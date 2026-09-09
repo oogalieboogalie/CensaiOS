@@ -9,6 +9,9 @@ where your context goes to die.
 [![CI](https://github.com/oogalieboogalie/CensaiOS/actions/workflows/ci.yml/badge.svg)](https://github.com/oogalieboogalie/CensaiOS/actions/workflows/ci.yml)
 [![Docker Ready](https://img.shields.io/badge/Docker-ready-blue.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![GitHub stars](https://img.shields.io/github/stars/oogalieboogalie/CensaiOS?style=social)](https://github.com/oogalieboogalie/CensaiOS/stargazers)
+[![GitHub release](https://img.shields.io/github/v/release/oogalieboogalie/CensaiOS?sort=date&display_name=tag)](https://github.com/oogalieboogalie/CensaiOS/releases)
+[![Last commit](https://img.shields.io/github/last-commit/oogalieboogalie/CensaiOS)](https://github.com/oogalieboogalie/CensaiOS/commits/main)
+[![Contributors](https://img.shields.io/github/contributors/oogalieboogalie/CensaiOS)](https://github.com/oogalieboogalie/CensaiOS/graphs/contributors)
 
 Here's the shape of it: CensaiOS is a multiplayer canvas. Instead of one person staring at one
 chat box, a workspace holds the people, the agents, and the work itself — documents, terminals,

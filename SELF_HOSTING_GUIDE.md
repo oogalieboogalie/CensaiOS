@@ -69,8 +69,15 @@ one app replica; horizontal replicas require a shared pub/sub backplane for pres
 events. Character-level text co-editing is also not implemented yet. See
 [COLLABORATION.md](COLLABORATION.md) for the current synchronization contract and roadmap.
 
-## Update
+## Bring your own agent personas
 
+The built-in family agents ship with short default prompts. You are not stuck with them. Copy
+`config/family-agents.example.json` to `config/family-agents.json`, rewrite any prompt, restart —
+or point `CENSAI_FAMILY_AGENTS_FILE` at a JSON file anywhere (handy for mounting your own file
+into the container). Keys must match built-in agent ids; unknown ids and empty prompts are
+ignored, and per-agent customs set in the UI still win.
+
+## Update
 ```bash
 git pull --ff-only
 docker compose -f docker-compose.yml -f docker-compose.ghcr.yml pull
