@@ -1,0 +1,80 @@
+{
+  "$schema": "https://censai.dev/schemas/agent-card.schema.json",
+  "id": "agent:genesis",
+  "name": "Genesis",
+  "description": "Research and orchestration agent. Coordinates multi-agent task graphs and reports back to the sender.",
+  "version": "0.1.0",
+  "capabilities": [
+    { "name": "memory.read", "mode": "autonomous" },
+    { "name": "memory.write", "mode": "autonomous" },
+    { "name": "browser.read", "mode": "autonomous" },
+    { "name": "browser.use", "mode": "execute_with_approval" },
+    { "name": "files.read", "mode": "autonomous" },
+    { "name": "files.write", "mode": "execute_with_approval", "scope": ["/projects/*", "!/projects/*/secrets/*"] }
+  ],
+  "skills": [
+    {
+      "id": "skill:orchestrate",
+      "name": "Orchestrate a task graph",
+      "description": "Decompose a goal into subtasks, dispatch to worker agents, and report consolidated results.",
+      "tags": ["orchestration", "planning"]
+    },
+    {
+      "id": "skill:research",
+      "name": "Multi-source research",
+      "description": "Gather sources from the web, summarize findings, cite URLs.",
+      "tags": ["research", "web"]
+    }
+  ],
+  "model": {
+    "provider": "openrouter",
+    "id": "gpt-4o-mini",
+    "temperature": 0.2
+  },
+  "memory": {
+    "backend": "qdrant",
+    "collection": "family_values",
+    "policy": ["respect", "consent"]
+  },
+  "tools": [
+    {
+      "id": "tool:web.search",
+      "type": "http",
+      "config": {
+        "baseUrl": "https://api.serp/",
+        "keyRef": "SERP_API_KEY"
+      }
+    },
+    {
+      "id": "tool:supabase",
+      "type": "a2a-plugin",
+      "config": {
+        "projectRef": "xyz",
+        "keyRef": "SUPABASE_SERVICE_KEY"
+      }
+    }
+  ],
+  "edges": [
+    { "to": "agent:atlas", "channel": "tasks", "allowed": ["analyze", "summarize"] },
+    { "to": "agent:nexus", "channel": "events", "allowed": ["notify", "ask_consent"] }
+  ],
+  "guardrails": {
+    "egress": ["logging", "signature", "tool:*"],
+    "deny": ["os.shell", "fs.write:/system"],
+    "policyModules": ["respect", "privacy", "consent"]
+  },
+  "quotas": {
+    "maxReplicas": 3,
+    "leaseSeconds": 600,
+    "rateLimitPerMin": 30
+  },
+  "observability": {
+    "trace": true,
+    "logLevel": "info",
+    "incidentTag": null
+  },
+  "metadata": {
+    "tags": ["family", "builder"],
+    "version": "0.1.0+2026-05-15"
+  }
+}

@@ -1,0 +1,19 @@
+# gitleaks configuration for the public Censai repo.
+# Extends the built-in ruleset; the allowlist below prevents false positives on
+# documented placeholders. Real secrets in any commit still fail the scan.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented placeholders and example values, not real secrets"
+paths = [
+  '''\.env\.example$''',
+  '''(^|/)tests?/''',
+]
+regexes = [
+  # Obvious placeholder tokens in docs and example env files.
+  '''(?i)(your[_-]?|example[_-]?|placeholder|changeme|xxx+|\.\.\.|<[a-z_]+>)''',
+  '''sk-ant-\.\.\.''',
+  '''sk-\.\.\.''',
+]

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://censai.dev/schemas/agent-card.schema.json",
+  "id": "agent:claude-imported",
+  "name": "Claude (imported via AI Gateway)",
+  "description": "Anthropic Claude mounted through the Censai AI Gateway. BYOK-credentialed per user.",
+  "version": "1.0.0",
+  "capabilities": [
+    { "name": "memory.read", "mode": "read" },
+    { "name": "memory.write", "mode": "suggest" }
+  ],
+  "skills": [
+    {
+      "id": "skill:reason",
+      "name": "Long-form reasoning",
+      "description": "Extended chain-of-thought response with citation of inputs.",
+      "tags": ["reasoning", "writing"]
+    },
+    {
+      "id": "skill:code-review",
+      "name": "Code review",
+      "description": "Review a diff and emit structured feedback (blocking, suggestions, nits).",
+      "tags": ["code", "review"]
+    }
+  ],
+  "model": {
+    "provider": "anthropic",
+    "id": "claude-3-5-sonnet-20241022",
+    "temperature": 0.3
+  },
+  "memory": {
+    "backend": "none"
+  },
+  "tools": [
+    {
+      "id": "tool:ai-gateway",
+      "type": "function",
+      "config": {
+        "gateway": "censai-ai-gateway",
+        "keyRef": "ANTHROPIC_API_KEY"
+      }
+    }
+  ],
+  "guardrails": {
+    "egress": ["logging", "signature"],
+    "deny": ["os.shell"],
+    "policyModules": ["privacy"]
+  },
+  "quotas": {
+    "maxReplicas": 1,
+    "rateLimitPerMin": 60
+  },
+  "observability": {
+    "trace": true,
+    "logLevel": "info"
+  },
+  "metadata": {
+    "tags": ["external", "byok"],
+    "version": "claude-3-5-sonnet-20241022"
+  }
+}

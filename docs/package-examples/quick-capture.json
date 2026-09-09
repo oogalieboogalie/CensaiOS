@@ -1,0 +1,17 @@
+{
+  "$schema": "https://censai.dev/schemas/cognitive-load.schema.json",
+  "id": "package:quick-capture",
+  "name": "Quick Capture",
+  "description": "A one-field note taker. Type, autosaves, returns. No folders, no tags, no organization.",
+  "version": "1.2.0",
+  "category": "capture",
+  "cognitiveLoad": "low",
+  "signals": {
+    "setupMinutes": 0,
+    "decisionsPerSession": 0,
+    "notificationVolume": "0/hr",
+    "modeSwitches": 0
+  },
+  "rationale": "Single text field with autosave. No folders, no tags, no notifications, no decisions.",
+  "lastReviewed": "2026-06-23"
+}

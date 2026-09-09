@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://censai.dev/schemas/cognitive-load.schema.json",
+  "title": "Censai Package Cognitive Load",
+  "description": "Optional, additive metadata field on CensaiHub package and agent listings. Declares setup burden, interaction complexity, and attention cost on a 3-level scale so users (especially ADHD-first) can filter listings by tractability.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cognitiveLoad"],
+  "properties": {
+    "cognitiveLoad": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Self-declared cognitive load level. See docs/cognitive-load-field.md for the canonical definitions."
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional structured signal data that justifies the rating.",
+      "properties": {
+        "setupMinutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 480,
+          "description": "Initial setup time in minutes (0-480 = up to 8 hours)."
+        },
+        "decisionsPerSession": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Decision points the user encounters per typical session."
+        },
+        "notificationVolume": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)/hr$",
+          "description": "Notification rate during active use, formatted as 'N/hr' (e.g. '2/hr')."
+        },
+        "modeSwitches": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Number of distinct views/windows the user must move between."
+        }
+      }
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280,
+      "description": "One- or two-sentence explanation of why the package is rated at this level."
+    },
+    "lastReviewed": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date when the rating was last reviewed by the author."
+    }
+  }
+}

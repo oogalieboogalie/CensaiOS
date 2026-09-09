@@ -1,0 +1,132 @@
+/*
+ * Theme primitives shared by CSS, inline styles, and Tailwind utilities.
+ *
+ * Mood palettes deliberately own colorway tokens in presetEntries/. These
+ * defaults own only stable layout, shape, status, and compatibility tokens.
+ * Any token here can still be overridden through the existing theme custom
+ * variable mechanism.
+ */
+
+:root {
+  /* Tailwind's complete default spacing scale, expressed as theme tokens. */
+  --space-0: 0;
+  --space-px: 1px;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-11: 44px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-28: 112px;
+  --space-32: 128px;
+  --space-36: 144px;
+  --space-40: 160px;
+  --space-44: 176px;
+  --space-48: 192px;
+  --space-52: 208px;
+  --space-56: 224px;
+  --space-60: 240px;
+  --space-64: 256px;
+  --space-72: 288px;
+  --space-80: 320px;
+  --space-96: 384px;
+
+  --border-width-0: 0;
+  --border-width-1: 1px;
+  --border-width-2: 2px;
+  --border-width-4: 4px;
+  --border-width-8: 8px;
+  --window-border-width: var(--border-width-1);
+  --border-subtle: var(--hairline);
+  --border-strong: var(--hairline-strong);
+  --border-accent: var(--accent);
+
+  --radius-none: 0;
+  --radius-sm: 2px;
+  --radius-default: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-full: 9999px;
+
+  /* Theme compatibility aliases used by older and third-party windows. */
+  --surface-1: var(--surface);
+  --surface-soft: var(--surface-2);
+  --surface-raised: color-mix(in oklab, var(--surface) 92%, var(--ink));
+  --surface-3: color-mix(in oklab, var(--surface-2) 86%, var(--ink));
+  --surface-hover: color-mix(in oklab, var(--surface-2) 88%, var(--accent));
+  --surface-50: color-mix(in oklab, var(--surface) 50%, transparent);
+  --hairline-soft: color-mix(in oklab, var(--hairline) 65%, transparent);
+  --hairline-bg: color-mix(in oklab, var(--hairline) 35%, transparent);
+  --font-ui: var(--font-sans);
+  --accent-faint: color-mix(in oklab, var(--accent) 14%, transparent);
+  --accent-contrast: oklch(1 0 0);
+  --shadow-window: var(--shadow-pop);
+  --shadow-float: var(--shadow-pop);
+
+  /* Semantic status colors, plus established --ps-* compatibility aliases. */
+  --status-success: var(--ps-green);
+  --status-info: var(--ps-blue);
+  --status-danger: var(--ps-red);
+  --status-highlight: var(--ps-pink);
+  --status-amber: oklch(0.77 0.16 76);
+  --status-yellow: oklch(0.82 0.17 98);
+  --status-orange: oklch(0.72 0.18 52);
+  --status-purple: oklch(0.62 0.18 300);
+  --ps-amber: var(--status-amber);
+  --ps-yellow: var(--status-yellow);
+  --ps-orange: var(--status-orange);
+  --ps-purple: var(--status-purple);
+  --green: var(--status-success);
+  --red: var(--status-danger);
+  --orange: var(--status-orange);
+
+  /* Cross-surface neutral and canvas palette tokens. */
+  --color-transparent: transparent;
+  --color-white: oklch(1 0 0);
+  --color-black: oklch(0 0 0);
+  --canvas-pen-red: oklch(0.64 0.21 25);
+  --canvas-pen-amber: oklch(0.76 0.16 76);
+  --canvas-pen-green: oklch(0.72 0.16 148);
+  --canvas-pen-blue: oklch(0.66 0.16 250);
+  --canvas-pen-purple: oklch(0.62 0.18 300);
+  --canvas-pen-pink: oklch(0.68 0.20 5);
+
+  /* Opacity variants are explicit because Tailwind cannot alpha-compose var(). */
+  --accent-05: color-mix(in oklab, var(--accent) 5%, transparent);
+  --accent-10: color-mix(in oklab, var(--accent) 10%, transparent);
+  --accent-20: color-mix(in oklab, var(--accent) 20%, transparent);
+  --accent-30: color-mix(in oklab, var(--accent) 30%, transparent);
+  --accent-50: color-mix(in oklab, var(--accent) 50%, transparent);
+  --accent-soft-05: color-mix(in oklab, var(--accent-soft) 5%, transparent);
+  --accent-soft-10: color-mix(in oklab, var(--accent-soft) 10%, transparent);
+  --accent-soft-20: color-mix(in oklab, var(--accent-soft) 20%, transparent);
+  --accent-soft-30: color-mix(in oklab, var(--accent-soft) 30%, transparent);
+  --accent-soft-50: color-mix(in oklab, var(--accent-soft) 50%, transparent);
+  --ink-30: color-mix(in oklab, var(--ink) 30%, transparent);
+  --ink-40: color-mix(in oklab, var(--ink) 40%, transparent);
+  --ink-50: color-mix(in oklab, var(--ink) 50%, transparent);
+  --ink-60: color-mix(in oklab, var(--ink) 60%, transparent);
+  --ink-70: color-mix(in oklab, var(--ink) 70%, transparent);
+  --surface-soft-30: color-mix(in oklab, var(--surface-soft) 30%, transparent);
+  --surface-soft-50: color-mix(in oklab, var(--surface-soft) 50%, transparent);
+  --status-danger-10: color-mix(in oklab, var(--status-danger) 10%, transparent);
+  --status-danger-20: color-mix(in oklab, var(--status-danger) 20%, transparent);
+  --status-success-10: color-mix(in oklab, var(--status-success) 10%, transparent);
+}

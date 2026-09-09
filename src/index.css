@@ -1,0 +1,118 @@
+@import './themeTokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: oklch(0.965 0.008 80);
+  --canvas: oklch(0.955 0.012 80);
+  --surface: oklch(0.99 0.005 80);
+  --surface-2: oklch(0.97 0.008 80);
+  --hairline: oklch(0.88 0.008 80);
+  --hairline-strong: oklch(0.78 0.01 80);
+  --ink: oklch(0.22 0.015 60);
+  --ink-soft: oklch(0.42 0.01 60);
+  --ink-faint: oklch(0.62 0.008 60);
+  --accent-h: 145;
+  --accent-c: 0.11;
+  --accent-l: 0.62;
+  --accent: oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+  --accent-soft: oklch(0.92 0.04 var(--accent-h));
+  --accent-ink: oklch(0.32 0.08 var(--accent-h));
+  --ps-green: oklch(0.72 0.16 148);
+  --ps-blue: oklch(0.66 0.16 250);
+  --ps-red: oklch(0.64 0.21 25);
+  --ps-pink: oklch(0.68 0.20 5);
+  --radius-app: 18px;
+  --radius-card: 14px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 0 oklch(1 0 0 / 0.6) inset, 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -10px oklch(0 0 0 / 0.10);
+  --shadow-pop: 0 1px 0 oklch(1 0 0 / 0.6) inset, 0 6px 16px -4px oklch(0 0 0 / 0.10), 0 24px 48px -20px oklch(0 0 0 / 0.18);
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Code", "Cascadia Mono", Consolas, "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", "Outfit", "Inter", system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg: oklch(0.20 0.012 260);
+  --canvas: oklch(0.17 0.014 260);
+  --surface: oklch(0.245 0.014 260);
+  --surface-2: oklch(0.22 0.014 260);
+  --hairline: oklch(0.32 0.012 260);
+  --hairline-strong: oklch(0.42 0.014 260);
+  --ink: oklch(0.94 0.006 260);
+  --ink-soft: oklch(0.74 0.008 260);
+  --ink-faint: oklch(0.55 0.01 260);
+  --accent-soft: oklch(0.32 0.08 var(--accent-h));
+  --accent-ink: oklch(0.88 0.07 var(--accent-h));
+  --shadow-card: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 1px 2px oklch(0 0 0 / 0.4), 0 12px 32px -10px oklch(0 0 0 / 0.5);
+  --shadow-pop: 0 1px 0 oklch(1 0 0 / 0.05) inset, 0 8px 20px -4px oklch(0 0 0 / 0.5), 0 32px 60px -20px oklch(0 0 0 / 0.6);
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; height: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  color: var(--ink);
+  font-size: calc(14px * var(--app-font-scale, 1.0));
+  background:
+    radial-gradient(1200px 600px at 20% -10%, oklch(0.88 0.04 var(--accent-h) / 0.35), transparent 60%),
+    radial-gradient(900px 700px at 110% 110%, oklch(0.90 0.03 var(--accent-h) / 0.30), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(1200px 600px at 20% -10%, oklch(0.35 0.08 var(--accent-h) / 0.25), transparent 60%),
+    radial-gradient(900px 700px at 110% 110%, oklch(0.30 0.06 var(--accent-h) / 0.25), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+::selection { background: oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.25); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--hairline-strong); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+#app { width: 100vw; height: 100vh; display: block; }
+
+.splash {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  color: var(--ink-faint); font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+
+.splash .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 10px; display: inline-block; animation: pulse 1.2s ease-in-out infinite; }
+
+button:hover .ps-glyph { opacity: 1 !important; }
+.group-tag:hover .group-edit-btn { opacity: 1 !important; }
+
+@keyframes pulse { 0%,100% { opacity: 0.4; transform: scale(0.9);} 50% { opacity: 1; transform: scale(1.05);} }
+@keyframes gen-pulse { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes gen-shimmer { 0% { background-position: 0% 50% } 50% { background-position: 100% 50% } 100% { background-position: 0% 50% } }
+@keyframes gen-bounce { 0%,100% { transform: translateY(0); opacity: 0.6 } 50% { transform: translateY(-6px); opacity: 1 } }
+@keyframes gen-fade { from { opacity: 0; transform: scale(1.04) } to { opacity: 1; transform: scale(1) } }
+
+/* Custom Xterm.js styling for gorgeous selection and reliability */
+.xterm-selection {
+  opacity: 1 !important; /* Let the child divs control opacity */
+}
+.xterm-selection div {
+  background-color: var(--accent, #60a5fa) !important;
+  opacity: 0.45 !important;
+}
+
+/* Glassmorphic/Transparent xterm.js support */
+.terminal-translucent .xterm-viewport,
+.terminal-translucent .xterm-screen,
+.terminal-translucent .xterm {
+  background-color: transparent !important;
+}

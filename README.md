@@ -1,0 +1,133 @@
+# CensaiOS
+
+One shared canvas for your work and your agents. Documents, terminals, tasks, files, chats, and
+browsers live side by side on an infinite spatial surface — and persistent AI agents work in that
+same space, with their own identity, memory, and tools. No forty-tab shuffle, no chat transcript
+where your context goes to die.
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![CI](https://github.com/oogalieboogalie/CensaiOS/actions/workflows/ci.yml/badge.svg)](https://github.com/oogalieboogalie/CensaiOS/actions/workflows/ci.yml)
+[![Docker Ready](https://img.shields.io/badge/Docker-ready-blue.svg?logo=docker&logoColor=white)](https://www.docker.com)
+[![GitHub stars](https://img.shields.io/github/stars/oogalieboogalie/CensaiOS?style=social)](https://github.com/oogalieboogalie/CensaiOS/stargazers)
+
+Here's the shape of it: CensaiOS is a multiplayer canvas. Instead of one person staring at one
+chat box, a workspace holds the people, the agents, and the work itself — documents, terminals,
+tasks, files — arranged in space so you can see what the hell is going on.
+
+![Censai Canvas Preview](public/preview.png)
+
+## The core idea
+
+A chat box forgets. A canvas doesn't. Censai is built around the **shared workspace** as the unit
+that matters:
+
+- **People share a canvas**, not a screen recording. Presence, window positions, and durable canvas
+  changes belong to the workspace.
+- **Agents occupy the workspace too.** They can inspect authorized context, use equipped tools, run
+  in the background, and—after the required approval—write into visible work surfaces.
+- **The canvas preserves context.** Documents, terminals, tasks, files, chats, browsers, agents, and
+  their relationships stay spatially arranged instead of disappearing into a transcript.
+- **You own the runtime.** Run it on your workstation, home server, or private server with Docker.
+
+## Multiplayer collaboration
+
+The multiplayer beta covers the important slice end to end: an owner invites a workspace member,
+both see live presence and window movement, durable changes are revision-checked into PostgreSQL
+and broadcast to everyone, and an equipped agent can request approval, write into a canvas window,
+and publish the result to both people. Reconnecting restores the authoritative revision;
+non-members are denied.
+
+One honest boundary: no character-by-character collaborative text editing yet. Text is shared on commit, so a
+teammate sees the result after the editor pauses rather than on every keystroke. See
+[COLLABORATION.md](COLLABORATION.md) for the exact boundary and the path to CRDT-backed live
+co-editing.
+
+> **Release status:** the multiplayer vertical slice is implemented and under review in the current
+> beta line. It is not part of the latest public image until that source and its scrubbed public export
+> both pass review and merge. The release receipt identifies the exact commit in every published image.
+
+## What else is inside
+
+### Infinite canvas
+
+- Pan, zoom, draw, group, resize, and arrange work across a persistent spatial surface.
+- Connect agents to windows and organize related work into visual stations.
+- Use 50+ manifest-registered window types, including documents, code, terminals, files, tasks,
+  schedules, chats, browsers, images, media, agent design, and operational tools.
+- Scaffold a new window with `npm run window:new` and validate it with `npm run window:validate`.
+
+### Persistent agents
+
+- Create agents with their own identity, role, model route, tools, and workspace-scoped permissions.
+- Store weighted memories, knowledge-graph facts, and AES-256-GCM encrypted private journals.
+- Run with Ollama locally or use OpenAI-compatible, OpenRouter, Gemini, and other configured providers.
+- Queue background tasks and schedules that continue after the browser closes.
+- Give different agents different tools instead of exposing every capability to every model.
+
+### Self-hosted control
+
+- PostgreSQL is the durable authority for workspace and agent state.
+- Qdrant provides optional semantic recall and degrades gracefully when unavailable.
+- Risky execution capabilities can be kept behind the optional runner boundary.
+- Public releases pass tests, production build, window validation, secret scanning, dependency audit,
+  malicious-code tripwires, and CodeQL before an immutable image is published.
+
+## Quick start
+
+```bash
+git clone https://github.com/oogalieboogalie/CensaiOS.git
+cd CensaiOS
+cp .env.example .env
+docker compose -f docker-compose.yml -f docker-compose.ghcr.yml up -d
+```
+
+Open <http://localhost:3002>.
+
+The GHCR override pulls the newest validated public image. To build the checked-out source instead:
+
+```bash
+docker compose up -d --build
+```
+
+For local models, install [Ollama](https://ollama.com/) and pull a tool-calling model plus the default
+embedding model:
+
+```bash
+ollama pull qwen3-coder:latest
+ollama pull nomic-embed-text
+```
+
+Read [SELF_HOSTING_GUIDE.md](SELF_HOSTING_GUIDE.md) before exposing a shared installation to other
+people or the internet. The default Compose stack is intended for a trusted local machine.
+
+## Releases you can reproduce
+
+Every reviewed merge to public `main` must pass the public CI and security gates. A successful merge
+publishes:
+
+- an immutable `selfhost-<date>-<commit>` GitHub release;
+- a matching `ghcr.io/oogalieboogalie/CensaiOS:<release-tag>` container;
+- a release receipt tying the source commit to the image.
+
+Use the immutable tag for a repeatable installation. `latest` is only a convenience pointer.
+
+## Documentation
+
+- [Collaboration model and live-text roadmap](COLLABORATION.md)
+- [Self-hosting guide](SELF_HOSTING_GUIDE.md)
+- [Architecture](ARCHITECTURE.md)
+- [Window integration specification](docs/WINDOW_INTEGRATION_SPEC.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+
+## Project status
+
+CensaiOS is an active, founder-led beta. The canvas, agents, memory, tools, self-hosting, and
+release pipeline are real and used daily; the multiplayer slice works in the beta line;
+character-level co-editing and multi-node fan-out are still engineering work. This README
+deliberately claims less than the ambition.
+
+## License
+
+[Apache License 2.0](LICENSE). You may run, modify, and self-host Censai,
+including for business use.
