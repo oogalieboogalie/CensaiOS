@@ -1,0 +1,4 @@
+services:
+  homebase:
+    image: ghcr.io/oogalieboogalie/CensaiOS:latest
+    pull_policy: always

@@ -1,0 +1,34 @@
+import express from 'express';
+import { coreRouter } from './core.js';
+import { memoryRouter } from './memory.js';
+import { communicationRouter } from './communication.js';
+import { leadsRouter } from './leads.js';
+import { scoutRouter } from './scout.js';
+import { subagentsRouter } from './subagents.js';
+import { tasksRouter } from './tasks.js';
+import { milestonesRouter } from './milestones.js';
+import { goalsRouter } from './goals.js';
+import { familyRouter } from './family.js';
+import { knowledgeRouter } from './knowledge.js';
+import { capabilitiesRouter } from './capabilities.js';
+import { attributesRouter } from './attributes.js';
+import { wakeupsRouter } from './wakeups.js';
+import { toolPackagesRouter } from './toolPackages.js';
+
+export const agentsRouter = express.Router();
+
+agentsRouter.use(coreRouter);
+agentsRouter.use(memoryRouter);
+agentsRouter.use(communicationRouter);
+agentsRouter.use(leadsRouter);
+agentsRouter.use(scoutRouter);
+agentsRouter.use(subagentsRouter);
+agentsRouter.use(tasksRouter);
+agentsRouter.use(milestonesRouter);
+agentsRouter.use(goalsRouter);
+agentsRouter.use(familyRouter);
+agentsRouter.use(knowledgeRouter);
+agentsRouter.use(capabilitiesRouter);
+agentsRouter.use(attributesRouter);
+agentsRouter.use(wakeupsRouter);
+agentsRouter.use(toolPackagesRouter);

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- stock:wave — oscillation, signal-over-time, rhythm -->
+  <path d="M6 32 Q14 18 22 32 T38 32 T54 32 T62 32" />
+  <path d="M6 42 Q14 34 22 42 T38 42 T54 42 T62 42" opacity="0.5" />
+</svg>

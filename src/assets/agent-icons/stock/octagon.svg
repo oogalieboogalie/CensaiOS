@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- stock:octagon — many-sided, the stop / boundary sign -->
+  <polygon points="22,6 42,6 58,22 58,42 42,58 22,58 6,42 6,22" />
+  <line x1="20" y1="20" x2="44" y2="44" opacity="0.45" />
+  <line x1="44" y1="20" x2="20" y2="44" opacity="0.45" />
+</svg>

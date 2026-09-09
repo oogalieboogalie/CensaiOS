@@ -1,0 +1,123 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: homebase
+      POSTGRES_PASSWORD: homebase
+      POSTGRES_DB: homebase
+    volumes:
+      - pgdata18root:/var/lib/postgresql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/001-init.sql
+      - ./docker/002-family-brain.sql:/docker-entrypoint-initdb.d/002-family-brain.sql
+      - ./docker/003-capabilities.sql:/docker-entrypoint-initdb.d/003-capabilities.sql
+      - ./docker/004-sub-agents.sql:/docker-entrypoint-initdb.d/004-sub-agents.sql
+      - ./docker/005-workspaces.sql:/docker-entrypoint-initdb.d/005-workspaces.sql
+      - ./docker/006-github-projects.sql:/docker-entrypoint-initdb.d/006-github-projects.sql
+      - ./docker/007-jules.sql:/docker-entrypoint-initdb.d/007-jules.sql
+      - ./docker/008-agent-tasks.sql:/docker-entrypoint-initdb.d/008-agent-tasks.sql
+      - ./docker/009-subagent-models.sql:/docker-entrypoint-initdb.d/009-subagent-models.sql
+      - ./docker/010-local-dev-restarts.sql:/docker-entrypoint-initdb.d/010-local-dev-restarts.sql
+      - ./docker/011-atlas-taxonomy.sql:/docker-entrypoint-initdb.d/011-atlas-taxonomy.sql
+      - ./docker/012-tkg-bellman-extension.sql:/docker-entrypoint-initdb.d/012-tkg-bellman-extension.sql
+      - ./docker/013-dispatch-batches.sql:/docker-entrypoint-initdb.d/013-dispatch-batches.sql
+      - ./docker/014-memory-healing.sql:/docker-entrypoint-initdb.d/014-memory-healing.sql
+      - ./docker/015-agent-tool-scopes.sql:/docker-entrypoint-initdb.d/015-agent-tool-scopes.sql
+      - ./docker/016-schedules.sql:/docker-entrypoint-initdb.d/016-schedules.sql
+      - ./docker/017-jules-task-sync.sql:/docker-entrypoint-initdb.d/017-jules-task-sync.sql
+      - ./docker/018-agent-task-receipts.sql:/docker-entrypoint-initdb.d/018-agent-task-receipts.sql
+      - ./docker/019-operational-intelligence.sql:/docker-entrypoint-initdb.d/019-operational-intelligence.sql
+      - ./docker/026-execution-ledger.sql:/docker-entrypoint-initdb.d/026-execution-ledger.sql
+      - ./docker/030-run-causality.sql:/docker-entrypoint-initdb.d/030-run-causality.sql
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homebase"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: always
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "6335:6333"
+      - "6336:6334"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/6333'"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  homebase:
+    build: .
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    env_file:
+      - .env
+    ports:
+      - "3002:3001"
+    volumes:
+      - homebase_state:/app/.homebase-state
+      - .:/workspace/CensaiHub
+    environment:
+      DATABASE_URL: postgresql://homebase:homebase@postgres:5432/homebase
+      QDRANT_URL: http://qdrant:6333
+      AI_BASE_URL: http://host.docker.internal:11434/v1
+      AI_API_KEY: ollama
+      AI_MODEL: minimax-m2.5:cloud
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://host.docker.internal:11434/v1}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+      COHERE_PAID_API_KEY: ${COHERE_PAID_API_KEY:-}
+      COHERE_NON_COMMERCIAL_KEY: ${COHERE_NON_COMMERCIAL_KEY:-}
+      COHERE_CHAT_BASE_URL: ${COHERE_CHAT_BASE_URL:-https://api.cohere.ai/compatibility/v1}
+      COHERE_BASE_URL: ${COHERE_BASE_URL:-}
+      COHERE_EMBEDDING_DIMENSION: ${COHERE_EMBEDDING_DIMENSION:-}
+      APP_ORIGIN: ${CENSAI_DOCKER_APP_ORIGIN:-http://localhost:3002}
+      GOOGLE_REDIRECT_URI: ${CENSAI_DOCKER_GOOGLE_REDIRECT_URI:-http://localhost:3002/api/auth/google/callback}
+      PORT: 3001
+      NODE_ENV: production
+      CENSAI_MODE: ${CENSAI_MODE:-}
+      HOMEBASE_MODE: ${HOMEBASE_MODE:-local_desktop}
+      HOMEBASE_CONTAINER_PROJECT_ROOT: ${HOMEBASE_CONTAINER_PROJECT_ROOT:-/workspace/CensaiHub}
+      # Optional host<->container path mapping for the terminal/runner.
+      # Set these if you mount a host project directory into the container.
+      # HOMEBASE_HOST_PROJECT_ROOT: /path/to/your/project
+      # HOMEBASE_CONTAINER_PROJECT_ROOT: /workspace/project
+      RUNNER_ENABLED: "true"
+      RUNNER_URL: http://runner:3003
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+
+  runner:
+    build: .
+    command: ["node", "server/runner/service.js"]
+    profiles: ["runner"]
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      RUNNER_PORT: 3003
+      RUNNER_SECRET: ${RUNNER_SECRET}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/workspace/CensaiHub
+    ports:
+      - "3003:3003"
+
+volumes:
+  pgdata18root:
+  qdrant_data:
+  homebase_state:

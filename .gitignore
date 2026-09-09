@@ -1,0 +1,35 @@
+node_modules
+dist
+dist-landing
+coverage/
+%APPDATA%/
+.env
+.google_tokens.json
+.homebase-state/
+.codex-run/
+.codex-runlogs/
+.codex-*.log
+.perf/
+/workspaces/
+
+# scratch / junk artifacts
+*.mess
+test-atlas-write*
+outputs-sandbox-resolver.cjs
+
+# local dev logs
+*.log
+__pycache__/
+*.py[cod]
+
+# local and agent workspace directories
+/backups/
+/images/
+/scratch/
+/outputs/
+/.codex-work/
+/to-dos/
+/agents/
+/vex/logs/
+/vex/data/cache/
+/packages/actuarial_bridge/.audit/

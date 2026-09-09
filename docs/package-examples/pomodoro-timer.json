@@ -1,0 +1,17 @@
+{
+  "$schema": "https://censai.dev/schemas/cognitive-load.schema.json",
+  "id": "package:pomodoro-timer",
+  "name": "Pomodoro Timer",
+  "description": "A 25/5 minute focus timer with a single start button and audible chime. No setup, no notifications, no state.",
+  "version": "1.0.0",
+  "category": "focus",
+  "cognitiveLoad": "low",
+  "signals": {
+    "setupMinutes": 0,
+    "decisionsPerSession": 1,
+    "notificationVolume": "0/hr",
+    "modeSwitches": 0
+  },
+  "rationale": "Single-button timer with no setup, no notifications, and no state to track across sessions. Just press start.",
+  "lastReviewed": "2026-06-23"
+}

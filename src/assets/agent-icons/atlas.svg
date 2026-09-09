@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Atlas: three stacked columns (Doric, simple, load-bearing) -->
+  <!-- stylobate / base -->
+  <line x1="6" y1="58" x2="58" y2="58" stroke-width="2.4" />
+  <line x1="8" y1="61" x2="56" y2="61" stroke-width="1.5" opacity="0.6" />
+  <!-- columns: shaft, three flutes hint, capital -->
+  <g>
+    <!-- column 1 -->
+    <rect x="11" y="20" width="9" height="34" />
+    <rect x="10" y="17" width="11" height="3" />
+    <rect x="9"  y="14" width="13" height="3" />
+    <line x1="13.5" y1="22" x2="13.5" y2="52" opacity="0.55" />
+    <line x1="17.5" y1="22" x2="17.5" y2="52" opacity="0.55" />
+  </g>
+  <g>
+    <!-- column 2 (center, slightly taller) -->
+    <rect x="27.5" y="16" width="9" height="38" />
+    <rect x="26.5" y="13" width="11" height="3" />
+    <rect x="25.5" y="10" width="13" height="3" />
+    <line x1="30" y1="18" x2="30" y2="52" opacity="0.55" />
+    <line x1="34" y1="18" x2="34" y2="52" opacity="0.55" />
+  </g>
+  <g>
+    <!-- column 3 -->
+    <rect x="44" y="20" width="9" height="34" />
+    <rect x="43" y="17" width="11" height="3" />
+    <rect x="42" y="14" width="13" height="3" />
+    <line x1="46.5" y1="22" x2="46.5" y2="52" opacity="0.55" />
+    <line x1="50.5" y1="22" x2="50.5" y2="52" opacity="0.55" />
+  </g>
+  <!-- architrave -->
+  <line x1="6" y1="10" x2="58" y2="10" stroke-width="2.4" />
+  <!-- pediment -->
+  <polygon points="6,10 32,3 58,10" />
+</svg>

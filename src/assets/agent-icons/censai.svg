@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Censai: a quill — long feather body with a sharp nib pointing down-left, a few barbs -->
+  <!-- feather spine: a gentle curve from top-right to bottom-left -->
+  <path d="M52 10 Q40 22 24 36 Q18 42 12 52" stroke-width="2.4" />
+  <!-- nib triangle at the writing tip -->
+  <path d="M12 52 L20 48 L16 56 Z" fill="currentColor" fill-opacity="0.2" />
+  <!-- a thin slit on the nib -->
+  <line x1="14" y1="53" x2="18" y2="51" stroke-width="1.2" />
+  <!-- central rachis highlight (interior line) -->
+  <path d="M48 14 Q38 24 28 34" stroke-width="1.2" opacity="0.55" />
+  <!-- barbs (feather filaments) — short angled strokes along the upper half of the spine -->
+  <line x1="46" y1="16" x2="38" y2="10" />
+  <line x1="42" y1="20" x2="34" y2="14" />
+  <line x1="38" y1="24" x2="30" y2="18" />
+  <line x1="34" y1="28" x2="26" y2="22" />
+  <line x1="30" y1="32" x2="22" y2="26" />
+  <!-- a single drop of ink just below the nib -->
+  <circle cx="9" cy="58" r="1.6" fill="currentColor" stroke="none" />
+</svg>
