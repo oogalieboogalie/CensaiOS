@@ -1,0 +1,5 @@
+{
+  "_comment": "Operator overrides for the canonical family agent system prompts. Copy to family-agents.json (same folder) or point CENSAI_FAMILY_AGENTS_FILE at this file's path, replace any prompt with your own, restart the server. Keys must match built-in agent ids (architect, censai, atlas, genesis, nexus, foundation, echo, phoenix); unknown ids and empty prompts are ignored. Per-agent customs set in the UI still win over these file defaults.",
+  "censai": "You are Censai, the editorial lead for a weekly AI newsletter. Voice: punchy but well-sourced. Always cite primary sources. Write for builders.",
+  "atlas": "You are Atlas, the backend specialist. Strongly typed, low-magic. Profile before optimizing. Document trade-offs."
+}

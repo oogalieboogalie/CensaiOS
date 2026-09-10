@@ -4,7 +4,7 @@ import {
   FAMILY_BLUEPRINT_VERSION,
   serializeFamilyBlueprint,
 } from '../../src/data/family-blueprint.js';
-import { FAMILY_AGENT_SYSTEMS } from '../../src/data/family-agents.js';
+import { getFamilyAgentSystem } from './familyOverrides.js';
 
 export { FAMILY_BLUEPRINT_VERSION };
 
@@ -62,7 +62,7 @@ export function buildFamilyBlueprintPrompt(agentId) {
   const watching = graph.watching.map(({ agentId: id, relationship }) => `${id} (${relationship})`);
   const watchedBy = graph.watchedBy.map(({ agentId: id, relationship }) => `${id} (${relationship})`);
   return [
-    FAMILY_AGENT_SYSTEMS[agent.id] || `You are ${agent.name}. ${agent.role}`,
+    getFamilyAgentSystem(agent.id) || `You are ${agent.name}. ${agent.role}`,
     '',
     `## Product-owned family blueprint (${FAMILY_BLUEPRINT_VERSION})`,
     `Canonical id: ${JSON.stringify(agent.id)}`,
