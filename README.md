@@ -8,6 +8,10 @@ that wishes there was a way to do it in real time that wasn't a zoom call. It's 
 understand things, scribble notes down, and draw literal connections between things.
 
 
+<img width="932" height="464" alt="Recording 2026-09-12 234041" src="https://github.com/user-attachments/assets/46308484-0ce8-4cf6-b7ed-8c5dece53dad" />
+
+
+
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI](https://github.com/oogalieboogalie/CensaiOS/actions/workflows/ci.yml/badge.svg)](https://github.com/oogalieboogalie/CensaiOS/actions/workflows/ci.yml)
 [![Docker Ready](https://img.shields.io/badge/Docker-ready-blue.svg?logo=docker&logoColor=white)](https://www.docker.com)
