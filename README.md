@@ -22,7 +22,8 @@ Here's the shape of it: CensaiOS is a multiplayer canvas. Instead of one person 
 chat box, a workspace holds the people, the agents, and the work itself — documents, terminals,
 tasks, files — arranged in space so you can see what the hell is going on.
 
-![Censai Canvas Preview](public/preview.png)
+<img width="803" height="715" alt="image" src="https://github.com/user-attachments/assets/0a7a808b-7e1e-4806-8dea-e58e96597e5d" />
+
 
 ## The core idea
 
