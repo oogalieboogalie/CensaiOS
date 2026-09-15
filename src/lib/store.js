@@ -34,7 +34,7 @@ export const useWorkspaceStore = create((set, get) => ({
   setPenSize: (size) => set({ penSize: size }),
 
   penMode: false,
-  setPenMode: (mode) => set({ penMode: mode }),
+  setPenMode: (mode) => set({ penMode: typeof mode === 'function' ? mode(get().penMode) : mode }),
 
   activeId: null,
   setActiveId: (id) => set({ activeId: id }),
@@ -59,7 +59,7 @@ export const useWorkspaceStore = create((set, get) => ({
   }),
 
   focusMode: false,
-  setFocusMode: (mode) => set({ focusMode: mode }),
+  setFocusMode: (mode) => set({ focusMode: typeof mode === 'function' ? mode(get().focusMode) : mode }),
 
   extraAgents: [],
   setExtraAgents: (agents) => set({ extraAgents: typeof agents === 'function' ? agents(get().extraAgents) : agents }),
