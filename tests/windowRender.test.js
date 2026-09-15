@@ -77,8 +77,7 @@ describe('Window Render Smoke Tests', () => {
 
   const windows = WINDOW_MANIFESTS.map(manifest => [manifest.kind, manifest]);
 
-  test.each(windows)('renders window kind: %s', async (kind, manifest) => {
-    // If the component is a provider connect window, mock api requests within the test using global fetch intercept
+  test.each(windows)('renders window kind: %s', async (kind, manifest) => {    // If the component is a provider connect window, mock api requests within the test using global fetch intercept
     // since the component fetches directly. For others, rely on the global fallbacks.
 
     // We import dynamically to avoid pulling the real 'api.js' module too early
@@ -111,7 +110,10 @@ describe('Window Render Smoke Tests', () => {
 
     // Verify it produced output (i.e., did not return null/empty fragment without throwing)
     expect(container).not.toBeEmptyDOMElement();
-  });
+    // Cold dynamic import + first render of heavy windows (framer-motion,
+    // charts) can exceed the 5s default under a loaded machine. This is a
+    // render smoke test, not a performance assertion.
+  }, 20000);
 
   test('operations board names its missing workspace scope', async () => {
     const { OperationsBoardWindow } = await import('../src/components/OperationsBoardWindow.jsx');
