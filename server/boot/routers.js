@@ -32,7 +32,7 @@ export function mountRouters(app) {
   // declaration order, so every subsequent `app.use('/api/...')` mount
   // (including all entries from ROUTE_MOUNTS) sees this guard.
   app.use('/api', (req, res, next) => {
-    if (req.path === '/health' || req.path === '/ready') {
+    if (req.path === '/health' || req.path === '/ready' || req.path.startsWith('/canvas/')) {
       return next();
     }
     // Bypass authentication in test environment and provide a mock session

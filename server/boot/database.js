@@ -20,6 +20,7 @@ import { ensureAgentCardInstallSchema } from '../agent-registry/installSchema.js
 import { ensureSalesLeadSchema } from '../salesLeads/schema.js';
 import { ensureMemoryTenancySchema } from '../memory/tenancySchema.js';
 import { ensureSubAgentTenancySchema } from '../memory/subagentTenancySchema.js';
+import { ensureCanvasIntegrationTokenSchema } from './canvasTokenSchema.js';
 
 const log = createLogger('boot-db');
 
@@ -45,6 +46,7 @@ async function probeDb() {
   await ensureSalesLeadSchema(pool);
   await ensureMemoryTenancySchema(pool);
   await ensureSubAgentTenancySchema(pool);
+  await ensureCanvasIntegrationTokenSchema(pool);
   await ensureRunCausalitySchema(pool);
   await ensureCapabilitySchema();
   await ensureAttributeSchema();

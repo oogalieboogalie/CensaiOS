@@ -64,6 +64,7 @@ import { freeTierStatusRouter } from '../routes/freeTierStatus.js';
 import { approvalsRouter } from '../routes/approvals.js';
 import { workspaceMembersRouter } from '../routes/workspaceMembers.js';
 import { agentIconsRouter } from '../routes/agentIcons.js';
+import { canvasRouter } from '../routes/canvas.js';
 import {
   requireFeatureFlag,
   requireLocalFilesystem,
@@ -146,6 +147,7 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api/mlops', router: mlopsRouter },
   { method: 'use', path: '/api/reliability', router: reliabilityRouter },
   { method: 'use', path: '/api/agent-registry', router: agentRegistryRouter },
+  { method: 'use', path: '/api', router: canvasRouter },
 ]);
 
 /**

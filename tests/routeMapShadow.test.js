@@ -46,6 +46,7 @@ describe('route map shadow contract', () => {
       '/kubernetes/status',
       '/sandbox/toolchains|/sandbox/toolchains|/sandbox/rebuild-status|/sandbox/rebuild-cancel|/sandbox/toolchains/detect|/sandbox/toolchains/install',
       '/commands|/commands/:commandId/execute',
+      '/canvas/cards',
     ]);
 
     const broadSignatures = ROUTE_MOUNTS
