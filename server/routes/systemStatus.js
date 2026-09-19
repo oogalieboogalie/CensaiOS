@@ -15,8 +15,10 @@ function humanUptime(seconds) {
 
 async function listContainers() {
   try {
-    const { stdout: psOut } = await exec('docker ps --format "{{.Names}}|||{{.Status}}|||{{.Ports}}"');
-    const { stdout: statsOut } = await exec('docker stats --no-stream --format "{{.Name}}|||{{.CPUPerc}}|||{{.MemUsage}}"');
+    const [{ stdout: psOut }, { stdout: statsOut }] = await Promise.all([
+      exec('docker ps --format "{{.Names}}|||{{.Status}}|||{{.Ports}}"'),
+      exec('docker stats --no-stream --format "{{.Name}}|||{{.CPUPerc}}|||{{.MemUsage}}"'),
+    ]);
     const statsMap = new Map();
     for (const line of statsOut.split(/\r?\n/)) {
       if (!line.trim()) continue;
@@ -43,7 +45,7 @@ router.get('/status', async (req, res) => {
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
     const load = os.loadavg();
-    const containers = await listContainers();
+    const containers = await listContainersCached();
     res.json({
       host: {
         platform: os.platform(),
@@ -63,3 +65,22 @@ router.get('/status', async (req, res) => {
 });
 
 export { router as systemStatusRouter };
+
+// Docker stats collection costs ~1-2s per call and the widget polls every
+// 10s, so container data is cached briefly. Host stats stay live.
+const CONTAINER_TTL_MS = 15_000;
+let containerCache = { at: 0, value: null };
+
+async function listContainersCached() {
+  if (containerCache.value && Date.now() - containerCache.at < CONTAINER_TTL_MS) {
+    return containerCache.value;
+  }
+  const value = await listContainers();
+  containerCache = { at: Date.now(), value };
+  return value;
+}
+
+// Test-only: drop the cached container snapshot.
+export function __resetSystemStatusCache() {
+  containerCache = { at: 0, value: null };
+}
