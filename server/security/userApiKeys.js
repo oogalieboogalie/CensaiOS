@@ -25,28 +25,13 @@ export function inferUserApiKeyProvider(provider, baseUrl) {
   const normalized = normalizeUserApiKeyProvider(provider);
   if (normalized) return normalized;
 
-  const raw = String(baseUrl || '').trim().toLowerCase();
-  if (raw === 'google-native') return 'google';
-
-  let hostname = '';
-  try {
-    hostname = new URL(raw).hostname.toLowerCase();
-  } catch {
-    try {
-      hostname = new URL(`https://${raw}`).hostname.toLowerCase();
-    } catch {
-      hostname = '';
-    }
-  }
-
-  if (!hostname) return null;
-
-  if (hostname === 'cohere.ai' || hostname.endsWith('.cohere.ai')) return 'cohere';
-  if (hostname === 'openrouter.ai' || hostname.endsWith('.openrouter.ai')) return 'openrouter';
-  if (hostname === 'api.openai.com') return 'openai';
-  if (hostname === 'googleapis.com' || hostname.endsWith('.googleapis.com')) return 'google';
-  if (hostname === 'moonshot.cn' || hostname.endsWith('.moonshot.cn')) return 'moonshot';
-  if (hostname === 'opencode.ai' || hostname.endsWith('.opencode.ai')) return 'opencode';
+  const url = String(baseUrl || '').toLowerCase();
+  if (url.includes('cohere.ai')) return 'cohere';
+  if (url.includes('openrouter.ai')) return 'openrouter';
+  if (url.includes('api.openai.com')) return 'openai';
+  if (url.includes('googleapis.com') || url === 'google-native') return 'google';
+  if (url.includes('moonshot.cn')) return 'moonshot';
+  if (url.includes('opencode.ai')) return 'opencode';
   return null;
 }
 
