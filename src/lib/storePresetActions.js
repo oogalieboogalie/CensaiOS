@@ -140,7 +140,25 @@ export const createPresetActions = (set, get) => ({
   deleteGroupPreset: (groupId, presetId) => {
     set(state => ({
       canvasGroups: state.canvasGroups.map(g => g.id === groupId
-        ? { ...g, presets: (g.presets || []).filter(p => p.id !== presetId) }
+        ? {
+            ...g,
+            presets: (g.presets || []).filter(p => p.id !== presetId),
+            // Clearing the default when its preset is deleted so the group
+            // falls back to the semantic layout instead of a dead id.
+            defaultPresetId: g.defaultPresetId === presetId ? null : g.defaultPresetId,
+          }
+        : g
+      )
+    }));
+  },
+
+  // Pin one of the group's saved layouts as its default: entering a window
+  // and auto-arrange fall back to this instead of SEMANTIC_WORKSPACE.
+  // Pass null/undefined to clear back to the built-in default.
+  setGroupDefaultPreset: (groupId, presetId) => {
+    set(state => ({
+      canvasGroups: state.canvasGroups.map(g => g.id === groupId
+        ? { ...g, defaultPresetId: presetId || null }
         : g
       )
     }));

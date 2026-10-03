@@ -1,4 +1,5 @@
 import React from 'react';
+import { glossContainer } from '../../lib/theme/gloss.js';
 
 function bytesToHuman(bytes) {
   const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
@@ -43,7 +44,7 @@ export function SystemStatusWidget({ focusMode }) {
   };
 
   return (
-    <div style={{ position: 'fixed', top: 80, right: 16, width: minimized ? 'auto' : 320, background: 'var(--surface)', color: 'var(--ink)', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.12)', padding: minimized ? '6px 10px' : 12, fontSize: 12, zIndex: 1200 }}>
+    <div style={glossContainer({ position: 'fixed', top: 80, right: 16, width: minimized ? 'auto' : 320, color: 'var(--ink)', borderRadius: 'var(--radius-float)', padding: minimized ? '6px 10px' : 12, fontSize: 12, zIndex: 1200 })}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: minimized ? 0 : 8, gap: 8 }}>
         <strong>Host Status</strong>
         {!minimized && <small style={{ color: 'var(--ink-faint)' }}>{status?.now ? new Date(status.now).toLocaleTimeString() : ''}</small>}

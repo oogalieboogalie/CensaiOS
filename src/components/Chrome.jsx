@@ -4,6 +4,7 @@ import { PSButton } from './chrome/Buttons.jsx';
 import { FileMenu } from './chrome/FileMenu.jsx';
 import { WindowMenu } from './topbar/WindowMenu.jsx';
 import { useEscapeDismiss } from '../lib/useEscapeDismiss.js';
+import { glossButton, glossContainer } from '../lib/theme/gloss.js';
 
 function formatTopClock(d) {
   const day = d.toLocaleDateString(undefined, { weekday: 'short' });
@@ -50,15 +51,18 @@ export function Chrome({
     <>
       <div style={{ position: 'fixed', top: 0, left: 12, transform: `translateY(${folded ? '-100%' : '0'})`, transition: 'transform 0.4s cubic-bezier(.4,.0,.2,1), opacity 0.4s', opacity: fade ? 0 : 1, zIndex: 50 }}
         onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }} onMouseLeave={(e) => { if (fade) e.currentTarget.style.opacity = 0; }}>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: 20, borderBottomRightRadius: 20, padding: '7px 12px 9px', boxShadow: 'var(--shadow-card)', display: 'inline-flex', alignItems: 'center', gap: 10, width: 'max-content' }}>
-          <img src="/assets/app-icon-64.png" alt="Censai logo" style={{ height: 24, width: 24, borderRadius: 4 }} />
-          <button title="File menu" onClick={() => setShowFiles(s => !s)} style={{ all: 'unset', cursor: 'pointer', width: 26, height: 26, borderRadius: 8, display: 'grid', placeItems: 'center', color: 'var(--ink-soft)', background: showFiles ? 'var(--surface-2)' : 'transparent' }}>
+        <div style={glossContainer({ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: 'var(--radius-float)', borderBottomRightRadius: 'var(--radius-float)', padding: '7px 12px 9px', display: 'inline-flex', alignItems: 'center', gap: 10, width: 'max-content' })}>
+          <button title="File menu" onClick={() => setShowFiles(s => !s)} style={{
+            all: 'unset',
+            ...glossButton({ cursor: 'pointer', width: 26, height: 26, borderRadius: 'var(--radius-float-btn)', display: 'grid', placeItems: 'center', color: 'var(--ink-soft)' }),
+            ...(showFiles ? { background: 'var(--accent-soft)', color: 'var(--accent-ink)' } : {}),
+          }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 4h10M3 8h10M3 12h10"/></svg>
           </button>
           <div style={{ width: 1, height: 18, background: 'var(--hairline)' }} />
           <WindowMenu onSpawn={onSpawn} />
           <div style={{ width: 1, height: 18, background: 'var(--hairline)' }} />
-          <button title="Fold toolbar" onClick={() => setFolded(true)} style={{ all: 'unset', cursor: 'pointer', width: 26, height: 26, borderRadius: 8, display: 'grid', placeItems: 'center', color: 'var(--ink-soft)' }}><Icon.Up size={16}/></button>
+          <button title="Fold toolbar" onClick={() => setFolded(true)} style={{ all: 'unset', ...glossButton({ cursor: 'pointer', width: 26, height: 26, borderRadius: 'var(--radius-float-btn)', display: 'grid', placeItems: 'center', color: 'var(--ink-soft)' }) }}><Icon.Up size={16}/></button>
         </div>
         {showFiles && <FileMenu onClose={() => setShowFiles(false)} projectName={projectName}
           currentProject={currentProject}
@@ -75,25 +79,27 @@ export function Chrome({
         />}
       </div>
       {folded && <div style={{ position: 'fixed', top: 0, left: 12, zIndex: 50, opacity: idle && !focusMode ? 0.3 : 1, transition: 'opacity 0.3s' }}>
-        <button onClick={() => setFolded(false)} title="Show toolbar" style={{ all: 'unset', cursor: 'pointer', padding: '4px 14px 5px', background: 'var(--surface)', border: '1px solid var(--hairline)', borderTop: 'none', borderBottomLeftRadius: 14, borderBottomRightRadius: 14, boxShadow: 'var(--shadow-card)', color: 'var(--ink-faint)' }}><Icon.Down size={14}/></button>
+        <button onClick={() => setFolded(false)} title="Show toolbar" style={{ all: 'unset', ...glossContainer({ cursor: 'pointer', padding: '4px 14px 5px', borderTop: 'none', borderBottomLeftRadius: 'var(--radius-float)', borderBottomRightRadius: 'var(--radius-float)', color: 'var(--ink-faint)' }) }}><Icon.Down size={14}/></button>
       </div>}
       <div style={{ position: 'fixed', top: 0, right: 0, zIndex: 50, opacity: fade ? 0 : 1, transition: 'opacity 0.4s' }}
         onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }} onMouseLeave={(e) => { if (fade) e.currentTarget.style.opacity = 0; }}>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderTop: 'none', borderRight: 'none', borderBottomLeftRadius: 18, padding: '8px 12px', boxShadow: 'var(--shadow-card)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={onOpenSettings} title="Settings" style={{ all: 'unset', cursor: 'pointer', width: 26, height: 26, borderRadius: 8, display: 'grid', placeItems: 'center', color: 'var(--ink-soft)' }}><Icon.Gear size={16} /></button>
+        <div style={glossContainer({ borderTop: 'none', borderRight: 'none', borderBottomLeftRadius: 'var(--radius-float)', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 })}>
+          <button onClick={onOpenSettings} title="Settings" style={{ all: 'unset', ...glossButton({ cursor: 'pointer', width: 26, height: 26, borderRadius: 'var(--radius-float-btn)', display: 'grid', placeItems: 'center', color: 'var(--ink-soft)' }) }}><Icon.Gear size={16} /></button>
           <button
             onClick={onTogglePenMode}
             title={penMode ? 'Disable pen mode' : 'Enable pen mode'}
             style={{
               all: 'unset',
-              cursor: 'pointer',
-              width: 26,
-              height: 26,
-              borderRadius: 8,
-              display: 'grid',
-              placeItems: 'center',
-              color: penMode ? 'var(--accent-ink)' : 'var(--ink-soft)',
-              background: penMode ? 'var(--accent-soft)' : 'transparent',
+              ...glossButton({
+                cursor: 'pointer',
+                width: 26,
+                height: 26,
+                borderRadius: 'var(--radius-float-btn)',
+                display: 'grid',
+                placeItems: 'center',
+                color: penMode ? 'var(--accent-ink)' : 'var(--ink-soft)',
+              }),
+              ...(penMode ? { background: 'var(--accent-soft)' } : {}),
             }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

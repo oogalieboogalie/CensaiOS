@@ -10,7 +10,7 @@ export function buildOutcomePrompt(value) {
     '',
     outcome,
     '',
-    'Start now. Turn this into a concrete workspace plan, choose the agents and tools that are actually needed, and create or schedule the next steps you can execute. Ask only when a missing decision would materially change the result. Keep the work and receipts visible in this workspace.',
+    'Start now. Turn this into a concrete workspace plan, choose the agents and tools that are actually needed, and create or schedule the next steps you can execute. Open the modules I need directly on the canvas with canvas_spawn_window (a todo list, a note, a chat — whatever fits) so I can see the setup happening, not just read about it. Ask only when a missing decision would materially change the result. Keep the work and receipts visible in this workspace.',
   ].join('\n');
 }
 
@@ -21,7 +21,7 @@ export function CanvasOutcomeCommand({ onSubmit }) {
 
   const submit = (event) => {
     event.preventDefault();
-    if (canSubmit) onSubmit(prompt);
+    if (canSubmit) onSubmit(prompt, outcome.trim());
   };
 
   return (
@@ -34,7 +34,7 @@ export function CanvasOutcomeCommand({ onSubmit }) {
       <p style={{
         margin: '4px 0 9px', color: 'var(--ink-soft)', fontSize: 11.5, lineHeight: 1.45,
       }}>
-        Describe what you want to do and Censai will suggest modules that fit your needs.
+        Describe what you want to do and CensaiOS will suggest modules that fit your needs.
       </p>
       <form onSubmit={submit} style={{
         display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr) 34px',
@@ -44,7 +44,7 @@ export function CanvasOutcomeCommand({ onSubmit }) {
         <div style={{
           gridColumn: '1 / -1', margin: '-2px 0 2px', color: 'var(--ink-faint)', fontSize: 10.5, lineHeight: 1.45,
         }}>
-          Censai can make mistakes. Feedback is welcome.
+          CensaiOS can make mistakes. Feedback is welcome.
         </div>
         <span aria-hidden="true" style={{
           width: 28, height: 28, borderRadius: 8, display: 'grid', placeItems: 'center',
@@ -56,7 +56,7 @@ export function CanvasOutcomeCommand({ onSubmit }) {
           id="canvas-outcome"
           value={outcome}
           onChange={(event) => setOutcome(event.target.value)}
-          placeholder="Tell Censai what you want done…"
+          placeholder="Tell CensaiOS what you want done…"
           autoComplete="off"
           autoFocus
           style={{

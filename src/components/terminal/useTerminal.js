@@ -132,7 +132,15 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId) {
       socketRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [cwd, theme, win.id, win.agentSessionId, win.agentRun?.prompt, workspaceId, sendBind]);
+  }, [cwd, win.id, win.agentSessionId, win.agentRun?.prompt, workspaceId, sendBind]);
+
+  // Live-apply color changes (canvas theme follows, terminal settings
+  // tweaks) without tearing down the shell session.
+  React.useEffect(() => {
+    const term = termRef.current;
+    if (!term) return;
+    term.options.theme = win.opacity !== undefined ? { ...theme, background: 'rgba(0,0,0,0)' } : theme;
+  }, [theme, win.opacity]);
 
   React.useEffect(() => {
     sendBind();

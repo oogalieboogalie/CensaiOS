@@ -1,59 +1,32 @@
 import React from 'react';
 import { getCollaborationClientId } from '../../lib/collaboration/clientIdentity.js';
 import { diffPresenceNotices } from '../../lib/collaboration/liveText.js';
+import { collaborationUrl, mergeCollaborationPreviews } from '../../lib/collaboration/previews.js';
 
-const PATH = '/ws/workspace-collaboration';
+// Re-exported so existing importers keep working after the previews extraction.
+export { collaborationUrl, mergeCollaborationPreviews };
+
 const PREVIEW_TTL_MS = 4000;
 const CURSOR_TTL_MS = 3000;
 const TYPING_TTL_MS = 3000;
 const TEXT_TTL_MS = 6000;
-
-export function collaborationUrl(workspaceId, clientId) {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.host;
-  return `${protocol}//${host}${PATH}?workspaceId=${encodeURIComponent(workspaceId)}`
-    + `&clientId=${encodeURIComponent(clientId)}`;
-}
-
-export function mergeCollaborationPreviews(wins, previews, presence = {}, activeId = null) {
-  const { text = {}, typing = {} } = presence;
-  return wins.map((win) => {
-    const preview = previews[win.id];
-    const remote = text[win.id];
-    const typer = typing[win.id];
-    let next = preview ? {
-      ...win,
-      x: preview.x,
-      y: preview.y,
-      collaborationActor: preview.actor,
-    } : win;
-    if (typer) {
-      next = { ...next, typingActor: { ...typer.actor, label: `${typer.actor?.label || 'Someone'} typing…` } };
-    }
-    // Live remote text for viewers only — never clobber the locally focused editor.
-    if (remote && win.id !== activeId && (win.kind === 'doc' || win.kind === 'code_editor')) {
-      next = {
-        ...next,
-        text: remote.text,
-        code: win.kind === 'code_editor' ? remote.text : next.code,
-        typingActor: remote.actor
-          ? { ...remote.actor, label: `${remote.actor?.label || 'Someone'} typing…` }
-          : next.typingActor,
-      };
-    }
-    return next;
-  });
-}
+// Consecutive closes without a single open means the endpoint is rejecting us
+// for good (unknown/forbidden workspace, dead session) — not a blip. Stop
+// retrying instead of hammering it every 5s forever; a workspaceId/enabled
+// change (effect re-run) or a fresh open resets the count. Sized generously
+// (~80s of retrying) so slow cold boots still self-heal.
+const MAX_CONSECUTIVE_FAILURES = 20;
+const OFFLINE_STATE = {
+  status: 'offline', participants: [], previews: {},
+  cursors: {}, typing: {}, textPreviews: {}, notices: [],
+  lastActivity: null, lastAgentRun: null,
+};
 
 export function useWorkspaceCollaboration({
   enabled, workspaceId, wins, revision, onAuthoritativeCommit, activeId,
 }) {
   const clientId = React.useMemo(() => getCollaborationClientId(), []);
-  const [state, setState] = React.useState({
-    status: 'offline', participants: [], previews: {},
-    cursors: {}, typing: {}, textPreviews: {}, notices: [],
-    lastActivity: null, lastAgentRun: null,
-  });
+  const [state, setState] = React.useState(OFFLINE_STATE);
   const socketRef = React.useRef(null);
   const revisionRef = React.useRef(revision);
   const previewTimers = React.useRef(new Map());
@@ -68,7 +41,7 @@ export function useWorkspaceCollaboration({
 
   React.useEffect(() => {
     if (!enabled || !workspaceId) {
-      setState({ status: 'offline', participants: [], previews: {}, cursors: {}, typing: {}, textPreviews: {}, notices: [], lastActivity: null, lastAgentRun: null });
+      setState(OFFLINE_STATE);
       return undefined;
     }
     let disposed = false;
@@ -173,9 +146,22 @@ export function useWorkspaceCollaboration({
         if (socketRef.current === socket) socketRef.current = null;
         if (disposed) return;
         snapshotBaseline.current = false;
-        setState((current) => ({ ...current, status: 'reconnecting', participants: [] }));
-        const delay = Math.min(5000, 250 * (2 ** attempt));
         attempt += 1;
+        if (attempt >= MAX_CONSECUTIVE_FAILURES) {
+          setState((current) => ({
+            ...current,
+            status: 'error',
+            participants: [],
+            notices: [...(current.notices || []), {
+              id: `collaboration-unavailable-${Date.now()}`,
+              kind: 'error',
+              text: 'Live collaboration unavailable — reconnects when the workspace changes.',
+            }].slice(-5),
+          }));
+          return;
+        }
+        setState((current) => ({ ...current, status: 'reconnecting', participants: [] }));
+        const delay = Math.min(5000, 250 * (2 ** (attempt - 1)));
         reconnectTimer = setTimeout(connect, delay);
       });
       socket.addEventListener('error', () => undefined);

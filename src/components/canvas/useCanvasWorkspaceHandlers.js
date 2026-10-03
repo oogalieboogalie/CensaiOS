@@ -1,5 +1,6 @@
 import React from 'react';
 import { getOwningGroup } from '../../lib/layoutAlgo.js';
+import { resolveGroupArrangePreset } from '../../lib/layout/defaultPreset.js';
 import { screenToCanvas } from '../../lib/canvasMath.js';
 import { basenameFromPath, windowInsideGroup } from './CanvasInteractions.js';
 import { useTheme } from '../Theme.jsx';
@@ -50,12 +51,16 @@ export function useCanvasWorkspaceHandlers({
       displacement = Math.hypot(finalPosition.x - original.x, finalPosition.y - original.y);
     }
     const didMove = interaction.moved === true && displacement > 2;
+    // Click (no drag) is a strict no-op for membership: a click must never
+    // recompute the owning group. Center-point containment can disagree with
+    // the stored groupId (e.g. an oversized window whose center sits outside
+    // its group), and recomputing on click silently strips membership.
+    if (!didMove) return;
     const owner = getOwningGroup(draggedWin, canvasGroups, false);
     const nextGroupId = owner ? owner.id : null;
-    if (nextGroupId !== (original.groupId || null) || didMove) {
+    if (nextGroupId !== (original.groupId || null)) {
       onUpdate(winId, { groupId: nextGroupId });
     }
-    if (!didMove) return;
     if (interaction.moved) {
       window.dispatchEvent(new CustomEvent(FIRST_MISSION_DRAG_EVENT, {
         detail: { winId, position: finalPosition },
@@ -74,7 +79,7 @@ export function useCanvasWorkspaceHandlers({
     const enteredNewGroup = (original.groupId || null) !== group.id;
     if (!enteredNewGroup) return;
     if (theme.groupSnapping !== false) {
-      setTimeout(() => onAutoArrangeGroup?.(group.id, group.presetId || 'SEMANTIC_WORKSPACE'), 50);
+      setTimeout(() => onAutoArrangeGroup?.(group.id, resolveGroupArrangePreset(group)), 50);
     }
   };
 

@@ -14,7 +14,7 @@ export function CollaborationPresence({ collaboration, focusMode = false, onShar
     <div data-testid="collaboration-presence" style={{
       position: 'fixed', right: 18, bottom: 16, zIndex: 45,
       display: 'flex', alignItems: 'center', gap: 7,
-      padding: '6px 9px', borderRadius: 999,
+      padding: '6px 9px', borderRadius: 'var(--radius-float)',
       border: '1px solid var(--hairline)', background: 'var(--surface)',
       boxShadow: 'var(--shadow-card)', color: 'var(--ink-soft)',
       fontFamily: 'var(--font-mono)', fontSize: 10,
@@ -29,7 +29,7 @@ export function CollaborationPresence({ collaboration, focusMode = false, onShar
       <span>{STATUS_LABELS[collaboration.status] || 'Offline'}</span>
       {live && <span style={{ color: 'var(--ink-faint)' }}>· {participants.length}</span>}
       {onShare && (
-        <button type="button" onClick={onShare} style={{ border: 0, borderRadius: 999, padding: '4px 7px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', font: 'inherit', fontWeight: 700, cursor: 'pointer' }}>
+        <button type="button" onClick={onShare} style={{ border: 0, borderRadius: 'var(--radius-float-btn)', padding: '4px 7px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', font: 'inherit', fontWeight: 700, cursor: 'pointer' }}>
           Share
         </button>
       )}

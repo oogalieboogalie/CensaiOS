@@ -34,7 +34,7 @@ export const useWorkspaceStore = create((set, get) => ({
   setPenSize: (size) => set({ penSize: size }),
 
   penMode: false,
-  setPenMode: (mode) => set({ penMode: mode }),
+  setPenMode: (mode) => set({ penMode: typeof mode === 'function' ? mode(get().penMode) : mode }),
 
   activeId: null,
   setActiveId: (id) => set({ activeId: id }),
@@ -59,7 +59,7 @@ export const useWorkspaceStore = create((set, get) => ({
   }),
 
   focusMode: false,
-  setFocusMode: (mode) => set({ focusMode: mode }),
+  setFocusMode: (mode) => set({ focusMode: typeof mode === 'function' ? mode(get().focusMode) : mode }),
 
   extraAgents: [],
   setExtraAgents: (agents) => set({ extraAgents: typeof agents === 'function' ? agents(get().extraAgents) : agents }),
@@ -79,7 +79,7 @@ export const useWorkspaceStore = create((set, get) => ({
   presets: [],
   setPresets: (presets) => set({ presets: typeof presets === 'function' ? presets(get().presets) : presets }),
 
-  sidebarFavorites: [],
+  sidebarFavorites: ['plan', 'idea', 'chat', 'files', 'code-editor', 'workflow', 'browser', 'image'],
   setSidebarFavorites: (favorites) => set({ sidebarFavorites: typeof favorites === 'function' ? favorites(get().sidebarFavorites) : favorites }),
 
   // Brief B1 — window allow-list. The state shape that lets new users land
@@ -112,8 +112,9 @@ export const useWorkspaceStore = create((set, get) => ({
     const p = pos || randomDropSpot(sz, get().pan, get().zoom);
     const now = new Date().toISOString();
     
+    // New terminals spawn solid so they wear the canvas theme at full
+    // strength; gloss stays opt-in per window via the style menu slider.
     const defaultStylesByKind = {
-      terminal: { opacity: 0.85 },
       code_editor: { opacity: 0.85 },
       githubConsole: { opacity: 0.90 }
     };

@@ -76,14 +76,14 @@ function applyTheme(t) {
   root.setAttribute('data-mood', t.mood);
   Object.entries(THEME_VAR_DEFAULTS).forEach(([k, v]) => root.style.setProperty(k, v));
   Object.entries(mood.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  // A1 — derive the window-frame tokens from the effective (post-merge) surface
+  // so live-edits of --surface from the Fine Tune panel propagate to the
+  // header and shadow. Derived first so explicit Fine Tune overrides win.
+  const derived = computeTokenMap(mood, { customVars: t.customVars });
+  Object.entries(derived).forEach(([k, v]) => root.style.setProperty(k, v));
   Object.entries(t.customVars || {}).forEach(([k, v]) => {
     if (v) root.style.setProperty(k, v);
   });
-  // A1 — derive the window-frame tokens from the effective (post-merge) surface
-  // so live-edits of --surface from the Fine Tune panel propagate to the
-  // header and shadow. customVars can still override these explicitly.
-  const derived = computeTokenMap(mood, { customVars: t.customVars });
-  Object.entries(derived).forEach(([k, v]) => root.style.setProperty(k, v));
 }
 
 const ThemeContext = React.createContext(null);

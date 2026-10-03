@@ -18,15 +18,16 @@
 
 import { mountRoutes } from './routeMap.js';
 import { authRouter } from '../routes/auth.js';
+import { hubAuthRouter } from '../routes/hubAuth.js';
 import { getSystemStatus } from '../health.js';
 import { runnerClient } from '../runner/client.js';
 import { requireAuthorizedSession } from '../security/sessionGuard.js';
 
 export function mountRouters(app) {
-  // Pre-guard: /api/auth is the one mount that MUST come before the guard
-  // so the login flow can populate req.session.userId. Kept inline because
-  // it is bootstrap, not data.
+  // Pre-guard: /api/auth and /api/hub-auth must come before the guard
+  // so signup/login/confirm can be reached without a session.
   app.use('/api/auth', authRouter);
+  app.use('/api/hub-auth', hubAuthRouter);
 
   // Authentication guard for all other API endpoints. Express matches in
   // declaration order, so every subsequent `app.use('/api/...')` mount

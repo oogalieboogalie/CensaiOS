@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ROADMAP_ITEMS, TIMELINE_START, TIMELINE_END } from '../data/roadmap-data.js';
 
-export function RoadmapTimeline() {
+export function RoadmapTimeline({ bottom = 24 }) {
   const [hoveredId, setHoveredId] = useState(null);
 
   const startMs = new Date(TIMELINE_START).getTime();
@@ -11,7 +11,7 @@ export function RoadmapTimeline() {
   return (
     <div style={{
       position: 'fixed',
-      bottom: 24,
+      bottom,
       left: '50%',
       transform: 'translateX(-50%)',
       width: '100%',

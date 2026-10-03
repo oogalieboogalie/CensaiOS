@@ -57,6 +57,9 @@ import { windowImportRouter } from '../routes/windowImport.js';
 import { operationalIntelligenceRouter } from '../routes/operationalIntelligence.js';
 import { mlopsRouter } from '../routes/mlops.js';
 import { reliabilityRouter } from '../routes/reliability.js';
+import { ideasRouter } from '../routes/ideas.js';
+import { ollamaRouter } from '../routes/ollama.js';
+import { oauthRouter } from '../routes/oauth.js';
 import { agentRegistryRouter } from '../routes/agentRegistry/index.js';
 import { commandsRouter } from '../routes/commands.js';
 import { keysRouter } from '../routes/keys.js';
@@ -145,6 +148,9 @@ export const ROUTE_MOUNTS = Object.freeze([
   },
   { method: 'use', path: '/api/mlops', router: mlopsRouter },
   { method: 'use', path: '/api/reliability', router: reliabilityRouter },
+  { method: 'use', path: '/api/ideas', router: ideasRouter },
+  { method: 'use', path: '/api/ollama', router: ollamaRouter },
+  { method: 'use', path: '/api/oauth', router: oauthRouter },
   { method: 'use', path: '/api/agent-registry', router: agentRegistryRouter },
 ]);
 

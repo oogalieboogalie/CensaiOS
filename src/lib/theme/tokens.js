@@ -56,8 +56,8 @@ const HEADER_LIFT = {
   dark: 0.040, // lift the surface a touch so the header is visible
 };
 
-/** Per-mood header chroma factor: how much of the surface chroma survives. */
-const HEADER_CHROMA_FACTOR = 0.55;
+/** Per-mood header chroma factor: the picked chroma survives intact. */
+const HEADER_CHROMA_FACTOR = 1.0;
 
 /** Header chroma floor: brand-tinted moods get a hint of accent color. */
 const HEADER_CHROMA_FLOOR = {
@@ -65,10 +65,11 @@ const HEADER_CHROMA_FLOOR = {
   dark: 0.018,
 };
 
-/** Accent blend weight: how much the accent hue pulls the header color. */
+/** Accent blend weight: the header carries the picked accent at full
+ * strength (header unification) instead of a surface-anchored whisper. */
 const ACCENT_BLEND = {
-  light: 0.10,
-  dark: 0.18,
+  light: 0.32,
+  dark: 0.38,
 };
 
 /** Shadows: a soft white inset + an outer drop tuned for the mode. */
@@ -91,8 +92,17 @@ function mix(a, b, weight) {
   return {
     l: a.l + (b.l - a.l) * w,
     c: a.c + (b.c - a.c) * w,
-    h: a.h + (b.h - a.h) * w,
+    h: mixHue(a.h, b.h, w),
   };
+}
+
+/** Hue interpolation along the shortest arc so far-apart hues (e.g. 330°
+// and 20°) blend through the near side instead of slingshotting across
+// the wheel. */
+function mixHue(aH, bH, weight) {
+  let delta = ((bH - aH) % 360 + 360) % 360;
+  if (delta > 180) delta -= 360;
+  return aH + delta * weight;
 }
 
 /**

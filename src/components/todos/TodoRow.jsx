@@ -61,9 +61,15 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
   const implementationStatus = item.implementationStatus || (isSent ? 'dispatched' : null);
   const contractMissing = Array.isArray(item.contractMissing) ? item.contractMissing.join(', ') : '';
   
+  const [expanded, setExpanded] = React.useState(false);
+
   const handleDoubleClick = () => {
     if (!isSent) {
       onStartEdit(item.id, item.text);
+    } else {
+      // Sent items can't be edited (would corrupt the handoff),
+      // but expand so the full text is readable and copyable.
+      setExpanded((e) => !e);
     }
   };
   
@@ -94,7 +100,7 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
             />
           </div>
         ) : (
-          <span title={isSent ? 'Sent items cannot be edited' : 'Double-click to edit'} style={{ fontSize: 13.5, color: item.done ? 'var(--ink-faint)' : 'var(--ink)', textDecoration: item.done ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</span>
+          <span title={isSent ? (expanded ? 'Double-click to collapse' : 'Double-click to expand full text') : 'Double-click to edit'} style={{ fontSize: 13.5, color: item.done ? 'var(--ink-faint)' : 'var(--ink)', textDecoration: item.done ? 'line-through' : 'none', whiteSpace: expanded ? 'normal' : 'nowrap', overflow: expanded ? 'visible' : 'hidden', textOverflow: expanded ? 'clip' : 'ellipsis', userSelect: 'text', cursor: 'text', overflowWrap: 'anywhere' }}>{item.text}</span>
         )}
         {implementationStatus && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, minHeight: 16 }}>

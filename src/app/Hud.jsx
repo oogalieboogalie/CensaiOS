@@ -1,11 +1,12 @@
 import React from 'react';
-import { CollaborationPresence } from '../components/CollaborationPresence.jsx';
 import { PresenceToasts } from '../components/PresenceToasts.jsx';
 import { FirstMission } from '../components/onboarding/FirstMission.jsx';
 
-export function Hud({ focusMode, collaboration, onShare }) {
+// Note: the live presence pill used to render here. It now lives inside the
+// middle multi-tool dock (DockPresence in Toolbar.jsx), so Hud only owns
+// toasts + onboarding.
+export function Hud({ focusMode, collaboration }) {
   return (<>
-    <CollaborationPresence collaboration={collaboration} focusMode={focusMode} onShare={onShare} />
     {!focusMode && <PresenceToasts collaboration={collaboration} />}
     <FirstMission focusMode={focusMode} />
   </>);

@@ -20,7 +20,6 @@ import { Toolbar } from './Toolbar.jsx';
 import { Hud } from './Hud.jsx';
 import { AgentRunToasts } from '../components/AgentRunToasts.jsx';
 import { AgentMailToasts } from '../components/AgentMailToasts.jsx';
-import { AgentMessenger } from '../components/messenger/AgentMessenger.jsx';
 import SystemStatusWidget from '../components/status/SystemStatusWidget.jsx';
 import { useAppActions } from './hooks/useAppActions.js';
 import { useAppBootstrap } from './hooks/useAppBootstrap.js';
@@ -30,6 +29,8 @@ import { usePresetBootstrap } from './hooks/usePresetBootstrap.js';
 import { useWorkspaceHistory } from './hooks/useWorkspaceHistory.js';
 import { useWorkspaceDraft } from './hooks/useWorkspaceDraft.js';
 import { useAppKeyboard } from './hooks/useAppKeyboard.js';
+import { useGroupHotkeys } from './hooks/useGroupHotkeys.js';
+import { invertBindings } from '../lib/groupHotkeys.js';
 import { useSettingsWindow } from './hooks/useSettingsWindow.js';
 import { Login } from '../components/Login.jsx';
 import { SovereignAccessGate } from '../components/SovereignAccessGate.jsx';
@@ -75,7 +76,7 @@ export function AppContent() {
   } = useWorkspaceStore();
 
   const { spawnAt, spawnGroup, onUpdate, onUpdateGroup, resizeGroup, deleteWindows, onCloseGroup, onClose, createAgent } = useAppActions();
-  const { saveAsPreset, loadPreset, deletePreset, saveGroupPreset, loadGroupPreset, deleteGroupPreset, autoArrangeGroup } = useAppPresets();
+  const { saveAsPreset, loadPreset, deletePreset, saveGroupPreset, loadGroupPreset, deleteGroupPreset, setGroupDefaultPreset, autoArrangeGroup } = useAppPresets();
   const { undo, redo } = useWorkspaceHistory(isInitialized);
   const openSettings = useSettingsWindow({ wins, spawnAt, setActiveId, onUpdate });
   const openSharing = React.useCallback(() => openSettings('sharing'), [openSettings]);
@@ -155,6 +156,11 @@ export function AppContent() {
   usePresetBootstrap(session.authenticated, setPresets);
 
   useAppKeyboard({ onNewAgent, onNewWindow, redo, undo, setFocusMode, spawnAt });
+  const { bindings: groupHotkeyBindings } = useGroupHotkeys({ workspaceId });
+  const groupHotkeySlotById = React.useMemo(
+    () => invertBindings(groupHotkeyBindings),
+    [groupHotkeyBindings]
+  );
 
   if (sessionChecking) {
     return <div style={{ position: 'fixed', inset: 0, background: 'var(--canvas)', display: 'grid', placeItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>Authenticating...</div>;
@@ -201,6 +207,8 @@ export function AppContent() {
           onSaveGroupPreset={saveGroupPreset}
           onLoadGroupPreset={loadGroupPreset}
           onDeleteGroupPreset={deleteGroupPreset}
+          onSetDefaultGroupPreset={setGroupDefaultPreset}
+          groupHotkeySlotById={groupHotkeySlotById}
           onMoveGroup={moveGroup}
           onRubberBand={(rect) => { const size = getDefaultWindowSize('todos');
             spawnAt('todos', { title: 'Plan', subtitle: 'rubber-banded region', items: [] },
@@ -243,16 +251,16 @@ export function AppContent() {
         onDragAgent={onDragAgent} dockOffset={dockOffset} onMoveDock={setDockOffset}
       />
 
-      <Hud focusMode={focusMode} collaboration={collaboration} onShare={openSharing} />
+      <Hud focusMode={focusMode} collaboration={collaboration} />
       <AgentRunToasts collaboration={collaboration} onOpenWindow={(id) => setActiveId(id)} />
       <AgentMailToasts workspaceId={workspaceId} />
-      <AgentMessenger />
       <SystemStatusWidget focusMode={focusMode} />
       <Toolbar
         activeTool={activeTool} onSelectTool={setActiveTool}
         penColor={penColor} setPenColor={setPenColor}
         penSize={penSize} setPenSize={setPenSize}
         focusMode={focusMode} onAiAgent={openAiAgent}
+        collaboration={collaboration} onShare={openSharing} workspaceId={workspaceId}
       />
       <PersistencePill persistence={persistence} />
       {pendingDraft?.value && (

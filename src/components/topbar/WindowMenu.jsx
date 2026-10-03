@@ -92,7 +92,7 @@ function MenuItem({ label, icon, onClick }) {
   return (
     <button
       onClick={onClick}
-      style={{ all: 'unset', boxSizing: 'border-box', width: '100%', padding: '7px 10px', borderRadius: 6, fontSize: 12.5, color: 'var(--ink)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+      style={{ all: 'unset', boxSizing: 'border-box', width: '100%', padding: '7px 10px', borderRadius: 'var(--radius-float-sm)', fontSize: 12.5, color: 'var(--ink)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
       onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
     >
@@ -119,9 +119,9 @@ export function WindowMenu({ onSpawn }) {
         aria-expanded={menuOpen}
         aria-haspopup="menu"
         onClick={() => setMenuOpen((s) => !s)}
-        style={{ all: 'unset', cursor: 'pointer', padding: '4px 10px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-soft)', background: menuOpen ? 'var(--surface-2)' : 'transparent' }}
+        style={{ all: 'unset', cursor: 'pointer', padding: '4px 10px', borderRadius: 'var(--radius-float-btn)', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-soft)', background: menuOpen ? 'var(--surface-2)' : 'transparent' }}
       >
-        <img src="/assets/logolite.png" alt="" style={{ height: 28, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 1px 3px rgba(8,16,216,0.1))' }} />
+        <img src="/assets/logolite.png" alt="" style={{ height: 28, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 1px 3px rgba(8,16,216,0.1))', borderRadius: 'var(--radius-float-sm)' }} />
         Modules
       </button>
 
@@ -131,7 +131,7 @@ export function WindowMenu({ onSpawn }) {
           <div
             data-canvas-ui
             role="menu"
-            style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 70, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 12, padding: 6, minWidth: 240, maxHeight: 460, overflowY: 'auto', boxShadow: 'var(--shadow-pop)' }}
+            style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 70, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-float)', padding: 6, minWidth: 240, maxHeight: 460, overflowY: 'auto', boxShadow: 'var(--shadow-pop)' }}
           >
             {SECTIONS.map((section, i) => (
               <div key={section.label}>

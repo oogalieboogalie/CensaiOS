@@ -27,6 +27,12 @@
   --radius-app: 18px;
   --radius-card: 14px;
   --radius-pill: 999px;
+  /* Cohesive canvas floating-UI radius system (post-login landing + UI refresh).
+     All floating bars use --radius-float; inner buttons use --radius-float-btn.
+     Avatars / status dots / round tool buttons stay circular by design. */
+  --radius-float: 14px;
+  --radius-float-btn: 10px;
+  --radius-float-sm: 8px;
   --shadow-card: 0 1px 0 oklch(1 0 0 / 0.6) inset, 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -10px oklch(0 0 0 / 0.10);
   --shadow-pop: 0 1px 0 oklch(1 0 0 / 0.6) inset, 0 6px 16px -4px oklch(0 0 0 / 0.10), 0 24px 48px -20px oklch(0 0 0 / 0.18);
   --font-sans: "Segoe UI Variable Text", "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
