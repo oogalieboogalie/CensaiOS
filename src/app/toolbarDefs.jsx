@@ -34,6 +34,13 @@ export const AI_DEF = {
   glyph: <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />,
 };
 
+// Momentary action (never becomes the active tool): focuses the existing
+// Censai chat window or spawns one. Lives in the dock next to AI Copilot.
+export const CHAT_DEF = {
+  id: 'chat', label: 'Chat', key: 'C',
+  glyph: <path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.4-4 8-9 8-1.4 0-2.7-.2-3.9-.7L3 21l1.4-4.4C3.5 15.2 3 13.7 3 12c0-4.4 4-8 9-8s9 3.6 9 8z" />,
+};
+
 export const PEN_COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#FFFFFF'];
 export const PEN_SIZES = [2, 4, 8];
 

@@ -10,6 +10,7 @@ import { tickJulesWatcher } from './julesWatcher.js';
 import { attachTerminalServer } from '../terminal/index.js';
 import { attachAgentRegistryWs } from '../ws/agentRegistry.js';
 import { attachWorkspaceCollaborationWs } from '../ws/workspaceCollaboration.js';
+import { attachHocuspocusWs } from '../collab/hocuspocus.js';
 import { initializeDynamicTools, initializeMcpTools, shutdownMcpTools } from '../tools.js';
 
 const log = createLogger('server-lifecycle');
@@ -42,6 +43,7 @@ export async function startServer(app, options = {}) {
       attachTerminalServer(server, { sessionStore: app.get('sessionStore') });
       attachAgentRegistryWs(server, { sessionStore: app.get('sessionStore') });
       attachWorkspaceCollaborationWs(server, { sessionStore: app.get('sessionStore') });
+      attachHocuspocusWs(server, { sessionStore: app.get('sessionStore') });
 
       if (shouldStartWorkers) {
         startLogCleanup();

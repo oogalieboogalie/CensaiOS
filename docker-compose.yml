@@ -101,6 +101,23 @@ services:
       qdrant:
         condition: service_healthy
 
+  # Phase 1 skeleton: Hocuspocus runs in-process inside `homebase` (see
+  # server/boot/lifecycle.js). This profile-gated entry reserves the split-out
+  # service name with no published ports; standalone extraction is later work.
+  hocuspocus:
+    build: .
+    profiles: ["hocuspocus"]
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 1234
+      HOCUSPOCUS_PORT: 1234
+      HOCUSPOCUS_PATH: /hocuspocus
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   runner:
     build: .
     command: ["node", "server/runner/service.js"]

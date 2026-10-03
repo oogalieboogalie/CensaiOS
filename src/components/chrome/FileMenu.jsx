@@ -43,7 +43,7 @@ export function FileMenu({ onClose, projectName, currentProject, onOpenLocalProj
 
   return <>
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
-    <div data-canvas-ui style={{ position: 'absolute', top: 44, left: 8, zIndex: 70, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 12, padding: 6, minWidth: 240, boxShadow: 'var(--shadow-pop)' }}>
+    <div data-canvas-ui style={{ position: 'absolute', top: 44, left: 8, zIndex: 70, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-float)', padding: 6, minWidth: 240, maxWidth: 320, boxShadow: 'var(--shadow-pop)' }}>
       <div style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{projectName || 'Untitled'}</div>
 
       <ProjectSelector

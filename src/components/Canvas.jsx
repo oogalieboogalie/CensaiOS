@@ -19,7 +19,8 @@ import { CanvasSelectionOutline } from './canvas/CanvasSelectionOutline.jsx';
 import { getWindowBounds } from '../lib/layoutAlgo.js';
 import { isPointInRect, screenToCanvas } from '../lib/canvasMath.js';
 
-export function Canvas({ wins, activeId, selectedIds = [], workspaceRevision, onUpdate, onClose, onSelect, onSelection, onDeleteSelected, onSpawn, onRubberBand, onRequestNewAgent, onCreateAgent, onWindowMovePreview, onCursorMove, cursors = {}, dockState, pan, zoom, onPanZoom, onFitView, onJumpNearestCluster, canvasGroups = [], onSpawnGroup, onUpdateGroup, onResizeGroup, onCloseGroup, onMoveGroup, onAutoArrangeGroup, onSaveGroupPreset, onLoadGroupPreset, onDeleteGroupPreset, paths = [], setPaths, links = [], onLinkCreate, onLinkDelete, currentProject = null, activeTool, penColor, penSize, penMode = false, pinnedRailOffset = { top: 24, left: 24 }, suppressEmptyState = false }) {
+export function Canvas({ wins, activeId, selectedIds = [], workspaceRevision, onUpdate, onClose, onSelect, onSelection, onDeleteSelected, onSpawn, onRubberBand, onRequestNewAgent, onCreateAgent, onWindowMovePreview, onCursorMove, cursors = {}, dockState, pan, zoom, onPanZoom, onFitView, onJumpNearestCluster, canvasGroups = [], onSpawnGroup, onUpdateGroup, onResizeGroup, onCloseGroup, onMoveGroup, onAutoArrangeGroup, onSaveGroupPreset, onLoadGroupPreset, onDeleteGroupPreset, onSetDefaultGroupPreset, paths = [], setPaths, links = [], onLinkCreate, onLinkDelete, currentProject = null, activeTool, penColor, penSize, penMode = false, groupHotkeySlotById = {}, pinnedRailOffset = { top: 24,
+left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules, launchpadChipKinds }) {
   const ref = React.useRef(null);
   const themeContext = useTheme();
   const theme = themeContext?.theme || { canvasPanMode: 'both' };
@@ -33,7 +34,7 @@ export function Canvas({ wins, activeId, selectedIds = [], workspaceRevision, on
     onPointerDown,
     onPointerMove,
     onPointerUp,
-    panRef,
+    isPanning,
     consumeContextMenuSuppression,
   } = useCanvasPointer({
     ref,
@@ -108,7 +109,7 @@ export function Canvas({ wins, activeId, selectedIds = [], workspaceRevision, on
       zoom={zoom}
       activeTool={activeTool}
       penMode={penMode}
-      isPanning={Boolean(panRef.current)}
+      isPanning={isPanning}
       fixedChildren={<>
         <CanvasWindows
           wins={wins}
@@ -176,11 +177,14 @@ export function Canvas({ wins, activeId, selectedIds = [], workspaceRevision, on
           onSaveGroupPreset={onSaveGroupPreset}
           onLoadGroupPreset={onLoadGroupPreset}
           onDeleteGroupPreset={onDeleteGroupPreset}
+          onSetDefaultGroupPreset={onSetDefaultGroupPreset}
+          groupHotkeySlotById={groupHotkeySlotById}
         />
         <CanvasSelectionOutline wins={wins} selectedIds={selectedIds} zoom={zoom} />
         <CanvasWires wins={wins} dockState={dockState} pan={pan} zoom={zoom} />
 
-        {wins.length === 0 && !band && !region && !suppressEmptyState && <EmptyState onSpawn={onSpawn} />}
+        {wins.length === 0 && !band && !region && !suppressEmptyState && <EmptyState
+onSpawn={onSpawn} onTour={onLaunchpadTour} suggestModules={launchpadSuggestModules} chipKinds={launchpadChipKinds} />}
         <CanvasRubberBand band={band} zoom={zoom} />
     </CanvasShell>
 

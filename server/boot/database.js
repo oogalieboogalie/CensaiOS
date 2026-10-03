@@ -18,6 +18,7 @@ import { ensureAutonomyTenancySchema } from '../autonomy/schema.js';
 import { ensureAgentCardTenancySchema } from '../agent-registry/tenancySchema.js';
 import { ensureAgentCardInstallSchema } from '../agent-registry/installSchema.js';
 import { ensureSalesLeadSchema } from '../salesLeads/schema.js';
+import { ensureHubAccountSchema } from '../hubAccounts/schema.js';
 import { ensureMemoryTenancySchema } from '../memory/tenancySchema.js';
 import { ensureSubAgentTenancySchema } from '../memory/subagentTenancySchema.js';
 
@@ -43,6 +44,7 @@ async function probeDb() {
   await ensureAgentCardTenancySchema(pool);
   await ensureAgentCardInstallSchema(pool);
   await ensureSalesLeadSchema(pool);
+  await ensureHubAccountSchema(pool);
   await ensureMemoryTenancySchema(pool);
   await ensureSubAgentTenancySchema(pool);
   await ensureRunCausalitySchema(pool);

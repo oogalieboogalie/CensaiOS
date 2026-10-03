@@ -15,6 +15,14 @@ export function CanvasMarks({ zoom, pan }) {
 }
 
 // ─── Empty State ───
-export function EmptyState({ onSpawn }) {
-  return <CanvasLaunchpad manifests={LAUNCHER_MANIFESTS} onSpawn={onSpawn} />;
+export function EmptyState({ onSpawn, onTour, suggestModules, chipKinds }) {
+  return (
+    <CanvasLaunchpad
+      manifests={LAUNCHER_MANIFESTS}
+      onSpawn={onSpawn}
+      onTour={onTour}
+      suggestModules={suggestModules}
+      chipKinds={chipKinds}
+    />
+  );
 }

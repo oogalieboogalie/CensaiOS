@@ -3,7 +3,9 @@ import { Icon } from '../Icons.jsx';
 import { ThemePanelCard } from './ThemeControls.jsx';
 import { MoodChip, MoodSwatch, SavedPresetRow } from './ThemePresets.jsx';
 import { MOODS } from '../Theme.jsx';
-import { CURATED_MOOD_IDS } from '../../lib/theme/curatedPresets.js';
+import { CURATED_MOOD_IDS, SPOTLIGHT_MOOD_IDS } from '../../lib/theme/curatedPresets.js';
+
+const DISPLAY_MOOD_IDS = [...SPOTLIGHT_MOOD_IDS, ...CURATED_MOOD_IDS.filter((id) => !SPOTLIGHT_MOOD_IDS.includes(id))];
 
 export function MoodSection({ theme, resetTheme, randomizeTheme, applyMoodPreset, moodsExpanded, setMoodsExpanded }) {
   const selectedMood = MOODS[theme.mood] || MOODS.cream;
@@ -40,13 +42,13 @@ export function MoodSection({ theme, resetTheme, randomizeTheme, applyMoodPreset
       </div>
       {moodsExpanded ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(112px, 1fr))', gap: 7 }}>
-          {CURATED_MOOD_IDS.map(name => (
+          {DISPLAY_MOOD_IDS.map(name => (
             <MoodChip key={name} name={name} mood={MOODS[name]} active={theme.mood === name} onClick={() => applyMoodPreset(name)} />
           ))}
         </div>
       ) : (
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-          {CURATED_MOOD_IDS.map(name => (
+          {DISPLAY_MOOD_IDS.map(name => (
             <MoodSwatch key={name} name={name} mood={MOODS[name]} active={theme.mood === name} onClick={() => applyMoodPreset(name)} />
           ))}
         </div>

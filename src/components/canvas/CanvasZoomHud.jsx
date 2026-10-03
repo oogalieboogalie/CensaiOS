@@ -1,17 +1,16 @@
 import React from 'react';
+import { glossButton, glossContainer } from '../../lib/theme/gloss.js';
 
 export function ZoomHud({ zoom, onZoomIn, onZoomOut, onReset, onJumpNearestCluster }) {
   const pct = Math.round(zoom * 100);
   return (
-    <div style={{
+    <div style={glossContainer({
       position: 'fixed', bottom: 14, left: 14,
       display: 'flex', alignItems: 'center', gap: 2,
-      background: 'var(--surface)', border: '1px solid var(--hairline)',
-      borderRadius: 10, padding: 3,
-      boxShadow: 'var(--shadow-card)',
+      borderRadius: 'var(--radius-float)', padding: 3,
       zIndex: 30,
       pointerEvents: 'auto',
-    }}>
+    })}>
       <ZoomBtn onClick={onZoomOut} title="Zoom out">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </ZoomBtn>
@@ -23,7 +22,7 @@ export function ZoomHud({ zoom, onZoomIn, onZoomOut, onReset, onJumpNearestClust
       <button onClick={onReset} title="Fit to content" style={{
         all: 'unset', cursor: 'pointer',
         fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.06em',
-        color: 'var(--ink-soft)', padding: '4px 6px', borderRadius: 6,
+        color: 'var(--ink-soft)', padding: '4px 6px', borderRadius: 'var(--radius-float-sm)',
         minWidth: 38, textAlign: 'center',
         transition: 'background 0.15s',
       }}
@@ -40,14 +39,17 @@ export function ZoomHud({ zoom, onZoomIn, onZoomOut, onReset, onJumpNearestClust
 function ZoomBtn({ onClick, title, children }) {
   return (
     <button onClick={onClick} title={title} style={{
-      all: 'unset', cursor: 'pointer',
-      width: 26, height: 26, borderRadius: 7,
-      display: 'grid', placeItems: 'center',
-      color: 'var(--ink-soft)',
-      transition: 'background 0.15s, color 0.15s',
+      all: 'unset',
+      ...glossButton({
+        cursor: 'pointer',
+        width: 26, height: 26, borderRadius: 'var(--radius-float-btn)',
+        display: 'grid', placeItems: 'center',
+        color: 'var(--ink-soft)',
+        transition: 'color 0.15s, filter 0.15s',
+      }),
     }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--ink)'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--ink-soft)'; }}
+      onMouseEnter={e => { e.currentTarget.style.color = 'var(--ink)'; e.currentTarget.style.filter = 'brightness(1.1)'; }}
+      onMouseLeave={e => { e.currentTarget.style.color = 'var(--ink-soft)'; e.currentTarget.style.filter = 'none'; }}
     >{children}</button>
   );
 }

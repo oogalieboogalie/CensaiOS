@@ -23,17 +23,35 @@ export function useCanvasViewport({ ref, pan, zoom, onPanZoom, panMode = 'both' 
       }
     };
     const up = (e) => {
+      // Clear on Space *or* Alt release regardless of the current panMode so
+      // switching the pan control mid-hold can never leave spaceRef stuck true
+      // (stuck Space turns every left-drag into a pan and hijacks button
+      // clicks via the pan-capture path in useCanvasPointer).
       const matches = panCode === 'Alt' ? e.key === 'Alt' : e.code === 'Space';
-      if (matches) {
+      const eitherModifierReleased = e.code === 'Space' || e.key === 'Alt';
+      if (matches || eitherModifierReleased) {
         spaceRef.current = false;
         setSpaceHeld(false);
       }
     };
+    // Losing window focus (Alt-Tab, DevTools click, iframe focus steal) skips
+    // keyup entirely — reset or Space stays held forever.
+    const clear = () => {
+      spaceRef.current = false;
+      setSpaceHeld(false);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') clear();
+    };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
+    window.addEventListener('blur', clear);
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', clear);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [panMode]);
 

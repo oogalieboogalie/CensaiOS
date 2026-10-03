@@ -20,12 +20,15 @@ export function WindowTitle({ icon, label, accent, subtitle, agent, attachedAgen
   // bold sans text. Everything else keeps the low-profile rail.
   const isWin98 = chromeCtx?.chromeVariant === 'win98';
   const isFrameActive = chromeCtx?.isActive ?? true;
+  // Header unification: every window's rail paints the SAME canvas-accent
+  // wash. Per-window `accent` survives only as the icon tint below — the
+  // background never forks per window kind again.
   const titleBackground = isWin98
     ? (isFrameActive ? 'var(--window-title-bg, var(--accent))' : 'var(--hairline)')
-    : (accent
-      ? `color-mix(in oklab, ${accent} 15%, var(--surface-2))`
-      : 'var(--window-title-bg, color-mix(in oklab, var(--window-accent, var(--accent)) 12%, var(--surface-2)))');
-  const washOpacity = isWin98 ? 1 : (usesTrafficLights ? 0.46 : 0.28);
+    : 'var(--window-title-bg, color-mix(in oklab, var(--window-accent, var(--accent)) 35%, var(--surface-2)))';
+  // Header unification: the wash paints at full opacity so the picked
+  // accent survives to the header instead of a 3%-visible whisper.
+  const washOpacity = 1;
 
   return (
     <div

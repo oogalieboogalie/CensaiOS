@@ -62,6 +62,9 @@ jest.unstable_mockModule('../server/memory/subagentTenancySchema.js', () => ({
 jest.unstable_mockModule('../server/runs/schema.js', () => ({
   ensureRunCausalitySchema: jest.fn(async () => {}),
 }));
+jest.unstable_mockModule('../server/hubAccounts/schema.js', () => ({
+  ensureHubAccountSchema: jest.fn(async () => {}),
+}));
 
 jest.unstable_mockModule('../server/boot/attributeSchema.js', () => ({
   ensureAttributeSchema: jest.fn(async () => {}),

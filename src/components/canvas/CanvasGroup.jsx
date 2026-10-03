@@ -9,7 +9,7 @@ import { createLogger } from '../../lib/logger.js';
 
 const log = createLogger('group');
 
-export function CanvasGroup({ group, zoom, allWins, allGroups, onUpdate, onClose, onMove, onDragEnd, onLayout, onResize, onApplyBuiltInPreset, onSavePreset, onLoadPreset, onDeletePreset }) {
+export function CanvasGroup({ group, zoom, allWins, allGroups, onUpdate, onClose, onMove, onDragEnd, onLayout, onResize, onApplyBuiltInPreset, onSavePreset, onLoadPreset, onDeletePreset, onSetDefaultPreset, hotkeySlot }) {
   const [isEditing, setIsEditing] = React.useState(false);
   const [tempLabel, setTempLabel] = React.useState(group.label);
   const [presetMenuOpen, setPresetMenuOpen] = React.useState(false);
@@ -141,6 +141,11 @@ export function CanvasGroup({ group, zoom, allWins, allGroups, onUpdate, onClose
             {group.label}
           </div>
         )}
+        {hotkeySlot && (
+          <span title={`Control group ${hotkeySlot} — Ctrl/Alt+${hotkeySlot} to assign, F${hotkeySlot} to focus`} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 800, background: 'rgba(255,255,255,0.22)', borderRadius: 4, padding: '1px 5px', lineHeight: 1.4 }}>
+            {hotkeySlot}
+          </span>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 4 }}>
           {group.attachedAgents && group.attachedAgents.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', marginRight: 4 }}>
@@ -184,6 +189,7 @@ export function CanvasGroup({ group, zoom, allWins, allGroups, onUpdate, onClose
         presets={presets}
         onLoadPreset={onLoadPreset}
         onDeletePreset={onDeletePreset}
+        onSetDefaultPreset={onSetDefaultPreset}
       />
 
       <CanvasGroupResizeHandle

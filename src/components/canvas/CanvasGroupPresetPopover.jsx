@@ -3,7 +3,7 @@ import { getBuiltInPresets } from '../../lib/layoutAlgo.js';
 import { CanvasGroupPresetPreview } from './CanvasGroupPresetPreview.jsx';
 import { useEscapeDismiss } from '../../lib/useEscapeDismiss.js';
 
-export function CanvasGroupPresetPopover({ presetMenuOpen, setPresetMenuOpen, setSavingPreset, setPresetName, allWins, group, zoom, onApplyBuiltInPreset, savingPreset, saveInputRef, presetName, onSavePreset, presets, onLoadPreset, onDeletePreset }) {
+export function CanvasGroupPresetPopover({ presetMenuOpen, setPresetMenuOpen, setSavingPreset, setPresetName, allWins, group, zoom, onApplyBuiltInPreset, savingPreset, saveInputRef, presetName, onSavePreset, presets, onLoadPreset, onDeletePreset, onSetDefaultPreset }) {
   const dismiss = () => { setPresetMenuOpen(false); setSavingPreset(false); setPresetName(''); };
   useEscapeDismiss(presetMenuOpen, dismiss);
   return <>
@@ -127,6 +127,7 @@ export function CanvasGroupPresetPopover({ presetMenuOpen, setPresetMenuOpen, se
               <div style={{ borderTop: '1px solid var(--hairline)', marginTop: 4, paddingTop: 4, maxHeight: 200, overflowY: 'auto' }}>
                 {presets.map(p => {
                   const isUndo = p.name === 'Before auto-arrange';
+                  const isDefault = group.defaultPresetId === p.id && !isUndo;
                   return (
                     <div key={p.id} style={{
                       display: 'flex', alignItems: 'center', gap: 4,
@@ -146,10 +147,26 @@ export function CanvasGroupPresetPopover({ presetMenuOpen, setPresetMenuOpen, se
                           </svg>
                         )}
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+                        {isDefault && (
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-ink)', background: 'var(--accent-soft)', borderRadius: 4, padding: '0 4px', flexShrink: 0 }}>
+                            DEFAULT
+                          </span>
+                        )}
                         <span style={{ marginLeft: 'auto', marginRight: 4, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)' }}>
                           {(p.windows || []).length}w
                         </span>
                       </div>
+                      {!isUndo && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onSetDefaultPreset?.(isDefault ? null : p.id); }}
+                          title={isDefault ? 'Clear default layout' : 'Set as default layout for this group'}
+                          style={{ all: 'unset', cursor: 'pointer', width: 22, height: 22, borderRadius: 5, display: 'grid', placeItems: 'center', color: isDefault ? 'var(--accent-ink)' : 'var(--ink-faint)', transition: 'color 0.15s, background 0.15s' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent-ink)'; e.currentTarget.style.background = 'oklch(0 0 0 / 0.04)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = isDefault ? 'var(--accent-ink)' : 'var(--ink-faint)'; e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill={isDefault ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        </button>
+                      )}
                       <button
                         onClick={(e) => { e.stopPropagation(); onDeletePreset?.(p.id); }}
                         title="Delete preset"

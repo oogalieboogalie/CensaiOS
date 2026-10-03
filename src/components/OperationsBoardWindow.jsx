@@ -19,6 +19,7 @@ import { JulesPanel } from './operations/JulesPanel.jsx';
 import { SchedulerPanel } from './operations/SchedulerPanel.jsx';
 import { TaskQueuePanel } from './operations/TaskQueuePanel.jsx';
 import { useVisibilityAwareInterval } from '../lib/usePolling.js';
+import { ColorSettingsPanel } from './ColorSettingsPanel.jsx';
 
 async function readJson(url, fallback) {
   try {
@@ -48,6 +49,7 @@ export function OperationsBoardWindow({ win, onUpdate, isActive }) {
   });
   const [includeCompleted, setIncludeCompleted] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
+  const [themeOpen, setThemeOpen] = React.useState(false);
 
   const load = React.useCallback(async ({ refreshJules = false, quiet = false } = {}) => {
     if (!quiet) setRefreshing(true);
@@ -141,6 +143,14 @@ export function OperationsBoardWindow({ win, onUpdate, isActive }) {
         >
           <Icon.Refresh size={13} />
         </button>
+        <button
+          type="button"
+          title="Theme settings"
+          onClick={() => setThemeOpen((o) => !o)}
+          style={iconButtonStyle(themeOpen)}
+        >
+          <Icon.Eye size={13} />
+        </button>
       </WindowTitle>
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'grid', gridTemplateRows: 'auto 1fr', background: 'var(--surface)', color: 'var(--ink)' }}>
@@ -205,6 +215,7 @@ export function OperationsBoardWindow({ win, onUpdate, isActive }) {
           </div>
         </div>
       </div>
+      {themeOpen && <ColorSettingsPanel onClose={() => setThemeOpen(false)} />}
     </>
   );
 }

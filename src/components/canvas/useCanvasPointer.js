@@ -1,7 +1,10 @@
 import React from 'react';
 import { distance, screenToCanvas } from '../../lib/canvasMath.js';
 import { windowsInSelection } from './CanvasInteractions.js';
-import { buildBandBox, buildFreehandStroke, buildRectStroke, computePinchZoom, consumeSuppression, shouldStartCanvasPan } from './pointerBuilders.js';
+import {
+  blurActiveEditable, buildBandBox, buildFreehandStroke, buildPinchStart, buildRectStroke,
+  computePinchZoom, consumeSuppression, isInteractivePanTarget, shouldStartCanvasPan,
+} from './pointerBuilders.js';
 
 // Re-exported so existing importers keep working after the builders extraction.
 export { shouldStartCanvasPan };
@@ -27,6 +30,9 @@ export function useCanvasPointer({
 }) {
   const [band, setBand] = React.useState(null);
   const [currentPath, setCurrentPath] = React.useState(null);
+  // Mirrors panRef for cursor rendering: refs don't trigger re-renders, so a
+  // bare Boolean(panRef.current) stays stuck on "grabbing" after the pan ends.
+  const [isPanning, setIsPanning] = React.useState(false);
   const dragRef = React.useRef(null);
   const panRef = React.useRef(null);
   const activeTouchPointsRef = React.useRef(new Map());
@@ -41,28 +47,17 @@ export function useCanvasPointer({
 
     // Blur active input/textarea/contenteditable on canvas background click/pan
     const isPanningStart = shouldStartCanvasPan(e.button, spaceRef.current, panMode);
-    if ((isCanvasBg || isPanningStart) && document.activeElement && typeof document.activeElement.blur === 'function') {
-      const tag = document.activeElement.tagName;
-      if (['INPUT', 'TEXTAREA'].includes(tag) || document.activeElement.contentEditable === 'true') {
-        document.activeElement.blur();
-      }
-    }
+    if (isCanvasBg || isPanningStart) blurActiveEditable();
 
     if (isTouch) {
       activeTouchPointsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (activeTouchPointsRef.current.size >= 2) {
         const touches = [...activeTouchPointsRef.current.values()];
-        const first = touches[0];
-        const second = touches[1];
-        pinchRef.current = {
-          startDistance: Math.max(1, Math.hypot(second.x - first.x, second.y - first.y)),
-          startZoom: zoom,
-          startPanX: pan.x,
-          startPanY: pan.y,
-        };
+        pinchRef.current = buildPinchStart(touches[0], touches[1], zoom, pan);
         e.preventDefault();
         dragRef.current = null;
         panRef.current = null;
+        setIsPanning(false);
         setBand(null);
         setRegion(null);
         setCurrentPath(null);
@@ -73,10 +68,13 @@ export function useCanvasPointer({
     }
 
     const isPanTool = activeTool === 'pan' && e.button === 0 && isCanvasBg;
-    if (isPanningStart || isPanTool || (penMode && isTouch && e.button === 0 && isCanvasBg) || (activeTool === 'pan' && isTouch && isCanvasBg)) {
+    // A stuck-or-held Space must never turn clicks on canvas UI into pan drags.
+    const canPan = !(e.button === 0 && isInteractivePanTarget(e.target));
+    if ((isPanningStart && canPan) || isPanTool || (penMode && isTouch && e.button === 0 && isCanvasBg) || (activeTool === 'pan' && isTouch && isCanvasBg)) {
       e.preventDefault();
       panRef.current = { sx: e.clientX, sy: e.clientY, ox: pan.x, oy: pan.y };
-      ref.current.setPointerCapture(e.pointerId);
+      setIsPanning(true);
+      try { ref.current.setPointerCapture(e.pointerId); } catch {}
       return;
     }
 
@@ -86,7 +84,7 @@ export function useCanvasPointer({
       const rect = ref.current.getBoundingClientRect();
       const canvasPt = screenToCanvas(e.clientX, e.clientY, pan.x, pan.y, zoom, rect);
       dragRef.current = { id: e.pointerId, x0: canvasPt.x, y0: canvasPt.y, started: false, mode: 'group' };
-      ref.current.setPointerCapture(e.pointerId);
+      try { ref.current.setPointerCapture(e.pointerId); } catch {}
       onSelect(null);
       onSelection?.([]);
       setRegion(null);
@@ -126,7 +124,7 @@ export function useCanvasPointer({
         };
       }
 
-      ref.current.setPointerCapture(e.pointerId);
+      try { ref.current.setPointerCapture(e.pointerId); } catch {}
       onSelect(null);
       onSelection?.([]);
       setRegion(null);
@@ -180,6 +178,7 @@ export function useCanvasPointer({
 
     if (panRef.current) {
       panRef.current = null;
+      setIsPanning(false);
       try { ref.current.releasePointerCapture(e.pointerId); } catch {}
       return;
     }
@@ -233,5 +232,5 @@ export function useCanvasPointer({
 
   const consumeContextMenuSuppression = () => consumeSuppression(suppressContextMenuRef);
 
-  return { band, setBand, currentPath, onPointerDown, onPointerMove, onPointerUp, panRef, consumeContextMenuSuppression };
+  return { band, setBand, currentPath, onPointerDown, onPointerMove, onPointerUp, panRef, isPanning, consumeContextMenuSuppression };
 }

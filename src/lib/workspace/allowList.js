@@ -214,9 +214,17 @@ export function filterAllowedWindows(wins, workspace) {
 export function applyAllowListToInitial(initial, fallbackAllowList) {
   const safeInitial = initial || {};
   const allowList = safeInitial.windowAllowList || fallbackAllowList || {};
+  // Grandfather rule: windows already on the canvas are sacred. A narrow
+  // allow-list (e.g. from an older install flow) must never delete existing
+  // layout on boot — it only gates NEW spawns. Kinds present in wins pass
+  // unless explicitly set false; unknown future kinds stay hidden.
+  const effective = { ...allowList };
+  for (const win of safeInitial.wins || []) {
+    if (win?.kind && effective[win.kind] === undefined) effective[win.kind] = true;
+  }
   const wins = filterAllowedWindows(safeInitial.wins || [], {
     ...safeInitial,
-    windowAllowList: allowList,
+    windowAllowList: effective,
   });
-  return { wins, windowAllowList: allowList };
+  return { wins, windowAllowList: effective };
 }

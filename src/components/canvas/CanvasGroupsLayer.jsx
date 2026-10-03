@@ -16,6 +16,8 @@ export function CanvasGroupsLayer({
   onSaveGroupPreset,
   onLoadGroupPreset,
   onDeleteGroupPreset,
+  onSetDefaultGroupPreset,
+  groupHotkeySlotById = {},
 }) {
   return groups.map(g => (
     <CanvasGroup
@@ -56,6 +58,8 @@ export function CanvasGroupsLayer({
       onSavePreset={(name) => onSaveGroupPreset?.(g.id, name)}
       onLoadPreset={(presetId) => onLoadGroupPreset?.(g.id, presetId)}
       onDeletePreset={(presetId) => onDeleteGroupPreset?.(g.id, presetId)}
+      onSetDefaultPreset={(presetId) => onSetDefaultGroupPreset?.(g.id, presetId)}
+      hotkeySlot={groupHotkeySlotById[g.id] || null}
     />
   ));
 }

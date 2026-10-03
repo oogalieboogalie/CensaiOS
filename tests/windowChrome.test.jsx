@@ -57,7 +57,7 @@ describe('low-profile window chrome', () => {
     expect(rail.style.padding).toBe('6px 84px 6px 12px');
     expect(rail.style.minHeight).toBe('28px');
     expect(rail.style.borderBottomWidth).toBe('0px');
-    expect(wash.style.opacity).toBe('0.28');
+    expect(wash.style.opacity).toBe('1');
     expect(copy.style.overflow).toBe('hidden');
     expect(subtitle.style.whiteSpace).toBe('nowrap');
     expect(subtitle.style.textOverflow).toBe('ellipsis');

@@ -6,6 +6,10 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const SERVER_ROOT = path.join(REPO_ROOT, 'server');
 const ALLOWED_CHAT_COMPLETION_FILES = new Set([
   'server/aiGateway/chatCompletion.js',
+  // Local-only Ollama proxy: requireLocalBaseUrl() refuses anything that is
+  // not loopback, so this file cannot reach metered cloud endpoints around
+  // the gateway (enforced + tested in tests/ollamaRoutes.test.js).
+  'server/routes/ollama.js',
 ]);
 const ALLOWED_GOOGLE_GENAI_FILES = new Set([
   'server/aiGateway/geminiNativeChat.js',

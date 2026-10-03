@@ -60,7 +60,7 @@ export function MultiGroupDock({ groups, onGroupsChange, focusMode, dockOffset, 
           onClick={() => setShowToggle((v) => !v)}
           data-testid="dock-collapsed-marker"
           title="Show dock"
-          style={{ all: 'unset', cursor: 'pointer', width: 28, height: 28, borderRadius: '50%', background: 'var(--surface)', color: 'var(--ink-soft)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}
+          style={{ all: 'unset', cursor: 'pointer', width: 28, height: 28, borderRadius: 'var(--radius-float-btn)', background: 'var(--surface)', color: 'var(--ink-soft)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}
         >
           <Icon.Group size={14} />
         </button>
@@ -74,8 +74,8 @@ export function MultiGroupDock({ groups, onGroupsChange, focusMode, dockOffset, 
       onMouseEnter={(e) => { if (focusMode) { e.currentTarget.style.opacity = 1; e.currentTarget.style.pointerEvents = 'auto'; } }}
       onMouseLeave={(e) => { if (focusMode) { e.currentTarget.style.opacity = 0; e.currentTarget.style.pointerEvents = 'none'; } }}>
       {groups.filter(g => isGroupVisible(dock, g.id, g.agentIds)).map(g => <GroupRail key={g.id} group={{ ...g, agentIds: g.agentIds.filter(id => isAgentVisible(dock, g.id, id, g.agentIds)) }} onToggle={() => updateGroup(g.id, { collapsed: !g.collapsed })} onEdit={() => setEditGroupId(g.id)} onAvatarPointerDown={onAvatarPointerDown} onMovePointerDown={onMovePointerDown} onMovePointerMove={onMovePointerMove} onMovePointerUp={onMovePointerUp} moving={moving} />)}
-      <button onClick={() => setAddingGroup(true)} title="Add group" style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, borderRadius: '50%', background: 'var(--surface)', color: 'var(--ink-faint)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}><Icon.Plus size={14} /></button>
-      <button ref={visibilityTriggerRef} onClick={() => setShowToggle((v) => !v)} title="Toggle dock visibility" data-testid="dock-visibility-btn" style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, borderRadius: '50%', background: 'var(--surface)', color: 'var(--ink-faint)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}><Icon.Gear size={14} /></button>
+      <button onClick={() => setAddingGroup(true)} title="Add group" style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, borderRadius: 'var(--radius-float-btn)', background: 'var(--surface)', color: 'var(--ink-faint)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}><Icon.Plus size={14} /></button>
+      <button ref={visibilityTriggerRef} onClick={() => setShowToggle((v) => !v)} title="Toggle dock visibility" data-testid="dock-visibility-btn" style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, borderRadius: 'var(--radius-float-btn)', background: 'var(--surface)', color: 'var(--ink-faint)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}><Icon.Gear size={14} /></button>
       {showToggle && <DockVisibilityToggle groups={groups} anchorRef={visibilityTriggerRef} onClose={() => setShowToggle(false)} />}
       {editGroupId && <GroupEditor group={groups.find(g => g.id === editGroupId)} onSave={(patch) => { updateGroup(editGroupId, patch); setEditGroupId(null); }} onDelete={() => { if (groups.length > 1) { removeGroup(editGroupId); setEditGroupId(null); } }} canDelete={groups.length > 1} onClose={() => setEditGroupId(null)} />}
       {addingGroup && <GroupEditor group={{ id: '', name: '', hue: Math.round(Math.random() * 360), agentIds: [], collapsed: false }} onSave={(g) => { addGroup({ ...g, id: (g.name || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).slice(2, 6) }); setAddingGroup(false); }} onClose={() => setAddingGroup(false)} isNew />}
@@ -88,11 +88,11 @@ function GroupRail({ group, onToggle, onEdit, onAvatarPointerDown, onMovePointer
   const agents = group.agentIds.map(id => getAgentById(id)).filter(Boolean);
   return (
     <div data-dock-group={group.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 12, padding: 5, boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 44 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-float)', padding: 5, boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 44 }}>
         <div style={{ position: 'relative' }} className="group-tag">
           <button onClick={onToggle} onPointerDown={onMovePointerDown} onPointerMove={onMovePointerMove} onPointerUp={onMovePointerUp} onPointerCancel={onMovePointerUp}
             title={group.collapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}
-            style={{ all: 'unset', cursor: moving ? 'grabbing' : 'pointer', width: 32, height: 32, borderRadius: 8, background: 'var(--accent-soft)', color: 'var(--accent-ink)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--accent)', position: 'relative' }}>
+            style={{ all: 'unset', cursor: moving ? 'grabbing' : 'pointer', width: 32, height: 32, borderRadius: 'var(--radius-float-btn)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--accent)', position: 'relative' }}>
             <Icon.Group size={16} />
             {group.collapsed && <div style={{ position: 'absolute', right: -6, bottom: -6, background: 'var(--accent)', color: 'white', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 999, fontFamily: 'var(--font-mono)' }}>{agents.length}</div>}
           </button>
