@@ -1,105 +1,163 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+/* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
+import { Icon } from './Icons.jsx';
+import { WindowTitle } from './Windows.jsx';
+import { useWorkspaceStore } from '../lib/store.js';
+import { getProvenance, getProvenanceRecord } from '../lib/api/tracing.js';
+
+const emptyStyle = { flex: 1, height: '100%', display: 'grid', placeItems: 'center', padding: 24, textAlign: 'center', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', lineHeight: 1.5 };
+const sectionLabel = { fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', color: 'var(--ink-faint)', marginBottom: 6 };
+const boxStyle = { background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: 10, fontSize: 'var(--text-xs)', lineHeight: 1.5, whiteSpace: 'pre-wrap', overflow: 'auto' };
+const workspaceStillActive = workspaceId => useWorkspaceStore.getState().workspaceId === workspaceId;
+
+function featureOffMessage(err) {
+  return err?.status === 404 && err?.payload?.feature === 'operational-intelligence'
+    ? 'Provenance is off on this server. Set CENSAI_FEATURE_OPERATIONAL_INTELLIGENCE=true and restart.'
+    : null;
+}
 
 /**
- * Provenance Explorer Window
- * Allows engineers to trace AI-generated code back to the original prompt and model.
- * Correlates production runtime events with code provenance.
+ * Provenance Explorer: traces code an agent wrote back to the agent, model
+ * and prompt that produced it. Records are written by the file-writing tools
+ * (local, GitHub, project) when an agent runs them from chat.
  */
-export function ProvenanceExplorerWindow({ workspaceId = 'local' }) {
-  const [provenanceList, setProvenanceList] = useState([]);
-  const [selectedArt, setSelectedArt] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+export function ProvenanceExplorerWindow({ win = {}, onUpdate }) {
+  const workspaceId = useWorkspaceStore(state => state.workspaceId);
+  const hasWorkspace = Boolean(String(workspaceId || '').trim());
+  const [records, setRecords] = React.useState([]);
+  const [selected, setSelected] = React.useState(null);
+  const [filter, setFilter] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [notice, setNotice] = React.useState('');
 
-  useEffect(() => {
-    fetchProvenance();
+  const load = React.useCallback(async () => {
+    if (!hasWorkspace) return;
+    setLoading(true);
+    setNotice('');
+    try {
+      const data = await getProvenance(workspaceId);
+      if (!workspaceStillActive(workspaceId)) return;
+      setRecords(Array.isArray(data) ? data : []);
+    } catch (err) {
+      if (workspaceStillActive(workspaceId)) setNotice(featureOffMessage(err) || err.message);
+    } finally {
+      if (workspaceStillActive(workspaceId)) setLoading(false);
+    }
+  }, [hasWorkspace, workspaceId]);
+
+  const open = React.useCallback(async (id) => {
+    setNotice('');
+    try {
+      const record = await getProvenanceRecord(workspaceId, id);
+      if (workspaceStillActive(workspaceId)) setSelected(record);
+    } catch (err) {
+      if (workspaceStillActive(workspaceId)) setNotice(err.message);
+    }
   }, [workspaceId]);
 
-  async function fetchProvenance() {
-    setLoading(true);
-    try {
-      // In a real implementation, we'd have a specific API for listing provenance
-      // For this demo, we'll assume a generic artifact fetcher or similar.
-      const res = await fetch(`/api/artifacts?workspace_id=${workspaceId}&artifact_type=ai_provenance`);
-      if (!res.ok) throw new Error('Failed to fetch provenance');
-      const data = await res.json();
-      setProvenanceList(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  React.useEffect(() => {
+    setRecords([]);
+    setSelected(null);
+    if (hasWorkspace) load();
+  }, [hasWorkspace, load, workspaceId]);
+
+  const needle = filter.trim().toLowerCase();
+  const visible = needle
+    ? records.filter(r => `${r.data?.file_path} ${r.owner_id} ${r.data?.model}`.toLowerCase().includes(needle))
+    : records;
 
   return (
-    <div className="flex h-full flex-col bg-surface overflow-hidden text-ink">
-      <div className="flex border-b border-accent-soft p-2 bg-surface-alt items-center justify-between">
-        <h2 className="text-sm font-bold uppercase tracking-wider opacity-70">Provenance Explorer</h2>
-        <button
-          onClick={fetchProvenance}
-          className="text-xs px-2 py-1 bg-accent text-white rounded hover:bg-accent-soft transition-colors"
-        >
-          Refresh
+    <>
+      <WindowTitle
+        icon={<Icon.Search size={14} />}
+        label={win.title || 'Provenance Explorer'}
+        subtitle={hasWorkspace ? `${records.length} record${records.length === 1 ? '' : 's'}` : 'no workspace'}
+        attachedAgentIds={win.attachedAgents}
+        onDetach={(id) => onUpdate?.({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
+      >
+        <button type="button" aria-label="Refresh provenance" onClick={load} disabled={loading || !hasWorkspace} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
+          <Icon.Refresh size={12} />
         </button>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar: List of provenance records */}
-        <div className="w-1/3 border-r border-accent-soft overflow-y-auto bg-surface-alt">
-          {loading && <div className="p-4 text-xs italic opacity-50 text-center">Loading...</div>}
-          {error && <div className="p-4 text-xs text-red-500 font-mono">{error}</div>}
-          {!loading && provenanceList.length === 0 && (
-            <div className="p-4 text-xs italic opacity-50 text-center">No AI provenance records found.</div>
-          )}
-          {provenanceList.map(art => (
-            <div
-              key={art.id}
-              onClick={() => setSelectedArt(art)}
-              className={`p-3 border-b border-accent-soft cursor-pointer transition-colors ${selectedArt?.id === art.id ? 'bg-accent/10 border-l-4 border-l-accent' : 'hover:bg-accent/5'}`}
-            >
-              <div className="text-sm font-medium truncate">{art.data.file_path}</div>
-              <div className="text-[10px] opacity-60 mt-1">
-                {art.data.model} • {new Date(art.created_at).toLocaleString()}
+      </WindowTitle>
+      {!hasWorkspace ? (
+        <div style={emptyStyle}>Open a workspace to see which agent wrote which code.</div>
+      ) : (
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '260px 1fr', minHeight: 0, background: 'var(--surface)', color: 'var(--ink)' }}>
+          <div style={{ borderRight: '1px solid var(--hairline)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div style={{ padding: 8, borderBottom: '1px solid var(--hairline)' }}>
+              <input
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Filter by file, agent or model"
+                style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', color: 'var(--ink)', fontSize: 'var(--text-xs)' }}
+              />
+            </div>
+            {notice && <div role="status" style={{ padding: 10, fontSize: 'var(--text-xs)', color: 'var(--ps-red)', lineHeight: 1.4 }}>{notice}</div>}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {!loading && !notice && visible.length === 0 && (
+                <div style={{ padding: 14, fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', lineHeight: 1.5 }}>
+                  {records.length === 0
+                    ? 'No AI-written code yet. Records appear here when an agent writes a file from chat.'
+                    : 'Nothing matches that filter.'}
+                </div>
+              )}
+              {visible.map(record => (
+                <button
+                  key={record.id}
+                  type="button"
+                  onClick={() => open(record.id)}
+                  style={{ all: 'unset', display: 'block', boxSizing: 'border-box', width: '100%', cursor: 'pointer', padding: '9px 12px', borderBottom: '1px solid var(--hairline)', background: selected?.id === record.id ? 'var(--accent-soft)' : 'transparent' }}
+                >
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{record.data?.file_path || record.title}</div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginTop: 3 }}>
+                    {record.owner_id} · {record.data?.model || 'unknown model'} · {new Date(record.created_at).toLocaleString()}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ overflowY: 'auto', padding: 14, minWidth: 0 }}>
+            {selected ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <section>
+                  <div style={sectionLabel}>Written by</div>
+                  <div style={{ fontSize: 'var(--text-sm)' }}>
+                    <b>{selected.owner_id}</b> using <b>{selected.data?.model || 'unknown model'}</b> into <code>{selected.data?.file_path}</code>
+                    {selected.metadata?.repo ? <> in <code>{selected.metadata.repo}</code></> : null}
+                    {selected.metadata?.project ? <> in project <code>{selected.metadata.project}</code></> : null}
+                    {selected.metadata?.branch ? <> on <code>{selected.metadata.branch}</code></> : null}
+                  </div>
+                </section>
+                <section>
+                  <div style={sectionLabel}>Prompt</div>
+                  <div style={{ ...boxStyle, maxHeight: 180 }}>
+                    {selected.metadata?.prompt_visible
+                      ? (selected.metadata.full_prompt || selected.data?.prompt_preview || '(empty)')
+                      : `Hidden: this came from another member's chat (${selected.metadata?.prompt_length || 0} characters).`}
+                  </div>
+                </section>
+                <section>
+                  <div style={sectionLabel}>Generated code</div>
+                  <pre style={{ ...boxStyle, margin: 0, fontFamily: 'var(--font-mono)', maxHeight: 320 }}>{selected.data?.code_snippet}</pre>
+                </section>
+                <section>
+                  <div style={sectionLabel}>Lineage</div>
+                  {(selected.events || []).length === 0
+                    ? <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>No events linked to this record.</div>
+                    : (selected.events || []).map(event => (
+                      <div key={event.id} style={{ fontSize: 'var(--text-xs)', padding: '4px 0', borderBottom: '1px solid var(--hairline)' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{new Date(event.created_at).toLocaleTimeString()}</span>{' '}
+                        <b>{event.event_type}</b> by {event.actor_id}
+                      </div>
+                    ))}
+                </section>
               </div>
-            </div>
-          ))}
+            ) : (
+              <div style={emptyStyle}>Pick a record to see the prompt, the code and its lineage.</div>
+            )}
+          </div>
         </div>
-
-        {/* Detail View */}
-        <div className="flex-1 overflow-y-auto p-4 bg-surface font-mono">
-          {selectedArt ? (
-            <div className="space-y-6">
-              <section>
-                <h3 className="text-xs font-bold text-accent uppercase mb-2">Original Prompt</h3>
-                <div className="bg-surface-alt p-3 rounded text-xs leading-relaxed border border-accent-soft whitespace-pre-wrap max-h-48 overflow-y-auto">
-                  {selectedArt.metadata.full_prompt || selectedArt.data.prompt_preview}
-                </div>
-              </section>
-
-              <section>
-                <h3 className="text-xs font-bold text-accent uppercase mb-2">Generated Code</h3>
-                <div className="bg-ink text-white p-3 rounded text-xs border border-accent-soft whitespace-pre-wrap overflow-x-auto">
-                  {selectedArt.data.code_snippet}
-                </div>
-              </section>
-
-              <section>
-                <h3 className="text-xs font-bold text-accent uppercase mb-2">Metadata</h3>
-                <div className="grid grid-cols-2 gap-2 text-[10px] opacity-80 bg-surface-alt p-2 rounded border border-accent-soft">
-                  <div>Model: <span className="text-ink">{selectedArt.data.model}</span></div>
-                  <div>Agent: <span className="text-ink">{selectedArt.owner_id}</span></div>
-                  <div>Created: <span className="text-ink">{new Date(selectedArt.created_at).toISOString()}</span></div>
-                  <div>ID: <span className="text-ink">{selectedArt.id}</span></div>
-                </div>
-              </section>
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center opacity-30 italic text-sm">
-              Select a record to view lineage
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }

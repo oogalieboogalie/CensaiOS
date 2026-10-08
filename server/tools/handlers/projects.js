@@ -123,13 +123,14 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
 
       if (args.__provenance) {
         await recordProvenance({
-          workspace_id: project.name,
+          workspace_id: args.__provenance.workspace_id,
+          user_id: args.__provenance.user_id,
           agent_id: args.__provenance.agent_id,
           prompt: args.__provenance.prompt,
           model: args.__provenance.model,
           code_snippet: args.content,
           file_path: args.path,
-          metadata: { project_id: project.id, branch }
+          metadata: { project_id: project.id, project: project.name, branch }
         }).catch(err => console.error('[Provenance] Failed to record:', err.message));
       }
 

@@ -62,7 +62,7 @@ export function normalizeSchedule(schedule = {}, subAgents = []) {
 export function iconButtonStyle(disabled) {
   return {
     all: 'unset', cursor: disabled ? 'wait' : 'pointer', width: 24, height: 24,
-    borderRadius: 7, display: 'grid', placeItems: 'center',
+    borderRadius: 'var(--radius-md)', display: 'grid', placeItems: 'center',
     color: disabled ? 'var(--ink-faint)' : 'var(--accent-ink)',
     background: disabled ? 'var(--surface-2)' : 'var(--accent-soft)',
     border: '1px solid var(--hairline)',
@@ -71,18 +71,18 @@ export function iconButtonStyle(disabled) {
 
 export function Metric({ label, value, tone }) {
   return (
-    <div style={{ minWidth: 0, padding: '9px 10px', border: '1px solid var(--hairline)', borderRadius: 8, background: 'var(--surface-2)' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
-      <div style={{ marginTop: 3, fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 800, color: toneColor(tone), textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
+    <div style={{ minWidth: 0, padding: '9px 10px', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)' }}>
+      <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
+      <div style={{ marginTop: 3, fontFamily: 'var(--font-label)', fontSize: 'var(--text-md)', fontWeight: 800, color: toneColor(tone), textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
     </div>
   );
 }
 
 export function Panel({ title, action, children }) {
   return (
-    <section style={{ border: '1px solid var(--hairline)', borderRadius: 8, background: 'var(--surface)', overflow: 'hidden' }}>
+    <section style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderBottom: '1px solid var(--hairline)', background: 'var(--surface-2)' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 800, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</div>
+        <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', fontWeight: 800, color: 'var(--ink-soft)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>{title}</div>
         <div style={{ flex: 1 }} />
         {action}
       </div>
@@ -95,8 +95,8 @@ export function WorkerLine({ label, ready, detail }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '10px minmax(84px, auto) minmax(0, 1fr)', gap: 8, alignItems: 'center' }}>
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: ready ? 'var(--ps-green)' : 'var(--ps-red)', boxShadow: ready ? '0 0 8px var(--ps-green)' : 'none' }} />
-      <span style={{ fontSize: 12, fontWeight: 700 }}>{label}</span>
-      <span style={{ fontSize: 11, color: ready ? 'var(--ink-faint)' : 'var(--ps-red)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</span>
+      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>{label}</span>
+      <span style={{ fontSize: 'var(--text-xs)', color: ready ? 'var(--ink-faint)' : 'var(--ps-red)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</span>
     </div>
   );
 }
@@ -110,11 +110,11 @@ export function StatusBars({ counts, total }) {
         const pct = total > 0 ? Math.max(5, Math.round((count / total) * 100)) : 0;
         return (
           <div key={status} style={{ display: 'grid', gridTemplateColumns: '92px minmax(0, 1fr) 30px', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--ink-faint)', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{status}</span>
-            <div style={{ height: 7, borderRadius: 999, background: 'var(--surface-2)', overflow: 'hidden', border: '1px solid var(--hairline)' }}>
+            <span style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'var(--label-case)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{status}</span>
+            <div style={{ height: 7, borderRadius: 'var(--radius-full)', background: 'var(--surface-2)', overflow: 'hidden', border: '1px solid var(--hairline)' }}>
               <div style={{ width: `${pct}%`, height: '100%', background: toneColor(statusTone(status)) }} />
             </div>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-soft)', textAlign: 'right' }}>{count}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', textAlign: 'right' }}>{count}</span>
           </div>
         );
       })}
@@ -130,13 +130,13 @@ export function CompactList({ items, empty, render }) {
 export function Row({ dotTone, title, meta, right, href, onClick }) {
   const isClickable = Boolean(href || onClick);
   const content = (
-    <div style={{ display: 'grid', gridTemplateColumns: '10px minmax(0, 1fr) auto', gap: 8, alignItems: 'center', padding: 8, border: '1px solid var(--hairline)', borderRadius: 8, background: isClickable ? 'var(--surface-hover)' : 'var(--surface-2)' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '10px minmax(0, 1fr) auto', gap: 8, alignItems: 'center', padding: 8, border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: isClickable ? 'var(--surface-hover)' : 'var(--surface-2)' }}>
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: toneColor(dotTone), boxShadow: dotTone === 'live' ? `0 0 8px ${toneColor(dotTone)}` : 'none' }} />
       <span style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
-        {meta && <div style={{ marginTop: 2, fontSize: 10.5, color: 'var(--ink-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</div>}
+        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
+        {meta && <div style={{ marginTop: 2, fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</div>}
       </span>
-      {right && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: isClickable ? 'var(--accent-ink)' : 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{right}</span>}
+      {right && <span style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: isClickable ? 'var(--accent-ink)' : 'var(--ink-faint)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>{right}</span>}
     </div>
   );
   if (href) return <a href={href} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{content}</a>;
@@ -146,7 +146,7 @@ export function Row({ dotTone, title, meta, right, href, onClick }) {
 
 export function Empty({ text }) {
   return (
-    <div style={{ padding: 14, border: '1px dashed var(--hairline)', borderRadius: 8, color: 'var(--ink-faint)', fontSize: 12, textAlign: 'center' }}>
+    <div style={{ padding: 14, border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
       {text}
     </div>
   );

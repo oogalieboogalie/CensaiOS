@@ -2,6 +2,9 @@ import React from 'react';
 import { api } from '../../lib/api.js';
 import { DEFAULT_THEME, MOODS, createId, useTheme } from '../Theme.jsx';
 import { normalizeSettingsTab, SETTINGS_TABS } from './settingsTabs.js';
+import { pickSpotlightMood } from '../../lib/theme/curatedPresets.js';
+import { CUSTOM_MOOD_ID, DEFAULT_CUSTOM_COLORS, generateCustomMood, lookPatch } from '../../lib/theme/looks.js';
+import { parseThemeFile, serializeThemeFile } from '../../lib/theme/themeFile.js';
 
 export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
   const { theme, setTheme } = useTheme();
@@ -34,38 +37,39 @@ export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
     setTheme({ mood: name, customVars: {}, ...(nextMood.accent || {}) });
   };
 
+  // Design-system looks: one click sets colors + radius + density + fonts.
+  const applyLook = (id) => {
+    const patch = lookPatch(id);
+    if (patch) setTheme(patch);
+  };
+  const setShape = (patch) => setTheme(patch);
+  // Custom colorway: three inputs, the generator derives the rest.
+  const setCustomColors = (patch) => {
+    const customColors = { ...DEFAULT_CUSTOM_COLORS, ...(theme.customColors || {}), ...patch };
+    const accent = generateCustomMood(customColors).accent;
+    setTheme({ mood: CUSTOM_MOOD_ID, look: 'custom', customColors, customVars: {}, ...accent });
+  };
+
+  const exportTheme = (name = 'My Homebase theme') => {
+    const blob = new Blob([serializeThemeFile(theme, name)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'theme'}.homebase-theme.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const importTheme = async (file) => {
+    const result = parseThemeFile(await file.text(), MOODS);
+    if (result.ok) setTheme(result.patch);
+    return result;
+  };
+
   const randomizeTheme = () => {
-    const isDark = Math.random() > 0.5;
-    const baseHue = Math.floor(Math.random() * 360);
-    // No accent picker anymore: the accent is drawn from the same picked
-    // palette (base hue, pushed to full color) so random themes stay coherent.
-    const accentHue = baseHue;
-    const accentChroma = Number((0.14 + Math.random() * 0.08).toFixed(3));
-    const accentLightness = isDark
-      ? Number((0.60 + Math.random() * 0.18).toFixed(2))
-      : Number((0.45 + Math.random() * 0.18).toFixed(2));
-    const rnd = (min, max) => min + Math.random() * (max - min);
-    const customVars = {};
-    if (isDark) {
-      customVars['--bg'] = `oklch(${rnd(0.14, 0.20).toFixed(3)} ${rnd(0.005, 0.020).toFixed(3)} ${baseHue})`;
-      customVars['--canvas'] = `oklch(${rnd(0.11, 0.16).toFixed(3)} ${rnd(0.005, 0.020).toFixed(3)} ${baseHue})`;
-      customVars['--surface'] = `oklch(${rnd(0.19, 0.25).toFixed(3)} ${rnd(0.005, 0.020).toFixed(3)} ${baseHue})`;
-      customVars['--surface-2'] = `oklch(${rnd(0.16, 0.21).toFixed(3)} ${rnd(0.005, 0.015).toFixed(3)} ${baseHue})`;
-      customVars['--ink'] = `oklch(${rnd(0.90, 0.96).toFixed(3)} ${rnd(0.002, 0.010).toFixed(3)} ${baseHue})`;
-      customVars['--ink-soft'] = `oklch(${rnd(0.70, 0.78).toFixed(3)} ${rnd(0.004, 0.010).toFixed(3)} ${baseHue})`;
-      customVars['--hairline'] = `oklch(${rnd(0.28, 0.35).toFixed(3)} ${rnd(0.005, 0.015).toFixed(3)} ${baseHue})`;
-      customVars['--hairline-strong'] = `oklch(${rnd(0.38, 0.46).toFixed(3)} ${rnd(0.005, 0.015).toFixed(3)} ${baseHue})`;
-    } else {
-      customVars['--bg'] = `oklch(${rnd(0.94, 0.98).toFixed(3)} ${rnd(0.005, 0.015).toFixed(3)} ${baseHue})`;
-      customVars['--canvas'] = `oklch(${rnd(0.92, 0.96).toFixed(3)} ${rnd(0.005, 0.018).toFixed(3)} ${baseHue})`;
-      customVars['--surface'] = `oklch(${rnd(0.97, 0.995).toFixed(3)} ${rnd(0.002, 0.010).toFixed(3)} ${baseHue})`;
-      customVars['--surface-2'] = `oklch(${rnd(0.93, 0.97).toFixed(3)} ${rnd(0.005, 0.015).toFixed(3)} ${baseHue})`;
-      customVars['--ink'] = `oklch(${rnd(0.18, 0.26).toFixed(3)} ${rnd(0.01, 0.03).toFixed(3)} ${baseHue})`;
-      customVars['--ink-soft'] = `oklch(${rnd(0.38, 0.46).toFixed(3)} ${rnd(0.008, 0.02).toFixed(3)} ${baseHue})`;
-      customVars['--hairline'] = `oklch(${rnd(0.83, 0.89).toFixed(3)} ${rnd(0.005, 0.015).toFixed(3)} ${baseHue})`;
-      customVars['--hairline-strong'] = `oklch(${rnd(0.70, 0.78).toFixed(3)} ${rnd(0.008, 0.02).toFixed(3)} ${baseHue})`;
-    }
-    setTheme({ mood: isDark ? 'midnight' : 'cream', hue: accentHue, chroma: accentChroma, lightness: accentLightness, customVars });
+    const next = pickSpotlightMood(theme.mood, Math.random);
+    if (!next) return;
+    applyMoodPreset(next);
   };
 
   const saveCurrentPreset = async () => {
@@ -119,6 +123,7 @@ export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
     customPresets, savingPreset, setSavingPreset, presetName, setPresetName,
     activeSurface, setActiveSurface, pos, tabs: SETTINGS_TABS,
     resetTheme, clearOverrides, applyMoodPreset, randomizeTheme,
+    applyLook, setShape, setCustomColors, exportTheme, importTheme,
     saveCurrentPreset, applyCustomPreset, deleteCustomPreset,
     startDrag,
   };

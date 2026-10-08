@@ -1,9 +1,9 @@
 import React from 'react';
 
 const fieldStyle = {
-  width: '100%', minWidth: 0, padding: '7px 9px', borderRadius: 7,
+  width: '100%', minWidth: 0, padding: '7px 9px', borderRadius: 'var(--radius-md)',
   border: '1px solid var(--hairline)', background: 'var(--surface)',
-  color: 'var(--ink)', fontSize: 11,
+  color: 'var(--ink)', fontSize: 'var(--text-xs)',
 };
 
 export function ImportN8NChatCard({ client, onImported, canImport }) {
@@ -34,10 +34,10 @@ export function ImportN8NChatCard({ client, onImported, canImport }) {
   };
 
   return (
-    <div data-testid="registry-n8n-import" style={{ display: 'grid', gap: 7, padding: 12, border: '1px solid var(--hairline)', borderRadius: 9, background: 'var(--surface-raised)' }}>
+    <div data-testid="registry-n8n-import" style={{ display: 'grid', gap: 7, padding: 12, border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-raised)' }}>
       <div>
-        <div style={{ fontSize: 12, fontWeight: 750, color: 'var(--ink)' }}>Import an n8n chat workflow</div>
-        <div style={{ marginTop: 2, fontSize: 11, lineHeight: 1.4, color: 'var(--ink-soft)' }}>
+        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 750, color: 'var(--ink)' }}>Import an n8n chat workflow</div>
+        <div style={{ marginTop: 2, fontSize: 'var(--text-xs)', lineHeight: 1.4, color: 'var(--ink-soft)' }}>
           Use an active Chat Trigger production URL. Each message runs the workflow and may consume one n8n execution. Import does not run it.
         </div>
       </div>
@@ -75,13 +75,13 @@ export function ImportN8NChatCard({ client, onImported, canImport }) {
           data-testid="registry-n8n-submit"
           disabled={busy || !canImport || !complete}
           title={!canImport ? 'Workspace owners and admins can import agents.' : undefined}
-          style={{ border: 0, borderRadius: 7, padding: '7px 11px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 11, fontWeight: 750, cursor: canImport ? 'pointer' : 'default', opacity: busy || !canImport ? 0.55 : 1 }}
+          style={{ border: 0, borderRadius: 'var(--radius-md)', padding: '7px 11px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontWeight: 750, cursor: canImport ? 'pointer' : 'default', opacity: busy || !canImport ? 0.55 : 1 }}
         >
           {busy ? 'Saving…' : 'Import'}
         </button>
       </div>
-      {error && <div role="alert" style={{ color: 'var(--ps-red)', fontSize: 11 }}>{error}</div>}
-      {notice && <div role="status" style={{ color: 'var(--ps-green)', fontSize: 11 }}>{notice}</div>}
+      {error && <div role="alert" style={{ color: 'var(--ps-red)', fontSize: 'var(--text-xs)' }}>{error}</div>}
+      {notice && <div role="status" style={{ color: 'var(--ps-green)', fontSize: 'var(--text-xs)' }}>{notice}</div>}
     </div>
   );
 }

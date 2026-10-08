@@ -16,16 +16,16 @@ export function SchedulerTimeline({ state, onSpawn, onSelect, wins }) {
       flexDirection: 'column'
     }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--hairline)', background: 'var(--surface-2)' }}>
-        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Timeline</h3>
+        <h3 style={{ margin: 0, fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--ink)' }}>Timeline</h3>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 24 }}>
         {loading && schedules.length === 0 ? (
-          <div style={{ padding: 20, textAlign: 'center', color: 'var(--ink-soft)', fontSize: 12 }}>
+          <div style={{ padding: 20, textAlign: 'center', color: 'var(--ink-soft)', fontSize: 'var(--text-sm)' }}>
             Loading schedules...
           </div>
         ) : schedules.length === 0 ? (
-          <div style={{ padding: 20, textAlign: 'center', color: 'var(--ink-soft)', fontSize: 12 }}>
+          <div style={{ padding: 20, textAlign: 'center', color: 'var(--ink-soft)', fontSize: 'var(--text-sm)' }}>
             No upcoming scheduled tasks.
           </div>
         ) : (
@@ -34,7 +34,7 @@ export function SchedulerTimeline({ state, onSpawn, onSelect, wins }) {
 
               {/* Day Header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap' }}>
                   {dayName}
                 </span>
                 <div style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />

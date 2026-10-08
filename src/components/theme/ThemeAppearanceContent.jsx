@@ -1,6 +1,7 @@
 import React from 'react';
 import { MoodSection, SavedPresetsSection } from './ThemeDesignSections.jsx';
 import { FineTuneSection } from './ThemeWorkspaceSection.jsx';
+import { LookSection } from './ThemeLookSection.jsx';
 
 export function ThemeAppearanceContent({ panel }) {
   const {
@@ -22,6 +23,11 @@ export function ThemeAppearanceContent({ panel }) {
     saveCurrentPreset,
     applyCustomPreset,
     deleteCustomPreset,
+    applyLook,
+    setShape,
+    setCustomColors,
+    exportTheme,
+    importTheme,
   } = panel;
 
   return (
@@ -29,9 +35,17 @@ export function ThemeAppearanceContent({ panel }) {
       data-testid="theme-appearance-content"
       style={{ overflowY: 'auto', paddingRight: 6, display: 'grid', gap: 14, alignContent: 'start', flex: 1, minHeight: 0, height: '100%' }}
     >
-      <div style={{ padding: '10px 12px', borderRadius: 9, background: 'var(--accent-soft)', border: '1px solid var(--accent)', color: 'var(--accent-ink)', fontSize: 11, lineHeight: 1.45 }}>
+      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', lineHeight: 1.45 }}>
         You are editing the live canvas. Every open window updates as you make changes.
       </div>
+      <LookSection
+        theme={theme}
+        applyLook={applyLook}
+        setShape={setShape}
+        setCustomColors={setCustomColors}
+        exportTheme={exportTheme}
+        importTheme={importTheme}
+      />
       <MoodSection
         theme={theme}
         resetTheme={resetTheme}

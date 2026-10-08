@@ -4,7 +4,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { jest } from '@jest/globals';
-import SystemStatusWidget from '../src/components/status/SystemStatusWidget.jsx';
+import SystemStatusWidget, { STATUS_TRAY_ID } from '../src/components/status/SystemStatusWidget.jsx';
 import { AgentRunToasts } from '../src/components/AgentRunToasts.jsx';
 
 beforeEach(() => {
@@ -24,20 +24,43 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-test('host status minimizes to a header chip and remembers it', async () => {
-  const { rerender } = render(<SystemStatusWidget focusMode={false} />);
+test('host status docks into the tray instead of covering windows', async () => {
+  const { unmount } = render(
+    <>
+      <div id={STATUS_TRAY_ID} data-testid="tray" />
+      <SystemStatusWidget focusMode={false} />
+    </>
+  );
   await act(async () => { jest.advanceTimersByTime(0); });
-  expect(screen.getByText('Host Status')).toBeTruthy();
+  const chip = screen.getByTestId('host-status-chip');
+  expect(screen.getByTestId('tray')).toContainElement(chip);
+  expect(chip).toHaveTextContent('50%');
+  expect(screen.queryByTestId('host-status-float')).toBeNull();
 
-  await act(async () => {
-    fireEvent.click(screen.getByTitle('Minimize host status'));
-  });
-  expect(screen.queryByText('Loading...')).toBeNull();
-  expect(window.localStorage.getItem('host-status-min')).toBe('1');
+  await act(async () => { fireEvent.click(chip); });
+  expect(screen.getByTestId('host-status-panel')).toHaveTextContent('1d 2h 3m');
+  unmount();
+});
 
-  rerender(<SystemStatusWidget focusMode={false} />);
-  expect(screen.queryByText('Loading...')).toBeNull();
-  expect(screen.getByTitle('Expand host status')).toBeTruthy();
+test('host status can float on the canvas and dock back, and remembers it', async () => {
+  const { rerender, unmount } = render(
+    <>
+      <div id={STATUS_TRAY_ID} />
+      <SystemStatusWidget focusMode={false} />
+    </>
+  );
+  await act(async () => { jest.advanceTimersByTime(0); });
+  await act(async () => { fireEvent.click(screen.getByTestId('host-status-chip')); });
+  await act(async () => { fireEvent.click(screen.getByTitle('Float host status on the canvas')); });
+  expect(screen.getByTestId('host-status-float')).toBeTruthy();
+  expect(window.localStorage.getItem('host-status-placement')).toBe('float');
+
+  await act(async () => { fireEvent.click(screen.getByTitle('Dock host status into the tray')); });
+  expect(screen.queryByTestId('host-status-float')).toBeNull();
+  expect(window.localStorage.getItem('host-status-placement')).toBe('tray');
+  await act(async () => { rerender(<SystemStatusWidget focusMode />); });
+  expect(screen.queryByTestId('host-status-chip')).toBeNull();
+  unmount();
 });
 
 test('agent toast shows the tail with an opener, then dismisses', async () => {

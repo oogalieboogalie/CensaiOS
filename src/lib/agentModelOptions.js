@@ -33,6 +33,14 @@ export const MODEL_OPTIONS = {
     { value: 'google/gemini-2.5-pro', label: 'google/gemini-2.5-pro' },
     { value: 'google/gemini-2.5-flash', label: 'google/gemini-2.5-flash' },
   ],
+  openai: [
+    { value: 'gpt-4.1', label: 'gpt-4.1 · images · PDFs' },
+    { value: 'gpt-4.1-mini', label: 'gpt-4.1-mini · images · PDFs' },
+    { value: 'gpt-4o', label: 'gpt-4o · images · PDFs' },
+    { value: 'gpt-4o-mini', label: 'gpt-4o-mini · images · PDFs' },
+    { value: 'gpt-4o-audio-preview', label: 'gpt-4o-audio-preview · audio in' },
+    { value: 'o4-mini', label: 'o4-mini · images · PDFs' },
+  ],
   google: [
     { value: 'gemini-3.8-flash', label: 'gemini-3.8-flash' },
     { value: 'gemini-2.5-flash', label: 'gemini-2.5-flash' },

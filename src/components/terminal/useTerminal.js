@@ -37,6 +37,7 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId) {
       fontFamily: '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace',
       fontSize: Math.round((theme.fontSize || 13) * (win.fontScale || 1.0)),
       lineHeight: 1.25,
+      // eslint-disable-next-line no-restricted-syntax -- xterm needs a parseable transparent color for its canvas theme
       theme: win.opacity !== undefined ? { ...theme, background: 'rgba(0,0,0,0)' } : theme,
       allowProposedApi: true,
       rightClickSelectsWord: true,
@@ -132,7 +133,16 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId) {
       socketRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [cwd, theme, win.id, win.agentSessionId, win.agentRun?.prompt, workspaceId, sendBind]);
+  }, [cwd, win.id, win.agentSessionId, win.agentRun?.prompt, workspaceId, sendBind]);
+
+  // Live-apply color changes (canvas theme follows, terminal settings
+  // tweaks) without tearing down the shell session.
+  React.useEffect(() => {
+    const term = termRef.current;
+    if (!term) return;
+    // eslint-disable-next-line no-restricted-syntax -- xterm needs a parseable transparent color for its canvas theme
+    term.options.theme = win.opacity !== undefined ? { ...theme, background: 'rgba(0,0,0,0)' } : theme;
+  }, [theme, win.opacity]);
 
   React.useEffect(() => {
     sendBind();

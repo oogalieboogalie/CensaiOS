@@ -33,8 +33,8 @@ export function CanvasGroupBackgroundPicker({ color, hue, onChange }) {
         width: 18,
         height: 18,
         padding: 0,
-        border: '1px solid rgba(255,255,255,0.65)',
-        borderRadius: 5,
+        border: '1px solid color-mix(in oklab, var(--on-fill) 65%, transparent)',
+        borderRadius: 'var(--radius-sm)',
         background: 'transparent',
         cursor: 'pointer',
       }}

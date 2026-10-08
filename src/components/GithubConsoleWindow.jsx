@@ -71,7 +71,7 @@ export function GithubConsoleWindow({ win, onUpdate, currentProject }) {
         background: 'var(--surface)',
         color: 'var(--ink)',
         fontFamily: 'var(--font-ui)',
-        fontSize: 13,
+        fontSize: 'var(--text-md)',
       }}>
         <RepoSelector
           selectedRepo={selectedRepo}
@@ -90,7 +90,7 @@ export function GithubConsoleWindow({ win, onUpdate, currentProject }) {
           <div style={{
             margin: '12px 14px 0',
             padding: '10px 14px',
-            borderRadius: 8,
+            borderRadius: 'var(--radius-lg)',
             background: 'color-mix(in oklch, var(--ps-red) 12%, transparent)',
             border: '1px solid color-mix(in oklch, var(--ps-red) 40%, transparent)',
             color: 'var(--ps-red)',
@@ -102,7 +102,7 @@ export function GithubConsoleWindow({ win, onUpdate, currentProject }) {
             <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Icon.Alert size={14} /> GITHUB_TOKEN Missing
             </div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)' }}>
               To fetch pull requests and issues, configure a personal token named <code>GITHUB_TOKEN</code> in your <code>.env</code> file.
             </div>
           </div>
@@ -128,12 +128,12 @@ export function GithubConsoleWindow({ win, onUpdate, currentProject }) {
             <div style={{ flex: 1, display: 'grid', placeItems: 'center', color: 'var(--ink-soft)', textAlign: 'center', padding: 40 }}>
               <div>
                 <Icon.Github size={48} style={{ color: 'var(--ink-faint)', marginBottom: 12 }} />
-                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>Select a Repository</div>
-                <p style={{ maxWidth: 320, fontSize: 12, margin: 0 }}>Select a repository above to view its status, issues, and pull requests.</p>
+                <div style={{ fontWeight: 600, fontSize: 'var(--text-base)', marginBottom: 4 }}>Select a Repository</div>
+                <p style={{ maxWidth: 320, fontSize: 'var(--text-sm)', margin: 0 }}>Select a repository above to view its status, issues, and pull requests.</p>
               </div>
             </div>
           ) : error && !error.includes('GITHUB_TOKEN') ? (
-            <div style={{ color: 'var(--ps-red)', padding: 12, border: '1px solid var(--hairline)', borderRadius: 8, background: 'var(--surface-2)' }}>
+            <div style={{ color: 'var(--ps-red)', padding: 12, border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)' }}>
               {error}
             </div>
           ) : activeTab === 'pulls' ? (

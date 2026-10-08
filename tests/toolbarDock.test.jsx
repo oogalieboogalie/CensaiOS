@@ -75,11 +75,14 @@ describe('multitool dock', () => {
     renderDock();
     const btn = screen.getByTitle('Pan (H)');
     fireEvent.mouseEnter(btn);
-    expect(btn.style.background).toBe('var(--surface-2)');
+    // Gloss restyle: hover sheen is layered over the surface token rather
+    // than a flat fill — assert the token, not the exact gradient, so the
+    // test survives theme refinements.
+    expect(btn.style.background).toContain('var(--surface-2)');
     expect(btn.style.color).toBe('var(--accent-ink)');
     expect(document.getElementById('tool-tooltip').textContent).toBe('Pan (H)');
     fireEvent.mouseLeave(btn);
-    expect(btn.style.background).toBe('transparent');
+    expect(btn.style.background).toContain('var(--surface)');
   });
 
   test('bar pops out of the pill top on hover, pill stays put', () => {
@@ -105,7 +108,6 @@ describe('multitool dock', () => {
     fireEvent.keyDown(screen.getByLabelText('typing-box'), { key: 'r' });
     expect(props.onSelectTool).not.toHaveBeenCalled();
   });
-
   test('pen options popover shows for brush and rect only, once expanded', () => {
     const { unmount } = render(
       <Toolbar
@@ -114,7 +116,7 @@ describe('multitool dock', () => {
         penSize={4} setPenSize={jest.fn()} focusMode={false} onAiAgent={jest.fn()}
       />,
     );
-    expect(screen.getByTitle('Pen color #EF4444')).toBeInTheDocument();
+    expect(screen.getByTitle('Pen color Ink')).toBeInTheDocument();
     // Folded away with the bar until hover (0fr row, not unmounted, so it
     // can unfold with the animation).
     expect(screen.getByTestId('dock-capsule-full').style.gridTemplateRows).toBe('0fr');
@@ -124,6 +126,58 @@ describe('multitool dock', () => {
     unmount();
 
     renderDock({ activeTool: 'select' });
-    expect(screen.queryByTitle('Pen color #EF4444')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Pen color Ink')).not.toBeInTheDocument();
+  });
+
+  test('chat button toggles the dock messenger popup without changing the active tool', () => {
+    const seen = [];
+    const listener = (e) => seen.push(e.detail.tool);
+    window.addEventListener('canvas:tool-change', listener);
+    try {
+      const props = renderDock();
+      expect(screen.queryByTestId('dock-chat-popup')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByTitle('Chat (C)'));
+      expect(screen.getByTestId('dock-chat-popup')).toBeInTheDocument();
+      expect(props.onSelectTool).not.toHaveBeenCalled();
+      expect(seen).toEqual(['chat']);
+      fireEvent.click(screen.getByTitle('Chat (C)'));
+      expect(screen.queryByTestId('dock-chat-popup')).not.toBeInTheDocument();
+    } finally {
+      window.removeEventListener('canvas:tool-change', listener);
+    }
+  });
+
+  test('C shortcut toggles the dock messenger popup', () => {
+    const props = renderDock();
+    fireEvent.keyDown(document, { key: 'c' });
+    expect(screen.getByTestId('dock-chat-popup')).toBeInTheDocument();
+    expect(props.onSelectTool).not.toHaveBeenCalled();
+    fireEvent.keyDown(document, { key: 'c' });
+    expect(screen.queryByTestId('dock-chat-popup')).not.toBeInTheDocument();
+  });
+
+  test('presence row is hidden without collaboration', () => {
+    renderDock();
+    expect(screen.queryByTestId('collaboration-presence')).not.toBeInTheDocument();
+  });
+
+  test('presence row: share opens sharing settings, comments toggles the panel', () => {
+    const onShare = jest.fn();
+    renderDock({
+      collaboration: {
+        status: 'live',
+        participants: [{ clientId: 'a', actor: { label: 'Member Ada' } }],
+      },
+      onShare,
+      workspaceId: 'ws-123',
+    });
+    const row = screen.getByTestId('collaboration-presence');
+    expect(row).toHaveTextContent('Live');
+    expect(row).toHaveTextContent('1');
+    // Share opens Settings on the Sharing tab, where guest links live.
+    fireEvent.click(screen.getByText('Share'));
+    expect(onShare).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Invite')).not.toBeInTheDocument();
+    expect(screen.getByText('Comments')).toBeInTheDocument();
   });
 });

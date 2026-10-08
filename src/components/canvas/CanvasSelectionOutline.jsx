@@ -27,7 +27,7 @@ export function CanvasSelectionOutline({ wins, selectedIds, zoom }) {
         top: -22 / zoom,
         left: 0,
         padding: `${2 / zoom}px ${7 / zoom}px`,
-        borderRadius: 999,
+        borderRadius: 'var(--radius-full)',
         background: 'var(--accent)',
         color: 'white',
         fontSize: 10 / zoom,

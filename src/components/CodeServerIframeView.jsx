@@ -19,7 +19,7 @@ export function CodeServerIframeView({ url, theme, winOpacity }) {
         data-code-server-iframe
         src={url}
         title={`code-server: ${url}`}
-        style={{ flex: 1, width: '100%', height: '100%', border: 'none', borderRadius: 12, background: 'var(--surface)' }}
+        style={{ flex: 1, width: '100%', height: '100%', border: 'none', borderRadius: 'var(--radius-xl)', background: 'var(--surface)' }}
         allow="clipboard-read; clipboard-write"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
       />

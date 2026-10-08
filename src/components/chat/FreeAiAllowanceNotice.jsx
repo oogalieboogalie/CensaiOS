@@ -106,7 +106,7 @@ function Notice({ children }) {
         margin: '0 10px 8px',
         padding: '7px 10px',
         border: '1px solid var(--hairline)',
-        borderRadius: 9,
+        borderRadius: 'var(--radius-lg)',
         background: 'var(--surface-2)',
         color: 'var(--ink-soft)',
         display: 'flex',

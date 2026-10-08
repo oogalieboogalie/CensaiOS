@@ -5,6 +5,7 @@ import { Icon } from './Icons.jsx';
 import { ApprovalCard } from './approvals/ApprovalCard.jsx';
 import { useApprovalInbox } from './approvals/useApprovalInbox.js';
 import { useVisibilityAwareInterval } from '../lib/usePolling.js';
+import { CliApprovalCards } from './agentConsole/CliApprovalCards.jsx';
 
 export function PolicyDashboardWindow({ win, isActive }) {
   const inbox = useApprovalInbox();
@@ -27,20 +28,21 @@ export function PolicyDashboardWindow({ win, isActive }) {
       background: 'var(--surface)', color: 'var(--ink)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
         padding: '9px 12px', borderBottom: '1px solid var(--hairline)' }}>
-        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>
           Exact captured arguments · one signed decision · no automatic retry
         </div>
-        <label style={{ display: 'flex', gap: 6, alignItems: 'center', color: 'var(--ink-faint)', fontSize: 10 }}>
+        <label style={{ display: 'flex', gap: 6, alignItems: 'center', color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>
           <input type="checkbox" checked={pendingOnly} onChange={event => setPendingOnly(event.target.checked)} />
           Pending only
         </label>
       </div>
       <div style={{ minHeight: 0, overflow: 'auto', padding: 12, display: 'grid', gap: 10, alignContent: 'start' }}>
-        {inbox.error && <div role="alert" style={{ border: '1px solid var(--hairline)', borderRadius: 8,
-          padding: 10, color: 'var(--red)', background: 'var(--surface-raised)', fontSize: 11 }}>{inbox.error}</div>}
-        {inbox.loading && <div role="status" style={{ color: 'var(--ink-faint)', fontSize: 11 }}>Loading approvals…</div>}
+        <CliApprovalCards active={isActive} />
+        {inbox.error && <div role="alert" style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)',
+          padding: 10, color: 'var(--red)', background: 'var(--surface-raised)', fontSize: 'var(--text-xs)' }}>{inbox.error}</div>}
+        {inbox.loading && <div role="status" style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>Loading approvals…</div>}
         {inbox.ready && approvals.length === 0 && <div style={{ border: '1px dashed var(--hairline)',
-          borderRadius: 10, padding: 24, textAlign: 'center', color: 'var(--ink-faint)', fontSize: 11 }}>
+          borderRadius: 'var(--radius-lg)', padding: 24, textAlign: 'center', color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>
           {pendingOnly ? 'No agent actions are waiting for approval.' : 'No approval history in this workspace.'}
         </div>}
         {approvals.map(approval => <ApprovalCard key={approval.id} approval={approval}

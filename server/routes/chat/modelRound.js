@@ -25,6 +25,7 @@ export function callChatModelRound({
   round,
   userId,
   workspaceId,
+  onDelta = null,
 }) {
   const body = {
     model: reqModel,
@@ -48,5 +49,23 @@ export function callChatModelRound({
     },
     usageSink: workspaceUsageSink,
     accessContext,
+    onDelta,
   });
+}
+
+/**
+ * Spec 3: forward text as the model writes it. The first delta proves the
+ * provider accepted the request, so `onFirst` can open the NDJSON stream.
+ */
+export function forwardDeltas(round, sendEvent, onFirst) {
+  return (text) => {
+    onFirst?.();
+    sendEvent({ type: 'delta', round, text });
+  };
+}
+
+/** The person pressed stop (the browser closed the stream): run no more rounds or tools. */
+export function throwIfChatAborted(signal) {
+  if (!signal?.aborted) return;
+  throw Object.assign(new Error('Stopped'), { code: 'CHAT_ABORTED', statusCode: 499 });
 }

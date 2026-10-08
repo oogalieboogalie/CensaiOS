@@ -17,8 +17,8 @@ export function WindowStyleMenu({ win, theme, onUpdate, onClose, colorMenuRef })
         width: 200,
         background: 'var(--surface-2)',
         border: '1px solid var(--hairline-strong)',
-        borderRadius: 8,
-        boxShadow: 'var(--shadow-pop, 0 10px 25px rgba(0,0,0,0.3))',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-pop)',
         zIndex: 99,
         padding: '10px 12px',
         display: 'flex',
@@ -29,7 +29,7 @@ export function WindowStyleMenu({ win, theme, onUpdate, onClose, colorMenuRef })
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-soft)' }}>
+        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-soft)' }}>
           Window Style
         </span>
         <button
@@ -52,7 +52,7 @@ export function WindowStyleMenu({ win, theme, onUpdate, onClose, colorMenuRef })
       </div>
 
       <div style={{ display: 'grid', gap: 4 }}>
-        <label htmlFor="window-chrome-variant" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+        <label htmlFor="window-chrome-variant" style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>
           Chrome
         </label>
         <select
@@ -62,9 +62,9 @@ export function WindowStyleMenu({ win, theme, onUpdate, onClose, colorMenuRef })
           style={{
             background: 'var(--surface)',
             border: '1px solid var(--hairline)',
-            borderRadius: 6,
+            borderRadius: 'var(--radius-md)',
             padding: '4px 6px',
-            fontSize: 11,
+            fontSize: 'var(--text-xs)',
             color: 'var(--ink)',
             cursor: 'pointer',
             outline: 'none',
@@ -76,16 +76,16 @@ export function WindowStyleMenu({ win, theme, onUpdate, onClose, colorMenuRef })
           ))}
         </select>
         {activeVariant && activeVariant.id !== 'low-profile' && (
-          <span style={{ fontSize: 10, color: 'var(--ink-faint)', lineHeight: 1.4 }}>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', lineHeight: 1.4 }}>
             {activeVariant.description}
           </span>
         )}
       </div>
 
       <div style={{ display: 'grid', gap: 4 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-xs)' }}>
           <span style={{ color: 'var(--ink-soft)' }}>Accent Hue</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>
             {win.hue !== undefined ? `${win.hue}°` : 'Default'}
           </span>
         </div>
@@ -105,9 +105,9 @@ export function WindowStyleMenu({ win, theme, onUpdate, onClose, colorMenuRef })
               style={{
                 all: 'unset',
                 cursor: 'pointer',
-                fontSize: 9,
+                fontSize: 'var(--text-xs)',
                 padding: '2px 5px',
-                borderRadius: 4,
+                borderRadius: 'var(--radius-sm)',
                 background: 'var(--surface)',
                 border: '1px solid var(--hairline)',
                 color: 'var(--ink-soft)',
@@ -120,9 +120,9 @@ export function WindowStyleMenu({ win, theme, onUpdate, onClose, colorMenuRef })
           </div>
 
       <div style={{ display: 'grid', gap: 4 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-xs)' }}>
           <span style={{ color: 'var(--ink-soft)' }}>Transparency</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>
                 {win.opacity !== undefined ? `${Math.round(win.opacity * 100)}%` : '100%'}
               </span>
             </div>
@@ -143,9 +143,9 @@ export function WindowStyleMenu({ win, theme, onUpdate, onClose, colorMenuRef })
                   style={{
                     all: 'unset',
                     cursor: 'pointer',
-                    fontSize: 9,
+                    fontSize: 'var(--text-xs)',
                     padding: '2px 5px',
-                    borderRadius: 4,
+                    borderRadius: 'var(--radius-sm)',
                     background: 'var(--surface)',
                     border: '1px solid var(--hairline)',
                     color: 'var(--ink-soft)',
@@ -157,7 +157,7 @@ export function WindowStyleMenu({ win, theme, onUpdate, onClose, colorMenuRef })
             </div>
           </div>
 
-          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, cursor: 'pointer' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-xs)', cursor: 'pointer' }}>
             <span style={{ color: 'var(--ink-soft)' }} title="Hide frame, background, and shadow until hover">Frameless</span>
             <input
               type="checkbox"

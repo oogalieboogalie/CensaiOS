@@ -7,9 +7,9 @@ export function WindowLabClosedPreview({ onReopen }) {
       onClick={onReopen}
       style={{
         all: 'unset', cursor: 'pointer', position: 'absolute', left: 24, top: 24,
-        padding: '8px 12px', borderRadius: 8,
+        padding: '8px 12px', borderRadius: 'var(--radius-lg)',
         background: 'var(--surface)', border: '1px solid var(--hairline)',
-        color: 'var(--ink-soft)', fontSize: 12, fontWeight: 700,
+        color: 'var(--ink-soft)', fontSize: 'var(--text-sm)', fontWeight: 700,
       }}
     >
       Reopen preview

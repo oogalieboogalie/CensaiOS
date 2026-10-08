@@ -134,11 +134,11 @@ export function RegionMenu({ rect, zoom, neighbor, onFitNeighbor, onCancel, onPi
             transformOrigin: 'right center',
             whiteSpace: 'nowrap',
             padding: '4px 10px',
-            borderRadius: 6,
+            borderRadius: 'var(--radius-md)',
             background: 'var(--ink)',
             color: 'var(--surface)',
             fontFamily: 'var(--font-mono)',
-            fontSize: 11,
+            fontSize: 'var(--text-xs)',
             fontWeight: 500,
             letterSpacing: '0.04em',
             boxShadow: '0 2px 8px oklch(0 0 0 / 0.2)',
@@ -165,13 +165,13 @@ export function RegionMenu({ rect, zoom, neighbor, onFitNeighbor, onCancel, onPi
             overscrollBehavior: 'contain',
             background: 'var(--surface)',
             border: '1px solid var(--hairline)',
-            borderRadius: 12,
+            borderRadius: 'var(--radius-xl)',
             boxShadow: 'var(--shadow-pop)',
             padding: 6,
             zIndex: 12,
           }}
         >
-          <div style={{ padding: '5px 8px 7px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          <div style={{ padding: '5px 8px 7px', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)' }}>
             Chat With
           </div>
           {agents.map(agent => (
@@ -187,7 +187,7 @@ export function RegionMenu({ rect, zoom, neighbor, onFitNeighbor, onCancel, onPi
                 alignItems: 'center',
                 gap: 9,
                 padding: '7px 8px',
-                borderRadius: 8,
+                borderRadius: 'var(--radius-lg)',
                 color: 'var(--ink)',
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-2)'}
@@ -195,8 +195,8 @@ export function RegionMenu({ rect, zoom, neighbor, onFitNeighbor, onCancel, onPi
             >
               <AgentAvatar agent={agent} size={24} />
               <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                <span style={{ fontSize: 12.5, fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.name}</span>
-                <span style={{ fontSize: 10.5, color: 'var(--ink-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.role}</span>
+                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 650, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.name}</span>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.role}</span>
               </span>
             </button>
           ))}

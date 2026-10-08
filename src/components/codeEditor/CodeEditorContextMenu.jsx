@@ -11,14 +11,14 @@ function MenuButton({ label, hint, disabled, onClick }) {
       disabled={disabled}
       style={{
         all: 'unset', display: 'flex', flexDirection: 'column', gap: 1, width: '100%',
-        padding: '7px 10px', borderRadius: 6, cursor: disabled ? 'default' : 'pointer',
+        padding: '7px 10px', borderRadius: 'var(--radius-md)', cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.45 : 1, boxSizing: 'border-box',
       }}
       onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.background = 'var(--accent-soft)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
     >
-      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>{label}</span>
-      {hint && <span style={{ fontSize: 10, color: 'var(--ink-faint)' }}>{hint}</span>}
+      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--ink)' }}>{label}</span>
+      {hint && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>{hint}</span>}
     </button>
   );
 }
@@ -51,7 +51,7 @@ export function CodeEditorContextMenu({
       style={{
         position: 'fixed', left, top, width: w, zIndex: 1000,
         background: 'var(--surface)', border: '1px solid var(--hairline)',
-        borderRadius: 10, padding: 5, boxShadow: '0 12px 32px rgba(0,0,0,0.35)',
+        borderRadius: 'var(--radius-lg)', padding: 5, boxShadow: 'var(--elevation-3)',
         fontFamily: 'var(--font-sans)',
       }}
     >

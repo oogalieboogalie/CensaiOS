@@ -13,6 +13,7 @@ export function useImageStudio(win, onUpdate) {
   const initial = normalizeImageStudioState(win.state?.imageStudio || win.canvasState || {});
   const [state, setState] = React.useState(initial);
   const [tool, setTool] = React.useState('path');
+  // eslint-disable-next-line no-restricted-syntax -- default user paint color (data)
   const [color, setColor] = React.useState('#ffffff');
   const [strokeWidth, setStrokeWidth] = React.useState(5);
   const [textValue, setTextValue] = React.useState('Label');

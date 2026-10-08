@@ -168,6 +168,7 @@ describe('deriveRegistryEntry', () => {
     expect(e).toEqual({
       componentKey: 'NotesWindow',
       defaultSize: { w: 400, h: 300 },
+      sizeClass: null,
       title: 'Notes',
       canPin: true,
       canSpawnFromRegion: true,

@@ -48,3 +48,13 @@ export function convertTraceToTest(workspaceId, traceId) {
     method: 'POST',
   });
 }
+
+export function getProvenance(workspaceId) {
+  return requestTracing(scopedUrl('/provenance', workspaceId));
+}
+
+export function getProvenanceRecord(workspaceId, recordId) {
+  const value = String(recordId ?? '').trim();
+  if (!value) throw new Error('Provenance record id is required.');
+  return requestTracing(scopedUrl(`/provenance/${encodeURIComponent(value)}`, workspaceId));
+}

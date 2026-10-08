@@ -6,7 +6,7 @@ import { fmtTime } from './operations/OperationsShared.jsx';
 import { useWorkspaceStore } from '../lib/store.js';
 import { convertTraceToTest, getTraceEvents, getTraces } from '../lib/api/tracing.js';
 const emptyStyle = { flex: 1, height: '100%', display: 'grid', placeItems: 'center', padding: 24, textAlign: 'center', color: 'var(--ink-faint)' };
-const cardStyle = { padding: 8, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 6 };
+const cardStyle = { padding: 8, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)' };
 const workspaceStillActive = workspaceId => useWorkspaceStore.getState().workspaceId === workspaceId;
 export function TracingWindow({ win, onUpdate }) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
@@ -79,9 +79,9 @@ export function TracingWindow({ win, onUpdate }) {
         </div>
       ) : <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '250px 1fr', overflow: 'hidden', background: 'var(--surface)', color: 'var(--ink)' }}>
         <div style={{ borderRight: '1px solid var(--hairline)', overflowY: 'auto', padding: 8 }}>
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', opacity: 0.7 }}>Recent Traces</h4>
-          {notice && <div role="status" style={{ ...cardStyle, marginBottom: 8, color: 'var(--ink-soft)', fontSize: 11 }}>{notice}</div>}
-          {!notice && !loading && traces.length === 0 && <div style={{ color: 'var(--ink-faint)', fontSize: 11 }}>No traces in this workspace.</div>}
+          <h4 style={{ margin: '0 0 8px 0', fontSize: 'var(--text-sm)', opacity: 0.7 }}>Recent Traces</h4>
+          {notice && <div role="status" style={{ ...cardStyle, marginBottom: 8, color: 'var(--ink-soft)', fontSize: 'var(--text-xs)' }}>{notice}</div>}
+          {!notice && !loading && traces.length === 0 && <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>No traces in this workspace.</div>}
           {traces.map(t => (
             <button
               type="button"
@@ -90,9 +90,9 @@ export function TracingWindow({ win, onUpdate }) {
               style={{
                 width: '100%', padding: 8, textAlign: 'left', color: 'var(--ink)',
                 cursor: 'pointer',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-md)',
                 marginBottom: 4,
-                fontSize: '11px',
+                fontSize: 'var(--text-xs)',
                 background: selectedTraceId === t.id ? 'var(--accent-soft)' : 'transparent',
                 border: '1px solid var(--hairline)',
               }}
@@ -108,13 +108,13 @@ export function TracingWindow({ win, onUpdate }) {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid var(--hairline)', paddingBottom: 8 }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '14px' }}>{selectedTrace.title}</h3>
-                  <div style={{ fontSize: '11px', opacity: 0.7 }}>ID: {selectedTrace.id}</div>
+                  <h3 style={{ margin: 0, fontSize: 'var(--text-base)' }}>{selectedTrace.title}</h3>
+                  <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>ID: {selectedTrace.id}</div>
                 </div>
                 <button type="button" onClick={() => convertToTest(selectedTrace.id)}
                   style={{
                     background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none',
-                    padding: '4px 8px', borderRadius: 4, fontSize: '11px',
+                    padding: '4px 8px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)',
                     cursor: 'pointer'
                   }}
                 >
@@ -123,32 +123,32 @@ export function TracingWindow({ win, onUpdate }) {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginBottom: 16 }}>
                 <div style={cardStyle}>
-                  <div style={{ fontSize: '9px', opacity: 0.6, textTransform: 'uppercase' }}>Agent</div>
-                  <div style={{ fontSize: '12px' }}>{selectedTrace.data?.agentId}</div>
+                  <div style={{ fontSize: 'var(--text-xs)', opacity: 0.6, textTransform: 'uppercase' }}>Agent</div>
+                  <div style={{ fontSize: 'var(--text-sm)' }}>{selectedTrace.data?.agentId}</div>
                 </div>
                 <div style={cardStyle}>
-                  <div style={{ fontSize: '9px', opacity: 0.6, textTransform: 'uppercase' }}>Window</div>
-                  <div style={{ fontSize: '12px' }}>{selectedTrace.data?.windowId || 'N/A'}</div>
+                  <div style={{ fontSize: 'var(--text-xs)', opacity: 0.6, textTransform: 'uppercase' }}>Window</div>
+                  <div style={{ fontSize: 'var(--text-sm)' }}>{selectedTrace.data?.windowId || 'N/A'}</div>
                 </div>
                 {selectedTrace.data?.timings && (
                   <div style={cardStyle}>
-                    <div style={{ fontSize: '9px', opacity: 0.6, textTransform: 'uppercase' }}>Total Duration</div>
-                    <div style={{ fontSize: '12px' }}>{selectedTrace.data.timings.total_ms}ms</div>
+                    <div style={{ fontSize: 'var(--text-xs)', opacity: 0.6, textTransform: 'uppercase' }}>Total Duration</div>
+                    <div style={{ fontSize: 'var(--text-sm)' }}>{selectedTrace.data.timings.total_ms}ms</div>
                   </div>
                 )}
               </div>
-              <h4 style={{ fontSize: '12px', borderBottom: '1px solid var(--hairline)', paddingBottom: 4 }}>Execution Timeline</h4>
+              <h4 style={{ fontSize: 'var(--text-sm)', borderBottom: '1px solid var(--hairline)', paddingBottom: 4 }}>Execution Timeline</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {events.map(e => (
-                  <div key={e.id} style={{ padding: 8, borderLeft: '2px solid var(--accent)', background: 'var(--surface-2)', borderRadius: '0 4px 4px 0', fontSize: '12px' }}>
+                  <div key={e.id} style={{ padding: 8, borderLeft: '2px solid var(--accent)', background: 'var(--surface-2)', borderRadius: '0 4px 4px 0', fontSize: 'var(--text-sm)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>{e.event_type}</span>
-                      <span style={{ fontSize: '10px', opacity: 0.6 }}>{fmtTime(new Date(e.created_at))}</span>
+                      <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}>{fmtTime(new Date(e.created_at))}</span>
                     </div>
                     {e.event_type === 'agent.round' && (
                       <div>
                         <div>Round: {e.payload.round}</div>
-                        <div style={{ fontSize: '11px', opacity: 0.8 }}>
+                        <div style={{ fontSize: 'var(--text-xs)', opacity: 0.8 }}>
                           Model: {e.payload.modelConfig?.model} | Messages: {e.payload.messagesCount} | Tools: {e.payload.toolsAvailableCount}
                         </div>
                       </div>
@@ -159,8 +159,8 @@ export function TracingWindow({ win, onUpdate }) {
                           {e.payload.toolName}{e.payload.private ? ' (private)' : ''}
                         </div>
                         <div style={{
-                          marginTop: 4, padding: 4, background: 'var(--surface)', borderRadius: 2,
-                          fontSize: '11px',
+                          marginTop: 4, padding: 4, background: 'var(--surface)', borderRadius: 'var(--radius-xs)',
+                          fontSize: 'var(--text-xs)',
                           maxHeight: '100px',
                           overflowY: 'auto',
                           fontFamily: 'var(--font-mono)'
@@ -170,7 +170,7 @@ export function TracingWindow({ win, onUpdate }) {
                             : `${e.payload.resultType || 'unknown'} result · ${e.payload.resultLength ?? 0} units`}
                           {!e.payload.private && e.payload.summary && ` · ${JSON.stringify(e.payload.summary)}`}
                         </div>
-                        <div style={{ fontSize: '10px', marginTop: 4, color: e.payload.ok ? 'var(--ps-green)' : 'var(--ps-red)' }}>
+                        <div style={{ fontSize: 'var(--text-xs)', marginTop: 4, color: e.payload.ok ? 'var(--ps-green)' : 'var(--ps-red)' }}>
                           {e.payload.ok ? '✓ Success' : '✗ Failed'} ({e.payload.ms}ms)
                         </div>
                       </div>

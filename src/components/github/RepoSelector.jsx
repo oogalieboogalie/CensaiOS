@@ -25,7 +25,7 @@ export function RepoSelector({
       flexWrap: 'wrap'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 260 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink-faint)', letterSpacing: '0.05em' }}>Repo:</span>
+        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink-faint)', letterSpacing: '0.05em' }}>Repo:</span>
         {isEditingRepo ? (
           <div style={{ display: 'flex', gap: 6, flex: 1 }}>
             {projectRepoOptions.length > 0 && (
@@ -34,11 +34,11 @@ export function RepoSelector({
                 onChange={(e) => handleSelectRepo(e.target.value)}
                 style={{
                   padding: '5px 8px',
-                  borderRadius: 6,
+                  borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--hairline)',
                   background: 'var(--surface)',
                   color: 'var(--ink)',
-                  fontSize: 12,
+                  fontSize: 'var(--text-sm)',
                   outline: 'none',
                 }}
               >
@@ -60,12 +60,12 @@ export function RepoSelector({
               style={{
                 flex: 1,
                 padding: '5px 8px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--hairline)',
                 background: 'var(--surface)',
                 color: 'var(--ink)',
                 fontFamily: 'var(--font-mono)',
-                fontSize: 11,
+                fontSize: 'var(--text-xs)',
                 outline: 'none',
               }}
             />
@@ -73,12 +73,12 @@ export function RepoSelector({
               onClick={() => handleSelectRepo(repoInput || selectedRepo)}
               style={{
                 padding: '5px 10px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-md)',
                 background: 'var(--accent)',
                 color: 'white',
                 border: 'none',
                 fontWeight: 700,
-                fontSize: 11,
+                fontSize: 'var(--text-xs)',
                 cursor: 'pointer'
               }}
             >
@@ -89,11 +89,11 @@ export function RepoSelector({
                 onClick={() => setIsEditingRepo(false)}
                 style={{
                   padding: '5px 8px',
-                  borderRadius: 6,
+                  borderRadius: 'var(--radius-md)',
                   background: 'transparent',
                   color: 'var(--ink-soft)',
                   border: '1px solid var(--hairline)',
-                  fontSize: 11,
+                  fontSize: 'var(--text-xs)',
                   cursor: 'pointer'
                 }}
               >
@@ -103,7 +103,7 @@ export function RepoSelector({
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{selectedRepo}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--accent)' }}>{selectedRepo}</span>
             <button
               onClick={() => {
                 setRepoInput(selectedRepo);
@@ -118,7 +118,7 @@ export function RepoSelector({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                borderRadius: 4
+                borderRadius: 'var(--radius-sm)'
               }}
               onMouseEnter={e => e.currentTarget.style.background = 'var(--surface)'}
               onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -138,7 +138,7 @@ export function RepoSelector({
             cursor: 'pointer',
             width: 26,
             height: 26,
-            borderRadius: 6,
+            borderRadius: 'var(--radius-md)',
             display: 'grid',
             placeItems: 'center',
             background: 'var(--surface)',

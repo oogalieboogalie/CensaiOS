@@ -6,13 +6,14 @@ const persistWorkspaceWithPrewarm = jest.fn();
 const writeWorkspaceDraft = jest.fn();
 const clearWorkspaceDraft = jest.fn();
 const downloadWorkspaceSnapshot = jest.fn();
+const fetchWorkspaceRevision = jest.fn();
 
 jest.unstable_mockModule('../src/lib/projectPrewarm.js', () => ({ persistWorkspaceWithPrewarm }));
 jest.unstable_mockModule('../src/lib/api/workspaceAuthority.js', () => ({
   clearWorkspaceDraft, writeWorkspaceDraft,
 }));
 jest.unstable_mockModule('../src/lib/api.js', () => ({
-  api: { downloadWorkspaceSnapshot },
+  api: { downloadWorkspaceSnapshot, fetchWorkspaceRevision },
 }));
 
 const { useWorkspacePersistence } = await import('../src/app/hooks/useWorkspacePersistence.js');
@@ -49,6 +50,39 @@ describe('workspace autosave revision boundary', () => {
     }));
     expect(onRevision).toHaveBeenCalledWith(3);
     expect(result.current.status).toBe('saved');
+  });
+
+  test('with live CRDT sync, a conflict adopts the server revision and resaves instead of blocking', async () => {
+    persistWorkspaceWithPrewarm
+      .mockRejectedValueOnce(Object.assign(new Error('Workspace changed'), { code: 'workspace_revision_conflict' }))
+      .mockResolvedValueOnce({ revision: 8 });
+    fetchWorkspaceRevision.mockResolvedValue(7);
+    const onRevision = jest.fn();
+    const { rerender, result } = renderHook(
+      ({ workspace }) => useWorkspacePersistence({
+        enabled: true, workspace, revision: 4, onRevision, rebaseOnConflict: true,
+      }),
+      { initialProps: { workspace: { workspaceId: 'ws-1', wins: [] } } },
+    );
+    rerender({ workspace: { workspaceId: 'ws-1', wins: [{ id: 'one' }] } });
+    for (let i = 0; i < 4; i++) {
+      await act(async () => { jest.advanceTimersByTime(1000); await Promise.resolve(); await Promise.resolve(); });
+    }
+    expect(fetchWorkspaceRevision).toHaveBeenCalledWith('ws-1');
+    expect(persistWorkspaceWithPrewarm).toHaveBeenLastCalledWith(expect.objectContaining({ expectedRevision: 7 }));
+    expect(onRevision).toHaveBeenLastCalledWith(8);
+    expect(result.current.status).toBe('saved');
+  });
+
+  test('acknowledgeRevision moves forward only', () => {
+    const onRevision = jest.fn();
+    const { result } = renderHook(() => useWorkspacePersistence({
+      enabled: true, workspace: { wins: [] }, revision: 5, onRevision,
+    }));
+    act(() => { result.current.acknowledgeRevision(4); });
+    expect(onRevision).not.toHaveBeenCalled();
+    act(() => { result.current.acknowledgeRevision(9); });
+    expect(onRevision).toHaveBeenCalledWith(9);
   });
 
   test('conflict blocks silent retries and keeps explicit recovery actions', async () => {

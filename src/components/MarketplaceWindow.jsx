@@ -53,7 +53,7 @@ export function MarketplaceWindow() {
                 all: 'unset',
                 cursor: 'pointer',
                 padding: '6px 10px',
-                borderRadius: 8,
+                borderRadius: 'var(--radius-lg)',
                 background: isActive ? 'var(--surface-2)' : 'transparent',
                 color: isActive ? 'var(--ink)' : 'var(--ink-soft)',
                 fontWeight: isActive ? 600 : 400,
@@ -82,7 +82,7 @@ export function MarketplaceWindow() {
             background: 'var(--surface-2)',
             color: 'var(--ink)',
             border: '1px solid var(--hairline)',
-            borderRadius: 8,
+            borderRadius: 'var(--radius-lg)',
             outline: 'none',
           }}
         />
@@ -105,7 +105,7 @@ export function MarketplaceWindow() {
                   alignItems: 'center',
                   gap: 10,
                   padding: '8px 10px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--radius-lg)',
                   background: allowed ? 'var(--surface-2)' : 'transparent',
                   border: '1px solid transparent',
                   marginBottom: 4,
@@ -114,7 +114,7 @@ export function MarketplaceWindow() {
                 <Glyph size={16} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600 }}>{row.label}</div>
-                  <div style={{ color: 'var(--ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ color: 'var(--ink-soft)', fontSize: 'var(--text-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {row.description || row.hint}
                   </div>
                 </div>
@@ -128,8 +128,8 @@ export function MarketplaceWindow() {
                     all: 'unset',
                     cursor: 'pointer',
                     padding: '4px 12px',
-                    borderRadius: 999,
-                    background: allowed ? 'var(--accent, #6c8cff)' : 'var(--surface)',
+                    borderRadius: 'var(--radius-full)',
+                    background: allowed ? 'var(--accent)' : 'var(--surface)',
                     color: allowed ? 'var(--accent-ink, white)' : 'var(--ink-soft)',
                     border: '1px solid var(--hairline)',
                     minWidth: 56,

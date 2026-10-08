@@ -17,6 +17,7 @@ const VERBS = [
   { tools: ['submit_pr', 'pr_status', 'pr_comments', 'merge_pr'], verb: 'Reviewing pull requests', past: 'Reviewed pull requests', icon: 'Tools' },
   { tools: ['jules_submit', 'jules_status', 'jules_list'], verb: 'Dispatching Jules', past: 'Dispatched Jules', icon: 'Bot' },
   { tools: ['read_calendar', 'add_calendar_event'], verb: 'Consulting calendar', past: 'Consulted calendar', icon: 'Calendar' },
+  { tools: ['make_module'], verb: 'Building module', past: 'Built module', icon: 'Toolbox' },
 ];
 
 const VERB_BY_TOOL = new Map();

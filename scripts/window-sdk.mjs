@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { validateIntegrationMetadata } from '../src/lib/windowIntegrationTypes.js';
+import { validateHeaderMeta } from '../src/lib/windowHeader.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -258,6 +259,7 @@ async function validateWindows({ quiet = false } = {}) {
   const objectTypesText = readText(path.join(repoRoot, 'src', 'lib', 'canvasObjectTypes.js'));
   const emptyStateText = readText(paths.emptyState);
   const usesDynamicDiscovery = windowRegistryText.includes('import.meta.glob');
+  const iconNames = [...readText(path.join(repoRoot, 'src', 'components', 'Icons.jsx')).matchAll(/^\s{2}([A-Z][A-Za-z0-9]*):/gm)].map((m) => m[1]);
 
   for (const item of WINDOW_MANIFESTS) {
     if (!/^[a-z][A-Za-z0-9_]*$/.test(item.kind || '')) errors.push(`${item.kind}: invalid kind`);
@@ -351,6 +353,10 @@ async function validateWindows({ quiet = false } = {}) {
         errors.push(`${item.kind}: ${field} must be an array of non-empty strings`);
       }
     }
+
+    // Window header (spec 2): title, icon and mode only. Actions are passed
+    // to WindowTitle in code; WindowFrame draws the one shared header.
+    errors.push(...validateHeaderMeta(item.kind, item.header, { iconNames }));
 
     // Launcher tile metadata (optional; rendered by CanvasEmptyState).
     if (Object.prototype.hasOwnProperty.call(item, 'launcher')) {

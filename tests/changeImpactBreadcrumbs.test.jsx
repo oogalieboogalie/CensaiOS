@@ -38,7 +38,7 @@ describe('chat change-impact breadcrumbs', () => {
       })
     );
 
-    fireEvent.click(getByText('details'));
+    fireEvent.click(getByText('Change impact · normal risk'));
     getByText('change-impact breadcrumbs · normal risk');
     getByText('Agent tool');
     getByText('server/tools/definitions/ · server/tools/handlers/');

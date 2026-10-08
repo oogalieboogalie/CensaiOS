@@ -131,11 +131,11 @@ export const OPS_WINDOW_MANIFESTS = [
   {
     kind: 'containers',
     canvasType: 'containers',
-    label: 'Containers',
+    label: 'Docker',
     componentName: 'ContainersWindow',
     componentPath: 'src/components/ContainersWindow.jsx',
-    defaultSize: { w: 560, h: 460 },
-    launcher: { show: true, order: 150, icon: 'Container', label: 'Containers', hint: 'docker services' },
+    defaultSize: { w: 960, h: 620 },
+    launcher: { show: true, order: 150, icon: 'Container', label: 'Docker', hint: 'containers, images, compose' },
   },
   {
     kind: 'kubernetes',
@@ -154,7 +154,9 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'ToolchainSettingsWindow',
     componentPath: 'src/components/ToolchainSettingsWindow.jsx',
     defaultSize: { w: 520, h: 580 },
-    launcher: { show: true, order: 160, icon: 'Toolbox', label: 'Toolchains', hint: 'AI CLI tools in sandbox' },
+    // The Agent Console's Agents page replaced this launcher tile (spec 8);
+    // the window stays for Docker sandbox image settings.
+    launcher: { show: false, order: 160, icon: 'Toolbox', label: 'Toolchains', hint: 'Docker sandbox image for AI CLIs' },
   },
   {
     kind: 'windowImporter',
@@ -181,7 +183,6 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'ProvenanceExplorerWindow',
     componentPath: 'src/components/ProvenanceExplorerWindow.jsx',
     defaultSize: { w: 800, h: 600 },
-    moduleMenu: { show: false, status: 'coming-soon' },
     launcher: { show: true, order: 180, icon: 'Search', label: 'Provenance', hint: 'trace AI code to prompt' },
   },
   {

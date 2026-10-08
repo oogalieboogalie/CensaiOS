@@ -49,13 +49,13 @@ export function StreamWindow({ win, onUpdate }) {
         {!win.src ? (
           <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-faint)' }}>Presets</div>
+              <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', color: 'var(--ink-faint)' }}>Presets</div>
               <div style={{ display: 'grid', gap: 8 }}>
                 {PRESETS.map((p, i) => (
                   <button 
                     key={i} 
                     onClick={() => onUpdate({ src: p.url })}
-                    style={{ all: 'unset', cursor: 'pointer', padding: '10px 14px', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 8, fontSize: 13, color: 'var(--ink)', transition: 'background 0.15s, transform 0.1s' }}
+                    style={{ all: 'unset', cursor: 'pointer', padding: '10px 14px', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', fontSize: 'var(--text-md)', color: 'var(--ink)', transition: 'background 0.15s, transform 0.1s' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'oklch(var(--accent-l) calc(var(--accent-c) * 0.1) var(--accent-h) / 0.15)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'var(--surface-2)'}
                     onPointerDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
@@ -72,7 +72,7 @@ export function StreamWindow({ win, onUpdate }) {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />
-              <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-faint)' }}>OR SEARCH</div>
+              <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', color: 'var(--ink-faint)' }}>OR SEARCH</div>
               <div style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />
             </div>
 
@@ -80,7 +80,7 @@ export function StreamWindow({ win, onUpdate }) {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />
-              <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-faint)' }}>OR PASTE URL</div>
+              <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', color: 'var(--ink-faint)' }}>OR PASTE URL</div>
               <div style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />
             </div>
 
@@ -91,12 +91,12 @@ export function StreamWindow({ win, onUpdate }) {
                 value={inputUrl}
                 onChange={e => setInputUrl(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleLoad(); }}
-                style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 8, padding: '10px 12px', font: '13px var(--font-sans)', color: 'var(--ink)', outline: 'none' }}
+                style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '10px 12px', font: '13px var(--font-sans)', color: 'var(--ink)', outline: 'none' }}
               />
               <button 
                 onClick={handleLoad}
                 disabled={!inputUrl.trim()}
-                style={{ all: 'unset', cursor: inputUrl.trim() ? 'pointer' : 'not-allowed', padding: '10px', borderRadius: 8, background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, textAlign: 'center', opacity: inputUrl.trim() ? 1 : 0.5 }}
+                style={{ all: 'unset', cursor: inputUrl.trim() ? 'pointer' : 'not-allowed', padding: '10px', borderRadius: 'var(--radius-lg)', background: 'var(--accent)', color: 'white', fontSize: 'var(--text-md)', fontWeight: 600, textAlign: 'center', opacity: inputUrl.trim() ? 1 : 0.5 }}
               >
                 Load Stream
               </button>
@@ -107,7 +107,7 @@ export function StreamWindow({ win, onUpdate }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid var(--hairline)', background: 'var(--surface-2)' }}>
               <button 
                 onClick={() => onUpdate({ src: '' })}
-                style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-soft)' }}
+                style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', color: 'var(--ink-soft)' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--ink)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--ink-soft)'}
               >

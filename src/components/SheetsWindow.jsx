@@ -93,18 +93,18 @@ export function SheetsWindow({ win, onUpdate }) {
             value={spreadsheetId}
             onChange={(e) => setSpreadsheetId(e.target.value)}
             placeholder="Spreadsheet ID..."
-            style={{ flex: 1, padding: '4px 8px', borderRadius: 4, border: '1px solid var(--hairline)', background: 'var(--surface)', color: 'var(--ink)', fontSize: 12 }}
+            style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)', background: 'var(--surface)', color: 'var(--ink)', fontSize: 'var(--text-sm)' }}
           />
           <input
             value={range}
             onChange={(e) => setRange(e.target.value)}
             placeholder="Sheet1!A1:D10"
-            style={{ width: 120, padding: '4px 8px', borderRadius: 4, border: '1px solid var(--hairline)', background: 'var(--surface)', color: 'var(--ink)', fontSize: 12 }}
+            style={{ width: 120, padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--hairline)', background: 'var(--surface)', color: 'var(--ink)', fontSize: 'var(--text-sm)' }}
           />
           <button
             onClick={() => loadData()}
             disabled={loading || !spreadsheetId || !range}
-            style={{ padding: '4px 12px', borderRadius: 4, background: 'var(--accent)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, opacity: (loading || !spreadsheetId || !range) ? 0.6 : 1 }}
+            style={{ padding: '4px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 'var(--text-sm)', fontWeight: 600, opacity: (loading || !spreadsheetId || !range) ? 0.6 : 1 }}
           >
             {loading ? 'Loading...' : 'Load'}
           </button>
@@ -112,14 +112,14 @@ export function SheetsWindow({ win, onUpdate }) {
 
         {/* Content Area */}
         <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
-          {error && <div style={{ color: 'var(--ps-red)', marginBottom: 12, fontSize: 12, padding: 8, background: 'color-mix(in srgb, var(--ps-red) 10%, transparent)', borderRadius: 4 }}>Error: {error}</div>}
+          {error && <div style={{ color: 'var(--ps-red)', marginBottom: 12, fontSize: 'var(--text-sm)', padding: 8, background: 'color-mix(in srgb, var(--ps-red) 10%, transparent)', borderRadius: 'var(--radius-sm)' }}>Error: {error}</div>}
 
           {!spreadsheetId || !range ? (
-            <div style={{ color: 'var(--ink-soft)', fontSize: 12, textAlign: 'center', marginTop: 40 }}>
+            <div style={{ color: 'var(--ink-soft)', fontSize: 'var(--text-sm)', textAlign: 'center', marginTop: 40 }}>
               Enter a Spreadsheet ID and Range to connect.
             </div>
           ) : data.length > 0 ? (
-            <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12 }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 'var(--text-sm)' }}>
               <tbody>
                 {data.map((row, r) => (
                   <tr key={r}>
@@ -161,7 +161,7 @@ export function SheetsWindow({ win, onUpdate }) {
               </tbody>
             </table>
           ) : (
-            <div style={{ color: 'var(--ink-soft)', fontSize: 12, textAlign: 'center', marginTop: 40 }}>
+            <div style={{ color: 'var(--ink-soft)', fontSize: 'var(--text-sm)', textAlign: 'center', marginTop: 40 }}>
               {loading ? 'Loading...' : 'No data in range.'}
             </div>
           )}

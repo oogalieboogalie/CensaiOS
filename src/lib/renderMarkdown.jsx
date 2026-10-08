@@ -4,7 +4,7 @@ import React from 'react';
 // maxWidth 100% + minWidth 0 so long lines scroll inside the block
 // instead of stretching flex ancestors (chat rows are flex columns).
 // Exported for doc source-view reuse.
-export function CodeBlock({ code, lang, onCopyCode, blockKey }) {
+export function CodeBlock({ code, lang, onCopyCode, blockKey, extraActions = null }) {
   const [copied, setCopied] = React.useState(false);
   const copyTimer = React.useRef(null);
   React.useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
@@ -21,6 +21,7 @@ export function CodeBlock({ code, lang, onCopyCode, blockKey }) {
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-faint)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {lang || 'code'}
         </span>
+        {extraActions}
         {onCopyCode && (
           <button
             type="button"
@@ -45,11 +46,19 @@ export function CodeBlock({ code, lang, onCopyCode, blockKey }) {
   );
 }
 
-// Inline formatting: **bold**, *italic*, _italic_, `code`, [[wiki-link]]
-export function renderInline(str, onCopyCode) {
+const IMAGE_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/;
+
+// Inline formatting: **bold**, *italic*, _italic_, `code`, [[wiki-link]],
+// and ![alt](src) images when the caller passes `renderImage` (spec 3 chat).
+export function renderInline(str, onCopyCode, renderImage = null) {
   if (typeof str !== 'string') return str;
-  const parts = str.split(/(\*\*.*?\*\*|\*.*?\*|_.*?_|`.*?`|\[\[.*?\]\])/g);
+  const pattern = renderImage
+    ? /(!\[[^\]]*\]\([^)\s]+\)|\*\*.*?\*\*|\*.*?\*|_.*?_|`.*?`|\[\[.*?\]\])/g
+    : /(\*\*.*?\*\*|\*.*?\*|_.*?_|`.*?`|\[\[.*?\]\])/g;
+  const parts = str.split(pattern);
   return parts.map((part, j) => {
+    const image = renderImage && IMAGE_RE.exec(part);
+    if (image) return <React.Fragment key={j}>{renderImage({ alt: image[1], src: image[2] })}</React.Fragment>;
     if (part.startsWith('**') && part.endsWith('**')) return <strong key={j} style={{ fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
     if ((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) return <em key={j}>{part.slice(1, -1)}</em>;
     if (part.startsWith('`') && part.endsWith('`')) {
@@ -100,7 +109,15 @@ export function renderInline(str, onCopyCode) {
 // Block-level markdown: headings, lists, tables, code fences
 // compact=true → slightly smaller headings for chat bubbles
 // onCopyCode - optional callback for copying inline code snippets
-export function renderMarkdown(text, { compact = false, onCopyCode = null } = {}) {
+// renderCode({ code, lang }) - optional; return a node to replace a fenced block
+// renderImage({ src, alt }) - optional; turns ![alt](src) into a node
+export function renderMarkdown(text, { compact = false, onCopyCode = null, renderCode = null, renderImage = null } = {}) {
+  const codeBlock = (key, code, lang) => {
+    const custom = renderCode?.({ code, lang });
+    if (custom) return <React.Fragment key={key}>{custom}</React.Fragment>;
+    return <CodeBlock key={key} blockKey={key} code={code} lang={lang} onCopyCode={onCopyCode} />;
+  };
+  const inline = (value) => renderInline(value, onCopyCode, renderImage);
   if (!text || typeof text !== 'string') return text;
 
   const lines = text.split('\n');
@@ -116,9 +133,7 @@ export function renderMarkdown(text, { compact = false, onCopyCode = null } = {}
     if (ln.trim().startsWith('```')) {
       if (inCodeBlock) {
         // Close code block
-        result.push(
-          <CodeBlock key={i} blockKey={i} code={codeLines.join('\n')} lang={codeLang} onCopyCode={onCopyCode} />
-        );
+        result.push(codeBlock(i, codeLines.join('\n'), codeLang));
         codeLines = [];
         codeLang = '';
         inCodeBlock = false;
@@ -170,7 +185,7 @@ export function renderMarkdown(text, { compact = false, onCopyCode = null } = {}
       element = ln.replace(/^>\s*/, '');
       result.push(
         <div key={i} style={{ borderLeft: '3px solid var(--hairline-strong)', paddingLeft: 10, color: 'var(--ink-soft)', fontStyle: 'italic' }}>
-          {renderInline(element, onCopyCode)}
+          {inline(element)}
         </div>
       );
       continue;
@@ -182,7 +197,7 @@ export function renderMarkdown(text, { compact = false, onCopyCode = null } = {}
         const cells = ln.split('|').slice(1, -1).map(c => c.trim());
         result.push(
           <div key={i} style={{ display: 'flex', minWidth: 0, borderBottom: '1px solid var(--surface-2)', padding: '6px 0', fontSize: 13 }}>
-            {cells.map((c, j) => <div key={j} style={{ flex: 1, minWidth: 0, padding: '0 8px', overflowWrap: 'anywhere' }}>{renderInline(c, onCopyCode)}</div>)}
+            {cells.map((c, j) => <div key={j} style={{ flex: 1, minWidth: 0, padding: '0 8px', overflowWrap: 'anywhere' }}>{inline(c)}</div>)}
           </div>
         );
       }
@@ -191,7 +206,7 @@ export function renderMarkdown(text, { compact = false, onCopyCode = null } = {}
 
     // Process inline formatting
     if (typeof element === 'string') {
-      element = renderInline(element, onCopyCode);
+      element = inline(element);
     }
 
     result.push(<div key={i} style={style}>{element}</div>);
@@ -199,9 +214,7 @@ export function renderMarkdown(text, { compact = false, onCopyCode = null } = {}
 
   // Handle unclosed code block
   if (inCodeBlock && codeLines.length > 0) {
-    result.push(
-      <CodeBlock key="code-unclosed" blockKey="code-unclosed" code={codeLines.join('\n')} lang={codeLang} onCopyCode={onCopyCode} />
-    );
+    result.push(codeBlock('code-unclosed', codeLines.join('\n'), codeLang));
   }
 
   return result;

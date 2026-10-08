@@ -3,7 +3,8 @@
 // The parent drives content via `code`; edits flow back through `onChange`.
 
 import React from 'react';
-import CodeMirror, { EditorView } from '@uiw/react-codemirror';
+import CodeMirror, { EditorView, ExternalChange } from '@uiw/react-codemirror';
+import { diffText } from '../../../server/collab/textDiff.js';
 import { extensionsForLanguage } from './editorExtensions.js';
 import { buildEditorTheme } from './codeMirrorTheme.js';
 
@@ -27,7 +28,6 @@ export const VSCodeLikeEditor = React.forwardRef(function VSCodeLikeEditor(
   const themeExtension = React.useMemo(
     () => buildEditorTheme({ ...editorTheme, fontSize }),
     // Spread deps individually so memo only busts on real theme edits.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [editorTheme?.background, editorTheme?.foreground, editorTheme?.cursor,
       editorTheme?.selectionBackground, editorTheme?.black, editorTheme?.blue,
       editorTheme?.cyan, editorTheme?.green, editorTheme?.magenta,
@@ -38,6 +38,20 @@ export const VSCodeLikeEditor = React.forwardRef(function VSCodeLikeEditor(
     () => [EditorView.editable.of(!readOnly)],
     [readOnly],
   );
+
+  // CodeMirror stays uncontrolled after mount: the wrapper's own value sync
+  // defers updates while you type and later replays a stale copy, which
+  // clobbers edits. Every outside change (someone else typing, a file load)
+  // is applied here as just the changed span, so the cursor maps through it.
+  const initialCode = React.useRef(code).current;
+  React.useLayoutEffect(() => {
+    const view = viewRef.current;
+    if (!view || typeof code !== 'string') return;
+    const current = view.state.doc.toString();
+    if (current === code) return;
+    const op = diffText(current, code);
+    view.dispatch({ changes: { from: op.index, to: op.index + op.remove, insert: op.insert }, annotations: [ExternalChange.of(true)] });
+  }, [code]);
 
   const reportSelection = React.useCallback((state) => {
     onSelectionRef.current?.(selectionFromState(state));
@@ -57,7 +71,7 @@ export const VSCodeLikeEditor = React.forwardRef(function VSCodeLikeEditor(
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }} data-vscode-like-editor>
       <CodeMirror
-        value={code}
+        value={initialCode}
         height="100%"
         width="100%"
         theme={themeExtension}
@@ -65,7 +79,7 @@ export const VSCodeLikeEditor = React.forwardRef(function VSCodeLikeEditor(
         readOnly={Boolean(readOnly)}
         indentWithTab={false}
         basicSetup={{ autocompletion: true, bracketMatching: true, closeBrackets: true }}
-        onChange={(value) => onChange?.(value)}
+        onChange={(value, viewUpdate) => onChange?.(value, viewUpdate.startState.doc.toString())}
         onCreateEditor={(view) => { viewRef.current = view; }}
         onUpdate={(viewUpdate) => {
           if (viewUpdate.selectionSet) reportSelection(viewUpdate.state);
@@ -79,7 +93,7 @@ export const VSCodeLikeEditor = React.forwardRef(function VSCodeLikeEditor(
             });
           }
         }}
-        style={{ flex: 1, minHeight: 0, fontSize: fontSize || 13 }}
+        style={{ flex: 1, minHeight: 0, fontSize: fontSize || 'var(--text-md)' }}
       />
     </div>
   );

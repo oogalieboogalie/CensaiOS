@@ -13,6 +13,7 @@ import { createAgentCardInstallClient } from './installClient.js';
 import { createFamilyToolRegistryClient } from './toolClient.js';
 import { createToolPackageClient } from './packageClient.js';
 import { createA2AImportClient } from './importClient.js';
+import { createAgentNetworkClient } from './networkClient.js';
 
 export const INSTALLED_STORAGE_KEY = 'homebase.agentRegistry.installed.v1';
 const BASE_PATH = '/api/agent-registry';
@@ -122,6 +123,13 @@ export function createRegistryClient(opts = {}) {
   const agentImports = workspaceId
     ? createA2AImportClient({ fetch: opts.fetch, workspaceId })
     : null;
+  const network = workspaceId
+    ? createAgentNetworkClient({ fetch: opts.fetch, workspaceId })
+    : null;
+  const requireNetwork = () => {
+    if (!network) throw new Error('Open a workspace to use the agent network.');
+    return network;
+  };
   const wsClient = (opts.wsFactory || createAgentRegistryClient)({
     fetch: opts.fetch,
     socketFactory: opts.socketFactory,
@@ -144,6 +152,12 @@ export function createRegistryClient(opts = {}) {
       if (!agentImports) throw new Error('Open a workspace before importing an agent.');
       return agentImports.importN8NChat(input);
     },
+
+    discoverAgents(input) { return requireNetwork().discoverAgents(input); },
+    listHelpRequests() { return requireNetwork().listHelpRequests(); },
+    requestHelp(input) { return requireNetwork().requestHelp(input); },
+    decideHelpRequest(id, decision, note) { return requireNetwork().decideHelpRequest(id, decision, note); },
+    cancelHelpRequest(id) { return requireNetwork().cancelHelpRequest(id); },
 
     subscribeToCard(cardId, onEvent) {
       wsClient.connect();

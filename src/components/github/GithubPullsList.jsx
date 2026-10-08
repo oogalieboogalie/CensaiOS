@@ -33,7 +33,7 @@ export function GithubPullsList({
         key={pr.id}
         style={{
           border: '1px solid var(--hairline)',
-          borderRadius: 8,
+          borderRadius: 'var(--radius-lg)',
           background: 'var(--surface)',
           boxShadow: 'var(--shadow-card)',
           overflow: 'hidden',
@@ -66,7 +66,7 @@ export function GithubPullsList({
             <div style={{ fontWeight: 650, color: 'var(--ink)', lineHeight: 1.35 }}>
               {pr.title}
             </div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontFamily: 'var(--font-mono)' }}>#{pr.number}</span>
               <span>opened by <strong>{pr.user?.login}</strong></span>
               <span>·</span>
@@ -80,9 +80,9 @@ export function GithubPullsList({
                   <span
                     key={lbl.id}
                     style={{
-                      fontSize: 10,
+                      fontSize: 'var(--text-xs)',
                       padding: '1px 6px',
-                      borderRadius: 4,
+                      borderRadius: 'var(--radius-sm)',
                       background: `#${lbl.color}22`,
                       color: `#${lbl.color}`,
                       border: `1px solid #${lbl.color}44`,
@@ -100,7 +100,7 @@ export function GithubPullsList({
             {ci.status === 'success' && <span style={{ color: 'var(--ps-green)' }} title="CI Checks Passed">●</span>}
             {ci.status === 'failure' && <span style={{ color: 'var(--ps-red)' }} title="CI Checks Failed">●</span>}
             {ci.status === 'pending' && <span style={{ color: 'var(--ps-blue)', animation: 'pulse 1.5s infinite' }} title="CI Checks Running">●</span>}
-            <span style={{ color: 'var(--ink-faint)', fontSize: 10 }}>{isExpanded ? '▼' : '▶'}</span>
+            <span style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>{isExpanded ? '▼' : '▶'}</span>
           </div>
         </div>
 
@@ -117,23 +117,23 @@ export function GithubPullsList({
             {/* Body description */}
             {pr.body ? (
               <div style={{
-                fontSize: 12,
+                fontSize: 'var(--text-sm)',
                 lineHeight: 1.5,
                 color: 'var(--ink-soft)',
                 background: 'var(--surface-2)',
                 padding: '10px 12px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--hairline)',
               }}>
                 {renderMarkdown(pr.body, { compact: true })}
               </div>
             ) : (
-              <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>No description provided.</div>
+              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-faint)', fontStyle: 'italic' }}>No description provided.</div>
             )}
 
             {/* Labels manager */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Manage Labels</div>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--ink-soft)' }}>Manage Labels</div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                 <input
                   type="text"
@@ -143,11 +143,11 @@ export function GithubPullsList({
                   onKeyDown={(e) => e.key === 'Enter' && handleAddLabel(pr.number, true)}
                   style={{
                     padding: '4px 8px',
-                    borderRadius: 4,
+                    borderRadius: 'var(--radius-sm)',
                     border: '1px solid var(--hairline)',
                     background: 'var(--surface-2)',
                     color: 'var(--ink)',
-                    fontSize: 11,
+                    fontSize: 'var(--text-xs)',
                     outline: 'none'
                   }}
                 />
@@ -156,11 +156,11 @@ export function GithubPullsList({
                   disabled={addingLabel[pr.number] || !labelInputs[pr.number]?.trim()}
                   style={{
                     padding: '4px 10px',
-                    borderRadius: 4,
+                    borderRadius: 'var(--radius-sm)',
                     background: 'var(--accent)',
                     color: 'white',
                     border: 'none',
-                    fontSize: 11,
+                    fontSize: 'var(--text-xs)',
                     fontWeight: 700,
                     cursor: 'pointer',
                     opacity: labelInputs[pr.number]?.trim() ? 1 : 0.5
@@ -174,7 +174,7 @@ export function GithubPullsList({
             {/* CI Checks detail */}
             <div style={{
               padding: '10px 12px',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-md)',
               background: 'var(--surface-2)',
               border: '1px solid var(--hairline)',
               display: 'flex',
@@ -182,12 +182,12 @@ export function GithubPullsList({
               gap: 8
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>CI Checks Status</span>
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--ink-soft)' }}>CI Checks Status</span>
                 <span style={{
-                  fontSize: 10,
+                  fontSize: 'var(--text-xs)',
                   fontWeight: 700,
                   padding: '2px 8px',
-                  borderRadius: 4,
+                  borderRadius: 'var(--radius-sm)',
                   background: ci.status === 'success' ? 'var(--ps-green)' : ci.status === 'failure' ? 'var(--ps-red)' : 'var(--ps-blue)',
                   color: 'white'
                 }}>
@@ -196,11 +196,11 @@ export function GithubPullsList({
               </div>
 
               {loadingDetails ? (
-                <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Loading check runs details...</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Loading check runs details...</div>
               ) : prDetails[pr.number]?.checkRuns?.check_runs && prDetails[pr.number].checkRuns.check_runs.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
                   {prDetails[pr.number].checkRuns.check_runs.slice(0, 5).map(run => (
-                    <div key={run.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                    <div key={run.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-xs)' }}>
                       <span style={{ color: 'var(--ink)', fontFamily: 'var(--font-mono)' }}>{run.name}</span>
                       <span style={{
                         color: run.conclusion === 'success' ? 'var(--ps-green)' : run.conclusion === 'failure' ? 'var(--ps-red)' : 'var(--ink-soft)',
@@ -211,7 +211,7 @@ export function GithubPullsList({
                     </div>
                   ))}
                   {prDetails[pr.number].checkRuns.check_runs.length > 5 && (
-                    <div style={{ fontSize: 10, color: 'var(--ink-faint)', fontStyle: 'italic', textAlign: 'right' }}>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', fontStyle: 'italic', textAlign: 'right' }}>
                       + {prDetails[pr.number].checkRuns.check_runs.length - 5} more checks
                     </div>
                   )}
@@ -234,14 +234,14 @@ export function GithubPullsList({
                   flexDirection: 'column',
                   gap: 8,
                   padding: 10,
-                  borderRadius: 6,
+                  borderRadius: 'var(--radius-md)',
                   background: 'color-mix(in oklch, var(--ps-green) 8%, transparent)',
                   border: '1px solid color-mix(in oklch, var(--ps-green) 30%, transparent)'
                 }}>
                   <div style={{ fontWeight: 700, color: 'var(--ps-green)' }}>Confirm Merge</div>
                   
                   <div style={{ display: 'grid', gap: 6 }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-soft)' }}>Commit Title</label>
+                    <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-soft)' }}>Commit Title</label>
                     <input
                       type="text"
                       value={mergeOptions[pr.number]?.commit_title || ''}
@@ -251,15 +251,15 @@ export function GithubPullsList({
                       }))}
                       style={{
                         padding: '5px 8px',
-                        borderRadius: 4,
+                        borderRadius: 'var(--radius-sm)',
                         border: '1px solid var(--hairline)',
                         background: 'var(--surface)',
                         color: 'var(--ink)',
-                        fontSize: 11
+                        fontSize: 'var(--text-xs)'
                       }}
                     />
 
-                    <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-soft)' }}>Commit Message (Optional)</label>
+                    <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-soft)' }}>Commit Message (Optional)</label>
                     <textarea
                       placeholder="Provide optional merge commit details..."
                       value={mergeOptions[pr.number]?.commit_message || ''}
@@ -270,16 +270,16 @@ export function GithubPullsList({
                       rows={2}
                       style={{
                         padding: '5px 8px',
-                        borderRadius: 4,
+                        borderRadius: 'var(--radius-sm)',
                         border: '1px solid var(--hairline)',
                         background: 'var(--surface)',
                         color: 'var(--ink)',
-                        fontSize: 11,
+                        fontSize: 'var(--text-xs)',
                         resize: 'vertical'
                       }}
                     />
 
-                    <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-soft)' }}>Merge Method</label>
+                    <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-soft)' }}>Merge Method</label>
                     <select
                       value={mergeOptions[pr.number]?.merge_method || 'merge'}
                       onChange={(e) => setMergeOptions(prev => ({
@@ -288,11 +288,11 @@ export function GithubPullsList({
                       }))}
                       style={{
                         padding: '4px 8px',
-                        borderRadius: 4,
+                        borderRadius: 'var(--radius-sm)',
                         border: '1px solid var(--hairline)',
                         background: 'var(--surface)',
                         color: 'var(--ink)',
-                        fontSize: 11
+                        fontSize: 'var(--text-xs)'
                       }}
                     >
                       <option value="merge">Create a merge commit</option>
@@ -308,7 +308,7 @@ export function GithubPullsList({
                       style={{
                         flex: 1,
                         padding: '6px 12px',
-                        borderRadius: 6,
+                        borderRadius: 'var(--radius-md)',
                         background: 'var(--ps-green)',
                         color: 'white',
                         border: 'none',
@@ -323,7 +323,7 @@ export function GithubPullsList({
                       onClick={() => setShowMergeConfirm(prev => ({ ...prev, [pr.number]: false }))}
                       style={{
                         padding: '6px 12px',
-                        borderRadius: 6,
+                        borderRadius: 'var(--radius-md)',
                         background: 'transparent',
                         color: 'var(--ink-soft)',
                         border: '1px solid var(--hairline)',
@@ -341,7 +341,7 @@ export function GithubPullsList({
                       onClick={() => setShowMergeConfirm(prev => ({ ...prev, [pr.number]: true }))}
                       style={{
                         padding: '8px 16px',
-                        borderRadius: 6,
+                        borderRadius: 'var(--radius-md)',
                         background: 'var(--ps-green)',
                         color: 'white',
                         border: 'none',
@@ -361,7 +361,7 @@ export function GithubPullsList({
                         disabled
                         style={{
                           padding: '8px 16px',
-                          borderRadius: 6,
+                          borderRadius: 'var(--radius-md)',
                           background: 'var(--surface-2)',
                           color: 'var(--ink-faint)',
                           border: '1px solid var(--hairline)',
@@ -375,7 +375,7 @@ export function GithubPullsList({
                         Merge Blocked
                       </button>
                       <div style={{
-                        fontSize: 11,
+                        fontSize: 'var(--text-xs)',
                         color: 'var(--ink-soft)',
                         display: 'flex',
                         alignItems: 'center',

@@ -13,6 +13,7 @@ export {
   SNAP_TOLERANCE,
   GROUP_PADDING,
   GROUP_HEADER,
+  TAB_STRIP_HEIGHT,
   ALLOWED_RATIOS,
 } from './layout/constants.js';
 
@@ -27,7 +28,8 @@ export {
   getOwningGroup,
 } from './layout/bounds.js';
 
-export { inferLayout, cleanLayout } from './layout/infer.js';
+export { inferLayout, cleanLayout, solveLayout } from './layout/infer.js';
+export { getGroupGap, setGroupGap, GROUP_GAP_RANGE } from './layout/gap.js';
 
 export { getBuiltInPresets, applyPreset } from './layout/presets.js';
 export {

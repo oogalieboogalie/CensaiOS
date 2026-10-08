@@ -47,7 +47,7 @@ export function useOverseer() {
   React.useEffect(() => {
     const loadRepos = async () => {
       try {
-        const res = await fetch('/api/repos');
+        const res = await fetch('/api/github/repos');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {

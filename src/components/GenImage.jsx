@@ -3,7 +3,9 @@ import { GenIcon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 
 export function GenImageWindow({ win, onUpdate }) {
-  const [loading, setLoading] = React.useState(win.cooked !== true);
+  // A request in flight never survives a reload, so a fresh or restored window
+  // starts idle; only submit() flips this on.
+  const [loading, setLoading] = React.useState(false);
   const [prompt, setPrompt] = React.useState(win.prompt || '');
   const [editing, setEditing] = React.useState(!win.prompt);
   const [generatedImage, setGeneratedImage] = React.useState(win.generatedImage || null);
@@ -71,28 +73,28 @@ export function GenImageWindow({ win, onUpdate }) {
     <>
       <WindowTitle accent="var(--ps-pink)" icon={<GenIcon size={14}/>} label="Image" subtitle={finalPrompt ? 'nanobanana' : 'awaiting prompt'} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'oklch(0.20 0.02 280)', margin: '6px 8px 0 8px', borderRadius: 10 }}>
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'oklch(0.20 0.02 280)', margin: '6px 8px 0 8px', borderRadius: 'var(--radius-lg)' }}>
           {generatedImage && !loading && <img src={generatedImage} alt={finalPrompt} draggable="true" onDragStart={handleDragStart} onDragEnd={handleDragEnd} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', animation: 'gen-fade 0.5s ease-out both', cursor: dragImage ? 'grabbing' : 'grab' }} />}
           {loading && <CookingOverlay />}
-          {!finalPrompt && !loading && !generatedImage && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: 'oklch(0.7 0.04 280)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>type a prompt below</div>}
-          {error && !loading && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 20, textAlign: 'center', color: 'var(--ps-red)', fontFamily: 'var(--font-sans)', fontSize: 12 }}>Error: {error}</div>}
+          {!finalPrompt && !loading && !generatedImage && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: 'oklch(0.7 0.04 280)', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)' }}>type a prompt below</div>}
+          {error && !loading && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 20, textAlign: 'center', color: 'var(--ps-red)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>Error: {error}</div>}
         </div>
         <div style={{ padding: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
           {editing ? <>
             <input ref={inputRef} value={prompt} onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') { setEditing(false); setPrompt(win.prompt || ''); } }}
               placeholder="a watercolor of a small town newspaper office at dawn…"
-              style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 10, padding: '8px 12px', font: '13px/1.4 var(--font-sans)', color: 'var(--ink)', outline: 'none' }} />
-            <button onClick={submit} style={{ all: 'unset', cursor: 'pointer', padding: '7px 14px', borderRadius: 999, background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 600 }}>Cook</button>
+              style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '8px 12px', font: '13px/1.4 var(--font-sans)', color: 'var(--ink)', outline: 'none' }} />
+            <button onClick={submit} style={{ all: 'unset', cursor: 'pointer', padding: '7px 14px', borderRadius: 'var(--radius-full)', background: 'var(--accent)', color: 'white', fontSize: 'var(--text-sm)', fontWeight: 600 }}>Cook</button>
           </> : <>
             <button onClick={() => setEditing(true)} title="Edit prompt"
-              style={{ all: 'unset', cursor: 'pointer', padding: '7px 10px', borderRadius: 8, color: 'var(--ink-soft)', background: 'var(--surface-2)', fontSize: 12, flex: 1, fontStyle: finalPrompt ? 'normal' : 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{finalPrompt || 'no prompt yet'}</button>
+              style={{ all: 'unset', cursor: 'pointer', padding: '7px 10px', borderRadius: 'var(--radius-lg)', color: 'var(--ink-soft)', background: 'var(--surface-2)', fontSize: 'var(--text-sm)', flex: 1, fontStyle: finalPrompt ? 'normal' : 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{finalPrompt || 'no prompt yet'}</button>
             <button onClick={regenerate} disabled={loading} title="Regenerate"
-              style={{ all: 'unset', cursor: loading ? 'wait' : 'pointer', width: 30, height: 30, borderRadius: 8, display: 'grid', placeItems: 'center', color: 'var(--accent-ink)', background: 'var(--accent-soft)', opacity: loading ? 0.5 : 1 }}>
+              style={{ all: 'unset', cursor: loading ? 'wait' : 'pointer', width: 30, height: 30, borderRadius: 'var(--radius-lg)', display: 'grid', placeItems: 'center', color: 'var(--accent-ink)', background: 'var(--accent-soft)', opacity: loading ? 0.5 : 1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
             </button>
             <button onClick={saveImage} disabled={!generatedImage} title="Save image"
-              style={{ all: 'unset', cursor: !generatedImage ? 'not-allowed' : 'pointer', width: 30, height: 30, borderRadius: 8, display: 'grid', placeItems: 'center', color: 'var(--accent-ink)', background: 'var(--accent-soft)', opacity: !generatedImage ? 0.5 : 1 }}>
+              style={{ all: 'unset', cursor: !generatedImage ? 'not-allowed' : 'pointer', width: 30, height: 30, borderRadius: 'var(--radius-lg)', display: 'grid', placeItems: 'center', color: 'var(--accent-ink)', background: 'var(--accent-soft)', opacity: !generatedImage ? 0.5 : 1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
           </>}
@@ -106,8 +108,8 @@ function CookingOverlay() {
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: 'linear-gradient(120deg, oklch(0.22 0.04 280), oklch(0.18 0.03 320), oklch(0.20 0.04 200))', backgroundSize: '200% 200%', animation: 'gen-shimmer 2.5s ease infinite' }}>
       <div style={{ textAlign: 'center', color: 'oklch(0.95 0.05 320)' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600, marginBottom: 4 }}>cooking…</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', opacity: 0.7 }}>nanobanana · diffusion</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 600, marginBottom: 4 }}>cooking…</div>
+        <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', opacity: 0.7 }}>nanobanana · diffusion</div>
         <div style={{ marginTop: 14, display: 'flex', gap: 6, justifyContent: 'center' }}>
           {[0,1,2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'oklch(0.85 0.18 320)', animation: `gen-bounce 1.2s ease-in-out ${i * 0.15}s infinite` }}/>)}
         </div>

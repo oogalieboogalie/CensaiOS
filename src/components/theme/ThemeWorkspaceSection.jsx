@@ -9,10 +9,10 @@ export function FineTuneSection({ theme, setTheme, clearOverrides, activeSurface
     <ThemePanelCard>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Fine Tune</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Per-surface OKLCH controls</div>
+          <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--ink)' }}>Fine Tune</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Per-surface OKLCH controls</div>
         </div>
-        <button onClick={clearOverrides} style={{ all: 'unset', cursor: 'pointer', padding: '6px 9px', borderRadius: 7, background: 'var(--surface)', border: '1px solid var(--hairline)', color: 'var(--ink-soft)', fontSize: 11, fontWeight: 650 }}>Clear</button>
+        <button onClick={clearOverrides} style={{ all: 'unset', cursor: 'pointer', padding: '6px 9px', borderRadius: 'var(--radius-md)', background: 'var(--surface)', border: '1px solid var(--hairline)', color: 'var(--ink-soft)', fontSize: 'var(--text-xs)', fontWeight: 650 }}>Clear</button>
       </div>
       {SURFACE_CONTROLS.map(item => (
         <SurfaceControl key={item.varName} item={item} theme={theme} setTheme={setTheme} activeSurface={activeSurface} setActiveSurface={setActiveSurface} />
@@ -27,8 +27,8 @@ export function WorkspaceSection({ focusMode, setFocusMode, penMode, setPenMode,
     <div style={{ display: 'grid', gap: 13 }}>
       <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 13 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 750, color: 'var(--ink)' }}>Canvas behavior</div>
-          <div style={{ marginTop: 3, fontSize: 11, color: 'var(--ink-faint)' }}>Movement, snapping, drawing, and display scale.</div>
+          <div style={{ fontSize: 'var(--text-md)', fontWeight: 750, color: 'var(--ink)' }}>Canvas behavior</div>
+          <div style={{ marginTop: 3, fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Movement, snapping, drawing, and display scale.</div>
         </div>
       {typeof focusMode !== 'undefined' && (
         <WorkspaceToggle
@@ -55,8 +55,8 @@ export function WorkspaceSection({ focusMode, setFocusMode, penMode, setPenMode,
       <CanvasInteractionSettings />
       <div style={{ display: 'grid', gap: 4, padding: '4px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Window Border Thickness</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-soft)' }}>{theme.borderWidth || 1}px</span>
+          <span style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--ink)' }}>Window Border Thickness</span>
+          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-soft)' }}>{theme.borderWidth || 1}px</span>
         </div>
         <input
           type="range"
@@ -70,8 +70,8 @@ export function WorkspaceSection({ focusMode, setFocusMode, penMode, setPenMode,
       </div>
       <div style={{ display: 'grid', gap: 4, padding: '4px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>App Font Scale</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-soft)' }}>{Math.round((theme.fontScale || 1.0) * 100)}%</span>
+          <span style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--ink)' }}>App Font Scale</span>
+          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-soft)' }}>{Math.round((theme.fontScale || 1.0) * 100)}%</span>
         </div>
         <input
           type="range"
@@ -93,16 +93,16 @@ function WorkspaceToggle({ label, description, checked, onChange }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{label}</div>
-        <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{description}</div>
+        <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--ink)' }}>{label}</div>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>{description}</div>
       </div>
       <button
         type="button"
         onClick={onChange}
         aria-pressed={checked}
-        style={{ position: 'relative', width: 44, height: 24, borderRadius: 999, border: 0, padding: 0, background: checked ? 'var(--accent)' : 'oklch(0.5 0 0 / 0.22)', cursor: 'pointer', transition: 'background 0.15s', flex: '0 0 auto' }}
+        style={{ position: 'relative', width: 44, height: 24, borderRadius: 'var(--radius-full)', border: 0, padding: 0, background: checked ? 'var(--accent)' : 'oklch(0.5 0 0 / 0.22)', cursor: 'pointer', transition: 'background 0.15s', flex: '0 0 auto' }}
       >
-        <span style={{ position: 'absolute', top: 2, left: checked ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px oklch(0 0 0 / 0.28)', transition: 'left 0.15s' }} />
+        <span style={{ position: 'absolute', top: 2, left: checked ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: 'var(--on-fill)', boxShadow: 'var(--elevation-1)', transition: 'left 0.15s' }} />
       </button>
     </div>
   );

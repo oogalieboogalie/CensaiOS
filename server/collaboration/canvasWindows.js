@@ -1,6 +1,7 @@
 import { WORKSPACE_STATE_KEY } from '../state/clientStateStore.js';
 import { publishWorkspaceEvent } from './workspaceHub.js';
 import { persistCollaborationEpisodesSafely } from './episodeStore.js';
+import { mirrorWindowToCanvas } from '../collab/serverWriter.js';
 import { MAX_PREVIEW_BYTES } from './previewBuilder.js';
 import { randomUUID } from 'crypto';
 
@@ -16,6 +17,7 @@ const SPAWNABLE_KINDS = Object.freeze({
   doc: { w: 560, h: 460 },
   code_editor: { w: 680, h: 480 },
   htmlPreview: { w: 720, h: 520 },
+  module: { w: 440, h: 520 },
 });
 const PLACEMENT_GAP = 40;
 
@@ -54,8 +56,9 @@ function placementFor(windows, nearId) {
   const near = nearId ? windows.find((win) => win.id === nearId) : null;
   if (near && Number.isFinite(near.x) && Number.isFinite(near.y)) {
     return {
-      x: Math.max(0, (near.x || 0) + (near.w || 400) + PLACEMENT_GAP),
-      y: Math.max(0, near.y || 0),
+      // Canvas coordinates can be negative; line up with the window.
+      x: (near.x || 0) + (near.w || 400) + PLACEMENT_GAP,
+      y: near.y || 0,
     };
   }
   const rightEdge = windows.reduce((max, win) => (
@@ -71,12 +74,15 @@ function placementFor(windows, nearId) {
  */
 export async function spawnCanvasWindow(db, {
   workspaceId, agentId, kind, title, content = '', nearWindowId = null,
-  html = '', previewType = '', fileName = '',
+  html = '', previewType = '', fileName = '', request = '',
 }) {
   const id = requiredText(workspaceId, 'workspaceId');
   const actorId = requiredText(agentId, 'agentId');
   const winKind = requiredKind(kind);
   const winTitle = requiredText(title, 'title', 120);
+  if (winKind === 'module' && !String(request || '').trim()) {
+    throw collaborationError('Modules are built with make_module.', 'INVALID_CANVAS_WINDOW_KIND');
+  }
   const text = String(content || '');
   const previewHtml = String(html || '');
   // Projected previews (html/threejs/react/...) are standalone documents and
@@ -112,7 +118,9 @@ export async function spawnCanvasWindow(db, {
       x: at.x, y: at.y, w: size.w, h: size.h,
       createdBy: actorId,
       updatedAt: now,
-      ...(winKind === 'doc'
+      ...(winKind === 'module'
+        ? { request: String(request || '').slice(0, 2000), status: 'building', buildStartedAt: now }
+        : winKind === 'doc'
         ? { fileName: winTitle, text }
         : winKind === 'htmlPreview'
           ? {
@@ -151,6 +159,8 @@ export async function spawnCanvasWindow(db, {
     revision: committed.revision,
     actor: { type: 'agent', id: actorId, label },
   });
+  // Live CRDT path: browsers with the canvas open see the window immediately.
+  await mirrorWindowToCanvas(id, committed.window);
   publishWorkspaceEvent(id, {
     type: 'workspace.committed',
     workspaceId: id,

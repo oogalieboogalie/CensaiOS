@@ -1,11 +1,15 @@
 import {
+  blurActiveEditable,
   buildBandBox,
   buildFreehandStroke,
+  buildPinchStart,
   buildRectStroke,
   computePinchZoom,
   consumeSuppression,
+  isInteractivePanTarget,
   shouldStartCanvasPan,
 } from '../src/components/canvas/pointerBuilders.js';
+import { jest } from '@jest/globals';
 import { MAX_ZOOM, MIN_ZOOM } from '../src/lib/canvasMath.js';
 
 describe('shouldStartCanvasPan', () => {
@@ -99,5 +103,53 @@ describe('consumeSuppression', () => {
     expect(consumeSuppression(ref)).toBe(true);
     expect(ref.current).toBe(false);
     expect(consumeSuppression(ref)).toBe(false);
+  });
+});
+
+describe('blurActiveEditable', () => {
+  const fakeDoc = (el) => ({ activeElement: el });
+
+  test.each([
+    ['INPUT', 'inherit'],
+    ['TEXTAREA', 'inherit'],
+    ['DIV', 'true'],
+  ])('blurs a focused %s (contentEditable=%s)', (tagName, contentEditable) => {
+    const el = { tagName, contentEditable, blur: jest.fn() };
+    blurActiveEditable(fakeDoc(el));
+    expect(el.blur).toHaveBeenCalledTimes(1);
+  });
+
+  test('leaves non-editable focus alone and tolerates no focus', () => {
+    const button = { tagName: 'BUTTON', contentEditable: 'inherit', blur: jest.fn() };
+    blurActiveEditable(fakeDoc(button));
+    expect(button.blur).not.toHaveBeenCalled();
+    expect(() => blurActiveEditable(fakeDoc(null))).not.toThrow();
+  });
+});
+
+describe('isInteractivePanTarget', () => {
+  test('true when the target sits inside interactive canvas UI', () => {
+    const closest = jest.fn(() => ({}));
+    expect(isInteractivePanTarget({ closest })).toBe(true);
+    expect(closest.mock.calls[0][0]).toContain('[data-canvas-ui]');
+    expect(closest.mock.calls[0][0]).toContain('button');
+  });
+
+  test('false for bare canvas background and for missing targets', () => {
+    expect(isInteractivePanTarget({ closest: () => null })).toBe(false);
+    expect(isInteractivePanTarget(null)).toBe(false);
+    expect(isInteractivePanTarget({})).toBe(false);
+  });
+});
+
+describe('buildPinchStart', () => {
+  test('captures finger distance plus the zoom and pan at pinch start', () => {
+    expect(buildPinchStart({ x: 0, y: 0 }, { x: 3, y: 4 }, 1.5, { x: 10, y: 20 })).toEqual({
+      startDistance: 5, startZoom: 1.5, startPanX: 10, startPanY: 20,
+    });
+  });
+
+  test('never reports a zero distance (would divide by zero on move)', () => {
+    expect(buildPinchStart({ x: 7, y: 7 }, { x: 7, y: 7 }, 1, { x: 0, y: 0 }).startDistance).toBe(1);
   });
 });

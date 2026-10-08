@@ -1,5 +1,6 @@
 // BSP layout inference + clean (snap a layout tree into a rect). (Split from layoutAlgo.js.)
-import { GUTTER, MIN_CELL_WIDTH, MIN_CELL_HEIGHT, SNAP_TOLERANCE } from './constants.js';
+import { MIN_CELL_WIDTH, MIN_CELL_HEIGHT, SNAP_TOLERANCE, TAB_STRIP_HEIGHT } from './constants.js';
+import { getGroupGap } from './gap.js';
 import { snapToGrid, snapRatio } from './grid.js';
 import { getMinLayoutSize } from './bounds.js';
 
@@ -74,9 +75,15 @@ export function inferLayout(windows) {
   };
 }
 
-export function cleanLayout(node, rect, updates = [], snapBounds = true) {
-  if (!node) return updates;
-
+/**
+ * Solve a layout tree into a rect. Returns every window's rect plus the
+ * geometry the canvas draws on top: one entry per split (for the draggable
+ * seam) and one per slot (for tab strips). `path` addresses a node from the
+ * root with 'f' (first) / 's' (second) steps.
+ */
+export function solveLayout(node, rect, { snapBounds = true, gap = getGroupGap() } = {}) {
+  const out = { rects: [], splits: [], slots: [] };
+  if (!node) return out;
   const bounds = snapBounds
     ? {
         x: snapToGrid(rect.x, 'round'),
@@ -90,29 +97,66 @@ export function cleanLayout(node, rect, updates = [], snapBounds = true) {
         w: Math.max(MIN_CELL_WIDTH, rect.w),
         h: Math.max(MIN_CELL_HEIGHT, rect.h),
       };
+  // A tree can need more room than the rect (say, three stacked tiles in a
+  // short group); grow the rect instead of letting tiles spill past it.
+  const min = getMinLayoutSize(node, gap);
+  bounds.w = Math.max(bounds.w, min.w);
+  bounds.h = Math.max(bounds.h, min.h);
+  solveNode(node, bounds, gap, '', out);
+  return out;
+}
 
+function solveNode(node, bounds, gap, path, out) {
+  if (!node) return;
   if (node.type === 'leaf') {
-    updates.push({ id: node.windowId, patch: bounds });
-  } else if (node.type === 'split') {
-    const firstMin = getMinLayoutSize(node.first);
-    const secondMin = getMinLayoutSize(node.second);
-    if (node.axis === 'vertical') {
-      const available = Math.max(firstMin.w + secondMin.w, bounds.w - GUTTER);
-      const rawFirstW = available * node.ratio;
-      const firstW = Math.max(firstMin.w, Math.min(available - secondMin.w, snapToGrid(rawFirstW, 'round')));
-      const secondW = available - firstW;
-
-      cleanLayout(node.first, { x: bounds.x, y: bounds.y, w: firstW, h: bounds.h }, updates, false);
-      cleanLayout(node.second, { x: bounds.x + firstW + GUTTER, y: bounds.y, w: secondW, h: bounds.h }, updates, false);
-    } else {
-      const available = Math.max(firstMin.h + secondMin.h, bounds.h - GUTTER);
-      const rawFirstH = available * node.ratio;
-      const firstH = Math.max(firstMin.h, Math.min(available - secondMin.h, snapToGrid(rawFirstH, 'round')));
-      const secondH = available - firstH;
-
-      cleanLayout(node.first, { x: bounds.x, y: bounds.y, w: bounds.w, h: firstH }, updates, false);
-      cleanLayout(node.second, { x: bounds.x, y: bounds.y + firstH + GUTTER, w: bounds.w, h: secondH }, updates, false);
+    const stack = Array.isArray(node.stack) && node.stack.length > 1 ? node.stack : null;
+    if (!stack) {
+      if (node.windowId) out.rects.push({ id: node.windowId, rect: bounds });
+      out.slots.push({ path, rect: bounds, stack: node.windowId ? [node.windowId] : [], activeId: node.windowId || null });
+      return;
     }
+    const body = { x: bounds.x, y: bounds.y + TAB_STRIP_HEIGHT, w: bounds.w, h: Math.max(1, bounds.h - TAB_STRIP_HEIGHT) };
+    // Hidden tabs keep the same rect so they travel with the group.
+    for (const id of stack) out.rects.push({ id, rect: body });
+    out.slots.push({ path, rect: bounds, stack, activeId: stack.includes(node.windowId) ? node.windowId : stack[0] });
+    return;
+  }
+  if (node.type !== 'split') return;
+  const firstMin = getMinLayoutSize(node.first, gap);
+  const secondMin = getMinLayoutSize(node.second, gap);
+  const vertical = node.axis === 'vertical';
+  const size = vertical ? bounds.w : bounds.h;
+  const minFirst = vertical ? firstMin.w : firstMin.h;
+  const minSecond = vertical ? secondMin.w : secondMin.h;
+  const available = Math.max(minFirst + minSecond, size - gap);
+  const firstSize = Math.max(minFirst, Math.min(available - minSecond, snapToGrid(available * node.ratio, 'round')));
+  const secondSize = available - firstSize;
+  const firstRect = vertical
+    ? { x: bounds.x, y: bounds.y, w: firstSize, h: bounds.h }
+    : { x: bounds.x, y: bounds.y, w: bounds.w, h: firstSize };
+  const secondRect = vertical
+    ? { x: bounds.x + firstSize + gap, y: bounds.y, w: secondSize, h: bounds.h }
+    : { x: bounds.x, y: bounds.y + firstSize + gap, w: bounds.w, h: secondSize };
+  out.splits.push({
+    path,
+    axis: node.axis,
+    rect: bounds,
+    available,
+    minFirst,
+    minSecond,
+    firstSize,
+    seam: vertical
+      ? { x: bounds.x + firstSize, y: bounds.y, w: gap, h: bounds.h }
+      : { x: bounds.x, y: bounds.y + firstSize, w: bounds.w, h: gap },
+  });
+  solveNode(node.first, firstRect, gap, path + 'f', out);
+  solveNode(node.second, secondRect, gap, path + 's', out);
+}
+
+export function cleanLayout(node, rect, updates = [], snapBounds = true) {
+  if (!node) return updates;
+  for (const { id, rect: r } of solveLayout(node, rect, { snapBounds }).rects) {
+    updates.push({ id, patch: { ...r } });
   }
   return updates;
 }

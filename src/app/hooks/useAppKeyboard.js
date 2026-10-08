@@ -1,4 +1,5 @@
 import React from 'react';
+import { classifyPastedDesign, suggestDesignSize } from '../../lib/design/designSource.js';
 
 // Global canvas keyboard shortcuts + paste-to-spawn, extracted from
 // AppContent.jsx with no logic changes.
@@ -30,6 +31,24 @@ export function useAppKeyboard({ onNewAgent, onNewWindow, redo, undo, setFocusMo
       if (!text) return;
 
       e.preventDefault();
+
+      // Renderable UI lands as a borderless design block; a Figma link opens
+      // the Figma importer pre-filled.
+      const design = classifyPastedDesign(text);
+      if (design?.kind === 'figma') {
+        spawnAt('figma', { figmaMode: 'import', figmaFileUrl: design.url });
+        return;
+      }
+      if (design?.kind === 'design') {
+        spawnAt('designBlock', {
+          title: 'Pasted design',
+          source: text,
+          sourceType: design.sourceType,
+          frameless: true,
+          bare: true,
+        }, null, suggestDesignSize(design.sourceType, text));
+        return;
+      }
 
       // Simple heuristic: if it has common programming language keywords, brackets, etc.
       // or HTML-like tags, treat it as code.

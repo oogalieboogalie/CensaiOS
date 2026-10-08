@@ -32,6 +32,9 @@ export function setupMiddleware(app) {
     },
     credentials: true
   }));
+  // Chat turns can carry images, PDFs, audio and video (capped at 20 MB raw,
+  // ~27 MB as base64); everything else keeps the 10mb default.
+  app.use('/api/chat', express.json({ limit: '32mb' }));
   app.use(express.json({ limit: '10mb' }));
   app.use(createCsrfOriginGuard({ appOrigin: APP_ORIGIN }));
 
@@ -59,6 +62,9 @@ export function setupMiddleware(app) {
     : undefined);
 
   app.set('sessionStore', store);
+  // WebSocket upgrades verify the same signed cookie, so they must use the
+  // secret express-session actually signs with (including the dev fallback).
+  app.set('sessionSecret', SESSION_SECRET);
 
   app.use(session({
     store,

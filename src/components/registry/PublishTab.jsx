@@ -4,17 +4,18 @@
 import React from 'react';
 import { ImportA2ACard } from './ImportA2ACard.jsx';
 import { ImportN8NChatCard } from './ImportN8NChatCard.jsx';
+import { parseSkillInput } from './skillInput.js';
 
 const inputStyle = {
-  width: '100%', padding: '7px 10px', borderRadius: 7,
+  width: '100%', padding: '7px 10px', borderRadius: 'var(--radius-md)',
   border: '1px solid var(--hairline)', background: 'var(--surface)',
-  color: 'var(--ink)', fontSize: 12,
+  color: 'var(--ink)', fontSize: 'var(--text-sm)',
 };
 
 function Field({ label, htmlFor, children }) {
   return (
     <label htmlFor={htmlFor} style={{ display: 'grid', gap: 4 }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)' }}>{label}</span>
       {children}
     </label>
   );
@@ -27,6 +28,7 @@ export function PublishTab({ client, onPublished, canPublish = true, canImport =
   const [skillsRaw, setSkillsRaw] = React.useState('');
   const [endpoint, setEndpoint] = React.useState('');
   const [visibility, setVisibility] = React.useState('private');
+  const [acceptsRequests, setAcceptsRequests] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState('');
 
@@ -35,8 +37,7 @@ export function PublishTab({ client, onPublished, canPublish = true, canImport =
     if (!name.trim() || !description.trim()) return;
     setSubmitting(true); setError('');
     try {
-      const skills = skillsRaw.split(',').map((s) => s.trim()).filter(Boolean)
-        .map((s, i) => ({ id: `skill-${i}`, name: s }));
+      const skills = parseSkillInput(skillsRaw);
       const card = await client.createCard({
         name: name.trim(),
         description: description.trim(),
@@ -44,6 +45,7 @@ export function PublishTab({ client, onPublished, canPublish = true, canImport =
         skills,
         endpoint: endpoint.trim() || null,
         visibility,
+        metadata: { acceptsHelpRequests: acceptsRequests },
       });
       await onPublished?.(card);
       setName(''); setDescription(''); setSkillsRaw(''); setEndpoint(''); setVersion('0.1.0');
@@ -59,8 +61,8 @@ export function PublishTab({ client, onPublished, canPublish = true, canImport =
       <ImportA2ACard client={client} onImported={onPublished} canImport={canImport} />
       <ImportN8NChatCard client={client} onImported={onPublished} canImport={canImport} />
       <div style={{ borderTop: '1px solid var(--hairline)', margin: '2px 0' }} />
-      <div style={{ fontSize: 12, fontWeight: 750, color: 'var(--ink)' }}>Publish a descriptive card</div>
-      {error && <div data-testid="registry-error" style={{ color: 'var(--ps-red)', fontSize: 12 }}>{error}</div>}
+      <div style={{ fontSize: 'var(--text-sm)', fontWeight: 750, color: 'var(--ink)' }}>Publish a descriptive card</div>
+      {error && <div data-testid="registry-error" style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)' }}>{error}</div>}
       <Field label="Name" htmlFor="pub-name">
         <input id="pub-name" data-testid="registry-publish-name" value={name} onChange={(e) => setName(e.target.value)} required style={inputStyle} />
       </Field>
@@ -70,8 +72,8 @@ export function PublishTab({ client, onPublished, canPublish = true, canImport =
       <Field label="Version" htmlFor="pub-ver">
         <input id="pub-ver" data-testid="registry-publish-version" value={version} onChange={(e) => setVersion(e.target.value)} style={inputStyle} />
       </Field>
-      <Field label="Skills (comma-separated)" htmlFor="pub-skills">
-        <input id="pub-skills" data-testid="registry-publish-skills" value={skillsRaw} onChange={(e) => setSkillsRaw(e.target.value)} placeholder="e.g. summarize, search" style={inputStyle} />
+      <Field label="Skills (comma-separated, #tags help discovery)" htmlFor="pub-skills">
+        <input id="pub-skills" data-testid="registry-publish-skills" value={skillsRaw} onChange={(e) => setSkillsRaw(e.target.value)} placeholder="e.g. summarize #writing, web search #research" style={inputStyle} />
       </Field>
       <Field label="Endpoint (optional)" htmlFor="pub-endpoint">
         <input id="pub-endpoint" data-testid="registry-publish-endpoint" value={endpoint} onChange={(e) => setEndpoint(e.target.value)} placeholder="https://…" style={inputStyle} />
@@ -83,13 +85,17 @@ export function PublishTab({ client, onPublished, canPublish = true, canImport =
           <option value="public">public</option>
         </select>
       </Field>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 'var(--text-sm)', color: 'var(--ink-soft)' }}>
+        <input type="checkbox" data-testid="registry-publish-accepts" checked={acceptsRequests} onChange={(e) => setAcceptsRequests(e.target.checked)} />
+        Other agents may send this agent help requests
+      </label>
       <div>
         <button
           type="submit"
           disabled={submitting || !canPublish}
           title={!canPublish ? 'Open a workspace to publish AgentCards.' : undefined}
           data-testid="registry-publish-submit"
-          style={{ all: 'unset', cursor: canPublish ? 'pointer' : 'default', padding: '8px 14px', borderRadius: 7, background: canPublish ? 'var(--accent-soft)' : 'var(--surface)', color: canPublish ? 'var(--accent-ink)' : 'var(--ink-faint)', fontSize: 12, fontWeight: 700 }}
+          style={{ all: 'unset', cursor: canPublish ? 'pointer' : 'default', padding: '8px 14px', borderRadius: 'var(--radius-md)', background: canPublish ? 'var(--accent-soft)' : 'var(--surface)', color: canPublish ? 'var(--accent-ink)' : 'var(--ink-faint)', fontSize: 'var(--text-sm)', fontWeight: 700 }}
         >
           {submitting ? 'Publishing…' : 'Publish'}
         </button>

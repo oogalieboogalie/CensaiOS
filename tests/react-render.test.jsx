@@ -45,7 +45,7 @@ describe('React Jest harness', () => {
     expect(screen.getByText('Chat renderer mounted')).toBeInTheDocument();
     expect(screen.getByTitle('Close window')).toBeInTheDocument();
     expect(screen.getByTitle('Maximize window')).toBeInTheDocument();
-    expect(screen.getByTitle('Pin to screen')).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Pin to screen', hidden: true })).toBeInTheDocument();
   });
 
   test('renders the Mailcow setup state from the split hook and tab components', async () => {

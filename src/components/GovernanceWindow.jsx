@@ -71,12 +71,12 @@ export function GovernanceWindow({ win, onUpdate }) {
         {/* Scan History Table */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Validation History</h3>
+            <h3 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700 }}>Validation History</h3>
             <button
               onClick={fetchHistory}
               disabled={loading}
               style={{
-                all: 'unset', cursor: 'pointer', fontSize: 11, color: 'var(--accent)', fontWeight: 600
+                all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--accent)', fontWeight: 600
               }}
             >
               Refresh
@@ -85,11 +85,11 @@ export function GovernanceWindow({ win, onUpdate }) {
 
           <div style={{
             border: '1px solid var(--hairline)',
-            borderRadius: 8,
+            borderRadius: 'var(--radius-lg)',
             overflow: 'hidden',
             background: 'var(--surface-2)'
           }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
               <thead>
                 <tr style={{ background: 'var(--surface-3)', borderBottom: '1px solid var(--hairline)' }}>
                   <th style={thStyle}>Date</th>
@@ -121,7 +121,7 @@ export function GovernanceWindow({ win, onUpdate }) {
           </div>
         </div>
 
-        <div style={{ padding: 12, borderRadius: 8, background: 'var(--accent-faint)', color: 'var(--accent)', fontSize: 11, lineHeight: 1.4 }}>
+        <div style={{ padding: 12, borderRadius: 'var(--radius-lg)', background: 'var(--accent-faint)', color: 'var(--accent)', fontSize: 'var(--text-xs)', lineHeight: 1.4 }}>
           <strong>Unified AI Code Validation Framework:</strong> Automatic security scanning is integrated with the Vex Orchestrator.
           Use the <code>security_scan</code> task to trigger a new validation run across the repository.
         </div>
@@ -134,32 +134,32 @@ function MetricCard({ label, value, color, icon }) {
   return (
     <div style={{
       padding: '12px 16px',
-      borderRadius: 10,
+      borderRadius: 'var(--radius-lg)',
       background: 'var(--surface-2)',
       border: '1px solid var(--hairline)',
       display: 'flex',
       flexDirection: 'column',
       gap: 4
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-soft)', fontSize: 11 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-soft)', fontSize: 'var(--text-xs)' }}>
         {icon}
         {label}
       </div>
-      <div style={{ fontSize: 24, fontWeight: 800, color: color || 'var(--ink)' }}>{value}</div>
+      <div style={{ fontSize: 'var(--text-xl)', fontWeight: 800, color: color || 'var(--ink)' }}>{value}</div>
     </div>
   );
 }
 
 function StatusBadge({ verdict }) {
   const colors = {
-    critical: { bg: '#fee2e2', text: '#991b1b', label: 'CRITICAL' },
-    warn: { bg: '#ffedd5', text: '#9a3412', label: 'WARNING' },
-    clean: { bg: '#dcfce7', text: '#166534', label: 'CLEAN' }
+    critical: { bg: 'color-mix(in oklab, var(--danger) 16%, transparent)', text: 'var(--danger)', label: 'CRITICAL' },
+    warn: { bg: 'color-mix(in oklab, var(--warning) 16%, transparent)', text: 'var(--warning)', label: 'WARNING' },
+    clean: { bg: 'color-mix(in oklab, var(--success) 16%, transparent)', text: 'var(--success)', label: 'CLEAN' }
   };
   const c = colors[verdict] || colors.clean;
   return (
     <span style={{
-      padding: '2px 6px', borderRadius: 4, background: c.bg, color: c.text, fontSize: 10, fontWeight: 800
+      padding: '2px 6px', borderRadius: 'var(--radius-sm)', background: c.bg, color: c.text, fontSize: 'var(--text-xs)', fontWeight: 800
     }}>
       {c.label}
     </span>

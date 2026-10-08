@@ -135,7 +135,7 @@ export function PresetButton({ preset, active, onApply }) {
         alignItems: 'center',
         gap: 8,
         padding: '8px 9px',
-        borderRadius: 7,
+        borderRadius: 'var(--radius-md)',
         border: `1px solid ${active ? preset.theme.cursor : 'rgba(148,163,184,0.2)'}`,
         background: active ? 'rgba(148,163,184,0.12)' : '#111827',
         color: '#e2e8f0',
@@ -143,8 +143,8 @@ export function PresetButton({ preset, active, onApply }) {
       title={preset.description}
     >
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: 'block', fontSize: 11, fontWeight: 700 }}>{preset.name}</span>
-        <span style={{ display: 'block', marginTop: 2, fontSize: 9, color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{preset.description}</span>
+        <span style={{ display: 'block', fontSize: 'var(--text-xs)', fontWeight: 700 }}>{preset.name}</span>
+        <span style={{ display: 'block', marginTop: 2, fontSize: 'var(--text-xs)', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{preset.description}</span>
       </span>
       <span style={{ display: 'flex', gap: 3 }}>
         {swatches.map((color) => (
@@ -153,7 +153,7 @@ export function PresetButton({ preset, active, onApply }) {
             style={{
               width: 12,
               height: 12,
-              borderRadius: 3,
+              borderRadius: 'var(--radius-xs)',
               background: color,
               boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18)',
             }}

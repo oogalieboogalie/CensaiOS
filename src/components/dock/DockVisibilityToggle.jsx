@@ -28,13 +28,13 @@ function Switch({ checked, onChange, label }) {
         all: 'unset',
         cursor: 'pointer',
         padding: '4px 12px',
-        borderRadius: 999,
-        background: checked ? 'var(--accent, #6c8cff)' : 'var(--surface)',
+        borderRadius: 'var(--radius-full)',
+        background: checked ? 'var(--accent)' : 'var(--surface)',
         color: checked ? 'var(--accent-ink, white)' : 'var(--ink-soft)',
         border: '1px solid var(--hairline)',
         minWidth: 48,
         textAlign: 'center',
-        fontSize: 11,
+        fontSize: 'var(--text-xs)',
       }}
     >
       {checked ? 'On' : 'Off'}
@@ -76,17 +76,17 @@ export function DockVisibilityToggle({ groups = [], anchorRef, onClose }) {
         background: 'var(--surface)',
         color: 'var(--ink)',
         border: '1px solid var(--hairline)',
-        borderRadius: 12,
+        borderRadius: 'var(--radius-xl)',
         boxShadow: 'var(--shadow-card)',
         padding: 12,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontWeight: 600, fontSize: 13 }}>Dock visibility</span>
+        <span style={{ fontWeight: 600, fontSize: 'var(--text-md)' }}>Dock visibility</span>
         <Switch checked={visible} onChange={setVisible} label="Show dock" />
       </div>
       <div style={{ borderTop: '1px solid var(--hairline)', paddingTop: 10, marginBottom: 10 }}>
-        <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           Show group
         </div>
         {groups.map((g) => {
@@ -103,7 +103,7 @@ export function DockVisibilityToggle({ groups = [], anchorRef, onClose }) {
                 style={{
                   all: 'unset',
                   cursor: 'pointer',
-                  fontSize: 12,
+                  fontSize: 'var(--text-sm)',
                   color: activeGroupId === g.id ? 'var(--ink)' : 'var(--ink-soft)',
                   fontWeight: activeGroupId === g.id ? 600 : 400,
                 }}
@@ -117,7 +117,7 @@ export function DockVisibilityToggle({ groups = [], anchorRef, onClose }) {
       </div>
       {activeGroupId && (
         <div style={{ borderTop: '1px solid var(--hairline)', paddingTop: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Show agent
           </div>
           {(groups.find((g) => g.id === activeGroupId)?.agentIds || []).map((agentId) => (
@@ -126,7 +126,7 @@ export function DockVisibilityToggle({ groups = [], anchorRef, onClose }) {
               data-testid={`dock-agent-${agentId}`}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}
             >
-              <span style={{ fontSize: 12, color: 'var(--ink)' }}>{agentId}</span>
+              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--ink)' }}>{agentId}</span>
               <Switch checked={isAgentVisible(dock, activeGroupId, agentId, groups.find((g) => g.id === activeGroupId)?.agentIds)} onChange={(v) => setAgentVisible(activeGroupId, agentId, v)} label={`Show ${agentId}`} />
             </div>
           ))}

@@ -13,7 +13,7 @@ function fmtTime(value) {
 export function ActivityTab({ events }) {
   if (!events || events.length === 0) {
     return (
-      <div data-testid="registry-activity-empty" style={{ padding: 18, color: 'var(--ink-faint)', fontSize: 12, textAlign: 'center', border: '1px dashed var(--hairline)', borderRadius: 8, margin: 12 }}>
+      <div data-testid="registry-activity-empty" style={{ padding: 18, color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', textAlign: 'center', border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', margin: 12 }}>
         No activity yet. Calls on installed cards will stream here in real time.
       </div>
     );
@@ -27,7 +27,7 @@ export function ActivityTab({ events }) {
           key={`${ev.taskId || 'no-task'}-${events.length - i}`}
           data-testid="registry-activity-row"
           data-event-type={ev.type}
-          style={{ display: 'grid', gridTemplateColumns: '90px 1fr', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 8px', borderRadius: 6, background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}
+          style={{ display: 'grid', gridTemplateColumns: '90px 1fr', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', padding: '6px 8px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}
         >
           <span style={{ color: 'var(--ink-faint)' }}>{fmtTime(ev.ts)}</span>
           <span style={{ color: 'var(--ink)' }}>

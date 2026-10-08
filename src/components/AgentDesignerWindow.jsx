@@ -51,8 +51,8 @@ export function AgentDesignerWindow({ win, onUpdate, onCreateAgent, groups = [] 
           <div style={brandStyle}>
             <AgentAvatar agent={preview} size={30} ring />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preview.name}</div>
-              <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{agentType === 'core' ? 'Core agent' : `Sub-agent of ${parentAgent?.name || parentAgentId}`}</div>
+              <div style={{ fontSize: 'var(--text-md)', fontWeight: 800, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preview.name}</div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>{agentType === 'core' ? 'Core agent' : `Sub-agent of ${parentAgent?.name || parentAgentId}`}</div>
             </div>
           </div>
           {!isEditMode && <Segmented value={agentType} options={[['core', 'Core'], ['sub', 'Sub-agent']]} onChange={setAgentType} />}
@@ -66,7 +66,7 @@ export function AgentDesignerWindow({ win, onUpdate, onCreateAgent, groups = [] 
             <div style={formContainerStyle}>
               <div style={panelHeaderStyle}>
                 <span>Details</span>
-                <span style={{ color: '#94a3b8', fontSize: 11 }}>{selectedTools.length} tools</span>
+                <span style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>{selectedTools.length} tools</span>
               </div>
 
               <Field label="Name" count={`${name.length} / 128`}>
@@ -87,6 +87,7 @@ export function AgentDesignerWindow({ win, onUpdate, onCreateAgent, groups = [] 
                     <option value="cohere">Cohere</option>
                     <option value="google">Google API</option>
                     <option value="moonshot">Moonshot API</option>
+                    <option value="openai">OpenAI API</option>
                     <option value="openrouter">OpenRouter</option>
                     <option value="ollama">Ollama Local</option>
                     <option value="opencode">OpenCode Zen (Free)</option>
@@ -127,7 +128,7 @@ export function AgentDesignerWindow({ win, onUpdate, onCreateAgent, groups = [] 
               </div>
 
               <ColorPicker hue={hue} setHue={setHue} />
-              {status && <div style={{ fontSize: 11, color: status.includes('Failed') || status.includes('unavailable') ? 'var(--red)' : 'var(--green)', minHeight: 16 }}>{status}</div>}
+              {status && <div style={{ fontSize: 'var(--text-xs)', color: status.includes('Failed') || status.includes('unavailable') ? 'var(--red)' : 'var(--green)', minHeight: 16 }}>{status}</div>}
             </div>
           </div>
         </div>

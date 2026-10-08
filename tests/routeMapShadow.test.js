@@ -34,9 +34,10 @@ describe('route map shadow contract', () => {
       '/keys|/keys|/keys/:provider',
       '/tool-approvals|/tool-approvals/:id/decision',
       '/workspaces/:workspaceId/members|/workspaces/:workspaceId/members|/workspaces/personal|/workspaces/:workspaceId/members/me',
-      '/image|/ideas/expand|/chat|/group-chat',
-      // agentsRouter: 15 sub-routers (incl. communication + sales-leads + scout).
-      'layers:15',
+      '/workspaces/:workspaceId/share-links|/workspaces/:workspaceId/share-links|/workspaces/:workspaceId/share-links/:linkId|/workspaces/:workspaceId/share-links/:linkId/joins|/workspaces/:workspaceId/live|/workspaces/:workspaceId/windows/:windowId/public|/workspaces/:workspaceId/comments|/workspaces/:workspaceId/comments|/workspaces/:workspaceId/comments/:commentId/resolve',
+      '/image|/ideas/expand|/chat|/chat/capabilities|/chat/transcribe|/chat/speech|/group-chat',
+      // agentsRouter: 16 sub-routers (incl. communication + sales-leads + scout + leadhound).
+      'layers:16',
       '/local-dev-restarts/notifications',
       '/window-sdk/scaffold|/window-sdk/new|/window-sdk/validate',
       '/jules/queue|/jules/sessions',

@@ -179,8 +179,30 @@ the *only* hand-edit needed to add a window. Everything else is derived:
   // launcher tile (omit to keep the window out of the empty-state launcher):
   launcher: { show: true, order: 140, icon: 'Tools', label: 'My Window', hint: 'what it does' },
   integration: { /* provider block — see above */ },
+  // window header (spec 2): title, icon and mode only. Falls back to label
+  // and launcher.icon. mode: 'strip' | 'ghost' | 'bare' (default: theme).
+  header: { title: 'My window', icon: 'Tools' },
 }
 ```
+
+**Window header.** `WindowFrame` draws one shared header for every window.
+A window never draws its own title bar; it renders `<WindowTitle>` and the
+frame portals its title, icon and actions into that header:
+
+```jsx
+<WindowTitle
+  icon={<Icon.Files size={14} />}
+  label="Launch plan.md"
+  subtitle="markdown"
+  actions={[{ id: 'edit', label: 'Edit', pressed: editing, onSelect: toggleEdit }]} // first 3 inline
+  menu={[{ id: 'graph', label: 'Show note graph', onSelect: openGraph }]}           // overflow menu
+/>
+```
+
+Header text is sentence case with no emoji, uppercase or monospace; the
+stylesheet (`src/styles/window-chrome.css`) enforces the casing and font.
+Children of `WindowTitle` still work and count against the three inline
+actions; anything past three moves into the overflow menu.
 
 ### Module Registry v2 fields
 

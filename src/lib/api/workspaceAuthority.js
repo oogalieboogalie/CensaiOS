@@ -90,10 +90,15 @@ export async function loadWorkspaceAuthoritatively({ timeoutMs = 4000, workspace
     if (workspaceId) {
       return { status: 'ready', value: null, revision: 0, workspaceId };
     }
+    // An empty workspace still has a server identity (e.g. `user-1-default`).
+    // Adopt it: a client-minted id is unknown to the server, so collaboration
+    // sockets and saves for it are refused.
+    const empty = await response.json().catch(() => ({}));
+    const serverWorkspaceId = typeof empty?.workspaceId === 'string' ? empty.workspaceId : null;
     const recoverable = recovery.draft?.value ?? recovery.cachedValue;
     return recoverable
-      ? { status: 'restore_required', value: recoverable, revision: 0, ...recovery }
-      : { status: 'ready', value: null, revision: 0, workspaceId: null };
+      ? { status: 'restore_required', value: recoverable, revision: 0, workspaceId: serverWorkspaceId, ...recovery }
+      : { status: 'ready', value: null, revision: 0, workspaceId: serverWorkspaceId };
   }
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
@@ -131,6 +136,19 @@ export async function loadWorkspaceAuthoritatively({ timeoutMs = 4000, workspace
     revision: payload.revision,
     workspaceId: payload.workspaceId,
   };
+}
+
+/** Current server revision of a workspace (0 when it has never been saved). */
+export async function fetchWorkspaceRevision(workspaceId = null, { timeoutMs = 4000 } = {}) {
+  const response = await fetchWithTimeout(endpoint(workspaceId), {}, timeoutMs);
+  const payload = await response.json().catch(() => ({}));
+  if (response.status === 404) return 0;
+  if (!response.ok || !Number.isSafeInteger(payload.revision)) {
+    throw workspaceError(payload.error || `Workspace revision lookup failed (HTTP ${response.status})`, {
+      status: response.status,
+    });
+  }
+  return payload.revision;
 }
 
 export async function saveWorkspaceAuthoritatively(value, expectedRevision, { timeoutMs = 8000 } = {}) {

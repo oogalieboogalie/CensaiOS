@@ -38,10 +38,10 @@ function titleButtonStyle(background, color) {
     all: 'unset',
     cursor: 'pointer',
     padding: '3px 8px',
-    borderRadius: 6,
+    borderRadius: 'var(--radius-md)',
     background,
     color,
-    fontSize: 10,
+    fontSize: 'var(--text-xs)',
     fontWeight: 800,
     letterSpacing: '0.02em',
   };

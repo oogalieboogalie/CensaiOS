@@ -113,16 +113,20 @@ export function AgentAvatar({ agent, size = 28, ring = false, dragHandle = false
   const iconSize = Math.max(11, Math.round(size * 0.54));
   const badgeSize = Math.max(12, Math.round(size * 0.34));
 
-  // Theme-matched avatars: one calm identity instead of per-agent rainbow.
-  // (Per-agent hues still live on agent.hue for accents elsewhere.)
-  const bgStyle = 'var(--accent-soft)';
+  // Spec 3: each agent's own hue, at the look's accent lightness and
+  // chroma (tokens.css --agent-*), so avatars stay calm in every preset.
+  const hue = Number(agent.hue);
+  const hueStyle = Number.isFinite(hue) ? { '--agent-h': hue } : null;
+  const bgStyle = 'var(--agent-soft)';
   const borderStyle = '1px solid var(--hairline-strong)';
-  const colorStyle = 'var(--accent-ink)';
+  const colorStyle = 'var(--agent-ink)';
 
   return (
     <div
       title={`${agent.name} — ${agent.role}`}
+      data-agent-hue=""
       style={{
+        ...hueStyle,
         width: size,
         height: size,
         borderRadius: Math.max(8, Math.round(size * 0.28)),
@@ -134,7 +138,7 @@ export function AgentAvatar({ agent, size = 28, ring = false, dragHandle = false
         placeItems: 'center',
         border: borderStyle,
         boxShadow: ring
-          ? '0 0 0 2px var(--surface), 0 0 0 3px var(--accent)'
+          ? '0 0 0 2px var(--surface), 0 0 0 3px var(--agent)'
           : 'none',
         cursor: dragHandle ? 'grab' : 'default',
         userSelect: 'none',
@@ -168,8 +172,8 @@ export function AgentAvatar({ agent, size = 28, ring = false, dragHandle = false
             borderRadius: Math.max(4, Math.round(badgeSize * 0.32)),
             display: 'grid',
             placeItems: 'center',
-            background: 'var(--accent-soft)',
-            color: 'var(--accent-ink)',
+            background: 'var(--agent-soft)',
+            color: 'var(--agent-ink)',
             border: '1px solid var(--hairline-strong)',
             fontSize: Math.max(8, Math.round(size * 0.18)),
             fontWeight: 800,

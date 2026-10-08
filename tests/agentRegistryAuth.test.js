@@ -14,6 +14,8 @@
 //   POST /cards/:id/call (built-in) |   401   |      202       |   202
 //   POST /cards/:id/call (external) |   401   |      404**     |   422
 //   GET  /cards/:id/calls/:taskId   |   401   |      404**     |   200
+//   GET  /discover, /help-requests  |   401   |   (store-level workspace checks)
+//   POST /help-requests[/:id/...]   |   401   |   (store-level workspace checks)
 //
 //   * visibility-filtered; public cards visible to all
 //   ** the invoke surface hides private cards from non-owners with 404
@@ -61,6 +63,7 @@ jest.unstable_mockModule('../server/agent-card-runs/contract.js', () => ({
     }
     return card.id.slice(6);
   },
+  resolveAgentCardExecutor: (card) => ({ kind: 'builtin', agentId: card.id.slice(6) }),
 }));
 jest.unstable_mockModule('../server/agent-registry/access.js', () => ({
   actorWithWorkspaceAccess: async (actor) => actor ? { ...actor, workspaceIds: ['ws-1'] } : null,
@@ -350,5 +353,20 @@ describe('agent-registry auth matrix', () => {
       expect(queueRes.status).toBe(422);
       expect(queueRes.body.error).toMatch(/not supported yet/);
     });
+  });
+});
+
+describe('agent network endpoints require auth', () => {
+  test.each([
+    ['get', '/api/agent-registry/discover?workspaceId=ws-1&q=database'],
+    ['get', '/api/agent-registry/help-requests?workspaceId=ws-1'],
+    ['post', '/api/agent-registry/help-requests'],
+    ['get', `/api/agent-registry/help-requests/${crypto.randomUUID()}?workspaceId=ws-1`],
+    ['post', `/api/agent-registry/help-requests/${crypto.randomUUID()}/decision`],
+    ['post', `/api/agent-registry/help-requests/${crypto.randomUUID()}/cancel`],
+  ])('%s %s without a session → 401', async (method, url) => {
+    const response = await request(createApp())[method](url).send({ workspaceId: 'ws-1' });
+    expect(response.status).toBe(401);
+    expect(createAgentCardRun).not.toHaveBeenCalled();
   });
 });

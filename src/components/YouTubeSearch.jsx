@@ -27,7 +27,7 @@ export function YouTubeSearch({ label = 'Search YouTube', onPick }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-faint)' }}>{label}</div>
+      <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', color: 'var(--ink-faint)' }}>{label}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 6 }}>
         <input
           type="text"
@@ -35,19 +35,19 @@ export function YouTubeSearch({ label = 'Search YouTube', onPick }) {
           value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') search(); }}
-          style={{ minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 8, padding: '10px 12px', font: '13px var(--font-sans)', color: 'var(--ink)', outline: 'none' }}
+          style={{ minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '10px 12px', font: '13px var(--font-sans)', color: 'var(--ink)', outline: 'none' }}
         />
         <button
           onClick={search}
           disabled={!query.trim() || loading}
           title="Search YouTube"
-          style={{ all: 'unset', cursor: query.trim() && !loading ? 'pointer' : 'not-allowed', width: 38, borderRadius: 8, background: 'var(--accent)', color: 'white', display: 'grid', placeItems: 'center', opacity: query.trim() && !loading ? 1 : 0.5 }}
+          style={{ all: 'unset', cursor: query.trim() && !loading ? 'pointer' : 'not-allowed', width: 38, borderRadius: 'var(--radius-lg)', background: 'var(--accent)', color: 'white', display: 'grid', placeItems: 'center', opacity: query.trim() && !loading ? 1 : 0.5 }}
         >
           <Icon.Search size={14} />
         </button>
       </div>
       {error && (
-        <div style={{ padding: '8px 10px', borderRadius: 8, background: 'oklch(0.96 0.03 25)', color: 'oklch(0.42 0.16 25)', fontSize: 12 }}>
+        <div style={{ padding: '8px 10px', borderRadius: 'var(--radius-lg)', background: 'oklch(0.96 0.03 25)', color: 'oklch(0.42 0.16 25)', fontSize: 'var(--text-sm)' }}>
           {error}
         </div>
       )}
@@ -57,12 +57,12 @@ export function YouTubeSearch({ label = 'Search YouTube', onPick }) {
             <button
               key={item.id}
               onClick={() => onPick?.(item)}
-              style={{ all: 'unset', cursor: 'pointer', display: 'grid', gridTemplateColumns: item.thumbnail ? '64px minmax(0, 1fr)' : 'minmax(0, 1fr)', gap: 8, alignItems: 'center', padding: 8, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 8 }}
+              style={{ all: 'unset', cursor: 'pointer', display: 'grid', gridTemplateColumns: item.thumbnail ? '64px minmax(0, 1fr)' : 'minmax(0, 1fr)', gap: 8, alignItems: 'center', padding: 8, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)' }}
             >
-              {item.thumbnail && <img src={item.thumbnail} alt="" style={{ width: 64, height: 36, objectFit: 'cover', borderRadius: 5, background: 'var(--surface)' }} />}
+              {item.thumbnail && <img src={item.thumbnail} alt="" style={{ width: 64, height: 36, objectFit: 'cover', borderRadius: 'var(--radius-sm)', background: 'var(--surface)' }} />}
               <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
-                <div style={{ fontSize: 10, color: 'var(--ink-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.channelTitle}</div>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.channelTitle}</div>
               </div>
             </button>
           ))}

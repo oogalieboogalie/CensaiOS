@@ -8,7 +8,7 @@ import { clearWorkspaceDraft, writeWorkspaceDraft } from '../../lib/api/workspac
 // candidate, so waiting longer only costs time, never data.
 const RETRY_DELAYS = [5000, 15000, 30000, 60000];
 
-export function useWorkspacePersistence({ enabled, workspace, revision, onRevision }) {
+export function useWorkspacePersistence({ enabled, workspace, revision, onRevision, rebaseOnConflict = false }) {
   const [state, setState] = React.useState({ status: 'idle', error: '' });
   const baselineRef = React.useRef(null);
   const latestRef = React.useRef(null);
@@ -20,7 +20,10 @@ export function useWorkspacePersistence({ enabled, workspace, revision, onRevisi
   const recoveryStoredRef = React.useRef(false);
   const timerRef = React.useRef(null);
 
+  const rebaseRef = React.useRef(rebaseOnConflict);
+  const rebaseAttemptsRef = React.useRef(0);
   React.useEffect(() => { revisionRef.current = revision; }, [revision]);
+  React.useEffect(() => { rebaseRef.current = rebaseOnConflict; }, [rebaseOnConflict]);
 
   const flush = React.useCallback(async () => {
     if (savingRef.current || blockedRef.current || !latestRef.current) return;
@@ -38,9 +41,23 @@ export function useWorkspacePersistence({ enabled, workspace, revision, onRevisi
       baselineRef.current = candidate.signature;
       failedRef.current = false;
       retryAttemptRef.current = 0;
+      rebaseAttemptsRef.current = 0;
       setState({ status: 'saved', error: '' });
     } catch (error) {
-      if (error.code === 'workspace_revision_conflict') {
+      if (error.code === 'workspace_revision_conflict' && rebaseRef.current && rebaseAttemptsRef.current < 5) {
+        rebaseAttemptsRef.current += 1;
+        // Live CRDT sync already merged the canvas with everyone else's edits,
+        // so this snapshot is not stale: adopt the server's revision and resave.
+        try {
+          const latest = await api.fetchWorkspaceRevision(candidate.workspace?.workspaceId);
+          revisionRef.current = latest;
+          onRevision(latest);
+        } catch { /* the retry below surfaces a persistent failure */ }
+        failedRef.current = true;
+        setState({ status: 'saving', error: '' });
+        clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => { failedRef.current = false; flush(); }, 200);
+      } else if (error.code === 'workspace_revision_conflict') {
         blockedRef.current = true;
         setState({ status: 'conflict', error: error.message || 'Workspace changed elsewhere' });
       } else {
@@ -112,10 +129,19 @@ export function useWorkspacePersistence({ enabled, workspace, revision, onRevisi
     return true;
   }, [onRevision]);
 
+  // Record a newer server revision without adopting its content (live CRDT
+  // sync owns the shared canvas fields).
+  const acknowledgeRevision = React.useCallback((nextRevision) => {
+    if (!Number.isSafeInteger(nextRevision) || nextRevision <= revisionRef.current) return;
+    revisionRef.current = nextRevision;
+    onRevision(nextRevision);
+  }, [onRevision]);
+
   return {
     ...state,
     retry,
     adoptExternal,
+    acknowledgeRevision,
     download: () => api.downloadWorkspaceSnapshot(latestRef.current?.workspace, 'draft'),
   };
 }

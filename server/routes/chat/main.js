@@ -22,6 +22,10 @@ export async function handleChat(req, res) {
   };
 
   const isStreaming = !!stream;
+  // Spec 3 stop button: the browser aborts its fetch, the socket closes
+  // before we end the response, and the loop stops at its next step.
+  const abort = new AbortController();
+  res.on?.('close', () => { if (!res.writableEnded) abort.abort(); });
   let streamStarted = false;
   const bufferedEvents = [];
 
@@ -118,7 +122,8 @@ export async function handleChat(req, res) {
       onModelAccepted: beginStream,
       timings,
       userId: req.session?.userId,
-      traceId
+      traceId,
+      signal: abort.signal,
     });
 
     if (traceId) {
@@ -172,6 +177,14 @@ export async function handleChat(req, res) {
       });
     }
   } catch (err) {
+    if (err?.code === 'CHAT_ABORTED') {
+      if (traceId) {
+        finalizeTrace({ db: pool }, { traceId, status: 'failed', finalText: 'Stopped by user', timings })
+          .catch(e => console.error('Failed to finalize stopped trace:', e.message));
+      }
+      if (!res.writableEnded) res.end();
+      return undefined;
+    }
     console.error('Chat API error:', err.message);
     if (traceId) {
       finalizeTrace({ db: pool }, {

@@ -19,6 +19,7 @@ import { JulesPanel } from './operations/JulesPanel.jsx';
 import { SchedulerPanel } from './operations/SchedulerPanel.jsx';
 import { TaskQueuePanel } from './operations/TaskQueuePanel.jsx';
 import { useVisibilityAwareInterval } from '../lib/usePolling.js';
+import { ColorSettingsPanel } from './ColorSettingsPanel.jsx';
 
 async function readJson(url, fallback) {
   try {
@@ -48,6 +49,7 @@ export function OperationsBoardWindow({ win, onUpdate, isActive }) {
   });
   const [includeCompleted, setIncludeCompleted] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
+  const [themeOpen, setThemeOpen] = React.useState(false);
 
   const load = React.useCallback(async ({ refreshJules = false, quiet = false } = {}) => {
     if (!quiet) setRefreshing(true);
@@ -141,11 +143,19 @@ export function OperationsBoardWindow({ win, onUpdate, isActive }) {
         >
           <Icon.Refresh size={13} />
         </button>
+        <button
+          type="button"
+          title="Theme settings"
+          onClick={() => setThemeOpen((o) => !o)}
+          style={iconButtonStyle(themeOpen)}
+        >
+          <Icon.Eye size={13} />
+        </button>
       </WindowTitle>
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'grid', gridTemplateRows: 'auto 1fr', background: 'var(--surface)', color: 'var(--ink)' }}>
         {!hasWorkspace && (
-          <div role="status" style={{ margin: '10px 12px 0', padding: '8px 10px', border: '1px solid var(--hairline)', borderRadius: 8, background: 'var(--surface-raised)', color: 'var(--ink-soft)', fontSize: 12 }}>
+          <div role="status" style={{ margin: '10px 12px 0', padding: '8px 10px', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-raised)', color: 'var(--ink-soft)', fontSize: 'var(--text-sm)' }}>
             Open a workspace to scope schedules and agent tasks. Runtime health remains visible.
           </div>
         )}
@@ -198,13 +208,14 @@ export function OperationsBoardWindow({ win, onUpdate, isActive }) {
                 />
               </>
             ) : (
-              <section style={{ border: '1px solid var(--hairline)', borderRadius: 10, padding: 12, background: 'var(--surface-raised)', color: 'var(--ink-soft)', fontSize: 12 }}>
+              <section style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 12, background: 'var(--surface-raised)', color: 'var(--ink-soft)', fontSize: 'var(--text-sm)' }}>
                 Workspace schedules and agent tasks are unavailable until a workspace is open.
               </section>
             )}
           </div>
         </div>
       </div>
+      {themeOpen && <ColorSettingsPanel onClose={() => setThemeOpen(false)} />}
     </>
   );
 }

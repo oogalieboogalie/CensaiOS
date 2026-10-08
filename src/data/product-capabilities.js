@@ -84,6 +84,24 @@ export const PRODUCT_CAPABILITIES = Object.freeze([
     ],
   },
   {
+    id: 'family-like-agent-system',
+    label: 'family-like agent system',
+    status: 'available',
+    evidence: ['server/memory/core/agents.js', 'server/memory/prompt.js'],
+  },
+  {
+    id: 'A2A-messaging',
+    label: 'A2A messaging',
+    status: 'available',
+    evidence: ['server/agent-wakeups/runLifecycle.js'],
+  },
+  {
+    id: 'BYOK',
+    label: 'BYOK',
+    status: 'available',
+    evidence: ['server/aiGateway/modelAccess.js', 'server/security/credentialVault.js'],
+  },
+  {
     id: 'durable-agent-card-installs',
     label: 'durable workspace AgentCard pins',
     status: 'available',
@@ -101,6 +119,16 @@ export const BETA_BOUNDARIES = Object.freeze([
   { id: 'saas-tenancy', label: 'multi-tenant cloud isolation', status: 'planned' },
 ]);
 
+const LANDING_IDS = [
+  'family-like-agent-system',
+  'durable-memory',
+  'A2A-messaging',
+  'scheduled-runs',
+  'self-hosting',
+  'BYOK',
+  'workspace-tool-modules',
+];
+
 export const LANDING_CAPABILITIES = Object.freeze(
-  PRODUCT_CAPABILITIES.filter((capability) => capability.status === 'available').slice(0, 10)
+  PRODUCT_CAPABILITIES.filter((capability) => LANDING_IDS.includes(capability.id))
 );

@@ -104,18 +104,18 @@ export function FirstMission({ focusMode = false }) {
   if (!open || focusMode) return null;
 
   return <>
-    {rect && <div aria-hidden="true" style={{ position: 'fixed', left: rect.left - 7, top: rect.top - 7, width: rect.width + 14, height: rect.height + 14, zIndex: 500, pointerEvents: 'none', border: '2px solid var(--accent)', borderRadius: 12, boxShadow: '0 0 0 5px var(--accent-soft), var(--shadow-pop)' }} />}
-    <section aria-live="polite" data-testid="first-mission" data-mission-step={complete ? 'complete' : step} style={{ position: 'fixed', ...cardPosition, zIndex: 510, width: 320, maxWidth: 'calc(100vw - 32px)', boxSizing: 'border-box', padding: 16, borderRadius: 14, border: '1px solid var(--hairline)', background: 'var(--surface)', color: 'var(--ink)', boxShadow: 'var(--shadow-pop)' }}>
+    {rect && <div aria-hidden="true" style={{ position: 'fixed', left: rect.left - 7, top: rect.top - 7, width: rect.width + 14, height: rect.height + 14, zIndex: 500, pointerEvents: 'none', border: '2px solid var(--accent)', borderRadius: 'var(--radius-xl)', boxShadow: '0 0 0 5px var(--accent-soft), var(--shadow-pop)' }} />}
+    <section aria-live="polite" data-testid="first-mission" data-mission-step={complete ? 'complete' : step} style={{ position: 'fixed', ...cardPosition, zIndex: 510, width: 320, maxWidth: 'calc(100vw - 32px)', boxSizing: 'border-box', padding: 16, borderRadius: 'var(--radius-xl)', border: '1px solid var(--hairline)', background: 'var(--surface)', color: 'var(--ink)', boxShadow: 'var(--shadow-pop)' }}>
       {complete ? <>
         <div style={{ color: 'var(--accent)', font: '700 10px var(--font-mono)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Mission complete</div>
-        <h3 style={{ margin: '7px 0 5px', fontSize: 17 }}>Your canvas is yours now.</h3>
-        <p style={{ margin: 0, color: 'var(--ink-soft)', fontSize: 12.5, lineHeight: 1.5 }}>You opened, arranged, customized, and left yourself a real next action.</p>
-        <button type="button" onClick={() => setOpen(false)} style={{ marginTop: 12, border: 0, borderRadius: 8, padding: '8px 13px', background: 'var(--accent)', color: 'var(--accent-ink)', fontWeight: 750, cursor: 'pointer' }}>Done</button>
+        <h3 style={{ margin: '7px 0 5px', fontSize: 'var(--text-lg)' }}>Your canvas is yours now.</h3>
+        <p style={{ margin: 0, color: 'var(--ink-soft)', fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>You opened, arranged, customized, and left yourself a real next action.</p>
+        <button type="button" onClick={() => setOpen(false)} style={{ marginTop: 12, border: 0, borderRadius: 'var(--radius-lg)', padding: '8px 13px', background: 'var(--accent)', color: 'var(--accent-ink)', fontWeight: 750, cursor: 'pointer' }}>Done</button>
       </> : <>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>{[0, 1, 2, 3].map((index) => <span key={index} style={{ width: index === step ? 22 : 7, height: 7, borderRadius: 999, background: index <= step ? 'var(--accent)' : 'var(--surface-3)', transition: 'width 0.2s' }} />)}<span style={{ marginLeft: 'auto', color: 'var(--ink-faint)', font: '700 9px var(--font-mono)', letterSpacing: '0.1em' }}>MISSION 1 · {step + 1}/4</span></div>
-        <h3 style={{ margin: '10px 0 5px', fontSize: 16 }}>{copy[0]}</h3>
-        <p style={{ margin: 0, color: 'var(--ink-soft)', fontSize: 12.5, lineHeight: 1.5 }}>{copy[1]}</p>
-        <button type="button" onClick={skip} style={{ all: 'unset', marginTop: 11, color: 'var(--ink-faint)', fontSize: 11, cursor: 'pointer' }}>Skip mission</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>{[0, 1, 2, 3].map((index) => <span key={index} style={{ width: index === step ? 22 : 7, height: 7, borderRadius: 'var(--radius-full)', background: index <= step ? 'var(--accent)' : 'var(--surface-3)', transition: 'width 0.2s' }} />)}<span style={{ marginLeft: 'auto', color: 'var(--ink-faint)', font: '700 9px var(--font-mono)', letterSpacing: '0.1em' }}>MISSION 1 · {step + 1}/4</span></div>
+        <h3 style={{ margin: '10px 0 5px', fontSize: 'var(--text-lg)' }}>{copy[0]}</h3>
+        <p style={{ margin: 0, color: 'var(--ink-soft)', fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>{copy[1]}</p>
+        <button type="button" onClick={skip} style={{ all: 'unset', marginTop: 11, color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', cursor: 'pointer' }}>Skip mission</button>
       </>}
     </section>
   </>;

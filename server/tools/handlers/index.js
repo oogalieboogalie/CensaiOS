@@ -28,7 +28,9 @@ import { handleToolDiscovery } from './discovery.js';
 import { handleReliabilityTool } from './reliability.js';
 import { handleDeepMemoryTool } from './deepMemory.js';
 import { handleCanvasCollaborationTool } from './canvas.js';
+import { handleModuleTool } from './modules.js';
 import { handleResearchTool } from './research.js';
+import { handleAgentNetworkTool } from './agentNetwork.js';
 
 
 export const TOOL_REGISTRY = {
@@ -158,6 +160,14 @@ export const TOOL_REGISTRY = {
   'canvas_spawn_window': handleCanvasCollaborationTool,
   'project_preview': handleCanvasCollaborationTool,
   'canvas_window_index': handleCanvasCollaborationTool,
+
+  // Modules on demand (spec 6)
+  'make_module': handleModuleTool,
+
+  // Agent network (discovery + help requests)
+  'discover_agents': handleAgentNetworkTool,
+  'request_agent_help': handleAgentNetworkTool,
+  'agent_help_status': handleAgentNetworkTool,
   // Mailcow
   'mailcow_domains': handleMailcowTool,
   'mailcow_mailboxes': handleMailcowTool,

@@ -12,7 +12,7 @@ export async function apiFetch(path, opts = {}) {
 }
 
 export function getVerdictColor(verdict) {
-  if (verdict === 'critical') return '#ff4757';
-  if (verdict === 'warn') return '#ffa502';
-  return '#2ed573';
+  if (verdict === 'critical') return 'var(--danger)';
+  if (verdict === 'warn') return 'var(--warning)';
+  return 'var(--success)';
 }

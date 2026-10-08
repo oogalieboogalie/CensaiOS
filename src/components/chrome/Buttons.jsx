@@ -10,7 +10,7 @@ export function ToolBtn({ onClick, label, icon, accent }) {
       onMouseLeave={() => setHover(false)}
       style={{ 
         all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, 
-        padding: '4px 8px', borderRadius: 8, color: hover ? accent : 'var(--ink-soft)', 
+        padding: '4px 8px', borderRadius: 'var(--radius-float-btn)', color: hover ? accent : 'var(--ink-soft)', 
         background: hover ? 'var(--surface-2)' : 'transparent', transition: 'color 0.15s, background 0.15s' 
       }}
     >
@@ -39,7 +39,7 @@ export function MenuItem({ label, onClick }) {
   return (
     <div 
       onClick={onClick} 
-      style={{ padding: '7px 10px', borderRadius: 6, fontSize: 12.5, color: 'var(--ink)', cursor: 'pointer' }}
+      style={{ padding: '7px 10px', borderRadius: 'var(--radius-float-sm)', fontSize: 'var(--text-sm)', color: 'var(--ink)', cursor: 'pointer' }}
       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-2)'}
       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
     >

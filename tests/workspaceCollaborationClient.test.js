@@ -21,3 +21,18 @@ test('collaboration websocket URL stays same-origin and workspace scoped', () =>
     '/ws/workspace-collaboration?workspaceId=workspace%20a&clientId=client%2F1'
   );
 });
+
+test('with the shared doc live, typing shows who is there but never locks or overwrites text', () => {
+  const wins = [{ id: 'doc', kind: 'doc', text: 'mine' }];
+  const presence = {
+    text: { doc: { text: 'stale preview', actor: { label: 'Sam' } } },
+    typing: { doc: { actor: { label: 'Sam' } } },
+  };
+  const legacy = mergeCollaborationPreviews(wins, {}, presence, null);
+  expect(legacy[0]).toMatchObject({ text: 'stale preview', typingActor: { label: 'Sam typing…' } });
+  expect(legacy[0].typingActor.shared).toBeUndefined();
+
+  const live = mergeCollaborationPreviews(wins, {}, presence, null, { crdt: true });
+  expect(live[0].text).toBe('mine');
+  expect(live[0].typingActor).toMatchObject({ label: 'Sam typing…', shared: true });
+});

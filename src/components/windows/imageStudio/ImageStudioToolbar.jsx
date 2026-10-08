@@ -47,7 +47,7 @@ export function ImageStudioToolbar({
             style={{
               width: 22,
               height: 22,
-              borderRadius: 999,
+              borderRadius: 'var(--radius-full)',
               border: item === color ? '2px solid var(--accent)' : '1px solid var(--hairline)',
               background: item,
               cursor: 'pointer',
@@ -66,7 +66,7 @@ export function ImageStudioToolbar({
               cursor: 'pointer',
               width: 24,
               height: 24,
-              borderRadius: 8,
+              borderRadius: 'var(--radius-lg)',
               display: 'grid',
               placeItems: 'center',
               background: strokeWidth === item.value ? 'var(--accent-soft)' : 'var(--surface-2)',
@@ -82,7 +82,7 @@ export function ImageStudioToolbar({
             value={textValue}
             onChange={event => setTextValue(event.target.value)}
             placeholder="Text"
-            style={{ flex: '1 1 160px', minWidth: 120, background: 'var(--surface-2)', border: '1px solid var(--hairline)', color: 'var(--ink)', borderRadius: 8, padding: '6px 8px', fontSize: 12 }}
+            style={{ flex: '1 1 160px', minWidth: 120, background: 'var(--surface-2)', border: '1px solid var(--hairline)', color: 'var(--ink)', borderRadius: 'var(--radius-lg)', padding: '6px 8px', fontSize: 'var(--text-sm)' }}
           />
         )}
       </div>
@@ -100,9 +100,9 @@ function ToolButton({ active, disabled, onClick, children }) {
         all: 'unset',
         cursor: disabled ? 'not-allowed' : 'pointer',
         padding: '6px 9px',
-        borderRadius: 8,
+        borderRadius: 'var(--radius-lg)',
         background: active ? 'var(--accent)' : 'var(--surface-2)',
-        color: active ? 'white' : 'var(--ink-soft)',
+        color: active ? 'var(--on-fill)' : 'var(--ink-soft)',
         opacity: disabled ? 0.45 : 1,
         font: '700 11px var(--font-mono)',
       }}

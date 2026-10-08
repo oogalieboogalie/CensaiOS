@@ -141,27 +141,27 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
         attachedAgentIds={win.attachedAgents}
         onDetach={(id) => onUpdate?.({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
       >
-        {win.isGithub && <span style={{ fontSize: 9, background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 4, color: 'var(--ink)' }}>{win.githubRepo}</span>}
-        {isIframeMode && <span data-code-server-url-badge style={{ fontFamily: 'var(--font-mono)', fontSize: 9, background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 4, color: 'var(--ink)' }} title={codeServerUrl}>{codeServerUrl}</span>}
+        {win.isGithub && <span style={{ fontSize: 'var(--text-xs)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', color: 'var(--ink)' }}>{win.githubRepo}</span>}
+        {isIframeMode && <span data-code-server-url-badge style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', color: 'var(--ink)' }} title={codeServerUrl}>{codeServerUrl}</span>}
         {win.filePath && !win.isGithub && !isIframeMode && (
           <button onClick={(e) => { e.stopPropagation(); saveFile(); }} disabled={saving} title="Save local file"
-            style={{ all: 'unset', cursor: saving ? 'wait' : 'pointer', color: 'var(--accent-ink)', border: '1px solid var(--hairline)', borderRadius: 7, padding: '4px 7px', textTransform: 'none', letterSpacing: 0, fontSize: 11, fontWeight: 700, opacity: saving ? 0.5 : 1 }}>
+            style={{ all: 'unset', cursor: saving ? 'wait' : 'pointer', color: 'var(--accent-ink)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '4px 7px', textTransform: 'none', letterSpacing: 0, fontSize: 'var(--text-xs)', fontWeight: 700, opacity: saving ? 0.5 : 1 }}>
             {saving ? 'Saving...' : 'Save'}
           </button>
         )}
         {!isIframeMode && (
           <button onClick={(e) => { e.stopPropagation(); formatWhole(); }} disabled={!canFormat} title={canFormat ? `Format ${langLabel} (Prettier)` : `No formatter for ${langLabel}`}
-            style={{ all: 'unset', cursor: canFormat ? 'pointer' : 'default', color: 'var(--accent-ink)', border: '1px solid var(--hairline)', borderRadius: 7, padding: '4px 7px', textTransform: 'none', letterSpacing: 0, fontSize: 11, fontWeight: 700, opacity: canFormat ? 1 : 0.45 }}>
+            style={{ all: 'unset', cursor: canFormat ? 'pointer' : 'default', color: 'var(--accent-ink)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '4px 7px', textTransform: 'none', letterSpacing: 0, fontSize: 'var(--text-xs)', fontWeight: 700, opacity: canFormat ? 1 : 0.45 }}>
             Format
           </button>
         )}
         <button onClick={() => setShowSettings(!showSettings)} onPointerDown={(e) => e.stopPropagation()} title="Editor theme settings"
-          style={{ background: showSettings ? 'rgba(96, 165, 250, 0.15)' : 'transparent', border: 'none', borderRadius: 4, padding: 4, cursor: 'pointer', color: showSettings ? '#60a5fa' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s ease', marginRight: 8 }}>
+          style={{ background: showSettings ? 'color-mix(in oklab, var(--accent) 15%, transparent)' : 'transparent', border: 'none', borderRadius: 'var(--radius-sm)', padding: 4, cursor: 'pointer', color: showSettings ? 'var(--accent)' : 'var(--ink-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s ease', marginRight: 8 }}>
           <Icon.Gear size={14} />
         </button>
         {!isIframeMode && (
           <button onClick={(e) => { e.stopPropagation(); previewAsHtml(); }} title="Open a shared preview linked to this code window"
-            style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--accent-ink)', background: 'var(--accent-soft)', border: '1px solid var(--accent)', borderRadius: 7, padding: '4px 7px', textTransform: 'none', letterSpacing: 0, fontSize: 11, fontWeight: 700 }}>
+            style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--accent-ink)', background: 'var(--accent-soft)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-md)', padding: '4px 7px', textTransform: 'none', letterSpacing: 0, fontSize: 'var(--text-xs)', fontWeight: 700 }}>
             <Icon.Eye size={12} />
             Preview
           </button>
@@ -169,17 +169,17 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
       </WindowTitle>
 
       {showSettings && <SettingsPanel title="Editor Theme" theme={theme} onThemeChange={handleThemeChange} onClose={() => setShowSettings(false)} />}
-      {win.typingActor && !isIframeMode && <div style={{ padding: '5px 12px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 11, fontFamily: 'var(--font-sans)' }}>{win.typingActor.label} — read-only while they type, so your saves never collide.</div>}
-      {formatStatus && !isIframeMode && <div style={{ padding: '4px 12px', background: formatStatus.kind === 'error' ? 'rgba(251,113,133,0.12)' : 'var(--accent-soft)', color: formatStatus.kind === 'error' ? 'var(--danger, #fb7185)' : 'var(--accent-ink)', fontSize: 11, fontFamily: 'var(--font-sans)' }}>{formatStatus.text}</div>}
+      {win.typingActor && !win.typingActor.shared && !isIframeMode && <div style={{ padding: '5px 12px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{win.typingActor.label} — read-only while they type, so your saves never collide.</div>}
+      {formatStatus && !isIframeMode && <div style={{ padding: '4px 12px', background: formatStatus.kind === 'error' ? 'color-mix(in oklab, var(--danger) 12%, transparent)' : 'var(--accent-soft)', color: formatStatus.kind === 'error' ? 'var(--danger)' : 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{formatStatus.text}</div>}
 
       {isIframeMode ? (
         <CodeServerIframeView url={codeServerUrl} theme={theme} winOpacity={win.opacity} />
       ) : (
       <div onContextMenu={openMenu} style={{ flex: 1, minHeight: 0, display: 'flex', background: win.opacity !== undefined ? 'transparent' : theme.background }}>
         {useLegacyPane ? (
-          <LegacyCodePane code={code} theme={theme} winOpacity={win.opacity} readOnly={Boolean(win.typingActor)} onChange={updateCode} focusProps={focusProps} />
+          <LegacyCodePane code={code} theme={theme} winOpacity={win.opacity} readOnly={Boolean(win.typingActor && !win.typingActor.shared)} onChange={updateCode} focusProps={focusProps} />
         ) : (
-          <VSCodeLikeEditor ref={editorRef} code={code} language={language} editorTheme={theme} fontSize={theme.fontSize || 13} readOnly={Boolean(win.typingActor)} onChange={updateCode} />
+          <VSCodeLikeEditor ref={editorRef} code={code} language={language} editorTheme={theme} fontSize={theme.fontSize || 13} readOnly={Boolean(win.typingActor && !win.typingActor.shared)} onChange={updateCode} />
         )}
       </div>
       )}

@@ -61,7 +61,7 @@ export function SidebarFavoritesPopover({ favoriteableItems, sidebarFavorites, s
         overscrollBehavior: 'contain',
         background: 'var(--surface)',
         border: '1px solid var(--hairline)',
-        borderRadius: 12,
+        borderRadius: 'var(--radius-xl)',
         boxShadow: 'var(--shadow-pop)',
         padding: '8px 6px',
         zIndex: 12,
@@ -70,7 +70,7 @@ export function SidebarFavoritesPopover({ favoriteableItems, sidebarFavorites, s
         gap: 2,
       }}
     >
-      <div style={{ padding: '3px 8px 6px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.12em', textTransform: 'uppercase', borderBottom: '1px solid var(--hairline)', marginBottom: 4 }}>
+      <div style={{ padding: '3px 8px 6px', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', borderBottom: '1px solid var(--hairline)', marginBottom: 4 }}>
         Sidebar Favorites
       </div>
       {favoriteableItems.map(item => {
@@ -91,7 +91,7 @@ export function SidebarFavoritesPopover({ favoriteableItems, sidebarFavorites, s
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '6px 8px',
-              borderRadius: 8,
+              borderRadius: 'var(--radius-lg)',
               color: 'var(--ink)',
               transition: 'background 0.15s',
             }}
@@ -100,12 +100,12 @@ export function SidebarFavoritesPopover({ favoriteableItems, sidebarFavorites, s
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: isFav ? 'var(--accent)' : 'var(--ink-faint)', display: 'inline-flex' }}>{item.icon}</span>
-              <span style={{ fontSize: 12, fontWeight: isFav ? 600 : 500 }}>{item.label}</span>
+              <span style={{ fontSize: 'var(--text-sm)', fontWeight: isFav ? 600 : 500 }}>{item.label}</span>
             </div>
             <div style={{
               width: 14,
               height: 14,
-              borderRadius: 4,
+              borderRadius: 'var(--radius-sm)',
               border: isFav ? '1.5px solid var(--accent)' : '1.5px solid var(--ink-faint)',
               background: isFav ? 'var(--accent)' : 'transparent',
               display: 'flex',

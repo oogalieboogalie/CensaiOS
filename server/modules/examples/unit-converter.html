@@ -1,0 +1,62 @@
+<!-- module {"request": "a unit converter", "manifest": {"name": "Unit converter", "description": "Convert length, area, weight and temperature.", "icon": "Tools", "size": {"w": 420, "h": 380}, "permissions": []}} -->
+<div class="stack" style="gap: var(--space-4)">
+  <h2>Unit converter</h2>
+  <div class="row" id="kinds"></div>
+  <div class="grid" style="grid-template-columns: 1fr auto 1fr; align-items: end">
+    <label class="stack"><span class="label">From</span><input id="value" type="number" step="any"><select id="from"></select></label>
+    <button class="ghost" id="swap" aria-label="Swap units" style="margin-bottom: 2px">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h10l-3-3M13 11H3l3 3"/></svg>
+    </button>
+    <label class="stack"><span class="label">To</span><output class="big" id="result" style="min-height: 30px">0</output><select id="to"></select></label>
+  </div>
+  <div class="muted" id="formula"></div>
+</div>
+<style>
+  #kinds button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+  #result { font-size: var(--text-xl); }
+</style>
+<script>
+  const UNITS = {
+    Length: { m: 1, km: 1000, cm: 0.01, mi: 1609.344, ft: 0.3048, in: 0.0254 },
+    Area: { 'sq ft': 0.09290304, 'sq m': 1, acre: 4046.8564224, hectare: 10000 },
+    Weight: { kg: 1, g: 0.001, lb: 0.45359237, oz: 0.028349523125 },
+    Temperature: { C: 'C', F: 'F', K: 'K' },
+  };
+  const toC = { C: (v) => v, F: (v) => (v - 32) * 5 / 9, K: (v) => v - 273.15 };
+  const fromC = { C: (v) => v, F: (v) => v * 9 / 5 + 32, K: (v) => v + 273.15 };
+  const state = censai.storage.get('conv', { kind: 'Length', from: 'mi', to: 'km', value: 1 });
+  const $ = (id) => document.getElementById(id);
+
+  Object.keys(UNITS).forEach((kind) => {
+    const b = document.createElement('button');
+    b.textContent = kind;
+    b.onclick = () => { const names = Object.keys(UNITS[kind]); Object.assign(state, { kind, from: names[0], to: names[1] }); update(); };
+    $('kinds').appendChild(b);
+  });
+
+  function convert(v) {
+    const table = UNITS[state.kind];
+    if (state.kind === 'Temperature') return fromC[state.to](toC[state.from](v));
+    return v * table[state.from] / table[state.to];
+  }
+  function fill(select, value) {
+    select.innerHTML = Object.keys(UNITS[state.kind]).map((u) => `<option${u === value ? ' selected' : ''}>${u}</option>`).join('');
+  }
+  function update() { censai.storage.set('conv', state); render(); }
+  function render() {
+    fill($('from'), state.from);
+    fill($('to'), state.to);
+    if (document.activeElement !== $('value')) $('value').value = state.value;
+    const v = parseFloat(state.value);
+    const out = Number.isFinite(v) ? convert(v) : NaN;
+    $('result').textContent = Number.isFinite(out) ? Number(out.toPrecision(8)).toLocaleString() : '-';
+    $('formula').textContent = Number.isFinite(out) ? `${v} ${state.from} = ${Number(out.toPrecision(8))} ${state.to}` : 'Enter a number to convert.';
+    $('kinds').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.textContent === state.kind)));
+  }
+  $('value').oninput = (e) => { state.value = e.target.value; update(); };
+  $('from').onchange = (e) => { state.from = e.target.value; update(); };
+  $('to').onchange = (e) => { state.to = e.target.value; update(); };
+  $('swap').onclick = () => { [state.from, state.to] = [state.to, state.from]; update(); };
+  censai.storage.onChange((key, value) => { if (key === 'conv' && value) { Object.assign(state, value); render(); } });
+  render();
+</script>

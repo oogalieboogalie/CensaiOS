@@ -6,7 +6,7 @@ export function ToolkitSelect({ onApply }) {
   const [toolkitId, setToolkitId] = React.useState('default');
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
-      <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink)' }}>Select Toolkit</span>
+      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 800, color: 'var(--ink)' }}>Select Toolkit</span>
       <span style={{ display: 'flex', gap: 6 }}>
         <select
           aria-label="Select Toolkit"

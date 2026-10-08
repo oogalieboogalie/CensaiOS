@@ -109,14 +109,14 @@ export function LeadsWindow() {
         <button
           onClick={refresh}
           title="Refresh queue"
-          style={{ all: 'unset', cursor: 'pointer', fontSize: 13, color: 'var(--ink-faint)', padding: '0 2px' }}
+          style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-md)', color: 'var(--ink-faint)', padding: '0 2px' }}
         >
           ↻
         </button>
         <button
           onClick={() => setScoutOpen((o) => !o)}
           title="Run a scout pass"
-          style={{ all: 'unset', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: scoutOpen ? 'white' : 'var(--accent-ink)', background: scoutOpen ? 'var(--accent)' : 'var(--accent-soft)', borderRadius: 7, padding: '3px 10px' }}
+          style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 700, color: scoutOpen ? 'white' : 'var(--accent-ink)', background: scoutOpen ? 'var(--accent)' : 'var(--accent-soft)', borderRadius: 'var(--radius-md)', padding: '3px 10px' }}
         >
           ⌖ Scout
         </button>
@@ -128,7 +128,7 @@ export function LeadsWindow() {
             key={s}
             onClick={() => { setFilter(s); setLoading(true); }}
             style={{
-              all: 'unset', cursor: 'pointer', fontSize: 11, padding: '3px 10px', borderRadius: 999,
+              all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', padding: '3px 10px', borderRadius: 'var(--radius-full)',
               background: filter === s ? 'var(--accent-soft)' : 'var(--surface-2)',
               color: filter === s ? 'var(--accent-ink)' : 'var(--ink-soft)', fontWeight: filter === s ? 700 : 400,
             }}
@@ -138,13 +138,13 @@ export function LeadsWindow() {
         ))}
       </div>
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {loading && <div style={{ color: 'var(--ink-faint)', fontSize: 12, padding: 8 }}>Loading leads…</div>}
-        {!loading && error && <div style={{ color: 'var(--ps-red)', fontSize: 12, padding: 8 }}>{error}</div>}
+        {loading && <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', padding: 8 }}>Loading leads…</div>}
+        {!loading && error && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)', padding: 8 }}>{error}</div>}
         {!loading && !error && leads.length === 0 && (
-          <div style={{ color: 'var(--ink-faint)', fontSize: 12, padding: 8, fontStyle: 'italic' }}>
+          <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', padding: 8, fontStyle: 'italic' }}>
             No leads here yet — run a scout and they land in this queue.
             {workspaceId && (
-              <span style={{ display: 'block', marginTop: 4, fontStyle: 'normal', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+              <span style={{ display: 'block', marginTop: 4, fontStyle: 'normal', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>
                 workspace {String(workspaceId).slice(0, 8)}
               </span>
             )}
@@ -157,20 +157,20 @@ export function LeadsWindow() {
             lead.linkedin && ['li', lead.linkedin],
           ].filter(Boolean);
           return (
-            <div key={lead.id} style={{ border: '1px solid var(--hairline)', borderRadius: 10, padding: '8px 10px', background: 'var(--surface)' }}>
+            <div key={lead.id} style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '8px 10px', background: 'var(--surface)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: STATUS_DOT[lead.status] || 'var(--ink-faint)' }} />
-                <strong style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <strong style={{ flex: 1, fontSize: 'var(--text-md)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {lead.name}
                 </strong>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent-ink)', background: 'var(--accent-soft)', borderRadius: 6, padding: '1px 7px' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--accent-ink)', background: 'var(--accent-soft)', borderRadius: 'var(--radius-md)', padding: '1px 7px' }}>
                   {(Number(lead.icp_score) || 0).toFixed(2)}
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 3 }}>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', marginTop: 3 }}>
                 {[lead.team, lead.brokerage, lead.city].filter(Boolean).join(' · ') || '—'}
               </div>
-              <div style={{ fontSize: 11, marginTop: 3, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: 'var(--text-xs)', marginTop: 3, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {lead.phone && <a href={`tel:${lead.phone}`} style={{ color: 'var(--accent-ink)', textDecoration: 'none' }}>{lead.phone}</a>}
                 {lead.email && <a href={`mailto:${lead.email}`} style={{ color: 'var(--accent-ink)', textDecoration: 'none' }}>{lead.email}</a>}
                 {lead.website && <a href={lead.website} target="_blank" rel="noreferrer" style={{ color: 'var(--ink-faint)', textDecoration: 'none' }}>site ↗</a>}
@@ -179,7 +179,7 @@ export function LeadsWindow() {
                 ))}
               </div>
               {Array.isArray(lead.buying_signals) && lead.buying_signals.length > 0 && (
-                <div style={{ fontSize: 10, color: 'var(--ink-faint)', marginTop: 3, fontFamily: 'var(--font-mono)' }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginTop: 3, fontFamily: 'var(--font-mono)' }}>
                   ⚡ {lead.buying_signals.join(' · ')}
                 </div>
               )}
@@ -191,10 +191,10 @@ export function LeadsWindow() {
                     title={s === lead.status ? 'Current status' : `Mark as ${s}`}
                     style={{
                       all: 'unset', cursor: s === lead.status ? 'default' : 'pointer',
-                      fontSize: 10, fontWeight: s === lead.status ? 700 : 400,
+                      fontSize: 'var(--text-xs)', fontWeight: s === lead.status ? 700 : 400,
                       color: s === lead.status ? 'var(--accent-ink)' : 'var(--ink-faint)',
                       background: s === lead.status ? 'var(--accent-soft)' : 'transparent',
-                      border: '1px solid var(--hairline)', borderRadius: 999, padding: '2px 9px',
+                      border: '1px solid var(--hairline)', borderRadius: 'var(--radius-full)', padding: '2px 9px',
                     }}
                   >
                     {s}
@@ -204,21 +204,21 @@ export function LeadsWindow() {
                   onClick={() => draftEmail(lead)}
                   disabled={drafts[lead.id]?.loading}
                   title="Draft an outreach email for this lead"
-                  style={{ all: 'unset', cursor: drafts[lead.id]?.loading ? 'not-allowed' : 'pointer', fontSize: 10, fontWeight: 700, color: 'var(--ps-teal)', border: '1px solid var(--hairline)', borderRadius: 999, padding: '2px 9px', marginLeft: 'auto' }}
+                  style={{ all: 'unset', cursor: drafts[lead.id]?.loading ? 'not-allowed' : 'pointer', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--ps-teal)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-full)', padding: '2px 9px', marginLeft: 'auto' }}
                 >
                   {drafts[lead.id]?.loading ? '✎…' : drafts[lead.id]?.body ? '↻ Redraft' : '✎ Draft'}
                 </button>
               </div>
               {drafts[lead.id]?.error && (
-                <div style={{ fontSize: 11, color: 'var(--ps-red)', marginTop: 6 }}>{drafts[lead.id].error}</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ps-red)', marginTop: 6 }}>{drafts[lead.id].error}</div>
               )}
               {drafts[lead.id]?.body && (
-                <div style={{ marginTop: 6, border: '1px dashed var(--hairline)', borderRadius: 8, padding: '7px 9px', background: 'var(--surface-2)' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700 }}>{drafts[lead.id].subject}</div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', whiteSpace: 'pre-wrap', marginTop: 4 }}>{drafts[lead.id].body}</div>
+                <div style={{ marginTop: 6, border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '7px 9px', background: 'var(--surface-2)' }}>
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>{drafts[lead.id].subject}</div>
+                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', whiteSpace: 'pre-wrap', marginTop: 4 }}>{drafts[lead.id].body}</div>
                   <button
                     onClick={() => copyDraft(lead)}
-                    style={{ all: 'unset', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'var(--accent-ink)', marginTop: 6 }}
+                    style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-ink)', marginTop: 6 }}
                   >
                     {copiedId === lead.id ? '✓ Copied' : '⧉ Copy'}
                   </button>

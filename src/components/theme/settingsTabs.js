@@ -2,6 +2,7 @@ export const SETTINGS_TABS = Object.freeze([
   { id: 'appearance', label: 'Appearance' },
   { id: 'workspace', label: 'Canvas' },
   { id: 'sharing', label: 'Sharing' },
+  { id: 'modules', label: 'Modules' },
   { id: 'vault', label: 'AI keys' },
 ]);
 

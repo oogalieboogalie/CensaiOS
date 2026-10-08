@@ -1,6 +1,7 @@
 import { WORKSPACE_STATE_KEY } from '../state/clientStateStore.js';
 import { publishWorkspaceEvent } from './workspaceHub.js';
 import { persistCollaborationEpisodesSafely } from './episodeStore.js';
+import { mirrorWindowToCanvas } from '../collab/serverWriter.js';
 
 const SUPPORTED_WINDOW_FIELDS = Object.freeze({ doc: 'text', code_editor: 'code' });
 const MAX_APPEND_BYTES = 8 * 1024;
@@ -118,6 +119,8 @@ export async function appendCollaborativeWindowText(db, {
     revision: committed.revision,
     actor: { type: 'agent', id: actorId, label },
   });
+  // Live CRDT path: browsers with the canvas open see the window immediately.
+  await mirrorWindowToCanvas(id, committed.window);
   publishWorkspaceEvent(id, {
     type: 'workspace.committed',
     workspaceId: id,

@@ -14,24 +14,24 @@ export function AgentActivityCard({ activity }) {
   return (
     <div style={{
       padding: '8px 10px',
-      borderRadius: 10,
+      borderRadius: 'var(--radius-lg)',
       border: '1px solid var(--hairline)',
       background: active ? 'var(--accent-soft)' : 'var(--surface-2)',
       display: 'grid',
       gap: 3,
     }}>
       <div style={{
-        fontFamily: 'var(--font-mono)',
-        fontSize: 9,
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
+        fontFamily: 'var(--font-label)',
+        fontSize: 'var(--text-xs)',
+        letterSpacing: 'var(--label-tracking)',
+        textTransform: 'var(--label-case)',
         color: active ? 'var(--accent)' : 'var(--ink-faint)',
       }}>
         {LABELS[activity.status] || activity.status}
         {activity.unread > 0 ? ` · ${activity.unread} unread` : ''}
       </div>
       {activity.detail && (
-        <div style={{ fontSize: 11, color: 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {activity.detail}
         </div>
       )}

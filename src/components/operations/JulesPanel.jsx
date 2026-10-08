@@ -4,7 +4,7 @@ import { Panel, CompactList, Row, statusTone, fmtTime } from './OperationsShared
 export function JulesPanel({ jules, includeCompleted, setIncludeCompleted }) {
   return (
     <Panel title="Jules Sessions" action={
-      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: 'var(--ink-faint)' }}>
+      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
         <input type="checkbox" checked={includeCompleted} onChange={(e) => setIncludeCompleted(e.target.checked)} />
         completed
       </label>

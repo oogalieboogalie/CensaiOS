@@ -96,7 +96,7 @@ export function SpotifyWindow({ win, onUpdate }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--surface)' }}>
         {!currentUrl ? (
           <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ fontSize: 13, color: 'var(--ink)' }}>
+            <div style={{ fontSize: 'var(--text-md)', color: 'var(--ink)' }}>
               Paste a Spotify URL or URI to embed a player.
             </div>
 
@@ -111,8 +111,8 @@ export function SpotifyWindow({ win, onUpdate }) {
                     padding: '10px 14px',
                     background: 'var(--surface-2)',
                     border: '1px solid var(--hairline)',
-                    borderRadius: 8,
-                    fontSize: 13,
+                    borderRadius: 'var(--radius-lg)',
+                    fontSize: 'var(--text-md)',
                     color: 'var(--ink)',
                   }}
                 >
@@ -135,7 +135,7 @@ export function SpotifyWindow({ win, onUpdate }) {
                   width: '100%',
                   background: 'var(--surface-2)',
                   border: error ? '1px solid var(--ps-red)' : '1px solid var(--hairline)',
-                  borderRadius: 8,
+                  borderRadius: 'var(--radius-lg)',
                   padding: '10px 12px',
                   font: '13px var(--font-sans)',
                   color: 'var(--ink)',
@@ -143,7 +143,7 @@ export function SpotifyWindow({ win, onUpdate }) {
                 }}
               />
               {error && (
-                <div style={{ fontSize: 11, color: 'var(--ps-red)' }}>Invalid Spotify URL</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ps-red)' }}>Invalid Spotify URL</div>
               )}
               <button
                 onClick={handleLoad}
@@ -152,10 +152,10 @@ export function SpotifyWindow({ win, onUpdate }) {
                   all: 'unset',
                   cursor: inputUrl.trim() ? 'pointer' : 'not-allowed',
                   padding: '10px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--radius-lg)',
                   background: 'var(--accent)',
                   color: 'white',
-                  fontSize: 13,
+                  fontSize: 'var(--text-md)',
                   fontWeight: 600,
                   textAlign: 'center',
                   opacity: inputUrl.trim() ? 1 : 0.5
@@ -178,7 +178,7 @@ export function SpotifyWindow({ win, onUpdate }) {
               <button onClick={clearTrack} style={{
                 all: 'unset',
                 cursor: 'pointer',
-                fontSize: 12,
+                fontSize: 'var(--text-sm)',
                 color: 'var(--ink-soft)'
               }}>
                 Change track

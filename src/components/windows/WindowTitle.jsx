@@ -1,67 +1,86 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AgentAvatar } from '../Agents.jsx';
 import { getAgentById } from '../../lib/agentStore.js';
-import { DEFAULT_THEME, MOODS, useTheme } from '../Theme.jsx';
 import { WindowChromeContext } from './windowChromeContext.js';
+import { cleanHeaderText, splitHeaderActions } from '../../lib/windowHeader.js';
 
-export function WindowTitle({ icon, label, accent, subtitle, agent, attachedAgentIds, onDetach, children }) {
-  const attached = (attachedAgentIds || []).map(id => getAgentById(id)).filter(Boolean);
-  const themeContext = useTheme();
-  const theme = themeContext?.theme || DEFAULT_THEME;
-  const mood = MOODS[theme.mood] || MOODS.cream;
-  // Per-window override wins when the frame provides one (win.chromeVariant);
-  // otherwise fall back to the mood's traffic-light request. Null context =
-  // title rendered outside a frame, keep historical behavior.
-  const chromeCtx = React.useContext(WindowChromeContext);
-  const moodTrafficLights = mood.vars?.['--window-extra-controls-display'] !== 'none'
-    && mood.vars?.['--window-extra-controls-display'] !== undefined;
-  const usesTrafficLights = chromeCtx?.trafficControls ?? moodTrafficLights;
-  // Full win98 header skin: solid bar (navy active, gray inactive), white
-  // bold sans text. Everything else keeps the low-profile rail.
-  const isWin98 = chromeCtx?.chromeVariant === 'win98';
-  const isFrameActive = chromeCtx?.isActive ?? true;
-  const titleBackground = isWin98
-    ? (isFrameActive ? 'var(--window-title-bg, var(--accent))' : 'var(--hairline)')
-    : (accent
-      ? `color-mix(in oklab, ${accent} 15%, var(--surface-2))`
-      : 'var(--window-title-bg, color-mix(in oklab, var(--window-accent, var(--accent)) 12%, var(--surface-2)))');
-  const washOpacity = isWin98 ? 1 : (usesTrafficLights ? 0.46 : 0.28);
-
+/** A data-declared header action: `{ id, label, icon, onSelect, pressed, title }`. */
+function HeaderAction({ label, icon, onSelect, pressed, title, inMenu }) {
   return (
-    <div
-      data-window-title-rail="low-profile"
-      data-chrome-header={isWin98 ? 'win98' : 'low-profile'}
-      data-traffic-controls={usesTrafficLights ? 'true' : 'false'}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: isWin98 ? '4px 76px 4px 8px' : (usesTrafficLights ? '6px 60px 6px 72px' : '6px 84px 6px 12px'),
-        minHeight: isWin98 ? 24 : 28, boxSizing: 'border-box',
-        fontFamily: isWin98 ? 'var(--font-sans)' : 'var(--font-mono)',
-        fontSize: isWin98 ? 12 : 10.5, letterSpacing: isWin98 ? '0.02em' : '0.07em',
-        textTransform: isWin98 ? 'none' : 'uppercase',
-        fontWeight: isWin98 ? 700 : undefined,
-        color: isWin98 ? 'oklch(1 0 0)' : 'var(--ink-soft)', borderBottomWidth: 0,
-        flexShrink: 0, position: 'relative', zIndex: 4, pointerEvents: 'none',
-        backdropFilter: 'var(--window-title-backdrop, none)',
-        WebkitBackdropFilter: 'var(--window-title-backdrop, none)',
-      }}
-    >
-      <span aria-hidden="true" data-window-title-wash style={{
-        position: 'absolute', inset: 0, zIndex: 0,
-        background: titleBackground,
-        opacity: washOpacity,
-        pointerEvents: 'none',
-      }} />
-      {agent && <div style={{ pointerEvents: 'auto', position: 'relative', zIndex: 1, flexShrink: 0 }}><AgentAvatar agent={agent} size={16} /></div>}
-      {icon && !agent && <span style={{ color: isWin98 ? 'oklch(1 0 0)' : (accent || 'var(--accent-ink)'), position: 'relative', zIndex: 1, display: 'flex', flexShrink: 0 }}>{icon}</span>}
-      <div data-window-title-copy style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0, overflow: 'hidden', position: 'relative', zIndex: 1 }}>
-        <span style={{ pointerEvents: 'none', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '0 1 auto' }}>{label}</span>
-        {subtitle && <span style={{ textTransform: 'none', letterSpacing: 0, color: isWin98 ? 'oklch(1 0 0 / 0.8)' : 'var(--ink-faint)', fontWeight: 400, pointerEvents: 'none', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 4 auto' }}>· {subtitle}</span>}
+    <button type="button" className={inMenu ? 'hb-win-menu-item' : 'hb-win-action'}
+      role={inMenu ? 'menuitem' : undefined}
+      aria-pressed={inMenu || pressed === undefined ? undefined : Boolean(pressed)}
+      title={title || (typeof label === 'string' ? label : undefined)}
+      // Keep focus where it is (an editor's blur must not race the action).
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={(e) => { e.stopPropagation(); onSelect?.(e); }}>
+      {icon}{label && <span>{label}</span>}
+    </button>
+  );
+}
+
+/**
+ * What a window puts in its header. It does not draw a title bar: inside a
+ * WindowFrame it portals into the frame's shared header (WindowHeader.jsx).
+ *
+ *   icon, label, subtitle, agent, attachedAgentIds/onDetach  → title slot
+ *   actions  data actions; the first three show inline, the rest overflow
+ *   children custom inline controls, counted against the same three
+ *   menu     items that always live in the overflow menu
+ *
+ * Outside a frame (tests, the window lab) it renders a plain row.
+ */
+export function WindowTitle({ icon, label, accent, subtitle, agent, attachedAgentIds, onDetach, actions, menu, children }) {
+  const chrome = React.useContext(WindowChromeContext);
+  const claimTitle = chrome?.claimTitle;
+  React.useLayoutEffect(() => claimTitle?.(), [claimTitle]);
+
+  const attached = (attachedAgentIds || []).map(id => getAgentById(id)).filter(Boolean);
+  const items = [
+    ...(actions || []).filter(Boolean).map((a, i) => <HeaderAction key={a.id || `action-${i}`} {...a} />),
+    ...React.Children.toArray(children).filter(Boolean),
+  ];
+  const { inline, overflow } = splitHeaderActions(items);
+  const menuItems = [
+    // Data actions that spill over render as menu items; custom children move as-is.
+    ...overflow.map((el) => (React.isValidElement(el) && el.type === HeaderAction ? React.cloneElement(el, { inMenu: true }) : el)),
+    ...(menu || []).filter(Boolean).map((m, i) => <HeaderAction key={m.id || `menu-${i}`} {...m} inMenu />),
+  ];
+
+  const titleNode = (
+    <>
+      {agent && <span className="hb-win-identity"><AgentAvatar agent={agent} size={16} /></span>}
+      {icon && !agent && <span className="hb-win-identity" data-window-identity style={accent ? { color: accent } : undefined}>{icon}</span>}
+      <span className="hb-win-label">{cleanHeaderText(label)}</span>
+      {subtitle && <span className="hb-win-subtitle">{cleanHeaderText(subtitle)}</span>}
+      {attached.length > 0 && (
+        <span className="hb-win-agents">
+          {attached.map(a => (
+            <span key={a.id} title={`${a.name} attached. Click to detach.`} data-no-drag
+              onClick={(e) => { e.stopPropagation(); onDetach?.(a.id); }} style={{ cursor: 'pointer' }}>
+              <AgentAvatar agent={a} size={18} ring />
+            </span>
+          ))}
+        </span>
+      )}
+    </>
+  );
+
+  const slots = chrome?.slots;
+  if (!slots) {
+    return (
+      <div className="hb-win-header" data-window-title-rail="standalone">
+        <div className="hb-win-title" data-window-title-copy>{titleNode}</div>
+        <div className="hb-win-actions">{inline}{menuItems}</div>
       </div>
-      {attached.length > 0 && <div style={{ display: 'flex', gap: 4, pointerEvents: 'auto', position: 'relative', zIndex: 1, flexShrink: 0 }}>
-        {attached.map(a => <div key={a.id} title={`${a.name} attached — click to detach`} onClick={(e) => { e.stopPropagation(); onDetach?.(a.id); }} style={{ cursor: 'pointer' }}><AgentAvatar agent={a} size={18} ring /></div>)}
-      </div>}
-      {children && <div style={{ pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 6, position: 'relative', zIndex: 1, flexShrink: 0 }}>{children}</div>}
-    </div>
+    );
+  }
+  return (
+    <>
+      {slots.title && createPortal(titleNode, slots.title)}
+      {slots.actions && inline.length > 0 && createPortal(inline, slots.actions)}
+      {slots.menu && menuItems.length > 0 && createPortal(menuItems, slots.menu)}
+    </>
   );
 }

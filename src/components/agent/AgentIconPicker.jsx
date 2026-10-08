@@ -71,14 +71,14 @@ export function AgentIconPicker({ value, onChange }) {
   return (
     <div data-testid="agent-icon-picker" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--hairline)', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+        <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', border: '1px solid var(--hairline)', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
           {previewSvg ? (
             <div aria-hidden="true" style={{ width: 32, height: 32, display: 'grid', placeItems: 'center' }} dangerouslySetInnerHTML={{ __html: previewSvg }} />
           ) : (
-            <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>none</span>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>none</span>
           )}
         </div>
-        <div style={{ flex: 1, fontSize: 11, color: 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ flex: 1, fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {value ? (value.startsWith('<svg') ? '<inline SVG>' : value) : 'No icon selected'}
         </div>
       </div>
@@ -94,11 +94,11 @@ export function AgentIconPicker({ value, onChange }) {
               all: 'unset',
               cursor: 'pointer',
               padding: '4px 8px',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-md)',
               background: activeTab === tab.id ? 'var(--surface-2)' : 'transparent',
               color: activeTab === tab.id ? 'var(--ink)' : 'var(--ink-soft)',
               fontWeight: activeTab === tab.id ? 600 : 400,
-              fontSize: 11,
+              fontSize: 'var(--text-xs)',
             }}
           >
             {tab.label}
@@ -108,7 +108,7 @@ export function AgentIconPicker({ value, onChange }) {
 
       {activeTab === 'built-in' && (
         <div data-testid="icon-picker-built-in" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Built-in team</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Built-in team</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
             {familyIcons.map((icon) => (
               <button
@@ -121,9 +121,9 @@ export function AgentIconPicker({ value, onChange }) {
                   all: 'unset',
                   cursor: 'pointer',
                   width: 32, height: 32,
-                  borderRadius: 6,
-                  background: value === icon.id ? 'var(--accent-soft, #eef2ff)' : 'var(--surface-2)',
-                  border: `1px solid ${value === icon.id ? 'var(--accent, #6c8cff)' : 'var(--hairline)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  background: value === icon.id ? 'var(--accent-soft)' : 'var(--surface-2)',
+                  border: `1px solid ${value === icon.id ? 'var(--accent)' : 'var(--hairline)'}`,
                   display: 'grid',
                   placeItems: 'center',
                   color: 'var(--ink)',
@@ -132,7 +132,7 @@ export function AgentIconPicker({ value, onChange }) {
               />
             ))}
           </div>
-          <div style={{ fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 4 }}>Stock</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 4 }}>Stock</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 4 }}>
             {stockIcons.map((icon) => (
               <button
@@ -145,9 +145,9 @@ export function AgentIconPicker({ value, onChange }) {
                   all: 'unset',
                   cursor: 'pointer',
                   width: 32, height: 32,
-                  borderRadius: 6,
-                  background: value === icon.id ? 'var(--accent-soft, #eef2ff)' : 'var(--surface-2)',
-                  border: `1px solid ${value === icon.id ? 'var(--accent, #6c8cff)' : 'var(--hairline)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  background: value === icon.id ? 'var(--accent-soft)' : 'var(--surface-2)',
+                  border: `1px solid ${value === icon.id ? 'var(--accent)' : 'var(--hairline)'}`,
                   display: 'grid',
                   placeItems: 'center',
                   color: 'var(--ink)',
@@ -168,11 +168,11 @@ export function AgentIconPicker({ value, onChange }) {
               cursor: busy ? 'not-allowed' : 'pointer',
               display: 'inline-block',
               padding: '8px 12px',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-md)',
               background: 'var(--surface-2)',
               border: '1px solid var(--hairline)',
               color: 'var(--ink-soft)',
-              fontSize: 11,
+              fontSize: 'var(--text-xs)',
               textAlign: 'center',
             }}
           >
@@ -187,14 +187,14 @@ export function AgentIconPicker({ value, onChange }) {
             disabled={busy}
             style={{ display: 'none' }}
           />
-          <div style={{ fontSize: 10, color: 'var(--ink-faint)' }}>Max 50 KB. SVGs are validated + sanitized (no scripts, no event handlers).</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Max 50 KB. SVGs are validated + sanitized (no scripts, no event handlers).</div>
         </div>
       )}
 
       {activeTab === 'generate' && (
         <div data-testid="icon-picker-generate" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {!isGenerateEnabled() ? (
-            <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
               Generator is disabled. Set <code>CENSAAI_AGENT_ICON_GENERATOR=1</code> to enable.
             </div>
           ) : (
@@ -204,7 +204,7 @@ export function AgentIconPicker({ value, onChange }) {
                 onChange={(e) => setGeneratePrompt(e.target.value)}
                 placeholder="Describe the icon (e.g. 'compass rose for the architect')"
                 data-testid="icon-picker-generate-prompt"
-                style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--hairline)', background: 'var(--surface-2)', color: 'var(--ink)', fontSize: 12, outline: 'none' }}
+                style={{ width: '100%', padding: '6px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', color: 'var(--ink)', fontSize: 'var(--text-sm)', outline: 'none' }}
               />
               <button
                 type="button"
@@ -215,23 +215,23 @@ export function AgentIconPicker({ value, onChange }) {
                   all: 'unset',
                   cursor: busy || !generatePrompt.trim() ? 'not-allowed' : 'pointer',
                   padding: '6px 10px',
-                  borderRadius: 6,
-                  background: busy || !generatePrompt.trim() ? 'var(--surface-2)' : 'var(--accent, #6c8cff)',
+                  borderRadius: 'var(--radius-md)',
+                  background: busy || !generatePrompt.trim() ? 'var(--surface-2)' : 'var(--accent)',
                   color: busy || !generatePrompt.trim() ? 'var(--ink-faint)' : 'var(--accent-ink, white)',
-                  fontSize: 11,
+                  fontSize: 'var(--text-xs)',
                   textAlign: 'center',
                 }}
               >
                 {busy ? 'Generating…' : 'Generate'}
               </button>
-              <div style={{ fontSize: 10, color: 'var(--ink-faint)' }}>Raster fallbacks (base64 PNG inside SVG) are rejected.</div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Raster fallbacks (base64 PNG inside SVG) are rejected.</div>
             </>
           )}
         </div>
       )}
 
       {error && (
-        <div data-testid="icon-picker-error" style={{ fontSize: 11, color: '#dc2626', background: 'var(--surface-2)', border: '1px solid #dc2626', borderRadius: 6, padding: '6px 8px' }}>
+        <div data-testid="icon-picker-error" style={{ fontSize: 'var(--text-xs)', color: 'var(--danger)', background: 'var(--surface-2)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '6px 8px' }}>
           {error}
         </div>
       )}

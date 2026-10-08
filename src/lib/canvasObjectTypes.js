@@ -64,8 +64,12 @@ export function normalizeCanvasObject(canvasObject = {}) {
     title: canvasObject.title || '',
     x: Number.isFinite(canvasObject.x) ? canvasObject.x : 0,
     y: Number.isFinite(canvasObject.y) ? canvasObject.y : 0,
-    width: Number.isFinite(canvasObject.width) ? canvasObject.width : (Number.isFinite(canvasObject.w) ? canvasObject.w : defaultSize.w),
-    height: Number.isFinite(canvasObject.height) ? canvasObject.height : (Number.isFinite(canvasObject.h) ? canvasObject.h : defaultSize.h),
+    // Legacy `w`/`h` win over `width`/`height`: they are what the canvas
+    // renders and what every layout path writes. Older group layouts wrote
+    // w/h without width/height, and preferring the stale width here snapped
+    // grouped windows back to their pre-group size on the next update.
+    width: Number.isFinite(canvasObject.w) ? canvasObject.w : (Number.isFinite(canvasObject.width) ? canvasObject.width : defaultSize.w),
+    height: Number.isFinite(canvasObject.h) ? canvasObject.h : (Number.isFinite(canvasObject.height) ? canvasObject.height : defaultSize.h),
     zIndex: Number.isFinite(canvasObject.zIndex) ? canvasObject.zIndex : null,
     state: canvasObject.state && typeof canvasObject.state === 'object' ? canvasObject.state : {},
     metadata: canvasObject.metadata && typeof canvasObject.metadata === 'object' ? canvasObject.metadata : {},
@@ -74,6 +78,22 @@ export function normalizeCanvasObject(canvasObject = {}) {
     createdAt: canvasObject.createdAt || null,
     updatedAt: canvasObject.updatedAt || null,
   };
+}
+
+/**
+ * Merge a patch into a window while keeping `w`/`width` and `h`/`height` in
+ * step. A patch may size a window with either spelling; whichever it uses
+ * becomes both. Without a size in the patch the window keeps its current
+ * rendered size (`w`/`h`).
+ */
+export function patchWindow(win = {}, patch = {}) {
+  const next = { ...win, ...patch };
+  const pick = (a, b, c, d) => [a, b, c, d].find(Number.isFinite);
+  const w = pick(patch.w, patch.width, win.w, win.width);
+  const h = pick(patch.h, patch.height, win.h, win.height);
+  if (w !== undefined) { next.w = w; next.width = w; }
+  if (h !== undefined) { next.h = h; next.height = h; }
+  return next;
 }
 
 export function canvasObjectToLegacyWindow(canvasObject = {}) {

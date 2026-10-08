@@ -13,7 +13,7 @@ describe('group layout behavior', () => {
   test('resizes group members proportionally without snapping to a new layout', () => {
     const group = { id: 'group-1', x: 0, y: 0, w: 1000, h: 800 };
     const wins = [
-      { id: 'files', groupId: group.id, x: 32, y: 32, w: 300, h: 300 },
+      { id: 'files', groupId: group.id, x: 0, y: 0, w: 300, h: 300 },
       { id: 'chat', groupId: group.id, x: 668, y: 32, w: 300, h: 736 },
     ];
     const result = resizeGroupContents(
@@ -24,8 +24,8 @@ describe('group layout behavior', () => {
 
     expect(result.groupPatch).toEqual({ w: 1500, h: 1200 });
     expect(result.windowPatches[0].patch).toMatchObject({
-      x: 32,
-      y: 32,
+      x: 0,
+      y: 0,
     });
     expect(result.windowPatches[0].patch.w).toBeGreaterThan(300);
     expect(result.windowPatches[1].patch.x).toBeGreaterThan(668);

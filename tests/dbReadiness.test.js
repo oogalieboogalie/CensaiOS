@@ -28,6 +28,12 @@ jest.unstable_mockModule('../server/boot/capabilitySchema.js', () => ({
 jest.unstable_mockModule('../server/agent-registry/installSchema.js', () => ({
   ensureAgentCardInstallSchema: jest.fn(async () => {}),
 }));
+jest.unstable_mockModule('../server/agent-registry/helpSchema.js', () => ({
+  ensureAgentHelpRequestSchema: jest.fn(async () => {}),
+}));
+jest.unstable_mockModule('../server/shareLinks/schema.js', () => ({
+  ensureShareLinkSchema: jest.fn(async () => {}),
+}));
 
 // The remaining probeDb schema ensures below are mocked for the same reason
 // as the modules above: several read SQL files from disk with real fs, and
@@ -61,6 +67,9 @@ jest.unstable_mockModule('../server/memory/subagentTenancySchema.js', () => ({
 }));
 jest.unstable_mockModule('../server/runs/schema.js', () => ({
   ensureRunCausalitySchema: jest.fn(async () => {}),
+}));
+jest.unstable_mockModule('../server/hubAccounts/schema.js', () => ({
+  ensureHubAccountSchema: jest.fn(async () => {}),
 }));
 
 jest.unstable_mockModule('../server/boot/attributeSchema.js', () => ({

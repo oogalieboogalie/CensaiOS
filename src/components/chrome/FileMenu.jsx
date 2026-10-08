@@ -43,8 +43,8 @@ export function FileMenu({ onClose, projectName, currentProject, onOpenLocalProj
 
   return <>
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
-    <div data-canvas-ui style={{ position: 'absolute', top: 44, left: 8, zIndex: 70, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 12, padding: 6, minWidth: 240, boxShadow: 'var(--shadow-pop)' }}>
-      <div style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{projectName || 'Untitled'}</div>
+    <div data-canvas-ui style={{ position: 'absolute', top: 44, left: 8, zIndex: 70, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-float)', padding: 6, minWidth: 240, maxWidth: 320, boxShadow: 'var(--shadow-pop)' }}>
+      <div style={{ padding: '6px 10px', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)' }}>{projectName || 'Untitled'}</div>
 
       <ProjectSelector
         currentProject={currentProject}
@@ -52,7 +52,7 @@ export function FileMenu({ onClose, projectName, currentProject, onOpenLocalProj
         onClose={onClose}
       />
       {currentProject?.path && (
-        <div style={{ padding: '0 10px 6px', fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--ink-faint)', lineHeight: 1.35, wordBreak: 'break-all' }}>
+        <div style={{ padding: '0 10px 6px', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', lineHeight: 1.35, wordBreak: 'break-all' }}>
           Current root: {currentProject.path}
         </div>
       )}
@@ -64,7 +64,7 @@ export function FileMenu({ onClose, projectName, currentProject, onOpenLocalProj
       <MenuSep />
 
       {/* ─── Presets section ─── */}
-      <div style={{ padding: '6px 10px 2px', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Presets</div>
+      <div style={{ padding: '6px 10px 2px', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)' }}>Presets</div>
 
       {savingPreset ? (
         <div style={{ padding: '4px 8px 6px', display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -80,14 +80,14 @@ export function FileMenu({ onClose, projectName, currentProject, onOpenLocalProj
             style={{
               flex: 1, all: 'unset',
               border: '1px solid var(--hairline)', background: 'var(--surface-2)',
-              borderRadius: 6, padding: '5px 8px', fontSize: 12, color: 'var(--ink)',
+              borderRadius: 'var(--radius-md)', padding: '5px 8px', fontSize: 'var(--text-sm)', color: 'var(--ink)',
             }}
           />
           <button onClick={commitSavePreset} disabled={!presetName.trim()} style={{
             all: 'unset', cursor: presetName.trim() ? 'pointer' : 'not-allowed',
-            padding: '5px 10px', borderRadius: 6,
+            padding: '5px 10px', borderRadius: 'var(--radius-md)',
             background: 'var(--accent)', color: 'white',
-            fontSize: 11, fontWeight: 600, opacity: presetName.trim() ? 1 : 0.4,
+            fontSize: 'var(--text-xs)', fontWeight: 600, opacity: presetName.trim() ? 1 : 0.4,
           }}>Save</button>
         </div>
       ) : (
@@ -101,13 +101,13 @@ export function FileMenu({ onClose, projectName, currentProject, onOpenLocalProj
       )}
 
       {sortedPresets.length === 0 ? (
-        <div style={{ padding: '4px 14px 8px', fontSize: 11, color: 'var(--ink-faint)', fontStyle: 'italic' }}>No saved presets yet.</div>
+        <div style={{ padding: '4px 14px 8px', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', fontStyle: 'italic' }}>No saved presets yet.</div>
       ) : (
         <div style={{ maxHeight: 220, overflowY: 'auto', overscrollBehavior: 'contain', padding: '2px 0' }}>
           {sortedPresets.map(p => (
             <div key={p.id} style={{
               display: 'flex', alignItems: 'center', gap: 4,
-              padding: '2px 4px 2px 10px', borderRadius: 6, margin: '0 2px',
+              padding: '2px 4px 2px 10px', borderRadius: 'var(--radius-md)', margin: '0 2px',
             }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-2)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -115,17 +115,17 @@ export function FileMenu({ onClose, projectName, currentProject, onOpenLocalProj
               <div
                 onClick={() => { onLoadPreset?.(p.id); onClose(); }}
                 title={`Load "${p.name}" — ${(p.wins || []).length} windows`}
-                style={{ flex: 1, padding: '5px 0', fontSize: 12.5, color: 'var(--ink)', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                style={{ flex: 1, padding: '5px 0', fontSize: 'var(--text-sm)', color: 'var(--ink)', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               >
                 {p.name}
-                <span style={{ marginLeft: 6, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)' }}>
+                <span style={{ marginLeft: 6, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
                   {(p.wins || []).length}w
                 </span>
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); onDeletePreset?.(p.id); }}
                 title="Delete preset"
-                style={{ all: 'unset', cursor: 'pointer', width: 22, height: 22, borderRadius: 5, display: 'grid', placeItems: 'center', color: 'var(--ink-faint)', transition: 'color 0.15s, background 0.15s' }}
+                style={{ all: 'unset', cursor: 'pointer', width: 22, height: 22, borderRadius: 'var(--radius-sm)', display: 'grid', placeItems: 'center', color: 'var(--ink-faint)', transition: 'color 0.15s, background 0.15s' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--ps-red)'; e.currentTarget.style.background = 'oklch(0 0 0 / 0.04)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--ink-faint)'; e.currentTarget.style.background = 'transparent'; }}
               >

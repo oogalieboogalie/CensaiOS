@@ -11,10 +11,10 @@ export function ImageStudioGallery({
     <aside style={{ width: 280, borderLeft: '1px solid var(--hairline)', padding: 12, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
       <div>
         <div style={{ font: '800 12px var(--font-mono)', color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Gallery</div>
-        <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Generated and saved images</div>
+        <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>Generated and saved images</div>
       </div>
       {gallery.length === 0 ? (
-        <div style={{ flex: 1, display: 'grid', placeItems: 'center', textAlign: 'center', color: 'var(--ink-faint)', border: '1px dashed var(--hairline)', borderRadius: 8, padding: 16 }}>
+        <div style={{ flex: 1, display: 'grid', placeItems: 'center', textAlign: 'center', color: 'var(--ink-faint)', border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 16 }}>
           Images will appear here
         </div>
       ) : (
@@ -49,15 +49,15 @@ function GalleryCard({ item, selected, onSelect, onInsert, onDelete }) {
       onClick={onSelect}
       style={{
         border: selected ? '1px solid var(--accent)' : '1px solid var(--hairline)',
-        borderRadius: 8,
+        borderRadius: 'var(--radius-lg)',
         overflow: 'hidden',
         background: 'var(--surface-2)',
         cursor: 'pointer',
       }}
     >
-      <img src={item.thumbnailSrc || item.src} alt={item.prompt || 'Generated image'} style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block', background: '#050608' }} />
+      <img src={item.thumbnailSrc || item.src} alt={item.prompt || 'Generated image'} style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block', background: 'var(--surface-sunken)' }} />
       <div style={{ padding: 8, display: 'grid', gap: 6 }}>
-        <div style={{ color: 'var(--ink)', fontSize: 12, lineHeight: 1.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+        <div style={{ color: 'var(--ink)', fontSize: 'var(--text-sm)', lineHeight: 1.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
           {item.prompt || 'Untitled image'}
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -78,7 +78,7 @@ function SmallButton({ danger, onClick, children }) {
       style={{
         all: 'unset',
         cursor: 'pointer',
-        borderRadius: 6,
+        borderRadius: 'var(--radius-md)',
         padding: '5px 7px',
         background: danger ? 'color-mix(in oklab, var(--ps-red) 15%, transparent)' : 'var(--surface)',
         color: danger ? 'var(--ps-red)' : 'var(--ink-soft)',

@@ -22,21 +22,21 @@ export function CanvasStarterGrid({ starters, onSpawn }) {
             data-testid="canvas-starter" data-window-kind={manifest.kind}
             onClick={() => spawn(manifest)} style={{
               appearance: 'none', minWidth: 0, padding: '11px 12px', textAlign: 'left',
-              border: '1px solid var(--hairline)', borderRadius: 10,
+              border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)',
               background: 'var(--surface)', color: 'var(--ink)',
               boxShadow: 'var(--shadow-card)', cursor: canSpawn ? 'pointer' : 'default',
               opacity: canSpawn ? 1 : 0.6, display: 'grid', gridTemplateColumns: '28px 1fr',
               columnGap: 9, alignItems: 'center',
             }}>
             <span aria-hidden="true" style={{
-              width: 28, height: 28, borderRadius: 8, display: 'grid', placeItems: 'center',
+              width: 28, height: 28, borderRadius: 'var(--radius-lg)', display: 'grid', placeItems: 'center',
               color: 'var(--ps-blue)',
               background: 'color-mix(in oklab, var(--ps-blue) 12%, var(--surface))',
             }}><Glyph size={14} /></span>
             <span style={{ minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: 12.5, fontWeight: 700 }}>{launcher.label}</span>
+              <span style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 700 }}>{launcher.label}</span>
               <span style={{
-                display: 'block', marginTop: 2, color: 'var(--ink-soft)', fontSize: 11.5,
+                display: 'block', marginTop: 2, color: 'var(--ink-soft)', fontSize: 'var(--text-xs)',
               }}>
                 {launcher.hint}
               </span>

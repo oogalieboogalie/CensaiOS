@@ -52,6 +52,19 @@ describe('server-authoritative workspace client', () => {
     }));
   });
 
+  test('404 adopts the server workspace id instead of leaving the client to mint one', async () => {
+    fetch.mockResolvedValueOnce(response(404, { value: null, workspaceId: 'user-1-default', revision: 0 }));
+    await expect(loadWorkspaceAuthoritatively()).resolves.toEqual({
+      status: 'ready', value: null, revision: 0, workspaceId: 'user-1-default',
+    });
+
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ wins: ['legacy'] }));
+    fetch.mockResolvedValueOnce(response(404, { value: null, workspaceId: 'user-1-default', revision: 0 }));
+    await expect(loadWorkspaceAuthoritatively()).resolves.toEqual(expect.objectContaining({
+      status: 'restore_required', workspaceId: 'user-1-default',
+    }));
+  });
+
   test('loads an explicitly shared workspace without mixing in another local cache', async () => {
     localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ workspaceId: 'workspace-old', wins: ['old'] }));
     fetch.mockResolvedValue(response(200, {

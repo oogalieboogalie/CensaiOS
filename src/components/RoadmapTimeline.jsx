@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ROADMAP_ITEMS, TIMELINE_START, TIMELINE_END } from '../data/roadmap-data.js';
 
-export function RoadmapTimeline() {
+export function RoadmapTimeline({ bottom = 24 }) {
   const [hoveredId, setHoveredId] = useState(null);
 
   const startMs = new Date(TIMELINE_START).getTime();
@@ -11,7 +11,7 @@ export function RoadmapTimeline() {
   return (
     <div style={{
       position: 'fixed',
-      bottom: 24,
+      bottom,
       left: '50%',
       transform: 'translateX(-50%)',
       width: '100%',
@@ -24,7 +24,7 @@ export function RoadmapTimeline() {
       <div style={{
         background: 'var(--surface)',
         border: '1px solid var(--hairline)',
-        borderRadius: 24,
+        borderRadius: 'var(--radius-xl)',
         padding: '16px 24px',
         boxShadow: 'var(--shadow-card)',
         pointerEvents: 'auto', // re-enable pointer events for the container
@@ -90,7 +90,7 @@ export function RoadmapTimeline() {
                   width: 220,
                   background: 'var(--surface)',
                   border: '1px solid var(--hairline)',
-                  borderRadius: 12,
+                  borderRadius: 'var(--radius-xl)',
                   padding: '12px',
                   boxShadow: 'var(--shadow-pop)',
                   opacity: hoveredId === item.id ? 1 : 0,
@@ -100,13 +100,13 @@ export function RoadmapTimeline() {
                   zIndex: 50,
                   textAlign: 'left',
                 }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-ink)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>
+                  <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--accent-ink)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', marginBottom: 4 }}>
                     {item.phase}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.2 }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 'var(--text-base)', color: 'var(--ink)', marginBottom: 6, lineHeight: 1.2 }}>
                     {item.title}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', lineHeight: 1.4 }}>
                     {item.description}
                   </div>
                   
@@ -142,11 +142,11 @@ export function RoadmapTimeline() {
                   position: 'absolute',
                   top: '100%',
                   marginTop: 6,
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 9,
+                  fontFamily: 'var(--font-label)',
+                  fontSize: 'var(--text-xs)',
                   color: (isCompleted || isInProgress) ? 'var(--ink)' : 'var(--ink-faint)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
+                  textTransform: 'var(--label-case)',
+                  letterSpacing: 'var(--label-tracking)',
                   whiteSpace: 'nowrap',
                 }}>
                   {item.phase}

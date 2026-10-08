@@ -34,7 +34,18 @@ export function AgentWindow({ win, onUpdate, onSpawn }) {
     return () => { alive = false; };
   }, [agent?.id, workspaceId]);
 
-  if (!agent) return null;
+  // A window whose agent was deleted (or never set) used to render as a blank
+  // frame; say so instead so the user knows to close it.
+  if (!agent) {
+    return (
+      <>
+        <WindowTitle label="Agent" subtitle="not found" />
+        <div style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 20, textAlign: 'center', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
+          This agent no longer exists. Close this window or open an agent from the Agent Registry.
+        </div>
+      </>
+    );
+  }
 
   const status = 'idle';
 
@@ -45,11 +56,11 @@ export function AgentWindow({ win, onUpdate, onSpawn }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <AgentAvatar agent={agent} size={48} ring />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, color: 'var(--ink)' }}>{agent.name}</div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{agent.role}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--ink)' }}>{agent.name}</div>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)' }}>{agent.role}</div>
           </div>
           <div style={{ flex: 1 }} />
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: status === 'drafting' ? `oklch(0.32 0.10 ${agent.hue})` : 'var(--ink-faint)', background: status === 'drafting' ? `oklch(0.94 0.04 ${agent.hue})` : 'var(--surface-2)', padding: '3px 8px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', color: status === 'drafting' ? `oklch(0.32 0.10 ${agent.hue})` : 'var(--ink-faint)', background: status === 'drafting' ? `oklch(0.94 0.04 ${agent.hue})` : 'var(--surface-2)', padding: '3px 8px', borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: status === 'drafting' ? `oklch(0.62 0.14 ${agent.hue})` : 'var(--ink-faint)' }} />{status}
           </div>
         </div>
@@ -59,7 +70,7 @@ export function AgentWindow({ win, onUpdate, onSpawn }) {
         </div>
         <AgentActivityCard activity={activity} />
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>System</div>
+          <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', marginBottom: 6 }}>System</div>
           {editing ? (
             <AgentEditor
               agent={agent} draft={draft} setDraft={setDraft}
@@ -71,7 +82,7 @@ export function AgentWindow({ win, onUpdate, onSpawn }) {
               textRef={textRef}
             />
           ) : (
-            <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--ink-soft)', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 10, padding: 10 }}>
+            <div style={{ fontSize: 'var(--text-sm)', lineHeight: 1.5, color: 'var(--ink-soft)', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 10 }}>
               {currentPrompt}
             </div>
           )}

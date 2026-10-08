@@ -66,7 +66,12 @@ export const TOOL_CATALOG_OVERRIDES = {
   canvas_append_window: { label: 'Canvas Append Window', category: 'Coordination', scopeKind: 'workspace', risk: 'write' },
   canvas_spawn_window: { label: 'Canvas Spawn Window', category: 'Coordination', scopeKind: 'workspace', risk: 'write' },
   project_preview: { label: 'Project Preview', category: 'Coordination', scopeKind: 'workspace', risk: 'write' },
-  canvas_window_index: { label: 'Canvas Window Index', category: 'Coordination', scopeKind: 'workspace' },  // Mailcow
+  canvas_window_index: { label: 'Canvas Window Index', category: 'Coordination', scopeKind: 'workspace' },
+  make_module: { label: 'Make Module', category: 'Coordination', scopeKind: 'workspace', risk: 'write' },
+  discover_agents: { label: 'Discover Agents', category: 'Coordination', scopeKind: 'agents' },
+  request_agent_help: { label: 'Request Agent Help', category: 'Coordination', scopeKind: 'agents', risk: 'write' },
+  agent_help_status: { label: 'Agent Help Status', category: 'Coordination', scopeKind: 'agents' },
+  // Mailcow
   mailcow_domains:        { label: 'Mailcow Domains',        category: 'Mail', scopeKind: 'mail' },
   mailcow_mailboxes:      { label: 'Mailcow Mailboxes',      category: 'Mail', scopeKind: 'mail' },
   mailcow_aliases:        { label: 'Mailcow Aliases',        category: 'Mail', scopeKind: 'mail' },

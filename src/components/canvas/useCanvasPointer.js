@@ -1,7 +1,12 @@
 import React from 'react';
 import { distance, screenToCanvas } from '../../lib/canvasMath.js';
 import { windowsInSelection } from './CanvasInteractions.js';
-import { buildBandBox, buildFreehandStroke, buildRectStroke, computePinchZoom, consumeSuppression, shouldStartCanvasPan } from './pointerBuilders.js';
+import { strokesInBox } from '../../lib/ink/shapes.js';
+import { useInkPointer } from './useInkPointer.js';
+import {
+  blurActiveEditable, buildBandBox, buildPinchStart, buildRectStroke,
+  computePinchZoom, consumeSuppression, isInteractivePanTarget, shouldStartCanvasPan,
+} from './pointerBuilders.js';
 
 // Re-exported so existing importers keep working after the builders extraction.
 export { shouldStartCanvasPan };
@@ -19,6 +24,7 @@ export function useCanvasPointer({
   penMode,
   penColor,
   penSize,
+  paths = [],
   setPaths,
   setRegion,
   onSpawn,
@@ -26,7 +32,10 @@ export function useCanvasPointer({
   panMode = 'both',
 }) {
   const [band, setBand] = React.useState(null);
-  const [currentPath, setCurrentPath] = React.useState(null);
+  const ink = useInkPointer({ ref, pan, zoom, penColor, penSize, paths, setPaths });
+  // Mirrors panRef for cursor rendering: refs don't trigger re-renders, so a
+  // bare Boolean(panRef.current) stays stuck on "grabbing" after the pan ends.
+  const [isPanning, setIsPanning] = React.useState(false);
   const dragRef = React.useRef(null);
   const panRef = React.useRef(null);
   const activeTouchPointsRef = React.useRef(new Map());
@@ -34,6 +43,8 @@ export function useCanvasPointer({
   const suppressContextMenuRef = React.useRef(false);
 
   const onPointerDown = (e) => {
+    // Spec 9: a palm resting on the screen never pans, pinches or draws.
+    if (ink.palm.classify(e, 'down') === 'palm') return;
     const isCanvasBg = e.target === ref.current || e.target.dataset?.canvasBg;
     const isPen = e.pointerType === 'pen';
     const isTouch = e.pointerType === 'touch';
@@ -41,42 +52,35 @@ export function useCanvasPointer({
 
     // Blur active input/textarea/contenteditable on canvas background click/pan
     const isPanningStart = shouldStartCanvasPan(e.button, spaceRef.current, panMode);
-    if ((isCanvasBg || isPanningStart) && document.activeElement && typeof document.activeElement.blur === 'function') {
-      const tag = document.activeElement.tagName;
-      if (['INPUT', 'TEXTAREA'].includes(tag) || document.activeElement.contentEditable === 'true') {
-        document.activeElement.blur();
-      }
-    }
+    if (isCanvasBg || isPanningStart) blurActiveEditable();
 
     if (isTouch) {
       activeTouchPointsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (activeTouchPointsRef.current.size >= 2) {
         const touches = [...activeTouchPointsRef.current.values()];
-        const first = touches[0];
-        const second = touches[1];
-        pinchRef.current = {
-          startDistance: Math.max(1, Math.hypot(second.x - first.x, second.y - first.y)),
-          startZoom: zoom,
-          startPanX: pan.x,
-          startPanY: pan.y,
-        };
+        pinchRef.current = buildPinchStart(touches[0], touches[1], zoom, pan);
         e.preventDefault();
         dragRef.current = null;
         panRef.current = null;
+        setIsPanning(false);
         setBand(null);
         setRegion(null);
-        setCurrentPath(null);
+        ink.commitStroke();
         try { ref.current.setPointerCapture(e.pointerId); } catch {}
         return;
       }
-      if (!penMode && activeTool !== 'pan') return;
+      // Pen draws, fingers navigate: one finger on the board pans it.
+      if (!isCanvasBg) return;
     }
 
     const isPanTool = activeTool === 'pan' && e.button === 0 && isCanvasBg;
-    if (isPanningStart || isPanTool || (penMode && isTouch && e.button === 0 && isCanvasBg) || (activeTool === 'pan' && isTouch && isCanvasBg)) {
+    // A stuck-or-held Space must never turn clicks on canvas UI into pan drags.
+    const canPan = !(e.button === 0 && isInteractivePanTarget(e.target));
+    if ((isPanningStart && canPan) || isPanTool || (isTouch && e.button === 0 && isCanvasBg)) {
       e.preventDefault();
       panRef.current = { sx: e.clientX, sy: e.clientY, ox: pan.x, oy: pan.y };
-      ref.current.setPointerCapture(e.pointerId);
+      setIsPanning(true);
+      try { ref.current.setPointerCapture(e.pointerId); } catch {}
       return;
     }
 
@@ -86,12 +90,13 @@ export function useCanvasPointer({
       const rect = ref.current.getBoundingClientRect();
       const canvasPt = screenToCanvas(e.clientX, e.clientY, pan.x, pan.y, zoom, rect);
       dragRef.current = { id: e.pointerId, x0: canvasPt.x, y0: canvasPt.y, started: false, mode: 'group' };
-      ref.current.setPointerCapture(e.pointerId);
+      try { ref.current.setPointerCapture(e.pointerId); } catch {}
       onSelect(null);
       onSelection?.([]);
       setRegion(null);
     }
 
+    if ((e.button === 0 || isPenEraser) && isCanvasBg) ink.setInkSelection([]);
     if (e.button === 0 || isPenEraser) {
       if (!isCanvasBg && activeTool !== 'eraser') {
         onSelect(null);
@@ -100,14 +105,16 @@ export function useCanvasPointer({
       e.preventDefault();
       const rect = ref.current.getBoundingClientRect();
       const canvasPt = screenToCanvas(e.clientX, e.clientY, pan.x, pan.y, zoom, rect);
-      const pressure = isPen && e.pressure > 0 ? e.pressure : 1;
 
       if (activeTool === 'eraser' || isPenEraser) {
         dragRef.current = { id: e.pointerId, isErasing: true };
         setPaths(prev => prev.filter(p => !p.pts.some(pt => distance(pt.x, pt.y, canvasPt.x, canvasPt.y) < 16 / zoom)));
       } else if (activeTool === 'pen' || (penMode && isPen)) {
         dragRef.current = { id: e.pointerId, isDrawing: true };
-        setCurrentPath([{ x: canvasPt.x, y: canvasPt.y, p: pressure }]);
+        ink.startStroke(e);
+      } else if (activeTool === 'lasso') {
+        dragRef.current = { id: e.pointerId, isLasso: true };
+        ink.startLasso(e);
       } else if (activeTool === 'rect' || activeTool === 'text') {
         dragRef.current = {
           id: e.pointerId,
@@ -126,7 +133,7 @@ export function useCanvasPointer({
         };
       }
 
-      ref.current.setPointerCapture(e.pointerId);
+      try { ref.current.setPointerCapture(e.pointerId); } catch {}
       onSelect(null);
       onSelection?.([]);
       setRegion(null);
@@ -134,6 +141,7 @@ export function useCanvasPointer({
   };
 
   const onPointerMove = (e) => {
+    if (ink.palm.classify(e) === 'palm') return;
     if (e.pointerType === 'touch') {
       activeTouchPointsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pinchRef.current && activeTouchPointsRef.current.size >= 2) {
@@ -154,11 +162,8 @@ export function useCanvasPointer({
     const canvasPt = screenToCanvas(e.clientX, e.clientY, pan.x, pan.y, zoom, rect);
     const d = dragRef.current;
 
-    if (d.isDrawing) {
-      const pressure = e.pointerType === 'pen' && e.pressure > 0 ? e.pressure : 1;
-      setCurrentPath(prev => prev ? [...prev, { x: canvasPt.x, y: canvasPt.y, p: pressure }] : null);
-      return;
-    }
+    if (d.isDrawing) return ink.extendStroke(e);
+    if (d.isLasso) return ink.extendLasso(e);
 
     if (d.isErasing) {
       setPaths(prev => prev.filter(p => !p.pts.some(pt => distance(pt.x, pt.y, canvasPt.x, canvasPt.y) < 16 / zoom)));
@@ -173,6 +178,7 @@ export function useCanvasPointer({
   };
 
   const onPointerUp = (e) => {
+    if (ink.palm.classify(e, 'up') === 'palm') return;
     if (e.pointerType === 'touch') {
       activeTouchPointsRef.current.delete(e.pointerId);
       if (activeTouchPointsRef.current.size < 2) pinchRef.current = null;
@@ -180,6 +186,7 @@ export function useCanvasPointer({
 
     if (panRef.current) {
       panRef.current = null;
+      setIsPanning(false);
       try { ref.current.releasePointerCapture(e.pointerId); } catch {}
       return;
     }
@@ -189,12 +196,8 @@ export function useCanvasPointer({
     }
     dragRef.current = null;
 
-    if (d?.isDrawing) {
-      const stroke = buildFreehandStroke(currentPath, penColor, penSize);
-      if (stroke) setPaths(prev => [...prev, stroke]);
-      setCurrentPath(null);
-      return;
-    }
+    if (d?.isDrawing) return ink.commitStroke();
+    if (d?.isLasso) return ink.endLasso();
 
     if (d?.isErasing) return;
 
@@ -223,7 +226,9 @@ export function useCanvasPointer({
         onSpawnGroup({ x: band.x, y: band.y }, { w: band.w, h: band.h });
       } else if (d.mode === 'selection') {
         onSelection?.(windowsInSelection(wins, band));
-        setRegion(band);
+        const inkIds = strokesInBox(paths, band);
+        ink.setInkSelection(inkIds);
+        if (!inkIds.length) setRegion(band);
       } else {
         setRegion(band);
       }
@@ -233,5 +238,5 @@ export function useCanvasPointer({
 
   const consumeContextMenuSuppression = () => consumeSuppression(suppressContextMenuRef);
 
-  return { band, setBand, currentPath, onPointerDown, onPointerMove, onPointerUp, panRef, consumeContextMenuSuppression };
+  return { band, setBand, ink, currentPath: ink.currentPath, onPointerDown, onPointerMove, onPointerUp, panRef, isPanning, consumeContextMenuSuppression };
 }

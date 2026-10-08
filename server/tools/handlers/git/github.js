@@ -31,7 +31,8 @@ export async function githubWriteFile(args) {
 
   if (args.__provenance) {
     await recordProvenance({
-      workspace_id: args.repo,
+      workspace_id: args.__provenance.workspace_id,
+      user_id: args.__provenance.user_id,
       agent_id: args.__provenance.agent_id,
       prompt: args.__provenance.prompt,
       model: args.__provenance.model,

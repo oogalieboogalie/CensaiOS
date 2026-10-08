@@ -42,8 +42,8 @@ function CentralAgentNode({ agent }) {
       <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--surface)', border: '2px solid var(--hairline)', display: 'grid', placeItems: 'center', boxShadow: 'var(--shadow-card)' }}>
         <AgentAvatar agent={agent} size={56} />
       </div>
-      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>{agent.name}</span>
-      <span style={{ fontSize: 10, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 1 }}>Core</span>
+      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)' }}>{agent.name}</span>
+      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 1 }}>Core</span>
     </div>
   );
 }
@@ -58,7 +58,7 @@ function EquipmentSlot({ slotKey, config, equipped, activeSlot, setActiveSlot, h
       onClick={() => setActiveSlot(isActive ? null : slotKey)}
       style={{
         position: 'absolute', ...config.position, zIndex: 2,
-        width: 140, height: 80, borderRadius: 12,
+        width: 140, height: 80, borderRadius: 'var(--radius-xl)',
         background: 'var(--surface)',
         border: `2px ${isEquipped ? 'solid' : 'dashed'} ${isEquipped ? module.color : isActive ? 'var(--accent-ink)' : 'var(--hairline)'}`,
         boxShadow: isActive ? '0 0 0 4px var(--hairline)' : 'var(--shadow-float)',
@@ -68,16 +68,16 @@ function EquipmentSlot({ slotKey, config, equipped, activeSlot, setActiveSlot, h
     >
       {!isEquipped ? (
         <>
-          <span style={{ fontSize: 10, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 1 }}>{config.label} Slot</span>
-          <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontWeight: 600 }}>Click to Equip</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 1 }}>{config.label} Slot</span>
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', fontWeight: 600 }}>Click to Equip</span>
         </>
       ) : (
         <>
-          <span style={{ fontSize: 10, color: module.color, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>{config.label}</span>
-          <span style={{ fontSize: 11, color: 'var(--ink)', fontWeight: 600, lineHeight: 1.2 }}>{module.name}</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: module.color, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>{config.label}</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink)', fontWeight: 600, lineHeight: 1.2 }}>{module.name}</span>
           <button
             onClick={(e) => handleUnequip(slotKey, e)}
-            style={{ all: 'unset', position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--hairline)', display: 'grid', placeItems: 'center', color: 'var(--ink-faint)', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+            style={{ all: 'unset', position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--hairline)', display: 'grid', placeItems: 'center', color: 'var(--ink-faint)', cursor: 'pointer', boxShadow: 'var(--elevation-1)' }}
             title="Unequip"
           >
             ✕
@@ -92,11 +92,11 @@ function SelectionSidebar({ activeSlot, equipped, installedModuleIds, setActiveS
   if (!activeSlot) return null;
 
   return (
-    <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 240, background: 'var(--surface)', borderLeft: '1px solid var(--hairline)', zIndex: 10, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 30px rgba(0,0,0,0.1)' }}>
+    <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 240, background: 'var(--surface)', borderLeft: '1px solid var(--hairline)', zIndex: 10, display: 'flex', flexDirection: 'column', boxShadow: 'var(--elevation-3)' }}>
       <div style={{ padding: '16px 20px', borderBottom: '1px dashed var(--hairline)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: 11, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 1 }}>Equip</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{SLOT_CONFIG[activeSlot].label} Module</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 1 }}>Equip</span>
+          <span style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>{SLOT_CONFIG[activeSlot].label} Module</span>
         </div>
         <button onClick={() => setActiveSlot(null)} style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)' }}>✕</button>
       </div>
@@ -109,20 +109,20 @@ function SelectionSidebar({ activeSlot, equipped, installedModuleIds, setActiveS
             key={mod.id}
             onClick={() => installed && handleEquip(activeSlot, mod.id)}
             style={{
-              padding: 12, borderRadius: 8, background: 'var(--surface-2)', border: `1px solid ${equipped[activeSlot] === mod.id ? mod.color : 'var(--hairline)'}`,
+              padding: 12, borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', border: `1px solid ${equipped[activeSlot] === mod.id ? mod.color : 'var(--hairline)'}`,
               cursor: installed ? 'pointer' : 'default', opacity: installed ? 1 : 0.58, display: 'flex', flexDirection: 'column', gap: 4, position: 'relative', overflow: 'hidden'
             }}
           >
             <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: mod.color }} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', paddingLeft: 6 }}>{mod.name}</span>
-            <span style={{ fontSize: 10, color: 'var(--ink-faint)', paddingLeft: 6, lineHeight: 1.4 }}>{mod.desc}</span>
-            <span style={{ fontSize: 9, color: 'var(--ink-soft)', paddingLeft: 6 }}>
+            <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)', paddingLeft: 6 }}>{mod.name}</span>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', paddingLeft: 6, lineHeight: 1.4 }}>{mod.desc}</span>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', paddingLeft: 6 }}>
               {mod.risk === 'read' ? 'Read-only' : 'Write · approval required'} · {mod.toolNames.join(', ')}
             </span>
-            {!installed && <span style={{ fontSize: 9, color: 'var(--accent-ink)', paddingLeft: 6 }}>Install in Agent Registry first</span>}
+            {!installed && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--accent-ink)', paddingLeft: 6 }}>Install in Agent Registry first</span>}
 
             {equipped[activeSlot] === mod.id && (
-              <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 10, fontWeight: 700, color: mod.color, textTransform: 'uppercase' }}>Equipped</span>
+              <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 'var(--text-xs)', fontWeight: 700, color: mod.color, textTransform: 'uppercase' }}>Equipped</span>
             )}
           </div>
           );

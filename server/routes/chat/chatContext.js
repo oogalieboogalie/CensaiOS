@@ -6,6 +6,11 @@ import { filterToolsForAgent } from '../../tools.js';
 import { buildSubAgentSystemPrompt } from './prompts.js';
 import pool from '../../db.js';
 import {
+  capabilityProviderFor,
+  getModelCapabilities,
+} from '../../../src/lib/chat/modelCapabilities.js';
+import { buildContentParts, messageAttachments } from '../../aiGateway/multimodal.js';
+import {
   getUserApiKeyConfig,
   inferUserApiKeyProvider,
 } from '../../security/userApiKeys.js';
@@ -176,18 +181,24 @@ export async function prepareChatContext(
   const impactPrompt = formatChangeImpactForPrompt(changeImpact);
   if (impactPrompt) systemPrompt += `\n\n${impactPrompt}`;
 
+  const capabilities = getModelCapabilities(capabilityProviderFor(provider, reqBaseUrl), reqModel);
+  const attachmentBudget = { used: 0 };
   const chatMessages = [
     { role: 'system', content: systemPrompt },
     ...messages.map(m => {
       let content = m.text || '';
       const isFromOtherAgent = m.from !== 'me' && m.from !== 'system' && m.from !== agentId;
       const textPrefix = isFromOtherAgent ? `[${m.from}]: ` : '';
+      const attachments = m.from === 'system' ? [] : messageAttachments(m);
 
-      if (m.image) {
-        content = [
-          { type: 'text', text: `${textPrefix}${m.text || 'Describe this image.'}` },
-          { type: 'image_url', image_url: { url: m.image } }
-        ];
+      if (attachments.length > 0) {
+        // Checked against the model's capability map: an unsupported
+        // attachment is a 400 with a clear reason, never a silent drop.
+        content = buildContentParts(
+          { text: `${textPrefix}${m.text || ''}`, attachments },
+          capabilities,
+          { budget: attachmentBudget },
+        );
       } else if (isFromOtherAgent) {
         content = `${textPrefix}${content}`;
       }

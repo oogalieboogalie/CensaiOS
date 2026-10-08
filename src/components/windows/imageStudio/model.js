@@ -14,6 +14,7 @@ export function makeStudioObject(type, point, options = {}) {
   const base = {
     id: options.id || `obj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type,
+    // eslint-disable-next-line no-restricted-syntax -- default user paint color (data)
     color: options.color || '#ffffff',
     strokeWidth: options.strokeWidth || 3,
   };
@@ -23,6 +24,7 @@ export function makeStudioObject(type, point, options = {}) {
     return { ...base, x: point.x, y: point.y, w: 1, h: 1, fill: 'transparent' };
   }
   if (type === 'line') return { ...base, x1: point.x, y1: point.y, x2: point.x, y2: point.y };
+  // eslint-disable-next-line no-restricted-syntax -- fontSize here is the drawn text object's size (canvas data), not UI type
   if (type === 'text') return { ...base, x: point.x, y: point.y, text: options.text || 'Text', fontSize: 28 };
   if (type === 'image') {
     return {

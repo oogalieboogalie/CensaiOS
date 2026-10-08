@@ -1,5 +1,7 @@
 import React from 'react';
 import { getBoundingBox, getSvgPath } from './helpers.js';
+import { cachedInkPath } from '../../lib/ink/stroke.js';
+import { pencilAsStroke } from '../../lib/ink/rasterize.js';
 
 export function WhiteboardCanvas({
   elements,
@@ -46,18 +48,8 @@ export function WhiteboardCanvas({
         {/* Render Elements */}
         {elements.map((el) => {
           if (el.type === 'pencil') {
-            return (
-              <path
-                key={el.id}
-                d={getSvgPath(el.pts)}
-                stroke={el.color}
-                strokeWidth={el.strokeWidth}
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={el.id === selectedId ? 0.8 : 1}
-              />
-            );
+            // Pressure ink (spec 9): a filled outline that tapers with the pen.
+            return <path key={el.id} d={cachedInkPath(pencilAsStroke(el))} fill={el.color} opacity={el.id === selectedId ? 0.8 : 1} />;
           }
 
           if (el.type === 'rect') {
@@ -115,6 +107,14 @@ export function WhiteboardCanvas({
             );
           }
 
+          if (el.type === 'image') {
+            // Placed by a chat's "Send to Sketchpad" (spec 3).
+            return (
+              <image key={el.id} href={el.href} x={el.x} y={el.y} width={el.w} height={el.h}
+                preserveAspectRatio="xMidYMid meet" />
+            );
+          }
+
           if (el.type === 'text') {
             // If text is being edited, don't draw it as static SVG
             if (el.id === editingTextId) return null;
@@ -142,7 +142,7 @@ export function WhiteboardCanvas({
         {activeMode === 'select' && selectedElement && (
           (() => {
             const { x: bx, y: by, w: bw, h: bh } = getBoundingBox(selectedElement);
-            const showHandles = selectedElement.type === 'rect' || selectedElement.type === 'circle';
+            const showHandles = ['rect', 'circle', 'image'].includes(selectedElement.type);
             
             return (
               <g pointerEvents="none">
@@ -201,8 +201,8 @@ export function WhiteboardCanvas({
                 color: color.startsWith('var') ? 'var(--ink)' : color,
                 border: '1px solid var(--accent)',
                 padding: '2px 4px',
-                borderRadius: 4,
-                fontSize: 14,
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 'var(--text-base)',
                 fontFamily: 'var(--font-sans, sans-serif)',
                 fontWeight: '500',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.15)',

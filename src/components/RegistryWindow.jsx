@@ -2,6 +2,7 @@
 //
 // D4 of the marketplace/registry push, plus the effective Tools trust surface:
 //   Browse     — paginated REST list of cards. Install button per row.
+//   Network    — discover agents by advertised skill and send help requests.
 //   Installed  — durable workspace-scoped pins. Call / Remove pin.
 //   Publish    — form to create a new card via REST.
 //   Activity   — live WS feed of events for the installed cards.
@@ -24,9 +25,11 @@ import { useRegistryInstalls } from './registry/useRegistryInstalls.js';
 import { ToolCatalogTab } from './registry/ToolCatalogTab.jsx';
 import { ToolPackagesTab } from './registry/ToolPackagesTab.jsx';
 import { useToolPackages } from './registry/useToolPackages.js';
+import { NetworkTab } from './registry/NetworkTab.jsx';
 
 const TABS = [
   { id: 'browse',    label: 'Browse',    icon: 'Search'  },
+  { id: 'network',   label: 'Network',   icon: 'Group'   },
   { id: 'installed', label: 'Installed', icon: 'Plug'    },
   { id: 'publish',   label: 'Publish',   icon: 'Plus'    },
   { id: 'activity',  label: 'Activity',  icon: 'History' },
@@ -46,8 +49,8 @@ function TabBar({ active, onChange }) {
             data-testid={`registry-tab-${t.id}`}
             onClick={() => onChange(t.id)}
             style={{
-              all: 'unset', cursor: 'pointer', padding: '6px 12px', borderRadius: 7,
-              fontSize: 12, fontWeight: 650, display: 'inline-flex', alignItems: 'center', gap: 6,
+              all: 'unset', cursor: 'pointer', padding: '6px 12px', borderRadius: 'var(--radius-md)',
+              fontSize: 'var(--text-sm)', fontWeight: 650, display: 'inline-flex', alignItems: 'center', gap: 6,
               color: active === t.id ? 'var(--accent-ink)' : 'var(--ink-soft)',
               background: active === t.id ? 'var(--accent-soft)' : 'transparent',
             }}
@@ -141,19 +144,20 @@ export function RegistryWindow({ win, onUpdate, client: clientProp }) {
       <WindowTitle
         icon={<Icon.Plug size={14} />}
         label={win?.title || 'Agent Registry'}
-        subtitle="browse · durable workspace pins · call activity"
+        subtitle="browse · agent network · workspace pins · call activity"
       />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface)', overflow: 'hidden' }}>
         <TabBar active={activeTab} onChange={setActiveTab} />
         {!hasWorkspaceScope && (
-          <div role="status" style={{ color: 'var(--ink-soft)', fontSize: 12, padding: '7px 12px', borderBottom: '1px solid var(--hairline)', background: 'var(--surface-raised)' }}>
+          <div role="status" style={{ color: 'var(--ink-soft)', fontSize: 'var(--text-sm)', padding: '7px 12px', borderBottom: '1px solid var(--hairline)', background: 'var(--surface-raised)' }}>
             Open a workspace to pin, publish, or call AgentCards. Public team cards remain browsable.
           </div>
         )}
-        {(error || installs.error || packages.error) && <div data-testid="registry-error-banner" style={{ color: 'var(--ps-red)', fontSize: 12, padding: '6px 12px', borderBottom: '1px solid var(--hairline)' }}>{error || installs.error || packages.error}</div>}
+        {(error || installs.error || packages.error) && <div data-testid="registry-error-banner" style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)', padding: '6px 12px', borderBottom: '1px solid var(--hairline)' }}>{error || installs.error || packages.error}</div>}
         {activeTab === 'browse' && <BrowseTab client={client} installed={installed}
           onInstall={installs.install} busyIds={installs.busyIds}
           canInstall={hasWorkspaceScope && installs.ready && installs.canManage} />}
+        {activeTab === 'network' && <NetworkTab client={client} enabled={hasWorkspaceScope} />}
         {activeTab === 'installed' && !installs.ready && <div role="status" style={{ padding: 18, color: 'var(--ink-soft)' }}>Loading workspace AgentCards…</div>}
         {activeTab === 'installed' && installs.ready && <InstalledTab installed={installed}
           onUninstall={installs.uninstall} busyIds={installs.busyIds} canManage={installs.canManage}

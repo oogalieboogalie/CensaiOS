@@ -78,7 +78,7 @@ describe('user API key routes', () => {
   test('rejects unsupported providers and unauthenticated writes', async () => {
     const unsupported = await request(createApp())
       .post('/api/keys')
-      .send({ provider: 'anthropic', apiKey: 'secret' });
+      .send({ provider: 'acme-ai', apiKey: 'secret' });
     const unauthorized = await request(createApp(null))
       .post('/api/keys')
       .send({ provider: 'openrouter', apiKey: 'secret' });

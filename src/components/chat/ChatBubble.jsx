@@ -1,186 +1,136 @@
+/* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
-import { renderMarkdown } from '../../lib/renderMarkdown.jsx';
-import { Icon } from '../Icons.jsx';
-import { diffStats } from './toolActivity.js';
+import { AgentAvatar } from '../Agents.jsx';
+import { AttachmentChip } from './AttachmentChip.jsx';
 import { ChangeImpactBreadcrumbs } from './ChangeImpactBreadcrumbs.jsx';
+import { ChatStatus } from './ChatStatus.jsx';
+import { MessageActions } from './MessageActions.jsx';
+import { MessageBody } from './MessageBody.jsx';
+import { ArtifactCard } from './ArtifactCard.jsx';
+import { ToolCallList, toolsFromActivity } from './ToolCallCard.jsx';
+import { formatMs } from './toolActivity.js';
+import { fileArtifacts, titleFromText } from '../../lib/chat/artifacts.js';
+import { agentHueStyle } from '../../lib/chat/persona.js';
 
-export function ChatBubble({ message: m, index, copied, onCopy }) {
-  const canCopy = !m.hidden && String(m.text || '').length > 0;
-  const isMe = m.from === 'me';
+/**
+ * One chat message (spec 3), shared by Chat, Group Chat and Ollama.
+ *
+ * The person's messages sit in a light bubble on the right. Agent replies are
+ * unbubbled text at reading width, with tool calls as cards above the text,
+ * big outputs as artifact cards, and hover actions underneath. Handlers that
+ * are not passed hide their action.
+ *
+ *   agent       who wrote it (avatar, name and accent); showAuthor draws the row
+ *   live        { liveStatus, activityLog } while the reply is still coming
+ *   onSend      (artifact) => opens it as a window on the canvas
+ */
+export function ChatBubble({
+  message: m, index, copied, onCopy, onSpeak, speaking = false, speakLoading = false,
+  agent = null, showAuthor = false, authorMeta = null, isLast = false, live = null,
+  onRetry, onBranch, onSend,
+}) {
+  const text = String(m.text || '');
+  const canCopy = !m.hidden && text.length > 0 && !live;
 
-  // Handler for copying inline code snippets
-  const handleCopyCode = React.useCallback((codeText) => {
-    navigator.clipboard.writeText(codeText).catch(err => console.error('Failed to copy:', err));
-  }, []);
+  if (m.hidden || m.from === 'system') {
+    return <div className="hb-msg-note" role="note">{text}</div>;
+  }
 
-  if (m.hidden) {
+  if (m.from === 'me') {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <div style={{
-          maxWidth: '92%', padding: '5px 9px', borderRadius: 999,
-          background: 'var(--surface)', color: 'var(--ink-faint)',
-          border: '1px solid var(--hairline)', fontSize: 10.5, lineHeight: 1.45,
-          fontFamily: 'var(--font-mono)', userSelect: 'text', WebkitUserSelect: 'text',
-        }}>
-          {m.text}
+      <div className="hb-msg" data-from="me">
+        <div className="hb-msg-bubble">
+          {m.image && <img src={m.image} alt="attached" style={{ width: '100%', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)' }} />}
+          <MessageAttachments attachments={m.attachments} />
+          {text && <div style={{ minWidth: 0 }}>{text}</div>}
         </div>
+        <MessageActions
+          copied={copied}
+          onCopy={canCopy && onCopy ? () => onCopy(m, index) : undefined}
+          onRetry={onRetry ? () => onRetry(index) : undefined}
+          onBranch={onBranch ? () => onBranch(index) : undefined}
+        />
       </div>
     );
   }
 
-  // Agent messages flow: full-width plain text, no bubble. User messages
-  // sit in a padded neutral box, right-aligned.
-  if (!isMe) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'flex-start', minWidth: 0 }}>
-        <div style={{
-          width: '100%', minWidth: 0,
-          background: 'transparent', border: 'none', borderRadius: 0, padding: 0,
-          color: 'var(--ink)', fontSize: 13.5, lineHeight: 1.55,
-          display: 'flex', flexDirection: 'column', gap: 6,
-          position: 'relative', userSelect: 'text', WebkitUserSelect: 'text',
-        }}>
-          {canCopy && (
-            <button
-              type="button"
-              title={copied ? 'Copied' : 'Copy message'}
-              onClick={() => onCopy(m, index)}
-              style={{
-                all: 'unset',
-                cursor: 'pointer',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: 22,
-                height: 22,
-                borderRadius: 6,
-                display: 'grid',
-                placeItems: 'center',
-                color: copied ? 'var(--accent-ink)' : 'var(--ink-faint)',
-                background: 'var(--surface-2)',
-                border: '1px solid var(--hairline)',
-              }}
-            >
-              {copied ? <Icon.Check size={12} /> : <Icon.Copy size={12} />}
-            </button>
-          )}
-          {m.image && <img src={m.image} alt="attached" style={{ width: '100%', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--hairline)', userSelect: 'none' }} />}
-          <div style={{ minWidth: 0, overflowWrap: 'break-word', userSelect: 'text', WebkitUserSelect: 'text' }}>
-            {renderMarkdown(m.text, { compact: true, onCopyCode: handleCopyCode })}
-          </div>
-          {m.activity && <ActivityStrip activity={m.activity} />}
-        </div>
-      </div>
-    );
-  }
+  const tools = toolsFromActivity(m.activity);
+  const files = fileArtifacts(m.activity);
+  const streaming = Boolean(live);
+  const meta = [
+    m.stopped ? 'Stopped' : null,
+    Number.isFinite(m.activity?.totalMs) ? formatMs(m.activity.totalMs) : null,
+    m.activity?.projectContext?.[0]?.projectName ? `${m.activity.projectContext[0].projectName} context` : null,
+  ].filter(Boolean).join(' · ');
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', minWidth: 0 }}>
-      <div style={{
-        maxWidth: '80%', minWidth: 0,
-        padding: '10px 14px',
-        paddingRight: canCopy ? 40 : 14,
-        borderRadius: 12,
-        background: 'var(--surface-2)',
-        color: 'var(--ink)',
-        border: '1px solid var(--hairline)',
-        fontSize: 13.5,
-        lineHeight: 1.5,
-        whiteSpace: 'pre-wrap',
-        overflowWrap: 'break-word',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 6,
-        position: 'relative',
-        userSelect: 'text',
-        WebkitUserSelect: 'text',
-      }}>
-        {canCopy && (
-          <button
-            type="button"
-            title={copied ? 'Copied' : 'Copy message'}
-            onClick={() => onCopy(m, index)}
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              position: 'absolute',
-              top: 8,
-              right: 9,
-              width: 20,
-              height: 20,
-              borderRadius: 6,
-              display: 'grid',
-              placeItems: 'center',
-              color: copied ? 'var(--accent-ink)' : 'var(--ink-faint)',
-              background: copied ? 'var(--accent-soft)' : 'transparent',
-            }}
-          >
-            {copied ? <Icon.Check size={12} /> : <Icon.Copy size={12} />}
-          </button>
-        )}
-        {m.image && <img src={m.image} alt="attached" style={{ width: '100%', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--hairline)', userSelect: 'none' }} />}
-        <div style={{ minWidth: 0, userSelect: 'text', WebkitUserSelect: 'text' }}>
-          {m.text}
+    <div className="hb-msg" data-from="agent" data-last={isLast ? 'true' : undefined}
+      data-agent-hue={agent ? '' : undefined} style={agentHueStyle(agent)}>
+      {showAuthor && agent && (
+        <div className="hb-msg-author">
+          <AgentAvatar agent={agent} size={18} />
+          <span>{agent.name}</span>
+          {authorMeta && <span className="hb-msg-author-meta">{authorMeta}</span>}
         </div>
-      </div>
+      )}
+      {live
+        ? <ChatStatus liveStatus={live.liveStatus} activityLog={live.activityLog} streaming={text.length > 0} />
+        : <ToolCallList tools={tools} />}
+      <ChangeImpact impact={m.activity?.changeImpact} />
+      {m.image && <img src={m.image} alt="attached" style={{ maxWidth: '100%', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)' }} />}
+      <MessageAttachments attachments={m.attachments} />
+      {(text || streaming) && (
+        <div className="hb-msg-body" data-error={m.error ? 'true' : undefined}>
+          {/* While streaming, a block caret rides the end of the last line. */}
+          {text && <MessageBody text={streaming ? `${text}\u258D` : text} onSend={onSend} streaming={streaming} />}
+        </div>
+      )}
+      {files.map(f => (
+        <ArtifactCard key={f.path} type="file" title={f.name}
+          meta={[f.repo || f.path, f.added ? `+${f.added} lines` : null].filter(Boolean).join(' · ')}
+          actions={[f.openable && onSend ? { label: 'Open', onClick: () => onSend(f), primary: true } : null]} />
+      ))}
+      {!streaming && (
+        <MessageActions
+          copied={copied}
+          onCopy={canCopy && onCopy ? () => onCopy(m, index) : undefined}
+          onRetry={onRetry ? () => onRetry(index) : undefined}
+          onBranch={onBranch ? () => onBranch(index) : undefined}
+          onSendToCanvas={canCopy && onSend ? () => onSend({ type: 'text', text, title: titleFromText(text, agent?.name ? `${agent.name} reply` : 'Reply') }) : undefined}
+          onSpeak={canCopy && onSpeak ? () => onSpeak(m, index) : undefined}
+          speaking={speaking}
+          speakLoading={speakLoading}
+          meta={meta}
+        />
+      )}
     </div>
   );
 }
 
-function fmtMs(ms) {
-  if (!Number.isFinite(ms)) return 'n/a';
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  return `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)}s`;
+/** The change-impact receipt, folded behind one line until asked for. */
+function ChangeImpact({ impact }) {
+  const [open, setOpen] = React.useState(false);
+  if (!impact?.breadcrumbs?.length) return null;
+  return (
+    <div>
+      <button type="button" className="hb-text-btn" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        Change impact · {impact.risk} risk
+      </button>
+      {open && <ChangeImpactBreadcrumbs impact={impact} />}
+    </div>
+  );
 }
 
-function ActivityStrip({ activity }) {
-  const [open, setOpen] = React.useState(false);
-  const hasTools = activity.tools?.length > 0;
+function MessageAttachments({ attachments }) {
+  if (!Array.isArray(attachments) || attachments.length === 0) return null;
   return (
-    <div style={{ marginTop: 4, borderTop: '1px dashed var(--hairline)', paddingTop: 7 }}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        style={{ all: 'unset', cursor: 'pointer', display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)' }}
-      >
-        <span style={{ color: 'var(--accent-ink)', fontWeight: 700 }}>{hasTools ? 'tool activity' : 'response timing'}</span>
-        {activity.projectContext?.length > 0 && <span>{activity.projectContext[0].projectName} context ready</span>}
-        <span>total {fmtMs(activity.totalMs)}</span>
-        <span>model {fmtMs(activity.modelMs)}</span>
-        {hasTools && <span>tools {fmtMs(activity.toolMs)}</span>}
-        {activity.rounds > 0 && <span>{activity.rounds} model call{activity.rounds === 1 ? '' : 's'}</span>}
-        <span>{open ? 'hide' : 'details'}</span>
-      </button>
-      {open && (
-        <div style={{ marginTop: 7, display: 'grid', gap: 6 }}>
-          <ChangeImpactBreadcrumbs impact={activity.changeImpact} />
-          {activity.projectContext?.map((context) => (
-            <div key={`${context.workspaceId}:${context.projectId}`} style={{ border: '1px solid var(--hairline)', borderRadius: 8, background: 'var(--surface)', padding: '7px 8px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-soft)' }}>
-              <span style={{ color: 'var(--accent-ink)', fontWeight: 800 }}>project context</span>
-              {` ${context.projectName} · ${context.permission} · ${context.sourceKind}`}
-            </div>
-          ))}
-          {activity.tools?.map((tool, i) => {
-            const stats = diffStats(tool.summary);
-            const detailText = tool.summary?.path || tool.summary?.target;
-            const failed = tool.ok === false;
-            return (
-              <div key={`${tool.name}-${i}`} style={{ border: `1px solid ${failed ? 'var(--ps-red)' : 'var(--hairline)'}`, borderRadius: 8, background: 'var(--surface)', padding: '7px 8px', display: 'grid', gap: 4 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
-                  <span style={{ color: failed ? 'var(--ps-red)' : 'var(--accent-ink)', fontWeight: 800 }} data-tool-outcome={failed ? 'failed' : 'ok'}>{failed ? '✗ ' : ''}{tool.name}</span>
-                  {failed && <span style={{ color: 'var(--ps-red)', fontWeight: 700 }}>failed</span>}
-                  {detailText && <span style={{ color: 'var(--ink-soft)', overflowWrap: 'anywhere' }}>{detailText}</span>}
-                  {stats && stats.added > 0 && <span style={{ color: 'var(--accent-ink)', fontWeight: 700 }}>+{stats.added}</span>}
-                  {stats && stats.removed > 0 && <span style={{ color: 'var(--ink-faint)', fontWeight: 700 }}>−{stats.removed}</span>}
-                  {tool.summary?.files > 1 && <span style={{ color: 'var(--ink-faint)' }}>{tool.summary.files} files</span>}
-                  <span style={{ color: 'var(--ink-faint)' }}>{fmtMs(tool.ms)}</span>
-                  {Number.isFinite(tool.resultChars) && <span style={{ color: 'var(--ink-faint)' }}>{tool.resultChars.toLocaleString()} chars</span>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+    <div className="hb-msg-media">
+      {attachments.map((a, i) => {
+        if (a?.kind === 'image' && a.dataUrl) return <img key={i} src={a.dataUrl} alt={a.name || 'attached image'} />;
+        if (a?.kind === 'audio' && a.dataUrl) return <audio key={i} controls src={a.dataUrl} aria-label={a.name || 'voice message'} />;
+        if (a?.kind === 'video' && a.dataUrl) return <video key={i} controls src={a.dataUrl} aria-label={a.name || 'video'} />;
+        return <AttachmentChip key={i} attachment={a || {}} />;
+      })}
     </div>
   );
 }

@@ -7,17 +7,17 @@ export function TaskWorkerStatus({ dbReady, workerReady, degradedState, workerMe
   const stateColor = degradedState ? badColor : okColor;
 
   return (
-    <div style={{ padding: 8, borderRadius: 7, background: degradedState ? 'oklch(0.96 0.03 25)' : 'var(--surface-2)', border: `1px solid ${degradedState ? badColor : 'var(--hairline)'}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ padding: 8, borderRadius: 'var(--radius-md)', background: degradedState ? 'oklch(0.96 0.03 25)' : 'var(--surface-2)', border: `1px solid ${degradedState ? badColor : 'var(--hairline)'}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 6 }}>
         <StatusPill label="DB" value={dbReady ? 'ready' : 'not ready'} active={dbReady} groupHue={groupHue} />
         <StatusPill label="Worker" value={workerReady ? 'ready' : 'blocked'} active={workerReady} groupHue={groupHue} />
         <StatusPill label="State" value={degradedState || 'ready'} active={!degradedState} groupHue={groupHue} />
       </div>
-      <div style={{ fontSize: 11, lineHeight: 1.35, color: stateColor, overflowWrap: 'anywhere' }}>
+      <div style={{ fontSize: 'var(--text-xs)', lineHeight: 1.35, color: stateColor, overflowWrap: 'anywhere' }}>
         {workerMessage}
       </div>
       {loadError && (
-        <div style={{ fontSize: 10, lineHeight: 1.35, color: 'var(--ink-faint)', overflowWrap: 'anywhere' }}>
+        <div style={{ fontSize: 'var(--text-xs)', lineHeight: 1.35, color: 'var(--ink-faint)', overflowWrap: 'anywhere' }}>
           Task API: {loadError}
         </div>
       )}
@@ -27,9 +27,9 @@ export function TaskWorkerStatus({ dbReady, workerReady, degradedState, workerMe
 
 function StatusPill({ label, value, active, groupHue }) {
   return (
-    <div style={{ minWidth: 0, padding: '5px 6px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--hairline)' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: active ? `oklch(0.50 0.14 ${groupHue})` : 'oklch(0.55 0.18 25)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
+    <div style={{ minWidth: 0, padding: '5px 6px', borderRadius: 'var(--radius-md)', background: 'var(--surface)', border: '1px solid var(--hairline)' }}>
+      <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: active ? `oklch(0.50 0.14 ${groupHue})` : 'oklch(0.55 0.18 25)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
     </div>
   );
 }
@@ -58,7 +58,7 @@ export function SubAgentTaskForm({ state, subAgents, groupHue }) {
       <textarea value={taskPrompt} onChange={e => setTaskPrompt(e.target.value)} placeholder="Prompt for one sub-agent..." rows={2}
         disabled={taskQueueBlocked}
         style={{ ...fieldStyle, gridColumn: '1 / -1', resize: 'vertical', minHeight: 44, maxHeight: 90, opacity: taskQueueBlocked ? 0.65 : 1 }} />
-      <button onClick={createTask} disabled={taskQueueBlocked || !taskAssignee || !taskTitle.trim() || !taskPrompt.trim()} style={{ all: 'unset', gridColumn: '1 / -1', cursor: !taskQueueBlocked && taskAssignee && taskTitle.trim() && taskPrompt.trim() ? 'pointer' : 'not-allowed', padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, textAlign: 'center', background: accentColor, color: '#fff', opacity: !taskQueueBlocked && taskAssignee && taskTitle.trim() && taskPrompt.trim() ? 1 : 0.5 }}>
+      <button onClick={createTask} disabled={taskQueueBlocked || !taskAssignee || !taskTitle.trim() || !taskPrompt.trim()} style={{ all: 'unset', gridColumn: '1 / -1', cursor: !taskQueueBlocked && taskAssignee && taskTitle.trim() && taskPrompt.trim() ? 'pointer' : 'not-allowed', padding: '5px 10px', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', fontWeight: 600, textAlign: 'center', background: accentColor, color: 'var(--on-fill)', opacity: !taskQueueBlocked && taskAssignee && taskTitle.trim() && taskPrompt.trim() ? 1 : 0.5 }}>
         Create single task
       </button>
     </div>
@@ -73,23 +73,23 @@ export function SubAgentRecentTasks({ state, subAgents, groupHue }) {
   return subAgents.map(s => {
     const recent = tasksForSub(s.id);
     return (
-      <div key={`tasks-${s.id}`} style={{ padding: '6px 8px', borderRadius: 6, background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}>
+      <div key={`tasks-${s.id}`} style={{ padding: '6px 8px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: recent.length ? 4 : 0 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink)' }}>{s.name}</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{recent.length ? `${recent.length} recent` : 'no tasks'}</span>
+          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink)' }}>{s.name}</span>
+          <span style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>{recent.length ? `${recent.length} recent` : 'no tasks'}</span>
         </div>
         {recent.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {recent.map(t => (
               <div key={t.id} title={taskQueueBlocked && (t.status || 'queued') === 'queued' ? `${t.prompt || ''}\n${workerMessage}` : t.prompt} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto minmax(56px, 82px)', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 11, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.title}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: t.priority === 'high' ? accentColor : 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t.priority || 'normal'}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: t.error || (taskQueueBlocked && (t.status || 'queued') === 'queued') ? 'oklch(0.55 0.18 25)' : 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>{t.error ? 'error' : taskQueueBlocked && (t.status || 'queued') === 'queued' ? blockedTaskStatus : t.status || 'queued'}</span>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.title}</span>
+                <span style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: t.priority === 'high' ? accentColor : 'var(--ink-faint)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>{t.priority || 'normal'}</span>
+                <span style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: t.error || (taskQueueBlocked && (t.status || 'queued') === 'queued') ? 'oklch(0.55 0.18 25)' : 'var(--ink-faint)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>{t.error ? 'error' : taskQueueBlocked && (t.status || 'queued') === 'queued' ? blockedTaskStatus : t.status || 'queued'}</span>
               </div>
             ))}
           </div>
         ) : (
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>No delegated tasks yet.</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>No delegated tasks yet.</div>
         )}
       </div>
     );

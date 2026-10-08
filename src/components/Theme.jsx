@@ -9,6 +9,8 @@ import {
   getThemePresetsView,
 } from '../lib/theme/presetLibrary.js';
 import { getSurfaceControlsView } from '../lib/theme/surfaceControls.js';
+import { DEFAULT_LOOK_ID, DEFAULT_SHAPE, LOOKS, resolveMood, shapeToCssVars, normalizeShape } from '../lib/theme/looks.js';
+import { setGroupGap } from '../lib/layout/gap.js';
 
 // Re-exported so the rest of the app can read PRESET_LIBRARY without coupling
 // to Theme.jsx. New surfaces (code editor, terminal, agent cards, …) should
@@ -16,7 +18,13 @@ import { getSurfaceControlsView } from '../lib/theme/surfaceControls.js';
 export { PRESET_LIBRARY, getMoodsView, getThemePresetsView } from '../lib/theme/presetLibrary.js';
 
 const THEME_KEY = 'homebase.theme.v1';
-export const DEFAULT_THEME = { hue: 225, chroma: 0.18, lightness: 0.66, mood: 'cobalt-deep', customVars: {}, gridSnapping: true, groupSnapping: true, canvasPanMode: 'both', borderWidth: 1, fontScale: 1.0 };
+// Default board: the restrained "Graphite" look (muted neutral, one accent,
+// sentence-case labels, no glow). Shape fields come from src/lib/theme/looks.js.
+export const DEFAULT_THEME = {
+  hue: 265, chroma: 0.13, lightness: 0.68, mood: LOOKS[DEFAULT_LOOK_ID].mood, look: DEFAULT_LOOK_ID,
+  customVars: {}, gridSnapping: true, groupSnapping: true, canvasPanMode: 'both', borderWidth: 1, fontScale: 1.0,
+  ...DEFAULT_SHAPE,
+};
 const THEME_VAR_DEFAULTS = {
   '--window-bg': 'var(--surface)',
   '--window-title-bg': 'transparent',
@@ -24,7 +32,7 @@ const THEME_VAR_DEFAULTS = {
   '--window-title-backdrop': 'none',
   '--window-radius': 'var(--radius-card)',
   '--window-shadow': 'var(--shadow-card)',
-  '--window-control-idle-opacity': '0.35',
+  '--window-control-idle-opacity': '0',
   '--window-extra-controls-display': 'none',
   '--window-strip-bg': 'transparent',
   '--window-strip-height': '0px',
@@ -70,20 +78,27 @@ function applyTheme(t) {
   root.style.setProperty('--accent-h', String(t.hue));
   root.style.setProperty('--accent-c', String(t.chroma));
   root.style.setProperty('--accent-l', String(t.lightness));
+  // Clear knob-owned vars a previous look may have set (e.g. glass).
+  ['--window-bg', '--window-backdrop'].forEach((k) => root.style.removeProperty(k));
   root.style.setProperty('--app-font-scale', String(t.fontScale || 1.0));
-  const mood = MOODS[t.mood] || MOODS.cream;
+  const mood = resolveMood(t, MOODS);
+  const shape = normalizeShape(t);
+  setGroupGap(shape.groupGap);
   root.setAttribute('data-theme', mood.mode);
   root.setAttribute('data-mood', t.mood);
+  root.setAttribute('data-glow', shape.glow ? 'on' : 'off');
   Object.entries(THEME_VAR_DEFAULTS).forEach(([k, v]) => root.style.setProperty(k, v));
   Object.entries(mood.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  // A1 — derive the window-frame tokens from the effective (post-merge) surface
+  // so live-edits of --surface from the Fine Tune panel propagate to the
+  // header and shadow. Derived first so explicit Fine Tune overrides win.
+  const derived = computeTokenMap(mood, { customVars: t.customVars, headerTint: shape.headerTint });
+  Object.entries(derived).forEach(([k, v]) => root.style.setProperty(k, v));
+  // Design-system shape knobs (radius, density, fonts, labels, motion, glass).
+  Object.entries(shapeToCssVars(shape)).forEach(([k, v]) => root.style.setProperty(k, v));
   Object.entries(t.customVars || {}).forEach(([k, v]) => {
     if (v) root.style.setProperty(k, v);
   });
-  // A1 — derive the window-frame tokens from the effective (post-merge) surface
-  // so live-edits of --surface from the Fine Tune panel propagate to the
-  // header and shadow. customVars can still override these explicitly.
-  const derived = computeTokenMap(mood, { customVars: t.customVars });
-  Object.entries(derived).forEach(([k, v]) => root.style.setProperty(k, v));
 }
 
 const ThemeContext = React.createContext(null);

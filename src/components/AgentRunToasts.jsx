@@ -18,8 +18,8 @@ export function AgentRunToasts({ collaboration, onOpenWindow }) {
     <div style={{
       position: 'fixed', right: 16, bottom: 64, zIndex: 1200, width: 340,
       background: 'var(--surface)', border: '1px solid var(--hairline)',
-      borderRadius: 12, boxShadow: 'var(--shadow-pop)', padding: 12,
-      fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--ink)',
+      borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-pop)', padding: 12,
+      fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--ink)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span style={{
@@ -32,7 +32,7 @@ export function AgentRunToasts({ collaboration, onOpenWindow }) {
         <button
           onClick={() => setDismissedAt(Date.now())}
           title="Dismiss"
-          style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 13 }}
+          style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 'var(--text-md)' }}
         >
           ✕
         </button>
@@ -42,7 +42,7 @@ export function AgentRunToasts({ collaboration, onOpenWindow }) {
       </div>
       {tailLines.length > 0 && (
         <pre style={{
-          margin: '0 0 8px', padding: 8, borderRadius: 8, background: 'var(--surface-2)',
+          margin: '0 0 8px', padding: 8, borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)',
           font: '10px var(--font-mono)', color: 'var(--ink-soft)',
           maxHeight: 120, overflow: 'hidden', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
         }}>
@@ -52,7 +52,7 @@ export function AgentRunToasts({ collaboration, onOpenWindow }) {
       {run.windowId && (
         <button
           onClick={() => { onOpenWindow?.(run.windowId); setDismissedAt(Date.now()); }}
-          style={{ all: 'unset', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'var(--accent-ink)', padding: '5px 10px', borderRadius: 7, background: 'var(--accent-soft)' }}
+          style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-ink)', padding: '5px 10px', borderRadius: 'var(--radius-md)', background: 'var(--accent-soft)' }}
         >
           Open transcript
         </button>

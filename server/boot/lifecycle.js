@@ -5,11 +5,13 @@ import { startTaskWorker } from '../taskWorker.js';
 import { startSchedulerWorker } from '../schedulerWorker.js';
 import { startAgentWakeupWorker } from '../agent-wakeups/worker.js';
 import { startAgentCardRunWorker } from '../agent-card-runs/worker.js';
+import { startOsvMirrorWorker } from '../osvMirror/worker.js';
 import { checkDb } from './database.js';
 import { tickJulesWatcher } from './julesWatcher.js';
 import { attachTerminalServer } from '../terminal/index.js';
 import { attachAgentRegistryWs } from '../ws/agentRegistry.js';
 import { attachWorkspaceCollaborationWs } from '../ws/workspaceCollaboration.js';
+import { attachHocuspocusWs } from '../collab/hocuspocus.js';
 import { initializeDynamicTools, initializeMcpTools, shutdownMcpTools } from '../tools.js';
 
 const log = createLogger('server-lifecycle');
@@ -39,9 +41,11 @@ export async function startServer(app, options = {}) {
         mode: getRuntimeMode(),
       });
 
-      attachTerminalServer(server, { sessionStore: app.get('sessionStore') });
-      attachAgentRegistryWs(server, { sessionStore: app.get('sessionStore') });
-      attachWorkspaceCollaborationWs(server, { sessionStore: app.get('sessionStore') });
+      const wsAuth = { sessionStore: app.get('sessionStore'), sessionSecret: app.get('sessionSecret') };
+      attachTerminalServer(server, { ...wsAuth });
+      attachAgentRegistryWs(server, { ...wsAuth });
+      attachWorkspaceCollaborationWs(server, { ...wsAuth });
+      attachHocuspocusWs(server, { ...wsAuth });
 
       if (shouldStartWorkers) {
         startLogCleanup();
@@ -49,6 +53,7 @@ export async function startServer(app, options = {}) {
         startSchedulerWorker();
         startAgentWakeupWorker();
         startAgentCardRunWorker();
+        startOsvMirrorWorker();
       }
 
       if (shouldStartWatchers) {

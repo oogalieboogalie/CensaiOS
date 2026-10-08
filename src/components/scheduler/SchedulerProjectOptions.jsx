@@ -26,11 +26,11 @@ export function SchedulerProjectOptions({ state }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Target Project Context</span>
+      <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', color: 'var(--ink-soft)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>Target Project Context</span>
       {projectsLoading && projectOptions.length === 0 ? (
-        <div style={{ fontSize: 12, color: 'var(--ink-soft)' }}>Loading projects...</div>
+        <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)' }}>Loading projects...</div>
       ) : projectsError && projectOptions.length === 0 ? (
-        <div style={{ fontSize: 12, color: 'var(--ps-red)' }}>{projectsError}</div>
+        <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ps-red)' }}>{projectsError}</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -40,11 +40,11 @@ export function SchedulerProjectOptions({ state }) {
               style={{
                 flex: 1,
                 padding: '8px 10px',
-                borderRadius: 8,
+                borderRadius: 'var(--radius-lg)',
                 border: '1px solid var(--hairline)',
                 background: 'var(--surface-2)',
                 color: 'var(--ink)',
-                fontSize: 13,
+                fontSize: 'var(--text-md)',
                 outline: 'none',
                 cursor: 'pointer'
               }}
@@ -66,9 +66,9 @@ export function SchedulerProjectOptions({ state }) {
                 placeItems: 'center',
                 width: 32,
                 height: 32,
-                borderRadius: 8,
+                borderRadius: 'var(--radius-lg)',
                 background: showAddProject ? 'var(--accent)' : 'var(--surface-2)',
-                color: showAddProject ? 'white' : 'var(--ink)',
+                color: showAddProject ? 'var(--on-fill)' : 'var(--ink)',
                 border: showAddProject ? '1px solid var(--accent)' : '1px solid var(--hairline)',
                 transition: 'all 0.15s ease'
               }}
@@ -85,7 +85,7 @@ export function SchedulerProjectOptions({ state }) {
               padding: 12,
               background: 'var(--surface-2)',
               border: '1px solid var(--hairline-strong)',
-              borderRadius: 8,
+              borderRadius: 'var(--radius-lg)',
               animation: 'gen-fade 0.2s ease'
             }}>
               <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
@@ -129,7 +129,7 @@ export function SchedulerProjectOptions({ state }) {
                   style={schedulerInputStyle}
                 />
               )}
-              {addProjectError && <div style={{ fontSize: 10, color: 'var(--ps-red)', lineHeight: 1.35 }}>{addProjectError}</div>}
+              {addProjectError && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ps-red)', lineHeight: 1.35 }}>{addProjectError}</div>}
               <button
                 type="button"
                 onClick={handleAddProjectOption}
@@ -138,10 +138,10 @@ export function SchedulerProjectOptions({ state }) {
                   all: 'unset',
                   cursor: addingProject || (newProjectMode === 'github' ? !newProjectRepo.trim() : !newProjectPath.trim()) ? 'not-allowed' : 'pointer',
                   padding: '7px 10px',
-                  borderRadius: 7,
+                  borderRadius: 'var(--radius-md)',
                   background: 'var(--accent)',
-                  color: 'white',
-                  fontSize: 11,
+                  color: 'var(--on-fill)',
+                  fontSize: 'var(--text-xs)',
                   fontWeight: 700,
                   textAlign: 'center',
                   opacity: addingProject || (newProjectMode === 'github' ? !newProjectRepo.trim() : !newProjectPath.trim()) ? 0.55 : 1
