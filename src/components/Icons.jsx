@@ -51,12 +51,21 @@ export const Icon = {
   Calendar: (p) => <I {...p}><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></I>,
   Music: (p) => <I {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></I>,
   Video: (p) => <I {...p}><rect x="2" y="6" width="16" height="12" rx="2"/><path d="M18 10l4-2v8l-4-2"/></I>,
+  Mic: (p) => <I {...p}><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></I>,
+  Paperclip: (p) => <I {...p}><path d="M20 11.5l-7.8 7.8a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"/></I>,
+  Speaker: (p) => <I {...p}><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></I>,
+  Stop: (p) => <I {...p}><rect x="6" y="6" width="12" height="12" rx="2"/></I>,
+  Picture: (p) => <I {...p}><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10.5" r="1.7"/><path d="M3 17.5l5-4 4 3 3-2 6 5"/></I>,
   Server: (p) => <I {...p}><rect x="2" y="4" width="20" height="6" rx="2"/><rect x="2" y="14" width="20" height="6" rx="2"/><path d="M6 7h.01M6 17h.01"/></I>,
   Play: (p) => <I {...p}><path d="M5 3l14 9-14 9z"/></I>,
   Edit: (p) => <I {...p}><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></I>,
   History: (p) => <I {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></I>,
   Alert: (p) => <I {...p}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></I>,
   Info: (p) => <I {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></I>,
+  Branch: (p) => <I {...p}><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-6 3-11.5 7"/></I>,
+  Chevron: (p) => <I {...p}><path d="m9 6 6 6-6 6"/></I>,
+  ArrowRight: (p) => <I {...p}><path d="M5 12h14M13 6l6 6-6 6"/></I>,
+  OpenWindow: (p) => <I {...p}><rect x="3" y="5" width="13" height="13" rx="2"/><path d="M14 3h7v7M21 3l-9 9"/></I>,
   Refresh: (p) => <I {...p}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></I>,
   Github: (p) => (
     <I size={p.size} fill="currentColor" stroke="none" {...p}>
@@ -72,6 +81,8 @@ export const Icon = {
   ImportTray: (p) => <I {...p}><path d="M12 3v10m0 0L8.5 9.5M12 13l3.5-3.5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></I>,
   Monitor: (p) => <I {...p}><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 12h2l1.5-3 2.5 5 1.5-2H17"/><path d="M12 16v4M9 20h6"/></I>,
   Flask: (p) => <I {...p}><path d="M9.5 3h5"/><path d="M10.5 3v5.5L5.7 17a2 2 0 0 0 1.8 3h9a2 2 0 0 0 1.8-3L13.5 8.5V3"/><path d="M8 14.5h8"/></I>,
+  Mail: (p) => <I {...p}><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="M22 7.5l-10 6-10-6"/></I>,
+  Download: (p) => <I {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></I>,
 };
 
 

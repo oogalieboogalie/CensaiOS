@@ -145,7 +145,7 @@ export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, git
       <div onClick={isDir ? onClick : undefined} onPointerDown={isDir ? undefined : onPointerDown}
         onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
         title={isDir ? (githubRepo ? 'Drop image to save here · click to expand' : 'click to expand') : 'Click to open · drag to canvas'}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `2px 6px 2px ${10 + depth * 14}px`, borderRadius: 4, cursor: isDir ? (dropTarget ? 'copy' : 'pointer') : 'grab', color: isDir ? 'var(--ink)' : 'var(--ink-soft)', userSelect: 'none', background: dropTarget ? 'var(--accent-soft)' : 'transparent', transition: 'background 0.15s' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `2px 6px 2px ${10 + depth * 14}px`, borderRadius: 'var(--radius-sm)', cursor: isDir ? (dropTarget ? 'copy' : 'pointer') : 'grab', color: isDir ? 'var(--ink)' : 'var(--ink-soft)', userSelect: 'none', background: dropTarget ? 'var(--accent-soft)' : 'transparent', transition: 'background 0.15s' }}
         onMouseEnter={(e) => !dropTarget && (e.currentTarget.style.background = 'var(--surface-2)')}
         onMouseLeave={(e) => !dropTarget && (e.currentTarget.style.background = 'transparent')}>
         {isDir ? <svg width="10" height="10" viewBox="0 0 10 10" style={{ transition: 'transform 0.15s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}><path d="M3 2 L7 5 L3 8" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg> : <span style={{ width: 10 }} />}
@@ -154,7 +154,7 @@ export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, git
           <button
             onClick={(e) => { e.stopPropagation(); onSetRoot(node.path); }}
             title="Work out of this folder (set as window root)"
-            style={{ all: 'unset', cursor: 'pointer', marginLeft: 'auto', fontSize: 9, color: 'var(--ink-faint)', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}
+            style={{ all: 'unset', cursor: 'pointer', marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', padding: '1px 6px', borderRadius: 'var(--radius-sm)', whiteSpace: 'nowrap' }}
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent-ink)'; e.currentTarget.style.background = 'var(--accent-soft)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--ink-faint)'; e.currentTarget.style.background = 'transparent'; }}
           >
@@ -162,10 +162,10 @@ export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, git
           </button>
         )}
       </div>
-      {isDir && open && loading && <div style={{ paddingLeft: 10 + (depth+1) * 14, color: 'var(--ink-faint)', fontSize: 10, fontStyle: 'italic', padding: '4px 0 4px ' + (10 + (depth+1) * 14) + 'px' }}>Loading...</div>}
+      {isDir && open && loading && <div style={{ paddingLeft: 10 + (depth+1) * 14, color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', fontStyle: 'italic', padding: '4px 0 4px ' + (10 + (depth+1) * 14) + 'px' }}>Loading...</div>}
       {isDir && open && children && children.map((c, i) => <Tree key={i} node={c} depth={depth + 1} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={githubRepo} mode={mode} rootDirPath={rootDirPath} wins={wins} onSelect={onSelect} onSetRoot={onSetRoot} />)}
       {drag && createPortal(
-        <div style={{ position: 'fixed', left: drag.x + 8, top: drag.y + 8, zIndex: 1000, pointerEvents: 'none', background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 8, padding: '6px 10px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink)', boxShadow: '0 8px 20px oklch(0 0 0 / 0.18)' }}>{node.name}</div>,
+        <div style={{ position: 'fixed', left: drag.x + 8, top: drag.y + 8, zIndex: 1000, pointerEvents: 'none', background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '6px 10px', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink)', boxShadow: '0 8px 20px oklch(0 0 0 / 0.18)' }}>{node.name}</div>,
         document.body
       )}
     </div>

@@ -81,8 +81,8 @@ export function getMissionCardPosition(rect, viewport = { width: innerWidth, hei
 }
 
 export function getMissionCopy(step, secondId) {
-  if (step === 0) return ['Open your first module', 'Use Modules in the top-left and choose any window.'];
-  if (step === 1 && !secondId) return ['Build a pair', 'Open Modules again and add a second window.'];
+  if (step === 0) return ['Open your first module', 'Press Add in the top-left (or Ctrl+K) and pick any module.'];
+  if (step === 1 && !secondId) return ['Build a pair', 'Open Add again and pick a second module.'];
   if (step === 1) return ['Put them side by side', 'Drag the new window beside the first. This only counts after a real move.'];
   if (step === 2 && document.querySelector('[data-testid="sidebar-favorites-popover"]')) return ['Choose quick favorites', 'Turn on at least two windows you want in this rail.'];
   if (step === 2 && document.querySelector('[aria-label="Customize Sidebar"]')) return ['Customize quick access', 'Click the gear, then turn on at least two favorite windows.'];

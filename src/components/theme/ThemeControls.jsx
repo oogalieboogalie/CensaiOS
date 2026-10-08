@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { MOODS, clamp, oklch, parseOklch } from '../Theme.jsx';
+import { resolveMood } from '../../lib/theme/looks.js';
 
 export function ColorWheel({ hue, chroma, onChange, size = 184, maxChroma = 0.22 }) {
   const radius = size / 2 - 9;
@@ -50,7 +51,7 @@ export function ColorWheel({ hue, chroma, onChange, size = 184, maxChroma = 0.22
 export function Slider({ label, value, min, max, step, onChange, format = v => v }) {
   return (
     <label style={{ display: 'grid', gap: 7 }}>
-      <span style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <span style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>
         <span>{label}</span>
         <span>{format(value)}</span>
       </span>
@@ -59,16 +60,16 @@ export function Slider({ label, value, min, max, step, onChange, format = v => v
   );
 }
 
-export function ThemePanelCard({ children, style }) {
+export function ThemePanelCard({ children, style, ...rest }) {
   return (
-    <div style={{ border: '1px solid var(--hairline)', borderRadius: 8, background: 'var(--surface-2)', ...style }}>
+    <div {...rest} style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', ...style }}>
       {children}
     </div>
   );
 }
 
 export function SurfaceControl({ item, theme, setTheme, activeSurface, setActiveSurface }) {
-  const moodVars = (MOODS[theme.mood] || MOODS.cream).vars;
+  const moodVars = resolveMood(theme, MOODS).vars;
   const customVars = theme.customVars || {};
   const value = customVars[item.varName] || moodVars[item.varName];
   const color = parseOklch(value);
@@ -98,16 +99,16 @@ export function SurfaceControl({ item, theme, setTheme, activeSurface, setActive
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 22, height: 22, borderRadius: 6, background: value, boxShadow: 'inset 0 0 0 1px oklch(0 0 0 / 0.14)', flexShrink: 0 }} />
+        <div style={{ width: 22, height: 22, borderRadius: 'var(--radius-md)', background: value, boxShadow: 'inset 0 0 0 1px oklch(0 0 0 / 0.14)', flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: isActive ? 750 : 600, color: 'var(--ink)' }}>{item.label}</div>
+          <div style={{ fontSize: 'var(--text-sm)', fontWeight: isActive ? 750 : 600, color: 'var(--ink)' }}>{item.label}</div>
           {isActive && (
-            <div style={{ fontSize: 10, color: 'var(--ink-faint)', marginTop: 2, lineHeight: 1.35 }}>{item.hint}</div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginTop: 2, lineHeight: 1.35 }}>{item.hint}</div>
           )}
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)', marginTop: 2 }}>{value}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginTop: 2 }}>{value}</div>
         </div>
         {customized && (
-          <button onClick={(e) => { e.stopPropagation(); reset(); }} title={`Reset ${item.label}`} style={{ all: 'unset', cursor: 'pointer', display: 'grid', placeItems: 'center', width: 22, height: 22, borderRadius: 6, color: 'var(--ink-faint)', background: 'var(--surface)', flexShrink: 0 }}>
+          <button onClick={(e) => { e.stopPropagation(); reset(); }} title={`Reset ${item.label}`} style={{ all: 'unset', cursor: 'pointer', display: 'grid', placeItems: 'center', width: 22, height: 22, borderRadius: 'var(--radius-md)', color: 'var(--ink-faint)', background: 'var(--surface)', flexShrink: 0 }}>
             <Icon.Close size={11} />
           </button>
         )}

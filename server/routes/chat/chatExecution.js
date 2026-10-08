@@ -14,7 +14,7 @@ import { recordPolicyEvidence } from '../../policy/evidence.js';
 import { recordTraceRound, recordToolTrace, recordTraceFailure } from '../../operational-intelligence/traces.js';
 import { isPrivateTraceTool } from '../../operational-intelligence/tracePrivacy.js';
 import { createChatToolSession } from './toolSession.js';
-import { callChatModelRound, chatModelAccessContext } from './modelRound.js';
+import { callChatModelRound, chatModelAccessContext, forwardDeltas, throwIfChatAborted } from './modelRound.js';
 
 export async function runChatLoop({
   agentId,
@@ -30,7 +30,7 @@ export async function runChatLoop({
   onModelAccepted,
   timings,
   userId,
-  traceId
+  traceId, signal = null,
 }) {
   let toolActions = [];
   let finalText = '';
@@ -38,12 +38,14 @@ export async function runChatLoop({
   let synthesisReason = null;
   let round = 0;
   const toolSession = createChatToolSession(toolsForCaller, reqProvider);
-  const toolContext = { userId, ...(authorizationWorkspaceId ? { workspaceId: authorizationWorkspaceId } : {}) };
+  const toolContext = { userId, ...(windowId ? { windowId } : {}), ...(authorizationWorkspaceId ? { workspaceId: authorizationWorkspaceId } : {}) };
   const accessContext = chatModelAccessContext(userId, authorizationWorkspaceId);
   let modelAccepted = false;
+  const acceptModel = () => { if (!modelAccepted) { modelAccepted = true; onModelAccepted?.(); } };
   if (toolSession.prompt) chatMessages.splice(1, 0, { role: 'system', content: toolSession.prompt });
 
   for (;;) {
+    throwIfChatAborted(signal);
     round += 1;
     if (round > MAX_CHAT_MODEL_ROUNDS) {
       finalText = summarizeToolActions(toolActions);
@@ -78,11 +80,9 @@ export async function runChatLoop({
       round,
       userId,
       workspaceId,
+      onDelta: forwardDeltas(round, sendEvent, acceptModel),
     });
-    if (!modelAccepted) {
-      modelAccepted = true;
-      onModelAccepted?.();
-    }
+    acceptModel();
     const modelMs = Date.now() - modelStartedAt;
     timings.model_ms += modelMs;
     timings.model_calls.push({
@@ -108,6 +108,7 @@ export async function runChatLoop({
       );
 
       for (const call of calls) {
+        throwIfChatAborted(signal);
         const toolName = call.function.name;
         let args = {};
         let argError = null;
@@ -132,6 +133,8 @@ export async function runChatLoop({
           agent_id: agentId,
           model: reqModel,
           prompt: chatMessages[chatMessages.length - 1]?.content || '',
+          workspace_id: authorizationWorkspaceId || null,
+          user_id: userId ?? null,
         };
 
         const isPrivate = isPrivateTraceTool(toolName);
@@ -232,8 +235,7 @@ export async function runChatLoop({
         });
       }
 
-      // Continue loop — model will process tool results and either
-      // call more tools or respond with text
+      // Continue: the model reads the tool results, then calls more tools or answers.
       continue;
     }
 

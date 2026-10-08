@@ -1,0 +1,245 @@
+/*
+ * Window chrome (spec 2): the one shared header every window gets from
+ * WindowFrame.jsx + WindowHeader.jsx. Values come only from tokens.css.
+ *
+ * Frame attributes the rules key off:
+ *   [data-win-frame]                       every window
+ *   [data-header-mode="strip|ghost|bare"]  header mode (theme knob or per window)
+ *   [data-active="true"]                   the window that gets your typing
+ *   [data-menu-open="true"]                overflow menu showing
+ */
+
+:root {
+  --window-header-h: var(--window-title-h);
+  --window-control-size: var(--space-6);
+  --window-focus-hairline: color-mix(in oklab, var(--accent) 55%, var(--hairline));
+}
+
+.hb-win-header {
+  position: relative;
+  z-index: 4;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--window-header-h);
+  padding: 0 var(--pad-1) 0 var(--pad-3);
+  box-sizing: border-box;
+  background: var(--window-title-bg, transparent);
+  backdrop-filter: var(--window-title-backdrop, none);
+  -webkit-backdrop-filter: var(--window-title-backdrop, none);
+  color: var(--ink-soft);
+  font: 500 var(--text-md) / 1 var(--font-sans);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity var(--dur-base) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
+}
+[data-win-frame][data-active="true"] .hb-win-header { color: var(--ink); }
+[data-win-frame][data-pinned="true"] .hb-win-header { cursor: default; }
+
+/* No uppercase, tracking or monospace anywhere in a header (spec 2). */
+.hb-win-header,
+.hb-win-header * {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-family: var(--font-sans) !important;
+}
+
+.hb-win-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.hb-win-title-slot { display: contents; }
+.hb-win-identity {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--window-accent, var(--accent));
+}
+.hb-win-label {
+  min-width: 0;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.hb-win-subtitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 4 auto;
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+.hb-win-agents { display: flex; gap: var(--space-1); flex-shrink: 0; }
+
+.hb-win-actions,
+.hb-win-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  flex-shrink: 0;
+  cursor: default;
+}
+.hb-win-actions:empty { display: none; }
+
+/* Data-declared actions (WindowTitle `actions`) and the frame's controls. */
+.hb-win-action,
+.hb-win-control {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: var(--window-control-size);
+  min-width: var(--window-control-size);
+  border-radius: var(--radius-sm);
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast), opacity var(--dur-base);
+}
+.hb-win-action { padding: 0 var(--space-2); font-size: var(--text-sm); color: var(--ink-soft); }
+.hb-win-action:hover,
+.hb-win-control:hover { background: var(--surface-hover); color: var(--ink); }
+.hb-win-action[aria-pressed="true"] { background: var(--surface-2); color: var(--ink); }
+.hb-win-action:focus-visible,
+.hb-win-control:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.hb-win-control[data-window-control="close"]:hover { color: var(--danger); }
+
+/* Hover reveal: controls rest invisible and fade in near the pointer. */
+.hb-win-controls { opacity: var(--window-control-idle-opacity, 0); transition: opacity var(--dur-base) var(--ease-standard); }
+[data-win-frame]:hover .hb-win-controls,
+[data-win-frame][data-menu-open="true"] .hb-win-controls,
+.hb-win-controls:focus-within { opacity: 1; }
+@media (hover: none) { .hb-win-controls { opacity: 1; } }
+
+/* Ghost: content runs to the top edge; the header floats in on hover. */
+[data-header-mode="ghost"] > .hb-win-header {
+  position: absolute;
+  inset: 0 0 auto 0;
+  background: color-mix(in oklab, var(--window-bg, var(--surface)) 88%, transparent);
+  backdrop-filter: blur(var(--space-2));
+  -webkit-backdrop-filter: blur(var(--space-2));
+  opacity: 0;
+  pointer-events: none;
+}
+[data-header-mode="ghost"]:hover > .hb-win-header,
+[data-header-mode="ghost"][data-menu-open="true"] > .hb-win-header {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Bare: no header; a small control pill at the top right on hover. */
+[data-header-mode="bare"] > .hb-win-header {
+  position: absolute;
+  top: var(--space-1-5);
+  right: var(--space-1-5);
+  height: auto;
+  padding: var(--space-0-5);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--elevation-2);
+  opacity: 0;
+  pointer-events: none;
+}
+[data-header-mode="bare"] > .hb-win-header .hb-win-title { display: none; }
+[data-header-mode="bare"] > .hb-win-header .hb-win-grip { display: inline-flex; }
+[data-header-mode="bare"] > .hb-win-header .hb-win-controls { opacity: 1; }
+[data-header-mode="bare"]:hover > .hb-win-header,
+[data-header-mode="bare"][data-menu-open="true"] > .hb-win-header {
+  opacity: 1;
+  pointer-events: auto;
+}
+.hb-win-grip { display: none; color: var(--ink-faint); padding: 0 var(--space-1); cursor: grab; }
+
+/* Overflow menu. */
+.hb-win-menu {
+  position: absolute;
+  top: calc(var(--window-header-h) - var(--space-0-5));
+  right: var(--space-1);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: var(--space-48);
+  max-height: 60vh;
+  overflow: auto;
+  padding: var(--space-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--elevation-3);
+  color: var(--ink);
+  cursor: default;
+}
+.hb-win-menu[hidden] { display: none; }
+[data-header-mode="bare"] .hb-win-menu { top: calc(100% + var(--space-1)); right: 0; }
+.hb-win-menu-section { display: flex; flex-direction: column; gap: var(--space-0-5); }
+.hb-win-menu-section:empty { display: none; }
+.hb-win-menu-section + .hb-win-menu-section { border-top: 1px solid var(--hairline); padding-top: var(--space-1); margin-top: var(--space-0-5); }
+.hb-win-menu-section > * { justify-content: flex-start; }
+.hb-win-menu-label { padding: var(--space-1) var(--space-2) 0; color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-win-menu-item {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-h);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.hb-win-menu-item:hover,
+.hb-win-menu-item:focus-visible { background: var(--surface-2); }
+.hb-win-menu-item[aria-checked="true"]::after { content: ""; margin-left: auto; width: var(--space-1-5); height: var(--space-1-5); border-radius: var(--radius-full); background: var(--accent); }
+.hb-win-menu-row { display: flex; gap: var(--space-0-5); padding: 0 var(--space-1); }
+.hb-win-menu-row .hb-win-menu-item { flex: 1; justify-content: center; }
+.hb-win-menu-row .hb-win-menu-item[aria-checked="true"] { background: var(--accent-soft); color: var(--accent-ink); }
+.hb-win-menu-row .hb-win-menu-item[aria-checked="true"]::after { display: none; }
+
+/* Traffic lights (macOS-style moods and the traffic-mac variant). */
+[data-traffic-controls="true"] .hb-win-controls { order: -1; gap: var(--space-2); margin-right: var(--space-2); opacity: 1; }
+[data-traffic-controls="true"] .hb-win-control {
+  height: var(--space-3);
+  min-width: var(--space-3);
+  width: var(--space-3);
+  border-radius: var(--radius-full);
+  color: transparent;
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+}
+[data-traffic-controls="true"] .hb-win-control[data-window-control="close"] { background: var(--ps-red); }
+[data-traffic-controls="true"] .hb-win-control[data-window-control="menu"] { background: var(--status-amber); order: 1; }
+[data-traffic-controls="true"] .hb-win-control[data-window-control="maximize"] { background: var(--ps-green); order: 2; }
+[data-traffic-controls="true"] .hb-win-header:hover .hb-win-control { color: var(--ink-70); }
+[data-traffic-controls="true"].hb-win-header { padding-left: var(--pad-3); }
+
+/* Windows 98: solid navy bar when active, gray when not, beveled squares. */
+[data-chrome-header="win98"].hb-win-header {
+  height: var(--space-6);
+  padding: 0 var(--space-1) 0 var(--space-2);
+  background: var(--hairline);
+  color: var(--on-fill);
+  font-weight: 700;
+}
+[data-active="true"] > [data-chrome-header="win98"].hb-win-header { background: var(--window-title-bg, var(--accent)); }
+[data-chrome-header="win98"] .hb-win-controls { opacity: 1; }
+[data-chrome-header="win98"] .hb-win-control {
+  height: var(--space-4);
+  min-width: var(--space-4);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: inset -1px -1px 0 var(--hairline-strong), inset 1px 1px 0 var(--color-white);
+}

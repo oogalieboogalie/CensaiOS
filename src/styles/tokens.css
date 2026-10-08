@@ -1,0 +1,279 @@
+/*
+ * Homebase design tokens — the ONE place colors, radii, type sizes, spacing,
+ * shadows and durations are defined.
+ *
+ * Layers:
+ *   1. Knobs      — a handful of numbers a theme ("look") turns: radius
+ *                   scale, density, motion scale, font scale, label style.
+ *                   Theme.jsx writes them onto :root; see src/lib/theme/looks.js.
+ *   2. Primitives — raw scales derived from the knobs (radius, type, space).
+ *   3. Semantic   — jobs, not paint: --surface, --ink, --accent, --danger,
+ *                   --elevation-2. Components use ONLY these names.
+ *
+ * Colorways (the --bg / --surface / --ink family) are theme data in
+ * src/lib/theme/presetEntries/; the values below are the light fallback that
+ * shows before the theme engine runs.
+ *
+ * Lint (.eslintrc.json) fails the build on raw hex / rgba() colors and
+ * numeric borderRadius / fontSize in src/components and src/app.
+ */
+
+:root {
+  /* ── 1. Knobs ─────────────────────────────────────────────────────────── */
+  --radius-scale: 1;
+  --density: 1;
+  --motion-scale: 1;
+  --app-font-scale: 1;
+
+  /* ── 2a. Radius: five steps + full. Nested rule: inner = outer - padding. */
+  --radius-none: 0;
+  --radius-xs: calc(2px * var(--radius-scale));
+  --radius-sm: calc(4px * var(--radius-scale));
+  --radius-md: calc(6px * var(--radius-scale));
+  --radius-lg: calc(8px * var(--radius-scale));
+  --radius-xl: calc(12px * var(--radius-scale));
+  --radius-full: 9999px;
+  /* Window frame radius, and the radius for a card sitting inside a window
+     with --space-2 of padding (nested radius rule). */
+  --radius-window: var(--radius-lg);
+  --radius-inset: max(0px, calc(var(--radius-window) - var(--space-2)));
+
+  /* Compatibility aliases — older components and Tailwind's `rounded-*`. All
+     point into the one scale above; do not give them their own numbers. */
+  --radius-default: var(--radius-sm);
+  --radius-2xl: var(--radius-xl);
+  --radius-3xl: var(--radius-xl);
+  --radius-app: var(--radius-xl);
+  --radius-card: var(--radius-window);
+  --radius-pill: var(--radius-full);
+  --radius-float: var(--radius-xl);
+  --radius-float-btn: var(--radius-lg);
+  --radius-float-sm: var(--radius-md);
+
+  /* ── 2b. Type scale: seven steps, nothing else. ───────────────────────── */
+  --text-xs: calc(11px * var(--app-font-scale));
+  --text-sm: calc(12px * var(--app-font-scale));
+  --text-md: calc(13px * var(--app-font-scale));
+  --text-base: calc(14px * var(--app-font-scale));
+  --text-lg: calc(16px * var(--app-font-scale));
+  --text-xl: calc(20px * var(--app-font-scale));
+  --text-2xl: calc(28px * var(--app-font-scale));
+
+  --font-sans: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "Cascadia Mono", Consolas, ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: var(--font-sans);
+  --font-ui: var(--font-sans);
+  /* Small labels (section headers, chips, window titles). Mono + caps is a
+     theme choice ("Terminal", "Classic"), not the default. */
+  --font-label: var(--font-sans);
+  --label-case: none;
+  --label-tracking: 0;
+  --label-weight: 500;
+  --label-size: var(--text-sm);
+
+  /* ── 2c. Spacing: 4-pt grid (Tailwind's full scale, for utilities). ───── */
+  --space-0: 0;
+  --space-px: 1px;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-11: 44px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-28: 112px;
+  --space-32: 128px;
+  --space-36: 144px;
+  --space-40: 160px;
+  --space-44: 176px;
+  --space-48: 192px;
+  --space-52: 208px;
+  --space-56: 224px;
+  --space-60: 240px;
+  --space-64: 256px;
+  --space-72: 288px;
+  --space-80: 320px;
+  --space-96: 384px;
+
+  /* Density-aware spacing: padding and control heights that compact /
+     comfortable presets scale together. */
+  --pad-1: calc(4px * var(--density));
+  --pad-2: calc(8px * var(--density));
+  --pad-3: calc(12px * var(--density));
+  --pad-4: calc(16px * var(--density));
+  --control-h: calc(28px * var(--density));
+  --row-h: calc(32px * var(--density));
+  --window-title-h: calc(28px * var(--density));
+
+  --border-width-0: 0;
+  --border-width-1: 1px;
+  --border-width-2: 2px;
+  --border-width-4: 4px;
+  --border-width-8: 8px;
+  --window-border-width: var(--border-width-1);
+
+  /* ── 2d. Motion: three durations, two curves. --motion-scale 0 = still. ─ */
+  --dur-fast: calc(120ms * var(--motion-scale));
+  --dur-base: calc(200ms * var(--motion-scale));
+  --dur-slow: calc(320ms * var(--motion-scale));
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1.2);
+
+  /* ── 3. Semantic color (light fallback; colorways override). ──────────── */
+  --bg: oklch(0.975 0.002 260);
+  --canvas: oklch(0.965 0.002 260);
+  --surface: oklch(0.995 0.001 260);
+  --surface-2: oklch(0.975 0.002 260);
+  --hairline: oklch(0.91 0.003 260);
+  --hairline-strong: oklch(0.82 0.004 260);
+  --ink: oklch(0.22 0.006 260);
+  --ink-soft: oklch(0.44 0.006 260);
+  --ink-faint: oklch(0.6 0.006 260);
+  --accent-h: 255;
+  --accent-c: 0.15;
+  --accent-l: 0.58;
+  --accent: oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+  --accent-soft: oklch(0.94 0.03 var(--accent-h));
+  --accent-ink: oklch(0.38 0.1 var(--accent-h));
+  --accent-contrast: oklch(1 0 0);
+
+  --ps-green: oklch(0.72 0.16 148);
+  --ps-blue: oklch(0.66 0.16 250);
+  --ps-red: oklch(0.64 0.21 25);
+  --ps-pink: oklch(0.68 0.2 5);
+
+  --surface-1: var(--surface);
+  --surface-soft: var(--surface-2);
+  --surface-raised: color-mix(in oklab, var(--surface) 92%, var(--ink));
+  --surface-3: color-mix(in oklab, var(--surface-2) 86%, var(--ink));
+  --surface-hover: color-mix(in oklab, var(--surface-2) 88%, var(--accent));
+  --surface-sunken: color-mix(in oklab, var(--surface) 90%, var(--color-black));
+  --surface-50: color-mix(in oklab, var(--surface) 50%, transparent);
+  --hairline-soft: color-mix(in oklab, var(--hairline) 65%, transparent);
+  --hairline-bg: color-mix(in oklab, var(--hairline) 35%, transparent);
+  --border-subtle: var(--hairline);
+  --border-strong: var(--hairline-strong);
+  --border-accent: var(--accent);
+  --accent-faint: color-mix(in oklab, var(--accent) 14%, transparent);
+  /* Overlays: dim what is behind a modal / image caption. */
+  --scrim: oklch(0 0 0 / 0.5);
+  --scrim-soft: oklch(0 0 0 / 0.25);
+  --scrim-strong: oklch(0 0 0 / 0.75);
+  /* Text on an image or a solid accent / status fill. */
+  --on-fill: oklch(1 0 0);
+  --on-fill-soft: oklch(1 0 0 / 0.8);
+  --highlight: oklch(1 0 0 / 0.08);
+
+  /* Status */
+  --status-success: var(--ps-green);
+  --status-info: var(--ps-blue);
+  --status-danger: var(--ps-red);
+  --status-highlight: var(--ps-pink);
+  --status-amber: oklch(0.77 0.16 76);
+  --status-yellow: oklch(0.82 0.17 98);
+  --status-orange: oklch(0.72 0.18 52);
+  --status-purple: oklch(0.62 0.18 300);
+  --success: var(--status-success);
+  --danger: var(--status-danger);
+  --warning: var(--status-amber);
+  --info: var(--status-info);
+  --ps-amber: var(--status-amber);
+  --ps-yellow: var(--status-yellow);
+  --ps-orange: var(--status-orange);
+  --ps-purple: var(--status-purple);
+  --green: var(--status-success);
+  --red: var(--status-danger);
+  --orange: var(--status-orange);
+
+  --color-transparent: transparent;
+  --color-white: oklch(1 0 0);
+  --color-black: oklch(0 0 0);
+  --canvas-pen-red: oklch(0.64 0.21 25);
+  --canvas-pen-amber: oklch(0.76 0.16 76);
+  --canvas-pen-green: oklch(0.72 0.16 148);
+  --canvas-pen-blue: oklch(0.66 0.16 250);
+  --canvas-pen-purple: oklch(0.62 0.18 300);
+  --canvas-pen-pink: oklch(0.68 0.2 5);
+
+  /* Opacity variants are explicit because Tailwind cannot alpha-compose var(). */
+  --accent-05: color-mix(in oklab, var(--accent) 5%, transparent);
+  --accent-10: color-mix(in oklab, var(--accent) 10%, transparent);
+  --accent-20: color-mix(in oklab, var(--accent) 20%, transparent);
+  --accent-30: color-mix(in oklab, var(--accent) 30%, transparent);
+  --accent-50: color-mix(in oklab, var(--accent) 50%, transparent);
+  --accent-soft-05: color-mix(in oklab, var(--accent-soft) 5%, transparent);
+  --accent-soft-10: color-mix(in oklab, var(--accent-soft) 10%, transparent);
+  --accent-soft-20: color-mix(in oklab, var(--accent-soft) 20%, transparent);
+  --accent-soft-30: color-mix(in oklab, var(--accent-soft) 30%, transparent);
+  --accent-soft-50: color-mix(in oklab, var(--accent-soft) 50%, transparent);
+  --ink-30: color-mix(in oklab, var(--ink) 30%, transparent);
+  --ink-40: color-mix(in oklab, var(--ink) 40%, transparent);
+  --ink-50: color-mix(in oklab, var(--ink) 50%, transparent);
+  --ink-60: color-mix(in oklab, var(--ink) 60%, transparent);
+  --ink-70: color-mix(in oklab, var(--ink) 70%, transparent);
+  --surface-soft-30: color-mix(in oklab, var(--surface-soft) 30%, transparent);
+  --surface-soft-50: color-mix(in oklab, var(--surface-soft) 50%, transparent);
+  --status-danger-10: color-mix(in oklab, var(--status-danger) 10%, transparent);
+  --status-danger-20: color-mix(in oklab, var(--status-danger) 20%, transparent);
+  --status-success-10: color-mix(in oklab, var(--status-success) 10%, transparent);
+
+  /* ── Elevation: three levels of "how far above the board". ────────────── */
+  --elevation-1: 0 1px 2px oklch(0 0 0 / 0.06), 0 1px 1px oklch(0 0 0 / 0.04);
+  --elevation-2: 0 2px 6px oklch(0 0 0 / 0.06), 0 10px 24px -12px oklch(0 0 0 / 0.16);
+  --elevation-3: 0 8px 20px -6px oklch(0 0 0 / 0.14), 0 28px 56px -24px oklch(0 0 0 / 0.28);
+  --shadow-card: var(--elevation-2);
+  --shadow-pop: var(--elevation-3);
+  --shadow-window: var(--shadow-pop);
+  --shadow-float: var(--shadow-pop);
+
+  /* Glossy chrome (src/lib/theme/gloss.js). Restrained looks set none. */
+  --gloss-sheen: none;
+  --gloss-bevel: 0 0 0 0 transparent;
+}
+
+/* ── Agent accent (spec 3). Each agent keeps its own hue but borrows the
+   look's accent lightness and chroma, so it sits right in every preset.
+   Set --agent-h on an element that carries [data-agent-hue]; the derived
+   colors are declared there because custom properties resolve where they
+   are declared, not where they are used. ─────────────────────────────── */
+:root,
+[data-agent-hue] {
+  --agent: oklch(var(--accent-l) var(--accent-c) var(--agent-h, var(--accent-h)));
+  --agent-soft: color-mix(in oklab, var(--agent) 16%, var(--surface));
+  --agent-ink: color-mix(in oklab, var(--agent) 68%, var(--ink));
+}
+
+[data-theme="dark"] {
+  --bg: oklch(0.17 0.004 260);
+  --canvas: oklch(0.15 0.004 260);
+  --surface: oklch(0.205 0.004 260);
+  --surface-2: oklch(0.235 0.004 260);
+  --hairline: oklch(0.29 0.004 260);
+  --hairline-strong: oklch(0.38 0.005 260);
+  --ink: oklch(0.95 0.002 260);
+  --ink-soft: oklch(0.76 0.004 260);
+  --ink-faint: oklch(0.58 0.005 260);
+  --accent-soft: oklch(0.3 0.06 var(--accent-h));
+  --accent-ink: oklch(0.85 0.08 var(--accent-h));
+  --highlight: oklch(1 0 0 / 0.06);
+  --elevation-1: 0 1px 2px oklch(0 0 0 / 0.4);
+  --elevation-2: 0 0 0 1px oklch(1 0 0 / 0.03), 0 12px 32px -12px oklch(0 0 0 / 0.6);
+  --elevation-3: 0 0 0 1px oklch(1 0 0 / 0.04), 0 32px 64px -24px oklch(0 0 0 / 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-scale: 0 !important; }
+}

@@ -7,7 +7,7 @@ export function ModuleStatusBar({ moduleTools, onRefresh }) {
       position: 'absolute', bottom: 0, left: 0, right: 0,
       background: 'var(--surface)', borderTop: '1px solid var(--hairline)',
       padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12,
-      fontSize: 11, zIndex: 3,
+      fontSize: 'var(--text-xs)', zIndex: 3,
     }}>
       <span style={{ fontWeight: 700, color: 'var(--ink-soft)' }}>Module tools added:</span>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, overflowY: 'auto', maxHeight: 36, flex: 1 }}>
@@ -16,8 +16,8 @@ export function ModuleStatusBar({ moduleTools, onRefresh }) {
         ) : moduleTools.map(tool => (
           <span key={tool} style={{
             background: 'var(--surface-2)', border: '1px solid var(--hairline)',
-            padding: '2px 8px', borderRadius: 4, fontFamily: 'monospace',
-            fontSize: 10, color: 'var(--accent-ink)',
+            padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontFamily: 'monospace',
+            fontSize: 'var(--text-xs)', color: 'var(--accent-ink)',
           }}>{tool}</span>
         ))}
       </div>

@@ -2,6 +2,7 @@ import {
   clearWorkspaceDraft,
   deleteWorkspaceAuthoritatively,
   downloadWorkspaceSnapshot,
+  fetchWorkspaceRevision,
   loadWorkspaceAuthoritatively,
   saveWorkspaceAuthoritatively,
 } from './workspaceAuthority.js';
@@ -16,7 +17,7 @@ export async function getWorkspace() {
     return result.value;
   }
 
-export { clearWorkspaceDraft, downloadWorkspaceSnapshot, loadWorkspaceAuthoritatively };
+export { clearWorkspaceDraft, downloadWorkspaceSnapshot, fetchWorkspaceRevision, loadWorkspaceAuthoritatively };
 
 /**
    * Saves the workspace state.

@@ -27,6 +27,9 @@ import {
 import { callCard, readCallResult } from './invoke.js';
 import { installCard, listInstalls, removeInstall } from './installs.js';
 import { importA2ACard, importN8NChat } from './imports.js';
+import {
+  cancelRequest, createRequest, decideRequest, discover, listRequests, readRequest,
+} from './network.js';
 
 export const agentRegistryRouter = express.Router();
 
@@ -72,6 +75,14 @@ agentRegistryRouter.put('/installs/:id', installCard);
 agentRegistryRouter.delete('/installs/:id', removeInstall);
 agentRegistryRouter.post('/imports/a2a', importA2ACard);
 agentRegistryRouter.post('/imports/n8n-chat', importN8NChat);
+
+// Agent network: discovery + agent-to-agent help requests.
+agentRegistryRouter.get('/discover', discover);
+agentRegistryRouter.get('/help-requests', listRequests);
+agentRegistryRouter.post('/help-requests', createRequest);
+agentRegistryRouter.get('/help-requests/:id', readRequest);
+agentRegistryRouter.post('/help-requests/:id/decision', decideRequest);
+agentRegistryRouter.post('/help-requests/:id/cancel', cancelRequest);
 
 agentRegistryRouter.post('/cards', createCard);
 agentRegistryRouter.patch('/cards/:id', updateCard);

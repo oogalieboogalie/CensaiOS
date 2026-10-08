@@ -5,38 +5,71 @@ import {
   SEMANTIC_PRESET,
 } from './semantic.js';
 
+// Common layouts work for any number of windows (2+). They come first in the
+// menu so a group always offers the same familiar shapes; the count-specific
+// ones below are extras for that exact window count.
+export const COMMON_PRESETS = Object.freeze([
+  Object.freeze({ id: 'COLUMNS', label: 'Side by side', preview: 'columns' }),
+  Object.freeze({ id: 'ROWS', label: 'Stacked', preview: 'rows' }),
+  Object.freeze({ id: 'GRID', label: 'Grid', preview: 'quad' }),
+  Object.freeze({ id: 'MAIN_SIDEBAR', label: 'Main + sidebar', preview: 'rightStack' }),
+]);
+
+// Count-specific extras. Shapes the common set already covers (left/right
+// split, three columns, quad, five columns, main + right stack) are left out
+// of the menu; their ids still arrange for groups saved with them.
+const COUNT_PRESETS = {
+  3: [{ id: 'STACK_LEFT_MAIN_RIGHT', label: 'Stack left + main right', preview: 'leftStack' }],
+  4: [
+    { id: 'DASHBOARD_1', label: 'Dashboard', preview: 'dashboard' },
+    { id: 'STACK_LEFT_TWO_MAINS', label: 'Stack left + 2 mains', preview: 'leftStack' },
+    { id: 'TWO_MAINS_STACK_RIGHT', label: '2 mains + stack right', preview: 'rightStack' },
+  ],
+  5: [
+    { id: 'SIDE_STACKS_MAIN_CENTER', label: 'Side stacks + main center', preview: 'sideStacks' },
+    { id: 'MAIN_PLUS_QUAD', label: 'Main + quad grid', preview: 'mainQuad' },
+  ],
+};
+const SIX_PLUS = [{ id: 'SIDE_STACKS_TWO_MAINS', label: 'Side stacks + 2 mains', preview: 'sideStacks' }];
+
 export function getBuiltInPresets(windowsOrCount) {
   const count = Array.isArray(windowsOrCount) ? windowsOrCount.length : windowsOrCount;
-  if (count <= 1) return [];
-  if (count === 2) return [
-    SEMANTIC_PRESET,
-    { id: 'SPLIT_LR', label: 'Split (Left / Right)', preview: 'columns' },
-    { id: 'SPLIT_TB', label: 'Split (Top / Bottom)', preview: 'rows' }
-  ];
-  if (count === 3) return [
-    SEMANTIC_PRESET,
-    { id: 'STACK_LEFT_MAIN_RIGHT', label: 'Stack Left + Main Right', preview: 'leftStack' },
-    { id: 'MAIN_LEFT_STACK_RIGHT', label: 'Main Left + Stack Right', preview: 'rightStack' },
-    { id: 'THREE_COLUMNS', label: 'Three Columns', preview: 'columns3' }
-  ];
-  if (count === 4) return [
-    SEMANTIC_PRESET,
-    { id: 'QUAD', label: 'Quad Grid', preview: 'quad' },
-    { id: 'DASHBOARD_1', label: 'Dashboard', preview: 'dashboard' },
-    { id: 'STACK_LEFT_TWO_MAINS', label: 'Stack Left + 2 Mains', preview: 'leftStack' },
-    { id: 'TWO_MAINS_STACK_RIGHT', label: '2 Mains + Stack Right', preview: 'rightStack' }
-  ];
-  if (count === 5) return [
-    SEMANTIC_PRESET,
-    { id: 'SIDE_STACKS_MAIN_CENTER', label: 'Side Stacks + Main Center', preview: 'sideStacks' },
-    { id: 'MAIN_PLUS_QUAD', label: 'Main + Quad Grid', preview: 'mainQuad' },
-    { id: 'FIVE_COLUMNS', label: 'Five Columns', preview: 'columns3' }
-  ];
-  if (count >= 6) return [
-    SEMANTIC_PRESET,
-    { id: 'SIDE_STACKS_TWO_MAINS', label: 'Side Stacks + 2 Mains', preview: 'sideStacks' }
-  ];
-  return [];
+  if (!(count >= 2)) return [];
+  const extras = count >= 6 ? SIX_PLUS : (COUNT_PRESETS[count] || []);
+  return [SEMANTIC_PRESET, ...COMMON_PRESETS, ...extras];
+}
+
+const leaf = (windowId) => ({ type: 'leaf', windowId });
+
+// N equal slices along one axis ('vertical' = side by side columns).
+function equalSplit(ids, axis) {
+  if (ids.length === 0) return null;
+  if (ids.length === 1) return leaf(ids[0]);
+  return { type: 'split', axis, ratio: 1 / ids.length, first: leaf(ids[0]), second: equalSplit(ids.slice(1), axis) };
+}
+
+function equalSplitNodes(nodes, axis) {
+  if (nodes.length === 1) return nodes[0];
+  return { type: 'split', axis, ratio: 1 / nodes.length, first: nodes[0], second: equalSplitNodes(nodes.slice(1), axis) };
+}
+
+// Near-square grid: ceil(sqrt(n)) columns, rows filled left to right. A short
+// last row stretches to the full width so there are no holes.
+function gridLayout(ids) {
+  const cols = Math.ceil(Math.sqrt(ids.length));
+  const rows = [];
+  for (let i = 0; i < ids.length; i += cols) rows.push(equalSplit(ids.slice(i, i + cols), 'vertical'));
+  return equalSplitNodes(rows, 'horizontal');
+}
+
+// Biggest window keeps the main slot (it is usually the one you work in);
+// the rest stack down a sidebar on the right.
+function mainSidebarLayout(windows, ids) {
+  const area = (w) => (typeof w === 'object' && Number.isFinite(w.w) && Number.isFinite(w.h) ? w.w * w.h : 0);
+  const byId = new Map(windows.map((w) => [w.id || w, w]));
+  const mainId = ids.reduce((best, id) => (area(byId.get(id)) > area(byId.get(best)) ? id : best), ids[0]);
+  const rest = ids.filter((id) => id !== mainId);
+  return { type: 'split', axis: 'vertical', ratio: 0.667, first: leaf(mainId), second: equalSplit(rest, 'horizontal') };
 }
 
 export function applyPreset(presetId, windows) {
@@ -48,6 +81,11 @@ export function applyPreset(presetId, windows) {
   const ids = orderWindowsByRole(windows).map(w => w.id || w);
   if (ids.length === 0) return null;
   if (ids.length === 1) return { type: 'leaf', windowId: ids[0] };
+
+  if (presetId === 'COLUMNS') return equalSplit(ids, 'vertical');
+  if (presetId === 'ROWS') return equalSplit(ids, 'horizontal');
+  if (presetId === 'GRID') return gridLayout(ids);
+  if (presetId === 'MAIN_SIDEBAR') return mainSidebarLayout(windows, ids);
 
   // N=2
   if (presetId === 'SPLIT_LR' && ids.length >= 2) {

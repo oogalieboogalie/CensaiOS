@@ -1,0 +1,42 @@
+<!-- module {"request": "an open-house sign-in sheet", "manifest": {"name": "Open house sign-in", "description": "Visitors sign in; the agent sees the list live.", "icon": "Person", "size": {"w": 480, "h": 560}, "permissions": []}} -->
+<div class="stack" style="gap: var(--space-3); height: 100%">
+  <div class="spread"><h2>Welcome in</h2><span class="pill" id="count">0 visitors</span></div>
+  <form class="stack" id="form">
+    <input id="name" placeholder="Your name" required autocomplete="off">
+    <div class="grid" style="grid-template-columns: 1fr 1fr">
+      <input id="email" type="email" placeholder="Email">
+      <input id="phone" placeholder="Phone">
+    </div>
+    <div class="row">
+      <select id="agent"><option value="no">Working with an agent? No</option><option value="yes">Working with an agent? Yes</option></select>
+      <button class="primary" type="submit" style="flex:none">Sign in</button>
+    </div>
+    <div class="muted" id="msg" style="min-height:1.4em"></div>
+  </form>
+  <div class="label">Signed in</div>
+  <div style="flex:1; overflow:auto; min-height: 0"><table><tbody id="list"></tbody></table></div>
+</div>
+<script>
+  let visitors = censai.storage.get('visitors', []);
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; };
+  function render() {
+    $('count').textContent = visitors.length + (visitors.length === 1 ? ' visitor' : ' visitors');
+    $('list').innerHTML = visitors.length ? visitors.slice().reverse().map((v) => `<tr><td>${esc(v.name)}</td><td class="muted">${esc(v.email || v.phone || '')}</td><td class="faint">${v.agent === 'yes' ? 'Has agent' : ''}</td><td class="num faint">${new Date(v.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</td></tr>`).join('') : '<tr><td class="faint">No one yet. The first visitor signs in above.</td></tr>';
+  }
+  $('form').onsubmit = (e) => {
+    e.preventDefault();
+    const name = $('name').value.trim();
+    const email = $('email').value.trim();
+    if (!name) { $('msg').textContent = 'Add your name to sign in.'; return; }
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('msg').textContent = 'That email looks off.'; return; }
+    visitors = [...visitors, { name, email, phone: $('phone').value.trim(), agent: $('agent').value, at: new Date().toISOString() }];
+    censai.storage.set('visitors', visitors);
+    censai.toast(name + ' signed in');
+    e.target.reset();
+    $('msg').textContent = 'Thanks, ' + name.split(' ')[0] + '. Enjoy the tour.';
+    render();
+  };
+  censai.storage.onChange((k, v) => { if (k === 'visitors' && Array.isArray(v)) { visitors = v; render(); } });
+  render();
+</script>

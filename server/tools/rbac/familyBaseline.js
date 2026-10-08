@@ -47,7 +47,25 @@ export const FAMILY_BUILD_TOOL_POLICIES = Object.freeze([
   policy('run_linter', 'write', 'autonomous_internal'),
 ]);
 
+// Agent network: every family member can find other AgentCards by skill and
+// ask one for help. Requests only auto-run against built-in family cards or
+// cards a workspace owner/admin pinned; anything else is refused for agents.
+export const FAMILY_NETWORK_TOOL_POLICIES = Object.freeze([
+  policy('discover_agents', 'read'),
+  policy('request_agent_help', 'write', 'autonomous_internal'),
+  policy('agent_help_status', 'read'),
+]);
+
+// Modules on demand (spec 6): every family member can build a sandboxed
+// module window from a plain-language request. The module itself runs in a
+// sandbox and asks the person before it calls an agent or the network.
+export const FAMILY_MODULE_TOOL_POLICIES = Object.freeze([
+  policy('make_module', 'write', 'autonomous_internal'),
+]);
+
 const CORE = FAMILY_INTRINSIC_TOOL_POLICIES.map(entry => entry.name);
+const NETWORK = FAMILY_NETWORK_TOOL_POLICIES.map(entry => entry.name);
+const MODULES = FAMILY_MODULE_TOOL_POLICIES.map(entry => entry.name);
 const ORCHESTRATION = FAMILY_ORCHESTRATION_TOOL_POLICIES.map(entry => entry.name);
 const LIFECYCLE = FAMILY_LIFECYCLE_TOOL_POLICIES.map(entry => entry.name);
 const PROJECT_READ = FAMILY_PROJECT_READ_TOOL_POLICIES.map(entry => entry.name);
@@ -70,12 +88,13 @@ const ROLE_ADDITIONS = Object.freeze({
 export const FAMILY_DEFAULT_TOOL_NAMES = Object.freeze(Object.fromEntries(
   Object.entries(ROLE_ADDITIONS).map(([agentId, additions]) => [
     agentId,
-    Object.freeze([...new Set([...CORE, ...additions])]),
+    Object.freeze([...new Set([...CORE, ...NETWORK, ...MODULES, ...additions])]),
   ]),
 ));
 
 const POLICY_BY_NAME = Object.freeze(Object.fromEntries(
-  [...FAMILY_INTRINSIC_TOOL_POLICIES, ...FAMILY_ORCHESTRATION_TOOL_POLICIES,
+  [...FAMILY_INTRINSIC_TOOL_POLICIES, ...FAMILY_NETWORK_TOOL_POLICIES, ...FAMILY_MODULE_TOOL_POLICIES,
+   ...FAMILY_ORCHESTRATION_TOOL_POLICIES,
    ...FAMILY_LIFECYCLE_TOOL_POLICIES, ...FAMILY_PROJECT_READ_TOOL_POLICIES,
    ...FAMILY_BUILD_TOOL_POLICIES]
     .map(entry => [entry.name, entry]),

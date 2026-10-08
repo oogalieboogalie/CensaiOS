@@ -95,6 +95,7 @@ export function normalizeWindowMeta(meta = {}) {
     componentName: meta.componentName || toComponentName(kind),
     componentPath: meta.componentPath || null,
     defaultSize: Object.freeze(size),
+    sizeClass: typeof meta.sizeClass === 'string' ? meta.sizeClass : null,
     title: meta.title || meta.label,
     canPin: meta.canPin !== false,
     canSpawnFromRegion: meta.canSpawnFromRegion !== false,
@@ -135,6 +136,7 @@ export function deriveRegistryEntry(meta) {
   return {
     componentKey: m.componentName,
     defaultSize: { ...m.defaultSize },
+    sizeClass: m.sizeClass,
     title: m.title,
     canPin: m.canPin,
     canSpawnFromRegion: m.canSpawnFromRegion,

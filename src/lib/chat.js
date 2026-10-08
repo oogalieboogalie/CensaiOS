@@ -21,6 +21,7 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
         currentProject: opts.currentProject,
         stream: true 
       }),
+      ...(opts.signal ? { signal: opts.signal } : {}),
     });
 
     if (!res.ok) throw await chatResponseError(res);
@@ -52,7 +53,9 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
     const handleLine = (line) => {
       try {
         const event = JSON.parse(line);
-        if (event.type === 'status' && opts.onStatusUpdate) {
+        if (event.type === 'delta') {
+          opts.onDelta?.(String(event.text || ''), event.round || 1);
+        } else if (event.type === 'status' && opts.onStatusUpdate) {
           opts.onStatusUpdate(event.status, event.detail);
         } else if (event.type === 'change_impact') {
           finalChangeImpact = event.impact;
@@ -106,9 +109,52 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
     };
   } catch (err) {
     if (err instanceof ChatRequestError) throw err;
+    if (err?.name === 'AbortError') {
+      throw new ChatRequestError('Stopped.', { code: 'CHAT_ABORTED' });
+    }
     throw new ChatRequestError('The AI service could not be reached. Try again shortly.', {
       code: 'CHAT_NETWORK_ERROR',
       details: { cause: err?.message || String(err) },
     });
   }
+}
+
+async function postChatJson(path, body) {
+  let res;
+  try {
+    res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    throw new ChatRequestError('The AI service could not be reached. Try again shortly.', {
+      code: 'CHAT_NETWORK_ERROR',
+      details: { cause: err?.message || String(err) },
+    });
+  }
+  if (!res.ok) throw await chatResponseError(res);
+  return res.json();
+}
+
+/** What the agent's current model accepts: { provider, model, capabilities, limits }. */
+export async function fetchChatCapabilities(agentId, { workspaceId } = {}) {
+  const params = new URLSearchParams();
+  if (agentId) params.set('agentId', agentId);
+  if (workspaceId) params.set('workspaceId', workspaceId);
+  const res = await fetch(`/api/chat/capabilities?${params}`);
+  if (!res.ok) throw await chatResponseError(res);
+  return res.json();
+}
+
+/** Speech-to-text through the agent's provider. Resolves to the transcript. */
+export async function transcribeSpeech(agentId, audioDataUrl, { workspaceId } = {}) {
+  const data = await postChatJson('/api/chat/transcribe', { agentId, workspaceId, audio: audioDataUrl });
+  return String(data?.text || '');
+}
+
+/** Text-to-speech through the agent's provider. Resolves to an audio data URL. */
+export async function synthesizeSpeech(agentId, text, { workspaceId } = {}) {
+  const data = await postChatJson('/api/chat/speech', { agentId, workspaceId, text });
+  return data?.audio || null;
 }

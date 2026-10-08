@@ -267,16 +267,17 @@ describe('RegistryWindow — Publish tab', () => {
     fireEvent.click(screen.getByTestId('registry-tab-publish'));
     fireEvent.change(screen.getByTestId('registry-publish-name'), { target: { value: 'My Agent' } });
     fireEvent.change(screen.getByTestId('registry-publish-description'), { target: { value: 'does things' } });
-    fireEvent.change(screen.getByTestId('registry-publish-skills'), { target: { value: 'summarize, search' } });
+    fireEvent.change(screen.getByTestId('registry-publish-skills'), { target: { value: 'summarize #writing, web search #research #web' } });
     fireEvent.change(screen.getByTestId('registry-publish-visibility'), { target: { value: 'public' } });
     fireEvent.click(screen.getByTestId('registry-publish-submit'));
     await waitFor(() => expect(client.createCard).toHaveBeenCalled());
     const callArg = client.createCard.mock.calls[0][0];
     expect(callArg.name).toBe('My Agent');
     expect(callArg.skills).toEqual([
-      { id: 'skill-0', name: 'summarize' },
-      { id: 'skill-1', name: 'search' },
+      { id: 'summarize', name: 'summarize', tags: ['writing'] },
+      { id: 'web-search', name: 'web search', tags: ['research', 'web'] },
     ]);
+    expect(callArg.metadata).toEqual({ acceptsHelpRequests: true });
     expect(callArg.visibility).toBe('public');
     // After publish, the window auto-installs and switches to Installed
     await waitFor(() => screen.getByTestId('registry-installed-list'));

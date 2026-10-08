@@ -1,6 +1,8 @@
 import { api } from './api.js';
 import { addAgent, getAgentById } from './agentStore.js';
 import { withoutUnsupportedWindows } from './appUtils.js';
+import { patchWindow } from './canvasObjectTypes.js';
+import { windowsInGroup } from './layout/groupResize.js';
 import { computeFitView } from './canvasMath.js';
 import { applyPreset, fitGroupToLayout, getGroupInnerBounds, cleanLayout } from './layoutAlgo.js';
 
@@ -78,11 +80,7 @@ export const createPresetActions = (set, get) => ({
     const { wins, canvasGroups } = get();
     const g = canvasGroups.find(x => x.id === groupId);
     if (!g) return null;
-    const inside = wins.filter(w => {
-      const cx = w.x + w.w / 2;
-      const cy = w.y + w.h / 2;
-      return cx >= g.x && cx <= g.x + g.w && cy >= g.y && cy <= g.y + g.h;
-    });
+    const inside = windowsInGroup(wins, g);
     return {
       id: crypto.randomUUID(),
       name,
@@ -128,7 +126,7 @@ export const createPresetActions = (set, get) => ({
         if (!saved) return w;
         const baseX = typeof saved.dx === 'number' ? g.x + saved.dx : saved.x;
         const baseY = typeof saved.dy === 'number' ? g.y + saved.dy : saved.y;
-        return { ...w, x: baseX, y: baseY, w: saved.w, h: saved.h, groupId };
+        return patchWindow(w, { x: baseX, y: baseY, w: saved.w, h: saved.h, groupId });
       }),
       canvasGroups: state.canvasGroups.map(grp => grp.id === groupId
         ? { ...grp, ...sizePatch, root: preset.root ?? grp.root ?? null, presetId: preset.presetId ?? grp.presetId }
@@ -140,7 +138,25 @@ export const createPresetActions = (set, get) => ({
   deleteGroupPreset: (groupId, presetId) => {
     set(state => ({
       canvasGroups: state.canvasGroups.map(g => g.id === groupId
-        ? { ...g, presets: (g.presets || []).filter(p => p.id !== presetId) }
+        ? {
+            ...g,
+            presets: (g.presets || []).filter(p => p.id !== presetId),
+            // Clearing the default when its preset is deleted so the group
+            // falls back to the semantic layout instead of a dead id.
+            defaultPresetId: g.defaultPresetId === presetId ? null : g.defaultPresetId,
+          }
+        : g
+      )
+    }));
+  },
+
+  // Pin one of the group's saved layouts as its default: entering a window
+  // and auto-arrange fall back to this instead of SEMANTIC_WORKSPACE.
+  // Pass null/undefined to clear back to the built-in default.
+  setGroupDefaultPreset: (groupId, presetId) => {
+    set(state => ({
+      canvasGroups: state.canvasGroups.map(g => g.id === groupId
+        ? { ...g, defaultPresetId: presetId || null }
         : g
       )
     }));
@@ -150,11 +166,7 @@ export const createPresetActions = (set, get) => ({
     const { wins, canvasGroups, snapshotGroup } = get();
     const g = canvasGroups.find(x => x.id === groupId);
     if (!g) return;
-    const inside = wins.filter(w => {
-      const cx = w.x + w.w / 2;
-      const cy = w.y + w.h / 2;
-      return cx >= g.x && cx <= g.x + g.w && cy >= g.y && cy <= g.y + g.h;
-    });
+    const inside = windowsInGroup(wins, g);
     if (inside.length === 0) return;
 
     const undoSnap = snapshotGroup(groupId, 'Before auto-arrange');
@@ -166,7 +178,7 @@ export const createPresetActions = (set, get) => ({
     set(state => ({
       wins: state.wins.map(w => {
         const up = updates.find(u => u.id === w.id);
-        return up ? { ...w, ...up.patch } : w;
+        return up ? patchWindow(w, { ...up.patch, groupId }) : w;
       }),
       canvasGroups: state.canvasGroups.map(grp => grp.id === groupId
         ? { ...grp, ...fittedGroup, root, presetId, presets: [undoSnap, ...((grp.presets || []).filter(p => p.name !== 'Before auto-arrange'))] }

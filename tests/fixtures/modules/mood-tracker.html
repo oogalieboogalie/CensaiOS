@@ -1,0 +1,49 @@
+<!-- module {"request": "a mood tracker", "manifest": {"name": "Mood tracker", "description": "Log how the day felt and see the last two weeks.", "icon": "Activity", "size": {"w": 420, "h": 460}, "permissions": []}} -->
+<div class="stack" style="gap: var(--space-4)">
+  <div class="spread"><h2>Mood tracker</h2><span class="muted" id="today"></span></div>
+  <div class="stack"><span class="label">How was today?</span><div class="row" id="moods"></div></div>
+  <input id="note" placeholder="One line about why (optional)">
+  <div class="stack"><span class="label">Last 14 days</span><svg id="chart" viewBox="0 0 280 90" width="100%" height="110" role="img" aria-label="Mood over the last 14 days"></svg></div>
+  <div class="muted" id="avg"></div>
+</div>
+<style>
+  #moods button { flex: 1; }
+  #moods button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+</style>
+<script>
+  const MOODS = ['Rough', 'Low', 'Okay', 'Good', 'Great'];
+  const key = (d) => d.toISOString().slice(0, 10);
+  let log = censai.storage.get('moods', {});
+  const $ = (id) => document.getElementById(id);
+  const todayKey = key(new Date());
+  $('today').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+
+  MOODS.forEach((label, i) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.onclick = () => { log = { ...log, [todayKey]: { score: i + 1, note: (log[todayKey] || {}).note || '' } }; censai.storage.set('moods', log); render(); };
+    $('moods').appendChild(b);
+  });
+  $('note').onchange = (e) => {
+    const entry = log[todayKey];
+    if (!entry) { censai.toast('Pick a mood first.'); return; }
+    log = { ...log, [todayKey]: { ...entry, note: e.target.value.trim() } };
+    censai.storage.set('moods', log);
+  };
+
+  function render() {
+    const entry = log[todayKey];
+    $('moods').querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-pressed', String(entry && entry.score === i + 1)));
+    if (document.activeElement !== $('note')) $('note').value = entry ? entry.note : '';
+    const days = Array.from({ length: 14 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 13 + i); return log[key(d)]; });
+    const pts = days.map((e, i) => e ? [10 + i * 20, 80 - (e.score - 1) * 17] : null);
+    const line = pts.filter(Boolean).map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ');
+    $('chart').innerHTML = [0, 1, 2, 3, 4].map((r) => `<line x1="0" x2="280" y1="${80 - r * 17}" y2="${80 - r * 17}" stroke="var(--hairline)"/>`).join('')
+      + (line ? `<path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>` : '')
+      + pts.map((p) => p ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--accent)"/>` : '').join('');
+    const scored = days.filter(Boolean);
+    $('avg').textContent = scored.length ? `Average ${MOODS[Math.round(scored.reduce((s, e) => s + e.score, 0) / scored.length) - 1].toLowerCase()} over ${scored.length} logged days.` : 'No days logged yet. Pick how today felt.';
+  }
+  censai.storage.onChange((k, v) => { if (k === 'moods' && v) { log = v; render(); } });
+  render();
+</script>

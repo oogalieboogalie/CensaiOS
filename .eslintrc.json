@@ -22,15 +22,87 @@
   },
   "overrides": [
     {
-      "files": ["**/*.test.js", "**/*.test.jsx", "tests/**/*.js", "tests/**/*.jsx"],
+      "files": [
+        "**/*.test.js",
+        "**/*.test.jsx",
+        "tests/**/*.js",
+        "tests/**/*.jsx"
+      ],
       "env": {
         "jest": true
+      }
+    },
+    {
+      "files": [
+        "src/components/**/*.js",
+        "src/components/**/*.jsx",
+        "src/app/**/*.js",
+        "src/app/**/*.jsx"
+      ],
+      "excludedFiles": [
+        "src/components/music/musicSkins.js",
+        "src/components/music/MusicDevice.jsx",
+        "src/components/music/visualizerSignal.js",
+        "src/components/windows/terminalThemePresets.jsx",
+        "src/components/windows/WindowThemePanel.jsx",
+        "src/components/terminal/canvasTerminalTheme.js",
+        "src/components/windows/imageStudio/constants.js",
+        "src/components/excalidraw/**",
+        "src/components/whiteboard/**",
+        "src/components/canvas/CanvasState.js",
+        "src/components/landing/**",
+        "src/components/Landing.jsx",
+        "src/components/Login.jsx"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "Property[key.name=/^(borderRadius|fontSize)$/] > Literal[value>0]",
+            "message": "Use a radius or type token (var(--radius-md), var(--text-sm), ...) instead of a number. See src/styles/tokens.css."
+          },
+          {
+            "selector": "Property[key.name=/^(borderRadius|fontSize)$/] > ConditionalExpression > Literal[value>0]",
+            "message": "Use a radius or type token instead of a number. See src/styles/tokens.css."
+          },
+          {
+            "selector": "Property[key.name=/^(borderRadius|fontSize)$/] > Literal[value=/^\\d*\\.?\\d+(px|rem)$/]",
+            "message": "Use a radius or type token instead of a px value. See src/styles/tokens.css."
+          },
+          {
+            "selector": "Literal[value=/#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?\\b/]",
+            "message": "Raw hex color: use a semantic token (var(--surface), var(--ink), var(--accent), var(--danger), ...). See src/styles/tokens.css."
+          },
+          {
+            "selector": "TemplateElement[value.raw=/#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?\\b/]",
+            "message": "Raw hex color: use a semantic token. See src/styles/tokens.css."
+          },
+          {
+            "selector": "Literal[value=/rgba?\\(/]",
+            "message": "Raw rgba() color: use a semantic token, or color-mix() on one. See src/styles/tokens.css."
+          },
+          {
+            "selector": "TemplateElement[value.raw=/rgba?\\(/]",
+            "message": "Raw rgba() color: use a semantic token, or color-mix() on one. See src/styles/tokens.css."
+          }
+        ]
       }
     }
   ],
   "rules": {
-    "no-empty": ["warn", { "allowEmptyCatch": true }],
-    "no-unused-vars": ["warn", { "args": "none", "ignoreRestSiblings": true }],
+    "no-empty": [
+      "warn",
+      {
+        "allowEmptyCatch": true
+      }
+    ],
+    "no-unused-vars": [
+      "warn",
+      {
+        "args": "none",
+        "ignoreRestSiblings": true
+      }
+    ],
     "no-useless-escape": "warn"
   }
 }

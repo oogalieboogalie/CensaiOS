@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { DEFAULT_GROUPS, reconcileDockGroups } from './dockDefaults.js';
 import { addAgent, getAgents } from './agentStore.js';
-import { getCanvasObjectType, legacyKindForCanvasType, canvasObjectToLegacyWindow } from './canvasObjectTypes.js';
+import { getCanvasObjectType, legacyKindForCanvasType, canvasObjectToLegacyWindow, patchWindow } from './canvasObjectTypes.js';
 import { getDefaultWindowSize } from './windowManifest.js';
 import { randomDropSpot } from './appUtils.js';
 import { createLogger } from './logger.js';
 import { createPresetActions } from './storePresetActions.js';
 import { createCanvasActions } from './storeCanvasActions.js';
 import { createGroupActions } from './storeGroupActions.js';
+import { pruneAfterRemoval } from './layout/dock.js';
 
 const log = createLogger('canvas-actions');
 
@@ -27,14 +28,14 @@ export const useWorkspaceStore = create((set, get) => ({
   activeTool: 'select',
   setActiveTool: (tool) => set({ activeTool: tool }),
 
-  penColor: '#60A5FA',
+  penColor: 'var(--ink)',
   setPenColor: (color) => set({ penColor: color }),
 
   penSize: 4,
   setPenSize: (size) => set({ penSize: size }),
 
   penMode: false,
-  setPenMode: (mode) => set({ penMode: mode }),
+  setPenMode: (mode) => set({ penMode: typeof mode === 'function' ? mode(get().penMode) : mode }),
 
   activeId: null,
   setActiveId: (id) => set({ activeId: id }),
@@ -59,7 +60,7 @@ export const useWorkspaceStore = create((set, get) => ({
   }),
 
   focusMode: false,
-  setFocusMode: (mode) => set({ focusMode: mode }),
+  setFocusMode: (mode) => set({ focusMode: typeof mode === 'function' ? mode(get().focusMode) : mode }),
 
   extraAgents: [],
   setExtraAgents: (agents) => set({ extraAgents: typeof agents === 'function' ? agents(get().extraAgents) : agents }),
@@ -79,7 +80,7 @@ export const useWorkspaceStore = create((set, get) => ({
   presets: [],
   setPresets: (presets) => set({ presets: typeof presets === 'function' ? presets(get().presets) : presets }),
 
-  sidebarFavorites: [],
+  sidebarFavorites: ['plan', 'idea', 'chat', 'files', 'code-editor', 'workflow', 'browser', 'image'],
   setSidebarFavorites: (favorites) => set({ sidebarFavorites: typeof favorites === 'function' ? favorites(get().sidebarFavorites) : favorites }),
 
   // Brief B1 — window allow-list. The state shape that lets new users land
@@ -112,15 +113,16 @@ export const useWorkspaceStore = create((set, get) => ({
     const p = pos || randomDropSpot(sz, get().pan, get().zoom);
     const now = new Date().toISOString();
     
+    // New terminals spawn solid so they wear the canvas theme at full
+    // strength; gloss stays opt-in per window via the style menu slider.
     const defaultStylesByKind = {
-      terminal: { opacity: 0.85 },
       code_editor: { opacity: 0.85 },
       githubConsole: { opacity: 0.90 }
     };
     const targetKind = legacyKind || type;
     const defaultStyles = defaultStylesByKind[targetKind] || {};
 
-    const win = canvasObjectToLegacyWindow({
+    const win = canvasObjectToLegacyWindow(patchWindow({
       id,
       type,
       kind: legacyKind,
@@ -139,8 +141,7 @@ export const useWorkspaceStore = create((set, get) => ({
       createdAt: now,
       updatedAt: now,
       ...defaultStyles,
-      ...props,
-    });
+    }, props));
 
     set(state => {
       let nextWins = state.wins;
@@ -169,24 +170,28 @@ export const useWorkspaceStore = create((set, get) => ({
     set(state => ({
       wins: state.wins.map(w => {
         if (w.id !== id) return w;
-        return canvasObjectToLegacyWindow({
-          ...w,
+        return canvasObjectToLegacyWindow(patchWindow(w, {
           ...patch,
-          width: Number.isFinite(patch.width) ? patch.width : (Number.isFinite(patch.w) ? patch.w : w.width),
-          height: Number.isFinite(patch.height) ? patch.height : (Number.isFinite(patch.h) ? patch.h : w.height),
           updatedAt: new Date().toISOString(),
-        });
+        }));
       })
     }));
   },
 
   onClose: (id) => {
-    set(state => ({
-      wins: state.wins.filter(w => w.id !== id),
-      links: state.links.filter(l => l.fromId !== id && l.toId !== id),
-      activeId: state.activeId === id ? null : state.activeId,
-      selectedIds: state.selectedIds.filter(selectedId => selectedId !== id)
-    }));
+    set(state => {
+      const removed = state.wins.filter(w => w.id === id);
+      const wins = state.wins.filter(w => w.id !== id);
+      // A group that loses a tile re-tiles; one left with a single window dissolves.
+      const pruned = pruneAfterRemoval({ wins, canvasGroups: state.canvasGroups }, removed);
+      return {
+        wins: pruned?.wins || wins,
+        ...(pruned ? { canvasGroups: pruned.canvasGroups } : {}),
+        links: state.links.filter(l => l.fromId !== id && l.toId !== id),
+        activeId: state.activeId === id ? null : state.activeId,
+        selectedIds: state.selectedIds.filter(selectedId => selectedId !== id)
+      };
+    });
   },
 
   createAgent: (agent, options = {}) => {

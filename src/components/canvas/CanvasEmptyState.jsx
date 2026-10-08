@@ -11,10 +11,18 @@ export function CanvasMarks({ zoom, pan }) {
     { x: -1200, y: 0 }, { x: 1400, y: -100 },
     { x: 0, y: -800 }, { x: 0, y: 900 },
   ];
-  return <>{marks.map((p, i) => <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, color: 'var(--hairline-strong)', opacity: 0.5, pointerEvents: 'none', fontFamily: 'var(--font-mono)', fontSize: 18 }}>+</div>)}</>;
+  return <>{marks.map((p, i) => <div key={i} style={{ position: 'absolute', left: p.x, top: p.y, color: 'var(--hairline-strong)', opacity: 0.5, pointerEvents: 'none', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)' }}>+</div>)}</>;
 }
 
 // ─── Empty State ───
-export function EmptyState({ onSpawn }) {
-  return <CanvasLaunchpad manifests={LAUNCHER_MANIFESTS} onSpawn={onSpawn} />;
+export function EmptyState({ onSpawn, onTour, suggestModules, chipKinds }) {
+  return (
+    <CanvasLaunchpad
+      manifests={LAUNCHER_MANIFESTS}
+      onSpawn={onSpawn}
+      onTour={onTour}
+      suggestModules={suggestModules}
+      chipKinds={chipKinds}
+    />
+  );
 }

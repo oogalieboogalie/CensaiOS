@@ -10,6 +10,8 @@ import { discoveryTools } from './definitions/discovery.js';
 import { reliabilityTools } from './definitions/reliability.js';
 import { canvasCollaborationTools } from './definitions/canvas.js';
 import { researchTools } from './definitions/research.js';
+import { agentNetworkTools } from './definitions/agentNetwork.js';
+import { moduleTools } from './definitions/modules.js';
 
 export * from './rbac/index.js';
 export * from './catalog.js';
@@ -33,4 +35,6 @@ export const TOOL_DEFINITIONS = [
   ...reliabilityTools,
   ...canvasCollaborationTools,
   ...researchTools,
+  ...agentNetworkTools,
+  ...moduleTools,
 ];

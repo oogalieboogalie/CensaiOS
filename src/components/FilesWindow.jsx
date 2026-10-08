@@ -58,7 +58,7 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
 
       <FileModeSelector mode={mode} onUpdate={onUpdate} />
 
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '8px 6px', fontFamily: 'var(--font-mono)', fontSize: 12, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '8px 6px', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', display: 'flex', flexDirection: 'column' }}>
         
         {mode === 'local' && win.dirPath && (
           <LocalPathBar pathInput={pathInput} setPathInput={setPathInput} loadDir={loadDir} clearDir={clearDir} />
@@ -73,7 +73,7 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
                 if (parent) setPathInput(parent);
               }}
               title="Go up one folder (fills the path bar; open as project if outside the current root)"
-              style={{ all: 'unset', cursor: 'pointer', fontSize: 11, color: 'var(--ink-soft)', padding: '3px 8px', borderRadius: 6, background: 'var(--surface-2)' }}
+              style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', padding: '3px 8px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }}
             >
               ↑ Up
             </button>
@@ -87,13 +87,13 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
                 }
               }}
               title="Work out of the path above as a project (registers it and re-roots here)"
-              style={{ all: 'unset', cursor: 'pointer', fontSize: 11, color: 'var(--accent-ink)', padding: '3px 8px', borderRadius: 6, background: 'var(--accent-soft)', fontWeight: 600 }}
+              style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--accent-ink)', padding: '3px 8px', borderRadius: 'var(--radius-md)', background: 'var(--accent-soft)', fontWeight: 600 }}
             >
               Open as project
             </button>
           </div>
         )}
-        {switchError && <div style={{ padding: '0 10px 6px', color: 'var(--ps-red)', fontSize: 11 }}>Error: {switchError}</div>}
+        {switchError && <div style={{ padding: '0 10px 6px', color: 'var(--ps-red)', fontSize: 'var(--text-xs)' }}>Error: {switchError}</div>}
 
         {mode === 'github' && win.githubRepo && (
           <GithubRepoBar githubRepo={win.githubRepo} clearDir={clearDir} />
@@ -105,8 +105,8 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
 
         {canCreate && !creating && (
           <div style={{ display: 'flex', gap: 6, padding: '0 10px 6px' }}>
-            <button onClick={() => setCreating('file')} title="New file in this folder" style={{ all: 'unset', cursor: 'pointer', fontSize: 11, color: 'var(--ink-soft)', padding: '3px 8px', borderRadius: 6, background: 'var(--surface-2)' }}>+ File</button>
-            <button onClick={() => setCreating('folder')} title="New subfolder here" style={{ all: 'unset', cursor: 'pointer', fontSize: 11, color: 'var(--ink-soft)', padding: '3px 8px', borderRadius: 6, background: 'var(--surface-2)' }}>+ Folder</button>
+            <button onClick={() => setCreating('file')} title="New file in this folder" style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', padding: '3px 8px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }}>+ File</button>
+            <button onClick={() => setCreating('folder')} title="New subfolder here" style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', padding: '3px 8px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }}>+ Folder</button>
           </div>
         )}
 
@@ -115,7 +115,7 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
         )}
 
         {loading && <div style={{ padding: 12, color: 'var(--ink-faint)' }}>Loading...</div>}
-        {error && <div style={{ padding: 12, color: 'var(--ps-red)', fontFamily: 'var(--font-sans)', fontSize: 12 }}>Error: {error}</div>}
+        {error && <div style={{ padding: 12, color: 'var(--ps-red)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>Error: {error}</div>}
 
         {mode === 'local' && !win.dirPath && (
           <LocalEmptyState pathInput={pathInput} setPathInput={setPathInput} loadDir={loadDir} />
@@ -138,7 +138,7 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
         )}
 
         {(tree || searchResults) && (
-          <div style={{ marginTop: 14, paddingLeft: 10, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.5 }}>
+          <div style={{ marginTop: 14, paddingLeft: 10, fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', lineHeight: 1.5 }}>
             click opens code, docs & images · drag to canvas<br/>
             {mode === 'github' && 'drop image on folder to save to GitHub'}
           </div>

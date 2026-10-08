@@ -31,7 +31,7 @@ export function TabHeader({
             borderBottom: activeTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
             color: activeTab === tab.id ? 'var(--accent)' : 'var(--ink-soft)',
             fontWeight: activeTab === tab.id ? 700 : 500,
-            fontSize: 12,
+            fontSize: 'var(--text-sm)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -43,12 +43,12 @@ export function TabHeader({
           {tab.label}
           {tab.count !== undefined && tab.count > 0 && (
             <span style={{
-              fontSize: 10,
+              fontSize: 'var(--text-xs)',
               fontWeight: 700,
               background: activeTab === tab.id ? 'var(--accent)' : 'var(--surface)',
               color: activeTab === tab.id ? 'white' : 'var(--ink-soft)',
               padding: '1px 5px',
-              borderRadius: 10,
+              borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--hairline)',
               fontFamily: 'var(--font-mono)'
             }}>

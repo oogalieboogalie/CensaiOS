@@ -38,8 +38,8 @@ function Toast({ notice, onHide }) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
       background: 'var(--surface)', border: '1px solid var(--hairline)',
-      borderRadius: 999, boxShadow: 'var(--shadow-pop)',
-      padding: '8px 8px 8px 14px', fontFamily: 'var(--font-sans)', fontSize: 12,
+      borderRadius: 'var(--radius-full)', boxShadow: 'var(--shadow-pop)',
+      padding: '8px 8px 8px 14px', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
       color: 'var(--ink)', pointerEvents: 'auto',
       animation: 'presence-toast-in 0.25s ease-out',
     }}>
@@ -51,7 +51,7 @@ function Toast({ notice, onHide }) {
       <button
         onClick={onHide}
         title="Dismiss"
-        style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 12, padding: '0 4px' }}
+        style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', padding: '0 4px' }}
       >
         ✕
       </button>

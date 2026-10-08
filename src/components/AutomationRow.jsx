@@ -30,7 +30,7 @@ export function AutomationRow({ taskName, info, onAction }) {
   const cardStyle = {
     background: 'var(--surface-2)',
     border: isErrored ? '1px solid var(--ps-red)' : '1px solid var(--hairline)',
-    borderRadius: 12,
+    borderRadius: 'var(--radius-xl)',
     padding: 16,
     display: 'flex',
     flexDirection: 'column',
@@ -49,11 +49,11 @@ export function AutomationRow({ taskName, info, onAction }) {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h3 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <StatusBadge status={status} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{taskName}</span>
           </h3>
-          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ marginTop: 4, fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
             State: <span style={{ color: 'var(--ink)' }}>{state}</span>
             {!armed && ' (Not Armed)'}
           </div>
@@ -88,7 +88,7 @@ export function AutomationRow({ taskName, info, onAction }) {
       </div>
 
       {result !== null && (
-        <div style={{ fontSize: 11, color: result === 0 ? 'var(--ps-green)' : 'var(--ps-red)', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ fontSize: 'var(--text-xs)', color: result === 0 ? 'var(--ps-green)' : 'var(--ps-red)', fontFamily: 'var(--font-mono)' }}>
           Last result: {result}
         </div>
       )}
@@ -109,8 +109,8 @@ function StatusBadge({ status }) {
         justifyContent: 'center',
         minWidth: 64,
         padding: '2px 8px',
-        borderRadius: 999,
-        fontSize: 10,
+        borderRadius: 'var(--radius-full)',
+        fontSize: 'var(--text-xs)',
         fontWeight: 700,
         textTransform: 'uppercase',
         letterSpacing: '0.06em',
@@ -133,9 +133,9 @@ function statusColor(status) {
 
 function Field({ label, children }) {
   return (
-    <div style={{ background: 'var(--surface)', padding: 10, borderRadius: 8, border: '1px solid var(--hairline)', minWidth: 0 }}>
-      <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--ink-faint)', marginBottom: 4, letterSpacing: '0.05em' }}>{label}</div>
-      <div style={{ fontSize: 12, color: 'var(--ink)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+    <div style={{ background: 'var(--surface)', padding: 10, borderRadius: 'var(--radius-lg)', border: '1px solid var(--hairline)', minWidth: 0 }}>
+      <div style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', color: 'var(--ink-faint)', marginBottom: 4, letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {children}
       </div>
     </div>
@@ -147,8 +147,8 @@ function btnStyle(variant) {
     all: 'unset',
     cursor: 'pointer',
     padding: '6px 12px',
-    borderRadius: 8,
-    fontSize: 12,
+    borderRadius: 'var(--radius-lg)',
+    fontSize: 'var(--text-sm)',
     fontWeight: 600,
   };
   if (variant === 'accent') {

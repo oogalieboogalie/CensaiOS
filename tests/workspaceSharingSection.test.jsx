@@ -8,11 +8,13 @@ const inviteWorkspaceMember = jest.fn();
 const getPersonalWorkspace = jest.fn();
 const leaveWorkspace = jest.fn();
 
+const listShareLinks = jest.fn();
+
 jest.unstable_mockModule('../src/lib/api.js', () => ({
-  api: { getWorkspaceMembers, inviteWorkspaceMember, getPersonalWorkspace, leaveWorkspace },
+  api: { getWorkspaceMembers, inviteWorkspaceMember, getPersonalWorkspace, leaveWorkspace, listShareLinks },
 }));
 jest.unstable_mockModule('../src/lib/store.js', () => ({
-  useWorkspaceStore: (selector) => selector({ workspaceId: 'workspace-a' }),
+  useWorkspaceStore: (selector) => selector({ workspaceId: 'workspace-a', wins: [], canvasGroups: [] }),
 }));
 
 const { WorkspaceSharingSection } = await import('../src/components/theme/WorkspaceSharingSection.jsx');
@@ -26,6 +28,7 @@ describe('workspace sharing settings', () => {
       workspace: { id: 'workspace-a', name: 'Launch', role: 'owner' },
       members: [{ id: 7, email: 'owner@example.com', name: 'Owner', role: 'owner' }],
     });
+    listShareLinks.mockResolvedValue({ links: [], spectators: 0 });
     getPersonalWorkspace.mockResolvedValue({ workspace: { id: 'user-7-default', role: 'owner' } });
     leaveWorkspace.mockResolvedValue({ workspace: { id: 'user-7-default', role: 'owner' } });
     inviteWorkspaceMember.mockResolvedValue({
@@ -46,7 +49,9 @@ describe('workspace sharing settings', () => {
       'workspace-a', 'peer@example.com',
     ));
     expect(await screen.findByText('peer@example.com can now open this workspace.')).toBeTruthy();
-    expect(screen.getByDisplayValue(/workspace=workspace-a/)).toBeTruthy();
+    // Owners get the guest-link manager instead of a raw workspace address.
+    expect(screen.getByTestId('guest-link-manager')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Go live' })).toBeTruthy();
   });
 
   test('lets an invited member return to their own workspace without leaving', async () => {

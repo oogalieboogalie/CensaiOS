@@ -54,7 +54,9 @@ executionRouter.post('/run', async (req, res) => {
     const text = chunk.toString('utf8');
     stdoutBuffer += text;
     if (!runId) {
-      const match = stdoutBuffer.match(/run:\s*(run_\d+_[a-z0-9]+)/);
+      // Wait for a character after the id so a chunk boundary can't hand us
+      // a truncated run id (the status route would then never find its dir).
+      const match = stdoutBuffer.match(/run:\s*(run_\d+_[a-z0-9]+)(?=[^a-z0-9])/);
       if (match) {
         runId = match[1];
         activeRuns.set(runId, runState);
@@ -73,7 +75,7 @@ executionRouter.post('/run', async (req, res) => {
     runState.exitCode = code;
     runState.completedAt = new Date().toISOString();
     if (!runId) {
-      const match = stdoutBuffer.match(/run:\s*(run_\d+_[a-z0-9]+)/);
+      const match = stdoutBuffer.match(/run:\s*(run_\d+_[a-z0-9]+)(?![a-z0-9])/);
       if (match) {
         runId = match[1];
         activeRuns.set(runId, runState);

@@ -6,6 +6,7 @@ import { safeFastForwardCurrentProject, syncPulledTodoArtifacts } from '../opera
 import { dispatchTodoItem } from '../operational-intelligence/todoDispatch.js';
 import { createTodoItem, loadItems, openTodoList, updateTodoItem } from '../operational-intelligence/todos.js';
 import { resolveArtifact } from '../operational-intelligence/factories.js';
+import { findAuthorizedProvenance, listAuthorizedProvenance } from '../operational-intelligence/provenance.js';
 import { operationalRouteError, resolveOperationalScope } from '../operational-intelligence/routeScope.js';
 import { operationalIntelligenceEventsRouter } from './operationalIntelligenceEvents.js';
 import { operationalIntelligenceTracesRouter } from './operationalIntelligenceTraces.js';
@@ -15,6 +16,39 @@ export const operationalIntelligenceRouter = express.Router();
 operationalIntelligenceRouter.use(requireFeatureFlag('operational-intelligence'));
 operationalIntelligenceRouter.use(operationalIntelligenceEventsRouter);
 operationalIntelligenceRouter.use(operationalIntelligenceTracesRouter);
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+operationalIntelligenceRouter.get('/provenance', async (req, res) => {
+  try {
+    const { workspaceId, userId } = await resolveOperationalScope(req);
+    const records = await listAuthorizedProvenance(pool, {
+      workspaceId,
+      viewerUserId: userId,
+      filePath: req.query.filePath || null,
+      limit: req.query.limit,
+    });
+    res.json(records);
+  } catch (err) {
+    operationalRouteError(res, err);
+  }
+});
+
+operationalIntelligenceRouter.get('/provenance/:id', async (req, res) => {
+  try {
+    const { workspaceId, userId } = await resolveOperationalScope(req);
+    if (!UUID_RE.test(req.params.id)) return res.status(404).json({ error: 'Provenance record not found' });
+    const record = await findAuthorizedProvenance(pool, {
+      workspaceId,
+      artifactId: req.params.id,
+      viewerUserId: userId,
+    });
+    if (!record) return res.status(404).json({ error: 'Provenance record not found' });
+    res.json(record);
+  } catch (err) {
+    operationalRouteError(res, err);
+  }
+});
 
 operationalIntelligenceRouter.get('/todos/:listId', async (req, res) => {
   try {

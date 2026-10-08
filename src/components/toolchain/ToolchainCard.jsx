@@ -1,4 +1,4 @@
-const CLI_ICONS = { opencode: '⚡', gemini: '✦', codex: '◈', claudecode: '◉' };
+import { CLI_MONOGRAM } from '../agentConsole/CliMark.jsx';
 
 // status: 'unknown' | 'checking' | 'installed' | 'missing' | 'installing' | 'error'
 const STATUS_COLORS = {
@@ -11,7 +11,7 @@ const STATUS_COLORS = {
 };
 
 const STATUS_LABELS = {
-  unknown:    'Unknown',
+  unknown:    'Not checked',
   checking:   'Checking…',
   installed:  'Installed',
   missing:    'Not installed',
@@ -27,7 +27,7 @@ export function ToolchainCard({ tool, status, version, baked, log, sandboxUp, on
 
       {/* Left: icon + info */}
       <div className="tc-card-left">
-        <span className="tc-card-icon">{CLI_ICONS[tool.id] || '◆'}</span>
+        <span className="tc-card-icon" aria-hidden="true">{CLI_MONOGRAM[tool.id] || '··'}</span>
         <div>
           <div className="tc-card-name">{tool.label}</div>
           <div className="tc-card-desc">{tool.description}</div>

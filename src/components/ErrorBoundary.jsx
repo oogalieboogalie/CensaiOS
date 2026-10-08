@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax -- the crash screen must not depend on the theme that may have crashed */
 import React from 'react';
 
 // Surfaces otherwise-invisible render errors. Without this, an uncaught render
@@ -21,7 +22,7 @@ export class ErrorBoundary extends React.Component {
     if (!error) return this.props.children;
     return (
       <div style={{ position: 'fixed', inset: 0, overflow: 'auto', background: '#1a0000', color: '#ffd7d7', font: '12px/1.5 monospace', padding: 24, zIndex: 999999 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: '#ff6b6b' }}>App crashed during render</div>
+        <div style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 12, color: '#ff6b6b' }}>App crashed during render</div>
         <div style={{ marginBottom: 12, whiteSpace: 'pre-wrap' }}>{String(error && (error.stack || error.message || error))}</div>
         <div style={{ color: '#ff9b9b', whiteSpace: 'pre-wrap' }}>{info && info.componentStack}</div>
       </div>

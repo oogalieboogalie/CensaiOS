@@ -1,0 +1,84 @@
+<!-- module {"request": "a board that tracks my listings by stage", "manifest": {"name": "Listing pipeline", "description": "Track listings from lead to closed, shared with the team.", "icon": "List", "size": {"w": 900, "h": 540}, "permissions": []}} -->
+<div class="spread" style="margin-bottom: var(--space-3)">
+  <h2>Listing pipeline</h2>
+  <form class="row" id="add" style="width: 420px">
+    <input id="address" placeholder="Address" required>
+    <input id="price" placeholder="Price" inputmode="numeric" style="width: 120px">
+    <button class="primary" type="submit">Add</button>
+  </form>
+</div>
+<div class="board" id="board"></div>
+<style>
+  .board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); height: calc(100% - 52px); }
+  .col { background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); display: flex; flex-direction: column; min-height: 0; }
+  .col header { padding: var(--space-2) var(--space-3); display: flex; justify-content: space-between; border-bottom: 1px solid var(--hairline); }
+  .col.over { border-color: var(--accent); }
+  .cards { padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-2); overflow: auto; flex: 1; }
+  .listing { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); cursor: grab; }
+  .listing .spread button { min-height: 22px; padding: 0 var(--space-1); }
+  .empty { color: var(--ink-faint); font-size: var(--text-xs); padding: var(--space-2); }
+</style>
+<script>
+  const STAGES = ['Lead', 'Listed', 'Under contract', 'Closed'];
+  const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  let listings = censai.storage.get('listings', [
+    { id: 'a1', address: '14 Alder Way', price: 465000, stage: 'Lead' },
+    { id: 'a2', address: '902 Harbor St, Unit 4', price: 389000, stage: 'Listed' },
+    { id: 'a3', address: '7 Quarry Rd', price: 712000, stage: 'Under contract' },
+  ]);
+  const board = document.getElementById('board');
+
+  function save() { censai.storage.set('listings', listings); render(); }
+  function move(id, stage) { listings = listings.map((l) => l.id === id ? { ...l, stage } : l); save(); }
+
+  function render() {
+    board.innerHTML = '';
+    STAGES.forEach((stage, index) => {
+      const items = listings.filter((l) => l.stage === stage);
+      const total = items.reduce((sum, l) => sum + (l.price || 0), 0);
+      const col = document.createElement('section');
+      col.className = 'col';
+      col.innerHTML = `<header><span class="label">${stage} · ${items.length}</span><span class="num faint">${total ? money.format(total) : ''}</span></header><div class="cards"></div>`;
+      const cards = col.querySelector('.cards');
+      if (!items.length) cards.innerHTML = '<div class="empty">Drag a listing here</div>';
+      items.forEach((l) => {
+        const card = document.createElement('div');
+        card.className = 'listing';
+        card.draggable = true;
+        card.ondragstart = (e) => e.dataTransfer.setData('text/plain', l.id);
+        card.innerHTML = `<div>${escape(l.address)}</div><div class="spread"><span class="num muted">${l.price ? money.format(l.price) : 'No price'}</span><span class="row" style="gap:2px"></span></div>`;
+        const actions = card.querySelector('.row');
+        if (index > 0) actions.appendChild(button('Back', () => move(l.id, STAGES[index - 1])));
+        if (index < STAGES.length - 1) actions.appendChild(button('Next', () => move(l.id, STAGES[index + 1])));
+        else actions.appendChild(button('Remove', () => { listings = listings.filter((x) => x.id !== l.id); save(); }, 'danger'));
+        cards.appendChild(card);
+      });
+      col.ondragover = (e) => { e.preventDefault(); col.classList.add('over'); };
+      col.ondragleave = () => col.classList.remove('over');
+      col.ondrop = (e) => { e.preventDefault(); col.classList.remove('over'); move(e.dataTransfer.getData('text/plain'), stage); };
+      board.appendChild(col);
+    });
+  }
+
+  function button(label, onClick, extra) {
+    const b = document.createElement('button');
+    b.className = 'ghost ' + (extra || '');
+    b.textContent = label;
+    b.onclick = onClick;
+    return b;
+  }
+  function escape(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+
+  document.getElementById('add').onsubmit = (e) => {
+    e.preventDefault();
+    const address = document.getElementById('address').value.trim();
+    if (!address) return;
+    const price = parseInt(document.getElementById('price').value.replace(/[^0-9]/g, ''), 10) || 0;
+    listings = [...listings, { id: Date.now().toString(36), address, price, stage: 'Lead' }];
+    e.target.reset();
+    save();
+    censai.toast('Added ' + address);
+  };
+  censai.storage.onChange((key, value) => { if (key === 'listings' && Array.isArray(value)) { listings = value; render(); } });
+  render();
+</script>

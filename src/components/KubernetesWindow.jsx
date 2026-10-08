@@ -36,15 +36,15 @@ export function KubernetesWindow({ win, onUpdate }) {
 
   const renderContent = () => {
     if (loading && (!data.namespaces || !data.namespaces.length)) {
-      return <div style={{ padding: 14, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>Loading cluster state...</div>;
+      return <div style={{ padding: 14, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)' }}>Loading cluster state...</div>;
     }
     if (error) {
       return (
-        <div style={{ padding: 14, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+        <div style={{ padding: 14, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)' }}>
           {error.includes('Not configured') || error.includes('No current cluster') || error.includes('No valid kubeconfig') ? (
             <div>
               <p style={{ color: 'var(--ink-soft)', marginBottom: 8 }}>Kubernetes is not configured.</p>
-              <p style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Please ensure a valid kubeconfig exists on the server where Censai is running.</p>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Please ensure a valid kubeconfig exists on the server where Censai is running.</p>
             </div>
           ) : (
             <p style={{ color: 'var(--ps-red)' }}>Error: {error}</p>
@@ -58,14 +58,14 @@ export function KubernetesWindow({ win, onUpdate }) {
 
         {/* Namespaces Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--ink)', borderBottom: '1px solid var(--hairline)', paddingBottom: 4 }}>
+          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--ink)', borderBottom: '1px solid var(--hairline)', paddingBottom: 4 }}>
             Namespaces ({data.namespaces ? data.namespaces.length : 0})
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
             {(data.namespaces || []).map((ns, i) => (
-              <div key={i} style={{ padding: 8, background: 'var(--surface-2)', borderRadius: 6, border: '1px solid var(--hairline)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 600 }}>{ns.name}</span>
-                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: ns.status === 'Active' ? 'var(--ps-green)' : 'var(--ink-faint)' }}>{ns.status}</span>
+              <div key={i} style={{ padding: 8, background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 600 }}>{ns.name}</span>
+                <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: ns.status === 'Active' ? 'var(--ps-green)' : 'var(--ink-faint)' }}>{ns.status}</span>
               </div>
             ))}
           </div>
@@ -73,17 +73,17 @@ export function KubernetesWindow({ win, onUpdate }) {
 
         {/* Deployments Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--ink)', borderBottom: '1px solid var(--hairline)', paddingBottom: 4 }}>
+          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--ink)', borderBottom: '1px solid var(--hairline)', paddingBottom: 4 }}>
             Deployments ({data.deployments ? data.deployments.length : 0})
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {(data.deployments || []).map((dep, i) => (
-              <div key={i} style={{ padding: 8, background: 'var(--surface-2)', borderRadius: 6, border: '1px solid var(--hairline)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div key={i} style={{ padding: 8, background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 600 }}>{dep.name}</span>
-                  <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{dep.namespace}</span>
+                  <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 600 }}>{dep.name}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{dep.namespace}</span>
                 </div>
-                <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: dep.readyReplicas === dep.replicas ? 'var(--ps-green)' : 'var(--ps-amber)' }}>
+                <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: dep.readyReplicas === dep.replicas ? 'var(--ps-green)' : 'var(--ps-amber)' }}>
                   {dep.readyReplicas}/{dep.replicas} ready
                 </div>
               </div>
@@ -93,7 +93,7 @@ export function KubernetesWindow({ win, onUpdate }) {
 
         {/* Pods Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--ink)', borderBottom: '1px solid var(--hairline)', paddingBottom: 4 }}>
+          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--ink)', borderBottom: '1px solid var(--hairline)', paddingBottom: 4 }}>
             Pods ({data.pods ? data.pods.length : 0})
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -102,14 +102,14 @@ export function KubernetesWindow({ win, onUpdate }) {
               const isPending = pod.status === 'Pending';
               const color = isRunning ? 'var(--ps-green)' : (isPending ? 'var(--ps-amber)' : 'var(--ps-red)');
               return (
-                <div key={i} style={{ padding: 8, background: 'var(--surface-2)', borderRadius: 6, border: '1px solid var(--hairline)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div key={i} style={{ padding: 8, background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 600 }}>{pod.name}</span>
-                    <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{pod.namespace}</span>
+                    <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 600 }}>{pod.name}</span>
+                    <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>{pod.namespace}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    {pod.restarts > 0 && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--ps-amber)' }}>Restarts: {pod.restarts}</span>}
-                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color }}>{pod.status}</span>
+                    {pod.restarts > 0 && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--ps-amber)' }}>Restarts: {pod.restarts}</span>}
+                    <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color }}>{pod.status}</span>
                   </div>
                 </div>
               );

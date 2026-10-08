@@ -43,7 +43,7 @@ export class WindowLazyErrorBoundary extends React.Component {
           gap: 8,
           color: 'var(--ink-soft)',
           background: 'var(--surface)',
-          fontSize: 12,
+          fontSize: 'var(--text-sm)',
           lineHeight: 1.4,
         }}
       >

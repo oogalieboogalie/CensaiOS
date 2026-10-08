@@ -49,6 +49,7 @@ import { schedulesRouter } from '../routes/schedules.js';
 import { overseerRouter } from '../routes/overseer.js';
 import { vexRouter } from '../routes/vex/index.js';
 import { containersRouter } from '../routes/containers.js';
+import { dockerRouter } from '../routes/docker.js';
 import { systemStatusRouter } from '../routes/systemStatus.js';
 import { automationRouter } from '../routes/automation.js';
 import { kubernetesRouter } from '../routes/kubernetes.js';
@@ -57,13 +58,20 @@ import { windowImportRouter } from '../routes/windowImport.js';
 import { operationalIntelligenceRouter } from '../routes/operationalIntelligence.js';
 import { mlopsRouter } from '../routes/mlops.js';
 import { reliabilityRouter } from '../routes/reliability.js';
+import { ideasRouter } from '../routes/ideas.js';
+import { ollamaRouter } from '../routes/ollama.js';
+import { oauthRouter } from '../routes/oauth.js';
 import { agentRegistryRouter } from '../routes/agentRegistry/index.js';
 import { commandsRouter } from '../routes/commands.js';
 import { keysRouter } from '../routes/keys.js';
+import { designRouter } from '../routes/design.js';
+import { modulesRouter } from '../routes/modules.js';
 import { freeTierStatusRouter } from '../routes/freeTierStatus.js';
 import { approvalsRouter } from '../routes/approvals.js';
 import { workspaceMembersRouter } from '../routes/workspaceMembers.js';
+import { shareLinksRouter } from '../routes/shareLinks.js';
 import { agentIconsRouter } from '../routes/agentIcons.js';
+import { cliAgentsRouter } from '../routes/cliAgents.js';
 import {
   requireFeatureFlag,
   requireLocalFilesystem,
@@ -104,6 +112,7 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api/ai/free-tier', router: freeTierStatusRouter },
   { method: 'use', path: '/api', router: approvalsRouter },
   { method: 'use', path: '/api', router: workspaceMembersRouter },
+  { method: 'use', path: '/api', router: shareLinksRouter },
   { method: 'use', path: '/api/agent-icons', router: agentIconsRouter },
   { method: 'use', path: '/api', router: chatRouter },
   { method: 'use', path: '/api/images', router: imagesRouter },
@@ -117,10 +126,12 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api', router: overseerRouter },
   { method: 'use', path: '/api/vex', router: vexRouter },
   { method: 'use', path: '/api', router: containersRouter },
+  { method: 'use', path: '/api/docker', middleware: [requireLocalFilesystem], router: dockerRouter },
   { method: 'use', path: '/api/system', router: systemStatusRouter },
   { method: 'use', path: '/api', router: kubernetesRouter },
   { method: 'use', path: '/api/automation', router: automationRouter },
   { method: 'use', path: '/api', middleware: [sandboxLocalFilesystem], router: sandboxRouter },
+  { method: 'use', path: '/api/cli-agents', middleware: [requireLocalFilesystem], router: cliAgentsRouter },
 
   // CONSOLIDATED GUARD CHAIN — must stay in one entry.
   // Window import writes to disk and runs window:sync. The local-filesystem
@@ -145,7 +156,12 @@ export const ROUTE_MOUNTS = Object.freeze([
   },
   { method: 'use', path: '/api/mlops', router: mlopsRouter },
   { method: 'use', path: '/api/reliability', router: reliabilityRouter },
+  { method: 'use', path: '/api/ideas', router: ideasRouter },
+  { method: 'use', path: '/api/ollama', router: ollamaRouter },
+  { method: 'use', path: '/api/oauth', router: oauthRouter },
   { method: 'use', path: '/api/agent-registry', router: agentRegistryRouter },
+  { method: 'use', path: '/api/design', router: designRouter },
+  { method: 'use', path: '/api/modules', router: modulesRouter },
 ]);
 
 /**

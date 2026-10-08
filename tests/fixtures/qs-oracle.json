@@ -1,0 +1,1177 @@
+{
+ "generator": "freeze-qs-oracle",
+ "source": "qs@6.16.0",
+ "results": [
+  {
+   "name": "p-empty",
+   "out": {
+    "__object": true,
+    "entries": []
+   }
+  },
+  {
+   "name": "p-simple",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "b"
+     ],
+     [
+      "c",
+      "d"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-no-value",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      ""
+     ],
+     [
+      "b",
+      "c"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-empty-value",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      ""
+     ],
+     [
+      "b",
+      "c"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-encoded",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "b",
+         "c d"
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-prefix",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "b"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-nested",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "b",
+         {
+          "__object": true,
+          "entries": [
+           [
+            "c",
+            "d"
+           ]
+          ]
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-brackets",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__array": true,
+       "length": 2,
+       "items": [
+        "b",
+        "c"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-indices",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__array": true,
+       "length": 2,
+       "items": [
+        "c",
+        "b"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-dup-combine",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__array": true,
+       "length": 2,
+       "items": [
+        "b",
+        "c"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-dup-first",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "b"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-dup-last",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "c"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-bracket-equals",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__array": true,
+       "length": 1,
+       "items": [
+        "b=c"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-key-veto",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "1"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-dots",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "b",
+         "c"
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-dots-off",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a.b",
+      "c"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-comma",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__array": true,
+       "length": 3,
+       "items": [
+        "b",
+        "c",
+        "d"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-comma-truncate",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "0",
+         "x"
+        ],
+        [
+         "1",
+         "x"
+        ],
+        [
+         "2",
+         "x"
+        ],
+        [
+         "3",
+         "x"
+        ],
+        [
+         "4",
+         "x"
+        ],
+        [
+         "5",
+         "x"
+        ],
+        [
+         "6",
+         "x"
+        ],
+        [
+         "7",
+         "x"
+        ],
+        [
+         "8",
+         "x"
+        ],
+        [
+         "9",
+         "x"
+        ],
+        [
+         "10",
+         "x"
+        ],
+        [
+         "11",
+         "x"
+        ],
+        [
+         "12",
+         "x"
+        ],
+        [
+         "13",
+         "x"
+        ],
+        [
+         "14",
+         "x"
+        ],
+        [
+         "15",
+         "x"
+        ],
+        [
+         "16",
+         "x"
+        ],
+        [
+         "17",
+         "x"
+        ],
+        [
+         "18",
+         "x"
+        ],
+        [
+         "19",
+         "x"
+        ],
+        [
+         "20",
+         "x"
+        ],
+        [
+         "21",
+         "x"
+        ],
+        [
+         "22",
+         "x"
+        ],
+        [
+         "23",
+         "x"
+        ],
+        [
+         "24",
+         "x"
+        ],
+        [
+         "25",
+         "x"
+        ],
+        [
+         "26",
+         "x"
+        ],
+        [
+         "27",
+         "x"
+        ],
+        [
+         "28",
+         "x"
+        ],
+        [
+         "29",
+         "x"
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-comma-throw",
+   "err": {
+    "name": "RangeError",
+    "message": "Array limit exceeded. Only 20 elements allowed in an array."
+   }
+  },
+  {
+   "name": "p-depth0",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a[b][c]",
+      "d"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-depth1",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "b",
+         {
+          "__object": true,
+          "entries": [
+           [
+            "[c]",
+            "d"
+           ]
+          ]
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-strict-depth",
+   "err": {
+    "name": "RangeError",
+    "message": "Input depth exceeded depth option of 1 and strictDepth is true"
+   }
+  },
+  {
+   "name": "p-overflow-index",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "25",
+         "x"
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-overflow-merge",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "0",
+         "x"
+        ],
+        [
+         "25",
+         "y"
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-sparse-compact",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__array": true,
+       "length": 2,
+       "items": [
+        "b",
+        "c"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-sparse-keep",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__array": true,
+       "length": 4,
+       "items": [
+        {
+         "__hole": true
+        },
+        "b",
+        {
+         "__hole": true
+        },
+        "c"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-empty-arrays",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__array": true,
+       "length": 0,
+       "items": []
+      }
+     ],
+     [
+      "b",
+      {
+       "__array": true,
+       "length": 1,
+       "items": [
+        "c"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-no-parse-arrays",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "0",
+         "b"
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-proto-drop",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "b"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-proto-allow",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": []
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-plain",
+   "out": {
+    "__nullproto": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__nullproto": true,
+       "entries": [
+        [
+         "b",
+         "c"
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-strict-null",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      null
+     ],
+     [
+      "b",
+      "c"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-sentinel-utf8",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "é"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-sentinel-iso",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "é"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-iso-entities",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "✓"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-param-limit",
+   "err": {
+    "name": "RangeError",
+    "message": "Parameter limit exceeded. Only 2 parameters allowed."
+   }
+  },
+  {
+   "name": "p-delim-semi",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "b"
+     ],
+     [
+      "c",
+      "d"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-delim-regex",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "b"
+     ],
+     [
+      "c",
+      "d"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-decode-dots",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "b",
+         "c"
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-combine-bracket-dup",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__array": true,
+       "length": 2,
+       "items": [
+        "b",
+        "c"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-mixed-nesting",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "b",
+         {
+          "__array": true,
+          "length": 2,
+          "items": [
+           "c",
+           "d"
+          ]
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      "e",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "f",
+         {
+          "__array": true,
+          "length": 1,
+          "items": [
+           "g"
+          ]
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-union-mismatch",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__array": true,
+       "length": 2,
+       "items": [
+        {
+         "__object": true,
+         "entries": [
+          [
+           "b",
+           "c"
+          ]
+         ]
+        },
+        "d"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-bad-encoding",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "%E0%A4%A"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-plus-space",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "hello world"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-nonstring-input",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "b"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "p-err-charset",
+   "err": {
+    "name": "TypeError",
+    "message": "The charset option must be either utf-8, iso-8859-1, or undefined"
+   }
+  },
+  {
+   "name": "p-err-duplicates",
+   "err": {
+    "name": "TypeError",
+    "message": "The duplicates option must be either combine, first, or last"
+   }
+  },
+  {
+   "name": "p-err-decoder",
+   "err": {
+    "name": "TypeError",
+    "message": "Decoder has to be a function."
+   }
+  },
+  {
+   "name": "p-err-throw-flag",
+   "err": {
+    "name": "TypeError",
+    "message": "`throwOnLimitExceeded` option must be a boolean"
+   }
+  },
+  {
+   "name": "s-flat",
+   "out": "a=b&c=d"
+  },
+  {
+   "name": "s-nested",
+   "out": "a%5Bb%5D%5Bc%5D=d"
+  },
+  {
+   "name": "s-repeat",
+   "out": "q=x&ids=1&ids=2"
+  },
+  {
+   "name": "s-brackets",
+   "out": "a%5B%5D=b&a%5B%5D=c"
+  },
+  {
+   "name": "s-comma",
+   "out": "a=b%2Cc"
+  },
+  {
+   "name": "s-date",
+   "out": "d=2020-01-02T03%3A04%3A05.006Z"
+  },
+  {
+   "name": "s-null-loose",
+   "out": "a=&b=c"
+  },
+  {
+   "name": "s-null-strict",
+   "out": "a"
+  },
+  {
+   "name": "s-null-skip",
+   "out": "b=c"
+  },
+  {
+   "name": "s-undefined",
+   "out": "b=c"
+  },
+  {
+   "name": "s-empty-array",
+   "out": ""
+  },
+  {
+   "name": "s-empty-array-allow",
+   "out": "a[]"
+  },
+  {
+   "name": "s-non-object",
+   "out": ""
+  },
+  {
+   "name": "s-unicode",
+   "out": "a=%E2%9C%93%20%F0%9D%8C%86%20caf%C3%A9"
+  },
+  {
+   "name": "s-rfc1738",
+   "out": "a=hello+world"
+  },
+  {
+   "name": "s-dots",
+   "out": "a.b=c"
+  },
+  {
+   "name": "s-encode-dots",
+   "out": "a%252Eb=c"
+  },
+  {
+   "name": "s-encode-off",
+   "out": "a=b c&d=e"
+  },
+  {
+   "name": "s-values-only",
+   "out": "a b=c%20d"
+  },
+  {
+   "name": "s-prefix",
+   "out": "?a=b"
+  },
+  {
+   "name": "s-delim-semi",
+   "out": "a=b;c=d"
+  },
+  {
+   "name": "s-sort",
+   "out": "a=2&b=3&c=1"
+  },
+  {
+   "name": "s-filter-fn",
+   "out": "a=b"
+  },
+  {
+   "name": "s-filter-arr",
+   "out": "a=b"
+  },
+  {
+   "name": "s-serialize-date",
+   "out": "d=1577934245006"
+  },
+  {
+   "name": "s-sentinel",
+   "out": "utf8=%E2%9C%93&a=b"
+  },
+  {
+   "name": "s-sentinel-iso",
+   "out": "utf8=%26%2310003%3B&a=b"
+  },
+  {
+   "name": "s-depth-throw",
+   "err": {
+    "name": "RangeError",
+    "message": "Input depth exceeded depth option of 1"
+   }
+  },
+  {
+   "name": "s-cyclic",
+   "err": {
+    "name": "RangeError",
+    "message": "Cyclic object value"
+   }
+  },
+  {
+   "name": "s-shared-subtree",
+   "out": "a%5Bx%5D=1&b%5Bx%5D=1"
+  },
+  {
+   "name": "s-comma-null-safe",
+   "out": "a=,x"
+  },
+  {
+   "name": "s-comma-roundtrip",
+   "out": "a%5B%5D=x"
+  },
+  {
+   "name": "s-symbol-bigint",
+   "out": "a=Symbol(s)&b=10"
+  },
+  {
+   "name": "s-iso-encode",
+   "out": "a=%E9%26%2310003%3B"
+  },
+  {
+   "name": "s-buffer",
+   "out": "a=hi"
+  },
+  {
+   "name": "s-poisoned-ctor",
+   "out": "wrap%5Ba%5D=x"
+  },
+  {
+   "name": "s-err-format",
+   "err": {
+    "name": "TypeError",
+    "message": "Unknown format option provided."
+   }
+  },
+  {
+   "name": "s-err-encoder",
+   "err": {
+    "name": "TypeError",
+    "message": "Encoder has to be a function."
+   }
+  },
+  {
+   "name": "s-err-charset",
+   "err": {
+    "name": "TypeError",
+    "message": "The charset option must be either utf-8, iso-8859-1, or undefined"
+   }
+  },
+  {
+   "name": "s-err-comma-rt",
+   "err": {
+    "name": "TypeError",
+    "message": "`commaRoundTrip` must be a boolean, or absent"
+   }
+  },
+  {
+   "name": "c-googleapis",
+   "out": "q=hello%20world&ids=1&ids=2&ids=3&filter%5Ba%5D=b%20c"
+  },
+  {
+   "name": "c-roundtrip-flat",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      "b"
+     ],
+     [
+      "c",
+      {
+       "__array": true,
+       "length": 2,
+       "items": [
+        "d",
+        "e"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "c-roundtrip-nested",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "b",
+         "c d"
+        ],
+        [
+         "e",
+         {
+          "__array": true,
+          "length": 2,
+          "items": [
+           "1",
+           "2"
+          ]
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "name": "c-roundtrip-dots",
+   "out": {
+    "__object": true,
+    "entries": [
+     [
+      "a",
+      {
+       "__object": true,
+       "entries": [
+        [
+         "b",
+         "c"
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  }
+ ]
+}

@@ -3,6 +3,8 @@ import { ImageIcon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 
 function imageSrcFor(win) {
+  // An image sent from a chat (spec 3) carries its own data or https URL.
+  if (typeof win?.src === 'string' && /^(data:image\/|https?:\/\/|blob:)/.test(win.src)) return win.src;
   if (!win?.filePath) return null;
   if (win.isGithub && win.githubRepo) {
     const cleanPath = String(win.filePath).replace(/^\/+/, '');
@@ -33,18 +35,18 @@ export function ImageWindow({ win, onUpdate }) {
         accent="var(--ps-teal)"
         icon={<ImageIcon size={14} />}
         label={win.fileName || win.title || 'Image'}
-        subtitle={win.isGithub ? 'github image' : 'local image'}
+        subtitle={win.src ? 'from chat' : win.isGithub ? 'github image' : 'local image'}
         attachedAgentIds={win.attachedAgents}
         onDetach={(id) => onUpdate?.({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
       />
-      <div style={{ display: 'flex', gap: 6, padding: '6px 10px', alignItems: 'center', borderBottom: '1px solid var(--hairline)', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)' }}>
+      <div style={{ display: 'flex', gap: 6, padding: '6px 10px', alignItems: 'center', borderBottom: '1px solid var(--hairline)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={win.filePath}>
-          {win.filePath || 'No file'}
+          {win.filePath || (win.src ? 'Image from chat' : 'No file')}
         </span>
         <button
           onClick={() => setFitMode(mode === 'fit' ? 'fill' : 'fit')}
           title={mode === 'fit' ? 'Switch to fill (cover)' : 'Switch to fit (contain)'}
-          style={{ all: 'unset', cursor: 'pointer', padding: '2px 8px', borderRadius: 6, background: 'var(--surface-2)', color: 'var(--ink-soft)' }}
+          style={{ all: 'unset', cursor: 'pointer', padding: '2px 8px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', color: 'var(--ink-soft)' }}
         >
           {mode === 'fit' ? 'fit' : 'fill'}
         </button>
@@ -54,7 +56,7 @@ export function ImageWindow({ win, onUpdate }) {
             target="_blank"
             rel="noreferrer"
             title="Open original in a new tab"
-            style={{ padding: '2px 8px', borderRadius: 6, background: 'var(--surface-2)', color: 'var(--ink-soft)', textDecoration: 'none' }}
+            style={{ padding: '2px 8px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', color: 'var(--ink-soft)', textDecoration: 'none' }}
           >
             open
           </a>
@@ -72,7 +74,7 @@ export function ImageWindow({ win, onUpdate }) {
         }}
       >
         {!src && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
             No image file attached.
           </div>
         )}
@@ -86,17 +88,17 @@ export function ImageWindow({ win, onUpdate }) {
             style={
               mode === 'fill'
                 ? { width: '100%', height: '100%', objectFit: 'cover', display: 'block' }
-                : { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', borderRadius: 8, boxShadow: '0 8px 24px oklch(0 0 0 / 0.18)' }
+                : { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', borderRadius: 'var(--radius-lg)', boxShadow: '0 8px 24px oklch(0 0 0 / 0.18)' }
             }
           />
         )}
         {src && !failed && !loaded && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-faint)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
             Loading image…
           </div>
         )}
         {src && failed && (
-          <div style={{ padding: 16, fontSize: 12, color: 'var(--ps-red)', maxWidth: 320, textAlign: 'center' }}>
+          <div style={{ padding: 16, fontSize: 'var(--text-sm)', color: 'var(--ps-red)', maxWidth: 320, textAlign: 'center' }}>
             Couldn&apos;t load this image.
             {win.isGithub
               ? ' Private GitHub repos need a token on the server — try downloading it locally first.'

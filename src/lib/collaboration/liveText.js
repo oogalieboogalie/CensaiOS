@@ -9,6 +9,7 @@ let senders = {
   sendCursor: null,
   sendTyping: null,
   sendTextPreview: null,
+  sendInk: null,
 };
 
 export function setLivePresenceSenders(next) {
@@ -16,7 +17,7 @@ export function setLivePresenceSenders(next) {
 }
 
 export function resetLivePresenceSenders() {
-  senders = { sendCursor: null, sendTyping: null, sendTextPreview: null };
+  senders = { sendCursor: null, sendTyping: null, sendTextPreview: null, sendInk: null };
 }
 
 export function reportCursor(x, y) {
@@ -31,6 +32,12 @@ export function reportTyping(windowId) {
 export function reportTextPreview(windowId, text) {
   if (!windowId || typeof text !== 'string') return;
   try { senders.sendTextPreview?.(windowId, text); } catch { /* ephemeral — never throw */ }
+}
+
+/** A pen stroke in progress, so others watch it being drawn (spec 9). */
+export function reportInk(payload) {
+  if (!payload?.strokeId) return;
+  try { senders.sendInk?.({ type: 'ink.preview', ...payload }); } catch { /* ephemeral — never throw */ }
 }
 
 /**

@@ -20,7 +20,7 @@ export function ImageStudioWindow({ win, onUpdate }) {
         attachedAgentIds={win.attachedAgents}
         onDetach={(id) => onUpdate?.({ attachedAgents: (win.attachedAgents || []).filter(agentId => agentId !== id) })}
       />
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', background: '#07080d', color: 'var(--ink)' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', background: 'var(--surface-sunken)', color: 'var(--ink)' }}>
         <main style={{ flex: 1, minWidth: 0, padding: 12, display: 'flex', flexDirection: 'column', gap: 0 }}>
           <ImageStudioCanvas
             state={studio.state}

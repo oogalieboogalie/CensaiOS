@@ -27,6 +27,11 @@ export const TOOL_DEFS = [
     id: 'text', label: 'Text', key: 'T',
     glyph: <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M12 6v14m-3 0h6" />,
   },
+  {
+    // Spec 9: loop around ink strokes to select them.
+    id: 'lasso', label: 'Lasso', key: 'L',
+    glyph: <path strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2.5 2.5" d="M12 4c4.4 0 8 2.2 8 5s-3.6 5-8 5-8-2.2-8-5 3.6-5 8-5zm-5 9.5c-.8 1.8-.4 3.6 1 4.5 1.3.8 2.4.4 2.4 2.5" />,
+  },
 ];
 
 export const AI_DEF = {
@@ -34,7 +39,16 @@ export const AI_DEF = {
   glyph: <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />,
 };
 
-export const PEN_COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#FFFFFF'];
+// Momentary action (never becomes the active tool): focuses the existing
+// Censai chat window or spawns one. Lives in the dock next to AI Copilot.
+export const CHAT_DEF = {
+  id: 'chat', label: 'Chat', key: 'C',
+  glyph: <path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.4-4 8-9 8-1.4 0-2.7-.2-3.9-.7L3 21l1.4-4.4C3.5 15.2 3 13.7 3 12c0-4.4 4-8 9-8s9 3.6 9 8z" />,
+};
+
+// Theme tokens, so ink follows the look (spec 1) and reads as one muted set.
+export const PEN_COLORS = ['var(--ink)', 'var(--canvas-pen-blue)', 'var(--canvas-pen-red)', 'var(--canvas-pen-amber)', 'var(--canvas-pen-green)', 'var(--canvas-pen-purple)'];
+export const PEN_COLOR_NAMES = { 'var(--ink)': 'Ink', 'var(--canvas-pen-blue)': 'Blue', 'var(--canvas-pen-red)': 'Red', 'var(--canvas-pen-amber)': 'Amber', 'var(--canvas-pen-green)': 'Green', 'var(--canvas-pen-purple)': 'Purple' };
 export const PEN_SIZES = [2, 4, 8];
 
 export function broadcastToolChange(tool) {

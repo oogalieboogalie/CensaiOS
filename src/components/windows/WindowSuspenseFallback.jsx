@@ -11,7 +11,7 @@ export function WindowSuspenseFallback() {
       color: 'var(--ink-faint)',
       background: 'var(--surface)',
       fontFamily: 'var(--font-mono)',
-      fontSize: 11,
+      fontSize: 'var(--text-xs)',
     }}>
       loading window...
     </div>

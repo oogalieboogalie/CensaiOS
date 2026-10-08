@@ -71,7 +71,7 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
           flexDirection: 'column',
           background: 'var(--surface-1)',
         }}>
-          <div style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: 'var(--ink-faint)', textTransform: 'uppercase' }}>
+          <div style={{ padding: '12px 16px', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-faint)', textTransform: 'uppercase' }}>
             Deployed Models
           </div>
           <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -87,12 +87,12 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
                   transition: 'all 0.2s',
                 }}
               >
-                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{m.data.modelName}</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>v{m.data.version} • Drift: {(m.data.lastDriftScore || 0).toFixed(3)}</div>
+                <div style={{ fontSize: 'var(--text-md)', fontWeight: 500, color: 'var(--ink)' }}>{m.data.modelName}</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>v{m.data.version} • Drift: {(m.data.lastDriftScore || 0).toFixed(3)}</div>
               </div>
             ))}
             {models.length === 0 && !loading && (
-              <div style={{ padding: 20, fontSize: 12, color: 'var(--ink-faint)', textAlign: 'center' }}>
+              <div style={{ padding: 20, fontSize: 'var(--text-sm)', color: 'var(--ink-faint)', textAlign: 'center' }}>
                 No models registered
               </div>
             )}
@@ -104,43 +104,43 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
           {selectedModel ? (
             <>
               <div style={{ marginBottom: 24 }}>
-                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{selectedModel.data.modelName} <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--ink-soft)' }}>v{selectedModel.data.version}</span></h2>
-                <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 4 }}>Deployment ID: {selectedModel.id}</div>
+                <h2 style={{ margin: 0, fontSize: 'var(--text-xl)', fontWeight: 600 }}>{selectedModel.data.modelName} <span style={{ fontSize: 'var(--text-base)', fontWeight: 400, color: 'var(--ink-soft)' }}>v{selectedModel.data.version}</span></h2>
+                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', marginTop: 4 }}>Deployment ID: {selectedModel.id}</div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-                <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--hairline)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Drift Score</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: (selectedModel.data.lastDriftScore > selectedModel.data.thresholds.driftScore) ? 'var(--red)' : 'var(--green)' }}>
+                <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--hairline)' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Drift Score</div>
+                  <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: (selectedModel.data.lastDriftScore > selectedModel.data.thresholds.driftScore) ? 'var(--red)' : 'var(--green)' }}>
                     {(selectedModel.data.lastDriftScore || 0).toFixed(4)}
                   </div>
                 </div>
-                <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--hairline)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Threshold</div>
-                  <div style={{ fontSize: 24, fontWeight: 700 }}>{selectedModel.data.thresholds.driftScore}</div>
+                <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--hairline)' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Threshold</div>
+                  <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{selectedModel.data.thresholds.driftScore}</div>
                 </div>
-                <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--hairline)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Last Seen</div>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{selectedModel.data.lastSeenAt ? new Date(selectedModel.data.lastSeenAt).toLocaleString() : 'N/A'}</div>
+                <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--hairline)' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Last Seen</div>
+                  <div style={{ fontSize: 'var(--text-base)', fontWeight: 500 }}>{selectedModel.data.lastSeenAt ? new Date(selectedModel.data.lastSeenAt).toLocaleString() : 'N/A'}</div>
                 </div>
               </div>
 
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Drift Alerts</div>
+                <div style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 12 }}>Drift Alerts</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {alerts.map(a => (
-                    <div key={a.id} style={{ padding: 12, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={a.id} style={{ padding: 12, background: 'color-mix(in oklab, var(--danger) 10%, transparent)', border: '1px solid color-mix(in oklab, var(--danger) 20%, transparent)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--red)' }}>Drift Detected: {a.data.maxDrift.toFixed(4)}</div>
-                        <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{new Date(a.created_at).toLocaleString()}</div>
+                        <div style={{ fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--red)' }}>Drift Detected: {a.data.maxDrift.toFixed(4)}</div>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>{new Date(a.created_at).toLocaleString()}</div>
                       </div>
-                      <button style={{ padding: '4px 12px', borderRadius: 6, background: 'var(--red)', color: 'white', fontSize: 11, border: 'none', cursor: 'pointer' }}>
+                      <button style={{ padding: '4px 12px', borderRadius: 'var(--radius-md)', background: 'var(--red)', color: 'var(--on-fill)', fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer' }}>
                         Investigate
                       </button>
                     </div>
                   ))}
                   {alerts.length === 0 && (
-                    <div style={{ padding: 20, background: 'var(--surface-2)', borderRadius: 8, border: '1px solid var(--hairline)', textAlign: 'center', fontSize: 12, color: 'var(--ink-soft)' }}>
+                    <div style={{ padding: 20, background: 'var(--surface-2)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--hairline)', textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--ink-soft)' }}>
                       No active alerts
                     </div>
                   )}

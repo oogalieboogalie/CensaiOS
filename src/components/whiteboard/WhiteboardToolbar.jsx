@@ -27,7 +27,7 @@ export function WhiteboardToolbar({
       display: 'flex',
       gap: 6,
       padding: '4px 8px',
-      borderRadius: 8,
+      borderRadius: 'var(--radius-lg)',
       background: 'color-mix(in oklab, var(--surface-2) 90%, transparent)',
       backdropFilter: 'blur(8px)',
       border: '1px solid var(--hairline)',
@@ -47,7 +47,7 @@ export function WhiteboardToolbar({
         onClick={() => { setActiveMode('rect'); setSelectedId(null); }}
         style={{ ...btnStyle, background: activeMode === 'rect' ? 'var(--accent)' : 'transparent', color: activeMode === 'rect' ? '#fff' : 'var(--ink-soft)' }}
       >
-        <span style={{ display: 'inline-block', width: 12, height: 10, border: '1.5px solid currentColor', borderRadius: 1 }} />
+        <span style={{ display: 'inline-block', width: 12, height: 10, border: '1.5px solid currentColor', borderRadius: 'var(--radius-xs)' }} />
       </button>
 
       <button 
@@ -63,7 +63,7 @@ export function WhiteboardToolbar({
         onClick={() => { setActiveMode('arrow'); setSelectedId(null); }}
         style={{ ...btnStyle, background: activeMode === 'arrow' ? 'var(--accent)' : 'transparent', color: activeMode === 'arrow' ? '#fff' : 'var(--ink-soft)' }}
       >
-        <span style={{ fontSize: 13, fontWeight: 'bold', transform: 'rotate(-45deg)', display: 'inline-block' }}>→</span>
+        <span style={{ fontSize: 'var(--text-md)', fontWeight: 'bold', transform: 'rotate(-45deg)', display: 'inline-block' }}>→</span>
       </button>
 
       <button 
@@ -71,7 +71,7 @@ export function WhiteboardToolbar({
         onClick={() => { setActiveMode('text'); setSelectedId(null); }}
         style={{ ...btnStyle, background: activeMode === 'text' ? 'var(--accent)' : 'transparent', color: activeMode === 'text' ? '#fff' : 'var(--ink-soft)' }}
       >
-        <span style={{ fontSize: 12, fontWeight: 'bold', fontFamily: 'monospace' }}>T</span>
+        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'bold', fontFamily: 'monospace' }}>T</span>
       </button>
 
       <button 
@@ -79,7 +79,7 @@ export function WhiteboardToolbar({
         onClick={() => setActiveMode('select')}
         style={{ ...btnStyle, background: activeMode === 'select' ? 'var(--accent)' : 'transparent', color: activeMode === 'select' ? '#fff' : 'var(--ink-soft)' }}
       >
-        <span style={{ fontSize: 13, fontWeight: 'bold' }}>⬈</span>
+        <span style={{ fontSize: 'var(--text-md)', fontWeight: 'bold' }}>⬈</span>
       </button>
 
       <div style={{ width: 1, background: 'var(--hairline)', margin: '0 4px' }} />
@@ -127,7 +127,7 @@ export function WhiteboardToolbar({
           background: 'transparent',
           border: 'none',
           color: 'var(--ink-soft)',
-          fontSize: 11,
+          fontSize: 'var(--text-xs)',
           fontFamily: 'var(--font-sans)',
           outline: 'none',
           cursor: 'pointer'

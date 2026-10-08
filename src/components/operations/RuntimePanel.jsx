@@ -24,7 +24,7 @@ export function RuntimePanel({ dbReady, health, schedulerReady, schedulerWorker,
         {errorList.length > 0 && (
           <div style={{ marginTop: 8, display: 'grid', gap: 5 }}>
             {errorList.map((error, index) => (
-              <div key={`${error}-${index}`} style={{ fontSize: 11, color: 'var(--ps-red)', lineHeight: 1.35, overflowWrap: 'anywhere' }}>{error}</div>
+              <div key={`${error}-${index}`} style={{ fontSize: 'var(--text-xs)', color: 'var(--ps-red)', lineHeight: 1.35, overflowWrap: 'anywhere' }}>{error}</div>
             ))}
           </div>
         )}

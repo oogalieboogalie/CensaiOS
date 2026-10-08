@@ -1,0 +1,66 @@
+<!-- module {"request": "a tip calculator for my crew", "manifest": {"name": "Tip calculator", "description": "Split a bill and tip across a crew.", "icon": "Toolbox", "size": {"w": 400, "h": 500}, "permissions": []}} -->
+<div class="stack" style="gap: var(--space-4)">
+  <div class="spread">
+    <h2>Tip calculator</h2>
+    <span class="pill" id="per-pill">0 people</span>
+  </div>
+  <label class="stack"><span class="label">Bill total</span>
+    <input id="bill" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+  </label>
+  <div class="stack"><span class="label">Tip</span>
+    <div class="row" id="tips"></div>
+  </div>
+  <label class="stack"><span class="label">Crew size</span>
+    <div class="row">
+      <button class="ghost" id="minus" aria-label="Fewer people">-</button>
+      <input id="people" type="number" min="1" step="1" style="text-align:center">
+      <button class="ghost" id="plus" aria-label="More people">+</button>
+    </div>
+  </label>
+  <div class="card stack">
+    <div class="spread"><span class="muted">Tip</span><span class="num" id="tip-out">$0.00</span></div>
+    <div class="spread"><span class="muted">Total</span><span class="num" id="total-out">$0.00</span></div>
+    <div class="spread" style="margin-top: var(--space-2)"><span>Each person pays</span><span class="big" id="each-out">$0.00</span></div>
+  </div>
+</div>
+<style>
+  #tips button { flex: 1; }
+  #tips button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+</style>
+<script>
+  const TIP_OPTIONS = [15, 18, 20, 25];
+  const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' });
+  const state = censai.storage.get('tip', { bill: '', pct: 18, people: 4 });
+  const $ = (id) => document.getElementById(id);
+
+  const tipsRow = $('tips');
+  TIP_OPTIONS.forEach((pct) => {
+    const b = document.createElement('button');
+    b.textContent = pct + '%';
+    b.onclick = () => { state.pct = pct; save(); };
+    b.dataset.pct = pct;
+    tipsRow.appendChild(b);
+  });
+
+  function save() { censai.storage.set('tip', state); render(); }
+
+  function render() {
+    const bill = Math.max(0, parseFloat(state.bill) || 0);
+    const people = Math.max(1, Math.round(state.people) || 1);
+    const tip = bill * state.pct / 100;
+    if (document.activeElement !== $('bill')) $('bill').value = state.bill;
+    $('people').value = people;
+    $('tip-out').textContent = money.format(tip);
+    $('total-out').textContent = money.format(bill + tip);
+    $('each-out').textContent = money.format((bill + tip) / people);
+    $('per-pill').textContent = people + (people === 1 ? ' person' : ' people');
+    tipsRow.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.pct) === state.pct)));
+  }
+
+  $('bill').oninput = (e) => { state.bill = e.target.value; save(); };
+  $('people').oninput = (e) => { state.people = parseInt(e.target.value, 10) || 1; save(); };
+  $('minus').onclick = () => { state.people = Math.max(1, state.people - 1); save(); };
+  $('plus').onclick = () => { state.people = state.people + 1; save(); };
+  censai.storage.onChange((key, value) => { if (key === 'tip' && value) { Object.assign(state, value); render(); } });
+  render();
+</script>

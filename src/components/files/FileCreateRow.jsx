@@ -37,7 +37,7 @@ export function FileCreateRow({ mode, dirPath, onDone, onOpenFile }) {
 
   return (
     <div style={{ display: 'flex', gap: 6, padding: '6px 10px', alignItems: 'center' }}>
-      <span style={{ color: 'var(--ink-faint)', fontSize: 12 }}>{mode === 'folder' ? '📁' : '📄'}</span>
+      <span style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>{mode === 'folder' ? '📁' : '📄'}</span>
       <input
         ref={inputRef}
         value={name}
@@ -47,10 +47,10 @@ export function FileCreateRow({ mode, dirPath, onDone, onOpenFile }) {
           if (e.key === 'Escape') onDone?.(false);
         }}
         placeholder={mode === 'folder' ? 'New folder name…' : 'New file name…'}
-        style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 6, padding: '4px 8px', font: '11px var(--font-mono)', color: 'var(--ink)', outline: 'none' }}
+        style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '4px 8px', font: '11px var(--font-mono)', color: 'var(--ink)', outline: 'none' }}
       />
-      {status && <span style={{ color: 'var(--ps-red)', fontSize: 10 }}>{status}</span>}
-      <button onClick={() => onDone?.(false)} style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 11 }}>✕</button>
+      {status && <span style={{ color: 'var(--ps-red)', fontSize: 'var(--text-xs)' }}>{status}</span>}
+      <button onClick={() => onDone?.(false)} style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>✕</button>
     </div>
   );
 }

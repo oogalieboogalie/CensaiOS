@@ -5,14 +5,14 @@ import { getAgents, getAgentById } from '../../lib/agentStore.js';
 import { TodoAssignMenu } from './TodoAssignMenu.jsx';
 
 const STATUS_CONFIG = {
-  needs_contract: { label: 'needs contract', bg: 'var(--ps-orange)', color: '#fff' },
+  needs_contract: { label: 'needs contract', bg: 'var(--ps-orange)', color: 'var(--on-fill)' },
   queued:         { label: 'queued',          bg: 'var(--accent-soft)', color: 'var(--accent-ink)' },
-  dispatched:     { label: 'dispatched',      bg: 'oklch(0.55 0.15 280)', color: '#fff' },
-  pr_open:        { label: 'PR',             bg: 'oklch(0.55 0.18 310)', color: '#fff' },
-  blocked:        { label: 'blocked',         bg: 'var(--ps-red)', color: '#fff' },
-  failed:         { label: 'failed',          bg: 'var(--ps-red)', color: '#fff' },
-  merged:         { label: 'merged ✓',        bg: 'var(--ps-green)', color: '#fff' },
-  pulled:         { label: 'landed ✓',        bg: 'oklch(0.65 0.19 145)', color: '#fff' },
+  dispatched:     { label: 'dispatched',      bg: 'oklch(0.55 0.15 280)', color: 'var(--on-fill)' },
+  pr_open:        { label: 'PR',             bg: 'oklch(0.55 0.18 310)', color: 'var(--on-fill)' },
+  blocked:        { label: 'blocked',         bg: 'var(--ps-red)', color: 'var(--on-fill)' },
+  failed:         { label: 'failed',          bg: 'var(--ps-red)', color: 'var(--on-fill)' },
+  merged:         { label: 'merged ✓',        bg: 'var(--ps-green)', color: 'var(--on-fill)' },
+  pulled:         { label: 'landed ✓',        bg: 'oklch(0.65 0.19 145)', color: 'var(--on-fill)' },
 };
 
 const CONTRACT_HINT = `Add these lines to your todo:\nFiles: src/components/MyWindow.jsx\nAcceptance: npm test -- tests/myWindow.test.jsx`;
@@ -33,8 +33,8 @@ function StatusBadge({ status, prUrl, prNumber, contractMissing, handoffWarning 
       title={title}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 3,
-        fontSize: 9.5, fontWeight: 600, letterSpacing: '0.02em',
-        padding: '2px 7px', borderRadius: 20,
+        fontSize: 'var(--text-xs)', fontWeight: 600, letterSpacing: '0.02em',
+        padding: '2px 7px', borderRadius: 'var(--radius-full)',
         background: config.bg, color: config.color,
         whiteSpace: 'nowrap', lineHeight: 1.4,
         cursor: prUrl ? 'pointer' : title ? 'help' : 'default',
@@ -61,9 +61,15 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
   const implementationStatus = item.implementationStatus || (isSent ? 'dispatched' : null);
   const contractMissing = Array.isArray(item.contractMissing) ? item.contractMissing.join(', ') : '';
   
+  const [expanded, setExpanded] = React.useState(false);
+
   const handleDoubleClick = () => {
     if (!isSent) {
       onStartEdit(item.id, item.text);
+    } else {
+      // Sent items can't be edited (would corrupt the handoff),
+      // but expand so the full text is readable and copyable.
+      setExpanded((e) => !e);
     }
   };
   
@@ -76,8 +82,8 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
   };
   
   return (
-    <div onDoubleClick={handleDoubleClick} style={{ display: 'grid', gridTemplateColumns: '16px minmax(0, 1fr) auto auto', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, background: item.done ? 'rgba(46, 204, 113, 0.08)' : 'var(--surface-2)', border: '1px solid ' + (item.done ? 'var(--ps-green)' : 'var(--hairline)'), position: 'relative', transition: 'all 0.2s ease', cursor: isSent ? 'default' : 'pointer' }}>
-      <button onClick={(e) => { e.stopPropagation(); onToggle(); }} style={{ all: 'unset', cursor: 'pointer', width: 16, height: 16, borderRadius: 5, background: item.done ? 'var(--ps-green)' : 'transparent', boxShadow: 'inset 0 0 0 1.5px ' + (item.done ? 'transparent' : 'var(--hairline-strong)'), display: 'grid', placeItems: 'center', color: 'white', flexShrink: 0, transition: 'all 0.2s ease' }}>
+    <div onDoubleClick={handleDoubleClick} style={{ display: 'grid', gridTemplateColumns: '16px minmax(0, 1fr) auto auto', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 'var(--radius-lg)', background: item.done ? 'color-mix(in oklab, var(--success) 8%, transparent)' : 'var(--surface-2)', border: '1px solid ' + (item.done ? 'var(--ps-green)' : 'var(--hairline)'), position: 'relative', transition: 'all 0.2s ease', cursor: isSent ? 'default' : 'pointer' }}>
+      <button onClick={(e) => { e.stopPropagation(); onToggle(); }} style={{ all: 'unset', cursor: 'pointer', width: 16, height: 16, borderRadius: 'var(--radius-sm)', background: item.done ? 'var(--ps-green)' : 'transparent', boxShadow: 'inset 0 0 0 1.5px ' + (item.done ? 'transparent' : 'var(--hairline-strong)'), display: 'grid', placeItems: 'center', color: 'var(--on-fill)', flexShrink: 0, transition: 'all 0.2s ease' }}>
         {item.done && <Icon.Check size={10} stroke={2.6}/>}
       </button>
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -90,11 +96,11 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
               onKeyDown={handleKeyDown}
               onBlur={onSaveEdit}
               onClick={(e) => e.stopPropagation()}
-              style={{ flex: 1, padding: '2px 6px', fontSize: 13.5, border: '1px solid var(--accent)', borderRadius: 4, outline: 'none', background: 'var(--surface)', color: 'var(--ink)' }}
+              style={{ flex: 1, padding: '2px 6px', fontSize: 'var(--text-md)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-sm)', outline: 'none', background: 'var(--surface)', color: 'var(--ink)' }}
             />
           </div>
         ) : (
-          <span title={isSent ? 'Sent items cannot be edited' : 'Double-click to edit'} style={{ fontSize: 13.5, color: item.done ? 'var(--ink-faint)' : 'var(--ink)', textDecoration: item.done ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</span>
+          <span title={isSent ? (expanded ? 'Double-click to collapse' : 'Double-click to expand full text') : 'Double-click to edit'} style={{ fontSize: 'var(--text-md)', color: item.done ? 'var(--ink-faint)' : 'var(--ink)', textDecoration: item.done ? 'line-through' : 'none', whiteSpace: expanded ? 'normal' : 'nowrap', overflow: expanded ? 'visible' : 'hidden', textOverflow: expanded ? 'clip' : 'ellipsis', userSelect: 'text', cursor: 'text', overflowWrap: 'anywhere' }}>{item.text}</span>
         )}
         {implementationStatus && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, minHeight: 16 }}>
@@ -106,7 +112,7 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
               handoffWarning={item.handoffWarning}
             />
             {item.handoffPath && !item.prUrl && implementationStatus !== 'needs_contract' && (
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }} title={item.handoffPath}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }} title={item.handoffPath}>
                 {item.handoffPath.split('/').pop()}
               </span>
             )}
@@ -124,7 +130,7 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
           : !item.assignee ? 'Assign to an agent first'
           : 'Create project handoff'
         }
-        style={{ all: 'unset', cursor: canHandoff && item.assignee && !item.handingOff ? 'pointer' : 'not-allowed', width: 24, height: 24, borderRadius: 7, display: 'grid', placeItems: 'center', background: item.handoffPath ? 'var(--accent-soft)' : 'var(--surface)', border: '1px solid var(--hairline)', color: item.handoffPath ? 'var(--accent-ink)' : 'var(--ink-faint)', opacity: canHandoff && item.assignee ? 1 : 0.45 }}
+        style={{ all: 'unset', cursor: canHandoff && item.assignee && !item.handingOff ? 'pointer' : 'not-allowed', width: 24, height: 24, borderRadius: 'var(--radius-md)', display: 'grid', placeItems: 'center', background: item.handoffPath ? 'var(--accent-soft)' : 'var(--surface)', border: '1px solid var(--hairline)', color: item.handoffPath ? 'var(--accent-ink)' : 'var(--ink-faint)', opacity: canHandoff && item.assignee ? 1 : 0.45 }}
       >
         {item.handingOff ? '...' : <Icon.ArrowAssign size={12} />}
       </button>

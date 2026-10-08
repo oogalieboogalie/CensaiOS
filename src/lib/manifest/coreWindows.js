@@ -56,8 +56,7 @@ export const CORE_WINDOW_MANIFESTS = [
     label: 'Workflow',
     componentName: 'WorkflowWindow',
     componentPath: 'src/components/WorkflowWindow.jsx',
-    defaultSize: { w: 480, h: 320 },
-    moduleMenu: { show: false, status: 'prototype' },
+    defaultSize: { w: 480, h: 560 },
     launcher: { show: true, order: 40, icon: 'NewWorkflow', label: 'Workflow', hint: 'multi-step pipeline' },
   },
   {
@@ -102,7 +101,7 @@ export const CORE_WINDOW_MANIFESTS = [
     label: 'Idea',
     componentName: 'IdeaWindow',
     componentPath: 'src/components/IdeaWindow.jsx',
-    defaultSize: { w: 320, h: 400 },
+    defaultSize: { w: 560, h: 460 },
   },
   {
     kind: 'calendar',

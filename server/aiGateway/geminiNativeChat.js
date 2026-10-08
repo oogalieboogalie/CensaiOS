@@ -4,6 +4,7 @@ import {
   buildChatUsageRecord,
   recordChatUsage,
 } from './usage.js';
+import { toGeminiPart } from './multimodal.js';
 
 export const GOOGLE_NATIVE_PROVIDER = 'google-native';
 export const geminiNativeChatLog = createLogger('ai');
@@ -66,15 +67,23 @@ function toGeminiContents(messages) {
   const contents = [];
 
   for (const message of messages) {
-    const text = textFromMessageContent(message?.content);
-    if (!text) continue;
-    if (message.role === 'system') {
-      systemParts.push(text);
+    if (message?.role === 'system') {
+      const text = textFromMessageContent(message?.content);
+      if (text) systemParts.push(text);
       continue;
+    }
+    // Images, PDFs, audio and video ride along as inlineData parts.
+    const parts = Array.isArray(message?.content)
+      ? message.content.map(toGeminiPart).filter(Boolean)
+      : [];
+    if (parts.length === 0) {
+      const text = textFromMessageContent(message?.content);
+      if (!text) continue;
+      parts.push({ text });
     }
     contents.push({
       role: message.role === 'assistant' || message.role === 'model' ? 'model' : 'user',
-      parts: [{ text }],
+      parts,
     });
   }
 

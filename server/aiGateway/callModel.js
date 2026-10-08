@@ -34,6 +34,7 @@ export async function callModel({
   usageAttribution = null,
   usageSink = null,
   accessContext = null,
+  onDelta = null,
 } = {}) {
   const safeUsageSink = bestEffortUsageSink(usageSink);
   const access = await resolveModelAccess({
@@ -97,6 +98,7 @@ export async function callModel({
       retry: prepared.retry,
       usageAttribution: effectiveAttribution,
       usageSink: safeUsageSink,
+      onDelta,
     });
   } catch (error) {
     return settleModelAccessFailure(access, error);

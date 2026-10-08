@@ -41,8 +41,9 @@ export const MEDIA_WINDOW_MANIFESTS = [
     label: 'Music Player',
     componentName: 'MusicWindow',
     componentPath: 'src/components/MusicWindow.jsx',
-    defaultSize: { w: 320, h: 380 },
-    launcher: { show: true, order: 100, icon: 'Music', label: 'Music Player', hint: 'Lofi & Spotify' },
+    defaultSize: { w: 300, h: 460 },
+    sizeClass: 'fixed', // device-shaped player, not a document window
+    launcher: { show: true, order: 100, icon: 'Music', label: 'Music Player', hint: 'Retro MP3 player' },
   },
   {
     kind: 'stream',
@@ -75,8 +76,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
     label: 'Analytics Board',
     componentName: 'AnalyticsBoardWindow',
     componentPath: 'src/components/AnalyticsBoardWindow.jsx',
-    defaultSize: { w: 420, h: 360 },
-    moduleMenu: { show: false, status: 'prototype' },
+    defaultSize: { w: 520, h: 640 },
   },
   {
     kind: 'mailcow',
@@ -129,8 +129,22 @@ export const MEDIA_WINDOW_MANIFESTS = [
     label: 'Figma',
     componentName: 'FigmaWindow',
     componentPath: 'src/components/FigmaWindow.jsx',
-    defaultSize: { w: 800, h: 560 },
-    moduleMenu: { show: false, status: 'coming-soon' },
-    launcher: { show: true, order: 220, icon: 'Edit', label: 'Figma', hint: 'embedded design file' },
+    defaultSize: { w: 768, h: 528 },
+    sizeClass: 'wide', // room for the frame grid
+    launcher: { show: true, order: 220, icon: 'Edit', label: 'Figma', hint: 'import designs as live code' },
+  },
+  {
+    kind: 'designBlock',
+    canvasType: 'designBlock',
+    label: 'Design Block',
+    componentName: 'DesignBlockWindow',
+    componentPath: 'src/components/DesignBlockWindow.jsx',
+    defaultSize: { w: 960, h: 640 },
+    sizeClass: 'large', // pasted UI opens at a desktop-ish board; Figma imports pass their frame size
+    header: { title: 'Design block', icon: 'Code', mode: 'bare' },
+    launcher: {
+      show: true, order: 225, icon: 'Code', label: 'Design block', hint: 'borderless live UI code',
+      props: { title: 'Design block', sourceType: 'tailwind', frameless: true, bare: true, source: '<section class="min-h-screen grid place-items-center bg-gradient-to-br from-slate-50 to-indigo-100 p-12"><div class="max-w-xl text-center space-y-5"><p class="text-sm font-semibold tracking-widest text-indigo-600 uppercase">Design block</p><h1 class="text-5xl font-bold tracking-tight text-slate-900">Paste UI code on the canvas</h1><p class="text-lg text-slate-600">HTML, Tailwind, React or SVG renders right here with no window around it. Select it to edit the code or remix it with any model.</p></div></section>' },
+    },
   },
 ];

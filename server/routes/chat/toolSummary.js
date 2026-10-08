@@ -56,6 +56,8 @@ export function summarizeToolCall(tool, args = {}) {
       return args.query ? { target: clipTarget(args.query) } : null;
     case 'query_knowledge':
       return args.subject ? { target: clipTarget(args.subject) } : null;
+    case 'make_module':
+      return args.request ? { target: clipTarget(args.title || args.request) } : null;
     case 'message_to':
       return args.agent ? { target: clipTarget(args.agent) } : null;
     default:

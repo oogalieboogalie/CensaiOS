@@ -27,11 +27,12 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
   }, [win.isEditing]);
 
   React.useEffect(() => {
-    // Remote live previews flow through win.text — never clobber the local draft.
-    if (!win.filePath && !isEditing) {
+    // Shared edits flow in through win.text even mid-typing; DocWindow keeps
+    // the caret in place (useSharedCaret) and the shared doc merges the text.
+    if (!win.filePath) {
       setRealContent(win.text || win.content || FILE_CONTENTS[win.fileName] || '');
     }
-  }, [win.filePath, win.text, win.content, win.fileName, isEditing]);
+  }, [win.filePath, win.text, win.content, win.fileName]);
 
   React.useEffect(() => {
     if (win.filePath) {

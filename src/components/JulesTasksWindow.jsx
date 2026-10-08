@@ -82,44 +82,44 @@ export function JulesTasksWindow({ win, isActive }) {
             type="button"
             onClick={() => load({ refresh: true })}
             disabled={loading}
-            style={{ all: 'unset', cursor: loading ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 12, color: 'var(--ink)' }}
+            style={{ all: 'unset', cursor: loading ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 10px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-sm)', color: 'var(--ink)' }}
           >
             <Icon.Search size={13} />
             {loading ? 'Refreshing' : 'Refresh'}
           </button>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--ink-soft)' }}>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>
             <input type="checkbox" checked={includeCompleted} onChange={(e) => setIncludeCompleted(e.target.checked)} />
             completed
           </label>
           <div style={{ flex: 1 }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
             {lastLoadedAt ? `loaded ${fmtDate(lastLoadedAt)}` : 'not loaded'}
           </span>
         </div>
 
-        {error && <div style={{ color: 'var(--ps-red)', fontSize: 12 }}>{error}</div>}
+        {error && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)' }}>{error}</div>}
 
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'grid', alignContent: 'start', gap: 8 }}>
           <JulesQueuePanel queue={queue} includeCompleted={includeCompleted} />
           {!loading && sessions.length === 0 && !queue && (
-            <div style={{ border: '1px dashed var(--hairline)', borderRadius: 8, padding: 18, color: 'var(--ink-faint)', fontSize: 12, textAlign: 'center' }}>
+            <div style={{ border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 18, color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
               No Jules queue or session data.
             </div>
           )}
           {sessions.map(session => (
-            <div key={session.id || session.session} style={{ border: '1px solid var(--hairline)', borderRadius: 8, background: 'var(--surface-2)', padding: 10, display: 'grid', gap: 6 }}>
+            <div key={session.id || session.session} style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', padding: 10, display: 'grid', gap: 6 }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColor(session.status), boxShadow: `0 0 8px ${statusColor(session.status)}` }} />
-                <strong style={{ fontSize: 13, color: 'var(--ink)' }}>{session.title}</strong>
+                <strong style={{ fontSize: 'var(--text-md)', color: 'var(--ink)' }}>{session.title}</strong>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-faint)' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
                 <span>{session.status}</span>
                 {session.projectName && <span>{session.projectName}</span>}
                 {session.branch && <span>{session.branch}</span>}
                 <span>checked {fmtDate(session.lastPolledAt)}</span>
               </div>
               {(session.prUrl || session.julesUrl) && (
-                <div style={{ display: 'flex', gap: 8, fontSize: 11 }}>
+                <div style={{ display: 'flex', gap: 8, fontSize: 'var(--text-xs)' }}>
                   {session.julesUrl && <a href={session.julesUrl} target="_blank" rel="noreferrer">Jules</a>}
                   {session.prUrl && <a href={session.prUrl} target="_blank" rel="noreferrer">PR #{session.prNumber || ''}</a>}
                 </div>

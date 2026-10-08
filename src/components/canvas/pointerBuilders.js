@@ -63,3 +63,30 @@ export function consumeSuppression(suppressRef) {
   suppressRef.current = false;
   return suppressed;
 }
+
+// Blur a focused input/textarea/contenteditable so a canvas click or pan start
+// takes keyboard focus away from the editor the user just left.
+export function blurActiveEditable(doc = document) {
+  const el = doc.activeElement;
+  if (!el || typeof el.blur !== 'function') return;
+  if (['INPUT', 'TEXTAREA'].includes(el.tagName) || el.contentEditable === 'true') el.blur();
+}
+
+const INTERACTIVE_PAN_BLOCKERS = 'button, a, input, textarea, select, [contenteditable="true"], [data-canvas-ui], [data-canvas-context-surface]';
+
+// Never hijack clicks on interactive canvas UI (launchpad tiles, region menu,
+// inputs): turning a button press into a pan drag via preventDefault + pointer
+// capture silently kills onClick with no errors.
+export function isInteractivePanTarget(target) {
+  return !!target?.closest?.(INTERACTIVE_PAN_BLOCKERS);
+}
+
+// Snapshot taken when a second finger lands; computePinchZoom reads it on move.
+export function buildPinchStart(first, second, zoom, pan) {
+  return {
+    startDistance: Math.max(1, Math.hypot(second.x - first.x, second.y - first.y)),
+    startZoom: zoom,
+    startPanX: pan.x,
+    startPanY: pan.y,
+  };
+}

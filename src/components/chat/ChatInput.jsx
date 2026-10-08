@@ -1,128 +1,185 @@
+/* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { Icon } from '../Icons.jsx';
+import { fileAcceptFor } from '../../lib/chat/modelCapabilities.js';
+import { micSupported } from './useVoice.js';
+import { AttachmentChip } from './AttachmentChip.jsx';
+import { ModelChip } from './ModelChip.jsx';
 
-const MAX_TEXTAREA_HEIGHT = 200;
-const MIN_TEXTAREA_HEIGHT = 36;
+const MIN_TEXTAREA_HEIGHT = 40;
 
+/**
+ * The composer (spec 3): an input that grows with your text up to a third of
+ * the window, then a bar with attach controls (only the ones this model
+ * accepts), the model chip, voice, and send, which turns into stop while the
+ * reply streams. Paste or drop files anywhere on it.
+ */
 export function ChatInput({
   draft, setDraft,
-  sending, send,
-  showAttach, setShowAttach,
-  imageAttachment, onUpdate
+  sending, send, onStop,
+  imageAttachment, onUpdate,
+  capabilities = null,
+  attachments = [],
+  attachError = null,
+  clearAttachError,
+  addFiles,
+  removeAttachment,
+  recorder = null,
+  autoSpeak = false,
+  setAutoSpeak,
+  speakerError = null,
+  modelChip,
+  placeholder = 'Message',
+  inputLabel = 'Message',
 }) {
   const textareaRef = React.useRef(null);
+  const imageInputRef = React.useRef(null);
+  const fileInputRef = React.useRef(null);
+  const videoInputRef = React.useRef(null);
+  const [dragging, setDragging] = React.useState(false);
+  const caps = capabilities || {};
+  const canMic = Boolean(caps.voiceInput) && micSupported() && recorder;
+  const processing = Boolean(recorder?.processing);
+  const empty = !String(draft || '').trim() && attachments.length === 0 && !imageAttachment;
+  const snapshotUnsupported = Boolean(imageAttachment) && capabilities && !caps.image;
 
-  // Auto-grow the textarea up to MAX_TEXTAREA_HEIGHT as the user types.
+  // Grow with the text, up to a third of the chat window.
   React.useLayoutEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
+    const host = el.closest('[data-chat-root]');
+    const max = Math.max(120, Math.round((host?.clientHeight || 600) / 3));
     el.style.height = 'auto';
-    const next = Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT);
-    el.style.height = next + 'px';
-    el.style.overflowY = el.scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
+    el.style.height = `${Math.max(MIN_TEXTAREA_HEIGHT, Math.min(el.scrollHeight, max))}px`;
+    el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden';
   }, [draft]);
 
   const handleKeyDown = (e) => {
-    // Enter sends · Shift+Enter inserts a newline.
-    // Skip the send during IME composition so Japanese / Chinese / Korean
-    // users can confirm a candidate with Enter without firing a message.
-    if (
-      e.key === 'Enter' &&
-      !e.shiftKey &&
-      !e.nativeEvent.isComposing &&
-      e.keyCode !== 229
-    ) {
+    // Enter sends, Shift+Enter adds a line. Skip while an IME is composing so
+    // Japanese, Chinese and Korean input can confirm a candidate with Enter.
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
       e.preventDefault();
-      send();
+      if (!sending) send();
     }
   };
 
+  const pickFiles = (e) => {
+    addFiles?.(e.target.files);
+    e.target.value = '';
+  };
+
+  const handlePaste = (e) => {
+    const files = Array.from(e.clipboardData?.files || []);
+    if (files.length && addFiles) {
+      e.preventDefault();
+      addFiles(files);
+    }
+  };
+
+  const handleDrop = (e) => {
+    if (!e.dataTransfer?.files?.length || !addFiles) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+    addFiles(e.dataTransfer.files);
+  };
+
+  const notice = attachError || speakerError
+    || (snapshotUnsupported ? `${caps.model || 'This model'} can't read images. Remove the snapshot or switch the agent to a vision model.` : null);
+
   return (
-    <div style={{ padding: '8px 10px 10px', borderTop: '1px solid var(--hairline)', display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
-      {imageAttachment && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', background: 'var(--surface-2)', borderRadius: 8, alignSelf: 'flex-start', border: '1px solid var(--hairline)', position: 'relative' }}>
-          <img src={imageAttachment} alt="Canvas Snapshot" style={{ height: 48, borderRadius: 4, objectFit: 'contain' }} />
-          <button onClick={() => onUpdate({ imageAttachment: null })} aria-label="Remove attachment" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: 'var(--ink)', color: 'var(--surface)', display: 'grid', placeItems: 'center' }}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+    <div
+      className="hb-composer"
+      data-testid="chat-input"
+      data-dragging={dragging ? 'true' : undefined}
+      onDragOver={(e) => { if (addFiles && e.dataTransfer?.types?.includes?.('Files')) { e.preventDefault(); setDragging(true); } }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={handleDrop}
+    >
+      {notice && (
+        <div role="alert" className="hb-composer-notice">
+          <span>{notice}</span>
+          {(attachError && clearAttachError) && (
+            <button type="button" className="hb-icon-btn" onClick={clearAttachError} aria-label="Dismiss"><Icon.Close size={11} /></button>
+          )}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-        <button
-          onClick={() => setShowAttach(s => !s)}
-          title="Attach"
-          aria-label="Attach"
-          aria-expanded={showAttach}
-          style={{ all: 'unset', cursor: 'pointer', width: 28, height: 28, borderRadius: 8, display: 'grid', placeItems: 'center', color: 'var(--ink-soft)', background: showAttach ? 'var(--accent-soft)' : 'transparent', flexShrink: 0 }}
-        >
-          <Icon.Plus size={16}/>
-        </button>
+      <div className="hb-composer-box">
+        {(attachments.length > 0 || imageAttachment) && (
+          <div className="hb-composer-tray">
+            {attachments.map((a, i) => (
+              <AttachmentChip key={`${a.name}-${i}`} attachment={a} onRemove={() => removeAttachment?.(i)} />
+            ))}
+            {imageAttachment && (
+              <span style={{ position: 'relative', display: 'inline-flex' }}>
+                <img src={imageAttachment} alt="Canvas snapshot" style={{ height: 'var(--space-12)', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)' }} />
+                <button type="button" className="hb-icon-btn" onClick={() => onUpdate?.({ imageAttachment: null })} aria-label="Remove attachment"
+                  style={{ position: 'absolute', top: 0, right: 0, background: 'var(--surface)' }}>
+                  <Icon.Close size={10} />
+                </button>
+              </span>
+            )}
+          </div>
+        )}
         <textarea
           ref={textareaRef}
+          className="hb-composer-input"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="enter to send · shift+enter for newline"
-          disabled={sending}
+          onPaste={handlePaste}
+          placeholder={recorder?.recording ? 'Listening… press stop when done' : processing ? 'Processing voice…' : placeholder}
           rows={1}
-          aria-label="Message"
-          style={{
-            flex: 1,
-            background: 'var(--surface-2)',
-            border: '1px solid var(--hairline)',
-            borderRadius: 10,
-            padding: '8px 12px',
-            font: '13px/1.4 var(--font-sans)',
-            fontFamily: 'var(--font-sans)',
-            color: 'var(--ink)',
-            outline: 'none',
-            resize: 'none',
-            minHeight: MIN_TEXTAREA_HEIGHT,
-            maxHeight: MAX_TEXTAREA_HEIGHT,
-            lineHeight: 1.4,
-            boxSizing: 'border-box',
-          }}
+          aria-label={inputLabel}
         />
-        <button
-          onClick={send}
-          title="Send"
-          aria-label="Send message"
-          disabled={sending}
-          style={{ all: 'unset', cursor: sending ? 'wait' : 'pointer', width: 30, height: 30, borderRadius: 8, display: 'grid', placeItems: 'center', color: 'var(--accent-ink)', background: 'var(--accent-soft)', opacity: sending ? 0.5 : 1, flexShrink: 0 }}
-        >
-          <Icon.Send size={14}/>
-        </button>
-        {showAttach && <AttachMenu onClose={() => setShowAttach(false)} />}
+        <div className="hb-composer-bar">
+          {addFiles && caps.image && (
+            <ToolButton label="Attach image" onClick={() => imageInputRef.current?.click()}><Icon.Picture size={14} /></ToolButton>
+          )}
+          {addFiles && (
+            <ToolButton label={caps.pdf ? 'Attach file (PDF or text)' : 'Attach text file'} onClick={() => fileInputRef.current?.click()}><Icon.Paperclip size={14} /></ToolButton>
+          )}
+          {addFiles && caps.video && (
+            <ToolButton label="Attach video" onClick={() => videoInputRef.current?.click()}><Icon.Video size={14} /></ToolButton>
+          )}
+          {modelChip === undefined ? <ModelChip capabilities={capabilities} /> : modelChip}
+          <span className="hb-composer-spacer" />
+          {canMic && (
+            <ToolButton
+              label={recorder.recording ? 'Stop recording' : caps.voiceInput === 'native' ? 'Record voice message' : 'Dictate'}
+              onClick={recorder.toggle} active={recorder.recording} disabled={processing}>
+              {recorder.recording ? <Icon.Stop size={12} /> : <Icon.Mic size={14} />}
+            </ToolButton>
+          )}
+          {caps.voiceOutput && setAutoSpeak && (
+            <ToolButton label={autoSpeak ? 'Stop reading replies aloud' : 'Read replies aloud'} onClick={() => setAutoSpeak(!autoSpeak)} active={autoSpeak}>
+              <Icon.Speaker size={14} />
+            </ToolButton>
+          )}
+          {sending && onStop ? (
+            <button type="button" className="hb-send-btn" data-stop="true" onClick={onStop} title="Stop" aria-label="Stop reply">
+              <Icon.Stop size={11} />
+            </button>
+          ) : (
+            <button type="button" className="hb-send-btn" onClick={() => send()} title="Send" aria-label="Send message"
+              disabled={sending || processing || empty}>
+              <Icon.Up size={14} />
+            </button>
+          )}
+        </div>
       </div>
+      <input ref={imageInputRef} type="file" accept="image/*" multiple hidden data-testid="chat-image-input" onChange={pickFiles} />
+      <input ref={fileInputRef} type="file" accept={fileAcceptFor(caps)} multiple hidden data-testid="chat-file-input" onChange={pickFiles} />
+      <input ref={videoInputRef} type="file" accept="video/*" hidden data-testid="chat-video-input" onChange={pickFiles} />
     </div>
   );
 }
 
-function AttachMenu({ onClose }) {
-  const items = [
-    { icon: <Icon.Tools size={14}/>, label: 'tools', hint: 'web search · code exec · etc' },
-    { icon: <Icon.Memory size={14}/>, label: 'memory', hint: 'pull a snippet of context' },
-    { icon: <Icon.Group size={14}/>, label: 'group', hint: 'CC another agent' },
-    { icon: <Icon.Files size={14}/>, label: 'conversation files', hint: 'docs · transcripts' },
-    { icon: <Icon.Plug size={14}/>, label: 'connectors', hint: 'Notion · Linear · Slack' },
-  ];
+function ToolButton({ label, onClick, active = false, disabled = false, children }) {
   return (
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 5 }} />
-      <div style={{ position: 'absolute', bottom: 50, left: 6, zIndex: 6, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 12, boxShadow: 'var(--shadow-pop)', padding: 6, minWidth: 230 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '6px 10px 4px' }}>Attach</div>
-        {items.map((it, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, cursor: 'pointer' }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-2)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-            <span style={{ color: 'var(--ink-soft)' }}>{it.icon}</span>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 13, fontWeight: 500 }}>{it.label}</span>
-              <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{it.hint}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </>
+    <button type="button" className="hb-icon-btn" onClick={onClick} title={label} aria-label={label}
+      aria-pressed={active} disabled={disabled}>
+      {children}
+    </button>
   );
 }

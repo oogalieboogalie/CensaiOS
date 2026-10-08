@@ -52,9 +52,9 @@ const handleSubmit = async (e) => {
   };
 
   return (
-    <div style={{ position: 'absolute', bottom: 60, left: 12, right: 12, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 12, padding: 12, boxShadow: 'var(--shadow-pop)', zIndex: 20 }}>
+    <div style={{ position: 'absolute', bottom: 60, left: 12, right: 12, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-xl)', padding: 12, boxShadow: 'var(--shadow-pop)', zIndex: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>New Event</span>
+              <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>New Event</span>
               <button onClick={onClose} style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)' }}>✕</button>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -64,27 +64,27 @@ const handleSubmit = async (e) => {
                 placeholder="Event Title"
                 value={composingTitle}
                 onChange={e => setComposingTitle(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 13, outline: 'none' }}
+                style={{ width: '100%', padding: '6px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-md)', outline: 'none' }}
               />
               <div style={{ display: 'flex', gap: 6 }}>
                 <input
                   type="date"
                   value={composingDate}
                   onChange={e => setComposingDate(e.target.value)}
-                  style={{ flex: 1, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 11, outline: 'none' }}
+                  style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-xs)', outline: 'none' }}
                 />
                 <input
                   type="time"
                   value={composingStartTime}
                   onChange={e => setComposingStartTime(e.target.value)}
-                  style={{ width: 80, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 11, outline: 'none' }}
+                  style={{ width: 80, padding: '4px 8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-xs)', outline: 'none' }}
                 />
-                <span style={{ alignSelf: 'center', fontSize: 11 }}>–</span>
+                <span style={{ alignSelf: 'center', fontSize: 'var(--text-xs)' }}>–</span>
                 <input
                   type="time"
                   value={composingEndTime}
                   onChange={e => setComposingEndTime(e.target.value)}
-                  style={{ width: 80, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 11, outline: 'none' }}
+                  style={{ width: 80, padding: '4px 8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-xs)', outline: 'none' }}
                 />
               </div>
               <textarea
@@ -92,12 +92,12 @@ const handleSubmit = async (e) => {
                 value={composingDescription}
                 onChange={e => setComposingDescription(e.target.value)}
                 rows={2}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 12, outline: 'none', resize: 'none' }}
+                style={{ width: '100%', padding: '6px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-sm)', outline: 'none', resize: 'none' }}
               />
               <button
                 type="submit"
                 disabled={!composingTitle || submitting}
-                style={{ width: '100%', padding: '8px', borderRadius: 8, background: 'var(--ps-blue)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, opacity: (!composingTitle || submitting) ? 0.6 : 1 }}
+                style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-lg)', background: 'var(--ps-blue)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 'var(--text-sm)', fontWeight: 600, opacity: (!composingTitle || submitting) ? 0.6 : 1 }}
               >
                 {submitting ? 'Adding...' : 'Create Google Calendar Event'}
               </button>

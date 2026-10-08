@@ -19,12 +19,12 @@ export function TerminalHeader({ win, cwd, onUpdate, showSettings, setShowSettin
           onPointerDown={(e) => e.stopPropagation()}
           title="Terminal theme settings"
           style={{
-            background: showSettings ? 'rgba(96, 165, 250, 0.15)' : 'transparent',
+            background: showSettings ? 'color-mix(in oklab, var(--accent) 15%, transparent)' : 'transparent',
             border: 'none',
-            borderRadius: 4,
+            borderRadius: 'var(--radius-sm)',
             padding: 4,
             cursor: 'pointer',
-            color: showSettings ? '#60a5fa' : '#64748b',
+            color: showSettings ? 'var(--accent)' : 'var(--ink-faint)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -49,7 +49,7 @@ export function TerminalHeader({ win, cwd, onUpdate, showSettings, setShowSettin
 export function TerminalToolbar({ theme, win, currentProject, mountableProjects, mountProject, agentEnabled, onUpdate, onRunAgent }) {
   const inAgentRun = Boolean(win.agentRun?.prompt);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', background: theme.background, borderBottom: '1px solid rgba(148,163,184,0.15)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', background: theme.background, borderBottom: '1px solid var(--hairline)' }}>
       {inAgentRun && (
         <button
           onClick={() => onUpdate?.({ agentRun: null, agentSessionId: crypto.randomUUID(), title: 'Terminal' })}
@@ -57,21 +57,21 @@ export function TerminalToolbar({ theme, win, currentProject, mountableProjects,
           title="End the agent view and open a fresh shell in this window"
           style={{
             flexShrink: 0, background: 'var(--accent-soft)', color: 'var(--accent-ink)',
-            border: '1px solid var(--hairline)', borderRadius: 6, fontSize: 10,
-            fontFamily: 'var(--font-mono)', textTransform: 'uppercase',
-            letterSpacing: '0.06em', padding: '3px 8px', cursor: 'pointer',
+            border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)',
+            fontFamily: 'var(--font-label)', textTransform: 'var(--label-case)',
+            letterSpacing: 'var(--label-tracking)', padding: '3px 8px', cursor: 'pointer',
           }}
         >
           ← Shell
         </button>
       )}
-      <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Mounted to</span>
+      <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', color: 'var(--ink-faint)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>Mounted to</span>
       <select
         value={win.cwd || ''}
         onChange={(e) => mountProject(e.target.value)}
         onPointerDown={(e) => e.stopPropagation()}
         title="Mount this terminal to a project directory"
-        style={{ flex: 1, minWidth: 0, background: '#111827', color: '#d7deea', border: '1px solid rgba(148,163,184,0.25)', borderRadius: 6, fontSize: 11, fontFamily: 'var(--font-mono)', padding: '3px 6px' }}
+        style={{ flex: 1, minWidth: 0, background: 'var(--surface-sunken)', color: 'var(--ink)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', padding: '3px 6px' }}
       >
         <option value="">{currentProject?.path ? `current project (${currentProject.name || currentProject.path})` : 'sandbox (server cwd)'}</option>
         {mountableProjects.map((p) => (
@@ -89,14 +89,14 @@ export function TerminalToolbar({ theme, win, currentProject, mountableProjects,
           display: 'inline-flex',
           alignItems: 'center',
           gap: 4,
-          background: agentEnabled ? 'rgba(52,211,153,0.15)' : '#111827',
-          color: agentEnabled ? '#34d399' : '#94a3b8',
-          border: `1px solid ${agentEnabled ? 'rgba(52,211,153,0.4)' : 'rgba(148,163,184,0.25)'}`,
-          borderRadius: 6,
-          fontSize: 10,
-          fontFamily: 'var(--font-mono)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
+          background: agentEnabled ? 'color-mix(in oklab, var(--success) 15%, transparent)' : 'var(--surface-sunken)',
+          color: agentEnabled ? 'var(--success)' : 'var(--ink-faint)',
+          border: `1px solid ${agentEnabled ? 'color-mix(in oklab, var(--success) 40%, transparent)' : 'var(--hairline)'}`,
+          borderRadius: 'var(--radius-md)',
+          fontSize: 'var(--text-xs)',
+          fontFamily: 'var(--font-label)',
+          textTransform: 'var(--label-case)',
+          letterSpacing: 'var(--label-tracking)',
           padding: '3px 8px',
           cursor: 'pointer',
         }}
@@ -112,14 +112,14 @@ export function TerminalToolbar({ theme, win, currentProject, mountableProjects,
           display: 'inline-flex',
           alignItems: 'center',
           gap: 4,
-          background: '#111827',
-          color: '#94a3b8',
-          border: '1px solid rgba(148,163,184,0.25)',
-          borderRadius: 6,
-          fontSize: 10,
-          fontFamily: 'var(--font-mono)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
+          background: 'var(--surface-sunken)',
+          color: 'var(--ink-faint)',
+          border: '1px solid var(--hairline)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: 'var(--text-xs)',
+          fontFamily: 'var(--font-label)',
+          textTransform: 'var(--label-case)',
+          letterSpacing: 'var(--label-tracking)',
           padding: '3px 8px',
           cursor: 'pointer',
         }}
@@ -138,7 +138,7 @@ export function AgentRunBar({ theme, defaultCwd, onRun, onCancel }) {
     if (prompt.trim()) onRun?.(prompt.trim());
   };
   return (
-    <div style={{ display: 'flex', gap: 6, padding: '6px 8px', background: theme.background, borderBottom: '1px solid rgba(148,163,184,0.15)', alignItems: 'center' }}>
+    <div style={{ display: 'flex', gap: 6, padding: '6px 8px', background: theme.background, borderBottom: '1px solid var(--hairline)', alignItems: 'center' }}>
       <input
         ref={inputRef}
         value={prompt}
@@ -149,14 +149,14 @@ export function AgentRunBar({ theme, defaultCwd, onRun, onCancel }) {
         }}
         onPointerDown={(e) => e.stopPropagation()}
         placeholder={defaultCwd ? `Ask the agent to do something in ${defaultCwd}…` : 'Ask the agent to do something… (needs a project folder)'}
-        style={{ flex: 1, background: '#111827', color: '#d7deea', border: '1px solid rgba(148,163,184,0.25)', borderRadius: 6, fontSize: 11, fontFamily: 'var(--font-mono)', padding: '5px 8px', outline: 'none' }}
+        style={{ flex: 1, background: 'var(--surface-sunken)', color: 'var(--ink)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', padding: '5px 8px', outline: 'none' }}
       />
       <button
         onClick={submit}
         onPointerDown={(e) => e.stopPropagation()}
         disabled={!prompt.trim()}
         title="Run in a new terminal"
-        style={{ all: 'unset', cursor: prompt.trim() ? 'pointer' : 'not-allowed', fontSize: 11, color: 'var(--accent-ink)', padding: '4px 10px', borderRadius: 6, background: 'var(--accent-soft)', fontWeight: 600, opacity: prompt.trim() ? 1 : 0.45 }}
+        style={{ all: 'unset', cursor: prompt.trim() ? 'pointer' : 'not-allowed', fontSize: 'var(--text-xs)', color: 'var(--accent-ink)', padding: '4px 10px', borderRadius: 'var(--radius-md)', background: 'var(--accent-soft)', fontWeight: 600, opacity: prompt.trim() ? 1 : 0.45 }}
       >
         Run
       </button>

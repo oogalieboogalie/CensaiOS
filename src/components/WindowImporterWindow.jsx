@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react';
 import './WindowImporterWindow.css';
+import { WindowTitle } from './Windows.jsx';
+import { Icon } from './Icons.jsx';
 
 const STEPS = ['paste', 'importing', 'done', 'error'];
 
@@ -9,7 +11,7 @@ const PLACEHOLDER_JSX = `// Paste your AI Studio JSX here.
 
 export default function App() {
   return (
-    <div style={{ padding: 24, color: '#fff', background: '#1a1a2e' }}>
+    <div style={{ padding: 24, color: 'var(--ink)', background: 'var(--surface)' }}>
       <h1>My Window</h1>
       <p>Replace this with your AI Studio output.</p>
     </div>
@@ -76,13 +78,11 @@ export function WindowImporterWindow() {
   if (step === 'paste') {
     return (
       <div className="wi-root">
-        <div className="wi-header">
-          <span className="wi-icon">📦</span>
-          <div>
-            <h2 className="wi-title">Window Importer</h2>
-            <p className="wi-subtitle">Paste AI Studio output → AI adapts it → drops it on your canvas</p>
-          </div>
-        </div>
+        <WindowTitle
+          icon={<Icon.ImportTray size={14} />}
+          label="Window importer"
+          subtitle="Paste AI Studio output and it lands on your canvas"
+        />
 
         <div className="wi-tabs">
           {['jsx', 'css', 'options'].map(t => (

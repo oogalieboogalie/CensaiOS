@@ -33,7 +33,7 @@ export function ExoSkeletonWindow({ win, onUpdate }) {
         <button
           onClick={() => setActiveTab('modules')}
           style={{
-            all: 'unset', cursor: 'pointer', padding: '12px 8px', fontSize: 11, fontWeight: 700,
+            all: 'unset', cursor: 'pointer', padding: '12px 8px', fontSize: 'var(--text-xs)', fontWeight: 700,
             textTransform: 'uppercase', letterSpacing: 1,
             color: activeTab === 'modules' ? 'var(--accent)' : 'var(--ink-soft)',
             borderBottom: activeTab === 'modules' ? '2px solid var(--accent)' : '2px solid transparent',
@@ -45,7 +45,7 @@ export function ExoSkeletonWindow({ win, onUpdate }) {
         <button
           onClick={() => setActiveTab('attributes')}
           style={{
-            all: 'unset', cursor: 'pointer', padding: '12px 8px', fontSize: 11, fontWeight: 700,
+            all: 'unset', cursor: 'pointer', padding: '12px 8px', fontSize: 'var(--text-xs)', fontWeight: 700,
             textTransform: 'uppercase', letterSpacing: 1,
             color: activeTab === 'attributes' ? 'var(--accent)' : 'var(--ink-soft)',
             borderBottom: activeTab === 'attributes' ? '2px solid var(--accent)' : '2px solid transparent',

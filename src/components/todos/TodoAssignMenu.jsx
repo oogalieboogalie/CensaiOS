@@ -49,7 +49,7 @@ export function TodoAssignMenu({ anchorRef, agents, onAssign, onClose }) {
           overscrollBehavior: 'contain',
           background: 'var(--surface)',
           border: '1px solid var(--hairline)',
-          borderRadius: 12,
+          borderRadius: 'var(--radius-xl)',
           padding: 6,
           boxShadow: 'var(--shadow-pop)',
           display: 'flex',
@@ -57,7 +57,7 @@ export function TodoAssignMenu({ anchorRef, agents, onAssign, onClose }) {
           gap: 2,
         }}
       >
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '4px 8px' }}>Assign to</div>
+        <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', padding: '4px 8px' }}>Assign to</div>
         <AssignOption onClick={() => onAssign(null)}>Unassigned</AssignOption>
         {agents.map(agent => (
           <AssignOption key={agent.id} agent={agent} onClick={() => onAssign(agent.id)} />
@@ -79,7 +79,7 @@ function AssignOption({ agent, children, onClick }) {
         alignItems: 'center',
         gap: 8,
         padding: '6px 8px',
-        borderRadius: 6,
+        borderRadius: 'var(--radius-md)',
         color: agent ? 'var(--ink)' : 'var(--ink-soft)',
       }}
       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-2)'}
@@ -89,8 +89,8 @@ function AssignOption({ agent, children, onClick }) {
         <>
           <AgentAvatar agent={agent} size={20} />
           <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <span style={{ fontSize: 12, fontWeight: 500 }}>{agent.name}</span>
-            <span style={{ fontSize: 10, color: 'var(--ink-faint)' }}>{agent.role}</span>
+            <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>{agent.name}</span>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>{agent.role}</span>
           </span>
         </>
       ) : children}

@@ -45,8 +45,8 @@ export const btnStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: 4,
+  borderRadius: 'var(--radius-sm)',
   cursor: 'pointer',
-  fontSize: 12,
+  fontSize: 'var(--text-sm)',
   transition: 'all 0.15s ease',
 };

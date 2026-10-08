@@ -2,12 +2,15 @@ import { AGENT_CAPABILITY_MODULES } from '../../src/data/agent-capability-module
 import { listToolCatalog } from './catalog.js';
 import {
   FAMILY_INTRINSIC_TOOL_POLICIES,
+  FAMILY_NETWORK_TOOL_POLICIES,
+  FAMILY_MODULE_TOOL_POLICIES,
   familyDefaultToolNames,
   familyToolPolicy,
 } from './rbac/familyBaseline.js';
 import { getToolPackageForModule } from '../capabilities/packageCatalog.js';
 
-const INTRINSIC_NAMES = new Set(FAMILY_INTRINSIC_TOOL_POLICIES.map(entry => entry.name));
+const INTRINSIC_NAMES = new Set([...FAMILY_INTRINSIC_TOOL_POLICIES, ...FAMILY_NETWORK_TOOL_POLICIES, ...FAMILY_MODULE_TOOL_POLICIES]
+  .map(entry => entry.name));
 
 function moduleByToolName() {
   const result = new Map();

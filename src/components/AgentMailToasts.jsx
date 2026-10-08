@@ -81,8 +81,8 @@ export function AgentMailToasts({ workspaceId }) {
         <div key={t.id} style={{
           display: 'flex', alignItems: 'center', gap: 10,
           background: 'var(--surface)', border: '1px solid var(--hairline)',
-          borderRadius: 999, boxShadow: 'var(--shadow-pop)',
-          padding: '8px 8px 8px 14px', fontFamily: 'var(--font-sans)', fontSize: 12,
+          borderRadius: 'var(--radius-full)', boxShadow: 'var(--shadow-pop)',
+          padding: '8px 8px 8px 14px', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
           color: 'var(--ink)', pointerEvents: 'auto', maxWidth: 'min(560px, 90vw)',
           animation: 'agent-mail-toast-in 0.25s ease-out',
         }}>
@@ -94,7 +94,7 @@ export function AgentMailToasts({ workspaceId }) {
             <strong style={{ whiteSpace: 'nowrap' }}>{t.title}</strong>
             {t.sub && (
               <span style={{
-                color: 'var(--ink-faint)', fontSize: 11, overflow: 'hidden',
+                color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', overflow: 'hidden',
                 textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 420,
               }}>
                 {t.sub}
@@ -104,7 +104,7 @@ export function AgentMailToasts({ workspaceId }) {
           <button
             onClick={() => dismiss(t.id)}
             title="Dismiss"
-            style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 12, padding: '0 4px' }}
+            style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', padding: '0 4px' }}
           >
             ✕
           </button>

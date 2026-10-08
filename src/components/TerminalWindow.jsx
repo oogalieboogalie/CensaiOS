@@ -1,6 +1,13 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { api } from '../lib/api.js';
 import { DEFAULT_THEME } from './windows/WindowThemePanel.jsx';
+import { MOODS, useTheme } from './Theme.jsx';
+import {
+  accentOklch,
+  buildCanvasTerminalTheme,
+  resolveCssColor,
+  themeVarsFor,
+} from './terminal/canvasTerminalTheme.js';
 import { useTerminal } from './terminal/useTerminal.js';
 import { TerminalHeader, TerminalToolbar, AgentRunBar } from './terminal/TerminalUI.jsx';
 import { useWorkspaceStore } from '../lib/store.js';
@@ -13,7 +20,21 @@ export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
   const [projects, setProjects] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showAgentBar, setShowAgentBar] = useState(false);
-  const theme = win.terminalTheme || DEFAULT_THEME;
+  const { theme: canvasTheme } = useTheme();
+  // Uncustomized terminals follow the canvas theme; a per-window custom
+  // theme (set from the terminal settings menu) always wins.
+  const canvasTerminalTheme = useMemo(() => {
+    if (win.terminalTheme) return null;
+    const raw = themeVarsFor(canvasTheme, MOODS);
+    return buildCanvasTerminalTheme(DEFAULT_THEME, {
+      background: resolveCssColor(raw.background, ''),
+      foreground: resolveCssColor(raw.foreground, ''),
+      cursor: resolveCssColor(accentOklch(canvasTheme.hue, canvasTheme.chroma, canvasTheme.lightness), ''),
+      selection: resolveCssColor(raw.selection, ''),
+    });
+    // Recompute when the canvas look changes (mood, accent, fine-tune).
+  }, [win.terminalTheme, canvasTheme.hue, canvasTheme.chroma, canvasTheme.lightness, canvasTheme.mood, JSON.stringify(canvasTheme.customVars || {})]);
+  const theme = win.terminalTheme || canvasTerminalTheme || DEFAULT_THEME;
 
   const handleThemeChange = useCallback((newTheme) => {
     onUpdate({ terminalTheme: newTheme });

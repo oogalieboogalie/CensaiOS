@@ -31,8 +31,8 @@ export function N8nWindow({ win, onUpdate }) {
               all: 'unset',
               cursor: 'pointer',
               padding: '2px 6px',
-              borderRadius: 4,
-              fontSize: 10,
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--text-xs)',
               background: 'var(--surface-2)',
               color: 'var(--ink-faint)',
               border: '1px solid var(--hairline)',
@@ -55,15 +55,15 @@ export function N8nWindow({ win, onUpdate }) {
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
             <div style={{
-              width: 48, height: 48, borderRadius: 12, background: 'var(--surface-2)',
+              width: 48, height: 48, borderRadius: 'var(--radius-xl)', background: 'var(--surface-2)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'var(--ink-faint)', marginBottom: 16, border: '1px solid var(--hairline)'
             }}>
               <Icon.NewWorkflow size={24} />
             </div>
 
-            <h3 style={{ margin: '0 0 8px', fontSize: 14, color: 'var(--ink)' }}>Connect to n8n</h3>
-            <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--ink-faint)', maxWidth: 280, lineHeight: 1.5 }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 'var(--text-base)', color: 'var(--ink)' }}>Connect to n8n</h3>
+            <p style={{ margin: '0 0 24px', fontSize: 'var(--text-md)', color: 'var(--ink-faint)', maxWidth: 280, lineHeight: 1.5 }}>
               Enter the URL of your self-hosted n8n instance to embed it in this window.
             </p>
 
@@ -76,7 +76,7 @@ export function N8nWindow({ win, onUpdate }) {
                 style={{
                   flex: 1, minWidth: 0, padding: '8px 12px',
                   background: 'var(--surface-2)', border: '1px solid var(--hairline)',
-                  borderRadius: 6, color: 'var(--ink)', fontSize: 13, outline: 'none'
+                  borderRadius: 'var(--radius-md)', color: 'var(--ink)', fontSize: 'var(--text-md)', outline: 'none'
                 }}
               />
               <button
@@ -84,7 +84,7 @@ export function N8nWindow({ win, onUpdate }) {
                 disabled={!draftUrl.trim()}
                 style={{
                   padding: '8px 16px', background: 'var(--ink)', color: 'var(--surface)',
-                  border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 500,
+                  border: 'none', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-md)', fontWeight: 500,
                   cursor: draftUrl.trim() ? 'pointer' : 'not-allowed',
                   opacity: draftUrl.trim() ? 1 : 0.5
                 }}

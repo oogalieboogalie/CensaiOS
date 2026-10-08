@@ -1,16 +1,20 @@
 /** @jest-environment jsdom */
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
-import { jest } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { jest } from '@jest/globals';
 import { EmptyState } from '../src/components/canvas/CanvasEmptyState.jsx';
-import { buildOutcomePrompt } from '../src/components/canvas/CanvasOutcomeCommand.jsx';
 import { LAUNCHER_MANIFESTS } from '../src/lib/windowManifest.js';
 
 const starters = LAUNCHER_MANIFESTS
   .filter(manifest => manifest.launcher.startHere)
   .sort((a, b) => a.launcher.startHereOrder - b.launcher.startHereOrder);
+
+// Same tile selection as CanvasLaunchpad: visible launcher entries, first 6.
+const tiles = (LAUNCHER_MANIFESTS || [])
+  .filter((m) => m?.launcher?.show)
+  .slice(0, 6);
 
 test('manifest owns exactly the four expected beta starting points', () => {
   // The manifest data (startHere entries) must stay stable regardless of
@@ -20,49 +24,48 @@ test('manifest owns exactly the four expected beta starting points', () => {
   ]);
 });
 
-test('launchpad renders the outcome command form and key chrome', () => {
+test('launchpad shows the CensaiOS welcome, module tiles, and mouse hints', () => {
+  expect(tiles.length).toBeGreaterThan(0);
   render(<EmptyState onSpawn={jest.fn()} />);
 
   // The launchpad container must be present.
   expect(screen.getByTestId('canvas-launchpad')).toBeInTheDocument();
 
   // Heading is always shown.
-  expect(screen.getByRole('heading')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Welcome to CensaiOS.' })).toBeInTheDocument();
 
-  // The outcome input is shown and labelled.
-  expect(screen.getByRole('textbox', { name: /what would you like to do/i })).toBeInTheDocument();
+  // Theme-reactive logo wires to the tracked asset.
+  expect(screen.getByAltText('CensaiOS').getAttribute('src')).toContain('trimmedblk.png');
 
-  // The submit button ("Start with Censai") is present.
-  expect(screen.getByRole('button', { name: /Start with Censai/i })).toBeInTheDocument();
+  // Module tiles render (marquee duplicates the row, so match loosely).
+  const hint = tiles[0].launcher.hint || tiles[0].launcher.label;
+  expect(screen.getAllByTitle(hint).length).toBeGreaterThanOrEqual(1);
 
-  // Footer hint text is present.
+  // Mouse-hint block and footer hint text are present.
+  expect(screen.getByText(/move through space/)).toBeInTheDocument();
   expect(screen.getByText(/Open a project from the top bar/)).toBeInTheDocument();
+
+  // The old inline outcome form is gone from the launchpad by design.
+  expect(screen.queryByPlaceholderText(/tell censai/i)).not.toBeInTheDocument();
 });
 
-test('outcome form submit spawns a chat window with the typed prompt', () => {
+test('tile click spawns its window kind', () => {
   const onSpawn = jest.fn();
   render(<EmptyState onSpawn={onSpawn} />);
-
-  const input = screen.getByRole('textbox', { name: /what would you like to do/i });
-  const submitBtn = screen.getByRole('button', { name: /Start with Censai/i });
-
-  // Button is disabled while the input is empty.
-  expect(submitBtn).toBeDisabled();
-
-  // Type a prompt — button should become enabled.
-  fireEvent.change(input, { target: { value: 'help me plan my week' } });
-  expect(submitBtn).not.toBeDisabled();
-
-  // Submit — should call onSpawn with the chat window kind and the prompt.
-  fireEvent.click(submitBtn);
+  const hint = tiles[0].launcher.hint || tiles[0].launcher.label;
+  fireEvent.click(screen.getAllByTitle(hint)[0]);
   expect(onSpawn).toHaveBeenCalledTimes(1);
-  const [kind, props] = onSpawn.mock.calls[0];
-  expect(kind).toBe('chat');
-  expect(props.agentId).toBe('censai');
-  expect(props.msgs[0].text).toBe(buildOutcomePrompt('help me plan my week'));
+  expect(onSpawn.mock.calls[0][0]).toBe(tiles[0].kind);
 });
 
-test('without a spawn callback the submit button is visibly inert', () => {
-  render(<EmptyState />);
-  expect(screen.getByRole('button', { name: /Start with Censai/i })).toBeDisabled();
+test('tour button stays hidden without a tour handler', () => {
+  render(<EmptyState onSpawn={jest.fn()} />);
+  expect(screen.queryByText(/Show me around/)).not.toBeInTheDocument();
+});
+
+test('tour button calls the provided tour handler', () => {
+  const onTour = jest.fn();
+  render(<EmptyState onSpawn={jest.fn()} onTour={onTour} />);
+  fireEvent.click(screen.getByText(/Show me around/));
+  expect(onTour).toHaveBeenCalledTimes(1);
 });

@@ -30,8 +30,8 @@ export function IdeaBulletsSection({
         <span>{ideas.length}</span>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 8, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}>
-        <label style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-faint)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 8, borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}>
+        <label style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', fontWeight: 800, textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', color: 'var(--ink-faint)' }}>
           Save tag
         </label>
         <input
@@ -40,13 +40,13 @@ export function IdeaBulletsSection({
           placeholder="Website Update"
           style={tagInputStyle}
         />
-        <div style={{ fontSize: 10, color: 'var(--ink-faint)', lineHeight: 1.35 }}>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', lineHeight: 1.35 }}>
           [{currentProject?.name || 'Project'}] - {workItem.trim() || 'Work item'} - Ideated on today
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 8, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}>
-        <label style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-faint)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 8, borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}>
+        <label style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', fontWeight: 800, textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', color: 'var(--ink-faint)' }}>
           Handoff
         </label>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'center' }}>
@@ -62,19 +62,19 @@ export function IdeaBulletsSection({
           </select>
           {selectedAgent ? <AgentAvatar agent={selectedAgent} size={28} /> : <div style={emptyAssigneeStyle}><Icon.ArrowAssign size={13} /></div>}
         </div>
-        <div style={{ fontSize: 10, color: 'var(--ink-faint)', lineHeight: 1.35 }}>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', lineHeight: 1.35 }}>
           {assignee ? 'Save writes the idea note and queues an agent task.' : 'Choose an agent to queue a task from this idea.'}
         </div>
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 7, paddingRight: 2 }}>
         {ideas.length === 0 ? (
-          <div style={{ color: 'var(--ink-faint)', fontSize: 12, lineHeight: 1.5, padding: '10px 2px' }}>
+          <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', lineHeight: 1.5, padding: '10px 2px' }}>
             Throw messy fragments here. Press Enter or the plus button and they become bullets.
           </div>
         ) : ideas.map((idea, index) => (
           <div key={index} style={{ display: 'grid', gridTemplateColumns: '18px minmax(0, 1fr) 20px', gap: 6, alignItems: 'start' }}>
-            <div style={{ width: 7, height: 7, borderRadius: 99, background: 'var(--accent)', marginTop: 10, justifySelf: 'center' }} />
+            <div style={{ width: 7, height: 7, borderRadius: 'var(--radius-full)', background: 'var(--accent)', marginTop: 10, justifySelf: 'center' }} />
             <textarea
               value={idea}
               onChange={(e) => updateIdea(index, e.target.value)}

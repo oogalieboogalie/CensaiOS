@@ -1,59 +1,35 @@
 import React from 'react';
 import { getCollaborationClientId } from '../../lib/collaboration/clientIdentity.js';
 import { diffPresenceNotices } from '../../lib/collaboration/liveText.js';
+import { collaborationUrl, mergeCollaborationPreviews } from '../../lib/collaboration/previews.js';
 
-const PATH = '/ws/workspace-collaboration';
+// Re-exported so existing importers keep working after the previews extraction.
+export { collaborationUrl, mergeCollaborationPreviews };
+
 const PREVIEW_TTL_MS = 4000;
 const CURSOR_TTL_MS = 3000;
 const TYPING_TTL_MS = 3000;
 const TEXT_TTL_MS = 6000;
-
-export function collaborationUrl(workspaceId, clientId) {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.host;
-  return `${protocol}//${host}${PATH}?workspaceId=${encodeURIComponent(workspaceId)}`
-    + `&clientId=${encodeURIComponent(clientId)}`;
-}
-
-export function mergeCollaborationPreviews(wins, previews, presence = {}, activeId = null) {
-  const { text = {}, typing = {} } = presence;
-  return wins.map((win) => {
-    const preview = previews[win.id];
-    const remote = text[win.id];
-    const typer = typing[win.id];
-    let next = preview ? {
-      ...win,
-      x: preview.x,
-      y: preview.y,
-      collaborationActor: preview.actor,
-    } : win;
-    if (typer) {
-      next = { ...next, typingActor: { ...typer.actor, label: `${typer.actor?.label || 'Someone'} typing…` } };
-    }
-    // Live remote text for viewers only — never clobber the locally focused editor.
-    if (remote && win.id !== activeId && (win.kind === 'doc' || win.kind === 'code_editor')) {
-      next = {
-        ...next,
-        text: remote.text,
-        code: win.kind === 'code_editor' ? remote.text : next.code,
-        typingActor: remote.actor
-          ? { ...remote.actor, label: `${remote.actor?.label || 'Someone'} typing…` }
-          : next.typingActor,
-      };
-    }
-    return next;
-  });
-}
+// Consecutive closes without a single open means the endpoint is rejecting us
+// for good (unknown/forbidden workspace, dead session) — not a blip. Stop
+// retrying instead of hammering it every 5s forever; a workspaceId/enabled
+// change (effect re-run) or a fresh open resets the count. Sized generously
+// (~80s of retrying) so slow cold boots still self-heal.
+const MAX_CONSECUTIVE_FAILURES = 20;
+// Share link revoked (4403) or expired (4410): the guest must not reconnect.
+const GUEST_ENDED_CODES = new Set([4403, 4410]);
+const OFFLINE_STATE = {
+  status: 'offline', participants: [], spectators: 0, guest: null, previews: {},
+  cursors: {}, typing: {}, textPreviews: {}, notices: [],
+  lastActivity: null, lastAgentRun: null,
+};
 
 export function useWorkspaceCollaboration({
-  enabled, workspaceId, wins, revision, onAuthoritativeCommit, activeId,
+  enabled, workspaceId, wins, revision, onAuthoritativeCommit, activeId, crdt = false,
+  guest = false, onEvent = null,
 }) {
   const clientId = React.useMemo(() => getCollaborationClientId(), []);
-  const [state, setState] = React.useState({
-    status: 'offline', participants: [], previews: {},
-    cursors: {}, typing: {}, textPreviews: {}, notices: [],
-    lastActivity: null, lastAgentRun: null,
-  });
+  const [state, setState] = React.useState(OFFLINE_STATE);
   const socketRef = React.useRef(null);
   const revisionRef = React.useRef(revision);
   const previewTimers = React.useRef(new Map());
@@ -63,12 +39,15 @@ export function useWorkspaceCollaboration({
   const lastTextAt = React.useRef(new Map());
   const sequence = React.useRef(0);
   const snapshotBaseline = React.useRef(false);
+  // Other event types (comments, guest boards, camera) go to the caller via a ref.
+  const onEventRef = React.useRef(onEvent);
+  React.useEffect(() => { onEventRef.current = onEvent; }, [onEvent]);
 
   React.useEffect(() => { revisionRef.current = revision; }, [revision]);
 
   React.useEffect(() => {
     if (!enabled || !workspaceId) {
-      setState({ status: 'offline', participants: [], previews: {}, cursors: {}, typing: {}, textPreviews: {}, notices: [], lastActivity: null, lastAgentRun: null });
+      setState(OFFLINE_STATE);
       return undefined;
     }
     let disposed = false;
@@ -94,7 +73,7 @@ export function useWorkspaceCollaboration({
     const connect = () => {
       if (disposed) return;
       setState((current) => ({ ...current, status: attempt ? 'reconnecting' : 'connecting' }));
-      const socket = new WebSocket(collaborationUrl(workspaceId, clientId));
+      const socket = new WebSocket(collaborationUrl(workspaceId, clientId, { guest }));
       socketRef.current = socket;
       socket.addEventListener('open', () => { attempt = 0; });
       socket.addEventListener('message', (event) => {
@@ -103,6 +82,7 @@ export function useWorkspaceCollaboration({
         if (message.type === 'collaboration.ready') {
           setState((current) => ({
             ...current, status: 'live', participants: message.participants || [],
+            spectators: message.spectators || 0, guest: message.guest || null, self: message.actor || null,
           }));
         } else if (message.type === 'presence.snapshot') {
           // First snapshot (or first after a reconnect) only sets the
@@ -116,6 +96,7 @@ export function useWorkspaceCollaboration({
             return {
               ...current,
               participants: message.participants || [],
+              spectators: message.spectators || 0,
               notices: [...(current.notices || []), ...notices].slice(-5),
             };
           });
@@ -167,15 +148,35 @@ export function useWorkspaceCollaboration({
               setState((current) => ({ ...current, lastActivity: message.activity || null }));
             }
           }
+        } else {
+          onEventRef.current?.(message);
         }
       });
-      socket.addEventListener('close', () => {
+      socket.addEventListener('close', (event) => {
         if (socketRef.current === socket) socketRef.current = null;
         if (disposed) return;
         snapshotBaseline.current = false;
-        setState((current) => ({ ...current, status: 'reconnecting', participants: [] }));
-        const delay = Math.min(5000, 250 * (2 ** attempt));
+        if (GUEST_ENDED_CODES.has(event?.code)) {
+          setState((current) => ({ ...current, status: 'ended', participants: [], endedReason: event.reason || 'This link was turned off.' }));
+          onEventRef.current?.({ type: 'guest.ended', code: event.code, reason: event.reason });
+          return;
+        }
         attempt += 1;
+        if (attempt >= MAX_CONSECUTIVE_FAILURES) {
+          setState((current) => ({
+            ...current,
+            status: 'error',
+            participants: [],
+            notices: [...(current.notices || []), {
+              id: `collaboration-unavailable-${Date.now()}`,
+              kind: 'error',
+              text: 'Live collaboration unavailable — reconnects when the workspace changes.',
+            }].slice(-5),
+          }));
+          return;
+        }
+        setState((current) => ({ ...current, status: 'reconnecting', participants: [] }));
+        const delay = Math.min(5000, 250 * (2 ** (attempt - 1)));
         reconnectTimer = setTimeout(connect, delay);
       });
       socket.addEventListener('error', () => undefined);
@@ -188,7 +189,10 @@ export function useWorkspaceCollaboration({
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [clientId, enabled, onAuthoritativeCommit, workspaceId]);
+  }, [clientId, enabled, onAuthoritativeCommit, workspaceId, guest]);
+
+  const send = React.useCallback((payload) => (socketRef.current?.readyState === WebSocket.OPEN
+    ? (socketRef.current.send(JSON.stringify(payload)), true) : false), []);
 
   const previewWindowMove = React.useCallback((windowId, position) => {
     const socket = socketRef.current;
@@ -236,9 +240,9 @@ export function useWorkspaceCollaboration({
   const displayWins = React.useMemo(
     () => mergeCollaborationPreviews(
       wins, state.previews,
-      { text: state.textPreviews, typing: state.typing }, activeId,
+      { text: state.textPreviews, typing: state.typing }, activeId, { crdt },
     ),
-    [state.previews, state.textPreviews, state.typing, wins, activeId]
+    [state.previews, state.textPreviews, state.typing, wins, activeId, crdt]
   );
-  return { ...state, clientId, displayWins, previewWindowMove, sendCursor, sendTyping, sendTextPreview };
+  return { ...state, clientId, displayWins, previewWindowMove, sendCursor, sendTyping, sendTextPreview, send };
 }

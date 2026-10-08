@@ -38,12 +38,13 @@ describe('registry test window contract', () => {
   });
 
   test('builds a lab window object without extra wiring', () => {
+    // Opens at the normalized size class nearest its authored 400x300.
     expect(buildWindowLabObject('registryTestWindow')).toMatchObject({
       kind: 'registryTestWindow',
       type: 'registryTestWindow',
       title: 'Registry Test Window',
-      w: 400,
-      h: 300,
+      w: 560,
+      h: 448,
     });
   });
 });

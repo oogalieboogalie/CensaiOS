@@ -56,8 +56,8 @@ const HEADER_LIFT = {
   dark: 0.040, // lift the surface a touch so the header is visible
 };
 
-/** Per-mood header chroma factor: how much of the surface chroma survives. */
-const HEADER_CHROMA_FACTOR = 0.55;
+/** Per-mood header chroma factor: the picked chroma survives intact. */
+const HEADER_CHROMA_FACTOR = 1.0;
 
 /** Header chroma floor: brand-tinted moods get a hint of accent color. */
 const HEADER_CHROMA_FLOOR = {
@@ -65,10 +65,11 @@ const HEADER_CHROMA_FLOOR = {
   dark: 0.018,
 };
 
-/** Accent blend weight: how much the accent hue pulls the header color. */
+/** Accent blend weight: the header carries the picked accent at full
+ * strength (header unification) instead of a surface-anchored whisper. */
 const ACCENT_BLEND = {
-  light: 0.10,
-  dark: 0.18,
+  light: 0.32,
+  dark: 0.38,
 };
 
 /** Shadows: a soft white inset + an outer drop tuned for the mode. */
@@ -91,8 +92,17 @@ function mix(a, b, weight) {
   return {
     l: a.l + (b.l - a.l) * w,
     c: a.c + (b.c - a.c) * w,
-    h: a.h + (b.h - a.h) * w,
+    h: mixHue(a.h, b.h, w),
   };
+}
+
+/** Hue interpolation along the shortest arc so far-apart hues (e.g. 330°
+// and 20°) blend through the near side instead of slingshotting across
+// the wheel. */
+function mixHue(aH, bH, weight) {
+  let delta = ((bH - aH) % 360 + 360) % 360;
+  if (delta > 180) delta -= 360;
+  return aH + delta * weight;
 }
 
 /**
@@ -106,6 +116,9 @@ export function computeTokenMap(preset, options = {}) {
     return {};
   }
   const { customVars } = options;
+  // headerTint (0..1, default 1) scales how far the title rail lifts off the
+  // surface and leans toward the accent. 0 = header is the body color.
+  const tint = Number.isFinite(options.headerTint) ? clamp(options.headerTint, 0, 1) : 1;
   const mode = preset.mode === 'dark' ? 'dark' : 'light';
   const accent = preset.accent || { hue: 240, chroma: 0.05, lightness: 0.5 };
 
@@ -116,14 +129,18 @@ export function computeTokenMap(preset, options = {}) {
   // Header background: surface lifted (lightness stays anchored to surface,
   // never pulled down by accent) + chroma/hue nudged toward accent for
   // brand-tinted moods.
-  const headerL = clamp(surface.l + HEADER_LIFT[mode], 0, 1);
-  const chromaBlended = mix({ c: surface.c, h: surface.h }, { c: accent.chroma, h: accent.hue }, ACCENT_BLEND[mode]);
-  const headerC = Math.max(chromaBlended.c * HEADER_CHROMA_FACTOR, HEADER_CHROMA_FLOOR[mode]);
-  const headerH = ((chromaBlended.h % 360) + 360) % 360;
+  const headerL = clamp(surface.l + HEADER_LIFT[mode] * tint, 0, 1);
+  const chromaBlended = mix({ c: surface.c, h: surface.h }, { c: accent.chroma, h: accent.hue }, ACCENT_BLEND[mode] * tint);
+  const headerC = Math.max(chromaBlended.c * HEADER_CHROMA_FACTOR, HEADER_CHROMA_FLOOR[mode] * tint);
+  const headerH = tint === 0 ? surface.h : ((chromaBlended.h % 360) + 360) % 360;
   const headerBg = oklch({ l: headerL, c: headerC, h: headerH });
 
   // Shadow: mode-tuned, with a soft white inset.
   const shadow = SHADOW_BY_MODE[mode];
+  if (tint === 0) {
+    // Unified title bar: same color as the window body.
+    return { '--window-title-bg': 'var(--window-bg, var(--surface))', '--window-shadow': shadow };
+  }
 
   return {
     '--window-title-bg': headerBg,

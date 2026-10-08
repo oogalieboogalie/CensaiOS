@@ -21,3 +21,19 @@ export function navigateToWorkspace(workspaceId, locationLike = globalThis.locat
   if (href) locationLike?.assign?.(href);
   return href;
 }
+
+// Guest links (spec 5): `?join=<token>` opens the board as a guest. The token
+// is the permission, so it is only ever read from the URL, never logged.
+const JOIN_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+
+export function guestJoinToken(search = globalThis.location?.search || '') {
+  const value = new URLSearchParams(search).get('join')?.trim() || '';
+  return JOIN_TOKEN_PATTERN.test(value) ? value : null;
+}
+
+export function guestLinkUrl(token, locationLike = globalThis.location) {
+  if (!JOIN_TOKEN_PATTERN.test(String(token || ''))) return '';
+  const url = new URL(`${locationLike?.origin || ''}${locationLike?.pathname || '/'}`);
+  url.searchParams.set('join', token);
+  return url.toString();
+}

@@ -1,8 +1,9 @@
 // Window/group bounds geometry. (Split from layoutAlgo.js.)
 import {
-  GUTTER, MIN_CELL_WIDTH, MIN_CELL_HEIGHT, GROUP_PADDING, GROUP_HEADER,
+  MIN_CELL_WIDTH, MIN_CELL_HEIGHT, GROUP_PADDING, GROUP_HEADER, TAB_STRIP_HEIGHT,
 } from './constants.js';
 import { snapToGrid } from './grid.js';
+import { getGroupGap } from './gap.js';
 
 export function getWindowBounds(windows = []) {
   if (!windows.length) return null;
@@ -33,14 +34,17 @@ export function getGroupInnerBounds(group, padding = GROUP_PADDING, header = GRO
   };
 }
 
-export function getMinLayoutSize(node) {
-  if (!node || node.type === 'leaf') return { w: MIN_CELL_WIDTH, h: MIN_CELL_HEIGHT };
-  const first = getMinLayoutSize(node.first);
-  const second = getMinLayoutSize(node.second);
-  if (node.axis === 'vertical') {
-    return { w: first.w + GUTTER + second.w, h: Math.max(first.h, second.h) };
+export function getMinLayoutSize(node, gap = getGroupGap()) {
+  if (!node || node.type === 'leaf') {
+    const tabs = Array.isArray(node?.stack) && node.stack.length > 1 ? TAB_STRIP_HEIGHT : 0;
+    return { w: MIN_CELL_WIDTH, h: MIN_CELL_HEIGHT + tabs };
   }
-  return { w: Math.max(first.w, second.w), h: first.h + GUTTER + second.h };
+  const first = getMinLayoutSize(node.first, gap);
+  const second = getMinLayoutSize(node.second, gap);
+  if (node.axis === 'vertical') {
+    return { w: first.w + gap + second.w, h: Math.max(first.h, second.h) };
+  }
+  return { w: Math.max(first.w, second.w), h: first.h + gap + second.h };
 }
 
 export function fitGroupToLayout(group, node, padding = GROUP_PADDING, header = GROUP_HEADER) {

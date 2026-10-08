@@ -1,9 +1,11 @@
 import React from 'react';
 import { getOwningGroup } from '../../lib/layoutAlgo.js';
+import { resolveGroupArrangePreset } from '../../lib/layout/defaultPreset.js';
 import { screenToCanvas } from '../../lib/canvasMath.js';
 import { basenameFromPath, windowInsideGroup } from './CanvasInteractions.js';
 import { useTheme } from '../Theme.jsx';
 import { FIRST_MISSION_DRAG_EVENT } from '../../lib/firstMission.js';
+import { isDockAction, tiledMembers } from '../../lib/layout/dock.js';
 
 export function useCanvasWorkspaceHandlers({
   ref,
@@ -18,6 +20,9 @@ export function useCanvasWorkspaceHandlers({
   onUpdateGroup,
   onLinkCreate,
   setWireDrag,
+  onDockWindow,
+  onUndockWindow,
+  dockingEnabled = false,
 }) {
   const themeContext = useTheme();
   const theme = themeContext?.theme || { groupSnapping: true };
@@ -50,11 +55,10 @@ export function useCanvasWorkspaceHandlers({
       displacement = Math.hypot(finalPosition.x - original.x, finalPosition.y - original.y);
     }
     const didMove = interaction.moved === true && displacement > 2;
-    const owner = getOwningGroup(draggedWin, canvasGroups, false);
-    const nextGroupId = owner ? owner.id : null;
-    if (nextGroupId !== (original.groupId || null) || didMove) {
-      onUpdate(winId, { groupId: nextGroupId });
-    }
+    // Click (no drag) is a strict no-op for membership: a click must never
+    // recompute the owning group. Center-point containment can disagree with
+    // the stored groupId (e.g. an oversized window whose center sits outside
+    // its group), and recomputing on click silently strips membership.
     if (!didMove) return;
     if (interaction.moved) {
       window.dispatchEvent(new CustomEvent(FIRST_MISSION_DRAG_EVENT, {
@@ -62,19 +66,34 @@ export function useCanvasWorkspaceHandlers({
       }));
     }
 
-    const dcx = draggedWin.x + draggedWin.w / 2;
-    const dcy = draggedWin.y + draggedWin.h / 2;
-    const group = canvasGroups.find(g => dcx >= g.x && dcx <= g.x + g.w && dcy >= g.y && dcy <= g.y + g.h);
-    if (!group) return;
+    // Tiled groups: dropping on a zone docks; a tile Shift-dragged onto open
+    // canvas leaves its group (the rest re-tile).
+    if (dockingEnabled && isDockAction(interaction.dock)) {
+      onDockWindow(winId, interaction.dock);
+      return;
+    }
+    const tiledGroups = canvasGroups.filter((g) => tiledMembers(g, wins));
+    if (onUndockWindow && tiledGroups.some((g) => g.id === original.groupId)) {
+      onUndockWindow(winId);
+      return;
+    }
 
+    // Groups without a layout tree keep the older behavior: membership by
+    // where the window's center lands, then a tidy-up when it newly enters.
+    const looseGroups = canvasGroups.filter((g) => !tiledGroups.includes(g));
+    const owner = getOwningGroup(draggedWin, looseGroups, false);
+    const nextGroupId = owner ? owner.id : null;
+    if (nextGroupId !== (original.groupId || null)) {
+      onUpdate(winId, { groupId: nextGroupId });
+    }
+    if (!owner) return;
     // Only tidy when the window newly entered a group (or changed groups).
     // Re-positioning a window inside the group it already belongs to must
-    // leave the manual arrangement alone — otherwise every drag "messes up"
-    // the layout and windows snap back to preset sizes.
-    const enteredNewGroup = (original.groupId || null) !== group.id;
+    // leave the manual arrangement alone.
+    const enteredNewGroup = (original.groupId || null) !== owner.id;
     if (!enteredNewGroup) return;
     if (theme.groupSnapping !== false) {
-      setTimeout(() => onAutoArrangeGroup?.(group.id, group.presetId || 'SEMANTIC_WORKSPACE'), 50);
+      setTimeout(() => onAutoArrangeGroup?.(owner.id, resolveGroupArrangePreset(owner)), 50);
     }
   };
 

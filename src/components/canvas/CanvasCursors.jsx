@@ -19,7 +19,8 @@ export function CanvasCursors({ cursors = {}, zoom = 1 }) {
   return (
     <>
       {entries.map((c) => {
-        const color = cursorColor(c.clientId);
+        // Guests pick their own color when they join; members get a stable hue.
+        const color = c.actor?.color || cursorColor(c.clientId);
         const label = c.actor?.label || 'Someone';
         return (
           <div
@@ -30,13 +31,13 @@ export function CanvasCursors({ cursors = {}, zoom = 1 }) {
               pointerEvents: 'none', transform: `scale(${s})`, transformOrigin: '0 0',
             }}
           >
-            <svg width="18" height="26" viewBox="0 0 18 26" style={{ display: 'block', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}>
-              <path d="M2 1 L2 19 L7.5 14.5 L10 20 L12.5 18.8 L10 13.5 L15 13.5 Z" fill={color} stroke="white" strokeWidth="1.2" />
+            <svg width="18" height="26" viewBox="0 0 18 26" style={{ display: 'block', filter: 'drop-shadow(0 1px 2px var(--scrim))' }}>
+              <path d="M2 1 L2 19 L7.5 14.5 L10 20 L12.5 18.8 L10 13.5 L15 13.5 Z" fill={color} stroke="var(--on-fill)" strokeWidth="1.2" />
             </svg>
             <div style={{
               marginTop: 1, marginLeft: 12, display: 'inline-block',
-              background: color, color: 'white', borderRadius: 4,
-              padding: '1px 6px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
+              background: color, color: 'var(--on-fill)', borderRadius: 'var(--radius-sm)',
+              padding: '1px 6px', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 700,
               whiteSpace: 'nowrap',
             }}>
               {label}

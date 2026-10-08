@@ -1,5 +1,6 @@
 import React from 'react';
 import { WindowTitle } from './Windows.jsx';
+import { Icon } from './Icons.jsx';
 import { useScheduler } from './scheduler/useScheduler.js';
 import { SchedulerForm } from './scheduler/SchedulerForm.jsx';
 import { SchedulerTimeline } from './scheduler/SchedulerTimeline.jsx';
@@ -10,7 +11,7 @@ export function SchedulerWindow({ win, onUpdate, onSpawn, onSelect, wins, curren
   return (
     <>
       <WindowTitle
-        icon="Clock"
+        icon={<Icon.Calendar size={14} />}
         label="Task Scheduler"
       />
       <div style={{

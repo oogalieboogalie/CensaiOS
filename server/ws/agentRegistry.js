@@ -58,17 +58,22 @@ function parseCookieSid(req) {
   return null;
 }
 
-/** Default upgrade-time authenticator: connect.sid cookie -> session store. */
-export async function defaultAuthenticate(req, options = {}) {
+/** Raw session for an upgrade request (connect.sid cookie -> session store). */
+export async function loadSessionFromRequest(req, options = {}) {
   const { sessionStore, sessionSecret = process.env.SESSION_SECRET } = options;
   if (!sessionStore || typeof sessionStore.get !== 'function') return null;
   const sid = decodeSessionCookie(parseCookieSid(req), sessionSecret);
   if (!sid) return null;
-  const sess = await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     try {
       sessionStore.get(sid, (err, value) => err ? reject(err) : resolve(value || null));
     } catch (err) { reject(err); }
   });
+}
+
+/** Default upgrade-time authenticator: connect.sid cookie -> session store. */
+export async function defaultAuthenticate(req, options = {}) {
+  const sess = await loadSessionFromRequest(req, options);
   if (!sess || !isSessionAuthorized(sess, options)) return null;
   return {
     userId: String(sess.userId),

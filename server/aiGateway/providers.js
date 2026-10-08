@@ -34,6 +34,14 @@ const providerAdapters = {
       apiKey: getSecret('OPENROUTER_API_KEY') || '',
     };
   },
+  openai({ model }) {
+    return {
+      provider: 'openai',
+      model,
+      baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+      apiKey: getSecret('OPENAI_API_KEY') || '',
+    };
+  },
   cohere({ model }) {
     return {
       provider: 'cohere',

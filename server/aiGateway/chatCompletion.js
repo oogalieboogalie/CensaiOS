@@ -22,7 +22,9 @@ import {
   requestGeminiNativeChatCompletion,
 } from './geminiNativeChat.js';
 import { prepareCohereToolPayload } from './cohereTools.js';
+import { payloadNeedsGeminiNative } from './multimodal.js';
 import { isResponsesModel, requestResponsesCompletion } from './responsesClient.js';
+import { canStreamChat, isEventStream, readChatCompletionStream, streamingPayload } from './chatStream.js';
 
 export const aiGatewayLog = createLogger('ai');
 export const CHAT_COMPLETION_TIMEOUT_MS = Math.max(
@@ -38,6 +40,7 @@ export async function requestChatCompletion({
   retry = {},
   usageAttribution = null,
   usageSink = null,
+  onDelta = null,
 } = {}) {
   const modelPayload = config?.model && !body?.model ? { ...body, model: config.model } : body;
   const payload = config?.provider === 'cohere'
@@ -45,7 +48,7 @@ export async function requestChatCompletion({
     : modelPayload;
   const baseUrl = normalizeBaseUrl(config?.baseUrl || DEFAULT_CHAT_BASE_URL);
   let apiKey = config?.apiKey;
-  if (!apiKey && !['cohere', 'openrouter', 'moonshot', 'kimi', 'opencode'].includes(config?.provider)) {
+  if (!apiKey && !['cohere', 'openai', 'openrouter', 'moonshot', 'kimi', 'opencode'].includes(config?.provider)) {
     apiKey = getDefaultChatApiKey();
   }
 
@@ -55,6 +58,10 @@ export async function requestChatCompletion({
 
   if (config?.provider === 'openrouter' && !apiKey) {
     throw new Error('OpenRouter API key is missing. Please set OPENROUTER_API_KEY in your .env file or configure a personal API key.');
+  }
+
+  if (config?.provider === 'openai' && !apiKey) {
+    throw new Error('OpenAI API key is missing. Set OPENAI_API_KEY in your .env file or add a personal OpenAI key in Settings → Vault.');
   }
 
   if ((config?.provider === 'moonshot' || config?.provider === 'kimi') && !apiKey) {
@@ -69,9 +76,13 @@ export async function requestChatCompletion({
   const done = aiGatewayLog.startTimer();
   const context = logContext && typeof logContext === 'object' ? logContext : {};
 
-  if (isGoogleNativeChatProvider(config)) {
+  // Gemini's OpenAI-compatible endpoint takes images and audio but not PDFs or
+  // video, so a turn carrying those goes through the native API instead.
+  const geminiNative = isGoogleNativeChatProvider(config)
+    || (config?.provider === 'google' && payloadNeedsGeminiNative(payload));
+  if (geminiNative) {
     return requestGeminiNativeChatCompletion({
-      config,
+      config: { ...config, provider: 'google-native' },
       body: payload,
       timeoutMs,
       logContext: context,
@@ -91,6 +102,11 @@ export async function requestChatCompletion({
       usageSink,
     });
   }
+
+  // Spec 3: stream content deltas when the caller wants them and the
+  // provider speaks OpenAI-style SSE. The assembled result is identical.
+  const streaming = typeof onDelta === 'function' && canStreamChat(config);
+  const requestPayload = streaming ? streamingPayload(config, payload) : payload;
 
   // Attempt budget is status-aware: 429s get the patient lane (up to ~a
   // minute of exponential backoff), everything else keeps the fast lane.
@@ -118,7 +134,7 @@ export async function requestChatCompletion({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(requestPayload),
         signal: controller.signal,
       });
 
@@ -132,7 +148,9 @@ export async function requestChatCompletion({
         throw err;
       }
 
-      const data = await response.json();
+      const data = streaming && isEventStream(response)
+        ? await readChatCompletionStream(response, onDelta)
+        : await response.json();
       recordUsage({ ok: true, config, baseUrl, payload, data, ms: done(), attempt, context, usageAttribution, usageSink });
       return data;
     } catch (err) {

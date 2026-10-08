@@ -43,19 +43,19 @@ export function HtmlPreviewWindow({ win, onUpdate }) {
       />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'white' }}>
         {(preview.linked || preview.missing) && (
-          <div role="status" style={{ padding: '6px 10px', color: preview.missing ? 'var(--ps-red)' : 'var(--accent-ink)', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
+          <div role="status" style={{ padding: '6px 10px', color: preview.missing ? 'var(--ps-red)' : 'var(--accent-ink)', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)' }}>
             {preview.missing
               ? 'Linked code window is unavailable. Showing the last saved snapshot.'
               : `Linked to ${preview.label}. Changes follow the shared workspace.`}
           </div>
         )}
         {loading && (
-          <div style={{ padding: 16, color: 'var(--ink-faint)', background: 'var(--surface)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+          <div style={{ padding: 16, color: 'var(--ink-faint)', background: 'var(--surface)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>
             Loading HTML preview...
           </div>
         )}
         {error && (
-          <div style={{ padding: 16, color: 'var(--ps-red)', background: 'var(--surface)', fontSize: 12 }}>
+          <div style={{ padding: 16, color: 'var(--ps-red)', background: 'var(--surface)', fontSize: 'var(--text-sm)' }}>
             {error}
           </div>
         )}

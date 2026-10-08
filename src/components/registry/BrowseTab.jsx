@@ -4,25 +4,25 @@
 import React from 'react';
 
 const inputStyle = {
-  flex: 1, padding: '7px 10px', borderRadius: 7,
+  flex: 1, padding: '7px 10px', borderRadius: 'var(--radius-md)',
   border: '1px solid var(--hairline)', background: 'var(--surface)',
-  color: 'var(--ink)', fontSize: 12,
+  color: 'var(--ink)', fontSize: 'var(--text-sm)',
 };
 
 function CardRow({ card, installed, onInstall, canInstall, busy }) {
   const isInstalled = Boolean(installed[card.id]);
   const isDisabled = isInstalled || !canInstall || busy;
   return (
-    <div data-testid="registry-browse-row" data-card-id={card.id} style={{ border: '1px solid var(--hairline)', borderRadius: 8, background: 'var(--surface-2)', padding: 10, display: 'grid', gap: 6 }}>
+    <div data-testid="registry-browse-row" data-card-id={card.id} style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', padding: 10, display: 'grid', gap: 6 }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <strong style={{ fontSize: 13, color: 'var(--ink)' }}>{card.name}</strong>
-        {card.version && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)' }}>v{card.version}</span>}
-        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--ink-faint)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{card.visibility}</span>
+        <strong style={{ fontSize: 'var(--text-md)', color: 'var(--ink)' }}>{card.name}</strong>
+        {card.version && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>v{card.version}</span>}
+        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)' }}>{card.visibility}</span>
       </div>
-      {card.description && <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>{card.description}</div>}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--ink-faint)' }}>
+      {card.description && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', lineHeight: 1.4 }}>{card.description}</div>}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
         {(card.skills || []).slice(0, 4).map((s) => (
-          <span key={s.id || s.name} style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--surface)' }}>{s.name || s.id}</span>
+          <span key={s.id || s.name} style={{ padding: '2px 6px', borderRadius: 'var(--radius-sm)', background: 'var(--surface)' }}>{s.name || s.id}</span>
         ))}
       </div>
       <div>
@@ -35,11 +35,11 @@ function CardRow({ card, installed, onInstall, canInstall, busy }) {
           style={{
             all: 'unset',
             cursor: isDisabled ? 'default' : 'pointer',
-            padding: '5px 10px', borderRadius: 6,
+            padding: '5px 10px', borderRadius: 'var(--radius-md)',
             border: '1px solid var(--hairline)',
             background: isDisabled ? 'var(--surface)' : 'var(--accent-soft)',
             color: isDisabled ? 'var(--ink-faint)' : 'var(--accent-ink)',
-            fontSize: 11.5, fontWeight: 600,
+            fontSize: 'var(--text-xs)', fontWeight: 600,
           }}
         >
           {isInstalled ? 'Installed' : busy ? 'Installing…' : 'Install'}
@@ -90,13 +90,13 @@ export function BrowseTab({ client, installed, onInstall, canInstall = true, bus
           data-testid="registry-browse-filter"
           style={inputStyle}
         />
-        <button type="button" onClick={load} disabled={loading} data-testid="registry-browse-refresh" style={{ all: 'unset', cursor: 'pointer', padding: '7px 10px', borderRadius: 7, border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 12, color: 'var(--ink)' }}>
+        <button type="button" onClick={load} disabled={loading} data-testid="registry-browse-refresh" style={{ all: 'unset', cursor: 'pointer', padding: '7px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-sm)', color: 'var(--ink)' }}>
           {loading ? 'Loading…' : 'Refresh'}
         </button>
       </div>
-      {error && <div data-testid="registry-error" style={{ color: 'var(--ps-red)', fontSize: 12 }}>{error}</div>}
+      {error && <div data-testid="registry-error" style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)' }}>{error}</div>}
       {!loading && filtered.length === 0 && (
-        <div data-testid="registry-browse-empty" style={{ border: '1px dashed var(--hairline)', borderRadius: 8, padding: 18, color: 'var(--ink-faint)', fontSize: 12, textAlign: 'center' }}>
+        <div data-testid="registry-browse-empty" style={{ border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 18, color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
           No cards match.
         </div>
       )}

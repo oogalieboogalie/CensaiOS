@@ -107,13 +107,13 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
       `}</style>
       <WindowTitle accent="var(--ps-green)" icon={<Icon.Folder size={14}/>} label={win.title || 'Project To-Dos'} subtitle={win.subtitle || 'Newsletter / weekly'} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 12, background: 'var(--surface)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 12px', background: completedCount > 0 ? 'var(--ps-green)' : 'var(--surface-2)', borderRadius: 8, color: completedCount > 0 ? 'white' : 'var(--ink-faint)', fontSize: 12, fontWeight: 500, transition: 'background 0.3s ease' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 12px', background: completedCount > 0 ? 'var(--ps-green)' : 'var(--surface-2)', borderRadius: 'var(--radius-lg)', color: completedCount > 0 ? 'white' : 'var(--ink-faint)', fontSize: 'var(--text-sm)', fontWeight: 500, transition: 'background 0.3s ease' }}>
           <Icon.Check size={14} stroke={2.5} />
           <span>{completedCount} task{completedCount !== 1 ? 's' : ''} completed</span>
-          {totalCount > 0 && <span style={{ marginLeft: 'auto', opacity: 0.7, fontSize: 11 }}>({completedCount}/{totalCount})</span>}
+          {totalCount > 0 && <span style={{ marginLeft: 'auto', opacity: 0.7, fontSize: 'var(--text-xs)' }}>({completedCount}/{totalCount})</span>}
         </div>
-        {!currentProject?.path && <div style={{ marginBottom: 8, color: 'var(--ps-red)', fontSize: 11, lineHeight: 1.4 }}>Open a local project before handing off todos.</div>}
-        {handoffError && <div style={{ marginBottom: 8, color: 'var(--ps-red)', fontSize: 11, lineHeight: 1.4 }}>{handoffError}</div>}
+        {!currentProject?.path && <div style={{ marginBottom: 8, color: 'var(--ps-red)', fontSize: 'var(--text-xs)', lineHeight: 1.4 }}>Open a local project before handing off todos.</div>}
+        {handoffError && <div style={{ marginBottom: 8, color: 'var(--ps-red)', fontSize: 'var(--text-xs)', lineHeight: 1.4 }}>{handoffError}</div>}
 
         {/* Active Tasks List */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -166,11 +166,11 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                fontSize: 11,
+                fontSize: 'var(--text-xs)',
                 fontWeight: 600,
                 color: 'var(--ink-soft)',
                 padding: '4px 8px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-md)',
                 background: 'var(--surface-2)',
                 border: '1px solid var(--hairline)',
                 transition: 'background 0.2s',
@@ -209,7 +209,7 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
         <div style={{ marginTop: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
           <Icon.Plus size={14} style={{ color: 'var(--ink-faint)' }} />
           <input data-mission="todo-input" value={newText} onChange={(e) => setNewText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} placeholder="add a to-do"
-            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: 'var(--ink)', padding: '4px 0' }} />
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 'var(--text-md)', color: 'var(--ink)', padding: '4px 0' }} />
         </div>
       </div>
     </>

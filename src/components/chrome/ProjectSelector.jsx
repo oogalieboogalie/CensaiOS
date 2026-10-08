@@ -64,7 +64,7 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
   return (
     <>
       <div style={{ padding: '6px 10px 4px', display: 'grid', gap: 6 }}>
-        <div style={{ fontSize: 10, fontWeight: 650, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ fontSize: 'var(--text-xs)', fontWeight: 650, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Project folder
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -80,11 +80,11 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
             style={{
               flex: 1,
               padding: '6px 8px',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-md)',
               border: '1px solid var(--hairline)',
               background: 'var(--surface-2)',
               color: 'var(--ink)',
-              fontSize: 12,
+              fontSize: 'var(--text-sm)',
               fontFamily: 'var(--font-sans)',
               cursor: 'pointer',
               outline: 'none',
@@ -106,7 +106,7 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
               cursor: 'pointer',
               width: 28,
               height: 28,
-              borderRadius: 6,
+              borderRadius: 'var(--radius-md)',
               display: 'grid',
               placeItems: 'center',
               background: openingProject ? 'var(--accent-soft)' : 'var(--surface-2)',
@@ -119,9 +119,9 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
             </svg>
           </button>
         </div>
-        {projectError && <div style={{ color: 'var(--ps-red)', fontSize: 11, lineHeight: 1.35 }}>{projectError}</div>}
+        {projectError && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-xs)', lineHeight: 1.35 }}>{projectError}</div>}
         {projectsList.length === 0 && (
-          <div style={{ color: 'var(--ink-faint)', fontSize: 11, lineHeight: 1.4 }}>
+          <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', lineHeight: 1.4 }}>
             No local folders yet — add one with + below, or open the Files window to browse.
           </div>
         )}
@@ -129,7 +129,7 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
 
       {openingProject && (
         <div style={{ padding: '6px 8px 8px', display: 'grid', gap: 6, borderTop: '1px solid var(--hairline)', marginTop: 4 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-soft)' }}>Add/Open Local Path</div>
+          <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-soft)' }}>Add/Open Local Path</div>
           <input
             ref={projectInputRef}
             value={projectPath}
@@ -139,7 +139,7 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
               if (e.key === 'Escape') { setOpeningProject(false); setProjectError(''); }
             }}
             placeholder="C:\path\to\your\project"
-            style={{ all: 'unset', border: '1px solid var(--hairline)', background: 'var(--surface-2)', borderRadius: 6, padding: '6px 8px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink)' }}
+            style={{ all: 'unset', border: '1px solid var(--hairline)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', padding: '6px 8px', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink)' }}
           />
           <input
             value={projectNameInput}
@@ -149,10 +149,10 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
               if (e.key === 'Escape') { setOpeningProject(false); setProjectError(''); }
             }}
             placeholder="Project name (optional)"
-            style={{ all: 'unset', border: '1px solid var(--hairline)', background: 'var(--surface-2)', borderRadius: 6, padding: '6px 8px', fontSize: 11, color: 'var(--ink)' }}
+            style={{ all: 'unset', border: '1px solid var(--hairline)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', padding: '6px 8px', fontSize: 'var(--text-xs)', color: 'var(--ink)' }}
           />
-          {projectError && <div style={{ color: 'var(--ps-red)', fontSize: 11, lineHeight: 1.35 }}>{projectError}</div>}
-          <button onClick={commitOpenProject} disabled={!projectPath.trim()} style={{ all: 'unset', cursor: projectPath.trim() ? 'pointer' : 'not-allowed', padding: '7px 10px', borderRadius: 7, background: 'var(--accent)', color: 'white', fontSize: 11, fontWeight: 700, textAlign: 'center', opacity: projectPath.trim() ? 1 : 0.45 }}>Use this folder</button>
+          {projectError && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-xs)', lineHeight: 1.35 }}>{projectError}</div>}
+          <button onClick={commitOpenProject} disabled={!projectPath.trim()} style={{ all: 'unset', cursor: projectPath.trim() ? 'pointer' : 'not-allowed', padding: '7px 10px', borderRadius: 'var(--radius-md)', background: 'var(--accent)', color: 'white', fontSize: 'var(--text-xs)', fontWeight: 700, textAlign: 'center', opacity: projectPath.trim() ? 1 : 0.45 }}>Use this folder</button>
         </div>
       )}
     </>

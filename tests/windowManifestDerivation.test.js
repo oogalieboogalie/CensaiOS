@@ -118,9 +118,14 @@ describe('Modules menu visibility is derived from manifest maturity', () => {
       .filter((manifest) => manifest.moduleMenu?.show === false)
       .map((manifest) => manifest.kind);
     expect(hiddenKinds).toEqual(expect.arrayContaining([
-      'workflow', 'analyticsBoard', 'rook', 'sovereignTest',
+      'rook', 'sovereignTest', 'registryTestWindow', 'helloFactory',
     ]));
     expect(MODULE_MENU_MANIFESTS.some((manifest) => hiddenKinds.includes(manifest.kind))).toBe(false);
     for (const kind of hiddenKinds) expect(WINDOW_REGISTRY[kind]).toBeDefined();
+  });
+
+  test('modules finished in the module audit are discoverable', () => {
+    const menuKinds = MODULE_MENU_MANIFESTS.map((manifest) => manifest.kind);
+    expect(menuKinds).toEqual(expect.arrayContaining(['workflow', 'analyticsBoard', 'provenance_explorer']));
   });
 });

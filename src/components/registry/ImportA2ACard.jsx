@@ -25,10 +25,10 @@ export function ImportA2ACard({ client, onImported, canImport }) {
   };
 
   return (
-    <div data-testid="registry-a2a-import" style={{ display: 'grid', gap: 7, padding: 12, border: '1px solid var(--hairline)', borderRadius: 9, background: 'var(--surface-raised)' }}>
+    <div data-testid="registry-a2a-import" style={{ display: 'grid', gap: 7, padding: 12, border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-raised)' }}>
       <div>
-        <div style={{ fontSize: 12, fontWeight: 750, color: 'var(--ink)' }}>Import an A2A agent</div>
-        <div style={{ marginTop: 2, fontSize: 11, lineHeight: 1.4, color: 'var(--ink-soft)' }}>
+        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 750, color: 'var(--ink)' }}>Import an A2A agent</div>
+        <div style={{ marginTop: 2, fontSize: 'var(--text-xs)', lineHeight: 1.4, color: 'var(--ink-soft)' }}>
           Google ADK, LangGraph, or any public A2A v0.3 Agent Card. This imports identity and an endpoint—not remote memory or secrets.
         </div>
       </div>
@@ -41,7 +41,7 @@ export function ImportA2ACard({ client, onImported, canImport }) {
           onChange={(event) => setCardUrl(event.target.value)}
           onKeyDown={(event) => { if (event.key === 'Enter') submit(event); }}
           placeholder="https://agent.example/.well-known/agent-card.json"
-          style={{ flex: 1, minWidth: 0, padding: '7px 9px', borderRadius: 7, border: '1px solid var(--hairline)', background: 'var(--surface)', color: 'var(--ink)', fontSize: 11 }}
+          style={{ flex: 1, minWidth: 0, padding: '7px 9px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface)', color: 'var(--ink)', fontSize: 'var(--text-xs)' }}
         />
         <button
           type="button"
@@ -49,13 +49,13 @@ export function ImportA2ACard({ client, onImported, canImport }) {
           data-testid="registry-a2a-submit"
           disabled={busy || !canImport || !cardUrl.trim()}
           title={!canImport ? 'Workspace owners and admins can import agents.' : undefined}
-          style={{ border: 0, borderRadius: 7, padding: '7px 11px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 11, fontWeight: 750, cursor: canImport ? 'pointer' : 'default', opacity: busy || !canImport ? 0.55 : 1 }}
+          style={{ border: 0, borderRadius: 'var(--radius-md)', padding: '7px 11px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontWeight: 750, cursor: canImport ? 'pointer' : 'default', opacity: busy || !canImport ? 0.55 : 1 }}
         >
           {busy ? 'Checking…' : 'Import'}
         </button>
       </div>
-      {error && <div role="alert" style={{ color: 'var(--ps-red)', fontSize: 11 }}>{error}</div>}
-      {notice && <div role="status" style={{ color: 'var(--ps-green)', fontSize: 11 }}>{notice}</div>}
+      {error && <div role="alert" style={{ color: 'var(--ps-red)', fontSize: 'var(--text-xs)' }}>{error}</div>}
+      {notice && <div role="status" style={{ color: 'var(--ps-green)', fontSize: 'var(--text-xs)' }}>{notice}</div>}
     </div>
   );
 }

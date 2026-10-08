@@ -60,7 +60,7 @@ export function MultiGroupDock({ groups, onGroupsChange, focusMode, dockOffset, 
           onClick={() => setShowToggle((v) => !v)}
           data-testid="dock-collapsed-marker"
           title="Show dock"
-          style={{ all: 'unset', cursor: 'pointer', width: 28, height: 28, borderRadius: '50%', background: 'var(--surface)', color: 'var(--ink-soft)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}
+          style={{ all: 'unset', cursor: 'pointer', width: 28, height: 28, borderRadius: 'var(--radius-float-btn)', background: 'var(--surface)', color: 'var(--ink-soft)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}
         >
           <Icon.Group size={14} />
         </button>
@@ -74,8 +74,8 @@ export function MultiGroupDock({ groups, onGroupsChange, focusMode, dockOffset, 
       onMouseEnter={(e) => { if (focusMode) { e.currentTarget.style.opacity = 1; e.currentTarget.style.pointerEvents = 'auto'; } }}
       onMouseLeave={(e) => { if (focusMode) { e.currentTarget.style.opacity = 0; e.currentTarget.style.pointerEvents = 'none'; } }}>
       {groups.filter(g => isGroupVisible(dock, g.id, g.agentIds)).map(g => <GroupRail key={g.id} group={{ ...g, agentIds: g.agentIds.filter(id => isAgentVisible(dock, g.id, id, g.agentIds)) }} onToggle={() => updateGroup(g.id, { collapsed: !g.collapsed })} onEdit={() => setEditGroupId(g.id)} onAvatarPointerDown={onAvatarPointerDown} onMovePointerDown={onMovePointerDown} onMovePointerMove={onMovePointerMove} onMovePointerUp={onMovePointerUp} moving={moving} />)}
-      <button onClick={() => setAddingGroup(true)} title="Add group" style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, borderRadius: '50%', background: 'var(--surface)', color: 'var(--ink-faint)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}><Icon.Plus size={14} /></button>
-      <button ref={visibilityTriggerRef} onClick={() => setShowToggle((v) => !v)} title="Toggle dock visibility" data-testid="dock-visibility-btn" style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, borderRadius: '50%', background: 'var(--surface)', color: 'var(--ink-faint)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}><Icon.Gear size={14} /></button>
+      <button onClick={() => setAddingGroup(true)} title="Add group" style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, borderRadius: 'var(--radius-float-btn)', background: 'var(--surface)', color: 'var(--ink-faint)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}><Icon.Plus size={14} /></button>
+      <button ref={visibilityTriggerRef} onClick={() => setShowToggle((v) => !v)} title="Toggle dock visibility" data-testid="dock-visibility-btn" style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, borderRadius: 'var(--radius-float-btn)', background: 'var(--surface)', color: 'var(--ink-faint)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.05)' }}><Icon.Gear size={14} /></button>
       {showToggle && <DockVisibilityToggle groups={groups} anchorRef={visibilityTriggerRef} onClose={() => setShowToggle(false)} />}
       {editGroupId && <GroupEditor group={groups.find(g => g.id === editGroupId)} onSave={(patch) => { updateGroup(editGroupId, patch); setEditGroupId(null); }} onDelete={() => { if (groups.length > 1) { removeGroup(editGroupId); setEditGroupId(null); } }} canDelete={groups.length > 1} onClose={() => setEditGroupId(null)} />}
       {addingGroup && <GroupEditor group={{ id: '', name: '', hue: Math.round(Math.random() * 360), agentIds: [], collapsed: false }} onSave={(g) => { addGroup({ ...g, id: (g.name || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).slice(2, 6) }); setAddingGroup(false); }} onClose={() => setAddingGroup(false)} isNew />}
@@ -88,13 +88,13 @@ function GroupRail({ group, onToggle, onEdit, onAvatarPointerDown, onMovePointer
   const agents = group.agentIds.map(id => getAgentById(id)).filter(Boolean);
   return (
     <div data-dock-group={group.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 12, padding: 5, boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 44 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-float)', padding: 5, boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 44 }}>
         <div style={{ position: 'relative' }} className="group-tag">
           <button onClick={onToggle} onPointerDown={onMovePointerDown} onPointerMove={onMovePointerMove} onPointerUp={onMovePointerUp} onPointerCancel={onMovePointerUp}
             title={group.collapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}
-            style={{ all: 'unset', cursor: moving ? 'grabbing' : 'pointer', width: 32, height: 32, borderRadius: 8, background: 'var(--accent-soft)', color: 'var(--accent-ink)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--accent)', position: 'relative' }}>
+            style={{ all: 'unset', cursor: moving ? 'grabbing' : 'pointer', width: 32, height: 32, borderRadius: 'var(--radius-float-btn)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px var(--accent)', position: 'relative' }}>
             <Icon.Group size={16} />
-            {group.collapsed && <div style={{ position: 'absolute', right: -6, bottom: -6, background: 'var(--accent)', color: 'white', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 999, fontFamily: 'var(--font-mono)' }}>{agents.length}</div>}
+            {group.collapsed && <div style={{ position: 'absolute', right: -6, bottom: -6, background: 'var(--accent)', color: 'white', fontSize: 'var(--text-xs)', fontWeight: 700, padding: '1px 5px', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-mono)' }}>{agents.length}</div>}
           </button>
           <button onClick={onEdit} title="Edit group" className="group-edit-btn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', left: -22, top: 6, width: 16, height: 16, borderRadius: '50%', background: 'var(--surface)', color: 'var(--ink-soft)', boxShadow: 'inset 0 0 0 1px var(--hairline)', display: 'grid', placeItems: 'center', opacity: 0, transition: 'opacity 0.2s' }}>
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
@@ -103,11 +103,11 @@ function GroupRail({ group, onToggle, onEdit, onAvatarPointerDown, onMovePointer
         <div style={{ display: 'grid', gridTemplateRows: group.collapsed ? '0fr' : '1fr', transition: 'grid-template-rows 0.32s cubic-bezier(.4,.0,.2,1)', width: '100%', overflow: 'hidden' }}>
           <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingTop: group.collapsed ? 0 : 4 }}>
             {agents.map(a => <div key={a.id} data-dock-agent={a.id} onPointerDown={(e) => onAvatarPointerDown(e, a)} style={{ cursor: 'grab' }} title={`Drag ${a.name} onto canvas`}><AgentAvatar agent={a} size={32} /></div>)}
-            {agents.length === 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--ink-faint)', letterSpacing: '0.04em', writingMode: 'vertical-rl', transform: 'rotate(180deg)', padding: '6px 2px' }}>empty</div>}
+            {agents.length === 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: '0.04em', writingMode: 'vertical-rl', transform: 'rotate(180deg)', padding: '6px 2px' }}>empty</div>}
           </div>
         </div>
       </div>
-      {!group.collapsed && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-faint)', maxWidth: 44, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{group.name}</div>}
+      {!group.collapsed && <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', color: 'var(--ink-faint)', maxWidth: 44, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{group.name}</div>}
     </div>
   );
 }
@@ -123,38 +123,38 @@ function GroupEditor({ group, onSave, onDelete, onClose, canDelete, isNew }) {
   return ReactDOM.createPortal(
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'oklch(0 0 0 / 0.15)', zIndex: 200 }} />
-      <div role="dialog" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 210, width: 380, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, padding: 18, boxShadow: 'var(--shadow-pop)' }}>
+      <div role="dialog" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 210, width: 380, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-xl)', padding: 18, boxShadow: 'var(--shadow-pop)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>{isNew ? 'new group' : 'edit group'}</div>
+          <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', color: 'var(--ink-faint)' }}>{isNew ? 'new group' : 'edit group'}</div>
           <div style={{ flex: 1 }} /><button onClick={onClose} style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)' }}><Icon.Close size={14}/></button>
         </div>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Name</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Editorial" style={{ width: '100%', border: '1px solid var(--hairline)', background: 'var(--surface-2)', borderRadius: 8, padding: '8px 10px', font: '13px/1.3 var(--font-sans)', color: 'var(--ink)', outline: 'none' }} />
+          <span style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)' }}>Name</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Editorial" style={{ width: '100%', border: '1px solid var(--hairline)', background: 'var(--surface-2)', borderRadius: 'var(--radius-lg)', padding: '8px 10px', font: '13px/1.3 var(--font-sans)', color: 'var(--ink)', outline: 'none' }} />
         </label>
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Accent tint</div>
-          <div style={{ position: 'relative', height: 22, background: 'linear-gradient(to right, var(--surface-2), var(--accent-soft), var(--accent))', border: '1px solid var(--hairline)', borderRadius: 999, cursor: 'pointer' }}
+          <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', marginBottom: 6 }}>Accent tint</div>
+          <div style={{ position: 'relative', height: 22, background: 'linear-gradient(to right, var(--surface-2), var(--accent-soft), var(--accent))', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-full)', cursor: 'pointer' }}
             onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHue(Math.round(((e.clientX - r.left) / r.width) * 360)); }}>
-            <div style={{ position: 'absolute', left: `${(hue/360)*100}%`, top: '50%', transform: 'translate(-50%,-50%)', width: 16, height: 16, borderRadius: 6, background: 'var(--accent)', boxShadow: '0 0 0 2px var(--surface), 0 0 0 3px var(--hairline-strong)', pointerEvents: 'none' }}/>
+            <div style={{ position: 'absolute', left: `${(hue/360)*100}%`, top: '50%', transform: 'translate(-50%,-50%)', width: 16, height: 16, borderRadius: 'var(--radius-md)', background: 'var(--accent)', boxShadow: '0 0 0 2px var(--surface), 0 0 0 3px var(--hairline-strong)', pointerEvents: 'none' }}/>
           </div>
         </div>
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Members</div>
+          <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', marginBottom: 6 }}>Members</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {agents.map(a => {
               const on = agentIds.includes(a.id);
-              return <button key={a.id} onClick={() => toggle(a.id)} style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px 4px 4px', borderRadius: 8, background: on ? 'var(--accent-soft)' : 'var(--surface-2)', border: '1px solid ' + (on ? 'var(--accent)' : 'var(--hairline)'), color: 'var(--ink)' }}>
-                <AgentAvatar agent={a} size={18} /><span style={{ fontSize: 11 }}>{a.name}</span>
+              return <button key={a.id} onClick={() => toggle(a.id)} style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px 4px 4px', borderRadius: 'var(--radius-lg)', background: on ? 'var(--accent-soft)' : 'var(--surface-2)', border: '1px solid ' + (on ? 'var(--accent)' : 'var(--hairline)'), color: 'var(--ink)' }}>
+                <AgentAvatar agent={a} size={18} /><span style={{ fontSize: 'var(--text-xs)' }}>{a.name}</span>
               </button>;
             })}
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, gap: 8 }}>
-          <div>{!isNew && canDelete && <button onClick={onDelete} style={{ all: 'unset', cursor: 'pointer', fontSize: 11, color: 'var(--ps-red)', padding: '6px 10px' }}>Delete group</button>}</div>
+          <div>{!isNew && canDelete && <button onClick={onDelete} style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--ps-red)', padding: '6px 10px' }}>Delete group</button>}</div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={onClose} style={{ all: 'unset', cursor: 'pointer', padding: '7px 12px', borderRadius: 999, color: 'var(--ink-soft)', fontSize: 12, fontWeight: 600 }}>Cancel</button>
-            <button onClick={() => onSave({ name: name.trim() || 'Group', hue, agentIds })} style={{ all: 'unset', cursor: 'pointer', padding: '7px 16px', borderRadius: 8, background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 600 }}>{isNew ? 'Create' : 'Save'}</button>
+            <button onClick={onClose} style={{ all: 'unset', cursor: 'pointer', padding: '7px 12px', borderRadius: 'var(--radius-full)', color: 'var(--ink-soft)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>Cancel</button>
+            <button onClick={() => onSave({ name: name.trim() || 'Group', hue, agentIds })} style={{ all: 'unset', cursor: 'pointer', padding: '7px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--accent)', color: 'white', fontSize: 'var(--text-sm)', fontWeight: 600 }}>{isNew ? 'Create' : 'Save'}</button>
           </div>
         </div>
       </div>

@@ -26,7 +26,7 @@ export function GithubIssuesList({
         key={issue.id}
         style={{
           border: '1px solid var(--hairline)',
-          borderRadius: 8,
+          borderRadius: 'var(--radius-lg)',
           background: 'var(--surface)',
           boxShadow: 'var(--shadow-card)',
           overflow: 'hidden',
@@ -58,7 +58,7 @@ export function GithubIssuesList({
             <div style={{ fontWeight: 650, color: 'var(--ink)', lineHeight: 1.35 }}>
               {issue.title}
             </div>
-            <div style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontFamily: 'var(--font-mono)' }}>#{issue.number}</span>
               <span>opened by <strong>{issue.user?.login}</strong></span>
               <span>·</span>
@@ -72,9 +72,9 @@ export function GithubIssuesList({
                   <span
                     key={lbl.id}
                     style={{
-                      fontSize: 10,
+                      fontSize: 'var(--text-xs)',
                       padding: '1px 6px',
-                      borderRadius: 4,
+                      borderRadius: 'var(--radius-sm)',
                       background: `#${lbl.color}22`,
                       color: `#${lbl.color}`,
                       border: `1px solid #${lbl.color}44`,
@@ -87,7 +87,7 @@ export function GithubIssuesList({
               </div>
             )}
           </div>
-          <span style={{ color: 'var(--ink-faint)', fontSize: 10 }}>{isExpanded ? '▼' : '▶'}</span>
+          <span style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>{isExpanded ? '▼' : '▶'}</span>
         </div>
 
         {/* Issue Expanded Details */}
@@ -103,23 +103,23 @@ export function GithubIssuesList({
             {/* Body description */}
             {issue.body ? (
               <div style={{
-                fontSize: 12,
+                fontSize: 'var(--text-sm)',
                 lineHeight: 1.5,
                 color: 'var(--ink-soft)',
                 background: 'var(--surface-2)',
                 padding: '10px 12px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--hairline)',
               }}>
                 {renderMarkdown(issue.body, { compact: true })}
               </div>
             ) : (
-              <div style={{ fontSize: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>No description provided.</div>
+              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-faint)', fontStyle: 'italic' }}>No description provided.</div>
             )}
 
             {/* Labels manager */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)' }}>Add Label</div>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--ink-soft)' }}>Add Label</div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                 <input
                   type="text"
@@ -129,11 +129,11 @@ export function GithubIssuesList({
                   onKeyDown={(e) => e.key === 'Enter' && handleAddLabel(issue.number, false)}
                   style={{
                     padding: '4px 8px',
-                    borderRadius: 4,
+                    borderRadius: 'var(--radius-sm)',
                     border: '1px solid var(--hairline)',
                     background: 'var(--surface-2)',
                     color: 'var(--ink)',
-                    fontSize: 11,
+                    fontSize: 'var(--text-xs)',
                     outline: 'none'
                   }}
                 />
@@ -142,11 +142,11 @@ export function GithubIssuesList({
                   disabled={addingLabel[issue.number] || !labelInputs[issue.number]?.trim()}
                   style={{
                     padding: '4px 10px',
-                    borderRadius: 4,
+                    borderRadius: 'var(--radius-sm)',
                     background: 'var(--accent)',
                     color: 'white',
                     border: 'none',
-                    fontSize: 11,
+                    fontSize: 'var(--text-xs)',
                     fontWeight: 700,
                     cursor: 'pointer',
                     opacity: labelInputs[issue.number]?.trim() ? 1 : 0.5

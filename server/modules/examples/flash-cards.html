@@ -1,0 +1,77 @@
+<!-- module {"request": "flash cards I can study, and have my agent write cards on a topic", "manifest": {"name": "Flash cards", "description": "Study a deck; ask your agent to write new cards.", "icon": "Memory", "size": {"w": 440, "h": 520}, "permissions": ["agent"]}} -->
+<div class="stack" style="gap: var(--space-3); height: 100%">
+  <div class="spread"><h2>Flash cards</h2><span class="pill" id="progress">0 / 0</span></div>
+  <button class="card" id="card" aria-live="polite">
+    <span class="label" id="side">Question</span>
+    <span id="text"></span>
+    <span class="faint" style="font-size: var(--text-xs)">Click to flip</span>
+  </button>
+  <div class="row">
+    <button id="prev">Previous</button>
+    <button id="again" style="flex:1">Again</button>
+    <button class="primary" id="got" style="flex:1">Got it</button>
+    <button id="next">Next</button>
+  </div>
+  <form class="row" id="gen">
+    <input id="topic" placeholder="Topic, e.g. real estate terms">
+    <button type="submit">Write 5 cards</button>
+  </form>
+  <div class="muted" id="status" style="min-height: 1.4em"></div>
+</div>
+<style>
+  #card { min-height: 180px; display: flex; flex-direction: column; justify-content: center; gap: var(--space-2); text-align: center; font-size: var(--text-lg); padding: var(--space-5); }
+</style>
+<script>
+  let deck = censai.storage.get('deck', [
+    { q: 'What does escrow hold?', a: 'Money and documents held by a neutral party until a deal closes.' },
+    { q: 'What is a contingency?', a: 'A condition that must be met for the contract to become binding.' },
+    { q: 'What does CMA stand for?', a: 'Comparative market analysis.' },
+  ]);
+  let i = 0, flipped = false;
+  const $ = (id) => document.getElementById(id);
+
+  function render() {
+    const card = deck[i];
+    $('progress').textContent = deck.length ? (i + 1) + ' / ' + deck.length : '0 / 0';
+    $('side').textContent = flipped ? 'Answer' : 'Question';
+    $('text').textContent = card ? (flipped ? card.a : card.q) : 'No cards yet. Write some below.';
+  }
+  function go(step) { if (!deck.length) return; i = (i + step + deck.length) % deck.length; flipped = false; render(); }
+
+  $('card').onclick = () => { flipped = !flipped; render(); };
+  $('prev').onclick = () => go(-1);
+  $('next').onclick = () => go(1);
+  $('got').onclick = () => go(1);
+  $('again').onclick = () => {
+    if (!deck.length) return;
+    const [card] = deck.splice(i, 1);
+    deck.push(card);
+    censai.storage.set('deck', deck);
+    flipped = false;
+    render();
+  };
+
+  $('gen').onsubmit = async (e) => {
+    e.preventDefault();
+    const topic = $('topic').value.trim();
+    if (!topic) { $('status').textContent = 'Type a topic first.'; return; }
+    $('status').textContent = 'Asking your agent...';
+    try {
+      const answer = await censai.agent.ask('Write 5 flash cards about "' + topic + '". Reply with only a JSON array of {"q": question, "a": short answer}.');
+      const cards = JSON.parse(answer.slice(answer.indexOf('['), answer.lastIndexOf(']') + 1));
+      const clean = cards.filter((c) => c && c.q && c.a).map((c) => ({ q: String(c.q), a: String(c.a) }));
+      if (!clean.length) throw new Error('No cards in the reply.');
+      deck = deck.concat(clean);
+      censai.storage.set('deck', deck);
+      i = deck.length - clean.length;
+      flipped = false;
+      $('status').textContent = 'Added ' + clean.length + ' cards on ' + topic + '.';
+      $('topic').value = '';
+      render();
+    } catch (err) {
+      $('status').textContent = 'Could not write cards: ' + err.message;
+    }
+  };
+  censai.storage.onChange((key, value) => { if (key === 'deck' && Array.isArray(value)) { deck = value; i = Math.min(i, Math.max(0, deck.length - 1)); render(); } });
+  render();
+</script>

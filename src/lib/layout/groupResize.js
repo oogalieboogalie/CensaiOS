@@ -1,18 +1,29 @@
 import { GROUP_PADDING } from './constants.js';
 import { getGroupInnerBounds } from './bounds.js';
 import { cleanLayout } from './infer.js';
+import { MIN_WINDOW_SIZE } from '../windowSizeClasses.js';
 
-const MIN_WINDOW_WIDTH = 220;
-const MIN_WINDOW_HEIGHT = 140;
-const MIN_GROUP_WIDTH = 320;
-const MIN_GROUP_HEIGHT = 240;
+const MIN_WINDOW_WIDTH = MIN_WINDOW_SIZE.w;
+const MIN_WINDOW_HEIGHT = MIN_WINDOW_SIZE.h;
+const MIN_GROUP_WIDTH = MIN_WINDOW_SIZE.w;
+const MIN_GROUP_HEIGHT = MIN_WINDOW_SIZE.h;
 
-function isGroupMember(item, group) {
+// A window belongs to a group if it was explicitly added (groupId) or its
+// centre sits inside the group rect. The explicit check matters: a member
+// whose centre drifted outside (e.g. it grew) must not silently drop out of
+// layouts, hotkey focus, or resizes.
+export function isGroupMember(item, group) {
   if (item.groupId === group.id) return true;
   const centerX = item.x + item.w / 2;
   const centerY = item.y + item.h / 2;
   return centerX >= group.x && centerX <= group.x + group.w
     && centerY >= group.y && centerY <= group.y + group.h;
+}
+
+/** Unpinned windows that belong to `group`. */
+export function windowsInGroup(wins = [], group) {
+  if (!group) return [];
+  return wins.filter((win) => !win.pinned && isGroupMember(win, group));
 }
 
 export function captureGroupResize(group, wins = [], groups = []) {
@@ -108,7 +119,7 @@ function flexGroupContents(snapshot, nextGroup) {
   const allCovered = snapshot.wins.every((w) => leafIds.has(w.id));
   if (!allCovered || snapshot.wins.length === 0) return null;
   const inner = getGroupInnerBounds(nextGroup);
-  const updates = cleanLayout(snapshot.root, inner);
+  const updates = cleanLayout(snapshot.root, inner, [], false);
   const byId = new Map(updates.map((u) => [u.id, u.patch]));
   // cleanLayout must have produced a rect for every member.
   if (!snapshot.wins.every((w) => byId.has(w.id))) return null;

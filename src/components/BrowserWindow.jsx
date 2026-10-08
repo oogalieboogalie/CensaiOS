@@ -86,7 +86,7 @@ export function BrowserWindow({ win, onUpdate }) {
             onChange={e => setDraftUrl(e.target.value)}
             onPointerDown={e => e.stopPropagation()} // Prevent drag when clicking input
             placeholder="Enter URL (e.g. youtube.com/watch?v=...)"
-            style={{ flex: 1, border: '1px solid var(--hairline)', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontFamily: 'var(--font-mono)', outline: 'none', background: 'var(--surface)', color: 'var(--ink)' }}
+            style={{ flex: 1, border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '4px 10px', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-mono)', outline: 'none', background: 'var(--surface)', color: 'var(--ink)' }}
           />
           {((window.__TAURI__ && window.__TAURI__.core?.invoke) || window.__TAURI_INTERNALS__?.invoke) && activeUrl && (
             <button
@@ -98,7 +98,7 @@ export function BrowserWindow({ win, onUpdate }) {
                 cursor: 'pointer',
                 width: 26,
                 height: 26,
-                borderRadius: 6,
+                borderRadius: 'var(--radius-md)',
                 display: 'grid',
                 placeItems: 'center',
                 color: 'var(--ink-soft)',
@@ -132,7 +132,7 @@ export function BrowserWindow({ win, onUpdate }) {
           ) : (
             <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16, background: 'var(--surface)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-faint)', display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', color: 'var(--ink-faint)', display: 'flex', justifyContent: 'space-between' }}>
                   <span>Digital Library Shortcuts</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
@@ -148,7 +148,7 @@ export function BrowserWindow({ win, onUpdate }) {
                         setDraftUrl(parsed);
                         onUpdate({ url: parsed });
                       }}
-                      style={{ all: 'unset', cursor: 'pointer', padding: '10px 14px', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 8, fontSize: 13, color: 'var(--ink)', transition: 'background 0.15s, transform 0.1s' }}
+                      style={{ all: 'unset', cursor: 'pointer', padding: '10px 14px', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', fontSize: 'var(--text-md)', color: 'var(--ink)', transition: 'background 0.15s, transform 0.1s' }}
                       onMouseEnter={e => e.currentTarget.style.background = 'oklch(var(--accent-l) calc(var(--accent-c) * 0.1) var(--accent-h) / 0.15)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'var(--surface-2)'}
                       onPointerDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
@@ -171,7 +171,7 @@ export function BrowserWindow({ win, onUpdate }) {
                           setDraftUrl(parsed);
                           onUpdate({ url: parsed });
                         }}
-                        style={{ all: 'unset', flex: 1, cursor: 'pointer', padding: '10px 14px', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 8, fontSize: 13, color: 'var(--ink)', transition: 'background 0.15s, transform 0.1s' }}
+                        style={{ all: 'unset', flex: 1, cursor: 'pointer', padding: '10px 14px', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', fontSize: 'var(--text-md)', color: 'var(--ink)', transition: 'background 0.15s, transform 0.1s' }}
                         onMouseEnter={e => e.currentTarget.style.background = 'oklch(var(--accent-l) calc(var(--accent-c) * 0.1) var(--accent-h) / 0.15)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'var(--surface-2)'}
                         onPointerDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
@@ -185,7 +185,7 @@ export function BrowserWindow({ win, onUpdate }) {
                       <button 
                         onClick={() => onUpdate({ customShortcutUrl: '', customShortcutName: '' })}
                         title="Remove custom shortcut"
-                        style={{ all: 'unset', cursor: 'pointer', position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 20, height: 20, display: 'grid', placeItems: 'center', color: 'var(--ink-faint)', borderRadius: 4 }}
+                        style={{ all: 'unset', cursor: 'pointer', position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 20, height: 20, display: 'grid', placeItems: 'center', color: 'var(--ink-faint)', borderRadius: 'var(--radius-sm)' }}
                         onMouseEnter={e => { e.currentTarget.style.color = 'var(--ps-red)'; e.currentTarget.style.background = 'var(--surface)'; }}
                         onMouseLeave={e => { e.currentTarget.style.color = 'var(--ink-faint)'; e.currentTarget.style.background = 'transparent'; }}
                       >
@@ -193,8 +193,8 @@ export function BrowserWindow({ win, onUpdate }) {
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 10px', background: 'var(--surface-2)', border: '1px dashed var(--hairline)', borderRadius: 8 }}>
-                      <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>ADD CUSTOM SHORTCUT</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 10px', background: 'var(--surface-2)', border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)' }}>
+                      <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>ADD CUSTOM SHORTCUT</div>
                       <input 
                         placeholder="Name (e.g. My Book)" 
                         onKeyDown={e => {
@@ -206,7 +206,7 @@ export function BrowserWindow({ win, onUpdate }) {
                             }
                           }
                         }}
-                        style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 4, padding: '4px 6px', fontSize: 11, color: 'var(--ink)', outline: 'none' }}
+                        style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-sm)', padding: '4px 6px', fontSize: 'var(--text-xs)', color: 'var(--ink)', outline: 'none' }}
                       />
                       <input 
                         placeholder="URL (e.g. localhost:8000/book.pdf)" 
@@ -219,7 +219,7 @@ export function BrowserWindow({ win, onUpdate }) {
                             }
                           }
                         }}
-                        style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 4, padding: '4px 6px', fontSize: 11, color: 'var(--ink)', outline: 'none' }}
+                        style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-sm)', padding: '4px 6px', fontSize: 'var(--text-xs)', color: 'var(--ink)', outline: 'none' }}
                       />
                     </div>
                   )}
@@ -228,12 +228,12 @@ export function BrowserWindow({ win, onUpdate }) {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
                 <div style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />
-                <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-faint)' }}>OR SEARCH THE WEB</div>
+                <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', color: 'var(--ink-faint)' }}>OR SEARCH THE WEB</div>
                 <div style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-soft)' }}>Use the address bar above to enter any website URL.</p>
+                <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--ink-soft)' }}>Use the address bar above to enter any website URL.</p>
               </div>
             </div>
           )}

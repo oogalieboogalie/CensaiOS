@@ -13,7 +13,7 @@ export function CanvasInteractionSettings() {
   return (
     <div style={{ display: 'grid', gap: 13 }}>
       <label style={{ display: 'grid', gap: 5 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Canvas pan control</span>
+        <span style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--ink)' }}>Canvas pan control</span>
         <select
           aria-label="Canvas pan control"
           value={theme.canvasPanMode || 'both'}
@@ -21,11 +21,11 @@ export function CanvasInteractionSettings() {
           style={{
             width: '100%',
             border: '1px solid var(--hairline)',
-            borderRadius: 8,
+            borderRadius: 'var(--radius-lg)',
             background: 'var(--surface-2)',
             color: 'var(--ink)',
             padding: '8px 10px',
-            fontSize: 12,
+            fontSize: 'var(--text-sm)',
           }}
         >
           {PAN_OPTIONS.map((option) => (
@@ -35,8 +35,8 @@ export function CanvasInteractionSettings() {
       </label>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Snap group layouts</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Keep role-based slots when windows enter or move inside a group</div>
+          <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--ink)' }}>Snap group layouts</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Keep role-based slots when windows enter or move inside a group</div>
         </div>
         <button
           type="button"
@@ -47,7 +47,7 @@ export function CanvasInteractionSettings() {
             position: 'relative',
             width: 44,
             height: 24,
-            borderRadius: 999,
+            borderRadius: 'var(--radius-full)',
             border: 0,
             padding: 0,
             background: theme.groupSnapping !== false ? 'var(--accent)' : 'oklch(0.5 0 0 / 0.22)',
@@ -55,7 +55,7 @@ export function CanvasInteractionSettings() {
             flex: '0 0 auto',
           }}
         >
-          <span style={{ position: 'absolute', top: 2, left: theme.groupSnapping !== false ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+          <span style={{ position: 'absolute', top: 2, left: theme.groupSnapping !== false ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: 'var(--on-fill)', transition: 'left 0.15s' }} />
         </button>
       </div>
     </div>

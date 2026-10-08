@@ -18,7 +18,7 @@ export const DEFAULT_THEME = {
   red: '#fb7185',
   white: '#e5e7eb',
   yellow: '#fbbf24',
-  fontSize: 13,
+  fontSize: 'var(--text-md)',
 };
 
 export const THEME_COLOR_LABELS = [
@@ -62,12 +62,12 @@ export function ColorPicker({ value, onChange, label }) {
           height: 28,
           padding: 0,
           border: 'none',
-          borderRadius: 4,
+          borderRadius: 'var(--radius-sm)',
           cursor: 'pointer',
           background: 'transparent',
         }}
       />
-      <span style={{ fontSize: 11, color: '#94a3b8', flex: 1 }}>{label}</span>
+      <span style={{ fontSize: 'var(--text-xs)', color: '#94a3b8', flex: 1 }}>{label}</span>
       <input
         type="text"
         value={draft}
@@ -86,13 +86,13 @@ export function ColorPicker({ value, onChange, label }) {
         style={{
           width: 80,
           padding: '4px 6px',
-          fontSize: 10,
-          fontFamily: 'var(--font-mono)',
+          fontSize: 'var(--text-xs)',
+          fontFamily: 'var(--font-label)',
           background: '#1e293b',
           color: '#d7deea',
           border: '1px solid rgba(148,163,184,0.2)',
-          borderRadius: 4,
-          textTransform: 'uppercase',
+          borderRadius: 'var(--radius-sm)',
+          textTransform: 'var(--label-case)',
         }}
       />
     </div>
@@ -145,14 +145,14 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
         overflow: 'auto',
         background: '#0f172a',
         border: '1px solid rgba(148,163,184,0.2)',
-        borderRadius: 8,
+        borderRadius: 'var(--radius-lg)',
         boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
         zIndex: 100,
         padding: 12,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0' }}>{title}</span>
+        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: '#e2e8f0' }}>{title}</span>
         <button
           onClick={onClose}
           style={{
@@ -168,7 +168,7 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <span style={{ fontSize: 11, color: '#94a3b8', flex: 1 }}>Font Size</span>
+        <span style={{ fontSize: 'var(--text-xs)', color: '#94a3b8', flex: 1 }}>Font Size</span>
         <input
           type="number"
           min="8"
@@ -178,20 +178,20 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
           style={{
             width: 80,
             padding: '4px 6px',
-            fontSize: 10,
+            fontSize: 'var(--text-xs)',
             fontFamily: 'var(--font-mono)',
             background: '#1e293b',
             color: '#d7deea',
             border: '1px solid rgba(148,163,184,0.2)',
-            borderRadius: 4,
+            borderRadius: 'var(--radius-sm)',
           }}
         />
       </div>
 
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Presets</span>
-          <span style={{ fontSize: 9, color: '#64748b' }}>.team ideas</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Presets</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: '#64748b' }}>.team ideas</span>
         </div>
         <div style={{ display: 'grid', gap: 6 }}>
           {TERMINAL_THEME_PRESETS.map((preset) => (
@@ -221,12 +221,12 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
         style={{
           width: '100%',
           padding: '8px 12px',
-          fontSize: 11,
+          fontSize: 'var(--text-xs)',
           fontWeight: 500,
           background: '#1e293b',
           color: '#94a3b8',
           border: '1px solid rgba(148,163,184,0.2)',
-          borderRadius: 6,
+          borderRadius: 'var(--radius-md)',
           cursor: 'pointer',
           transition: 'all 0.15s ease',
         }}

@@ -1,4 +1,6 @@
 import './ToolchainSettings.css';
+import { WindowTitle } from './Windows.jsx';
+import { Icon } from './Icons.jsx';
 import { useToolchains } from './toolchain/useToolchains.js';
 import { ToolchainCard } from './toolchain/ToolchainCard.jsx';
 
@@ -17,20 +19,16 @@ export function ToolchainSettingsWindow() {
   return (
     <div className="tc-root">
 
-      {/* ── Header ── */}
-      <div className="tc-header">
-        <span className="tc-title-icon">🧰</span>
-        <div className="tc-header-text">
-          <h2 className="tc-title">AI Coding Assistants</h2>
-          <p className="tc-subtitle">Install CLI coding tools into your sandbox.</p>
-        </div>
-        <div className="tc-header-actions">
-          <span className={`tc-sandbox-pill ${sandboxUp === true ? 'tc-sandbox-pill--up' : sandboxUp === false ? 'tc-sandbox-pill--down' : ''}`}>
-            {sandboxUp === true ? '● Sandbox running' : sandboxUp === false ? '● Sandbox offline' : '○ …'}
-          </span>
-          <button className="tc-icon-btn" title="Re-check all" onClick={detectAll}>↺</button>
-        </div>
-      </div>
+      <WindowTitle
+        icon={<Icon.Toolbox size={14} />}
+        label="AI coding assistants"
+        subtitle="Install CLI coding tools into your sandbox"
+        actions={[{ id: 'recheck', icon: <Icon.Refresh size={12} />, title: 'Re-check all', onSelect: detectAll }]}
+      >
+        <span className={`tc-sandbox-pill ${sandboxUp === true ? 'tc-sandbox-pill--up' : sandboxUp === false ? 'tc-sandbox-pill--down' : ''}`}>
+          {sandboxUp === true ? 'Sandbox running' : sandboxUp === false ? 'Sandbox offline' : 'Checking…'}
+        </span>
+      </WindowTitle>
 
       {/* ── Rebuild progress panel ── */}
       {(isBuilding || buildDone || buildFailed) && (

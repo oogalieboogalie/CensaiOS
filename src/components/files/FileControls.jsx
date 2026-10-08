@@ -5,13 +5,13 @@ export function FileModeSelector({ mode, onUpdate }) {
     <div style={{ display: 'flex', borderBottom: '1px solid var(--hairline)', background: 'var(--surface)' }}>
       <button 
         onClick={() => onUpdate({ mode: 'local' })} 
-        style={{ flex: 1, padding: '6px 0', fontSize: 11, fontWeight: 600, color: mode === 'local' ? 'var(--ink)' : 'var(--ink-faint)', background: mode === 'local' ? 'var(--surface-2)' : 'transparent', border: 'none', borderRight: '1px solid var(--hairline)', cursor: 'pointer' }}
+        style={{ flex: 1, padding: '6px 0', fontSize: 'var(--text-xs)', fontWeight: 600, color: mode === 'local' ? 'var(--ink)' : 'var(--ink-faint)', background: mode === 'local' ? 'var(--surface-2)' : 'transparent', border: 'none', borderRight: '1px solid var(--hairline)', cursor: 'pointer' }}
       >
         Local
       </button>
       <button 
         onClick={() => onUpdate({ mode: 'github' })} 
-        style={{ flex: 1, padding: '6px 0', fontSize: 11, fontWeight: 600, color: mode === 'github' ? 'var(--ink)' : 'var(--ink-faint)', background: mode === 'github' ? 'var(--surface-2)' : 'transparent', border: 'none', cursor: 'pointer' }}
+        style={{ flex: 1, padding: '6px 0', fontSize: 'var(--text-xs)', fontWeight: 600, color: mode === 'github' ? 'var(--ink)' : 'var(--ink-faint)', background: mode === 'github' ? 'var(--surface-2)' : 'transparent', border: 'none', cursor: 'pointer' }}
       >
         GitHub
       </button>
@@ -27,10 +27,10 @@ export function LocalPathBar({ pathInput, setPathInput, loadDir, clearDir }) {
         value={pathInput}
         onChange={e => setPathInput(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') loadDir(); }}
-        style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 6, padding: '4px 8px', font: '10px var(--font-mono)', color: 'var(--ink)', outline: 'none' }}
+        style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '4px 8px', font: '10px var(--font-mono)', color: 'var(--ink)', outline: 'none' }}
       />
-      <button onClick={loadDir} style={{ all: 'unset', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 10, fontWeight: 600 }}>Reload</button>
-      <button onClick={clearDir} style={{ all: 'unset', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, background: 'transparent', color: 'var(--ink-faint)', fontSize: 10 }}>Reset</button>
+      <button onClick={loadDir} style={{ all: 'unset', cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-md)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontWeight: 600 }}>Reload</button>
+      <button onClick={clearDir} style={{ all: 'unset', cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-md)', background: 'transparent', color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>Reset</button>
     </div>
   );
 }
@@ -39,7 +39,7 @@ export function GithubRepoBar({ githubRepo, clearDir }) {
   return (
     <div style={{ display: 'flex', gap: 6, padding: '4px 6px 8px', borderBottom: '1px solid var(--hairline)', marginBottom: 8, alignItems: 'center' }}>
       <div style={{ flex: 1, font: '10px var(--font-mono)', color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{githubRepo}</div>
-      <button onClick={clearDir} style={{ all: 'unset', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, background: 'transparent', color: 'var(--ink-faint)', fontSize: 10 }}>Reset</button>
+      <button onClick={clearDir} style={{ all: 'unset', cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-md)', background: 'transparent', color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>Reset</button>
     </div>
   );
 }
@@ -52,7 +52,7 @@ export function FileSearchFilter({ searchInput, setSearchInput }) {
         placeholder="Filter paths..."
         value={searchInput}
         onChange={e => setSearchInput(e.target.value)}
-        style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 6, padding: '4px 8px', font: '10px var(--font-mono)', color: 'var(--ink)', outline: 'none' }}
+        style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '4px 8px', font: '10px var(--font-mono)', color: 'var(--ink)', outline: 'none' }}
       />
     </div>
   );

@@ -5,12 +5,23 @@ import { getBoundingBox } from './excalidraw/helpers.js';
 import { WhiteboardToolbar } from './excalidraw/WhiteboardToolbar.jsx';
 import { WhiteboardCanvas } from './excalidraw/WhiteboardCanvas.jsx';
 import { Icon } from './Icons.jsx';
+import { SketchpadActions } from './excalidraw/SketchpadActions.jsx';
+import { createPalmFilter } from '../lib/ink/palmFilter.js';
+import { coalescedSamples, inkPoint } from '../lib/ink/stroke.js';
+
+// The board's copy is the shared one (spec 9); this browser's saved copy is
+// only a fallback for windows from before the scene was stored on the board.
+function initialElements(win) {
+  const shared = win.state?.excalidraw?.elements;
+  if (Array.isArray(shared)) return shared;
+  const scene = readExcalidrawScene(win);
+  return Array.isArray(scene?.elements) ? scene.elements : [];
+}
 
 export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
-  const [elements, setElements] = React.useState(() => {
-    const scene = readExcalidrawScene(win);
-    return Array.isArray(scene?.elements) ? scene.elements : [];
-  });
+  const [elements, setElements] = React.useState(() => initialElements(win));
+  const palm = React.useMemo(() => createPalmFilter(), []);
+  const lastSaved = React.useRef(win.state?.excalidraw?.elements);
   const [activeMode, setActiveMode] = React.useState('pencil');
   const [selectedId, setSelectedId] = React.useState(null);
   const [color, setColor] = React.useState('var(--accent)');
@@ -28,14 +39,26 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
 
   const queueSave = React.useCallback((nextElements) => {
     setElements(nextElements);
+    lastSaved.current = nextElements;
     persistExcalidrawScene(win.id, { elements: nextElements });
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
+      saveTimerRef.current = null;
       onUpdate?.({ state: { ...(win.state || {}), excalidraw: { elements: nextElements } } });
     }, 200);
   }, [onUpdate, win.id, win.state]);
 
   React.useEffect(() => () => saveTimerRef.current && window.clearTimeout(saveTimerRef.current), []);
+
+  // Someone else drew: take the board's copy unless we're mid-gesture.
+  const shared = win.state?.excalidraw?.elements;
+  const busy = Boolean(drawingElement || dragState || resizeState || editingTextId);
+  React.useEffect(() => {
+    if (!Array.isArray(shared) || shared === lastSaved.current || busy || saveTimerRef.current) return;
+    if (JSON.stringify(shared) === JSON.stringify(lastSaved.current)) return;
+    lastSaved.current = shared;
+    setElements(shared);
+  }, [shared, busy]);
 
   const getCoordinates = (e) => {
     const rect = svgRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
@@ -44,12 +67,16 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
   };
 
   const handlePointerDown = (e) => {
+    // Pen draws; a palm (or any finger once a pen is in use) is ignored.
+    const kind = palm.classify(e, 'down');
+    if (kind === 'palm' || (kind === 'touch' && palm.penSeen)) return;
     if (editingTextId) finalizeTextEdit();
     const { x, y } = getCoordinates(e);
+    try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* synthetic events */ }
 
     if (activeMode === 'select') {
       const selEl = selectedId && elements.find(el => el.id === selectedId);
-      if (selEl && ['rect', 'circle'].includes(selEl.type)) {
+      if (selEl && ['rect', 'circle', 'image'].includes(selEl.type)) {
         const { x: ex, y: ey, w: ew, h: eh } = selEl;
         const handles = [{ id: 'tl', cx: ex, cy: ey }, { id: 'tr', cx: ex + ew, cy: ey }, { id: 'bl', cx: ex, cy: ey + eh }, { id: 'br', cx: ex + ew, cy: ey + eh }];
         const hit = handles.find(h => Math.hypot(h.cx - x, h.cy - y) < 8);
@@ -72,7 +99,7 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
 
     const newId = crypto.randomUUID();
     let newEl = null;
-    if (activeMode === 'pencil') newEl = { id: newId, type: 'pencil', x, y, pts: [{ x, y }], color, strokeWidth };
+    if (activeMode === 'pencil') newEl = { id: newId, type: 'pencil', x, y, pts: [inkPoint({ x, y }, e)], color, strokeWidth, pen: e.pointerType === 'pen' };
     else if (activeMode === 'rect') newEl = { id: newId, type: 'rect', x, y, w: 0, h: 0, color, strokeWidth };
     else if (activeMode === 'circle') newEl = { id: newId, type: 'circle', x, y, w: 0, h: 0, color, strokeWidth };
     else if (activeMode === 'arrow') newEl = { id: newId, type: 'arrow', x, y, pts: [{ x, y }, { x, y }], color, strokeWidth };
@@ -86,6 +113,7 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
   };
 
   const handlePointerMove = (e) => {
+    if (palm.classify(e) === 'palm') return;
     const { x, y } = getCoordinates(e);
     if (resizeState) {
       const { id, handle, startX, startY, initialElement } = resizeState;
@@ -115,7 +143,7 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
       setElements(elements.map(el => {
         if (el.id !== drawingElement.id) return el;
         const u = { ...el };
-        if (u.type === 'pencil') u.pts = [...u.pts, { x, y }];
+        if (u.type === 'pencil') u.pts = [...u.pts, ...coalescedSamples(e).map((ev) => inkPoint(getCoordinates(ev), ev))];
         else if (['rect', 'circle'].includes(u.type)) { u.w = x - u.x; u.h = y - u.y; }
         else if (u.type === 'arrow') u.pts = [u.pts[0], { x, y }];
         return u;
@@ -123,7 +151,8 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
     }
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e) => {
+    if (palm.classify(e, 'up') === 'palm') return;
     if (drawingElement) {
       const next = elements.map(el => {
         if (el.id !== drawingElement.id) return el;
@@ -181,7 +210,7 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
       <WindowTitle icon={<Icon.Edit size={14} />} label="Sketchpad" subtitle={subtitle}>
         <button
           onClick={(e) => { e.stopPropagation(); handleReset(); }}
-          style={{ all: 'unset', cursor: 'pointer', padding: '2px 8px', borderRadius: 4, fontSize: 10, background: 'var(--surface-2)', color: 'var(--ink-faint)', border: '1px solid var(--hairline)' }}
+          style={{ all: 'unset', cursor: 'pointer', padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)', background: 'var(--surface-2)', color: 'var(--ink-faint)', border: '1px solid var(--hairline)' }}
           title="Clear everything"
         >
           Clear Board
@@ -201,6 +230,7 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
           finalizeTextEdit={finalizeTextEdit} color={color} handleTextDoubleClick={handleTextDoubleClick}
           svgRef={svgRef} handlePointerDown={handlePointerDown} handlePointerMove={handlePointerMove} handlePointerUp={handlePointerUp}
         />
+        {elements.length > 0 && !drawingElement && <SketchpadActions win={win} elements={elements} onChange={queueSave} />}
       </div>
     </>
   );

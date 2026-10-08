@@ -13,6 +13,7 @@ export const IMAGE_STUDIO_TOOLS = [
   { id: 'text', label: 'Text' },
 ];
 
+/* eslint-disable no-restricted-syntax -- user paint palette data, not UI chrome */
 export const IMAGE_STUDIO_COLORS = [
   '#ffffff',
   '#ff4d5f',
@@ -24,6 +25,7 @@ export const IMAGE_STUDIO_COLORS = [
   '#b46cff',
   '#08090d',
 ];
+/* eslint-enable no-restricted-syntax */
 
 export const STROKE_SIZES = [
   { id: 'small', label: 'S', value: 2 },

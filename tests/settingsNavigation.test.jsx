@@ -12,6 +12,7 @@ test('settings use four plain-language sections', () => {
     { id: 'appearance', label: 'Appearance' },
     { id: 'workspace', label: 'Canvas' },
     { id: 'sharing', label: 'Sharing' },
+    { id: 'modules', label: 'Modules' },
     { id: 'vault', label: 'AI keys' },
   ]);
   expect(normalizeSettingsTab('sharing')).toBe('sharing');

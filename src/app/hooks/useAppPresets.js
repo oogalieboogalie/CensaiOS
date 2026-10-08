@@ -10,6 +10,7 @@ export function useAppPresets() {
     saveGroupPreset: store.saveGroupPreset,
     loadGroupPreset: store.loadGroupPreset,
     deleteGroupPreset: store.deleteGroupPreset,
+    setGroupDefaultPreset: store.setGroupDefaultPreset,
     autoArrangeGroup: store.autoArrangeGroup
   };
 }

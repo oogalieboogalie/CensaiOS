@@ -15,22 +15,22 @@ export function SchedulerDateTimeForm({ state }) {
     <>
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 10, marginTop: 4 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Time</span>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 8, padding: '4px 6px' }}>
-            <select value={hour} onChange={(e) => setHour(e.target.value)} style={{ all: 'unset', fontSize: 13, fontWeight: 600, color: 'var(--ink)', cursor: 'pointer', padding: '2px 4px' }}>
+          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', color: 'var(--ink-soft)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>Time</span>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '4px 6px' }}>
+            <select value={hour} onChange={(e) => setHour(e.target.value)} style={{ all: 'unset', fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--ink)', cursor: 'pointer', padding: '2px 4px' }}>
               {Array.from({ length: 12 }).map((_, i) => {
                 const val = String(i + 1).padStart(2, '0');
                 return <option key={val} value={val}>{val}</option>;
               })}
             </select>
             <span style={{ color: 'var(--ink-soft)', fontWeight: 600 }}>:</span>
-            <select value={minute} onChange={(e) => setMinute(e.target.value)} style={{ all: 'unset', fontSize: 13, fontWeight: 600, color: 'var(--ink)', cursor: 'pointer', padding: '2px 4px' }}>
+            <select value={minute} onChange={(e) => setMinute(e.target.value)} style={{ all: 'unset', fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--ink)', cursor: 'pointer', padding: '2px 4px' }}>
               {Array.from({ length: 12 }).map((_, i) => {
                 const val = String(i * 5).padStart(2, '0');
                 return <option key={val} value={val}>{val}</option>;
               })}
             </select>
-            <select value={ampm} onChange={(e) => setAmpm(e.target.value)} style={{ all: 'unset', fontSize: 10, fontWeight: 700, color: 'var(--ink-soft)', cursor: 'pointer', padding: '2px 4px', background: 'var(--hairline)', borderRadius: 4 }}>
+            <select value={ampm} onChange={(e) => setAmpm(e.target.value)} style={{ all: 'unset', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--ink-soft)', cursor: 'pointer', padding: '2px 4px', background: 'var(--hairline)', borderRadius: 'var(--radius-sm)' }}>
               <option value="AM">AM</option>
               <option value="PM">PM</option>
             </select>
@@ -38,7 +38,7 @@ export function SchedulerDateTimeForm({ state }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Date</span>
+          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', color: 'var(--ink-soft)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>Date</span>
           <input
             type="date"
             value={selectedDate}
@@ -46,11 +46,11 @@ export function SchedulerDateTimeForm({ state }) {
             style={{
               width: '100%',
               padding: '6px 8px',
-              borderRadius: 8,
+              borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--hairline)',
               background: 'var(--surface-2)',
               color: 'var(--ink)',
-              fontSize: 12,
+              fontSize: 'var(--text-sm)',
               fontWeight: 500,
               outline: 'none',
               cursor: 'pointer'
@@ -59,9 +59,9 @@ export function SchedulerDateTimeForm({ state }) {
         </div>
       </div>
 
-      <div style={{ border: '1px dashed var(--hairline)', borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--surface-2)' }}>
+      <div style={{ border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 10, display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--surface-2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Repeat?</span>
+          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', color: 'var(--ink-soft)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>Repeat?</span>
           <button
             type="button"
             onClick={() => setRepeat(!repeat)}
@@ -70,7 +70,7 @@ export function SchedulerDateTimeForm({ state }) {
               cursor: 'pointer',
               width: 38,
               height: 20,
-              borderRadius: 10,
+              borderRadius: 'var(--radius-lg)',
               background: repeat ? 'var(--accent)' : 'var(--hairline-strong)',
               position: 'relative',
               transition: 'background 0.2s ease'
@@ -80,12 +80,12 @@ export function SchedulerDateTimeForm({ state }) {
               width: 14,
               height: 14,
               borderRadius: '50%',
-              background: 'white',
+              background: 'var(--on-fill)',
               position: 'absolute',
               top: 3,
               left: repeat ? 21 : 3,
               transition: 'left 0.2s ease',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+              boxShadow: 'var(--elevation-1)'
             }} />
           </button>
         </div>
@@ -104,13 +104,13 @@ export function SchedulerDateTimeForm({ state }) {
                     width: 22,
                     height: 22,
                     borderRadius: '50%',
-                    fontSize: 10,
+                    fontSize: 'var(--text-xs)',
                     fontWeight: 700,
                     display: 'grid',
                     placeItems: 'center',
                     textTransform: 'capitalize',
                     background: repeatDays[day] ? 'var(--accent)' : 'var(--surface)',
-                    color: repeatDays[day] ? 'white' : 'var(--ink-soft)',
+                    color: repeatDays[day] ? 'var(--on-fill)' : 'var(--ink-soft)',
                     border: `1px solid ${repeatDays[day] ? 'var(--accent)' : 'var(--hairline)'}`,
                     boxShadow: 'var(--shadow-card)'
                   }}
@@ -121,17 +121,17 @@ export function SchedulerDateTimeForm({ state }) {
             </div>
 
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-soft)' }}>Frequency:</span>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-soft)' }}>Frequency:</span>
               <select
                 value={repeatFreq}
                 onChange={(e) => setRepeatFreq(e.target.value)}
                 style={{
                   padding: '4px 8px',
-                  borderRadius: 6,
+                  borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--hairline)',
                   background: 'var(--surface)',
                   color: 'var(--ink)',
-                  fontSize: 11,
+                  fontSize: 'var(--text-xs)',
                   outline: 'none',
                   cursor: 'pointer'
                 }}

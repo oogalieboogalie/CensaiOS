@@ -2,22 +2,30 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { jest } from '@jest/globals';
-import { EmptyState } from '../src/components/canvas/CanvasEmptyState.jsx';
+import { CanvasOutcomeCommand, buildOutcomePrompt } from '../src/components/canvas/CanvasOutcomeCommand.jsx';
 
-test('the primary outcome command opens Censai and begins the request immediately', () => {
-  const onSpawn = jest.fn();
-  render(<EmptyState onSpawn={onSpawn} />);
-  fireEvent.change(screen.getByPlaceholderText('Tell Censai what you want done…'), {
+test('the outcome command submits the built prompt plus the raw text', () => {
+  const onSubmit = jest.fn();
+  render(<CanvasOutcomeCommand onSubmit={onSubmit} />);
+  fireEvent.change(screen.getByPlaceholderText('Tell CensaiOS what you want done…'), {
     target: { value: 'Ship the beta onboarding flow' },
   });
   fireEvent.click(screen.getByRole('button', { name: 'Start with Censai' }));
-  expect(onSpawn).toHaveBeenCalledWith('chat', {
-    agentId: 'censai',
-    msgs: [{
-      from: 'me',
-      text: expect.stringContaining('Ship the beta onboarding flow'),
-    }],
-    autoSend: true,
-  });
+  expect(onSubmit).toHaveBeenCalledTimes(1);
+  expect(onSubmit).toHaveBeenCalledWith(
+    expect.stringContaining('Ship the beta onboarding flow'),
+    'Ship the beta onboarding flow',
+  );
+});
+
+test('the submit button stays disabled while the input is empty', () => {
+  render(<CanvasOutcomeCommand onSubmit={jest.fn()} />);
+  expect(screen.getByRole('button', { name: 'Start with Censai' })).toBeDisabled();
+});
+
+test('buildOutcomePrompt returns empty for blank input', () => {
+  expect(buildOutcomePrompt('   ')).toBe('');
+  expect(buildOutcomePrompt('Ship it')).toContain('Ship it');
 });

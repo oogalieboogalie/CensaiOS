@@ -39,7 +39,7 @@ export function OverseerWindow({ win }) {
 
         <OverseerStatus status={status} />
 
-        {error && <div style={{ color: 'var(--ps-red)', fontSize: 12, paddingLeft: 4 }}>{error}</div>}
+        {error && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)', paddingLeft: 4 }}>{error}</div>}
 
         <OverseerLogs status={status} logEndRef={logEndRef} />
       </div>

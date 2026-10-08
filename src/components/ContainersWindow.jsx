@@ -1,187 +1,132 @@
-import React, { useState, useEffect } from 'react';
-import { Icon } from './Icons.jsx';
+import React, { useEffect, useMemo, useState } from 'react';
 import { WindowTitle } from './windows/WindowTitle.jsx';
-import { useVisibilityAwareInterval } from '../lib/usePolling.js';
+import { DIcon } from './docker/dockerIcons.jsx';
+import { IconButton, StatusDot, UnavailableState, SkeletonRows, Toast } from './docker/DockerUi.jsx';
+import { useDockerData } from './docker/useDockerData.js';
+import { ContainersPanel } from './docker/ContainersPanel.jsx';
+import { ContainerDetail } from './docker/ContainerDetail.jsx';
+import { ComposePanel } from './docker/ComposePanel.jsx';
+import { ResourcesPanel } from './docker/ResourcesPanel.jsx';
+import { formatBytes } from './docker/dockerApi.js';
+import './docker/docker.css';
 
-export function ContainersWindow({ win, onUpdate }) {
-  const [containers, setContainers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [logs, setLogs] = useState({});
-  const [restarting, setRestarting] = useState({});
-  const [removing, setRemoving] = useState({});
+const TABS = [
+  { id: 'containers', label: 'Containers', icon: DIcon.Box },
+  { id: 'compose', label: 'Compose', icon: DIcon.Stack },
+  { id: 'images', label: 'Images', icon: DIcon.Layers },
+  { id: 'volumes', label: 'Volumes', icon: DIcon.Disk },
+  { id: 'networks', label: 'Networks', icon: DIcon.Network },
+];
 
-  const fetchContainers = async () => {
-    try {
-      const res = await fetch('/api/containers');
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to fetch containers');
-      }
-      const data = await res.json();
-      setContainers(Array.isArray(data.containers) ? data.containers : []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchContainers();
-  }, []);
-
-  useVisibilityAwareInterval(fetchContainers, 5000);
-
-  const handleLogs = async (service) => {
-    try {
-      const res = await fetch(`/api/containers/${encodeURIComponent(service)}/logs`);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || `Failed to fetch logs for ${service}`);
-      }
-      const data = await res.json();
-      setLogs((prev) => ({ ...prev, [service]: data.logs }));
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  const handleRestart = async (service) => {
-    setRestarting((prev) => ({ ...prev, [service]: true }));
-    try {
-      const res = await fetch(`/api/containers/${encodeURIComponent(service)}/restart`, {
-        method: 'POST',
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || `Failed to restart ${service}`);
-      }
-      await fetchContainers();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setRestarting((prev) => ({ ...prev, [service]: false }));
-    }
-  };
-
-  const handleRemove = async (service) => {
-    if (!window.confirm(`Remove container "${service}"? A sandbox will be recreated on next use.`)) return;
-    setRemoving((prev) => ({ ...prev, [service]: true }));
-    try {
-      const res = await fetch(`/api/containers/${encodeURIComponent(service)}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || `Failed to remove ${service}`);
-      }
-      await fetchContainers();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setRemoving((prev) => ({ ...prev, [service]: false }));
-    }
-  };
-
-  const renderContent = () => {
-    if (loading && containers.length === 0) {
-      return <div style={{ padding: 14, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>Loading containers...</div>;
-    }
-    if (error) {
-      return <div style={{ padding: 14, color: 'var(--ps-red)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>Error: {error}</div>;
-    }
-    if (containers.length === 0) {
-      return <div style={{ padding: 14, color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>No containers found.</div>;
-    }
-
-    return (
-      <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {containers.map((c, i) => {
-          const svc = c.Service || c.Name || c.service || 'unknown';
-          const status = c.Status || c.State || 'unknown';
-          const ports = Array.isArray(c.Publishers)
-            ? c.Publishers.map((p) => `${p.PublishedPort || ''}→${p.TargetPort || ''}`).join(', ')
-            : (c.Ports || '');
-          const isRunning = status.toLowerCase().includes('up') || status.toLowerCase().includes('running');
-
-          return (
-            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--surface-2)', padding: 12, borderRadius: 8, border: '1px solid var(--hairline)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {svc}
-                    {c.Sandbox && (
-                      <span title={c.HostPath || 'Agent sandbox (reused across terminal sessions)'} style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent-ink)', background: 'var(--accent-soft)', borderRadius: 5, padding: '1px 6px' }}>
-                        sandbox
-                      </span>
-                    )}
-                  </span>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      fontSize: 11,
-                      fontFamily: 'var(--font-mono)',
-                      color: isRunning ? 'var(--ps-green)' : 'var(--ink-soft)'
-                    }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: isRunning ? 'var(--ps-green)' : 'var(--ink-faint)' }} />
-                      {status}
-                    </span>
-                    {ports && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)' }}>ports: {ports}</span>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button
-                    onClick={() => handleLogs(svc)}
-                    style={{ all: 'unset', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--hairline)', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)' }}
-                  >
-                    Logs
-                  </button>
-                  <button
-                    onClick={() => handleRestart(svc)}
-                    disabled={restarting[svc]}
-                    style={{ all: 'unset', cursor: restarting[svc] ? 'not-allowed' : 'pointer', padding: '4px 8px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--hairline)', fontSize: 11, fontFamily: 'var(--font-mono)', color: restarting[svc] ? 'var(--ink-faint)' : 'var(--ink)' }}
-                  >
-                    {restarting[svc] ? 'Restarting...' : 'Restart'}
-                  </button>
-                  {c.Sandbox && (
-                    <button
-                      onClick={() => handleRemove(svc)}
-                      disabled={removing[svc]}
-                      title="Remove this sandbox (recreated on next use)"
-                      style={{ all: 'unset', cursor: removing[svc] ? 'not-allowed' : 'pointer', padding: '4px 8px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--hairline)', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ps-red)' }}
-                    >
-                      {removing[svc] ? 'Removing...' : 'Remove'}
-                    </button>
-                  )}
-                </div>
-              </div>
-              {logs[svc] && (
-                <div style={{ background: '#0e1117', border: '1px solid #21262d', borderRadius: 6, padding: 8, overflow: 'auto', maxHeight: 200, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#c9d1d9', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-                  {logs[svc]}
-                </div>
-              )}
-            </div>
-          );
-        })}
+function EngineBar({ status, containers, onRefresh, refreshing }) {
+  const e = status.engine || {};
+  const list = containers || [];
+  const running = list.filter((c) => c.state === 'running').length;
+  const unhealthy = list.filter((c) => c.health === 'unhealthy').length;
+  const disk = (status.disk || []).reduce((s, d) => s + d.size, 0);
+  const reclaim = (status.disk || []).reduce((s, d) => s + d.reclaimable, 0);
+  const metrics = [
+    { label: 'Running', value: running, tone: running ? 'ok' : undefined },
+    { label: 'Stopped', value: list.length - running },
+    ...(unhealthy ? [{ label: 'Unhealthy', value: unhealthy, tone: 'danger' }] : []),
+    { label: 'Images', value: status.counts?.images ?? '—' },
+    { label: 'Disk', value: formatBytes(disk), title: reclaim ? `${formatBytes(reclaim)} reclaimable` : undefined },
+  ];
+  return (
+    <div className="dk-engine">
+      <div className="dk-engine-id">
+        <span className="dk-engine-logo"><DIcon.Whale size={20} /></span>
+        <div className="dk-row-text">
+          <div className="dk-engine-name"><StatusDot tone="ok" pulse /> Engine running</div>
+          <div className="dk-row-sub dk-truncate">
+            v{e.version} · {e.os}{e.arch ? ` · ${e.arch}` : ''}{e.cpus ? ` · ${e.cpus} CPUs` : ''}{e.memTotal ? ` · ${formatBytes(e.memTotal)}` : ''}
+          </div>
+        </div>
       </div>
-    );
+      <div className="dk-engine-metrics">
+        {metrics.map((m) => (
+          <div key={m.label} className={`dk-metric ${m.tone ? `dk-metric--${m.tone}` : ''}`} title={m.title}>
+            <strong>{m.value}</strong><span>{m.label}</span>
+          </div>
+        ))}
+        <IconButton icon={<DIcon.Refresh />} label="Refresh" onClick={onRefresh} busy={refreshing} />
+      </div>
+    </div>
+  );
+}
+
+export function ContainersWindow({ win }) {
+  const [tab, setTab] = useState('containers');
+  const [query, setQuery] = useState('');
+  const [selectedId, setSelectedId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const data = useDockerData(tab);
+  const { status, statusError, available, containers, resources } = data;
+  const selected = useMemo(() => (containers || []).find((c) => c.id === selectedId) || null, [containers, selectedId]);
+  useEffect(() => { if (containers && selectedId && !selected) setSelectedId(null); }, [containers, selectedId, selected]);
+
+  const refresh = async () => { setRefreshing(true); await data.refresh(); setRefreshing(false); };
+  const counts = {
+    containers: containers?.length,
+    compose: resources.compose?.length ?? new Set((containers || []).map((c) => c.composeProject).filter(Boolean)).size,
+    images: resources.images?.length ?? status?.counts?.images,
+    volumes: resources.volumes?.length,
+    networks: resources.networks?.length,
   };
+  const openContainer = (id) => { setTab('containers'); setQuery(''); setSelectedId(id); };
+
+  let body;
+  if (!status && !statusError) body = <SkeletonRows count={6} />;
+  else if (statusError && !status) body = <UnavailableState reason={statusError.reason} message={statusError.message} onRetry={refresh} retrying={refreshing} />;
+  else if (!available) body = <UnavailableState reason={status.reason} message={status.message} onRetry={refresh} retrying={refreshing} />;
+  else {
+    const common = { busy: data.busy, run: data.run, query };
+    body = (
+      <>
+        <EngineBar status={status} containers={containers} onRefresh={refresh} refreshing={refreshing} />
+        <div className="dk-tabbar">
+          <nav className="dk-tabs" role="tablist" aria-label="Docker resources">
+            {TABS.map((t) => (
+              <button key={t.id} type="button" role="tab" aria-selected={tab === t.id}
+                className={`dk-tab ${tab === t.id ? 'is-active' : ''}`} onClick={() => setTab(t.id)}>
+                <t.icon size={13} /><span className="dk-tab-label">{t.label}</span>
+                {counts[t.id] != null && <span className="dk-count">{counts[t.id]}</span>}
+              </button>
+            ))}
+          </nav>
+          <label className="dk-search">
+            <DIcon.Search size={13} />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Search ${tab}`} aria-label={`Search ${tab}`} />
+            {query && <button type="button" className="dk-search-x" onClick={() => setQuery('')} aria-label="Clear search"><DIcon.Close size={11} /></button>}
+          </label>
+        </div>
+        <div className={`dk-body ${tab === 'containers' && selected ? 'has-detail' : ''}`}>
+          <div className="dk-list">
+            {tab === 'containers' && <ContainersPanel {...common} containers={containers} stats={data.stats}
+              selectedId={selectedId} onSelect={(id) => setSelectedId((cur) => (cur === id ? null : id))} />}
+            {tab === 'compose' && <ComposePanel {...common} projects={resources.compose} error={data.resourceErrors.compose} onSelectContainer={openContainer} />}
+            {['images', 'volumes', 'networks'].includes(tab) && (
+              <ResourcesPanel {...common} kind={tab} rows={resources[tab]} error={data.resourceErrors[tab]} />
+            )}
+          </div>
+          {tab === 'containers' && selected && (
+            <ContainerDetail key={selected.id} container={selected} stat={data.stats[selected.shortId]}
+              history={data.history[selected.shortId]} busy={data.busy} run={data.run} onClose={() => setSelectedId(null)} />
+          )}
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
-      <WindowTitle
-        icon={<Icon.Tools size={14} />}
-        label={win.title || 'Containers'}
-      />
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        {renderContent()}
+      <WindowTitle icon={<DIcon.Whale size={14} />} label={win.title || 'Docker'} />
+      <div className="dk-root">
+        {body}
+        <Toast toast={data.toast} onDismiss={data.dismissToast} />
       </div>
     </>
   );
 }
 
-// In standard agent-added files, make sure the default export matches if needed, though vite glob imports handle named exports just fine for Windows.
 export default ContainersWindow;

@@ -86,7 +86,7 @@ test('Source filter shows raw code instead of rendered markdown', async () => {
   // Rendered by default: the `#` line is consumed as a heading.
   expect(container.querySelector('pre')).toBeNull();
 
-  fireEvent.click(screen.getByRole('button', { name: 'Source' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Show raw source', hidden: true }));
   expect(onUpdate).toHaveBeenCalledWith({ sourceView: true });
 
   rerender(<DocWindow
@@ -101,5 +101,5 @@ test('Source filter shows raw code instead of rendered markdown', async () => {
   const pre = container.querySelector('pre');
   expect(pre.textContent).toContain('# not a heading');
   expect(pre.textContent).toContain('const a = 1;');
-  expect(screen.getByRole('button', { name: 'Rendered' })).toBeInTheDocument();
+  expect(screen.getByRole('menuitem', { name: 'Show rendered markdown', hidden: true })).toBeInTheDocument();
 });

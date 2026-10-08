@@ -1,4 +1,5 @@
 import { deriveRegistryEntry } from './windowMeta.js';
+import { normalizeDefaultSize } from './windowSizeClasses.js';
 import { isIntegrationManifest, normalizeIntegration } from './windowIntegrationTypes.js';
 import { OPS_WINDOW_MANIFESTS } from './manifest/opsWindows.js';
 import { CORE_WINDOW_MANIFESTS } from './manifest/coreWindows.js';
@@ -55,8 +56,12 @@ export const WINDOW_REGISTRY = Object.freeze(WINDOW_MANIFESTS.reduce((acc, manif
   return acc;
 }, {}));
 
+// Opening sizes, snapped to the shared size classes (src/lib/windowSizeClasses.js).
 export const DEFAULT_WINDOW_SIZES = Object.freeze(Object.fromEntries(
-  Object.entries(WINDOW_REGISTRY).map(([kind, config]) => [kind, Object.freeze({ ...config.defaultSize })])
+  Object.entries(WINDOW_REGISTRY).map(([kind, config]) => [
+    kind,
+    Object.freeze(normalizeDefaultSize(config.defaultSize, config.sizeClass)),
+  ])
 ));
 
 export const LEGACY_KIND_TO_CANVAS_TYPE = Object.freeze(Object.fromEntries(
@@ -141,11 +146,10 @@ export function getWindowIntegration(kindOrType) {
 }
 
 export function getDefaultWindowSize(kindOrType) {
-  const regEntry = WINDOW_REGISTRY[kindOrType];
-  if (regEntry) return { ...regEntry.defaultSize };
+  if (DEFAULT_WINDOW_SIZES[kindOrType]) return { ...DEFAULT_WINDOW_SIZES[kindOrType] };
   const manifest = getWindowManifest(kindOrType);
   return manifest?.defaultSize
-    ? { ...manifest.defaultSize }
+    ? normalizeDefaultSize(manifest.defaultSize, manifest.sizeClass)
     : { ...FALLBACK_WINDOW_SIZE };
 }
 

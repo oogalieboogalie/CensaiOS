@@ -40,32 +40,32 @@ export function ScoutPanel({ workspaceId, onScouted }) {
         value={area}
         onChange={(e) => setArea(e.target.value)}
         placeholder="Area — e.g. Waverly, IA"
-        style={{ all: 'unset', border: '1px solid var(--hairline)', borderRadius: 7, padding: '5px 9px', fontSize: 12, color: 'var(--ink)', background: 'var(--surface-2)' }}
+        style={{ all: 'unset', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '5px 9px', fontSize: 'var(--text-sm)', color: 'var(--ink)', background: 'var(--surface-2)' }}
       />
       <input
         value={icp}
         onChange={(e) => setIcp(e.target.value)}
         placeholder="Ideal customer — e.g. 3–10 person teams doing open houses"
-        style={{ all: 'unset', border: '1px solid var(--hairline)', borderRadius: 7, padding: '5px 9px', fontSize: 12, color: 'var(--ink)', background: 'var(--surface-2)' }}
+        style={{ all: 'unset', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '5px 9px', fontSize: 'var(--text-sm)', color: 'var(--ink)', background: 'var(--surface-2)' }}
       />
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <label style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Top</label>
+        <label style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Top</label>
         <select
           value={topK}
           onChange={(e) => setTopK(Number(e.target.value))}
-          style={{ border: '1px solid var(--hairline)', borderRadius: 7, padding: '3px 6px', fontSize: 12, color: 'var(--ink)', background: 'var(--surface-2)' }}
+          style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '3px 6px', fontSize: 'var(--text-sm)', color: 'var(--ink)', background: 'var(--surface-2)' }}
         >
           {[1, 2, 3, 4, 5].map((k) => <option key={k} value={k}>{k}</option>)}
         </select>
         <button
           onClick={runScout}
           disabled={scouting || !area.trim()}
-          style={{ all: 'unset', cursor: scouting || !area.trim() ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 700, color: 'white', background: 'var(--accent)', borderRadius: 7, padding: '4px 14px', opacity: scouting || !area.trim() ? 0.5 : 1, marginLeft: 'auto' }}
+          style={{ all: 'unset', cursor: scouting || !area.trim() ? 'not-allowed' : 'pointer', fontSize: 'var(--text-sm)', fontWeight: 700, color: 'white', background: 'var(--accent)', borderRadius: 'var(--radius-md)', padding: '4px 14px', opacity: scouting || !area.trim() ? 0.5 : 1, marginLeft: 'auto' }}
         >
           {scouting ? 'Scouting…' : 'Run'}
         </button>
       </div>
-      {msg && <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>{msg}</div>}
+      {msg && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>{msg}</div>}
     </div>
   );
 }
