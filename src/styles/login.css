@@ -1,0 +1,313 @@
+/* Sign-in screen (src/components/Login.jsx). Tokens only: it follows the
+   active look, which is the censaiOS brand by default. */
+
+.hb-login {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  background-color: var(--bg);
+  /* The canvas dot grid, the same dots the mark is drawn from. */
+  background-image: radial-gradient(circle at center, var(--hairline) 1px, transparent 1.4px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+.hb-login-column {
+  width: 100%;
+  max-width: 360px;
+  margin: auto;
+  padding: var(--space-12) var(--space-4) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-8);
+  animation: hb-login-in var(--dur-slow) var(--ease-standard) both;
+}
+
+@keyframes hb-login-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.hb-login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+
+.hb-login-tagline {
+  margin: calc(var(--space-1) * -1) 0 0;
+  color: var(--ink-faint);
+  font-size: var(--text-base);
+}
+
+.hb-login-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-2);
+}
+
+.hb-login-provider {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 38px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: var(--text-md);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard);
+}
+
+.hb-login-provider:hover { border-color: var(--hairline-strong); }
+.hb-login-provider[data-active] { border-color: var(--accent-line); }
+.hb-login-provider:focus-visible,
+.hb-login-primary:focus-visible,
+.hb-login-ghost:focus-visible,
+.hb-login-footer > *:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+.hb-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.hb-login-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--ink-faint);
+  font-size: var(--text-xs);
+}
+
+.hb-login-divider::before,
+.hb-login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.hb-login-field {
+  display: grid;
+  gap: var(--space-1-5);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.hb-login-field input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-md);
+  font-weight: 400;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.hb-login-field input::placeholder { color: var(--ink-faint); }
+.hb-login-field input:focus {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-20);
+}
+
+.hb-login-primary {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease-standard);
+}
+
+.hb-login-primary:hover { opacity: 0.9; }
+.hb-login-primary:disabled { opacity: 0.6; cursor: progress; }
+
+.hb-login-note {
+  color: var(--ink-faint);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.hb-login-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.hb-login-error {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--status-danger-20);
+  border-radius: var(--radius-md);
+  background: var(--status-danger-10);
+  color: var(--status-danger);
+  font-size: var(--text-sm);
+}
+
+.hb-login-footer {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-6);
+  font-size: var(--text-sm);
+}
+
+.hb-login-footer > * {
+  all: unset;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+.hb-login-footer > *:hover { color: var(--ink); }
+
+/* Privacy dialog */
+.hb-login-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: var(--scrim);
+}
+
+.hb-login-dialog {
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-3);
+  color: var(--ink);
+}
+
+.hb-login-dialog-head,
+.hb-login-dialog-foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+}
+
+.hb-login-dialog-head { border-bottom: 1px solid var(--hairline); }
+.hb-login-dialog-foot { border-top: 1px solid var(--hairline); justify-content: flex-end; }
+.hb-login-dialog-head h3 { margin: 0; font-size: var(--text-lg); font-weight: 600; }
+.hb-login-dialog-head p { margin: var(--space-1) 0 0; color: var(--ink-faint); font-size: var(--text-sm); }
+
+.hb-login-ghost {
+  all: unset;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.hb-login-ghost:hover { color: var(--ink); border-color: var(--hairline-strong); }
+
+.hb-login-dialog-body {
+  overflow-y: auto;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  font-size: var(--text-md);
+  line-height: 1.6;
+}
+
+.hb-login-dialog-body h4 { margin: 0 0 var(--space-1); font-size: var(--text-base); font-weight: 600; }
+.hb-login-dialog-body p { margin: 0; color: var(--ink-soft); }
+.hb-login-dialog-body code {
+  padding: 1px var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.hb-login-callout {
+  padding: var(--space-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.hb-login-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.hb-login-links a { color: var(--accent-ink); }
+
+.hb-login-providers {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.hb-login-providers li {
+  padding: var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+.hb-login-providers li > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.hb-login-tag {
+  color: var(--ink-faint);
+  font-size: var(--text-xs);
+}

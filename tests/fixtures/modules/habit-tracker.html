@@ -1,0 +1,45 @@
+<!-- module {"request": "a habit tracker", "manifest": {"name": "Habit tracker", "description": "Check off habits by day and keep streaks.", "icon": "Check", "size": {"w": 520, "h": 420}, "permissions": []}} -->
+<div class="stack" style="gap: var(--space-3)">
+  <div class="spread"><h2>Habits</h2><form class="row" id="add" style="width: 260px"><input id="habit" placeholder="New habit"><button type="submit">Add</button></form></div>
+  <table><thead id="head"></thead><tbody id="rows"></tbody></table>
+</div>
+<style>
+  td.cell { text-align: center; padding: var(--space-1); }
+  .tick { width: 24px; height: 24px; min-height: 24px; padding: 0; border-radius: var(--radius-xs); }
+  .tick[aria-pressed="true"] { background: var(--accent); border-color: transparent; color: var(--on-fill); }
+</style>
+<script>
+  const DAYS = 7;
+  const key = (d) => d.toISOString().slice(0, 10);
+  const days = Array.from({ length: DAYS }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (DAYS - 1) + i); return d; });
+  let data = censai.storage.get('habits', { list: ['Call 5 past clients', 'Post a listing', 'Walk 30 minutes'], done: {} });
+  const $ = (id) => document.getElementById(id);
+  function save() { censai.storage.set('habits', data); render(); }
+  function streak(h) { let n = 0; const d = new Date(); while (data.done[h + '|' + key(d)]) { n += 1; d.setDate(d.getDate() - 1); } return n; }
+  function render() {
+    $('head').innerHTML = '<tr><th>Habit</th>' + days.map((d) => `<th style="text-align:center">${d.toLocaleDateString(undefined, { weekday: 'narrow' })}</th>`).join('') + '<th style="text-align:right">Streak</th><th></th></tr>';
+    $('rows').innerHTML = '';
+    if (!data.list.length) $('rows').innerHTML = '<tr><td class="faint" colspan="10">Add a habit to start a streak.</td></tr>';
+    data.list.forEach((h) => {
+      const tr = document.createElement('tr');
+      const name = document.createElement('td'); name.textContent = h; tr.appendChild(name);
+      days.forEach((d) => {
+        const td = document.createElement('td'); td.className = 'cell';
+        const b = document.createElement('button'); b.className = 'tick';
+        const k = h + '|' + key(d);
+        b.setAttribute('aria-pressed', String(Boolean(data.done[k])));
+        b.setAttribute('aria-label', h + ' on ' + d.toDateString());
+        b.innerHTML = data.done[k] ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 6.5l2.5 2.5 4.5-6"/></svg>' : '';
+        b.onclick = () => { data.done = { ...data.done }; if (data.done[k]) delete data.done[k]; else data.done[k] = true; save(); };
+        td.appendChild(b); tr.appendChild(td);
+      });
+      const s = document.createElement('td'); s.className = 'num'; s.style.textAlign = 'right'; s.textContent = streak(h) + 'd'; tr.appendChild(s);
+      const rm = document.createElement('td'); const x = document.createElement('button'); x.className = 'ghost danger'; x.textContent = 'Remove';
+      x.onclick = () => { data.list = data.list.filter((y) => y !== h); save(); }; rm.appendChild(x); tr.appendChild(rm);
+      $('rows').appendChild(tr);
+    });
+  }
+  $('add').onsubmit = (e) => { e.preventDefault(); const h = $('habit').value.trim(); if (!h || data.list.includes(h)) return; data.list = [...data.list, h]; $('habit').value = ''; save(); };
+  censai.storage.onChange((k, v) => { if (k === 'habits' && v) { data = v; render(); } });
+  render();
+</script>

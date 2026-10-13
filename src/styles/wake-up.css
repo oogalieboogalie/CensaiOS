@@ -1,0 +1,55 @@
+/* The board wakes up: the "Try this" window, and the glide the three welcome
+   windows play once when they land. Tokens only. */
+.hb-try {
+  flex: 1; min-height: 0; overflow: auto;
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  background: var(--surface); color: var(--ink); font-family: var(--font-sans);
+}
+.hb-try-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.hb-try-step {
+  all: unset; box-sizing: border-box; width: 100%; cursor: pointer;
+  display: flex; align-items: center; gap: var(--space-2-5);
+  padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-lg);
+  color: var(--ink-faint);
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+.hb-try-step:hover { background: var(--surface-2); color: var(--ink); }
+.hb-try-step:focus-visible { outline: 2px solid var(--accent-soft); }
+.hb-try-mark {
+  flex: none; width: 22px; height: 22px; border-radius: var(--radius-full);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--hairline); color: var(--ink-soft);
+  font-family: var(--font-mono); font-size: var(--text-xs);
+}
+.hb-try-step[data-done="true"] .hb-try-mark { background: var(--accent); border-color: transparent; color: var(--accent-contrast); }
+.hb-try-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.hb-try-title { font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
+.hb-try-step[data-done="true"] .hb-try-title { color: var(--ink-soft); }
+.hb-try-detail { font-size: var(--text-xs); color: var(--ink-faint); line-height: 1.4; }
+.hb-try-foot {
+  margin-top: auto; padding-top: var(--space-2); border-top: 1px solid var(--hairline);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2-5);
+  font-size: var(--text-xs); color: var(--ink-faint);
+}
+.hb-try-clear {
+  all: unset; box-sizing: border-box; cursor: pointer;
+  padding: var(--space-1) var(--space-3); border-radius: var(--radius-full);
+  border: 1px solid var(--hairline); color: var(--ink); font-size: var(--text-xs); font-weight: 600;
+}
+.hb-try-clear:hover { background: var(--surface-2); }
+.hb-try-clear:focus-visible { outline: 2px solid var(--accent-soft); }
+
+/* The glide: each welcome window rises into place, one after another. The
+   frame's own transform places it on the board, so this moves `translate`,
+   which stacks on top of it. */
+@keyframes hb-wake-glide {
+  from { translate: 0 40px; opacity: 0; }
+  to { translate: 0 0; opacity: 1; }
+}
+[data-win-frame][data-wake-up] { animation: hb-wake-glide calc(var(--dur-slow) * 2) var(--ease-standard) both; }
+[data-win-frame][data-wake-up="2"] { animation-delay: 160ms; }
+[data-win-frame][data-wake-up="3"] { animation-delay: 320ms; }
+@media (prefers-reduced-motion: reduce) {
+  [data-win-frame][data-wake-up] { animation: none; }
+}

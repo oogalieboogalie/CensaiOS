@@ -1,0 +1,29 @@
+/* Teleprompter: the window, its scrolling reader, and the pop-out page. Tokens only. */
+.hb-teleprompter { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); color: var(--ink); }
+.hb-teleprompter-note { margin: 0; padding: var(--space-1-5) var(--space-3); border-bottom: 1px solid var(--hairline); color: var(--ink-soft); font-size: var(--text-xs); }
+.hb-teleprompter-edit { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); }
+.hb-teleprompter-input { flex: 1; min-height: 0; box-sizing: border-box; width: 100%; padding: var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-2); color: var(--ink); font: inherit; font-size: var(--text-lg); line-height: 1.6; resize: none; }
+.hb-teleprompter-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent-line); }
+.hb-teleprompter-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.hb-teleprompter-hint { color: var(--ink-faint); font-size: var(--text-xs); }
+
+.hb-prompter { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); outline: none; }
+.hb-prompter-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; container-type: size; }
+.hb-prompter-scroll::-webkit-scrollbar { display: none; }
+.hb-prompter-scroll[data-mirror="true"] { transform: scaleX(-1); }
+/* Words start on the reading line (a quarter down, near the camera) and can scroll all the way past it. */
+.hb-prompter-text { box-sizing: border-box; padding: 25cqh var(--space-6) 80cqh; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--prompter-size, 40px); font-weight: 600; line-height: 1.35; color: var(--ink); text-align: center; }
+.hb-prompter-line { position: absolute; left: 0; right: 0; top: 25%; height: 0; pointer-events: none; }
+.hb-prompter-line::before, .hb-prompter-line::after { content: ""; position: absolute; top: -2px; width: var(--space-4); border-top: 4px solid var(--accent); }
+.hb-prompter-line::before { left: 0; border-radius: 0 var(--radius-full) var(--radius-full) 0; }
+.hb-prompter-line::after { right: 0; border-radius: var(--radius-full) 0 0 var(--radius-full); }
+.hb-prompter-bar { display: flex; align-items: center; gap: var(--space-1-5); flex-wrap: wrap; padding: var(--space-1-5) var(--space-2); border-top: 1px solid var(--hairline); background: var(--surface-2); }
+.hb-prompter-group { display: inline-flex; align-items: center; gap: var(--space-1); }
+.hb-prompter-value { min-width: var(--space-14); text-align: center; font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-prompter-btn { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-0-5) var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-sm); color: var(--ink); font-size: var(--text-xs); cursor: pointer; }
+.hb-prompter-btn:hover { border-color: var(--accent-line); }
+.hb-prompter-btn:focus-visible { outline: 2px solid var(--accent-soft); }
+.hb-prompter-btn[data-primary="true"], .hb-prompter-btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-fill); }
+
+/* The pop-out page: the reader fills the whole little window. */
+.hb-teleprompter-page { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--surface); }

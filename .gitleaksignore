@@ -1,0 +1,5 @@
+# These are exact historical fingerprints, not path or rule exclusions.
+# The Rook gateway credential was removed and rotated on 2026-07-16.
+28862b144c759fbc6038c8832ac5ba7db49e7589:src/components/RookWindow.jsx:generic-api-key:6
+# This value is a localStorage namespace, not a credential.
+9325c665aaa7a40f114ae2379b8adcd117c0da5a:src/lib/api/storage.js:generic-api-key:6

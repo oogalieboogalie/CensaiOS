@@ -1,0 +1,57 @@
+/* VM windows. Tokens only, so every look applies. */
+.hb-vm { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface-sunken); color: var(--ink); font-family: var(--font-sans); overflow: hidden; }
+.hb-vm-screen { position: absolute; inset: 0; outline: none; background: var(--surface-sunken); }
+.hb-vm-screen[hidden] { display: none; }
+/* noVNC centres its canvas in the screen element; keep that box exact. */
+.hb-vm-screen > div { background: transparent !important; }
+.hb-vm-screen canvas { outline: none; }
+
+.hb-vm-center { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-5); font-size: var(--text-sm); }
+.hb-vm-scroll { overflow-y: auto; place-items: start center; }
+.hb-vm-scroll > .hb-vm-card { margin: auto 0; }
+.hb-vm-card { width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-lg); box-shadow: var(--elevation-1); }
+.hb-vm-title { font-size: var(--text-md); font-weight: 600; color: var(--ink); }
+.hb-vm-body { margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--ink-soft); }
+.hb-vm-muted { margin: 0; font-size: var(--text-xs); line-height: 1.5; color: var(--ink-faint); }
+.hb-vm-error { margin: 0; padding: var(--space-2) var(--space-2-5); border-radius: var(--radius-sm); border: 1px solid var(--hairline); background: var(--surface-2); font-size: var(--text-sm); line-height: 1.45; color: var(--danger); }
+.hb-vm-foot { margin: 0; padding-top: var(--space-3); border-top: 1px solid var(--hairline); font-size: var(--text-xs); line-height: 1.5; color: var(--ink-faint); }
+
+.hb-vm-row { display: flex; gap: var(--space-2); }
+.hb-vm-field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.hb-vm-grow { flex: 1; }
+.hb-vm-port { width: 88px; flex: none; }
+.hb-vm-label { font-family: var(--font-label); font-size: var(--text-xs); text-transform: var(--label-case); letter-spacing: var(--label-tracking); color: var(--ink-faint); }
+.hb-vm-optional { text-transform: none; letter-spacing: 0; color: var(--ink-faint); opacity: 0.8; }
+.hb-vm-input { all: unset; box-sizing: border-box; width: 100%; min-height: 30px; padding: 0 var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-2); font-family: var(--font-mono); font-size: var(--text-sm); color: var(--ink); }
+.hb-vm-input::placeholder { color: var(--ink-faint); }
+.hb-vm-input:focus { border-color: var(--accent-line); }
+.hb-vm-textarea { min-height: 96px; padding: var(--space-2) var(--space-2-5); white-space: pre-wrap; resize: vertical; }
+.hb-vm-checks { display: flex; flex-wrap: wrap; gap: var(--space-1-5) var(--space-4); }
+.hb-vm-check { display: inline-flex; align-items: center; gap: var(--space-1-5); font-size: var(--text-xs); color: var(--ink-soft); cursor: pointer; }
+.hb-vm-check input { margin: 0; accent-color: var(--accent); }
+.hb-vm-actions { display: flex; align-items: center; gap: var(--space-2); }
+.hb-vm-link { all: unset; margin-left: auto; font-size: var(--text-xs); color: var(--accent-text); cursor: pointer; }
+.hb-vm-link:hover { text-decoration: underline; }
+.hb-vm-link:focus-visible { outline: 2px solid var(--accent-soft); border-radius: var(--radius-sm); }
+
+.hb-vm-help { display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-vm-tabs { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-2); align-self: flex-start; }
+.hb-vm-tab { all: unset; padding: var(--space-1) var(--space-2); border-radius: var(--radius-xs); font-size: var(--text-xs); color: var(--ink-soft); cursor: pointer; }
+.hb-vm-tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--elevation-1); }
+.hb-vm-tab:focus-visible { outline: 2px solid var(--accent-soft); }
+.hb-vm-code { margin: 0; padding: var(--space-2) var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-sunken); font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+
+.hb-vm-watch { position: absolute; inset: 0; display: grid; place-items: center; background: var(--surface-sunken); }
+.hb-vm-watch-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.hb-vm-watch-img[data-stale="true"] { opacity: 0.5; }
+.hb-vm-bar { position: absolute; left: 50%; bottom: var(--space-3); transform: translateX(-50%); display: inline-flex; align-items: center; gap: var(--space-2-5); padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-full); box-shadow: var(--elevation-1); font-size: var(--text-sm); white-space: nowrap; }
+.hb-vm-bar .hb-btn { border-radius: var(--radius-full); min-height: 24px; }
+.hb-vm-dot { width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--ink-faint); }
+.hb-vm-dot[data-live="true"] { background: var(--success); }
+
+.hb-vm-hint { position: absolute; left: 50%; bottom: var(--space-2); transform: translateX(-50%); padding: var(--space-1) var(--space-2-5); border-radius: var(--radius-full); background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--elevation-1); font-size: var(--text-xs); color: var(--ink-soft); pointer-events: none; white-space: nowrap; }
+
+.hb-vm-sheet { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: var(--space-2-5); padding: var(--space-3) var(--space-4) var(--space-4); background: var(--surface); border-top: 1px solid var(--hairline); box-shadow: var(--elevation-2); }
+.hb-vm-sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.hb-vm-icon-btn { all: unset; box-sizing: border-box; width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: var(--radius-sm); color: var(--ink-soft); cursor: pointer; }
+.hb-vm-icon-btn:hover { background: var(--surface-2); color: var(--ink); }

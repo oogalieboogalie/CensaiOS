@@ -1,0 +1,18 @@
+/* YorWare 3D Editor: undo the module base kit (made for small generated
+   modules) so the three.js editor looks the way its own stylesheet says.
+   The editor's main.css comes right after this file and wins where it sets
+   a property; `revert` drops the base kit everywhere else. */
+body { padding: 0; margin: 0; overflow: hidden; line-height: normal; }
+:root:root { color-scheme: light; }
+:root:root.yor-dark { color-scheme: dark; }
+button, input, select, textarea {
+  font: revert; color: revert; background: revert; border: revert; border-radius: revert;
+  padding: revert; min-height: revert; width: revert; transition: revert; cursor: revert;
+}
+button:hover { border-color: revert; }
+button:disabled { opacity: revert; cursor: revert; }
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: revert; outline-offset: revert; border-color: revert; }
+table { width: revert; border-collapse: revert; }
+th, td { text-align: revert; padding: revert; border-bottom: revert; }
+h1, h2, h3, p { margin: revert; font-weight: revert; letter-spacing: revert; font-size: revert; }
+.yor-note { padding: 12px 0; color: #888; line-height: 1.5; max-width: 260px; }

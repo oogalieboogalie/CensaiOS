@@ -1,0 +1,70 @@
+/* Live lessons (spec 12): the instructor's Classroom window and the
+   student's lesson panel. Tokens only, so every look applies. */
+.hb-class { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); color: var(--ink); font-family: var(--font-sans); font-size: var(--text-sm); }
+.hb-class-scroll { flex: 1; min-height: 0; overflow: auto; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+.hb-class-head { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--hairline); }
+.hb-class-title { font-size: var(--text-md); font-weight: 600; }
+.hb-class-meta { color: var(--ink-faint); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.hb-class-spacer { flex: 1; }
+.hb-class-label { font-family: var(--font-label); font-size: var(--text-xs); text-transform: var(--label-case); letter-spacing: var(--label-tracking); color: var(--ink-faint); }
+.hb-class-note { margin: 0; color: var(--ink-soft); font-size: var(--text-xs); line-height: 1.5; }
+
+.hb-class-form { display: grid; gap: var(--space-3); max-width: 520px; }
+.hb-class-field { display: grid; gap: var(--space-1-5); }
+.hb-class-input { box-sizing: border-box; width: 100%; padding: var(--space-2) var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink); font: inherit; font-size: var(--text-sm); }
+.hb-class-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent-line); }
+textarea.hb-class-input { min-height: 96px; resize: vertical; line-height: 1.5; }
+.hb-class-row { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.hb-class-row > * { flex: 1; min-width: 140px; }
+.hb-class-seg { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-2); }
+.hb-class-seg button { all: unset; padding: var(--space-1) var(--space-2-5); border-radius: var(--radius-xs); font-size: var(--text-xs); color: var(--ink-soft); cursor: pointer; }
+.hb-class-seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--elevation-1); }
+.hb-class-seg button[disabled] { opacity: 0.45; cursor: default; }
+.hb-class-error { color: var(--danger); font-size: var(--text-xs); }
+
+.hb-class-codes { display: flex; flex-wrap: wrap; gap: var(--space-1-5); }
+.hb-class-code { font-family: var(--font-mono); font-size: var(--text-xs); padding: 2px var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-xs); background: var(--surface-2); }
+.hb-class-code[data-used="true"] { color: var(--ink-faint); text-decoration: line-through; }
+
+.hb-class-queue { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-2) var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-2); }
+.hb-class-queue-item { display: inline-flex; align-items: center; gap: var(--space-1-5); padding: 2px 2px 2px var(--space-2); border-radius: var(--radius-full); background: var(--surface); border: 1px solid var(--hairline); font-size: var(--text-xs); }
+.hb-class-queue-item .hb-btn { min-height: 20px; padding: 0 var(--space-2); border-radius: var(--radius-full); font-size: var(--text-xs); }
+
+.hb-class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); }
+.hb-class-tile { display: flex; flex-direction: column; border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); overflow: hidden; }
+.hb-class-tile[data-hand="true"] { border-color: var(--accent-line); }
+.hb-class-thumb { all: unset; position: relative; display: block; aspect-ratio: 16 / 10; background: var(--canvas); border-bottom: 1px solid var(--hairline); cursor: pointer; }
+.hb-class-thumb:hover { outline: 2px solid var(--accent-soft); outline-offset: -2px; }
+.hb-class-thumb svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hb-class-thumb-win { fill: var(--surface); stroke: var(--hairline-strong); }
+.hb-class-thumb-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-class-tile-body { display: grid; gap: var(--space-2); padding: var(--space-2) var(--space-2-5) var(--space-2-5); }
+.hb-class-tile-name { display: flex; align-items: center; gap: var(--space-1-5); font-weight: 600; min-width: 0; }
+.hb-class-tile-name span:first-of-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-class-dot { flex: none; width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--accent); }
+.hb-class-hand { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-1); color: var(--accent-ink); font-size: var(--text-xs); font-weight: 600; }
+.hb-class-bar { height: 4px; border-radius: var(--radius-full); background: var(--surface-2); overflow: hidden; }
+.hb-class-bar > span { display: block; height: 100%; background: var(--accent); transition: width var(--dur-base) var(--ease-standard); }
+.hb-class-steps { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.hb-class-step { all: unset; display: inline-flex; align-items: center; gap: var(--space-1); padding: 1px var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-full); font-size: var(--text-xs); color: var(--ink-faint); cursor: default; max-width: 100%; }
+.hb-class-step[data-state="done"] { color: var(--ink); border-color: var(--accent-30); background: var(--accent-soft-10); cursor: pointer; }
+.hb-class-step[data-state="done"]:hover { border-color: var(--accent-line); }
+.hb-class-step[data-state="approved"] { color: var(--accent-contrast); background: var(--accent); border-color: transparent; cursor: pointer; }
+.hb-class-step span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+.hb-class-tile-actions { display: flex; flex-wrap: wrap; gap: var(--space-1-5); }
+.hb-class-tile-actions .hb-btn { min-height: 24px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+
+/* Student side */
+.hb-lesson-panel { position: fixed; top: 60px; left: 12px; z-index: 340; width: min(300px, calc(100vw - 24px)); max-height: calc(100vh - 80px); overflow: auto; display: grid; gap: var(--space-2); padding: var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-lg); box-shadow: var(--elevation-2); color: var(--ink); font-family: var(--font-ui); font-size: var(--text-sm); }
+.hb-lesson-step { display: grid; grid-template-columns: auto 1fr; gap: var(--space-1) var(--space-2); align-items: start; padding: var(--space-2); border-radius: var(--radius-sm); }
+.hb-lesson-step:hover { background: var(--surface-2); }
+.hb-lesson-step input { margin: 2px 0 0; accent-color: var(--accent); }
+.hb-lesson-stamp { grid-column: 2; display: inline-flex; align-items: center; gap: var(--space-1); justify-self: start; padding: 1px var(--space-2); border-radius: var(--radius-full); background: var(--accent); color: var(--accent-contrast); font-size: var(--text-xs); font-weight: 600; }
+.hb-lesson-waiting { grid-column: 2; color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-lesson-note { grid-column: 2; color: var(--ink-soft); font-size: var(--text-xs); }
+.hb-lesson-stream { position: fixed; right: 12px; bottom: 12px; z-index: 340; width: min(380px, calc(100vw - 24px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-lg); box-shadow: var(--elevation-2); overflow: hidden; }
+.hb-lesson-stream-head { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1-5) var(--space-1-5) var(--space-1-5) var(--space-3); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-lesson-stream-head .hb-btn { min-height: 22px; padding: 0 var(--space-2); font-size: var(--text-xs); margin-left: auto; }
+.hb-lesson-stream iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: var(--surface-sunken); }
+.hb-follow-chip { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 360; display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1-5) var(--space-1-5) var(--space-1-5) var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-full); box-shadow: var(--elevation-2); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-follow-chip .hb-btn { min-height: 24px; border-radius: var(--radius-full); font-size: var(--text-xs); }

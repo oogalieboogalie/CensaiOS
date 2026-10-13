@@ -1,0 +1,30 @@
+/* Agent memory: the "Memory" panel over a chat window. Builds on the Share
+   panel's pieces (agent-endpoints.css) so all chat panels look the same. */
+.hb-amem-pad { padding: var(--pad-3) var(--pad-4); }
+.hb-amem-tabs { padding: 0 var(--pad-4); }
+.hb-amem-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-amem-fact,
+.hb-amem-episode {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+}
+.hb-amem-fact-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.hb-amem-attr { display: inline-block; font-weight: 600; }
+.hb-amem-attr::first-letter { text-transform: uppercase; }
+.hb-amem-of { color: var(--ink-faint); font-weight: 400; }
+.hb-amem-value { color: var(--ink); font-weight: 600; }
+.hb-amem-fact .hb-amem-value { color: var(--accent); }
+.hb-amem-history { list-style: none; margin: 0; padding: 0 0 0 var(--space-2); border-left: 2px solid var(--hairline); display: flex; flex-direction: column; gap: var(--space-1-5); }
+.hb-amem-version { display: flex; flex-direction: column; gap: var(--space-0-5); }
+.hb-amem-version[data-state='replaced'] .hb-amem-value,
+.hb-amem-version[data-state='replaced'] .hb-amem-core-old { color: var(--ink-faint); text-decoration: line-through; }
+.hb-amem-version[data-state='past'] .hb-amem-value { color: var(--ink-soft); }
+.hb-amem-core { resize: vertical; min-height: 96px; font-family: inherit; line-height: 1.5; }
+.hb-amem-core-old { white-space: pre-wrap; font-size: var(--text-xs); }
+.hb-amem-summary { font-size: var(--text-sm); line-height: 1.5; color: var(--ink); }
+.hb-amem-since { display: flex; align-items: center; gap: var(--space-2); }
+.hb-amem-date { flex: none; width: auto; }

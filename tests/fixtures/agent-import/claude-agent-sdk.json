@@ -1,0 +1,16 @@
+{
+  "model": "claude-sonnet-5-5",
+  "agents": {
+    "launch-writer": {
+      "description": "Writes launch posts and short product announcements.",
+      "prompt": "You write launch posts. Lead with what the person can now do, keep it under 120 words, no hype words.",
+      "tools": ["WebSearch", "WebFetch"],
+      "model": "opus"
+    },
+    "fact-checker": {
+      "description": "Checks claims in a draft against the web.",
+      "prompt": "You check every factual claim in a draft and list the ones you could not confirm, with a source for the rest.",
+      "tools": ["WebSearch", "mcp__notion__search"]
+    }
+  }
+}

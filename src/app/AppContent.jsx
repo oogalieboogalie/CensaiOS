@@ -1,0 +1,290 @@
+import React from 'react';
+import { useGroupTileReconcile } from './hooks/useGroupTileReconcile.js';
+import { useWorkspaceStore } from '../lib/store.js';
+import { Canvas } from '../components/Canvas.jsx';
+import { Chrome } from '../components/Chrome.jsx';
+import { MultiGroupDock, DEFAULT_GROUPS } from '../components/Dock.jsx';
+import { Icon } from '../components/Icons.jsx';
+import { inferLayout, cleanLayout, fitGroupToLayout, getGroupInnerBounds, makeGroupBoundsForWindows } from '../lib/layoutAlgo.js';
+import { MIN_ZOOM, computeFitView, clusterWindows, boundsForItems, computeFitBounds } from '../lib/canvasMath.js';
+import { getCanvasObjectType, legacyKindForCanvasType } from '../lib/canvasObjectTypes.js';
+import { DEFAULT_WINDOW_SIZES, getDefaultWindowSize } from '../lib/windowManifest.js';
+import { withoutUnsupportedWindows, DEFAULT_HTML_PREVIEW } from '../lib/appUtils.js';
+import { applyAllowListToInitial } from '../lib/workspace/allowList.js';
+import { raiseWindow } from '../lib/windowStacking.js';
+import { loadCamera, saveCamera } from '../lib/cameraMemory.js';
+import {
+  getChromeWindowControlState,
+  runChromeCloseAction,
+  runChromeMaximizeAction,
+  runChromeMinimizeAction,
+} from './chromeWindowControls.js';
+import { Toolbar } from './Toolbar.jsx';
+import { Hud } from './Hud.jsx';
+import { AgentRunToasts } from '../components/AgentRunToasts.jsx';
+import { AgentMailToasts } from '../components/AgentMailToasts.jsx';
+import SystemStatusWidget from '../components/status/SystemStatusWidget.jsx';
+import { useAppActions } from './hooks/useAppActions.js';
+import { useAppBootstrap } from './hooks/useAppBootstrap.js';
+import { useAppCollaboration } from './hooks/useAppCollaboration.js';
+import { useAppPresets } from './hooks/useAppPresets.js';
+import { usePresetBootstrap } from './hooks/usePresetBootstrap.js';
+import { useWorkspaceHistory } from './hooks/useWorkspaceHistory.js';
+import { useWorkspaceDraft } from './hooks/useWorkspaceDraft.js';
+import { useAppKeyboard } from './hooks/useAppKeyboard.js';
+import { useGroupHotkeys } from './hooks/useGroupHotkeys.js';
+import { GroupFocusBar, useGroupFocusView } from './GroupFocusBar.jsx'; import { PresentMode } from './present/PresentMode.jsx';
+import { invertBindings } from '../lib/groupHotkeys.js';
+import { useSettingsWindow } from './hooks/useSettingsWindow.js';
+import { Login } from '../components/Login.jsx';
+import { SovereignAccessGate } from '../components/SovereignAccessGate.jsx';
+import { useKeyGate } from './hooks/useKeyGate.js';
+import { WorkspaceRecovery, PersistencePill, DraftRestoreBar } from '../components/WorkspaceRecovery.jsx';
+import { CommentPins } from '../components/comments/CommentPins.jsx';
+import { OwnerShareLayer } from '../components/guest/OwnerShareLayer.jsx';
+import { BoardHistoryPanel } from '../components/history/BoardHistoryPanel.jsx';
+
+export function AppContent() {
+  const {
+    initial, dataLoading, isInitialized, setIsInitialized, session, sessionChecking,
+    sessionLoad, workspaceLoad, workspaceRevision, setWorkspaceRevision, retryWorkspaceLoad,
+  } = useAppBootstrap();
+  const keyGate = useKeyGate(session);
+
+  const {
+    wins, setWins,
+    canvasGroups, setCanvasGroups,
+    paths, setPaths,
+    links, setLinks,
+    activeTool, setActiveTool,
+    penColor, setPenColor,
+    penSize, setPenSize,
+    penMode, setPenMode,
+    activeId, setActiveId,
+    selectedIds, setSelectedIds,
+    dockOffset, setDockOffset, setDock,
+    groups, setGroups,
+    focusMode, setFocusMode,
+    extraAgents, setExtraAgents,
+    currentProject, setCurrentProject,
+    workspaceId, setWorkspaceId,
+    pan, setPan,
+    zoom, setZoom,
+    presets, setPresets,
+    sidebarFavorites, setSidebarFavorites,
+    windowAllowList, setWindowAllowList,
+    // Store named actions
+    createLink, deleteLink,
+    fitView, jumpToNearestCluster,
+    onDragAgent,
+    onNewAgent, onNewTerminal, onNewHtmlPreview, onNewWindow, onNewWorkflow, onSpawnRook, onNewMailcow, onNewVex,
+    openLocalProject, moveGroup, dockWindow, undockWindow, setGroupSeam, showGroupTab,
+  } = useWorkspaceStore();
+
+  const { spawnAt, spawnGroup, onUpdate, onUpdateGroup, resizeGroup, deleteWindows, onCloseGroup, onClose, createAgent } = useAppActions();
+  const { saveAsPreset, loadPreset, deletePreset, saveGroupPreset, loadGroupPreset, deleteGroupPreset, setGroupDefaultPreset, autoArrangeGroup } = useAppPresets();
+  const { undo, redo } = useWorkspaceHistory(isInitialized);
+  const openSettings = useSettingsWindow({ wins, spawnAt, setActiveId, onUpdate });
+  const openSharing = React.useCallback(() => openSettings('sharing'), [openSettings]);
+  // Multitool dock AI button: focus the existing Censai chat or spawn one.
+  const openAiAgent = React.useCallback(() => {
+    const existing = wins.find((w) => w.kind === 'chat' || w.type === 'chat');
+    if (existing) { setActiveId(existing.id); return; }
+    spawnAt('chat', { agentId: 'censai', title: 'Censai' });
+  }, [wins, spawnAt, setActiveId]);
+
+  const { pendingDraft, restoreDraft, discardDraft, downloadDraft } = useWorkspaceDraft({
+    workspaceLoad, windowAllowList, setWindowAllowList, setWins, setCanvasGroups,
+    setPaths, setLinks, setPenColor, setPenSize, setPenMode, setDockOffset, setDock,
+    setGroups, setFocusMode, setExtraAgents, setSidebarFavorites,
+  });
+  React.useEffect(() => {
+    if (initial && !dataLoading && !isInitialized) {
+      // Brief B1 — apply migrated window allow-list (single helper).
+      const { wins: gatedWins, windowAllowList: appliedAllowList } = applyAllowListToInitial(initial, windowAllowList);
+      setWindowAllowList(appliedAllowList);
+      const safeWins = withoutUnsupportedWindows(gatedWins);
+      setWins(safeWins);
+      setCanvasGroups(initial.canvasGroups || []);
+      setPaths(initial.paths || []);
+      setLinks(initial.links || []);
+      if (initial.penColor) setPenColor(initial.penColor);
+      if (initial.penSize) setPenSize(initial.penSize); const wsId = workspaceLoad.workspaceId || initial.workspaceId || crypto.randomUUID(); setWorkspaceId(wsId);
+      setPenMode(Boolean(initial.penMode));
+      setDockOffset(initial.dockOffset || 0); setDock(initial.dock || { visible: false, groupOverrides: {} });
+      setGroups(initial.groups || DEFAULT_GROUPS);
+      setFocusMode(initial.focusMode || false);
+      setExtraAgents(initial.extraAgents || []); setSidebarFavorites(initial.sidebarFavorites || []);
+
+      const fit = loadCamera(wsId) || computeFitView(safeWins, initial.canvasGroups || []);
+      setPan({ x: fit.x, y: fit.y });
+      setZoom(fit.zoom);
+      // Brief B2 — auto-launch the marketplace when the user has zero enabled windows (the marketplace itself is always allowed, so this only fires for fully-empty workspaces).
+      if (appliedAllowList && !Object.values(appliedAllowList).some(Boolean)) setTimeout(() => spawnAt('marketplace'), 0);
+      const id = requestAnimationFrame(() => setIsInitialized(true));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [initial, dataLoading, isInitialized, spawnAt]);
+
+  const onPanZoom = React.useCallback(({ panX, panY, zoom: z }) => {
+    setPan({ x: panX, y: panY });
+    setZoom(z);
+  }, []);
+  React.useEffect(() => { if (isInitialized) saveCamera(workspaceId, { x: pan.x, y: pan.y, zoom }); }, [isInitialized, workspaceId, pan, zoom]);
+  useGroupTileReconcile(isInitialized);
+
+  const windowControlState = React.useMemo(
+    () => getChromeWindowControlState({ wins, activeId, focusMode }),
+    [wins, activeId, focusMode]
+  );
+  const handleWindowSelect = React.useCallback((id, event) => {
+    if (!id) {
+      setActiveId(null);
+      setSelectedIds([]);
+      return;
+    }
+    const toggle = Boolean(event?.metaKey || event?.ctrlKey || event?.shiftKey);
+    setActiveId(id); setWins((list) => raiseWindow(list, id));
+    setSelectedIds((current) => {
+      if (!toggle) return [id];
+      return current.includes(id)
+        ? current.filter((selectedId) => selectedId !== id)
+        : [...current, id];
+    });
+  }, [setActiveId, setSelectedIds, setWins]);
+  const handleSelection = React.useCallback((ids) => {
+    setSelectedIds(ids);
+    setActiveId(ids.at(-1) || null);
+  }, [setActiveId, setSelectedIds]);
+
+  const { persistence, collaboration } = useAppCollaboration({
+    enabled: isInitialized && (workspaceLoad.status === 'ready' || workspaceLoad.status === 'draft_required'), workspaceId, wins,
+    revision: workspaceRevision, onRevision: setWorkspaceRevision, activeId, user: session.user, selectedIds,
+  });
+  usePresetBootstrap(session.authenticated, setPresets);
+
+  useAppKeyboard({ onNewAgent, onNewWindow, redo, undo, setFocusMode, spawnAt });
+  const { bindings: groupHotkeyBindings } = useGroupHotkeys({ workspaceId });
+  const groupHotkeySlotById = React.useMemo(
+    () => invertBindings(groupHotkeyBindings),
+    [groupHotkeyBindings]
+  );
+  const focusView = useGroupFocusView(collaboration.displayWins, canvasGroups);
+  const chromeHidden = focusMode || focusView.active;
+
+  if (sessionChecking) {
+    return <div style={{ position: 'fixed', inset: 0, background: 'var(--canvas)', display: 'grid', placeItems: 'center', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', color: 'var(--ink-faint)' }}>Authenticating...</div>;
+  }
+
+  if (sessionLoad.status === 'unavailable') return <WorkspaceRecovery load={sessionLoad} onRetry={retryWorkspaceLoad} />;
+  if (!session.authenticated) {
+    return <Login oauthConfigured={session.oauthConfigured} localSignIn={Boolean(session.localSignIn)} fromAnotherComputer={Boolean(session.fromAnotherComputer)} onLoginSuccess={() => window.location.reload()} />;
+  }
+
+  if (keyGate) return <SovereignAccessGate {...keyGate} />;
+
+  if (dataLoading) {
+    return <div style={{ position: 'fixed', inset: 0, background: 'var(--canvas)', display: 'grid', placeItems: 'center', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', color: 'var(--ink-faint)' }}>Loading...</div>;
+  }
+
+  if (workspaceLoad.status !== 'ready' && workspaceLoad.status !== 'draft_required') {
+    return <WorkspaceRecovery load={workspaceLoad} onRetry={retryWorkspaceLoad} />;
+  }
+
+  return (
+    <>
+      <div id="canvas-root" style={{ position: 'fixed', inset: 0 }}>
+        <Canvas
+          wins={focusView.wins} activeId={activeId} selectedIds={selectedIds}
+          workspaceRevision={workspaceRevision}
+          pan={pan} zoom={zoom} onPanZoom={onPanZoom} onFitView={fitView}
+          onJumpNearestCluster={jumpToNearestCluster}
+          onUpdate={onUpdate} onClose={onClose} onSelect={handleWindowSelect}
+          onSelection={handleSelection} onDeleteSelected={deleteWindows}
+          onSpawn={spawnAt} dockState={{ groups, offset: dockOffset }}
+          canvasGroups={focusView.canvasGroups}
+          paths={paths} setPaths={setPaths}
+          links={links} onLinkCreate={createLink}
+          onLinkDelete={deleteLink}
+          currentProject={currentProject}
+          onSpawnGroup={spawnGroup}
+          onUpdateGroup={onUpdateGroup}
+          onResizeGroup={resizeGroup}
+          onCloseGroup={onCloseGroup}
+          onAutoArrangeGroup={autoArrangeGroup}
+          onSaveGroupPreset={saveGroupPreset}
+          onLoadGroupPreset={loadGroupPreset}
+          onDeleteGroupPreset={deleteGroupPreset}
+          onSetDefaultGroupPreset={setGroupDefaultPreset}
+          groupHotkeySlotById={groupHotkeySlotById}
+          onMoveGroup={moveGroup}
+          onDockWindow={dockWindow} onUndockWindow={undockWindow}
+          onSetGroupSeam={setGroupSeam} onShowGroupTab={showGroupTab}
+          onRubberBand={(rect) => { const size = getDefaultWindowSize('todos');
+            spawnAt('todos', { title: 'Plan', subtitle: 'rubber-banded region', items: [] },
+              { x: rect.x, y: rect.y }, { w: Math.max(size.w, rect.w), h: Math.max(size.h, rect.h) });
+          }}
+          activeTool={activeTool} penColor={penColor} penSize={penSize} penMode={penMode}
+          onRequestNewAgent={onNewAgent}
+          onCreateAgent={createAgent} onWindowMovePreview={collaboration.previewWindowMove}
+          onCursorMove={collaboration.sendCursor} cursors={collaboration.cursors} agentCursors={collaboration.agents}
+          worldOverlay={<CommentPins zoom={zoom} />}
+        />
+      </div>
+      <Chrome workspaceId={workspaceId} onOpenSharing={openSharing}
+        projectName={currentProject?.name || "No project open"}
+        currentProject={currentProject}
+        onOpenLocalProject={openLocalProject}
+        onNewAgent={onNewAgent} onNewWindow={onNewWindow} onNewWorkflow={onNewWorkflow}
+        onNewTerminal={onNewTerminal}
+        onNewHtmlPreview={onNewHtmlPreview} onSpawnRook={onSpawnRook} onNewMailcow={onNewMailcow} onNewVex={onNewVex}
+        onSpawn={spawnAt}
+        onToggleFocus={() => setFocusMode(f => !f)} focusMode={chromeHidden}
+        penMode={penMode}
+        onTogglePenMode={() => setPenMode(p => !p)}
+        onOpenSettings={openSettings}
+        presets={presets}
+        onSaveAsPreset={saveAsPreset}
+        onLoadPreset={loadPreset}
+        onDeletePreset={deletePreset}
+        windowControlState={windowControlState}
+        onMin={() => runChromeMinimizeAction({ wins, activeId, onUpdate })}
+        onMax={() => runChromeMaximizeAction({
+          wins,
+          activeId,
+          onUpdate,
+          onToggleFocus: () => setFocusMode((f) => !f),
+        })}
+        onClose={() => runChromeCloseAction({ activeId, onClose })}
+      />
+      <MultiGroupDock
+        groups={groups} onGroupsChange={setGroups} focusMode={chromeHidden}
+        onDragAgent={onDragAgent} dockOffset={dockOffset} onMoveDock={setDockOffset}
+      />
+
+      <Hud focusMode={chromeHidden} collaboration={collaboration} />
+      <AgentRunToasts collaboration={collaboration} onOpenWindow={(id) => setActiveId(id)} />
+      <AgentMailToasts workspaceId={workspaceId} />
+      <SystemStatusWidget focusMode={chromeHidden} />
+      <GroupFocusBar /><PresentMode workspaceId={workspaceId} />
+      <Toolbar
+        activeTool={activeTool} onSelectTool={setActiveTool}
+        penColor={penColor} setPenColor={setPenColor}
+        penSize={penSize} setPenSize={setPenSize}
+        focusMode={chromeHidden} onAiAgent={openAiAgent}
+        collaboration={collaboration} onShare={openSharing} workspaceId={workspaceId}
+      />
+      <OwnerShareLayer collaboration={collaboration} workspaceId={workspaceId} wins={wins} pan={pan} zoom={zoom} hidden={chromeHidden} />
+      {!chromeHidden && <BoardHistoryPanel workspaceId={workspaceId} wins={wins} />}
+      <PersistencePill persistence={persistence} />
+      {pendingDraft?.value && (
+        <DraftRestoreBar
+          savedAt={pendingDraft.savedAt ? new Date(pendingDraft.savedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}
+          onRestore={restoreDraft}
+          onDownload={downloadDraft}
+          onDiscard={discardDraft}
+        />
+      )}
+    </>
+  );
+}

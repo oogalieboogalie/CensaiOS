@@ -1,0 +1,11 @@
+/* Draw a track, drive a car. Tokens only, so every look applies. */
+.hb-race-hud { position: absolute; top: var(--space-2); left: var(--space-2); display: inline-flex; align-items: center; gap: var(--space-3); padding: var(--space-1) var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-md); box-shadow: var(--elevation-1); pointer-events: none; font-size: var(--text-xs); color: var(--ink); }
+.hb-race-stat { display: inline-flex; align-items: baseline; gap: var(--space-1); }
+.hb-race-stat .hb-game-num { min-width: 3.5em; }
+.hb-race-stat[data-best="true"] .hb-game-num { color: var(--accent-text); }
+.hb-race-key { font-family: var(--font-label); text-transform: var(--label-case); letter-spacing: var(--label-tracking); color: var(--ink-faint); }
+.hb-race-rivals { padding-left: var(--space-3); border-left: 1px solid var(--hairline); color: var(--ink-soft); }
+.hb-race-tip { position: absolute; left: 50%; bottom: var(--space-3); transform: translateX(-50%); padding: var(--space-1) var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-full); font-size: var(--text-xs); color: var(--ink-soft); pointer-events: none; white-space: nowrap; }
+.hb-race-tip[data-tone="warn"] { color: var(--warning); border-color: var(--warning); }
+.hb-race-flash { position: absolute; top: var(--space-2); right: var(--space-2); padding: var(--space-1) var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-md); font-size: var(--text-sm); font-variant-numeric: tabular-nums; color: var(--ink); pointer-events: none; }
+.hb-race-flash[data-best="true"] { color: var(--accent-text); border-color: var(--accent-line); }

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://censai.dev/schemas/cognitive-load.schema.json",
+  "id": "package:homebase-orchestrator",
+  "name": "Homebase Orchestrator",
+  "description": "Multi-agent task orchestration package. Wires the agent roster to a coordination queue with workspace events, retry, and report-back.",
+  "version": "0.3.0",
+  "category": "orchestration",
+  "cognitiveLoad": "high",
+  "signals": {
+    "setupMinutes": 60,
+    "decisionsPerSession": 15,
+    "notificationVolume": "8/hr",
+    "modeSwitches": 3
+  },
+  "rationale": "Multi-agent package: ~1h setup to import agent roster and configure wakeup queues; ~15 orchestration decisions per session (delegate / dispatch / wait / reply / retry); high notification volume during active work; user moves between canvas, chat, and automation board.",
+  "lastReviewed": "2026-06-23"
+}

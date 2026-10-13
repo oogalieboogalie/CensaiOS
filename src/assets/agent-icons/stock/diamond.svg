@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- stock:diamond — value, sharpness, decision point -->
+  <polygon points="32,6 58,32 32,58 6,32" />
+  <line x1="32" y1="14" x2="32" y2="50" opacity="0.45" />
+  <line x1="14" y1="32" x2="50" y2="32" opacity="0.45" />
+</svg>

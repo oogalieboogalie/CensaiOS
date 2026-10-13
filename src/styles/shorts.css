@@ -1,0 +1,41 @@
+/* YouTube Shorts window. Tokens only, so every look applies. */
+.hb-shorts { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface-sunken); outline: none; overflow: hidden; font-family: var(--font-sans); color: var(--ink); }
+.hb-shorts-stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: var(--space-2); }
+.hb-shorts-fit { flex: 1; align-self: stretch; min-width: 0; min-height: 0; display: grid; place-items: center; container-type: size; }
+.hb-shorts-frame { position: relative; width: min(100cqw, 100cqh * 9 / 16); height: min(100cqh, 100cqw * 16 / 9); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface-sunken); border: 1px solid var(--hairline); }
+.hb-shorts-player { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.hb-shorts-touch { position: absolute; inset: 0; cursor: pointer; touch-action: none; }
+.hb-shorts-paused { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; color: var(--ink); }
+.hb-shorts-paused svg { padding: var(--space-3); border-radius: var(--radius-full); background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--elevation-1); box-sizing: content-box; }
+.hb-shorts-caption { position: absolute; left: var(--space-2); right: var(--space-2); bottom: var(--space-2); display: flex; flex-direction: column; gap: 2px; padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-sm); background: var(--surface); border: 1px solid var(--hairline); pointer-events: none; font-size: var(--text-xs); }
+.hb-shorts-caption-title { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-shorts-caption-channel { color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.hb-shorts-rail { position: absolute; right: var(--space-2); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: var(--space-1-5); }
+.hb-shorts-icon-btn { all: unset; box-sizing: border-box; width: 28px; height: 28px; display: inline-grid; place-items: center; border-radius: var(--radius-full); background: var(--surface); border: 1px solid var(--hairline); color: var(--ink-soft); cursor: pointer; }
+.hb-shorts-icon-btn:hover { color: var(--ink); background: var(--surface-2); }
+.hb-shorts-icon-btn:focus-visible { outline: 2px solid var(--accent-soft); border-color: var(--accent-line); }
+.hb-shorts-icon-btn[disabled] { opacity: 0.4; cursor: default; }
+
+.hb-shorts-end { display: flex; align-items: center; justify-content: center; gap: var(--space-1-5); padding: 0 var(--space-3) var(--space-2); font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-shorts-link { all: unset; color: var(--accent-text); cursor: pointer; }
+.hb-shorts-link:hover { text-decoration: underline; }
+
+.hb-shorts-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 80%; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-2-5); padding: var(--space-3) var(--space-3) var(--space-4); background: var(--surface); border-top: 1px solid var(--hairline); box-shadow: var(--elevation-2); }
+.hb-shorts-sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.hb-shorts-sheet-head .hb-shorts-icon-btn { border-color: transparent; background: transparent; }
+.hb-shorts-label { font-family: var(--font-label); font-size: var(--text-xs); text-transform: var(--label-case); letter-spacing: var(--label-tracking); color: var(--ink-faint); }
+.hb-shorts-search { display: flex; gap: var(--space-1-5); }
+.hb-shorts-input { all: unset; box-sizing: border-box; flex: 1; min-width: 0; min-height: 28px; padding: 0 var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-2); font-size: var(--text-sm); color: var(--ink); }
+.hb-shorts-input::placeholder { color: var(--ink-faint); }
+.hb-shorts-input:focus { border-color: var(--accent-line); }
+.hb-shorts-note { margin: 0; font-size: var(--text-xs); line-height: 1.5; color: var(--ink-soft); }
+.hb-shorts-tiktok { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
+.hb-shorts-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.hb-shorts-row { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: var(--space-2); min-height: 30px; padding: 0 var(--space-2); border-radius: var(--radius-sm); font-size: var(--text-sm); color: var(--ink); cursor: pointer; }
+.hb-shorts-row svg { color: var(--ink-faint); }
+.hb-shorts-row:hover, .hb-shorts-row:focus-visible { background: var(--surface-2); }
+.hb-shorts-row[aria-current="true"] svg, .hb-shorts-row[aria-current="true"] .hb-shorts-row-hint { color: var(--accent-text); }
+.hb-shorts-row-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-shorts-row-hint { font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-shorts-foot { margin: 0; padding-top: var(--space-2-5); border-top: 1px solid var(--hairline); font-size: var(--text-xs); line-height: 1.5; color: var(--ink-faint); }

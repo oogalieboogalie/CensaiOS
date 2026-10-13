@@ -1,0 +1,14 @@
+# Google ADK Agent Config (adk create --type=config)
+agent_class: LlmAgent
+name: support_triage
+model: gemini-2.5-pro
+description: Reads a customer message and sorts it into billing, bug or question.
+instruction: |
+  You triage customer support messages.
+  Reply with one label (billing, bug or question) and one sentence explaining why.
+  If the message mentions a refund, it is always billing.
+tools:
+  - name: google_search
+  - name: my_company.tools.lookup_order
+sub_agents:
+  - config_path: ./refund_agent.yaml

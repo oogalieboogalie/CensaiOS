@@ -1,0 +1,72 @@
+/* YorWare Layout: the Censai Office toolbar and Creative tool rail, the page
+   strip on the left, the page on the sunken canvas, settings on the right.
+   The page itself is always white paper; amber (the accent) marks only the
+   current page, the active tool, what you selected and snap guides. */
+.hb-yl { outline: none; }
+.hb-yl-count { min-width: 52px; text-align: center; }
+.hb-yl-stage { padding: var(--space-5); }
+.hb-yl-stage[data-busy="true"] { cursor: progress; }
+
+/* The page */
+.hb-yl-page { display: block; flex-shrink: 0; box-shadow: var(--elevation-2); touch-action: none; user-select: none; overflow: visible; }
+.hb-yl-page[data-tool="select"] { cursor: default; }
+.hb-yl-page[data-tool="text"], .hb-yl-page[data-tool="image"], .hb-yl-page[data-tool="rect"], .hb-yl-page[data-tool="ellipse"], .hb-yl-page[data-tool="line"] { cursor: crosshair; }
+.hb-yl-page[data-tool="link"] [data-type="text"]:not([data-master]) { cursor: copy; }
+.hb-yl-page[data-tool="select"] [data-frame]:not([data-master]) { cursor: move; }
+.hb-yl-page [data-master="true"] { pointer-events: none; }
+.hb-yl-paper { fill: var(--color-white); }
+.hb-yl-margin { fill: none; stroke: color-mix(in oklab, var(--accent) 45%, var(--color-white)); stroke-dasharray: 3 3; pointer-events: none; }
+.hb-yl-textbox { fill: var(--color-transparent); stroke: color-mix(in oklab, var(--color-black) 22%, var(--color-white)); stroke-width: 0.6; stroke-dasharray: 2 2; }
+.hb-yl-page[data-tool]:not([data-tool="select"]):not([data-tool="link"]) .hb-yl-textbox { pointer-events: none; }
+.hb-yl-text { pointer-events: none; }
+.hb-yl-ghost { fill: color-mix(in oklab, var(--color-black) 40%, var(--color-white)); font-size: 10px; font-family: var(--font-sans, sans-serif); pointer-events: none; }
+.hb-yl-placeholder rect { fill: color-mix(in oklab, var(--color-black) 5%, var(--color-white)); stroke: color-mix(in oklab, var(--color-black) 25%, var(--color-white)); stroke-width: 0.6; }
+.hb-yl-placeholder path { stroke: color-mix(in oklab, var(--color-black) 18%, var(--color-white)); stroke-width: 0.6; }
+.hb-yl-placeholder text { fill: color-mix(in oklab, var(--color-black) 50%, var(--color-white)); font-size: 11px; font-family: var(--font-sans, sans-serif); }
+.hb-yl-hit { pointer-events: stroke; }
+.hb-yl-overflow rect { fill: var(--danger); stroke: var(--color-white); }
+.hb-yl-overflow path { stroke: var(--color-white); fill: none; }
+.hb-yl-overflow { pointer-events: none; }
+.hb-yl-snap { stroke: var(--accent); pointer-events: none; }
+.hb-yl-frame { pointer-events: none; }
+.hb-yl-frame-box { fill: none; stroke: var(--accent); }
+.hb-yl-grip { fill: var(--color-white); stroke: var(--accent); pointer-events: all; }
+.hb-yl-grip[data-dir="nw"], .hb-yl-grip[data-dir="se"] { cursor: nwse-resize; }
+.hb-yl-grip[data-dir="ne"], .hb-yl-grip[data-dir="sw"] { cursor: nesw-resize; }
+.hb-yl-badge rect { fill: var(--accent); }
+.hb-yl-badge text { fill: var(--color-black); font-family: var(--font-mono); }
+.hb-yl-draft { fill: color-mix(in oklab, var(--accent) 12%, transparent); stroke: var(--accent); stroke-dasharray: 4 3; pointer-events: none; }
+
+/* Page strip */
+.hb-yl-strip { list-style: none; margin: 0; padding: var(--space-2); width: 120px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-2); border-right: 1px solid var(--hairline); }
+.hb-yl-thumb-btn { all: unset; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-1); border-radius: var(--radius-sm); cursor: pointer; }
+.hb-yl-thumb-btn:hover { background: var(--surface-2); }
+.hb-yl-thumb-btn:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
+.hb-yl-thumb-svg { display: block; box-shadow: 0 0 0 1px var(--hairline); }
+.hb-yl-thumb[data-current="true"] .hb-yl-thumb-svg { box-shadow: 0 0 0 2px var(--accent); }
+.hb-yl-thumb-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.hb-yl-thumb[data-current="true"] .hb-yl-thumb-label { color: var(--ink); }
+.hb-yl-addpage { width: 100%; justify-content: center; }
+
+/* Panel */
+.hb-yl-story { min-height: 120px; font-size: var(--text-sm); line-height: 1.5; }
+.hb-yl-check { display: flex; gap: var(--space-2); align-items: flex-start; color: var(--ink-soft); }
+.hb-yl-warn { margin: 0; padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-sm); background: color-mix(in oklab, var(--danger) 12%, var(--surface)); color: var(--ink); font-size: var(--text-xs); line-height: 1.5; }
+.hb-yl-buttons { display: flex; flex-direction: column; gap: var(--space-1); }
+.hb-yl-buttons .hb-of-btn { justify-content: flex-start; }
+.hb-yl-pos { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-1); }
+.hb-yl-pos label { display: flex; flex-direction: column; gap: var(--space-0-5); font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-yl-pos .hb-cr-input { padding: 0 var(--space-1); }
+
+/* Start: pick a template */
+.hb-yl-start { align-self: start; display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-4) 0; text-align: center; }
+.hb-yl-start > .hb-cr-hint { max-width: 520px; }
+.hb-yl-start-title { font-size: var(--text-lg); font-weight: 600; color: var(--ink); }
+.hb-yl-templates { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); }
+.hb-yl-template { all: unset; box-sizing: border-box; width: 150px; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-3) var(--space-2); border-radius: var(--radius-md); cursor: pointer; }
+.hb-yl-template:hover { background: var(--surface-2); }
+.hb-yl-template:focus-visible { outline: 2px solid var(--accent-line); }
+.hb-yl-template .hb-yl-thumb-svg { box-shadow: var(--elevation-1); }
+.hb-yl-template:hover .hb-yl-thumb-svg { box-shadow: 0 0 0 2px var(--accent); }
+.hb-yl-template-name { margin-top: var(--space-1); font-weight: 600; color: var(--ink); }
+.hb-yl-template-hint { font-size: var(--text-xs); color: var(--ink-faint); line-height: 1.4; }

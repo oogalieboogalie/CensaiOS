@@ -1,0 +1,38 @@
+/* Agent Company, the board's idle clicker. Tokens only, so every look applies. */
+.hb-idle { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 280px); background: var(--surface-sunken); }
+.hb-idle-main { min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: var(--space-4); padding: var(--space-5) var(--space-5) var(--space-4); }
+.hb-idle-main > .hb-game-board { align-self: stretch; }
+.hb-idle-stats { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); text-align: center; }
+.hb-idle-wallet { font-size: var(--text-2xl); font-weight: 600; color: var(--ink); line-height: 1.1; }
+.hb-idle-tap-wrap { position: relative; display: grid; place-items: center; padding: var(--space-2); }
+.hb-idle-tap { all: unset; box-sizing: border-box; width: 112px; height: 112px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); border-radius: var(--radius-full); background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--elevation-1); color: var(--ink); font-size: var(--text-sm); font-weight: 600; cursor: pointer; user-select: none; transition: transform var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard); }
+.hb-idle-tap svg { fill: var(--accent); }
+.hb-idle-tap:hover { border-color: var(--accent-line); }
+.hb-idle-tap:active, .hb-idle-tap[data-pressed="true"] { transform: scale(0.96); }
+.hb-idle-tap:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 3px; }
+.hb-idle-tap:disabled { cursor: default; opacity: 0.6; }
+.hb-idle-float { position: absolute; transform: translate(-50%, -50%); pointer-events: none; font-size: var(--text-sm); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--accent-text); animation: hb-idle-rise 900ms var(--ease-standard) forwards; }
+@keyframes hb-idle-rise { from { opacity: 1; margin-top: 0; } to { opacity: 0; margin-top: -48px; } }
+.hb-idle-field { width: 100%; max-width: 360px; height: auto; flex: none; }
+.hb-idle-field-empty { font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-idle-dot { fill: var(--ink-faint); animation: hb-idle-pulse 2400ms ease-in-out infinite; }
+.hb-idle-dot[data-tier="1"] { fill: var(--ink-soft); }
+.hb-idle-dot[data-tier="2"] { fill: var(--ink); }
+.hb-idle-dot[data-tier="3"], .hb-idle-dot[data-tier="4"], .hb-idle-dot[data-tier="5"], .hb-idle-dot[data-tier="6"] { fill: var(--accent); }
+@keyframes hb-idle-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .hb-idle-dot, .hb-idle-float { animation: none; } }
+.hb-idle-away { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--ink-soft); }
+.hb-idle-away strong { color: var(--accent-text); }
+.hb-idle-shop { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); background: var(--surface); border-left: 1px solid var(--hairline); }
+.hb-idle-shop section { display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-idle-hires, .hb-idle-upgrades { display: flex; flex-direction: column; gap: var(--space-1-5); }
+.hb-idle-hire, .hb-idle-upgrade { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); color: var(--ink); font-size: var(--text-sm); cursor: pointer; transition: border-color var(--dur-fast) var(--ease-standard); }
+.hb-idle-hire:hover:not(:disabled), .hb-idle-upgrade:hover:not(:disabled) { border-color: var(--accent-line); }
+.hb-idle-hire:focus-visible, .hb-idle-upgrade:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.hb-idle-hire:disabled, .hb-idle-upgrade:disabled { cursor: default; color: var(--ink-faint); }
+.hb-idle-hire:disabled .hb-idle-cost, .hb-idle-upgrade:disabled .hb-idle-cost { color: var(--ink-faint); }
+.hb-idle-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.hb-idle-row-name { font-weight: 600; }
+.hb-idle-owned { color: var(--ink-soft); }
+.hb-idle-cost { color: var(--accent-text); font-size: var(--text-xs); }
+.hb-idle-upgrade .hb-idle-cost { align-self: flex-end; }

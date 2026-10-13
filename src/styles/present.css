@@ -1,0 +1,103 @@
+/* Present mode (src/app/present/): a thin Ultem progress line with the scene
+   name, the top bar's Present button, the scene editor and the empty card.
+   Restrained on purpose: one accent, no gradients, short fades only. */
+.hb-present-progress {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 300;
+  pointer-events: none;
+}
+.hb-present-track { height: 3px; background: color-mix(in oklab, var(--ink) 10%, transparent); }
+.hb-present-fill { height: 100%; background: var(--brand-ultem); transition: width 320ms ease-out; }
+.hb-present-label {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  margin: 0 0 var(--space-2) var(--space-3); padding: 3px 10px;
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  border: 1px solid var(--hairline);
+  color: var(--ink); font: var(--text-xs) var(--font-ui, inherit);
+  transition: opacity 600ms ease;
+}
+.hb-present-progress[data-fresh='false'] .hb-present-label { opacity: 0.35; }
+.hb-present-name { font-weight: 600; }
+.hb-present-count { color: var(--ink-faint); }
+
+.hb-present-split { display: inline-flex; align-items: center; gap: 1px; }
+.hb-present-top {
+  all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px; border-radius: var(--radius-float-btn) 0 0 var(--radius-float-btn);
+  background: var(--surface-2); color: var(--ink-soft);
+  font: 600 var(--text-xs) var(--font-ui, inherit);
+}
+.hb-present-top:hover { color: var(--ink); }
+.hb-present-top:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.hb-present-top-menu { padding: 0 7px; border-radius: 0 var(--radius-float-btn) var(--radius-float-btn) 0; }
+.hb-present-top-menu[aria-pressed='true'] { background: var(--accent-soft); color: var(--accent-ink); }
+
+.hb-present-editor, .hb-present-empty, .hb-present-notes-card {
+  position: fixed; z-index: 400;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--hairline); border-radius: var(--radius-float);
+  box-shadow: var(--shadow-card);
+  font: var(--text-sm, 13px) var(--font-ui, inherit);
+}
+.hb-present-editor {
+  top: 56px; right: 16px; bottom: 16px; width: 400px; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3);
+}
+.hb-present-editor header { flex: none; }
+.hb-present-editor footer { flex: none; flex-wrap: wrap; padding-top: var(--space-2); border-top: 1px solid var(--hairline); }
+.hb-present-scenes { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-present-scene {
+  display: flex; flex-direction: column; gap: var(--space-1-5);
+  padding: var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-md);
+}
+.hb-present-row { display: flex; align-items: center; gap: var(--space-1-5); }
+.hb-present-editor header .hb-present-hint { flex: 1; }
+.hb-present-shows { justify-content: space-between; color: var(--ink-soft); font-size: var(--text-xs); }
+.hb-present-hint { color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-present-input, .hb-present-key {
+  font: inherit; color: var(--ink); background: var(--surface-sunken, var(--surface-2));
+  border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: 4px 6px;
+}
+.hb-present-input { flex: 1; min-width: 0; }
+.hb-present-notes-input { resize: vertical; font-size: var(--text-xs); }
+.hb-present-btn {
+  font: 600 var(--text-xs) var(--font-ui, inherit); cursor: pointer;
+  padding: 5px 10px; border-radius: var(--radius-md);
+  border: 1px solid var(--hairline); background: var(--surface-2); color: var(--ink);
+}
+.hb-present-btn[data-primary] { background: var(--accent-line); border-color: var(--accent-line); color: var(--accent-contrast, var(--on-fill)); }
+.hb-present-btn:disabled, .hb-present-icon:disabled { opacity: 0.4; cursor: default; }
+.hb-present-icon {
+  all: unset; cursor: pointer; width: 22px; height: 22px; display: grid; place-items: center;
+  border-radius: var(--radius-sm); color: var(--ink-faint);
+}
+.hb-present-icon:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.hb-present-link { all: unset; cursor: pointer; color: var(--accent-ink); font-size: var(--text-xs); font-weight: 600; }
+.hb-present-link:focus-visible, .hb-present-icon:focus-visible { outline: 2px solid var(--accent-line); }
+
+.hb-present-empty {
+  top: 50%; left: 50%; transform: translate(-50%, -50%); width: 380px; max-width: calc(100vw - 32px);
+  padding: var(--space-4, 16px); display: flex; flex-direction: column; gap: var(--space-2);
+}
+.hb-present-empty p { margin: 0; color: var(--ink-soft); line-height: 1.5; }
+.hb-present-notes-card { right: 16px; bottom: 16px; width: 360px; padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1-5); }
+
+/* Presenter notes: its own window (body.hb-notes-page) or the inline card. */
+.hb-notes-page {
+  margin: 0; padding: var(--space-5, 24px); min-height: 100vh; box-sizing: border-box;
+  background: var(--surface); color: var(--ink); font: var(--text-base)/1.5 var(--font-ui, system-ui);
+}
+.hb-notes-inline { padding: var(--space-3); border-radius: var(--radius-md); background: var(--surface-2); }
+.hb-notes-meta { display: flex; justify-content: space-between; color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-notes-track { margin-top: var(--space-3); }
+.hb-notes-name { font-size: var(--text-2xl); font-weight: 650; margin: var(--space-2) 0 var(--space-3); }
+.hb-notes-text { margin: 0; font-size: var(--text-xl); line-height: 1.55; white-space: pre-wrap; }
+.hb-notes-next { margin-top: var(--space-5, 24px); padding-top: var(--space-3); border-top: 1px solid var(--hairline); color: var(--ink-faint); font-size: var(--text-sm, 13px); }
+.hb-notes-actions { margin-top: var(--space-4, 16px); }
+
+/* While presenting, the board's own helpers step aside: zoom buttons, the
+   dock marker, the clock line, the draft bar and group name tags. Windows
+   and everything happening in them stay live. */
+html[data-presenting] [data-present-hide],
+html[data-presenting] [data-group-label],
+html[data-presenting] [data-group-slot-badge] { display: none !important; }

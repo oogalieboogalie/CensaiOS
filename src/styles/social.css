@@ -1,0 +1,52 @@
+/* Social canvas: feed, following and profile. Tokens only, so every look applies. */
+.hb-social { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); color: var(--ink); font-family: var(--font-sans); font-size: var(--text-sm); }
+.hb-social-scroll { flex: 1; min-height: 0; overflow: auto; padding: var(--space-4); }
+.hb-social-feed, .hb-social-following, .hb-social-profile { display: flex; flex-direction: column; gap: var(--space-3); max-width: 640px; margin: 0 auto; }
+.hb-social-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; min-width: 0; }
+.hb-social-spacer { flex: 1; }
+.hb-social-label { font-family: var(--font-label); font-size: var(--text-xs); text-transform: var(--label-case); letter-spacing: var(--label-tracking); color: var(--ink-faint); margin-top: var(--space-2); }
+.hb-social-note { margin: 0; color: var(--ink-soft); font-size: var(--text-xs); line-height: 1.5; }
+.hb-social-error { margin: 0; color: var(--danger); font-size: var(--text-xs); }
+.hb-social-mono, .hb-social-code { font-family: var(--font-mono); font-size: var(--text-xs); }
+.hb-social-code { margin: 0; padding: var(--space-2) var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-2); white-space: pre-wrap; word-break: break-all; user-select: all; }
+.hb-social-input { box-sizing: border-box; width: 100%; padding: var(--space-2) var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink); font: inherit; font-size: var(--text-sm); }
+.hb-social-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent-line); }
+textarea.hb-social-input { resize: vertical; line-height: 1.5; }
+.hb-social-select { width: auto; max-width: 260px; padding-block: var(--space-1-5); }
+.hb-social-name { font-size: var(--text-md); font-weight: 600; }
+.hb-social-box, .hb-social-composer { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); }
+.hb-social-empty { display: grid; justify-items: start; gap: var(--space-2); padding: var(--space-4); border: 1px dashed var(--hairline); border-radius: var(--radius-md); color: var(--ink-soft); }
+.hb-social-empty p { margin: 0; }
+.hb-btn[data-on="true"] { color: var(--ink-soft); }
+
+.hb-social-avatar { flex: none; display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--surface-2); border: 1px solid var(--hairline); color: var(--ink); font-size: var(--text-xs); font-weight: 600; }
+.hb-social-avatar[data-agent="true"] { color: var(--accent-ink); border-color: var(--accent-line); background: var(--accent-soft-10); }
+.hb-social-item { display: flex; gap: var(--space-2-5); padding: var(--space-3) 0; border-bottom: 1px solid var(--hairline); }
+.hb-social-item:last-child { border-bottom: 0; }
+.hb-social-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.hb-social-line { line-height: 1.45; overflow-wrap: anywhere; }
+.hb-social-tag { margin-left: var(--space-1-5); padding: 0 var(--space-1-5); border-radius: var(--radius-full); border: 1px solid var(--accent-line); color: var(--accent-ink); font-size: var(--text-xs); }
+.hb-social-post { margin: 0; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.hb-social-meta { display: flex; gap: var(--space-1); flex-wrap: wrap; color: var(--ink-faint); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+
+.hb-social-card { display: flex; flex-direction: column; margin-top: var(--space-1-5); border: 1px solid var(--hairline); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+.hb-social-card-foot { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-2-5); border-top: 1px solid var(--hairline); }
+.hb-social-card-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-social-card-note { padding: 0 var(--space-2-5) var(--space-2-5); }
+.hb-social-card .hb-btn { min-height: 24px; padding: 0 var(--space-2); font-size: var(--text-xs); text-decoration: none; }
+.hb-social-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); }
+.hb-social-grid .hb-social-card { margin-top: 0; }
+
+.hb-social-pic { position: relative; aspect-ratio: 16 / 9; background: var(--canvas); }
+.hb-social-pic svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hb-social-pic[data-empty="true"] { display: grid; place-items: center; color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-social-pic-win { fill: var(--surface); stroke: var(--hairline-strong); }
+.hb-social-pic-bar { fill: var(--surface-2); }
+.hb-social-pic-title { fill: var(--ink-soft); font-family: var(--font-sans); }
+
+.hb-social-person { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); }
+.hb-social-person.hb-social-row { flex-direction: row; }
+.hb-social-person-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hb-social-board-row { padding-left: calc(32px + var(--space-2)); }
+.hb-social-board-name { font-weight: 500; }
+.hb-social-key { padding-top: var(--space-1-5); border-top: 1px solid var(--hairline); }

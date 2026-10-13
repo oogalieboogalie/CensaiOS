@@ -1,0 +1,65 @@
+import React from 'react';
+
+/**
+ * Top-center canvas toasts for presence: joins, leaves, invites.
+ * Auto-dismisses after 6s; newest on top, max 3 visible.
+ */
+export function PresenceToasts({ collaboration, onDismiss }) {
+  const notices = (collaboration?.notices || []).slice(-3).reverse();
+  const [dismissed, setDismissed] = React.useState({});
+  const visible = notices.filter((n) => !dismissed[n.id]);
+  if (visible.length === 0) return null;
+
+  const hide = (id) => {
+    setDismissed((d) => ({ ...d, [id]: true }));
+    onDismiss?.(id);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', top: 14, left: '50%', transform: 'translateX(-50%)',
+      zIndex: 1300, display: 'flex', flexDirection: 'column', gap: 8,
+      alignItems: 'center', pointerEvents: 'none',
+    }}>
+      {visible.map((n) => (
+        <Toast key={n.id} notice={n} onHide={() => hide(n.id)} />
+      ))}
+    </div>
+  );
+}
+
+function Toast({ notice, onHide }) {
+  // onHide is a new function on every render, and the canvas re-renders on
+  // every cursor move, so keying the timer on it meant toasts never left.
+  const hideRef = React.useRef(onHide);
+  hideRef.current = onHide;
+  React.useEffect(() => {
+    const timer = setTimeout(() => hideRef.current(), 6000);
+    return () => clearTimeout(timer);
+  }, [notice.id]);
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      background: 'var(--surface)', border: '1px solid var(--hairline)',
+      borderRadius: 'var(--radius-full)', boxShadow: 'var(--shadow-pop)',
+      padding: '8px 8px 8px 14px', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
+      color: 'var(--ink)', pointerEvents: 'auto',
+      animation: 'presence-toast-in 0.25s ease-out',
+    }}>
+      <span style={{
+        width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+        background: notice.kind === 'join' ? 'var(--ps-green)' : 'var(--ink-faint)',
+      }} />
+      <span>{notice.text}</span>
+      <button
+        onClick={onHide}
+        title="Dismiss"
+        style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', padding: '0 4px' }}
+      >
+        ✕
+      </button>
+      <style>{'@keyframes presence-toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }'}</style>
+    </div>
+  );
+}

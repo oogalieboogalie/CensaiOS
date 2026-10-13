@@ -1,0 +1,21 @@
+/* YorWare Diagrams: the Censai Office toolbar over an Excalidraw drawing
+   area that fills the rest of the window. Excalidraw keeps its own tool
+   look; only its accent turns Ultem amber so it sits with the suite. */
+.hb-yd { display: flex; flex-direction: column; min-height: 0; }
+.hb-yd-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.hb-yd-fit { position: absolute; inset: 0 auto auto 0; width: 100%; height: 100%; transform-origin: 0 0; }
+.hb-yd-loading { flex: 1; display: grid; place-items: center; color: var(--ink-faint); font-size: var(--text-sm); }
+.hb-yd-readonly { font-size: var(--text-xs); color: var(--ink-soft); padding: 0 var(--space-2); }
+.hb-yd-welcome { font-size: 0.9rem; opacity: 0.8; text-align: center; max-width: 320px; margin: 0.5rem auto 0; }
+.hb-yd .excalidraw {
+  --color-primary: #c98a1e; --color-primary-darker: #b07816; --color-primary-darkest: #94640f;
+  --color-primary-hover: #b07816; --color-primary-light: #fbecd0; --color-primary-light-darker: #f3dcae;
+  --color-surface-primary-container: #f6e3bd; --color-on-primary-container: #4a3304;
+  --color-brand-hover: #b07816; --color-brand-active: #94640f; --color-selection: #e5a83a;
+}
+.hb-yd .excalidraw.theme--dark {
+  --color-primary: #e5a83a; --color-primary-darker: #f0bd62; --color-primary-darkest: #f6cd84;
+  --color-primary-hover: #f0bd62; --color-primary-light: #4d3b18; --color-primary-light-darker: #5c4720;
+  --color-surface-primary-container: #5a4317; --color-on-primary-container: #fbe3b4;
+  --color-brand-hover: #f0bd62; --color-brand-active: #f6cd84; --color-selection: #e5a83a;
+}

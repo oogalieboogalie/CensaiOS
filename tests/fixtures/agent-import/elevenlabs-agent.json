@@ -1,0 +1,25 @@
+{
+  "agent_id": "agent_7101k2example",
+  "name": "Front Desk",
+  "conversation_config": {
+    "agent": {
+      "first_message": "Hi, thanks for calling Censai. How can I help today?",
+      "language": "en",
+      "prompt": {
+        "prompt": "You are the front desk for a small software company. Answer questions about opening hours (9 to 5, Monday to Friday), book callbacks, and keep every answer under three sentences.",
+        "llm": "gemini-2.0-flash",
+        "temperature": 0.5,
+        "tools": [
+          { "type": "system", "name": "end_call", "description": "" },
+          { "type": "webhook", "name": "book_callback", "description": "Books a callback", "api_schema": { "url": "https://example.com/callback", "method": "POST" } }
+        ],
+        "knowledge_base": [{ "type": "file", "name": "pricing.pdf", "id": "kb_1" }]
+      }
+    },
+    "tts": { "voice_id": "21m00Tcm4TlvDq8ikWAM", "model_id": "eleven_flash_v2_5" },
+    "asr": { "quality": "high" },
+    "turn": { "turn_timeout": 7 }
+  },
+  "platform_settings": { "widget": { "variant": "compact" } },
+  "metadata": { "created_at_unix_secs": 1760000000 }
+}

@@ -1,0 +1,301 @@
+{
+  "generator": "freeze-nanoid-oracle",
+  "source": "nanoid@3.3.19",
+  "cases": [
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 21,
+      "size": null,
+      "output": "4FoIrxg9WaRw7Z6UuKl0_"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 21,
+      "size": 1,
+      "output": "4"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 21,
+      "size": 5,
+      "output": "4FoIr"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 21,
+      "size": 50,
+      "output": "4FoIrxg9WaRw7Z6UuKl0_mNiJh8OnYy5bT4FoIrxg9WaRw7Z6U"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 6,
+      "size": null,
+      "output": "Jh8OnY"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 6,
+      "size": 1,
+      "output": "J"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 6,
+      "size": 5,
+      "output": "Jh8On"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 6,
+      "size": 50,
+      "output": "Jh8OnYy5bTJh8OnYy5bTJh8OnYy5bTJh8OnYy5bTJh8OnYy5bT"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 10,
+      "size": null,
+      "output": "l0_mNiJh8O"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 10,
+      "size": 1,
+      "output": "l"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 10,
+      "size": 5,
+      "output": "l0_mN"
+    },
+    {
+      "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict",
+      "defaultSize": 10,
+      "size": 50,
+      "output": "l0_mNiJh8OnYy5bTl0_mNiJh8OnYy5bTl0_mNiJh8OnYy5bTl0"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 21,
+      "size": null,
+      "output": "acbacbacbacbacbacbacb"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 21,
+      "size": 1,
+      "output": "a"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 21,
+      "size": 5,
+      "output": "acbac"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 21,
+      "size": 50,
+      "output": "acbacbacbacbacbacbacbacbaacbacbacbacbacbacbacbacba"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 6,
+      "size": null,
+      "output": "acbacb"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 6,
+      "size": 1,
+      "output": "a"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 6,
+      "size": 5,
+      "output": "acbac"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 6,
+      "size": 50,
+      "output": "acbacbaacbacbaacbacbaacbacbaacbacbaacbacbaacbacbaa"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 10,
+      "size": null,
+      "output": "cbacbacbac"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 10,
+      "size": 1,
+      "output": "c"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 10,
+      "size": 5,
+      "output": "cbacb"
+    },
+    {
+      "alphabet": "abc",
+      "defaultSize": 10,
+      "size": 50,
+      "output": "cbacbacbacbacbacbacbacbacbacbacbacbacbacbacbacbacb"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 21,
+      "size": null,
+      "output": "101010101010101011010"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 21,
+      "size": 1,
+      "output": "1"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 21,
+      "size": 5,
+      "output": "10101"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 21,
+      "size": 50,
+      "output": "10101010101010101101010101010101011010101010101010"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 6,
+      "size": null,
+      "output": "101011"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 6,
+      "size": 1,
+      "output": "1"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 6,
+      "size": 5,
+      "output": "10101"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 6,
+      "size": 50,
+      "output": "10101101011010110101101011010110101101011010110101"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 10,
+      "size": null,
+      "output": "0101010101"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 10,
+      "size": 1,
+      "output": "0"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 10,
+      "size": 5,
+      "output": "01010"
+    },
+    {
+      "alphabet": "01",
+      "defaultSize": 10,
+      "size": 50,
+      "output": "01010101010101010101010101010101010101010101010101"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 21,
+      "size": null,
+      "output": "61c72d83e94fa50b61c72"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 21,
+      "size": 1,
+      "output": "6"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 21,
+      "size": 5,
+      "output": "61c72"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 21,
+      "size": 50,
+      "output": "61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 6,
+      "size": null,
+      "output": "3e94fa"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 6,
+      "size": 1,
+      "output": "3"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 6,
+      "size": 5,
+      "output": "3e94f"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 6,
+      "size": 50,
+      "output": "3e94fa50b3e94fa50b3e94fa50b3e94fa50b3e94fa50b3e94f"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 10,
+      "size": null,
+      "output": "1c72d83e94"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 10,
+      "size": 1,
+      "output": "1"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 10,
+      "size": 5,
+      "output": "1c72d"
+    },
+    {
+      "alphabet": "0123456789abcdef",
+      "defaultSize": 10,
+      "size": 50,
+      "output": "1c72d83e94fa50b1c72d83e94fa50b1c72d83e94fa50b1c72d"
+    }
+  ],
+  "edges": {
+    "origZero": "",
+    "origNanoidZero": "",
+    "cloneZero": "",
+    "cloneNanoidZero": "",
+    "alphabet": "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict"
+  }
+}

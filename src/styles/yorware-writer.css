@@ -1,0 +1,23 @@
+/* YorWare Writer: sheets of paper on a sunken desk. The paper follows the
+   theme (light paper in light mode, dark paper in dark mode); between two
+   sheets a desk-coloured band with the next page's number. */
+.yw-desk { background: var(--surface-sunken); padding: var(--space-4) 0 var(--space-6); }
+.yw-fit { margin: 0 auto; }
+.yw-paper.hb-of-page[data-paged="true"] {
+  position: relative; box-sizing: border-box; width: var(--yw-page-w); max-width: none; min-height: var(--yw-page-h);
+  margin: 0; padding: var(--yw-margin); display: block; background: var(--surface); box-shadow: var(--elevation-2);
+  border-radius: var(--radius-xs); transform-origin: top left;
+}
+.yw-paper > [data-row-id="__title"] > .hb-of-doc-title { display: block; width: 100%; box-sizing: border-box; }
+.yw-break { position: relative; margin: 0 calc(var(--yw-margin) * -1); }
+.yw-break::after {
+  content: attr(data-label); position: absolute; left: 0; right: 0; top: var(--yw-gap-top); height: var(--yw-gap);
+  display: flex; align-items: center; justify-content: flex-end; padding-right: var(--space-3); box-sizing: border-box;
+  background: var(--surface-sunken); font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint);
+  box-shadow: inset 0 5px 5px -5px rgba(0, 0, 0, 0.28), inset 0 -5px 5px -5px rgba(0, 0, 0, 0.28);
+}
+.yw-after { display: flex; justify-content: center; padding-top: var(--space-3); }
+.yw-status {
+  display: flex; gap: var(--space-3); justify-content: flex-end; padding: var(--space-1) var(--space-3);
+  border-top: 1px solid var(--hairline); font-size: var(--text-xs); color: var(--ink-faint); font-variant-numeric: tabular-nums;
+}

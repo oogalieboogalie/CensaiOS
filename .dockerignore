@@ -1,0 +1,36 @@
+# The Docker build only sees what is listed here. Everything else in the
+# folder (installers, worktrees, backups, copied drives, node_modules) stays
+# out, so "transferring context" sends the source and nothing more.
+# Adding a new top-level file or folder the image needs? Add a ! line below.
+*
+
+!Dockerfile
+!package.json
+!package-lock.json
+!server.js
+!docker-compose.yml
+!index.html
+!landing.html
+!automation.html
+!window-lab.html
+!vite.config.js
+!vite.landing.config.js
+!tailwind.config.js
+!postcss.config.js
+!babel.config.cjs
+!src
+!public
+!server
+!docker
+!scripts
+!packages
+!tools
+!vendor
+
+# Never inside the listed folders either.
+**/node_modules
+**/.git
+**/target
+**/dist
+**/*.log
+**/.env

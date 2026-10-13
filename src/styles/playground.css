@@ -1,0 +1,34 @@
+/* Game playground window. Tokens only, so every look applies. */
+.hb-play { flex-direction: column; }
+.hb-play-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: var(--surface-sunken); }
+
+.hb-play-picker { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--surface); }
+.hb-play-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.hb-play-label { font-family: var(--font-label); font-size: var(--text-xs); text-transform: var(--label-case); letter-spacing: var(--label-tracking); color: var(--ink-faint); }
+.hb-play-link { all: unset; font-size: var(--text-xs); color: var(--ink-faint); cursor: pointer; }
+.hb-play-link:hover { color: var(--ink); }
+
+.hb-play-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--hairline); border-radius: var(--radius-md); overflow: hidden; }
+.hb-play-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); }
+.hb-play-row + .hb-play-row { border-top: 1px solid var(--hairline); }
+.hb-play-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hb-play-row-title { font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
+.hb-play-row-body { font-size: var(--text-xs); line-height: 1.45; color: var(--ink-soft); }
+.hb-play-row .hb-btn { flex: none; min-height: 28px; }
+
+.hb-play-engine { flex: none; min-width: 64px; text-align: center; padding: 2px var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-full); font-size: var(--text-xs); color: var(--ink-soft); white-space: nowrap; }
+.hb-play-engine[data-engine="love"] { color: var(--accent-text); border-color: var(--accent-line); }
+
+.hb-play-open { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.hb-play-open .hb-btn { min-height: 28px; }
+.hb-play-url { flex: 1; min-width: 220px; display: flex; gap: var(--space-2); margin: 0; }
+.hb-play-input { flex: 1; min-width: 0; min-height: 28px; padding: 0 var(--space-2); background: var(--surface-sunken); border: 1px solid var(--hairline); border-radius: var(--radius-sm); color: var(--ink); font: inherit; font-size: var(--text-sm); outline: none; }
+.hb-play-input:focus { border-color: var(--accent-line); }
+.hb-play-note { margin: 0; font-size: var(--text-xs); line-height: 1.5; color: var(--ink-faint); }
+.hb-play-error { margin: 0; font-size: var(--text-sm); color: var(--danger); }
+
+.hb-play-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.hb-play-status { position: absolute; top: var(--space-3); left: 50%; transform: translateX(-50%); max-width: calc(100% - var(--space-6)); padding: var(--space-1) var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-full); box-shadow: var(--elevation-1); font-size: var(--text-xs); color: var(--ink-soft); pointer-events: none; text-align: center; }
+.hb-play-bar { font: inherit; font-size: var(--text-sm); color: var(--ink); padding-right: var(--space-3); cursor: pointer; }
+.hb-play-bar:hover { border-color: var(--accent-line); }
+.hb-play-drop { position: absolute; inset: var(--space-2); display: grid; place-items: center; border: 1px dashed var(--accent-line); border-radius: var(--radius-lg); background: var(--scrim-soft); color: var(--ink); font-size: var(--text-sm); pointer-events: none; }

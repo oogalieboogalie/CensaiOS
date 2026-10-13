@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- stock:hex — balance, cell-like, six-sided efficiency -->
+  <polygon points="32,6 56,20 56,44 32,58 8,44 8,20" />
+  <line x1="8" y1="32" x2="56" y2="32" opacity="0.4" stroke-dasharray="2 3" />
+</svg>

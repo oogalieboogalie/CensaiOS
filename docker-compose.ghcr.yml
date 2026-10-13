@@ -1,0 +1,4 @@
+services:
+  homebase:
+    image: ghcr.io/oogalieboogalie/censaios:latest
+    pull_policy: always

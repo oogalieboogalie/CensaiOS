@@ -1,0 +1,11 @@
+{
+  "vulnerability_validation": {
+    "enabled": true,
+    "block_threshold_cvss": 7.0,
+    "warn_threshold_cvss": 0.1,
+    "cache_ttl_minutes": 15,
+    "ecosystems": ["npm", "pypi", "go", "maven"]
+  },
+  "policy_origin": "Enterprise Security Default 2026",
+  "last_updated": "2026-01-16T00:00:00Z"
+}

@@ -1,0 +1,53 @@
+/* Code Robot, the learn-to-code game. Tokens only, so every look applies. */
+.hb-robot { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr); background: var(--surface-sunken); }
+.hb-robot-stage { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
+.hb-robot-levels { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.hb-robot-level { all: unset; box-sizing: border-box; width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); font-size: var(--text-xs); font-variant-numeric: tabular-nums; color: var(--ink-soft); cursor: pointer; }
+.hb-robot-level:hover { border-color: var(--ink-faint); }
+.hb-robot-level[data-solved="true"] { color: var(--accent-text); border-color: var(--accent-line); }
+.hb-robot-level[aria-selected="true"] { background: var(--accent); border-color: var(--accent-line); color: var(--accent-contrast); }
+.hb-robot-level:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.hb-robot-levels-note { margin-left: auto; }
+.hb-robot-brief { display: flex; flex-direction: column; gap: var(--space-1); }
+.hb-robot-lesson { margin: 0; font-size: var(--text-xs); color: var(--accent-text); }
+.hb-robot-maps { display: flex; gap: var(--space-1); }
+.hb-robot-map-tab { all: unset; padding: var(--space-0-5) var(--space-2); border-radius: var(--radius-full); border: 1px solid var(--hairline); font-size: var(--text-xs); color: var(--ink-soft); cursor: pointer; background: var(--surface); }
+.hb-robot-map-tab[aria-selected="true"] { color: var(--ink); border-color: var(--ink-faint); }
+.hb-robot-map-tab[data-outcome="solved"] { color: var(--success); }
+.hb-robot-map-tab[data-outcome]:not([data-outcome="solved"]) { color: var(--danger); }
+.hb-robot-board-wrap { display: grid; place-items: center; padding: var(--space-2); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-md); }
+.hb-robot-board { width: 100%; max-width: 420px; max-height: 260px; height: auto; display: block; }
+.hb-robot-wall { fill: var(--surface-sunken); stroke: var(--hairline); stroke-width: 0.5; }
+.hb-robot-floor { fill: var(--surface); stroke: var(--hairline); stroke-width: 0.5; }
+.hb-robot-goal { fill: none; stroke: var(--accent-line); stroke-width: 2; }
+.hb-robot-gem { fill: var(--accent); }
+.hb-robot-bump { fill: none; stroke: var(--danger); stroke-width: 2; }
+.hb-robot-bot { transition: transform 180ms var(--ease-standard); }
+.hb-robot-bot rect { fill: var(--ink); }
+.hb-robot-eye { fill: var(--surface); }
+@media (prefers-reduced-motion: reduce) { .hb-robot-bot { transition: none; } }
+.hb-robot-outcome { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-height: 32px; font-size: var(--text-sm); color: var(--ink-soft); }
+.hb-robot-outcome[data-tone="good"] strong { color: var(--success); }
+.hb-robot-outcome[data-tone="bad"] { color: var(--danger); }
+.hb-robot-stars { display: inline-flex; gap: 3px; vertical-align: middle; }
+.hb-robot-stars span { width: 8px; height: 8px; border-radius: var(--radius-full); border: 1px solid var(--accent-line); }
+.hb-robot-stars span[data-on="true"] { background: var(--accent); }
+.hb-robot-class li { justify-content: space-between; }
+.hb-robot-pips { display: inline-flex; gap: 3px; }
+.hb-robot-pips span { width: 8px; height: 8px; border-radius: var(--radius-xs); background: var(--hairline); }
+.hb-robot-pips span[data-stars] { background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.hb-robot-pips span[data-stars="3"] { background: var(--accent); }
+.hb-robot-side { min-height: 0; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--surface); border-left: 1px solid var(--hairline); }
+.hb-robot-code { flex: 1; min-height: 120px; display: flex; overflow: hidden; border: 1px solid var(--hairline); border-radius: var(--radius-md); font-family: var(--font-mono); font-size: var(--text-sm); }
+.hb-robot-code > div { flex: 1; min-width: 0; }
+.hb-robot-code .cm-editor { height: 100%; }
+.hb-robot-code .cm-editor.cm-focused { outline: none; }
+.hb-robot-code .cm-scroller { font-family: var(--font-mono); }
+.hb-robot-actions { display: flex; align-items: center; gap: var(--space-2); }
+.hb-robot-actions .hb-btn { display: inline-flex; align-items: center; gap: var(--space-1); }
+.hb-robot-hint { margin-left: auto; font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-robot-hint summary { cursor: pointer; color: var(--ink-faint); }
+.hb-robot-hint p { margin: var(--space-1) 0 0; max-width: 240px; }
+.hb-robot-help { display: grid; grid-template-columns: auto 1fr; gap: 2px var(--space-3); margin: 0; font-size: var(--text-xs); }
+.hb-robot-help dt { font-family: var(--font-mono); color: var(--ink); }
+.hb-robot-help dd { margin: 0; color: var(--ink-faint); }

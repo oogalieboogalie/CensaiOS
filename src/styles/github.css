@@ -1,0 +1,69 @@
+/* GitHub window: the merge desk. Restrained: hairlines, one accent, status dots. */
+.hb-gh { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); color: var(--ink); font-family: var(--font-ui); font-size: var(--text-sm); }
+.hb-gh a { color: inherit; text-decoration: none; }
+.hb-gh a:hover { text-decoration: underline; text-underline-offset: 2px; }
+.hb-gh-pad { padding: var(--space-3) var(--space-4); }
+.hb-gh-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.hb-gh-error { margin: 0; color: var(--danger); font-size: var(--text-sm); }
+.hb-gh-empty { margin: 0; padding: var(--space-8) var(--space-4); text-align: center; color: var(--ink-faint); }
+.hb-gh-num { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+.hb-gh-tabs { display: flex; gap: var(--space-4); padding: 0 var(--space-4); border-bottom: 1px solid var(--hairline); }
+.hb-gh-tabs button { all: unset; cursor: pointer; padding: var(--space-2-5) 0; color: var(--ink-soft); border-bottom: 1px solid transparent; margin-bottom: -1px; display: inline-flex; gap: var(--space-1-5); align-items: center; }
+.hb-gh-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.hb-gh-tab-count { font-size: var(--text-xs); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+.hb-gh-desk { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.hb-gh-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2-5) var(--space-4); border-bottom: 1px solid var(--hairline); }
+.hb-gh-bar-count { color: var(--ink-soft); }
+.hb-gh-bar-count strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.hb-gh-bar-age { flex: 1; color: var(--ink-faint); font-size: var(--text-xs); }
+
+.hb-gh-list { list-style: none; margin: 0; padding: 0; }
+.hb-gh-row { display: flex; gap: var(--space-4); align-items: flex-start; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--hairline-soft); }
+.hb-gh-row:hover { background: var(--surface-hover); }
+.hb-gh-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.hb-gh-row-title { display: flex; align-items: baseline; gap: var(--space-2); font-weight: 500; font-size: var(--text-md); }
+.hb-gh-row-title a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.hb-gh-summary { margin: 0; color: var(--ink-soft); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.hb-gh-facts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-gh-status { display: inline-flex; align-items: center; gap: var(--space-1-5); }
+.hb-gh-status i { width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--ink-faint); flex: none; }
+.hb-gh-status[data-tone="ok"] i { background: var(--success); }
+.hb-gh-status[data-tone="bad"] { color: var(--danger); }
+.hb-gh-status[data-tone="bad"] i { background: var(--danger); }
+.hb-gh-status[data-tone="wait"] i { background: var(--warning); animation: hb-gh-pulse 1.4s var(--ease-standard) infinite; }
+.hb-gh-by { color: var(--ink-faint); }
+.hb-gh-row-action { flex: none; padding-top: var(--space-0-5); }
+.hb-gh-row-action .hb-btn { min-width: 96px; }
+.hb-btn[data-tone="warn"] { border-color: var(--warning); color: var(--ink); }
+
+.hb-gh-activity { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-1); padding: var(--space-1-5) var(--space-2); border-left: 2px solid var(--warning); background: var(--surface-2); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-gh-activity[data-tone="ok"] { border-left-color: var(--success); }
+.hb-gh-activity[data-tone="bad"] { border-left-color: var(--danger); color: var(--danger); }
+.hb-gh-activity-text { flex: 1; min-width: 0; }
+.hb-gh-activity-text strong { color: var(--ink); font-weight: 500; }
+.hb-gh-activity-sub { display: block; color: var(--ink-faint); margin-top: var(--space-0-5); }
+.hb-gh-approval { display: flex; flex-basis: 100%; align-items: center; gap: var(--space-2); }
+.hb-gh-approval-what { flex: 1; min-width: 0; font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.hb-gh-link { all: unset; cursor: pointer; color: var(--ink-faint); }
+.hb-gh-link:hover { color: var(--ink); }
+
+.hb-gh-recent { padding: var(--space-4); }
+.hb-gh-recent h4 { margin: 0 0 var(--space-2); font-family: var(--font-label); font-size: var(--text-xs); font-weight: var(--label-weight); text-transform: var(--label-case); letter-spacing: var(--label-tracking); color: var(--ink-faint); }
+.hb-gh-recent ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1-5); }
+.hb-gh-recent li { display: flex; align-items: baseline; gap: var(--space-2); color: var(--ink-soft); }
+.hb-gh-recent li a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-gh-recent-when { font-size: var(--text-xs); color: var(--ink-faint); white-space: nowrap; }
+
+.hb-gh-connect { margin: auto; width: min(440px, calc(100% - var(--space-8))); display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6) 0; }
+.hb-gh-connect h3 { margin: 0; font-size: var(--text-lg); font-weight: 600; }
+.hb-gh-connect p { margin: 0; color: var(--ink-soft); line-height: 1.5; }
+.hb-gh-connect p a { color: var(--accent-text); }
+.hb-gh-connect-row { display: flex; gap: var(--space-2); }
+.hb-gh-connect input { flex: 1; min-width: 0; min-height: 28px; padding: 0 var(--space-2-5); font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-sm); }
+.hb-gh-connect input:focus { outline: none; border-color: var(--accent-line); }
+.hb-gh-repo-options { display: flex; flex-wrap: wrap; gap: var(--space-1-5); }
+
+@keyframes hb-gh-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .hb-gh-status[data-tone="wait"] i { animation: none; } }

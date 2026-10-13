@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://censai.dev/schemas/agent-card.schema.json",
+  "title": "Censai Agent Card",
+  "description": "Censai's internal portable product manifest for agent identity, capabilities, memory posture, and marketplace readiness. External wire protocols such as A2A use explicit adapters.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "id", "name", "description", "version", "capabilities", "skills"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://censai.dev/schemas/agent-card.schema.json"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^agent:[a-z0-9][a-z0-9._-]{0,62}$",
+      "description": "Globally unique agent identifier. Convention: agent:<slug>."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Human-readable display name."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280,
+      "description": "One-sentence summary used in Censai listings."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
+      "description": "Censai card version (semver). Bump on capability changes."
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Named permission families the agent holds, with their mode. From EXOSKELETON_CAPABILITY_PLAN.md (Censai extension).",
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "skills": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Concrete skills the agent offers in the Censai manifest.",
+      "items": { "$ref": "#/$defs/skill" }
+    },
+    "model": { "$ref": "#/$defs/model" },
+    "memory": { "$ref": "#/$defs/memory" },
+    "tools": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/tool" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "guardrails": { "$ref": "#/$defs/guardrails" },
+    "quotas": { "$ref": "#/$defs/quotas" },
+    "observability": { "$ref": "#/$defs/observability" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "marketplace": { "$ref": "#/$defs/marketplace" }
+  },
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "mode"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.]+$",
+          "description": "Canonical capability name (e.g., browser.use, github.write). Catalog owned by docs/EXOSKELETON_CAPABILITY_PLAN.md."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["none", "read", "suggest", "execute_with_approval", "autonomous"],
+          "description": "Capability mode. None = capability not held. Autonomous = no approval required."
+        },
+        "scope": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional scope narrowing (host patterns, path patterns, etc.)."
+        }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^skill:[a-z0-9][a-z0-9._-]{0,62}$"
+        },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 280 },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "inputSchema": {
+          "type": "object",
+          "description": "Optional JSON Schema describing the skill's input (Censai extension). Lets callers validate inputs before dispatch."
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "AI provider (openrouter, openai, anthropic, google, ollama, custom)."
+        },
+        "id": { "type": "string", "description": "Model identifier at the provider." },
+        "temperature": { "type": "number", "minimum": 0, "maximum": 2 }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backend"],
+      "properties": {
+        "backend": {
+          "type": "string",
+          "enum": ["qdrant", "postgres", "sqlite", "none"],
+          "description": "Memory backend. 'none' means the agent is stateless."
+        },
+        "collection": { "type": "string" },
+        "policy": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Memory policy modules (e.g., respect, consent, privacy)."
+        }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^tool:[a-z0-9][a-z0-9._:-]{0,62}$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["http", "a2a-plugin", "function", "command"]
+        },
+        "config": {
+          "type": "object",
+          "description": "Tool-specific config (no schema constraint here; tools self-describe)."
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["to", "channel"],
+      "properties": {
+        "to": { "type": "string", "pattern": "^agent:[a-z0-9][a-z0-9._-]{0,62}$" },
+        "channel": { "type": "string", "enum": ["tasks", "events", "messages", "memory"] },
+        "allowed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Edge-level permission allowlist (e.g., 'analyze', 'summarize')."
+        }
+      }
+    },
+    "guardrails": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "egress": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "deny": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "policyModules": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "quotas": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxReplicas": { "type": "integer", "minimum": 1 },
+        "leaseSeconds": { "type": "integer", "minimum": 1 },
+        "rateLimitPerMin": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "trace": { "type": "boolean" },
+        "logLevel": { "type": "string", "enum": ["debug", "info", "warn", "error"] },
+        "incidentTag": { "type": ["string", "null"] }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "version": { "type": "string", "description": "Free-form version metadata (e.g., git SHA, build ID)." }
+      }
+    },
+    "marketplace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["visibility"],
+      "properties": {
+        "visibility": { "type": "string", "enum": ["private", "unlisted", "public"] },
+        "priceCents": { "type": "integer", "minimum": 0 },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "license": {
+          "type": "string",
+          "enum": ["BUSL-1.1", "AGPL-3.0", "Apache-2.0", "MIT", "custom"],
+          "description": "License under which the agent is published."
+        },
+        "trialDays": { "type": "integer", "minimum": 0, "maximum": 365 }
+      }
+    }
+  }
+}

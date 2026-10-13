@@ -1,0 +1,35 @@
+/* Search engines window (Add > Search engines). Tokens only, one accent. */
+.se { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--surface); color: var(--ink); font-size: var(--text-sm); }
+.se-engines { display: flex; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--hairline); overflow-x: auto; scrollbar-width: thin; }
+.se-engine { all: unset; display: inline-flex; align-items: center; gap: var(--space-1-5); height: 26px; padding: 0 var(--space-2); border-radius: var(--radius-sm); color: var(--ink-soft); white-space: nowrap; cursor: pointer; flex: none; }
+.se-engine:hover { background: var(--surface-hover); color: var(--ink); }
+.se-engine[aria-selected="true"] { background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--hairline); }
+.se-engine:focus-visible, .se-btn:focus-visible, .se-input:focus-visible, .se-link:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.se-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2-5) var(--space-3); }
+.se-bar-mark { display: grid; place-items: center; width: 28px; height: 28px; flex: none; }
+.se-input { flex: 1; min-width: 0; height: 32px; padding: 0 var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-2); color: var(--ink); font: inherit; font-size: var(--text-md); outline: none; }
+.se-input:focus { border-color: var(--accent-line); background: var(--surface); }
+.se-input--small { height: 26px; font-size: var(--text-sm); font-family: var(--font-mono); }
+.se-btn { display: inline-flex; align-items: center; height: 32px; padding: 0 var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; white-space: nowrap; text-decoration: none; }
+.se-btn:hover:not(:disabled) { background: var(--surface-hover); }
+.se-btn:disabled { opacity: 0.5; cursor: default; }
+.se-btn--primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.se-btn--primary:hover:not(:disabled) { background: var(--ink-soft); }
+.se-server { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3) var(--space-2-5); color: var(--ink-faint); font-size: var(--text-xs); }
+.se-server .se-btn { height: 26px; }
+.se-link { color: var(--accent-ink, var(--accent)); text-decoration: none; white-space: nowrap; }
+.se-link:hover { text-decoration: underline; }
+.se-body { position: relative; flex: 1; min-height: 0; border-top: 1px solid var(--hairline); display: flex; flex-direction: column; }
+.se-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2-5); padding: var(--space-6) var(--space-4); text-align: center; overflow-y: auto; }
+.se-empty .hb-brand-icon { margin-bottom: var(--space-1); }
+.se-empty-title { font-size: var(--text-lg); font-weight: 600; letter-spacing: -0.01em; }
+.se-faint { color: var(--ink-faint); font-size: var(--text-sm); line-height: 1.5; }
+.se-measure { max-width: 46ch; }
+.se-row { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: center; margin-top: var(--space-1); }
+.se-onion { display: flex; align-items: center; gap: var(--space-2); max-width: 100%; margin-top: var(--space-1); }
+.se-code { min-width: 0; overflow-x: auto; white-space: nowrap; padding: var(--space-1-5) var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-2); font-family: var(--font-mono); font-size: var(--text-xs); user-select: all; }
+.se-native { flex: 1; display: grid; place-items: center; padding: var(--space-4); text-align: center; }
+.se-framed { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.se-frame { flex: 1; width: 100%; border: 0; display: block; background: var(--surface); }
+.se-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-1-5) var(--space-3); border-top: 1px solid var(--hairline); font-size: var(--text-xs); }
+.se-foot .se-faint { font-size: var(--text-xs); }

@@ -1,0 +1,45 @@
+/* YorWare CAD: the Censai Office toolbar, the recipe on the left when open,
+   the part in the middle on the sunken surface, sizes on the right. The
+   accent marks only the pressed view and the Run button. */
+.hb-yc-stage { padding: 0; display: flex; align-items: stretch; justify-content: stretch; overflow: hidden; }
+.hb-yc-view { position: relative; flex: 1; min-width: 0; min-height: 0; touch-action: none; }
+.hb-yc-gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; cursor: grab; }
+.hb-yc-gl:active { cursor: grabbing; }
+.hb-yc-empty { position: absolute; inset: 0; display: grid; place-items: center; font-size: var(--text-sm); color: var(--ink-faint); pointer-events: none; }
+.hb-yc-error { position: absolute; left: var(--space-3); right: var(--space-3); bottom: var(--space-3); padding: var(--space-2) var(--space-2-5); border: 1px solid color-mix(in oklab, var(--ps-red) 40%, var(--hairline)); border-radius: var(--radius-md); background: color-mix(in oklab, var(--ps-red) 8%, var(--surface)); font-size: var(--text-sm); color: var(--ink); line-height: 1.45; }
+.hb-yc-status { min-width: 0; }
+.hb-yc-status[data-state="error"] { color: var(--ps-red); }
+
+/* Sizes and facts */
+.hb-yc-panel { width: 252px; }
+.hb-yc-dial { display: flex; flex-direction: column; gap: var(--space-0-5); color: var(--ink-soft); }
+.hb-yc-numwrap { display: inline-flex; align-items: center; gap: var(--space-1); }
+.hb-yc-num { box-sizing: border-box; width: 64px; height: 22px; padding: 0 var(--space-1); border: 1px solid var(--hairline); border-radius: var(--radius-xs); background: var(--surface); color: var(--ink); font-family: var(--font-mono); font-size: var(--text-xs); text-align: right; }
+.hb-yc-num:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -1px; }
+.hb-yc-toggle input { accent-color: var(--accent); }
+.hb-yc-facts { margin: 0; display: grid; grid-template-columns: 56px 1fr; gap: var(--space-1) var(--space-2); font-size: var(--text-sm); }
+.hb-yc-facts dt { color: var(--ink-faint); }
+.hb-yc-facts dd { margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
+.hb-yc-bodies { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-0-5); }
+.hb-yc-bodies li { display: flex; align-items: center; gap: var(--space-1-5); }
+.hb-yc-swatch { width: 10px; height: 10px; border-radius: var(--radius-xs); box-shadow: 0 0 0 1px var(--hairline); flex-shrink: 0; }
+
+/* Recipe */
+.hb-yc-code { width: 400px; flex-shrink: 0; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2-5) var(--space-3); border-right: 1px solid var(--hairline); min-height: 0; }
+.hb-yc-code-head { display: flex; align-items: center; justify-content: space-between; }
+.hb-yc-editor { flex: 1; min-height: 120px; display: flex; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-sunken); overflow: hidden; }
+.hb-yc-gutter { margin: 0; padding: var(--space-2) var(--space-1-5); min-width: 28px; text-align: right; font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; color: var(--ink-faint); overflow: hidden; user-select: none; border-right: 1px solid var(--hairline); }
+.hb-yc-textarea { flex: 1; min-width: 0; margin: 0; padding: var(--space-2); border: 0; resize: none; background: transparent; color: var(--ink); font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; white-space: pre; overflow: auto; tab-size: 2; }
+.hb-yc-textarea:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
+.hb-yc-code code { font-family: var(--font-mono); }
+.hb-yc-code a { color: var(--accent-ink); }
+.hb-yc-replace { display: flex; align-items: center; gap: var(--space-2); }
+
+/* Start */
+.hb-yc-start { margin: auto; display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-5); text-align: center; max-width: 640px; }
+.hb-yc-starters { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); width: 100%; }
+.hb-yc-starter { all: unset; box-sizing: border-box; width: 100%; height: 100%; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); cursor: pointer; text-align: left; }
+.hb-yc-starter:hover:not(:disabled) { border-color: var(--accent-line); }
+.hb-yc-starter:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.hb-yc-starter:disabled { cursor: default; }
+.hb-yc-starter-name { font-size: var(--text-sm); font-weight: 600; color: var(--ink); }

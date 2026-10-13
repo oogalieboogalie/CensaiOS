@@ -1,0 +1,32 @@
+/* Outside tools: the "Tools" panel over a chat window. Builds on the Share
+   panel's pieces (agent-endpoints.css) so both panels look the same. */
+.hb-otl-loading { padding: var(--pad-3) var(--pad-4); }
+.hb-otl-servers { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-otl-server {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+}
+.hb-otl-server[data-allowed='true'] { border-color: var(--accent-line); }
+.hb-otl-server > .hb-aep-toggle-row { display: flex; }
+.hb-otl-server-main { flex: 1; min-width: 0; }
+.hb-otl-name { display: flex; align-items: center; gap: var(--space-1-5); font-weight: 600; }
+.hb-otl-address { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); }
+.hb-otl-tools { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.hb-otl-tool {
+  padding: 0 var(--space-1-5);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+}
+.hb-otl-actions { display: flex; flex-wrap: wrap; gap: var(--space-1-5); }
+.hb-otl-add { display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-otl-add .hb-aep-input { flex: none; }
+.hb-otl-add > .hb-aep-btn { align-self: flex-start; }
+.hb-otl-from { color: var(--ink-faint); }

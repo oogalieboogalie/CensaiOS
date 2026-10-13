@@ -1,0 +1,79 @@
+{
+  "$schema": "https://censai.dev/schemas/agent-card.schema.json",
+  "id": "agent:homebase-publisher",
+  "name": "Homebase Marketplace Publisher",
+  "description": "Publishes the CensaiHub marketplace surface. Listens for new agent card submissions and exposes them via /api/marketplace/listings.",
+  "version": "0.2.0",
+  "capabilities": [
+    { "name": "memory.read", "mode": "autonomous" },
+    { "name": "memory.write", "mode": "autonomous" },
+    { "name": "browser.read", "mode": "read" },
+    { "name": "files.read", "mode": "autonomous", "scope": ["/marketplace/*"] },
+    { "name": "files.write", "mode": "execute_with_approval", "scope": ["/marketplace/listings/*"] }
+  ],
+  "skills": [
+    {
+      "id": "skill:publish-card",
+      "name": "Publish an agent card",
+      "description": "Validate a card against the contract schema and add it to the marketplace listing.",
+      "tags": ["marketplace", "publish"],
+      "inputSchema": {
+        "type": "object",
+        "required": ["cardPath"],
+        "properties": {
+          "cardPath": { "type": "string", "description": "Filesystem path to the agent card JSON." },
+          "visibility": { "type": "string", "enum": ["private", "unlisted", "public"] }
+        }
+      }
+    },
+    {
+      "id": "skill:list-listings",
+      "name": "List marketplace listings",
+      "description": "Return all published cards matching the visibility filter.",
+      "tags": ["marketplace", "list"]
+    }
+  ],
+  "model": {
+    "provider": "openrouter",
+    "id": "gpt-4o-mini",
+    "temperature": 0.1
+  },
+  "memory": {
+    "backend": "postgres",
+    "collection": "marketplace_listings",
+    "policy": ["consent"]
+  },
+  "tools": [
+    {
+      "id": "tool:marketplace-db",
+      "type": "function",
+      "config": { "table": "agent_listings" }
+    }
+  ],
+  "guardrails": {
+    "egress": ["logging", "signature"],
+    "deny": ["os.shell", "fs.write:/system", "fs.write:/secrets/*"],
+    "policyModules": ["respect", "privacy", "consent"]
+  },
+  "quotas": {
+    "maxReplicas": 2,
+    "leaseSeconds": 300,
+    "rateLimitPerMin": 120
+  },
+  "observability": {
+    "trace": true,
+    "logLevel": "info",
+    "incidentTag": "marketplace"
+  },
+  "metadata": {
+    "tags": ["marketplace", "internal"],
+    "version": "0.2.0+2026-06-23"
+  },
+  "marketplace": {
+    "visibility": "private",
+    "priceCents": 0,
+    "currency": "USD",
+    "license": "BUSL-1.1",
+    "trialDays": 0
+  }
+}

@@ -1,0 +1,36 @@
+/* Dock app windows. Tokens only, so every look applies. */
+.hb-dock { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface-sunken); color: var(--ink); font-family: var(--font-sans); overflow: hidden; }
+.hb-dock-title { font-size: var(--text-md); font-weight: 600; color: var(--ink); }
+.hb-dock-body { margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--ink-soft); }
+.hb-dock-muted { margin: 0; font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-dock-error { margin: 0 var(--space-4); font-size: var(--text-sm); color: var(--danger); }
+
+.hb-dock-note { flex: 1; display: grid; place-items: center; padding: var(--space-5); }
+.hb-dock-card { width: min(420px, 100%); display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-lg); box-shadow: var(--elevation-1); }
+
+/* The slot the real app sits over. What is drawn here only shows while the app is tucked away. */
+.hb-dock-slot { flex: 1; position: relative; background: var(--surface-sunken); }
+.hb-dock-under { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-4); text-align: center; font-size: var(--text-sm); color: var(--ink-faint); }
+
+.hb-dock-picker { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); padding-bottom: var(--space-3); }
+.hb-dock-picker-head { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-4) 0; }
+.hb-dock-picker-tools { display: flex; gap: var(--space-2); }
+.hb-dock-search { flex: 1; min-width: 0; min-height: 28px; padding: 0 var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--text-sm); outline: none; }
+.hb-dock-search:focus-visible { border-color: var(--accent-line); }
+.hb-dock-picker > .hb-dock-muted { padding: 0 var(--space-4); }
+.hb-dock-list { list-style: none; margin: 0; padding: 0 var(--space-2); overflow: auto; display: flex; flex-direction: column; gap: 1px; }
+.hb-dock-row { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-2-5); border-radius: var(--radius-sm); cursor: pointer; }
+.hb-dock-row:hover, .hb-dock-row:focus-visible { background: var(--surface-2); }
+.hb-dock-row-icon { width: 20px; height: 20px; flex: none; display: grid; place-items: center; color: var(--ink-faint); }
+.hb-dock-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.hb-dock-row-name { font-size: var(--text-sm); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-dock-row-process { font-size: var(--text-xs); color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-dock-row-action { font-size: var(--text-xs); color: var(--ink-faint); opacity: 0; }
+.hb-dock-row:hover .hb-dock-row-action, .hb-dock-row:focus-visible .hb-dock-row-action { opacity: 1; color: var(--accent-text); }
+
+.hb-dock-cast { flex: 1; min-height: 0; position: relative; display: grid; place-items: center; background: var(--surface-sunken); }
+.hb-dock-cast-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.hb-dock-cast-img[data-stale="true"] { opacity: 0.5; }
+.hb-dock-bar { position: absolute; left: 50%; bottom: var(--space-3); transform: translateX(-50%); display: inline-flex; align-items: center; gap: var(--space-2-5); padding: var(--space-1-5) var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-full); box-shadow: var(--elevation-1); font-size: var(--text-sm); white-space: nowrap; }
+.hb-dock-bar .hb-btn { border-radius: var(--radius-full); }
+.hb-dock-dot { width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--ink-faint); }

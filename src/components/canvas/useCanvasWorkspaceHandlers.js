@@ -1,0 +1,134 @@
+import React from 'react';
+import { getOwningGroup } from '../../lib/layoutAlgo.js';
+import { resolveGroupArrangePreset } from '../../lib/layout/defaultPreset.js';
+import { screenToCanvas } from '../../lib/canvasMath.js';
+import { useTheme } from '../Theme.jsx';
+import { FIRST_MISSION_DRAG_EVENT } from '../../lib/firstMission.js';
+import { isDockAction, tiledMembers } from '../../lib/layout/dock.js';
+import { resolveWindowProject } from '../../lib/windowProject.js';
+
+export function useCanvasWorkspaceHandlers({
+  ref,
+  wins,
+  canvasGroups,
+  currentProject,
+  pan,
+  zoom,
+  onUpdate,
+  onSpawn,
+  onAutoArrangeGroup,
+  onUpdateGroup,
+  onLinkCreate,
+  setWireDrag,
+  onDockWindow,
+  onUndockWindow,
+  dockingEnabled = false,
+}) {
+  const themeContext = useTheme();
+  const theme = themeContext?.theme || { groupSnapping: true };
+  const handleAssign = React.useCallback((data) => {
+    const item = {
+      id: crypto.randomUUID(),
+      text: data.text,
+      done: false,
+      assignee: data.assignee,
+      quoted: data.quoted,
+      source: data.source,
+      createdAt: Date.now(),
+    };
+    const existing = wins.find(ww => ww.kind === 'todos');
+    if (existing) onUpdate(existing.id, { items: [...(existing.items || []), item] });
+    else onSpawn('todos', { items: [item] });
+  }, [wins, onUpdate, onSpawn]);
+
+  const handleDragEnd = (winId, finalPosition, interaction = {}) => {
+    const original = wins.find(w => w.id === winId);
+    const draggedWin = original && finalPosition ? { ...original, ...finalPosition } : original;
+    if (!draggedWin) return;
+    // Click (no pointer movement) must be a no-op: selecting / focusing a
+    // window inside a group must never re-layout the group. The drag hook
+    // reports moved:false when pointer never moved; also guard against
+    // sub-pixel jitter so a click doesn't count as a drag.
+    let displacement = 0;
+    if (original && finalPosition
+      && typeof finalPosition.x === 'number' && typeof finalPosition.y === 'number') {
+      displacement = Math.hypot(finalPosition.x - original.x, finalPosition.y - original.y);
+    }
+    const didMove = interaction.moved === true && displacement > 2;
+    // Click (no drag) is a strict no-op for membership: a click must never
+    // recompute the owning group. Center-point containment can disagree with
+    // the stored groupId (e.g. an oversized window whose center sits outside
+    // its group), and recomputing on click silently strips membership.
+    if (!didMove) return;
+    if (interaction.moved) {
+      window.dispatchEvent(new CustomEvent(FIRST_MISSION_DRAG_EVENT, {
+        detail: { winId, position: finalPosition },
+      }));
+    }
+
+    // Tiled groups: dropping on a zone docks; a tile Shift-dragged onto open
+    // canvas leaves its group (the rest re-tile).
+    if (dockingEnabled && isDockAction(interaction.dock)) {
+      onDockWindow(winId, interaction.dock);
+      return;
+    }
+    const tiledGroups = canvasGroups.filter((g) => tiledMembers(g, wins));
+    if (onUndockWindow && tiledGroups.some((g) => g.id === original.groupId)) {
+      onUndockWindow(winId);
+      return;
+    }
+
+    // Groups without a layout tree keep the older behavior: membership by
+    // where the window's center lands, then a tidy-up when it newly enters.
+    const looseGroups = canvasGroups.filter((g) => !tiledGroups.includes(g));
+    const owner = getOwningGroup(draggedWin, looseGroups, false);
+    const nextGroupId = owner ? owner.id : null;
+    if (nextGroupId !== (original.groupId || null)) {
+      onUpdate(winId, { groupId: nextGroupId });
+    }
+    if (!owner) return;
+    // Only tidy when the window newly entered a group (or changed groups).
+    // Re-positioning a window inside the group it already belongs to must
+    // leave the manual arrangement alone.
+    const enteredNewGroup = (original.groupId || null) !== owner.id;
+    if (!enteredNewGroup) return;
+    if (theme.groupSnapping !== false) {
+      setTimeout(() => onAutoArrangeGroup?.(owner.id, resolveGroupArrangePreset(owner)), 50);
+    }
+  };
+
+  const handleWireStart = (winId, { x, y }) => {
+    const canvasPt = screenToCanvas(x, y, pan.x, pan.y, zoom, ref.current.getBoundingClientRect());
+    setWireDrag({ fromId: winId, startX: canvasPt.x, startY: canvasPt.y, x: canvasPt.x, y: canvasPt.y });
+  };
+
+  const handleWireDrag = ({ x, y }) => {
+    if (!ref.current) return;
+    const canvasPt = screenToCanvas(x, y, pan.x, pan.y, zoom, ref.current.getBoundingClientRect());
+    setWireDrag(prev => prev ? { ...prev, x: canvasPt.x, y: canvasPt.y } : null);
+  };
+
+  const handleWireEnd = (winId, { x, y }) => {
+    if (!ref.current) return;
+    const canvasPt = screenToCanvas(x, y, pan.x, pan.y, zoom, ref.current.getBoundingClientRect());
+    const targetWin = wins.find(w => w.id !== winId && canvasPt.x >= w.x && canvasPt.x <= w.x + w.w && canvasPt.y >= w.y && canvasPt.y <= w.y + w.h);
+    if (targetWin && onLinkCreate) onLinkCreate(winId, targetWin.id);
+    setWireDrag(null);
+  };
+
+  const handleGroupDragEnd = (groupId) => {
+    const draggedGroup = canvasGroups.find(g => g.id === groupId);
+    if (!draggedGroup) return;
+    const owner = getOwningGroup(draggedGroup, canvasGroups.filter(g => g.id !== groupId), true);
+    onUpdateGroup(groupId, { groupId: owner ? owner.id : null });
+  };
+
+  // Multi-project board: each window resolves its own project (see
+  // src/lib/windowProject.js); the board default only fills the gaps.
+  const getProjectContextForWindow = React.useCallback(
+    (win) => resolveWindowProject(win, { wins, canvasGroups, boardDefault: currentProject }),
+    [canvasGroups, currentProject, wins],
+  );
+
+  return { handleAssign, handleDragEnd, handleWireStart, handleWireDrag, handleWireEnd, handleGroupDragEnd, getProjectContextForWindow };
+}

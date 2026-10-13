@@ -1,0 +1,34 @@
+/* Scout agents: the "Scout" panel over a chat window. Builds on the Share
+   panel's pieces (agent-endpoints.css) so all chat panels look the same. */
+.hb-scout-pad { padding: var(--pad-3) var(--pad-4); }
+.hb-scout-row { display: flex; align-items: center; gap: var(--space-2); }
+.hb-scout-model { display: flex; flex-direction: column; gap: var(--space-1-5); }
+.hb-scout-map,
+.hb-scout-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+}
+.hb-scout-stats { display: flex; flex-wrap: wrap; gap: var(--space-3); font-size: var(--text-sm); color: var(--ink-soft); }
+.hb-scout-stats b { color: var(--ink); }
+.hb-scout-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-xs); }
+.hb-scout-list li { display: flex; justify-content: space-between; gap: var(--space-2); color: var(--ink-faint); }
+.hb-scout-list code,
+.hb-scout-spot code { color: var(--ink); overflow-wrap: anywhere; }
+.hb-scout-spot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
+.hb-scout-spot code { color: var(--accent); font-weight: 600; }
+.hb-scout-why { font-size: var(--text-sm); line-height: 1.5; color: var(--ink); }
+.hb-scout-line {
+  margin: 0;
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.hb-scout-also { font-size: var(--text-xs); color: var(--ink-soft); overflow-wrap: anywhere; }

@@ -1,0 +1,83 @@
+name: Security
+
+# Contributor-facing security gate for the public repo. Three layers:
+#   1. tripwires  — fast custom checks for malicious-PR patterns (always blocks)
+#   2. gitleaks   — secret scanning across the diff/history (always blocks)
+#   3. codeql     — deep semantic vulnerability analysis (informational on PRs)
+#
+# Runs on every PR. Use least-privilege tokens and the SAFE pull_request
+# trigger (never pull_request_target) so a hostile PR cannot read repo secrets.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * 1' # weekly, catches newly-disclosed CVEs in deps
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tripwires:
+    name: Malicious-code tripwires
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run security tripwires
+        run: node scripts/security-tripwires.mjs
+
+  secrets:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so a secret in any commit is caught
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
+
+  dependency-audit:
+    name: Dependency vulnerability audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # High/critical advisories fail the build; lower severities are reported.
+      - name: npm audit (production deps)
+        run: npm audit --omit=dev --audit-level=high
+
+  codeql:
+    name: CodeQL analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # Default security suite only. security-extended reports defense-in-depth
+          # suggestions (rate-limit coverage, user-controlled guards) across the
+          # whole API surface on first scan; those are scheduled hardening work,
+          # not release blockers for a beta that already requires human review.
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3

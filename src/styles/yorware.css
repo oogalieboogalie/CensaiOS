@@ -1,0 +1,76 @@
+/* YorWare PDF: the Censai Office toolbar and Creative tool rail, a page
+   strip on the left, the page on the sunken canvas in the middle. Amber
+   (the accent) marks only the current page, the active tool and what you
+   selected. */
+.hb-yp { outline: none; }
+.hb-yp[data-dropping="true"]::after { content: 'Drop to add the PDF'; position: absolute; inset: var(--space-2); display: grid; place-items: center; border: 2px dashed var(--accent); border-radius: var(--radius-md); background: color-mix(in oklab, var(--surface) 82%, transparent); color: var(--ink); font-weight: 600; pointer-events: none; z-index: 5; }
+.hb-yp-count { min-width: 44px; text-align: center; }
+
+/* Page strip */
+.hb-yp-strip { list-style: none; margin: 0; padding: var(--space-2); width: 124px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-2); border-right: 1px solid var(--hairline); }
+.hb-yp-thumb { border-top: 2px solid transparent; }
+.hb-yp-thumb[data-over="true"], .hb-yp-strip-end[data-over="true"] { border-top-color: var(--accent); }
+.hb-yp-thumb-btn { all: unset; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-1); border-radius: var(--radius-sm); cursor: pointer; }
+.hb-yp-thumb-btn:hover { background: var(--surface-2); }
+.hb-yp-thumb-btn:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
+.hb-yp-thumb-canvas { display: block; background: var(--color-white); box-shadow: 0 0 0 1px var(--hairline); }
+.hb-yp-thumb[data-current="true"] .hb-yp-thumb-canvas { box-shadow: 0 0 0 2px var(--accent); }
+.hb-yp-thumb-label { display: flex; gap: var(--space-1); align-items: center; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.hb-yp-thumb[data-current="true"] .hb-yp-thumb-label { color: var(--ink); }
+.hb-yp-thumb-marks { padding: 0 var(--space-1); border-radius: var(--radius-full); background: var(--accent-soft); color: var(--ink-soft); }
+.hb-yp-strip-end { padding: var(--space-2); border-top: 2px solid transparent; font-size: var(--text-xs); color: var(--ink-faint); text-align: center; }
+
+/* The page */
+.hb-yp-stage { padding: var(--space-5); }
+.hb-yp-page { position: relative; flex-shrink: 0; background: var(--color-white); box-shadow: var(--elevation-2); touch-action: none; user-select: none; }
+.hb-yp-page[data-tool="text"] { cursor: text; }
+.hb-yp-page[data-tool="sign"], .hb-yp-page[data-tool="highlight"], .hb-yp-page[data-tool="redact"] { cursor: crosshair; }
+.hb-yp-canvas { display: block; width: 100%; height: 100%; }
+.hb-yp-mark { position: absolute; box-sizing: border-box; cursor: move; }
+.hb-yp-mark[data-type="highlight"] .hb-yp-fill { mix-blend-mode: multiply; }
+.hb-yp-mark[data-selected="true"] { outline: 1.5px solid var(--accent); outline-offset: 1px; }
+.hb-yp-page:not([data-tool="select"]) .hb-yp-mark { pointer-events: none; }
+.hb-yp-fill { position: absolute; inset: 0; }
+.hb-yp-text, .hb-yp-text-edit { box-sizing: border-box; margin: 0; width: 100%; height: 100%; font-family: Helvetica, Arial, sans-serif; line-height: 1.25; white-space: pre; overflow: hidden; }
+.hb-yp-text-edit { display: block; border: none; outline: 1.5px solid var(--accent); background: color-mix(in oklab, var(--color-white) 88%, transparent); resize: none; min-width: 60px; overflow: visible; cursor: text; }
+.hb-yp-sign { display: block; width: 100%; height: 100%; overflow: visible; }
+.hb-yp-handle { position: absolute; right: -5px; bottom: -5px; width: 9px; height: 9px; border-radius: var(--radius-xs); background: var(--accent); box-shadow: 0 0 0 1px var(--surface); cursor: nwse-resize; }
+.hb-yp-draft { position: absolute; pointer-events: none; outline: 1px dashed var(--ink-soft); }
+.hb-yp-draft[data-type="highlight"] { background: color-mix(in oklab, var(--accent) 35%, transparent); }
+.hb-yp-draft[data-type="redact"] { background: color-mix(in oklab, var(--color-black) 70%, transparent); }
+
+/* Empty state */
+.hb-yp-empty { max-width: 340px; display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; color: var(--ink-soft); }
+.hb-yp-empty-title { font-size: var(--text-lg); font-weight: 600; color: var(--ink); }
+
+/* Signature pad */
+.hb-yp-modal { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; background: var(--scrim); }
+.hb-yp-modal-card { width: min(460px, calc(100% - var(--space-8))); display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--elevation-3); }
+.hb-yp-modal-head { font-weight: 600; }
+.hb-yp-pad { width: 100%; aspect-ratio: 420 / 160; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--color-white); touch-action: none; cursor: crosshair; }
+.hb-yp-pad-line { stroke: var(--hairline-strong); stroke-width: 1; stroke-dasharray: 4 4; }
+.hb-yp-modal-actions { display: flex; align-items: center; gap: var(--space-2); }
+
+/* Round two: the PDF's own form, sign-here flags, and search. Form boxes
+   get a faint amber wash so people can see what to fill in. */
+.hb-yp-form { position: absolute; inset: 0; pointer-events: none; }
+.hb-yp-field { position: absolute; box-sizing: border-box; margin: 0; padding: 0 var(--space-1); pointer-events: auto; border: 1px solid color-mix(in oklab, var(--accent) 55%, transparent); border-radius: var(--radius-xs); background: color-mix(in oklab, var(--accent) 12%, var(--color-white)); color: var(--color-black); font-family: Helvetica, Arial, sans-serif; outline: none; }
+.hb-yp-field:focus, .hb-yp-field:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.hb-yp-field[disabled] { background: transparent; border-style: dashed; }
+.hb-yp-field[data-type="check"], .hb-yp-field[data-type="radio"] { padding: 0; accent-color: var(--accent); cursor: pointer; }
+textarea.hb-yp-field { resize: none; line-height: 1.2; padding-top: var(--space-1); }
+.hb-yp-field-sign { all: unset; position: absolute; box-sizing: border-box; pointer-events: auto; display: grid; place-items: center; border: 1.5px dashed var(--accent); border-radius: var(--radius-xs); background: color-mix(in oklab, var(--accent) 10%, transparent); color: var(--ink-soft); font-weight: 600; cursor: pointer; }
+.hb-yp-form[data-tool="text"] .hb-yp-field, .hb-yp-form[data-tool="highlight"] .hb-yp-field, .hb-yp-form[data-tool="redact"] .hb-yp-field, .hb-yp-form[data-tool="highlight"] .hb-yp-field-sign, .hb-yp-form[data-tool="redact"] .hb-yp-field-sign { pointer-events: none; }
+.hb-yp-flag { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); padding: 0 var(--space-1) 0 var(--space-2); border: 1.5px dashed var(--accent); border-radius: var(--radius-sm); background: color-mix(in oklab, var(--accent) 16%, var(--color-white)); color: var(--color-black); font-family: var(--font-sans); line-height: 1.15; overflow: hidden; }
+.hb-yp-flag-text { display: flex; flex-direction: column; min-width: 0; }
+.hb-yp-flag-who { opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-yp-flag-btn { all: unset; flex-shrink: 0; padding: 2px var(--space-2); border-radius: var(--radius-xs); background: var(--accent); color: var(--on-fill); font-weight: 600; cursor: pointer; }
+.hb-yp-flag-btn:focus-visible { outline: 2px solid var(--ink); }
+.hb-yp-find { position: absolute; pointer-events: none; border-radius: var(--radius-xs); background: color-mix(in oklab, var(--accent) 28%, transparent); mix-blend-mode: multiply; }
+.hb-yp-find[data-current="true"] { background: color-mix(in oklab, var(--accent) 55%, transparent); box-shadow: 0 0 0 1.5px var(--accent); }
+.hb-yp-search { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--hairline); }
+.hb-yp-search-input { flex: 0 1 240px; min-width: 120px; height: 26px; box-sizing: border-box; padding: 0 var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--text-sm); }
+.hb-yp-search-input:focus { outline: none; border-color: var(--accent); }
+.hb-yp-search-count { min-width: 70px; font-size: var(--text-xs); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.hb-yp-search-snippet { flex: 1; min-width: 0; font-size: var(--text-xs); color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-yp-search-close { margin-left: auto; }

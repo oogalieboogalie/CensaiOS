@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Echo: three concentric arcs opening upward, like signal rings emanating outward -->
+  <!-- inner arc -->
+  <path d="M22 38 Q32 28 42 38" stroke-width="2.2" />
+  <!-- mid arc -->
+  <path d="M16 42 Q32 22 48 42" stroke-width="2" opacity="0.85" />
+  <!-- outer arc -->
+  <path d="M10 46 Q32 16 54 46" stroke-width="1.7" opacity="0.55" />
+  <!-- source point (the original signal) -->
+  <circle cx="32" cy="44" r="2.5" fill="currentColor" stroke="none" />
+  <!-- baseline -->
+  <line x1="10" y1="54" x2="54" y2="54" stroke-width="1.4" opacity="0.4" />
+</svg>

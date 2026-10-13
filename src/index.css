@@ -1,0 +1,122 @@
+@import './styles/tokens.css';
+@import './styles/window-chrome.css';
+@import './styles/login.css';
+@import './styles/chat.css';
+@import './styles/chat-key.css';
+@import './styles/modules.css';
+@import './styles/github.css';
+@import './styles/games.css';
+@import './styles/playground.css';
+@import './styles/racetrack.css';
+@import './styles/rhythm.css';
+@import './styles/driftholm.css';
+@import './styles/agentCompany.css';
+@import './styles/codeRobot.css';
+@import './styles/dock.css';
+@import './styles/lessons.css';
+@import './styles/shorts.css';
+@import './styles/music.css';
+@import './styles/studio.css';
+@import './styles/vm.css';
+@import './styles/leadhound.css';
+@import './styles/research.css';
+@import './styles/agent-network.css';
+@import './styles/office.css';
+@import './styles/creative.css';
+@import './styles/yorware.css';
+@import './styles/yorware-writer.css';
+@import './styles/yorware-diagrams.css';
+@import './styles/yorware-photos.css';
+@import './styles/yorware-layout.css';
+@import './styles/yorware-3d.css';
+@import './styles/yorware-cad.css';
+@import './styles/weewoo.css';
+@import './styles/search-engines.css';
+@import './styles/devServer.css';
+@import './styles/agent-endpoints.css';
+@import './styles/outside-tools.css';
+@import './styles/agent-memory.css';
+@import './styles/agent-scout.css';
+@import './styles/agent-cursors.css';
+@import './styles/present.css';
+@import './styles/share-quick.css';
+@import './styles/wake-up.css';
+@import './styles/social.css';
+@import './styles/model-arena.css';
+@import './styles/teleprompter.css';
+@import './styles/glass.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; height: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  color: var(--ink);
+  font-size: calc(14px * var(--app-font-scale, 1.0));
+  background: var(--bg);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+[data-glow="on"] body {
+  background:
+    radial-gradient(1200px 600px at 20% -10%, oklch(0.88 0.04 var(--accent-h) / 0.35), transparent 60%),
+    radial-gradient(900px 700px at 110% 110%, oklch(0.90 0.03 var(--accent-h) / 0.30), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+[data-glow="on"][data-theme="dark"] body {
+  background:
+    radial-gradient(1200px 600px at 20% -10%, oklch(0.35 0.08 var(--accent-h) / 0.25), transparent 60%),
+    radial-gradient(900px 700px at 110% 110%, oklch(0.30 0.06 var(--accent-h) / 0.25), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+::selection { background: oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.25); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--hairline-strong); border-radius: var(--radius-full); border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+#app { width: 100vw; height: 100vh; display: block; }
+
+.splash {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  color: var(--ink-faint); font: 500 var(--text-sm)/1.4 var(--font-label);
+  letter-spacing: var(--label-tracking); text-transform: var(--label-case);
+}
+
+.splash .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-ultem); margin-right: 10px; display: inline-block; animation: pulse 1.2s ease-in-out infinite; }
+
+button:hover .ps-glyph { opacity: 1 !important; }
+.group-tag:hover .group-edit-btn { opacity: 1 !important; }
+
+@keyframes pulse { 0%,100% { opacity: 0.4; transform: scale(0.9);} 50% { opacity: 1; transform: scale(1.05);} }
+@keyframes gen-pulse { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes gen-shimmer { 0% { background-position: 0% 50% } 50% { background-position: 100% 50% } 100% { background-position: 0% 50% } }
+@keyframes gen-bounce { 0%,100% { transform: translateY(0); opacity: 0.6 } 50% { transform: translateY(-6px); opacity: 1 } }
+@keyframes gen-fade { from { opacity: 0; transform: scale(1.04) } to { opacity: 1; transform: scale(1) } }
+
+/* Custom Xterm.js styling for gorgeous selection and reliability */
+.xterm-selection {
+  opacity: 1 !important; /* Let the child divs control opacity */
+}
+.xterm-selection div {
+  background-color: var(--accent) !important;
+  opacity: 0.45 !important;
+}
+
+/* Glassmorphic/Transparent xterm.js support */
+.terminal-translucent .xterm-viewport,
+.terminal-translucent .xterm-screen,
+.terminal-translucent .xterm {
+  background-color: transparent !important;
+}

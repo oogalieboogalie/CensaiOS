@@ -1,0 +1,31 @@
+/* Run dev window. Builds on the Docker window's dk-* pieces. */
+.rd-root { padding: 0; }
+.rd-setup {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; align-items: end;
+  padding: 14px 16px 12px; border-bottom: 1px solid var(--hairline); flex-shrink: 0;
+}
+.rd-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.rd-field--wide { grid-column: 1 / -1; }
+.rd-field > span { font-size: var(--text-xs); color: var(--ink-soft); font-weight: 500; }
+.rd-field input {
+  box-sizing: border-box; width: 100%; height: 30px; padding: 0 10px; border-radius: var(--radius-md);
+  border: 1px solid var(--hairline); background: var(--surface-2); color: var(--ink);
+  font-family: var(--font-mono); font-size: var(--text-xs); outline: none;
+}
+.rd-field input:focus { border-color: var(--accent-line); }
+.rd-field input:disabled { color: var(--ink-soft); }
+.rd-more { grid-column: 1 / -1; font-size: var(--text-xs); color: var(--ink-soft); }
+.rd-more summary { cursor: pointer; width: max-content; }
+.rd-more-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-top: 8px; }
+.rd-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
+.rd-run { height: 30px; padding: 0 14px; font-size: var(--text-sm); }
+.rd-status {
+  display: flex; align-items: center; gap: 8px; padding: 8px 16px; flex-shrink: 0;
+  border-bottom: 1px solid var(--hairline); font-size: var(--text-sm);
+}
+.rd-status-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-status--danger .rd-status-text { color: var(--danger); white-space: normal; }
+.rd-note { margin: 0 24px 20px; text-align: center; color: var(--ink-faint); font-size: var(--text-xs); }
+@container dkroot (max-width: 460px) {
+  .rd-setup, .rd-more-grid { grid-template-columns: 1fr; }
+}

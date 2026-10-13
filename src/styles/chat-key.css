@@ -1,0 +1,76 @@
+/* The chat's "add a key" card (KeyNeededCard): one calm card, one accent. */
+.hb-key-card {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 460px;
+  padding: var(--pad-3);
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--accent-line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.hb-key-card-title { font-weight: 650; color: var(--ink); }
+.hb-key-card-text { margin: 0; line-height: 1.5; color: var(--ink-soft); }
+.hb-key-card-choices { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.hb-key-card-choice {
+  padding: 4px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.hb-key-card-choice[data-on="true"] {
+  border-color: var(--accent-line);
+  background: var(--accent-faint);
+  color: var(--ink);
+}
+.hb-key-card-row { display: flex; gap: var(--space-2); }
+.hb-key-card-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+.hb-key-card-row input:focus { outline: 2px solid var(--accent-line); outline-offset: -1px; }
+.hb-key-card-save {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hb-key-card-save:disabled { background: var(--surface-3); color: var(--ink-faint); cursor: default; }
+.hb-key-card-error { color: var(--danger); font-size: var(--text-sm); }
+.hb-key-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  color: var(--ink-faint);
+  font-size: var(--text-xs);
+}
+.hb-key-card-foot a,
+.hb-key-card-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}

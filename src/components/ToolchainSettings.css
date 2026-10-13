@@ -1,0 +1,341 @@
+/* ── AI Coding Assistants Window ──────────────────────────────────────── */
+
+:root {
+  --tc-dot-unknown:   color-mix(in oklab, var(--ink) 20%, transparent);
+  --tc-dot-checking:  var(--warning);
+  --tc-dot-installed: var(--success);
+  --tc-dot-missing:   color-mix(in oklab, var(--ink) 15%, transparent);
+  --tc-dot-error:     var(--danger);
+}
+
+.tc-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.tc-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid color-mix(in oklab, var(--ink) 7%, transparent);
+  flex-shrink: 0;
+}
+
+.tc-title-icon { font-size: var(--text-xl); flex-shrink: 0; }
+
+.tc-header-text { flex: 1; }
+
+.tc-title {
+  margin: 0 0 1px;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.tc-subtitle {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
+}
+
+.tc-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tc-sandbox-pill {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: color-mix(in oklab, var(--ink) 6%, transparent);
+  border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
+  white-space: nowrap;
+}
+.tc-sandbox-pill--up   { color: var(--success); border-color: color-mix(in oklab, var(--success) 30%, transparent); background: color-mix(in oklab, var(--success) 8%, transparent); }
+.tc-sandbox-pill--down { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 30%, transparent); background: color-mix(in oklab, var(--danger) 8%, transparent); }
+
+.tc-icon-btn {
+  background: none;
+  border: none;
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
+  cursor: pointer;
+  font-size: var(--text-lg);
+  padding: 4px 6px;
+  border-radius: var(--radius-md);
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+.tc-icon-btn:hover { color: var(--ink); background: color-mix(in oklab, var(--ink) 7%, transparent); }
+
+/* ── Rebuild log panel ── */
+.tc-build-panel {
+  flex-shrink: 0;
+  margin: 10px 14px 0;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface) 60%, var(--color-black) 40%);
+  border: 1px solid color-mix(in oklab, var(--ink) 9%, transparent);
+  max-height: 160px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.tc-build-panel--done  { border-color: color-mix(in oklab, var(--success) 35%, transparent); }
+.tc-build-panel--error { border-color: color-mix(in oklab, var(--danger) 35%, transparent); }
+
+.tc-build-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-bottom: 1px solid color-mix(in oklab, var(--ink) 6%, transparent);
+  flex-shrink: 0;
+}
+.tc-build-label { flex: 1; }
+
+.tc-dismiss {
+  background: none;
+  border: none;
+  color: color-mix(in srgb, var(--ink) 40%, transparent);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+}
+.tc-dismiss:hover { color: var(--ink); }
+
+.tc-build-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 12px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  scrollbar-width: thin;
+}
+.tc-log-line   { display: flex; gap: 8px; }
+.tc-log-ts     { color: color-mix(in oklab, var(--ink) 28%, transparent); flex-shrink: 0; user-select: none; }
+
+/* ── Spinners ── */
+.tc-spinner-sm {
+  width: 12px;
+  height: 12px;
+  border: 2px solid color-mix(in oklab, var(--warning) 25%, transparent);
+  border-top-color: var(--warning);
+  border-radius: 50%;
+  animation: tc-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes tc-spin { to { transform: rotate(360deg); } }
+
+/* ── Empty / error states ── */
+.tc-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: var(--text-md);
+  color: color-mix(in srgb, var(--ink) 45%, transparent);
+  padding: 24px;
+  text-align: center;
+}
+.tc-empty--error { color: var(--danger); }
+.tc-retry {
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── CLI list ── */
+.tc-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: thin;
+}
+
+.tc-card {
+  border-radius: var(--radius-xl);
+  border: 1px solid color-mix(in oklab, var(--ink) 8%, transparent);
+  background: color-mix(in oklab, var(--ink) 3%, transparent);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.tc-card--baked {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent-line) 45%, transparent);
+}
+
+.tc-card-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.tc-card-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1;
+}
+.tc-card-name {
+  font-size: var(--text-base);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.tc-card-desc {
+  font-size: var(--text-sm);
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
+  line-height: 1.4;
+}
+.tc-card-version {
+  font-size: var(--text-xs);
+  color: var(--success);
+  margin-top: 2px;
+  font-family: 'Fira Code', monospace;
+}
+.tc-card-log {
+  font-size: var(--text-xs);
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.tc-card-log--error { color: var(--danger); }
+
+/* ── Right column ── */
+.tc-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tc-status-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.tc-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.tc-dot--pulse { animation: tc-pulse 1.2s ease-in-out infinite; }
+@keyframes tc-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+.tc-status-label {
+  font-size: var(--text-xs);
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
+  white-space: nowrap;
+}
+
+/* ── Action buttons ── */
+.tc-action-btn {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in oklab, var(--ink) 12%, transparent);
+  background: color-mix(in oklab, var(--ink) 6%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.tc-action-btn:hover:not(:disabled) { background: color-mix(in oklab, var(--ink) 11%, transparent); }
+.tc-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.tc-action-btn--secondary { color: color-mix(in srgb, var(--ink) 60%, transparent); }
+
+.tc-bake-btn {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.tc-bake-btn--on {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  border-color: color-mix(in srgb, var(--accent-line) 60%, transparent);
+  color: var(--ink);
+}
+.tc-bake-btn:hover { background: color-mix(in oklab, var(--ink) 8%, transparent); }
+
+/* ── Footer ── */
+.tc-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid color-mix(in oklab, var(--ink) 7%, transparent);
+  flex-shrink: 0;
+}
+.tc-footer-hint {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+.tc-save-error {
+  font-size: var(--text-sm);
+  color: var(--danger);
+}
+.tc-save-btn {
+  padding: 7px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.tc-save-btn:hover:not(:disabled) { opacity: 0.88; }
+.tc-save-btn:active:not(:disabled) { transform: scale(0.97); }
+.tc-save-btn:disabled { opacity: 0.3; cursor: not-allowed; }

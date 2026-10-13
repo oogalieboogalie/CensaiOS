@@ -1,0 +1,203 @@
+/* WeeWoo: the company office where agents show up as pixel avatars.
+   The scenery (carpet, wood desks, wallpaper, sky) is mixed from the design
+   tokens so it follows the board's look in light and dark. Flat, one
+   accent, as the WeeWoo handoff asks. */
+.ww {
+  --ww-paper: var(--surface);
+  --ww-floor: color-mix(in oklab, var(--warning) 10%, var(--surface-2));
+  --ww-carpet: color-mix(in oklab, var(--warning) 16%, var(--surface-2));
+  --ww-wood: color-mix(in oklab, var(--warning) 42%, var(--surface-3));
+  --ww-wood-dark: color-mix(in oklab, var(--warning) 40%, var(--ink-soft));
+  --ww-wall: color-mix(in oklab, var(--warning) 7%, var(--surface));
+  --ww-sky: color-mix(in oklab, var(--info) 28%, var(--surface));
+  --ww-screen: color-mix(in oklab, var(--ink) 92%, var(--surface));
+  --ww-screen-ink: color-mix(in oklab, var(--success) 55%, var(--surface));
+  position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0;
+  background: var(--surface); color: var(--ink); font-size: var(--text-sm);
+}
+.ww-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--hairline); flex-wrap: wrap; }
+.ww-crumbs { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.ww-crumb { all: unset; cursor: pointer; font-weight: 600; color: var(--ink); padding: var(--space-0-5) var(--space-1); border-radius: var(--radius-sm); white-space: nowrap; }
+.ww-crumb:hover { background: var(--surface-hover); }
+.ww-crumb:focus-visible { outline: 2px solid var(--accent-line); }
+.ww-crumb--here { cursor: default; color: var(--ink-soft); }
+.ww-crumb--here:hover { background: none; }
+.ww-grow { flex: 1; }
+.ww-faint { color: var(--ink-faint); font-size: var(--text-xs); }
+.ww-title { font-size: var(--text-lg); font-weight: 600; letter-spacing: -0.01em; }
+.ww-eyebrow { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+.ww-num { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.ww-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ww-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.ww-error { color: var(--danger); font-size: var(--text-xs); }
+
+.ww-btn { height: 26px; padding: 0 var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--text-sm); cursor: pointer; white-space: nowrap; }
+.ww-btn:hover:not(:disabled) { background: var(--surface-hover); }
+.ww-btn:disabled { opacity: 0.5; cursor: default; }
+.ww-btn:focus-visible, .ww-input:focus-visible, .ww-title-input:focus-visible, .ww-chip:focus-visible, .ww-part:focus-visible, .ww-swatch:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.ww-btn[aria-pressed="true"] { background: var(--surface-2); }
+.ww-btn--primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.ww-btn--primary:hover:not(:disabled) { background: var(--ink-soft); }
+/* The one place the accent is used: the "please help me" button. */
+.ww-btn--help { color: var(--accent-text); border-color: var(--accent-line); background: var(--surface); width: 100%; }
+.ww-input { box-sizing: border-box; height: 26px; padding: 0 var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--text-sm); }
+textarea.ww-input { height: auto; padding: var(--space-1-5) var(--space-2); resize: vertical; width: 100%; }
+.ww-title-input { all: unset; font-size: var(--text-lg); font-weight: 600; letter-spacing: -0.01em; padding: var(--space-0-5) var(--space-1); border-radius: var(--radius-sm); min-width: 120px; }
+.ww-title-input:hover { background: var(--surface-hover); }
+.ww-company-row { display: flex; align-items: baseline; gap: var(--space-3); padding: var(--space-2) var(--space-3) 0; flex-wrap: wrap; }
+.ww-company-switch { max-width: 180px; }
+
+.ww-pill { display: inline-flex; align-items: center; gap: var(--space-1-5); height: 22px; padding: 0 var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-full); font-size: var(--text-xs); color: var(--ink-soft); white-space: nowrap; }
+.ww-dot, .ww-legend i { width: 7px; height: 7px; border-radius: var(--radius-full); background: var(--ink-faint); display: inline-block; }
+[data-status="working"] > .ww-dot, .ww-legend i[data-status="working"] { background: var(--success); }
+[data-status="waiting"] > .ww-dot, .ww-legend i[data-status="waiting"] { background: var(--warning); }
+[data-status="error"] > .ww-dot, .ww-legend i[data-status="error"] { background: var(--danger); }
+[data-status="idle"] > .ww-dot, .ww-legend i[data-status="idle"] { background: var(--ps-amber); }
+.ww-pill[data-status="working"] > .ww-dot { animation: ww-pulse 1.6s var(--ease-standard) infinite; }
+@keyframes ww-pulse { 50% { opacity: 0.35; } }
+
+.ww-stage { position: relative; flex: 1; min-height: 0; overflow: auto; }
+.ww-empty { margin: var(--space-3) var(--space-3) 0; padding: var(--space-3); border: 1px dashed var(--hairline); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: var(--space-1); }
+
+/* ── Avatars ── */
+.ww-avatar { position: relative; display: inline-block; flex-shrink: 0; }
+.ww-avatar-pix { display: block; image-rendering: pixelated; }
+.ww-avatar::after { content: ""; position: absolute; left: 20%; right: 20%; bottom: -2px; height: 3px; border-radius: var(--radius-full); background: var(--scrim-soft); }
+.ww-avatar[data-anim="idle"] .ww-avatar-pix { animation: ww-bob 2.6s ease-in-out infinite; }
+.ww-avatar[data-anim="busy"] .ww-avatar-pix { animation: ww-bob 1.1s ease-in-out infinite; }
+.ww-avatar[data-anim="nap"] .ww-avatar-pix { animation: ww-breath 3.4s ease-in-out infinite; }
+.ww-avatar[data-anim="shake"] .ww-avatar-pix { animation: ww-shake 0.9s ease-in-out infinite; }
+.ww-avatar[data-anim="nap"]::before { content: "z"; position: absolute; top: -8px; right: -4px; font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); animation: ww-zzz 2.6s ease-in-out infinite; }
+@keyframes ww-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6%); } }
+@keyframes ww-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+@keyframes ww-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4%); } 75% { transform: translateX(4%); } }
+@keyframes ww-zzz { 0% { transform: translate(0, 0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(8px, -14px); opacity: 0; } }
+.ww-avatar-bubble { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); max-width: 180px; padding: var(--space-1) var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--ww-paper); box-shadow: var(--elevation-1); font-size: var(--text-xs); line-height: 1.35; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 3; animation: ww-bub 4.6s var(--ease-standard) both; pointer-events: none; }
+.ww-energy { display: inline-block; height: 4px; border-radius: var(--radius-full); background: var(--surface-3); overflow: hidden; }
+.ww-energy > i { display: block; height: 100%; border-radius: var(--radius-full); background: var(--success); }
+.ww-energy[data-level="lo"] > i { background: var(--warning); }
+.ww-energy[data-level="crit"] > i { background: var(--danger); }
+
+/* ── Floor ── */
+.ww-floor { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); min-height: 100%; box-sizing: border-box; }
+.ww-floor-grid { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); grid-auto-rows: minmax(170px, auto); gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-lg); background-color: var(--ww-floor);
+  background-image: linear-gradient(var(--hairline-soft) 1px, transparent 1px), linear-gradient(90deg, var(--hairline-soft) 1px, transparent 1px); background-size: 30px 30px; }
+.ww-room { position: relative; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2-5) var(--space-3) var(--space-2-5) var(--space-4); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--ww-paper); cursor: pointer; overflow: visible; transition: transform var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard); }
+.ww-room::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: var(--radius-md) 0 0 var(--radius-md); background: var(--ww-room); }
+.ww-room:hover { transform: translateY(-2px); box-shadow: var(--elevation-2); z-index: 2; }
+.ww-room[data-wide="true"] { grid-column: span 2; }
+.ww-room[data-lobby="true"] { background: var(--surface-2); }
+.ww-room[data-over="true"] { outline: 2px dashed var(--ww-room); outline-offset: -3px; }
+.ww-room-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0 var(--space-2); }
+.ww-room-name { font-size: var(--text-md); font-weight: 600; letter-spacing: -0.01em; }
+.ww-room-meta { font-size: var(--text-xs); color: var(--ink-faint); white-space: nowrap; }
+.ww-room-blurb { font-size: var(--text-xs); color: var(--ink-faint); }
+.ww-carpet { flex: 1; display: flex; flex-wrap: wrap; align-content: flex-end; gap: var(--space-3) var(--space-2); min-height: 92px; margin-top: var(--space-1); padding: var(--space-6) var(--space-2) var(--space-2); border: 1px dashed var(--hairline); border-radius: var(--radius-sm); background: var(--ww-carpet); }
+.ww-room-empty { margin: auto; font-size: var(--text-xs); color: var(--ink-faint); text-align: center; }
+.ww-seat { all: unset; position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 76px; cursor: pointer; }
+.ww-seat[draggable="true"] { cursor: grab; }
+.ww-seat:hover .ww-avatar { transform: translateY(-3px); }
+.ww-seat:hover .ww-seat-name { text-decoration: underline; }
+.ww-seat:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; border-radius: var(--radius-sm); }
+.ww-seat .ww-avatar { transition: transform var(--dur-fast) var(--ease-standard); }
+.ww-desk { width: 40px; height: 9px; margin-top: -4px; border-radius: 2px; background: var(--ww-wood); box-shadow: 0 1px 0 var(--hairline); }
+.ww-seat-name { max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-xs); font-weight: 500; }
+.ww-bubble-layer { position: absolute; inset: 0; pointer-events: none; }
+.ww-floor-bubble { all: unset; position: absolute; transform: translate(-50%, -100%); max-width: 220px; padding: var(--space-1-5) var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--ww-paper); box-shadow: var(--elevation-2); font-size: var(--text-xs); line-height: 1.4; color: var(--ink); z-index: 5; cursor: pointer; pointer-events: auto; animation: ww-floorbub 4.6s var(--ease-standard) both; }
+.ww-floor-bubble small { display: block; margin-bottom: 2px; font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+.ww-floor-bubble span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ww-floor-bubble[data-kind="reply"] { border-color: var(--success); }
+.ww-thread-line { position: absolute; height: 1px; background: var(--accent); transform-origin: 0 0; opacity: 0.5; z-index: 4; animation: ww-line 4.6s ease both; }
+@keyframes ww-bub { 0% { opacity: 0; } 10% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes ww-floorbub { 0% { opacity: 0; margin-top: 8px; } 10% { opacity: 1; margin-top: 0; } 82% { opacity: 1; } 100% { opacity: 0; margin-top: -12px; } }
+@keyframes ww-line { 0% { opacity: 0; } 12% { opacity: 0.55; } 80% { opacity: 0.4; } 100% { opacity: 0; } }
+.ww-floor-foot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--space-3); }
+.ww-legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--ink-faint); align-self: start; }
+.ww-legend i { margin-right: var(--space-1); }
+.ww-feed { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2) var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); }
+.ww-feed-row { display: flex; gap: var(--space-2); align-items: baseline; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-soft); min-width: 0; }
+.ww-feed-row strong { color: var(--ink); white-space: nowrap; }
+.ww-feed-row[data-kind="error"] { color: var(--danger); }
+.ww-kind { color: var(--ink-faint); white-space: nowrap; }
+
+/* ── Department, side on ── */
+.ww-dept { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); height: 100%; box-sizing: border-box; }
+.ww-dept-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.ww-dept-fields { flex: 1; display: flex; flex-direction: column; gap: var(--space-1); min-width: 200px; }
+.ww-blurb-input { max-width: 420px; }
+.ww-dept-room { position: relative; flex: 1; min-height: 300px; border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; background: var(--ww-wood); }
+.ww-dept-room::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--ww-room); z-index: 1; }
+.ww-wall { position: absolute; left: 0; right: 0; top: 0; height: 58%; background-color: var(--ww-wall); background-image: linear-gradient(var(--hairline-soft) 1px, transparent 1px), linear-gradient(90deg, var(--hairline-soft) 1px, transparent 1px); background-size: 36px 36px; }
+.ww-baseboard { position: absolute; left: 0; right: 0; top: 58%; height: 6px; background: var(--ww-wood-dark); }
+.ww-window { position: absolute; top: 12%; width: 22%; height: 46%; border: 3px solid var(--surface); border-radius: var(--radius-sm); box-shadow: 0 0 0 1px var(--hairline-strong); background-color: var(--ww-sky);
+  background-image: linear-gradient(var(--surface), var(--surface)), linear-gradient(var(--surface), var(--surface)); background-size: 100% 2px, 2px 100%; background-position: center; background-repeat: no-repeat; }
+.ww-poster { position: absolute; top: 14%; width: 70px; padding: var(--space-1-5); border: 1px solid var(--hairline); background: var(--ww-paper); font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.3; color: var(--ink-soft); transform: rotate(-2deg); }
+.ww-dept-desks { position: absolute; left: 0; right: 0; bottom: 0; top: 30%; display: flex; align-items: flex-end; justify-content: center; gap: var(--space-6); padding: 0 var(--space-4) var(--space-4); flex-wrap: wrap; overflow: auto; }
+.ww-dept-desks .ww-room-empty { align-self: center; padding: var(--space-3); background: var(--ww-paper); border-radius: var(--radius-md); }
+.ww-station { all: unset; position: relative; display: grid; justify-items: center; gap: var(--space-1); width: 120px; cursor: pointer; }
+.ww-station:hover .ww-nameplate { text-decoration: underline; }
+.ww-station:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; border-radius: var(--radius-sm); }
+.ww-monitor { display: block; width: 104px; height: 58px; padding: var(--space-1); box-sizing: border-box; border: 2px solid var(--ink); border-radius: var(--radius-xs); background: var(--ww-screen); overflow: hidden; }
+.ww-monitor pre { margin: 0; font-family: var(--font-mono); font-size: 7px; line-height: 1.3; color: var(--ww-screen-ink); white-space: pre-wrap; word-break: break-word; }
+.ww-station-desk { position: relative; width: 120px; height: 14px; border-radius: 3px 3px 1px 1px; background: var(--ww-wood-dark); }
+.ww-mug { position: absolute; right: 10px; top: -12px; width: 9px; height: 11px; border-radius: 0 0 3px 3px; background: var(--accent); }
+.ww-station-avatar { margin-top: -6px; }
+.ww-nameplate { padding: 1px var(--space-1-5); border: 1px solid var(--hairline); border-radius: var(--radius-xs); background: var(--ww-paper); font-size: var(--text-xs); font-weight: 600; }
+
+/* ── Agent detail ── */
+.ww-detail { display: grid; grid-template-columns: minmax(240px, 300px) minmax(280px, 1fr) minmax(220px, 260px); gap: var(--space-3); padding: var(--space-3); min-height: 100%; box-sizing: border-box; }
+.ww-habitat { display: flex; flex-direction: column; gap: var(--space-2); }
+.ww-habitat-scene { position: relative; height: 300px; border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; background: linear-gradient(var(--ww-wall) 0 62%, var(--ww-wood) 62% 100%); }
+.ww-window--big { left: 19%; width: 62%; height: 34%; top: 8%; }
+.ww-habitat-stand { position: absolute; left: 0; right: 0; bottom: var(--space-4); display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+.ww-big-desk { position: relative; display: block; width: 260px; height: 30px; margin-top: -10px; border-radius: 4px 4px 2px 2px; background: var(--ww-wood-dark); }
+.ww-monitor--big { position: absolute; left: var(--space-1); top: -62px; width: 86px; height: 58px; }
+.ww-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.ww-tile { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); }
+.ww-tile-val { font-weight: 600; }
+.ww-now { padding: var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-2); font-size: var(--text-xs); }
+.ww-detail-main { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3); }
+.ww-tabs { display: flex; gap: var(--space-1); border-bottom: 1px solid var(--hairline); }
+.ww-tab { all: unset; cursor: pointer; padding: var(--space-1-5) var(--space-2); font-weight: 500; color: var(--ink-soft); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.ww-tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.ww-tab:focus-visible { outline: 2px solid var(--accent-line); }
+.ww-activity { display: flex; flex-direction: column; gap: var(--space-1); overflow: auto; }
+.ww-job { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
+.ww-field { display: flex; align-items: center; gap: var(--space-2); color: var(--ink-soft); }
+.ww-kv { display: grid; grid-template-columns: 70px 1fr; gap: var(--space-1) var(--space-3); margin: 0; }
+.ww-kv dt { color: var(--ink-faint); font-size: var(--text-xs); }
+.ww-kv dd { margin: 0; }
+.ww-detail-side { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.ww-thread-row { all: unset; display: flex; justify-content: space-between; gap: var(--space-2); padding: var(--space-1-5) var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-sm); cursor: pointer; font-size: var(--text-xs); min-width: 0; }
+.ww-thread-row:hover { background: var(--surface-hover); }
+.ww-help-form { display: flex; flex-direction: column; gap: var(--space-1-5); }
+
+/* ── Avatar builder ── */
+.ww-builder { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: var(--space-4); }
+.ww-builder-preview { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-4) var(--space-2); border-radius: var(--radius-md); background: var(--ww-carpet); text-align: center; }
+.ww-builder-parts { display: flex; flex-direction: column; gap: var(--space-1-5); }
+.ww-body-grid { display: grid; grid-template-columns: repeat(auto-fill, 40px); gap: var(--space-1); }
+.ww-part { all: unset; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); cursor: pointer; }
+.ww-part[aria-checked="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.ww-swatches { display: flex; flex-wrap: wrap; gap: var(--space-1); align-items: center; }
+.ww-swatch { width: 22px; height: 22px; padding: 0; border: 1px solid var(--hairline); border-radius: var(--radius-xs); cursor: pointer; }
+.ww-swatch[aria-checked="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--ink); }
+.ww-color-input { width: 30px; height: 24px; padding: 0; border: 1px solid var(--hairline); border-radius: var(--radius-xs); background: none; cursor: pointer; }
+.ww-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.ww-chip { all: unset; padding: 2px var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-full); font-size: var(--text-xs); cursor: pointer; }
+.ww-chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+/* ── Thread overlay ── */
+.ww-veil { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: var(--scrim); }
+.ww-thread-card { width: min(520px, calc(100% - 40px)); max-height: 80%; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--elevation-3); }
+.ww-thread-head { display: flex; align-items: center; gap: var(--space-2); }
+.ww-thread-body { display: flex; flex-direction: column; gap: var(--space-2); overflow: auto; }
+.ww-msg { display: flex; align-items: flex-end; gap: var(--space-2); }
+.ww-msg--right { justify-content: flex-end; }
+.ww-msg-bub { max-width: 340px; padding: var(--space-2) var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-2); white-space: pre-wrap; line-height: 1.45; }
+.ww-msg--right .ww-msg-bub { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-avatar .ww-avatar-pix, .ww-avatar::before, .ww-pill > .ww-dot { animation: none !important; }
+  .ww-floor-bubble, .ww-avatar-bubble, .ww-thread-line { animation-duration: 0.01ms; animation-iteration-count: 1; animation-fill-mode: none; }
+}

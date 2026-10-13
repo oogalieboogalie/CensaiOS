@@ -1,0 +1,41 @@
+/* Rhythm Run, the note highway. Tokens only, so every look applies. */
+.hb-rhythm { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 260px); background: var(--surface-sunken); outline: none; }
+.hb-rhythm-stage { position: relative; min-height: 0; display: flex; overflow: hidden; }
+.hb-rhythm[data-phase="playing"] .hb-rhythm-stage { cursor: default; }
+.hb-rhythm-side { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); background: var(--surface); border-left: 1px solid var(--hairline); }
+.hb-rhythm-menu { display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-rhythm-songs { display: flex; flex-direction: column; gap: var(--space-1-5); margin-bottom: var(--space-2); }
+.hb-rhythm-song { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px; padding: var(--space-2) var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); cursor: pointer; }
+.hb-rhythm-song:hover { border-color: var(--ink-faint); }
+.hb-rhythm-song[aria-checked="true"] { border-color: var(--accent-line); }
+.hb-rhythm-song:focus-visible, .hb-rhythm-diff:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.hb-rhythm-song-title { font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
+.hb-rhythm-diffs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px; gap: 2px; border: 1px solid var(--hairline); border-radius: var(--radius-md); margin-bottom: var(--space-2); }
+.hb-rhythm-diff { all: unset; text-align: center; padding: var(--space-1) 0; border-radius: var(--radius-sm); font-size: var(--text-xs); color: var(--ink-soft); cursor: pointer; }
+.hb-rhythm-diff[aria-checked="true"] { background: var(--accent); color: var(--accent-contrast); }
+.hb-rhythm-go { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.hb-rhythm-go .hb-btn { min-height: 32px; justify-content: center; }
+.hb-rhythm-now { display: flex; flex-direction: column; gap: var(--space-1); }
+.hb-rhythm-hud { position: absolute; top: var(--space-3); left: var(--space-3); display: flex; align-items: baseline; gap: var(--space-2); padding: var(--space-1) var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-md); box-shadow: var(--elevation-1); pointer-events: none; }
+.hb-rhythm-hud-score { font-size: var(--text-lg); font-weight: 600; color: var(--ink); min-width: 4ch; }
+.hb-rhythm-mult { font-size: var(--text-sm); font-weight: 600; color: var(--ink-faint); }
+.hb-rhythm-mult[data-mult="2"], .hb-rhythm-mult[data-mult="3"] { color: var(--ink); }
+.hb-rhythm-mult[data-mult="4"] { color: var(--accent-text); }
+.hb-rhythm-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--hairline); }
+.hb-rhythm-progress span { display: block; height: 100%; background: var(--accent); }
+.hb-rhythm-count { position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); font-size: var(--text-2xl); font-weight: 600; color: var(--ink); pointer-events: none; }
+.hb-rhythm-judge { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); padding: var(--space-0-5) var(--space-3); border-radius: var(--radius-full); background: var(--surface); border: 1px solid var(--hairline); font-size: var(--text-sm); font-weight: 600; color: var(--ink); pointer-events: none; animation: hb-rhythm-pop 600ms var(--ease-standard) forwards; }
+.hb-rhythm-judge[data-kind="perfect"] { color: var(--accent-text); border-color: var(--accent-line); }
+.hb-rhythm-judge[data-kind="miss"] { color: var(--danger); }
+@keyframes hb-rhythm-pop { 0% { transform: translate(-50%, -50%) scale(0.9); } 15% { transform: translate(-50%, -50%) scale(1.05); } 100% { transform: translate(-50%, -60%) scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .hb-rhythm-judge { animation: none; } }
+.hb-rhythm-pads { position: absolute; left: 50%; bottom: var(--space-2); transform: translateX(-50%); display: flex; gap: var(--space-2); }
+.hb-rhythm-pad { all: unset; width: 36px; height: 24px; display: grid; place-items: center; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); font-size: var(--text-xs); font-family: var(--font-mono); color: var(--ink-soft); cursor: pointer; touch-action: none; }
+.hb-rhythm-pad:active { border-color: var(--accent-line); color: var(--ink); }
+.hb-rhythm-invite { position: absolute; top: var(--space-3); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); background: var(--surface); border: 1px solid var(--accent-line); border-radius: var(--radius-md); box-shadow: var(--elevation-2); font-size: var(--text-sm); color: var(--ink); white-space: nowrap; }
+.hb-rhythm-grade { width: 1.5em; text-align: center; font-weight: 600; color: var(--ink-soft); }
+.hb-rhythm-result-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.hb-rhythm-big-grade { font-size: var(--text-2xl); font-weight: 600; color: var(--accent-text); line-height: 1; }
+.hb-rhythm-score { font-size: var(--text-xl); font-weight: 600; color: var(--ink); }
+.hb-rhythm-counts { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-1) var(--space-3); font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-rhythm-counts strong { color: var(--ink); font-size: var(--text-sm); }

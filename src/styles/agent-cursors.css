@@ -1,0 +1,54 @@
+/* Agent cursors: an agent working on the board moves like a teammate. One
+   colour per agent (its own hue, Ultem amber when it has none), a slow
+   glide between windows, and its answer typed beside the pointer. */
+.hb-agent-cursors { position: absolute; inset: 0; pointer-events: none; z-index: 201; }
+
+.hb-agent-cursor {
+  position: absolute; left: 0; top: 0;
+  transition: transform 720ms cubic-bezier(0.22, 0.7, 0.2, 1);
+  animation: hb-agent-cursor-in 220ms ease-out both;
+  will-change: transform;
+}
+.hb-agent-cursor[data-phase="done"] { animation: hb-agent-cursor-out 500ms ease-in 1800ms both; }
+.hb-agent-cursor__body { transform-origin: 0 0; }
+
+.hb-agent-cursor__arrow { display: block; filter: drop-shadow(0 1px 2px var(--scrim)); }
+.hb-agent-cursor__arrow path { fill: var(--agent-cursor); stroke: var(--surface); stroke-width: 1.4; stroke-linejoin: round; }
+
+.hb-agent-cursor__tag {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  margin: 1px 0 0 12px; padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--agent-cursor); color: #17130b;
+  font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5;
+  white-space: nowrap; box-shadow: var(--shadow-card);
+}
+.hb-agent-cursor__name { font-weight: 700; }
+.hb-agent-cursor__status { font-weight: 500; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+
+.hb-agent-cursor__typed {
+  margin: 5px 0 0 12px; padding: 6px 9px; width: max-content; max-width: 280px;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  border-radius: var(--radius-md, 8px);
+  border-left: 2px solid var(--agent-cursor);
+  background: var(--surface); color: var(--ink);
+  font-size: var(--text-sm); line-height: 1.45;
+  box-shadow: var(--shadow-card);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.hb-agent-cursor__caret {
+  display: inline-block; width: 2px; height: 1em; margin-left: 1px; vertical-align: -0.15em;
+  background: var(--agent-cursor);
+  animation: hb-agent-caret 1s steps(1) infinite;
+}
+.hb-agent-cursor[data-phase="done"] .hb-agent-cursor__caret { animation: none; visibility: hidden; }
+
+@keyframes hb-agent-cursor-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hb-agent-cursor-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes hb-agent-caret { 50% { visibility: hidden; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hb-agent-cursor { transition: none; animation: none; }
+  .hb-agent-cursor[data-phase="done"] { animation: none; }
+  .hb-agent-cursor__caret { animation: none; }
+}

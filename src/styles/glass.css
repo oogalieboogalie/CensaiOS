@@ -1,0 +1,60 @@
+/*
+ * Frosted glass for floating surfaces: menus, pop-ups, the Ctrl+K palette and
+ * the floating bars. Colours come from the --glass-* tokens in tokens.css,
+ * which turn solid when glass is off.
+ *
+ *   .hb-glass       a menu or pop-up (blur on the element itself).
+ *   .hb-glass-host  a bar that opens its own pop-ups (glossContainer in
+ *                   src/lib/theme/gloss.js). The bar paints the tint; the blur
+ *                   sits on a ::before layer so a pop-up inside the bar still
+ *                   blurs the board, not just the bar (an element with
+ *                   backdrop-filter is the backdrop of everything inside it).
+ */
+
+.hb-glass,
+.hb-win-menu,
+.hb-palette,
+.hb-model-menu,
+.hb-of-menu,
+[data-header-mode="bare"] > .hb-win-header {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+  border-color: var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Big reading surfaces take a little more milk. */
+.hb-palette { background: var(--glass-bg-strong); }
+.hb-palette-input { border-bottom-color: var(--glass-line); }
+.hb-win-menu-section + .hb-win-menu-section { border-top-color: var(--glass-line); }
+
+/* Ghost headers float over the window's own body. */
+[data-header-mode="ghost"] > .hb-win-header {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+}
+
+/* Rows on glass: a soft tint, not a solid block. */
+.hb-win-menu-item:hover,
+.hb-win-menu-item:focus-visible,
+.hb-palette-row[aria-selected="true"],
+.hb-model-item:hover,
+.hb-model-item:focus-visible,
+.hb-of-menu-item:hover,
+.hb-of-menu-item:focus-visible,
+.hb-glass-row:hover,
+.hb-glass-row:focus-visible { background: var(--glass-hover); }
+
+.hb-glass-host { position: relative; isolation: isolate; }
+.hb-glass-host::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+  pointer-events: none;
+}

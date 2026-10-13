@@ -1,0 +1,203 @@
+# censaiOS: the whole app in one file.
+#
+#   git clone https://github.com/oogalieboogalie/CensaiOS.git
+#   cd CensaiOS
+#   docker compose up -d
+#
+# Then open http://localhost:3002. censaiOS answers this computer only; to open
+# it from your other computers, turn on Settings > Open anywhere (they use
+# port 3004 and sign in with a code). No .env file is needed: the app makes its
+# own secrets on first start (docker/entrypoint.sh) and sets up the whole
+# database. AI keys go in the app, on the "Connect your AI" screen after you
+# sign in (or Settings > AI provider keys later), never in this file.
+# To update: git pull, then docker compose up -d --build.
+#
+# Memory caps fit an 8 GB laptop; change them in .env if you need more
+# (CENSAI_APP_MEMORY=6g, for example).
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    mem_limit: ${CENSAI_DB_MEMORY:-1g}
+    environment:
+      POSTGRES_USER: homebase
+      POSTGRES_PASSWORD: homebase
+      POSTGRES_DB: homebase
+    volumes:
+      - pgdata18root:/var/lib/postgresql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/001-init.sql
+      - ./docker/002-family-brain.sql:/docker-entrypoint-initdb.d/002-family-brain.sql
+      - ./docker/003-capabilities.sql:/docker-entrypoint-initdb.d/003-capabilities.sql
+      - ./docker/004-sub-agents.sql:/docker-entrypoint-initdb.d/004-sub-agents.sql
+      - ./docker/005-workspaces.sql:/docker-entrypoint-initdb.d/005-workspaces.sql
+      - ./docker/006-github-projects.sql:/docker-entrypoint-initdb.d/006-github-projects.sql
+      - ./docker/007-jules.sql:/docker-entrypoint-initdb.d/007-jules.sql
+      - ./docker/008-agent-tasks.sql:/docker-entrypoint-initdb.d/008-agent-tasks.sql
+      - ./docker/009-subagent-models.sql:/docker-entrypoint-initdb.d/009-subagent-models.sql
+      - ./docker/010-local-dev-restarts.sql:/docker-entrypoint-initdb.d/010-local-dev-restarts.sql
+      - ./docker/011-atlas-taxonomy.sql:/docker-entrypoint-initdb.d/011-atlas-taxonomy.sql
+      - ./docker/012-tkg-bellman-extension.sql:/docker-entrypoint-initdb.d/012-tkg-bellman-extension.sql
+      - ./docker/013-dispatch-batches.sql:/docker-entrypoint-initdb.d/013-dispatch-batches.sql
+      - ./docker/014-memory-healing.sql:/docker-entrypoint-initdb.d/014-memory-healing.sql
+      - ./docker/015-agent-tool-scopes.sql:/docker-entrypoint-initdb.d/015-agent-tool-scopes.sql
+      - ./docker/016-schedules.sql:/docker-entrypoint-initdb.d/016-schedules.sql
+      - ./docker/017-jules-task-sync.sql:/docker-entrypoint-initdb.d/017-jules-task-sync.sql
+      - ./docker/018-agent-task-receipts.sql:/docker-entrypoint-initdb.d/018-agent-task-receipts.sql
+      - ./docker/019-operational-intelligence.sql:/docker-entrypoint-initdb.d/019-operational-intelligence.sql
+      - ./docker/026-execution-ledger.sql:/docker-entrypoint-initdb.d/026-execution-ledger.sql
+      - ./docker/030-run-causality.sql:/docker-entrypoint-initdb.d/030-run-causality.sql
+    # This computer only: the database is never reachable from the network.
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homebase"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: always
+    mem_limit: ${CENSAI_VECTOR_MEMORY:-1g}
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "127.0.0.1:6335:6333"
+      - "127.0.0.1:6336:6334"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/6333'"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  homebase:
+    build: .
+    restart: unless-stopped
+    mem_limit: ${CENSAI_APP_MEMORY:-4g}
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    # Optional: a .env file next to this one overrides the defaults below.
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      # The board, for this computer only. Other computers on the Wi-Fi can't
+      # reach it here, so nobody can sign in from the next room.
+      - "127.0.0.1:3002:3001"
+      # Open anywhere (Settings > Open anywhere): the one way in for your other
+      # computers. Shows a "not open yet" page until you turn the switch on,
+      # and then only lets in a computer you added with a one-time code.
+      - "${CENSAI_OTHER_COMPUTERS_PORT:-3004}:3004"
+      # Agent endpoints only (Share agent > Make reachable from outside):
+      # the port a tunnel points at. Published on this computer only.
+      - "127.0.0.1:3003:3003"
+    volumes:
+      - homebase_state:/app/.homebase-state
+      - .:/workspace/CensaiHub
+      - runner_secret:/run/censai-runner:ro
+    # Lets the app reach Ollama (or anything else) running on this computer
+    # at host.docker.internal on Linux too; Docker Desktop has it already.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Makes missing secrets and sets up a new database on first start.
+      CENSAI_SELF_SETUP: "1"
+      DATABASE_URL: postgresql://homebase:homebase@postgres:5432/homebase
+      QDRANT_URL: http://qdrant:6333
+      # The default AI when an agent has no key of its own: Ollama on this
+      # computer. Change it with CENSAI_DOCKER_AI_* lines in .env (separate
+      # names, so the AI_* lines `npm run dev` reads never leak in here).
+      AI_BASE_URL: ${CENSAI_DOCKER_AI_BASE_URL:-http://host.docker.internal:11434/v1}
+      AI_API_KEY: ${CENSAI_DOCKER_AI_API_KEY:-ollama}
+      AI_MODEL: ${CENSAI_DOCKER_AI_MODEL:-minimax-m2.5:cloud}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://host.docker.internal:11434/v1}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+      COHERE_PAID_API_KEY: ${COHERE_PAID_API_KEY:-}
+      COHERE_NON_COMMERCIAL_KEY: ${COHERE_NON_COMMERCIAL_KEY:-}
+      COHERE_CHAT_BASE_URL: ${COHERE_CHAT_BASE_URL:-https://api.cohere.ai/compatibility/v1}
+      COHERE_BASE_URL: ${COHERE_BASE_URL:-}
+      COHERE_EMBEDDING_DIMENSION: ${COHERE_EMBEDDING_DIMENSION:-}
+      APP_ORIGIN: ${CENSAI_DOCKER_APP_ORIGIN:-http://localhost:3002}
+      GOOGLE_REDIRECT_URI: ${CENSAI_DOCKER_GOOGLE_REDIRECT_URI:-http://localhost:3002/api/auth/google/callback}
+      PORT: 3001
+      # Inside the container; the ports above decide who can reach it.
+      CENSAI_LISTEN_HOST: 0.0.0.0
+      CENSAI_DOOR_PORT: "3004"
+      CENSAI_DOOR_PUBLIC_PORT: ${CENSAI_OTHER_COMPUTERS_PORT:-3004}
+      NODE_ENV: production
+      CENSAI_MODE: ${CENSAI_MODE:-}
+      HOMEBASE_MODE: ${HOMEBASE_MODE:-local_desktop}
+      # Not needed for Open anywhere; kept for older setups. Listing an address
+      # here never lets another computer sign in without a code.
+      CENSAI_LAN_ORIGINS: ${CENSAI_DOCKER_LAN_ORIGINS:-}
+      # This computer's name (Windows sets COMPUTERNAME), shown in Settings,
+      # Open anywhere as the address other computers type.
+      CENSAI_HOST_NAME: ${CENSAI_HOST_NAME:-${COMPUTERNAME:-}}
+      HOMEBASE_CONTAINER_PROJECT_ROOT: ${HOMEBASE_CONTAINER_PROJECT_ROOT:-/workspace/CensaiHub}
+      # Optional host<->container path mapping for the terminal/runner.
+      # Set these if you mount a host project directory into the container.
+      # HOMEBASE_HOST_PROJECT_ROOT: /path/to/your/project
+      # HOMEBASE_CONTAINER_PROJECT_ROOT: /workspace/project
+      RUNNER_ENABLED: "true"
+      RUNNER_URL: http://runner:3003
+      RUNNER_SECRET_FILE: /run/censai-runner/secret
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+
+  # Phase 1 skeleton: Hocuspocus runs in-process inside `homebase` (see
+  # server/boot/lifecycle.js). This profile-gated entry reserves the split-out
+  # service name with no published ports; standalone extraction is later work.
+  hocuspocus:
+    build: .
+    profiles: ["hocuspocus"]
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: 1234
+      HOCUSPOCUS_PORT: 1234
+      HOCUSPOCUS_PATH: /hocuspocus
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # The one service allowed to use Docker on this computer (Docker window,
+  # Run dev). It runs only `docker` and refuses the calls that could take
+  # over the PC (server/runner/dockerOnly.js). No published port: only the
+  # app reaches it, with a secret the runner makes on first start.
+  runner:
+    build: .
+    command: ["node", "server/runner/service.js"]
+    restart: unless-stopped
+    mem_limit: ${CENSAI_RUNNER_MEMORY:-512m}
+    environment:
+      RUNNER_PORT: 3003
+      RUNNER_SECRET: ${RUNNER_SECRET:-}
+      RUNNER_SECRET_FILE: /run/censai-runner/secret
+      RUNNER_DOCKER_ONLY: ${RUNNER_DOCKER_ONLY:-true}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner_secret:/run/censai-runner
+
+volumes:
+  pgdata18root:
+  qdrant_data:
+  homebase_state:
+  runner_secret:
