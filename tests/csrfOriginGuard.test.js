@@ -5,7 +5,7 @@ import { createCsrfOriginGuard } from '../server/middleware/csrfOriginGuard.js';
 function buildApp() {
   const app = express();
   app.use(createCsrfOriginGuard({ appOrigin: 'https://app.example.com' }));
-  app.all('/mutation', (_req, res) => res.json({ ok: true }));
+  app.all('/mutation', (req, res) => res.json({ ok: true, csrfOrigin: req.csrfOrigin || null }));
   return app;
 }
 
@@ -18,6 +18,7 @@ describe('CSRF origin guard', () => {
   test('allows mutations from the configured app origin', async () => {
     const response = await request(buildApp()).post('/mutation').set('Origin', 'https://app.example.com');
     expect(response.status).toBe(200);
+    expect(response.body.csrfOrigin).toBe('https://app.example.com');
   });
 
   test('rejects mutations from a foreign browser origin', async () => {

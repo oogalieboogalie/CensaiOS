@@ -27,6 +27,8 @@ export function createCsrfOriginGuard({ appOrigin = process.env.APP_ORIGIN || 'h
     const localDevelopmentOrigin = process.env.NODE_ENV !== 'production'
       && /^(?:http:\/\/localhost|http:\/\/127\.0\.0\.1)(?::\d+)?$/.test(origin);
     if (origin === configuredOrigin || origin === requestOrigin || localDevelopmentOrigin) {
+      // The origin that passed the cross-site check, for later handlers and logs.
+      req.csrfOrigin = origin;
       return next();
     }
 
