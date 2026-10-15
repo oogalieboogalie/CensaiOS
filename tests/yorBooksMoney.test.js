@@ -132,5 +132,5 @@ describe("the AI's answers are suggestions", () => {
 });
 
 test('whole dollars round the same way for money in and money out', () => {
-  expect(moneyWhole(-15050)).toBe(moneyWhole(15050).replace('$', '-$'));
+  expect(moneyWhole(-15050)).toBe(moneyWhole(15050).replace(/^\$/, '-$'));
 });

@@ -28,7 +28,7 @@ function runModule(mod, initial = {}) {
     resize: jest.fn(),
   };
   const scripts = [];
-  document.body.innerHTML = mod.source.replace(/<script>([\s\S]*?)<\/script>/g, (_, code) => { scripts.push(code); return ''; });
+  document.body.innerHTML = mod.source.replace(/<script>([\s\S]*?)<\/script>/gi, (_, code) => { scripts.push(code); return ''; });
   const errors = [];
   for (const code of scripts) {
     try { new Function('censai', code)(sdk); } catch (error) { errors.push(error); }
