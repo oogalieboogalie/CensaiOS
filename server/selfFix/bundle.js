@@ -46,7 +46,7 @@ export function buildBundle(input = {}, { logLines = [], at = Date.now() } = {})
     path,
     status,
     componentStack: input.componentStack ? scrubText(input.componentStack, 1500) : null,
-    page: input.page ? scrubText(String(input.page).replace(/\?.*$/, ''), 120) : null,
+    page: input.page ? scrubText(String(input.page).split('?')[0], 120) : null,
     actions: scrubActions(input.actions),
     logs: logLines.map((l) => scrubText(l, 600)),
     at,

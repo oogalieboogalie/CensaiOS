@@ -3,6 +3,7 @@ import pool from '../db.js';
 import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
 import { isServerKeyOwnerRole } from '../security/serverKeys.js';
 import { isKeySharedWith, readKeySharing, setKeySharing } from '../security/keySharing.js';
+import { resourceRateLimiter } from '../middleware/standardRateLimits.js';
 
 /**
  * Settings, AI keys, "Share my AI keys with". The owner (an admin) sees every
@@ -11,6 +12,7 @@ import { isKeySharedWith, readKeySharing, setKeySharing } from '../security/keyS
  * private team server already shares its keys, the cloud never does.
  */
 export const keySharingRouter = express.Router();
+keySharingRouter.use(resourceRateLimiter);
 
 function available() {
   return getRuntimeMode() === RUNTIME_MODES.LOCAL_DESKTOP;

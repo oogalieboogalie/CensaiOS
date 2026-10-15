@@ -107,6 +107,13 @@ export async function getDirectoryTree(dirPath) {
 
 const WINDOWS_PATH = /^[a-z]:[\\/]/i;
 
+// Drop trailing slashes without a regex (a /[\\/]+$/ test is slow on long runs of slashes).
+function trimTrailingSeparators(value) {
+  let end = value.length;
+  while (end > 0 && (value[end - 1] === '/' || value[end - 1] === '\\')) end -= 1;
+  return value.slice(0, end);
+}
+
 /**
  * File trees speak the path the window asked with. On a Windows PC running
  * censaiOS in Docker that is D:\Homebase\CensaiHub\src, not the container's
@@ -115,7 +122,7 @@ const WINDOWS_PATH = /^[a-z]:[\\/]/i;
  */
 export function shownPathFor(requested, resolved, ...names) {
   if (requested && WINDOWS_PATH.test(requested) && process.platform !== 'win32') {
-    const base = String(requested).replace(/[\\/]+$/, '').replace(/\//g, '\\');
+    const base = trimTrailingSeparators(String(requested)).replace(/\//g, '\\');
     return [base, ...names].join('\\');
   }
   return names.length ? path.join(resolved, ...names) : resolved;
@@ -123,7 +130,7 @@ export function shownPathFor(requested, resolved, ...names) {
 
 export function shownParentFor(requested, resolved) {
   if (requested && WINDOWS_PATH.test(requested) && process.platform !== 'win32') {
-    const parts = String(requested).replace(/[\\/]+$/, '').split(/[\\/]/);
+    const parts = trimTrailingSeparators(String(requested)).split(/[\\/]/);
     if (parts.length <= 1) return null;
     return parts.length === 2 ? `${parts[0]}\\` : parts.slice(0, -1).join('\\');
   }

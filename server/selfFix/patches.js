@@ -49,7 +49,12 @@ export function queueDir(repoRoot) {
 
 function fileFor(repoRoot, state, id) {
   if (!SAFE_ID.test(String(id))) throw Object.assign(new Error('Bad fix id.'), { statusCode: 400 });
-  return path.join(queueDir(repoRoot), state, `${id}.patch`);
+  const root = path.resolve(queueDir(repoRoot));
+  const file = path.resolve(root, state, `${id}.patch`);
+  if (!STATES.includes(state) || !file.startsWith(root + path.sep)) {
+    throw Object.assign(new Error('Bad fix id.'), { statusCode: 400 });
+  }
+  return file;
 }
 
 function move(repoRoot, id, from, to) {
