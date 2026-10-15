@@ -28,7 +28,7 @@ export function buildBundle(input = {}, { logLines = [], at = Date.now() } = {})
   const kind = cleanKind(input.kind);
   const message = scrubText(input.message || 'Unknown error', 600);
   const stack = scrubStack(input.stack || '');
-  const path = input.path ? scrubText(String(input.path).replace(/\?.*$/, ''), 160) : null;
+  const path = input.path ? scrubText(String(input.path).split('?')[0], 160) : null;
   const method = input.method ? String(input.method).toUpperCase().slice(0, 8) : null;
   const status = Number(input.status) || null;
   const windowKind = input.windowKind ? scrubText(input.windowKind, 40) : null;
