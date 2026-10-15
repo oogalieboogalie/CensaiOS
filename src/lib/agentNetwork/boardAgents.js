@@ -9,7 +9,7 @@ import { ACTIVE_HELP_STATUSES, HELP_CARD_KIND } from '../../../server/agent-regi
 import { describeCapabilities, getModelCapabilities } from '../chat/modelCapabilities.js';
 import { LEADHOUND_KIND } from './leadHoundHelp.js';
 
-const CLI_LABELS = { claudecode: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode' };
+const CLI_LABELS = { claudecode: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI' };
 const CLI_SKILLS = [
   { id: 'code', name: 'Write and edit code', tags: ['code', 'programming', 'refactor', 'bug', 'fix'] },
   { id: 'review', name: 'Review a change', tags: ['review', 'diff', 'pr'] },

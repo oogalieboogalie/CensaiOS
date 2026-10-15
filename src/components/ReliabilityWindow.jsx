@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useWorkspaceStore } from '../lib/store.js';
 
 export function ReliabilityWindow() {
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reviewId, setReviewId] = useState(null);
+  const cardRefs = useRef(new Map());
+  const workspaceId = useWorkspaceStore((s) => s.workspaceId);
 
   const fetchScans = () => {
     setLoading(true);
-    fetch('/api/reliability/scans')
+    const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
+    fetch(`/api/reliability/scans${qs}`)
       .then(res => res.json())
       .then(data => {
         setScans(Array.isArray(data) ? data : []);
@@ -21,7 +26,13 @@ export function ReliabilityWindow() {
 
   useEffect(() => {
     fetchScans();
-  }, []);
+  }, [workspaceId]);
+
+  // Review jumps to the file's full scan card above and highlights it.
+  const review = (id) => {
+    setReviewId(id);
+    cardRefs.current.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   const getScoreColor = (score) => {
     if (score >= 80) return 'text-green-500';
@@ -53,9 +64,10 @@ export function ReliabilityWindow() {
             scans.map(scan => (
               <motion.div
                 key={scan.id}
+                ref={(el) => { if (el) cardRefs.current.set(scan.id, el); else cardRefs.current.delete(scan.id); }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 rounded-lg border border-surface-soft bg-surface-soft/30 hover:bg-surface-soft/50 transition-colors"
+                className={`p-4 rounded-lg border bg-surface-soft/30 hover:bg-surface-soft/50 transition-colors ${reviewId === scan.id ? 'border-accent ring-2 ring-accent' : 'border-surface-soft'}`}
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -94,7 +106,7 @@ export function ReliabilityWindow() {
           {scans.filter(s => s.score < 80).map(s => (
             <div key={s.id} className="flex items-center justify-between p-2 rounded bg-red-500/10 border border-red-500/20">
               <span className="text-xs font-mono">{s.file_path}</span>
-              <button className="text-xs bg-red-500 text-white px-2 py-1 rounded">Review</button>
+              <button onClick={() => review(s.id)} className="text-xs bg-red-500 text-white px-2 py-1 rounded">Review</button>
             </div>
           ))}
         </div>

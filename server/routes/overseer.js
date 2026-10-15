@@ -13,8 +13,8 @@ overseerRouter.get('/overseer/status', (req, res) => {
 
 overseerRouter.post('/overseer/start', (req, res) => {
   try {
-    const { repo, intervalSeconds } = req.body;
-    startWatcher(repo, intervalSeconds);
+    const { repo, intervalSeconds, autoMerge } = req.body || {};
+    startWatcher(repo, intervalSeconds, { autoMerge: autoMerge === true });
     res.json(getStatus());
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -32,7 +32,8 @@ overseerRouter.post('/overseer/stop', (req, res) => {
 
 overseerRouter.post('/overseer/run', (req, res) => {
   try {
-    runAuditNow();
+    const { autoMerge } = req.body || {};
+    runAuditNow({ autoMerge: autoMerge === true });
     res.json(getStatus());
   } catch (err) {
     res.status(500).json({ error: err.message });

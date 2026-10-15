@@ -1,5 +1,6 @@
 import pool from '../db.js';
 import { decryptKey } from './vault.js';
+import { ownerEnvKeyConfig } from './envKeys.js';
 
 const PROVIDER_ALIASES = new Map([
   ['google-native', 'google'],
@@ -78,10 +79,22 @@ export async function getUserApiKeyConfig(userId, provider) {
      WHERE user_id = $1 AND provider = $2`,
     [userId, storedProvider]
   );
-  if (!rows.length) return null;
+  // Nothing saved: a local install's owner uses the key in .env (envKeys.js).
+  if (!rows.length) return ownerEnvKeyConfig(pool, userId, storedProvider);
 
   return {
     apiKey: decryptKey(rows[0].api_key_encrypted, userId),
     modelName: rows[0].model_name || null,
   };
+}
+
+/**
+ * Claude Pro/Max sign-in tokens (from `claude setup-token`, starting
+ * sk-ant-oat) only work in Anthropic's own apps; Anthropic forbids other
+ * apps from storing or using them. censaiOS takes Anthropic API keys only.
+ */
+export function subscriptionTokenProblem(provider, apiKey) {
+  if (provider !== 'anthropic' || !/^sk-ant-oat/i.test(String(apiKey || '').trim())) return null;
+  return 'That is a Claude subscription sign-in token, not an API key. Anthropic only allows those inside '
+    + 'its own apps. Make an API key at platform.claude.com (Settings, API keys) and paste that instead.';
 }

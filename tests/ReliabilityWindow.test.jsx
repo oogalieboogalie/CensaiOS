@@ -73,4 +73,18 @@ describe('ReliabilityWindow', () => {
     expect(global.fetch.mock.calls.length).toBeGreaterThan(callsBefore);
     expect(global.fetch).toHaveBeenCalledWith('/api/reliability/scans');
   });
+
+  test('Review jumps to and highlights that file\'s scan card', async () => {
+    const scrollIntoView = jest.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    await act(async () => {
+      render(<ReliabilityWindow />);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Review' }));
+    });
+    expect(scrollIntoView).toHaveBeenCalled();
+    const card = screen.getByRole('heading', { name: 'src/components/App.jsx' }).closest('div.p-4');
+    expect(card.className).toContain('ring-accent');
+  });
 });

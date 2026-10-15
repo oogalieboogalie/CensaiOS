@@ -1,219 +1,89 @@
 import React from 'react';
 import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
-import { api } from '../lib/api.js';
-import {
-  RUNNING_TASK_STATUSES,
-  ACTIVE_JULES_STATUSES,
-  fmtTime,
-  countByStatus,
-  iconButtonStyle,
-  buildActiveAgents,
-  normalizeSchedule
-} from './operations/OperationsShared.jsx';
-
-import { MetricsView } from './operations/MetricsView.jsx';
-import { RuntimePanel } from './operations/RuntimePanel.jsx';
-import { ActiveAgentsPanel } from './operations/ActiveAgentsPanel.jsx';
-import { JulesPanel } from './operations/JulesPanel.jsx';
-import { SchedulerPanel } from './operations/SchedulerPanel.jsx';
-import { TaskQueuePanel } from './operations/TaskQueuePanel.jsx';
-import { useVisibilityAwareInterval } from '../lib/usePolling.js';
+import { fmtTime, iconButtonStyle } from './operations/OperationsShared.jsx';
+import { UnderTheHood } from './operations/UnderTheHood.jsx';
 import { ColorSettingsPanel } from './ColorSettingsPanel.jsx';
-
-async function readJson(url, fallback) {
-  try {
-    const res = await fetch(url);
-    const data = await res.json().catch(() => fallback);
-    if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-    return data;
-  } catch (err) {
-    return { error: err.message || 'Request failed', fallback };
-  }
-}
-
+import { LiveOpsView } from './liveOps/LiveOpsView.jsx';
+import { useLiveOpsData } from './liveOps/useLiveOpsData.js';
+import { buildFeed } from '../lib/liveOps/feed.js';
+import { showWindow } from '../lib/agentNetwork/askBoardAgent.js';
 import { useWorkspaceStore } from '../lib/store.js';
 
+// Where "Open" goes for things that are not a window on the board.
+const OPENS = { console: 'agentConsole', dev: 'devServer', schedule: 'scheduler', task: 'scheduler' };
+
+/**
+ * Live Operations: everything happening on the board at a glance, for
+ * everyone on it. What is running, what needs a person, what failed and
+ * why in plain words, what is coming up, and what it cost today. The
+ * technical health view is one click away under "Under the hood".
+ */
 export function OperationsBoardWindow({ win, onUpdate, isActive }) {
-  const spawnAt = useWorkspaceStore(state => state.spawnAt);
-  const workspaceId = useWorkspaceStore(state => state.workspaceId);
-  const hasWorkspace = Boolean(String(workspaceId || '').trim());
-  const [state, setState] = React.useState({
-    health: null,
-    schedules: [],
-    tasks: [],
-    subAgents: [],
-    jules: [],
-    errors: {},
-    lastLoadedAt: null,
-  });
+  const spawnAt = useWorkspaceStore((s) => s.spawnAt);
+  const workspaceId = useWorkspaceStore((s) => s.workspaceId);
+  const wins = useWorkspaceStore((s) => s.wins);
   const [includeCompleted, setIncludeCompleted] = React.useState(false);
-  const [refreshing, setRefreshing] = React.useState(false);
+  const [hoodOpen, setHoodOpen] = React.useState(false);
   const [themeOpen, setThemeOpen] = React.useState(false);
+  const { state, load, refreshing, hasWorkspace } = useLiveOpsData({ workspaceId, isActive, includeCompleted });
 
-  const load = React.useCallback(async ({ refreshJules = false, quiet = false } = {}) => {
-    if (!quiet) setRefreshing(true);
-    const [health, schedules, taskPayload, subAgentPayload, julesPayload] = await Promise.all([
-      readJson('/api/health', null),
-      hasWorkspace
-        ? readJson(`/api/schedules?workspaceId=${encodeURIComponent(workspaceId)}`, [])
-        : { error: 'Open a workspace to load its schedules.', fallback: [] },
-      hasWorkspace
-        ? readJson(`/api/agent-tasks?workspaceId=${encodeURIComponent(workspaceId)}&limit=200`, [])
-        : { error: 'Open a workspace to load its agent tasks.', fallback: [] },
-      hasWorkspace
-        ? readJson(`/api/sub-agents?workspaceId=${encodeURIComponent(workspaceId)}`, [])
-        : { error: 'Open a workspace to load its sub-agents.', fallback: [] },
-      api.getJulesSessions({ refresh: refreshJules, includeCompleted }).catch(err => ({ error: err.message || 'Failed to load Jules sessions', sessions: [] })),
-    ]);
-
-    const errors = {};
-    if (health?.error) errors.health = health.error;
-    if (schedules?.error) errors.schedules = schedules.error;
-    if (taskPayload?.error) errors.tasks = taskPayload.error;
-    if (subAgentPayload?.error) errors.subAgents = subAgentPayload.error;
-    if (julesPayload?.error) errors.jules = julesPayload.error;
-
-    setState({
-      health: health?.error ? null : health,
-      schedules: Array.isArray(schedules) ? schedules.map(schedule => normalizeSchedule(schedule, Array.isArray(subAgentPayload) ? subAgentPayload : [])) : [],
-      tasks: Array.isArray(taskPayload) ? taskPayload : [],
-      subAgents: Array.isArray(subAgentPayload) ? subAgentPayload : [],
-      jules: Array.isArray(julesPayload?.sessions) ? julesPayload.sessions : [],
-      errors,
-      lastLoadedAt: new Date(),
+  const now = state.lastLoadedAt ? state.lastLoadedAt.getTime() : Date.now();
+  const feed = React.useMemo(() => {
+    const names = new Map(state.subAgents.map((a) => [a.id, a.name]));
+    return buildFeed({
+      wins,
+      now: Math.max(now, Date.now()),
+      agentName: (id) => names.get(id) || null,
+      server: {
+        tasks: state.tasks, schedules: state.schedules, cliTasks: state.cliTasks,
+        devServers: state.devServers, liveOps: state.liveOps, jules: state.jules,
+      },
     });
-    setRefreshing(false);
-  }, [hasWorkspace, includeCompleted, workspaceId]);
+  }, [wins, state, now]);
 
-  React.useEffect(() => {
-    load();
-  }, [load]);
-
-  useVisibilityAwareInterval(() => {
-    load({ quiet: true });
-  }, 5000, { inactive: !isActive });
-
-  React.useEffect(() => {
-    const handleUpdate = () => load();
-    window.addEventListener('tasks-updated', handleUpdate);
-    return () => {
-      window.removeEventListener('tasks-updated', handleUpdate);
-    };
-  }, [load]);
-
-  const taskCounts = React.useMemo(() => countByStatus(state.tasks), [state.tasks]);
-  const scheduleCounts = React.useMemo(() => countByStatus(state.schedules), [state.schedules]);
-  const activeTasks = state.tasks.filter(task => RUNNING_TASK_STATUSES.has(task.status || 'queued'));
-  const activeSchedules = state.schedules.filter(schedule => ['running', 'active'].includes(schedule.status || 'active'));
-  const activeJules = state.jules.filter(session => ACTIVE_JULES_STATUSES.has(session.status));
-  const activeAgents = buildActiveAgents({ tasks: activeTasks, schedules: activeSchedules, jules: activeJules, subAgents: state.subAgents });
-  const taskWorker = state.health?.taskWorker || {};
-  const schedulerWorker = state.health?.schedulerWorker || {};
-  const dbReady = Boolean(state.health?.database?.ready ?? state.health?.databaseStatus?.ready ?? state.health?.database);
-  const qdrantReady = Boolean(state.health?.qdrant?.ready);
-  const modelReady = Boolean(state.health?.modelProvider?.ready);
-  const workerReady = Boolean(taskWorker.ready);
-  const schedulerReady = Boolean(schedulerWorker.ready);
-  const errorList = Object.values(state.errors).filter(Boolean);
+  const onBoard = React.useCallback((id) => Boolean(id && (wins || []).some((w) => w.id === id)), [wins]);
+  const canOpen = React.useCallback((item) => onBoard(item.windowId) || Boolean(item.link) || Boolean(OPENS[item.source]), [onBoard]);
+  const open = React.useCallback((item) => {
+    if (onBoard(item.windowId)) { showWindow(item.windowId); return; }
+    if (item.link) { window.open(item.link, '_blank', 'noopener,noreferrer'); return; }
+    if (OPENS[item.source]) spawnAt(OPENS[item.source]);
+  }, [onBoard, spawnAt]);
 
   return (
     <>
       <WindowTitle
-        icon={<Icon.Tools size={14} />}
+        icon={<Icon.Monitor size={14} />}
         label={win.title || 'Live Operations'}
-        subtitle={state.lastLoadedAt ? `updated ${fmtTime(state.lastLoadedAt)}` : 'loading'}
+        subtitle={state.lastLoadedAt ? `live for everyone on this board · ${fmtTime(state.lastLoadedAt)}` : 'loading'}
         attachedAgentIds={win.attachedAgents}
-        onDetach={(id) => onUpdate?.({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
+        onDetach={(id) => onUpdate?.({ attachedAgents: (win.attachedAgents || []).filter((a) => a !== id) })}
       >
-        <button
-          type="button"
-          title="View Agent Traces"
-          onClick={() => spawnAt('agent_trace', { title: 'Agentic Tracing' })}
-          style={iconButtonStyle(false)}
-        >
+        <button type="button" className="hb-lo-hood-toggle" aria-pressed={hoodOpen} onClick={() => setHoodOpen((o) => !o)}>
+          {hoodOpen ? 'Back to overview' : 'Under the hood'}
+        </button>
+        <button type="button" title="View agent traces" onClick={() => spawnAt('agent_trace', { title: 'Agentic Tracing' })} style={iconButtonStyle(false)}>
           <Icon.Search size={13} />
         </button>
-        <button
-          type="button"
-          title="Refresh operations board"
-          onClick={() => load({ refreshJules: true })}
-          disabled={refreshing}
-          style={iconButtonStyle(refreshing)}
-        >
+        <button type="button" title="Refresh" onClick={() => load({ refreshJules: true })} disabled={refreshing} style={iconButtonStyle(refreshing)}>
           <Icon.Refresh size={13} />
         </button>
-        <button
-          type="button"
-          title="Theme settings"
-          onClick={() => setThemeOpen((o) => !o)}
-          style={iconButtonStyle(themeOpen)}
-        >
+        <button type="button" title="Theme settings" onClick={() => setThemeOpen((o) => !o)} style={iconButtonStyle(themeOpen)}>
           <Icon.Eye size={13} />
         </button>
       </WindowTitle>
 
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'grid', gridTemplateRows: 'auto 1fr', background: 'var(--surface)', color: 'var(--ink)' }}>
+      <div className="hb-lo-body">
         {!hasWorkspace && (
-          <div role="status" style={{ margin: '10px 12px 0', padding: '8px 10px', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-raised)', color: 'var(--ink-soft)', fontSize: 'var(--text-sm)' }}>
-            Open a workspace to scope schedules and agent tasks. Runtime health remains visible.
+          <div role="status" className="hb-lo-notice">
+            Open a workspace to scope schedules and agent tasks. Windows on this board still show here.
           </div>
         )}
-        <MetricsView
-          dbReady={dbReady}
-          qdrantReady={qdrantReady}
-          modelReady={modelReady}
-          schedulerReady={schedulerReady}
-          schedulerWorker={schedulerWorker}
-          workerReady={workerReady}
-          taskWorker={taskWorker}
-          activeAgentsCount={activeAgents.length}
-        />
-
-        <div style={{ minHeight: 0, overflow: 'auto', padding: 12, display: 'grid', gridTemplateColumns: 'minmax(250px, 0.9fr) minmax(360px, 1.4fr)', gap: 12, alignContent: 'start' }}>
-          <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
-            <RuntimePanel
-              dbReady={dbReady}
-              health={state.health}
-              schedulerReady={schedulerReady}
-              schedulerWorker={schedulerWorker}
-              workerReady={workerReady}
-              taskWorker={taskWorker}
-              errorList={errorList}
-              taskCounts={taskCounts}
-              tasksLength={state.tasks.length}
-            />
-
-            <ActiveAgentsPanel activeAgents={activeAgents} />
-          </div>
-
-          <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
-            <JulesPanel
-              jules={state.jules}
-              includeCompleted={includeCompleted}
-              setIncludeCompleted={setIncludeCompleted}
-            />
-
-            {hasWorkspace ? (
-              <>
-                <SchedulerPanel
-                  scheduleCounts={scheduleCounts}
-                  schedules={state.schedules}
-                  subAgents={state.subAgents}
-                />
-
-                <TaskQueuePanel
-                  tasks={state.tasks}
-                  subAgents={state.subAgents}
-                />
-              </>
-            ) : (
-              <section style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 12, background: 'var(--surface-raised)', color: 'var(--ink-soft)', fontSize: 'var(--text-sm)' }}>
-                Workspace schedules and agent tasks are unavailable until a workspace is open.
-              </section>
-            )}
-          </div>
-        </div>
+        {hoodOpen ? (
+          <UnderTheHood state={state} hasWorkspace={hasWorkspace} includeCompleted={includeCompleted} setIncludeCompleted={setIncludeCompleted} />
+        ) : (
+          <LiveOpsView feed={feed} now={Math.max(now, Date.now())} onOpen={open} canOpen={canOpen} />
+        )}
       </div>
       {themeOpen && <ColorSettingsPanel onClose={() => setThemeOpen(false)} />}
     </>

@@ -1,10 +1,10 @@
 // Start and collect videos for agents, the chat window and shared agent
-// endpoints. The caller's own Google key is used (vault first); a server key
-// is only used where the runtime allows it (local and private installs).
+// endpoints. The caller's own Google key is used (vault first); the server's
+// key only for those allowed to spend it (security/serverKeys.js).
 
 import { getGeminiApiKey } from '../googleKeys.js';
 import { getUserApiKeyConfig } from '../security/userApiKeys.js';
-import { requiresPersonalApiKey } from '../security/byokPolicy.js';
+import { mayUseServerKeys } from '../security/serverKeys.js';
 import { VideoError, checkVeoJob, downloadVeoVideo, startVeoJob } from './veo.js';
 import { canSeeVideoJob, createVideoJob, getVideoJob, saveVideoFile, updateVideoJob } from './store.js';
 
@@ -16,8 +16,10 @@ export async function resolveVideoKey({ userId = null, userRole = null } = {}, d
       if (personal?.apiKey) return personal.apiKey;
     } catch { /* fall through */ }
   }
-  if (requiresPersonalApiKey(userRole)) return null;
-  return (deps.serverKey ?? getGeminiApiKey()) || null;
+  const serverKey = (deps.serverKey ?? getGeminiApiKey()) || null;
+  if (!serverKey) return null;
+  const allowed = await (deps.mayUseServerKeys || mayUseServerKeys)({ userId, userRole });
+  return allowed ? serverKey : null;
 }
 
 export function videoUrl(id) {

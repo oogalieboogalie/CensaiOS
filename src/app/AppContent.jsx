@@ -22,6 +22,7 @@ import {
 import { Toolbar } from './Toolbar.jsx';
 import { Hud } from './Hud.jsx';
 import { AgentRunToasts } from '../components/AgentRunToasts.jsx';
+import { SelfFixNotice } from '../components/SelfFixNotice.jsx';
 import { AgentMailToasts } from '../components/AgentMailToasts.jsx';
 import SystemStatusWidget from '../components/status/SystemStatusWidget.jsx';
 import { useAppActions } from './hooks/useAppActions.js';
@@ -34,6 +35,7 @@ import { useWorkspaceDraft } from './hooks/useWorkspaceDraft.js';
 import { useAppKeyboard } from './hooks/useAppKeyboard.js';
 import { useGroupHotkeys } from './hooks/useGroupHotkeys.js';
 import { GroupFocusBar, useGroupFocusView } from './GroupFocusBar.jsx'; import { PresentMode } from './present/PresentMode.jsx';
+import { useTemplateAgents } from './hooks/useTemplateAgents.js';
 import { invertBindings } from '../lib/groupHotkeys.js';
 import { useSettingsWindow } from './hooks/useSettingsWindow.js';
 import { Login } from '../components/Login.jsx';
@@ -165,6 +167,7 @@ export function AppContent() {
 
   useAppKeyboard({ onNewAgent, onNewWindow, redo, undo, setFocusMode, spawnAt });
   const { bindings: groupHotkeyBindings } = useGroupHotkeys({ workspaceId });
+  useTemplateAgents();
   const groupHotkeySlotById = React.useMemo(
     () => invertBindings(groupHotkeyBindings),
     [groupHotkeyBindings]
@@ -228,7 +231,7 @@ export function AppContent() {
           onRequestNewAgent={onNewAgent}
           onCreateAgent={createAgent} onWindowMovePreview={collaboration.previewWindowMove}
           onCursorMove={collaboration.sendCursor} cursors={collaboration.cursors} agentCursors={collaboration.agents}
-          worldOverlay={<CommentPins zoom={zoom} />}
+          worldOverlay={<CommentPins zoom={zoom} />} minimapHidden={chromeHidden}
         />
       </div>
       <Chrome workspaceId={workspaceId} onOpenSharing={openSharing}
@@ -264,7 +267,7 @@ export function AppContent() {
 
       <Hud focusMode={chromeHidden} collaboration={collaboration} />
       <AgentRunToasts collaboration={collaboration} onOpenWindow={(id) => setActiveId(id)} />
-      <AgentMailToasts workspaceId={workspaceId} />
+      <AgentMailToasts workspaceId={workspaceId} /><SelfFixNotice />
       <SystemStatusWidget focusMode={chromeHidden} />
       <GroupFocusBar /><PresentMode workspaceId={workspaceId} />
       <Toolbar

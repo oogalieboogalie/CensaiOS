@@ -14,6 +14,11 @@ export function mapProjectPathForRuntime(projectPath) {
   const raw = String(projectPath || '');
   if (!raw) return raw;
 
+  // The projects folder (CENSAI_PROJECTS_FOLDER_ON_PC, e.g. D:\Projects)
+  // is mounted into Docker at CENSAI_PROJECTS_FOLDER (/workspace/projects).
+  const inProjects = mapPrefix(raw, process.env.CENSAI_PROJECTS_FOLDER_ON_PC, process.env.CENSAI_PROJECTS_FOLDER);
+  if (inProjects) return inProjects;
+
   const hostRoot = process.env.HOMEBASE_HOST_PROJECT_ROOT;
   const containerRoot = process.env.HOMEBASE_CONTAINER_PROJECT_ROOT;
   const normalizedContainer = containerRoot?.replace(/\\/g, '/').replace(/\/+$/, '');
@@ -34,9 +39,23 @@ export function mapProjectPathForRuntime(projectPath) {
     if (rawProjectName && rawProjectName === containerProjectName) {
       return normalizedContainer;
     }
+    // A Windows folder inside the shared checkout (D:\Homebase\CensaiHub\src)
+    // lives at the same place under the container's copy of that checkout.
+    if (/^[a-z]:\//i.test(raw.replace(/\\/g, '/')) && containerProjectName) {
+      const at = rawParts.findIndex(part => part.toLowerCase() === containerProjectName);
+      if (at > 0) return path.posix.join(normalizedContainer, ...rawParts.slice(at + 1));
+    }
   }
 
   return raw;
+}
+
+function mapPrefix(raw, hostRoot, containerRoot) {
+  if (!hostRoot || !containerRoot) return null;
+  const normalizedRaw = raw.replace(/\\/g, '/').toLowerCase();
+  const normalizedHost = hostRoot.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+  if (normalizedRaw !== normalizedHost && !normalizedRaw.startsWith(`${normalizedHost}/`)) return null;
+  return path.posix.join(containerRoot, raw.replace(/\\/g, '/').slice(normalizedHost.length));
 }
 
 export function normalizeProjectPathForStorage(projectPath) {

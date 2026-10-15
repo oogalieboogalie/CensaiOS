@@ -12,6 +12,7 @@ test('settings use plain-language sections', () => {
     { id: 'appearance', label: 'Appearance' },
     { id: 'workspace', label: 'Canvas' },
     { id: 'agents', label: 'Agents' },
+    { id: 'hotkeys', label: 'Hotkeys' },
     { id: 'sharing', label: 'Sharing' },
     { id: 'anywhere', label: 'Open anywhere' },
     { id: 'modules', label: 'Modules' },

@@ -165,3 +165,16 @@ export function boardProjects(wins, boardDefault = null) {
   }
   return [...byKey.values()];
 }
+
+/**
+ * The folder a hotkey terminal starts in: the project of the window you are
+ * working in (its file tree, terminal or chat), else the board default.
+ */
+export function hotkeyFolder({ wins = [], canvasGroups = [], activeId = null, currentProject = null } = {}) {
+  const active = wins.find((w) => w.id === activeId);
+  if (active && isProjectAware(active)) {
+    const project = resolveWindowProject(active, { wins, canvasGroups, boardDefault: currentProject });
+    if (project?.path) return project.path;
+  }
+  return currentProject?.path || '';
+}

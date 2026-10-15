@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom';
 import { fileWindowKind, fileWindowProps, isImageFile } from './fileRouting.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 
-export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, githubRepo, mode, rootDirPath, wins = [], onSelect, onSetRoot }) {
+export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, githubRepo, mode, rootDirPath, wins = [], onSelect, onSetRoot, reloadTick = 0 }) {
   const onUpdateWindow = useWorkspaceStore(s => s.onUpdate);
   const [open, setOpen] = React.useState(node.open ?? false);
   const [children, setChildren] = React.useState(node.children || null);
   const [loading, setLoading] = React.useState(false);
+  const [loadError, setLoadError] = React.useState('');
   const isDir = node.isDir !== false && (!node.children || node.isDir);
   const dragState = React.useRef(null);
   const [drag, setDrag] = React.useState(null);
@@ -17,11 +18,17 @@ export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, git
   React.useEffect(() => {
     if (open && isDir && !children && !loading && mode) {
       setLoading(true);
+      setLoadError('');
       if (mode === 'local') {
-        fetch(`/api/files/browse?path=${encodeURIComponent(node.path === rootDirPath ? rootDirPath : node.path)}`)
-          .then(res => res.json())
+        // A folder that can't be listed says why instead of looking empty.
+        fetch(`/api/files/browse?path=${encodeURIComponent(node.path)}`)
+          .then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `Could not open this folder (${res.status})`);
+            return data;
+          })
           .then(data => { setChildren(data.children || []); setLoading(false); })
-          .catch(() => { setChildren([]); setLoading(false); });
+          .catch(err => { setLoadError(err.message || 'Could not open this folder'); setChildren([]); setLoading(false); });
       } else if (mode === 'github' && githubRepo) {
         fetch(`/api/github/browse?repo=${encodeURIComponent(githubRepo)}&path=${encodeURIComponent(node.path === '/' ? '' : node.path)}`)
           .then(res => res.json())
@@ -32,6 +39,19 @@ export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, git
       }
     }
   }, [open, isDir, children, loading, mode, node.path, rootDirPath, githubRepo]);
+
+  // Files written by an agent or a terminal: re-list open folders in place,
+  // keeping what is expanded.
+  const lastTick = React.useRef(reloadTick);
+  React.useEffect(() => {
+    if (lastTick.current === reloadTick) return;
+    lastTick.current = reloadTick;
+    if (mode !== 'local' || !open || !isDir || !children) return;
+    fetch(`/api/files/browse?path=${encodeURIComponent(node.path)}`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (data?.children) setChildren(data.children); })
+      .catch(() => {});
+  }, [reloadTick, mode, open, isDir, children, node.path]);
 
   const onClick = () => {
     if (isDir) {
@@ -163,7 +183,12 @@ export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, git
         )}
       </div>
       {isDir && open && loading && <div style={{ paddingLeft: 10 + (depth+1) * 14, color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', fontStyle: 'italic', padding: '4px 0 4px ' + (10 + (depth+1) * 14) + 'px' }}>Loading...</div>}
-      {isDir && open && children && children.map((c, i) => <Tree key={i} node={c} depth={depth + 1} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={githubRepo} mode={mode} rootDirPath={rootDirPath} wins={wins} onSelect={onSelect} onSetRoot={onSetRoot} />)}
+      {isDir && open && !loading && (loadError || (children && children.length === 0)) && (
+        <div data-testid="tree-folder-note" style={{ padding: `2px 6px 4px ${10 + (depth + 1) * 14}px`, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: loadError ? 'var(--ps-red)' : 'var(--ink-faint)', fontStyle: loadError ? 'normal' : 'italic', whiteSpace: 'normal' }}>
+          {loadError || 'Empty folder'}
+        </div>
+      )}
+      {isDir && open && children && children.map((c) => <Tree key={c.path || c.name} node={c} depth={depth + 1} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={githubRepo} mode={mode} rootDirPath={rootDirPath} wins={wins} onSelect={onSelect} onSetRoot={onSetRoot} reloadTick={reloadTick} />)}
       {drag && createPortal(
         <div style={{ position: 'fixed', left: drag.x + 8, top: drag.y + 8, zIndex: 1000, pointerEvents: 'none', background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '6px 10px', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink)', boxShadow: '0 8px 20px oklch(0 0 0 / 0.18)' }}>{node.name}</div>,
         document.body

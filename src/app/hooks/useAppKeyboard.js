@@ -1,10 +1,13 @@
 import React from 'react';
 import { keyboardClaimed } from '../../lib/keyboardClaim.js';
 import { classifyPastedDesign, suggestDesignSize } from '../../lib/design/designSource.js';
+import { useAgentHotkeys } from './useAgentHotkeys.js';
 
 // Global canvas keyboard shortcuts + paste-to-spawn, extracted from
 // AppContent.jsx with no logic changes.
 export function useAppKeyboard({ onNewAgent, onNewWindow, redo, undo, setFocusMode, spawnAt }) {
+  // Alt+C Claude Code, Alt+G Copilot CLI… (remappable in Settings → Hotkeys).
+  useAgentHotkeys(spawnAt);
   React.useEffect(() => {
     const onKey = (e) => {
       if (keyboardClaimed()) return;

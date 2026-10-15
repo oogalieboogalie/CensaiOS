@@ -1,7 +1,7 @@
 // Stand-in for an OpenAI-compatible /chat/completions endpoint (Gemini's,
 // OpenAI's, OpenRouter's). Streams `words` one SSE chunk at a time with
 // `delayMs` between them, so a test (or a screenshot) sees a real race.
-// `respond(body)` returns { words, delayMs, firstDelayMs, usage } or
+// `respond(body)` returns { words, delayMs, firstDelayMs, usage, finishReason } or
 // { status, error }.
 import http from 'node:http';
 
@@ -30,7 +30,7 @@ export async function startOpenAiStandin(respond) {
         if (i) await wait(reply.delayMs ?? 0);
         chunk({ choices: [{ index: 0, delta: { content: word } }] });
       }
-      chunk({ choices: [{ index: 0, delta: {}, finish_reason: 'stop' }], ...(reply.usage ? { usage: reply.usage } : {}) });
+      chunk({ choices: [{ index: 0, delta: {}, finish_reason: reply.finishReason || 'stop' }], ...(reply.usage ? { usage: reply.usage } : {}) });
       res.end('data: [DONE]\n\n');
     });
   });

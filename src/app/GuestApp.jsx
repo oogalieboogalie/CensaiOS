@@ -19,6 +19,7 @@ import { useGuestGamePresence } from '../components/games/useGuestGamePresence.j
 import { JoinForm, Notice, ROLE_COPY, page, primary } from './GuestJoin.jsx';
 import { GuestBar } from './GuestBar.jsx';
 import { useLeadCamera } from './hooks/useLeadCamera.js';
+import { useTemplateAgents } from './hooks/useTemplateAgents.js';
 
 const NOOP = () => {};
 const noopAuthoritative = () => true;
@@ -98,6 +99,9 @@ export function GuestBoard({ session, onEnded, onLeave, extras = null, leadCamer
   }, [applyHostCamera, fitOnce, onEnded]);
 
   const yjs = useYjsCanvas({ enabled: editing, workspaceId, guest: true });
+  // A template board's agents ride on its groups; register them so a guest
+  // sees "Listing Writer", not the fallback agent.
+  useTemplateAgents();
   React.useEffect(() => { if (yjs.status === 'live') fitOnce(); }, [yjs.status, fitOnce]);
   const collaboration = useWorkspaceCollaboration({
     enabled: true, workspaceId, wins, revision: 0, onAuthoritativeCommit: noopAuthoritative,

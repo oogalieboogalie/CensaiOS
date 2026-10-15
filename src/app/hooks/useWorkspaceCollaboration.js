@@ -93,7 +93,7 @@ export function useWorkspaceCollaboration({
           snapshotBaseline.current = true;
           setState((current) => {
             const watched = (list) => (awarenessRef.current ? (list || []).filter((p) => p.actor?.type === 'guest') : list || []);
-            const notices = fresh ? [] : diffPresenceNotices(watched(current.participants), watched(message.participants));
+            const notices = fresh ? [] : diffPresenceNotices(watched(current.participants), watched(message.participants), { selfId: current.self?.id });
             return {
               ...current,
               participants: message.participants || [],

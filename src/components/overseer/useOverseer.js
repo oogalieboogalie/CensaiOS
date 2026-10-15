@@ -18,6 +18,8 @@ export function useOverseer() {
   const [isCustomRepo, setIsCustomRepo] = React.useState(true);
   const [customRepoText, setCustomRepoText] = React.useState('');
   
+  // Merging PRs stays off until the user ticks it; a running watcher shows its own setting.
+  const [autoMerge, setAutoMerge] = React.useState(false);
   const [error, setError] = React.useState('');
   const logEndRef = React.useRef(null);
 
@@ -27,7 +29,7 @@ export function useOverseer() {
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
-        
+        if (data.isRunning) setAutoMerge(data.autoMerge === true);
         if (data.repo && data.repo !== selectedRepo) {
           if (repos.includes(data.repo)) {
             setSelectedRepo(data.repo);
@@ -85,7 +87,7 @@ export function useOverseer() {
       const res = await fetch('/api/overseer/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repo, intervalSeconds: 3600 })
+        body: JSON.stringify({ repo, intervalSeconds: 3600, autoMerge })
       });
       if (!res.ok) {
         const errData = await res.json();
@@ -116,7 +118,11 @@ export function useOverseer() {
   const handleRunNow = async () => {
     setError('');
     try {
-      const res = await fetch('/api/overseer/run', { method: 'POST' });
+      const res = await fetch('/api/overseer/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoMerge }),
+      });
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || 'Failed to trigger run');
@@ -145,6 +151,8 @@ export function useOverseer() {
     isCustomRepo,
     customRepoText,
     setCustomRepoText,
+    autoMerge,
+    setAutoMerge,
     error,
     logEndRef,
     handleStart,

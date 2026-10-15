@@ -1,172 +1,51 @@
 import React from 'react';
-import { Icon } from '../Icons.jsx';
-import { SCHEDULER_AGENTS, getSelectedDaysString } from './constants.js';
+import { SCHEDULER_AGENTS } from './constants.js';
+import { describeRow, specFromRow } from '../../lib/schedule/fromScheduler.js';
+import { fromNow } from '../../lib/schedule/plainWords.js';
 
-export function SchedulerTimelineItem({ s, onSpawn, onSelect, wins, handleToggleStatus, handleDeleteSchedule }) {
-  const isCompleted = s.status === 'completed';
-  const isFailed = s.status === 'failed';
-  const isInactive = s.status === 'inactive';
-  const isRunning = s.status === 'running';
+const TOGGLE_WORDS = { active: 'Pause', running: 'Pause', inactive: 'Resume', failed: 'Try again', completed: 'Run again' };
+
+/** What sits next to a run's time in the Scheduler's list. */
+export function SchedulerTimelineItem({ s, now = new Date(), onSpawn, onSelect, wins, handleToggleStatus, handleDeleteSchedule }) {
+  const agent = SCHEDULER_AGENTS.find(a => a.id === s.agent_id) || SCHEDULER_AGENTS[0];
   const lastError = s.last_error || s.lastError || '';
   const lastResult = s.last_result || s.lastResult || '';
+  const lastRun = s.last_run_at || s.lastRunAt;
+  const detail = [agent?.name, s.project_name, describeRow(s, now)].filter(Boolean).join(' · ');
 
-  const statusLabel = isRunning ? 'Running' : isCompleted ? 'Completed' : isFailed ? 'Failed' : isInactive ? 'Paused' : 'Scheduled';
-
-  const agent = SCHEDULER_AGENTS.find(a => a.id === s.agent_id) || SCHEDULER_AGENTS[0];
-  const hue = agent.hue ?? 145;
+  const addToCalendar = () => {
+    const spec = specFromRow(s);
+    const [h, m] = spec.time.split(':').map(Number);
+    const prefill = {
+      title: `Task: ${s.task_text.slice(0, 40)}`,
+      description: `${s.task_text}\n\nhb://task/${s.id}`,
+      date: spec.date,
+      startTime: spec.time,
+      endTime: `${String(Math.min(h + 1, 23)).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
+    };
+    const calWin = wins?.find(w => w.kind === 'calendar');
+    onSpawn?.('calendar', { data: { prefill } });
+    if (calWin) onSelect?.(calWin.id);
+  };
 
   return (
-    <div style={{
-      background: 'var(--surface)',
-      border: '1px solid var(--hairline)',
-      borderRadius: 'var(--radius-xl)',
-      padding: '12px 16px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 10,
-      opacity: isCompleted || isInactive ? 0.6 : 1,
-      transition: 'opacity 0.2s ease',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* Time & Agent Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Icon.Calendar size={14} color="var(--ink-soft)" />
-          <span style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>{s.scheduled_time}</span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{
-            fontSize: 'var(--text-xs)',
-            fontWeight: 700,
-            color: `oklch(0.42 0.14 ${hue})`,
-            background: `oklch(0.92 0.04 ${hue})`,
-            border: `1px solid oklch(0.62 0.14 ${hue} / 0.3)`,
-            borderRadius: 'var(--radius-md)',
-            padding: '2px 8px'
-          }}>
-            Manager: {agent.name}
-          </span>
-          <div
-            title={statusLabel}
-            style={{
-              width: 8, height: 8, borderRadius: '50%',
-              background: isFailed ? 'var(--ps-red)' : isCompleted ? 'var(--accent)' : isInactive ? 'var(--hairline-strong)' : 'var(--ps-green)',
-              boxShadow: isInactive ? 'none' : `0 0 6px ${isFailed ? 'var(--ps-red)' : isCompleted ? 'var(--accent)' : 'var(--ps-green)'}`
-            }}
-          />
-        </div>
-      </div>
-
-      <div style={{
-        fontSize: 'var(--text-sm)', lineHeight: 1.4, color: 'var(--ink)',
-        textDecoration: isCompleted ? 'line-through' : 'none', wordBreak: 'break-word'
-      }}>
-        {s.task_text}
-      </div>
-
-      {s.document_target && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-           <button
-            onClick={() => onSpawn?.('doc', { fileName: s.document_target, maximized: true })}
-            style={{
-              all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--accent-ink)',
-              background: 'var(--accent-soft)', border: '1px solid var(--accent-line)',
-              borderRadius: 'var(--radius-md)', padding: '4px 10px', display: 'flex', alignItems: 'center',
-              gap: 6, fontWeight: 600, boxShadow: 'var(--elevation-1)'
-            }}
-          >
-            <Icon.Files size={12} />
-            Open {s.document_target}
-          </button>
-        </div>
+    <>
+      <div className="hb-sched-title">{s.task_text}</div>
+      <div className="hb-sched-detail">{detail}</div>
+      {s.status === 'running' && <span className="hb-sched-status">Running now</span>}
+      {(lastError || lastResult) && (
+        <p className="hb-sched-note" data-tone={lastError ? 'danger' : undefined}>
+          {lastRun ? `Last run ${fromNow(lastRun, now)}: ` : ''}{lastError || lastResult}
+        </p>
       )}
-
-      {(lastResult || lastError || s.startedAt || s.lastRunAt || s.last_run_id) && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--surface-2)',
-          border: `1px solid ${isFailed ? 'var(--ps-red)' : 'var(--hairline)'}`, borderRadius: 'var(--radius-md)',
-          padding: '7px 8px', fontSize: 'var(--text-xs)', color: isFailed ? 'var(--ps-red)' : 'var(--ink-soft)', lineHeight: 1.35
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', textTransform: 'var(--label-case)' }}>
-            <span>{statusLabel}</span>
-            <span>{s.lastRunAt ? new Date(s.lastRunAt).toLocaleString() : s.startedAt ? new Date(s.startedAt).toLocaleString() : ''}</span>
-          </div>
-          {(lastError || lastResult) && (
-            <div style={{ color: isFailed ? 'var(--ps-red)' : 'var(--ink)', whiteSpace: 'pre-wrap', maxHeight: 110, overflow: 'auto' }}>
-              {lastError || lastResult}
-            </div>
-          )}
-          {s.last_run_id && (
-            <div style={{ color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>
-              Run {s.last_run_id.slice(0, 8)}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--hairline)', paddingTop: 6, marginTop: 2 }}>
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
-          {s.repeat_enabled ? (
-            <span>🔁 repeats {s.repeat_freq} on: {getSelectedDaysString(s.repeat_days)}</span>
-          ) : (
-            <span>Project: {s.project_name}</span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            onClick={() => {
-              const calWin = wins?.find(w => w.kind === 'calendar');
-              const prefill = {
-                title: `Task: ${s.task_text.slice(0, 40)}`,
-                description: `${s.task_text}\n\nhb://task/${s.id}`,
-                date: s.scheduled_date,
-                startTime: s.scheduled_time.includes('AM') || s.scheduled_time.includes('PM')
-                  ? (function(){
-                      const [t, ampm] = s.scheduled_time.split(' ');
-                      let [h, m] = t.split(':');
-                      if (ampm === 'PM' && h !== '12') h = parseInt(h) + 12;
-                      if (ampm === 'AM' && h === '12') h = '00';
-                      return `${String(h).padStart(2, '0')}:${m}`;
-                    })()
-                  : '09:00',
-                endTime: '10:00'
-              };
-              onSpawn?.('calendar', { data: { prefill } });
-              if (calWin) onSelect?.(calWin.id);
-            }}
-            title="Add to Google Calendar"
-            style={{
-              all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--ps-red)',
-              background: 'oklch(from var(--ps-red) l c h / 0.1)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', fontWeight: 500
-            }}
-          >
-            Calendar
-          </button>
-          <button
-            onClick={() => handleToggleStatus(s.id)}
-            title={isCompleted || isFailed ? 'Mark Active' : isInactive ? 'Mark Completed' : 'Mark Inactive'}
-            style={{
-              all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--accent-ink)',
-              background: 'var(--accent-soft)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', fontWeight: 500
-            }}
-          >
-            {isCompleted || isFailed ? 'Active' : isInactive ? 'Complete' : 'Pause'}
-          </button>
-          <button
-            onClick={() => handleDeleteSchedule(s.id)}
-            title="Delete scheduled task"
-            style={{
-              all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--ps-red)',
-              background: 'var(--ps-red)15', padding: '2px 6px', borderRadius: 'var(--radius-sm)', fontWeight: 500
-            }}
-          >
-            Delete
-          </button>
-        </div>
+      <div className="hb-sched-actions">
+        <button type="button" className="hb-sched-btn" onClick={() => handleToggleStatus(s.id)}>{TOGGLE_WORDS[s.status] || 'Resume'}</button>
+        {s.document_target && (
+          <button type="button" className="hb-sched-btn" onClick={() => onSpawn?.('doc', { fileName: s.document_target, maximized: true })}>Open {s.document_target}</button>
+        )}
+        <button type="button" className="hb-sched-btn" title="Add to Google Calendar" onClick={addToCalendar}>Add to calendar</button>
+        <button type="button" className="hb-sched-btn" data-danger="true" onClick={() => handleDeleteSchedule(s.id)}>Delete</button>
       </div>
-    </div>
+    </>
   );
 }

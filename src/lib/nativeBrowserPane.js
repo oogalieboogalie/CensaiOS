@@ -22,6 +22,10 @@ export function paneId(winId) {
 // The native view always paints above the DOM, so it is hidden whenever its
 // area is collapsed or covered by another canvas window or menu.
 //
+// Small canvas chrome that only shows on hover (a group's resize corner, the
+// seams between tiles) is marked `data-pane-passthrough`: it does not count as
+// covering, or moving the mouse into a group blanks a Browser tile.
+//
 // `clip`: the view is a child of the app window, so the operating system cuts
 // off whatever hangs past the app's edges. Then a window dragged partly off
 // screen keeps showing its page and only the part still on screen is probed.
@@ -51,7 +55,8 @@ export function isAreaClear(el, rect, { clip = false } = {}) {
   ];
   return points.every(([x, y]) => {
     const hit = document.elementFromPoint(x, y);
-    return hit && el.contains(hit);
+    if (!hit) return false;
+    return el.contains(hit) || Boolean(hit.closest?.('[data-pane-passthrough]'));
   });
 }
 

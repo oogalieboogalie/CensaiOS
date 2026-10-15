@@ -20,7 +20,7 @@ module.exports = {
   create(context) {
     return {
       Program(node) {
-        const sourceCode = context.getSourceCode();
+        const sourceCode = (context.sourceCode ?? context.getSourceCode());
         const comments = sourceCode.getAllComments();
         const hasIntent = comments.some(comment => /@intent\b/.test(comment.value));
 

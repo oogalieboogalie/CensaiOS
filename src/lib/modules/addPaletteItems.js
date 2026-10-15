@@ -2,7 +2,8 @@
 // palette component turns each item's `action` into a spawn.
 //
 // Sections, top to bottom: Recent, My modules, every built-in module by
-// category, Templates, and always a last row "Make a new module…". When a
+// category, Ready-made boards, Templates, and always a last row "Make a new
+// module…". When a
 // search matches nothing, "Make a new module: <search>" moves to the top.
 
 import { DEFAULT_HTML_PREVIEW } from '../../components/canvas/CanvasState.js';
@@ -14,14 +15,14 @@ import { BRAND_BY_KIND } from '../brands/index.js';
 import { searchPaletteEntries } from '../search/engines.js';
 
 export const CATEGORIES = Object.freeze([
-  { label: 'Chat and agents', kinds: ['chat', 'groupChat', 'agentDesigner', 'weewoo', 'rook', 'exoSkeleton', 'modelArena'] },
+  { label: 'Chat and agents', kinds: ['chat', 'groupChat', 'agentDesigner', 'weewoo', 'rook', 'exoSkeleton', 'modelArena', 'arenaBenchmarks'] },
   // Censai Office: spreadsheets and decks that export to real files.
   { label: 'Censai Office', kinds: ['officeSheets', 'officeSlides'] },
   // Censai Creative: picture, vector and video editors (the Adobe-style set).
   { label: 'Censai Creative', kinds: ['creativePhoto', 'creativeVector', 'creativeVideo'] },
   // YorWare Suite: open-source everyday apps (spec 13). Writer is the old
   // Censai Docs window (kind officeDocs) grown into the suite.
-  { label: 'YorWare Suite', kinds: ['officeDocs', 'yorPdf', 'yorPhotos', 'yorLayout', 'yorDiagrams', 'yor3d', 'yorThreeEditor', 'yorCad'] },
+  { label: 'YorWare Suite', kinds: ['officeDocs', 'yorPdf', 'yorPhotos', 'yorLayout', 'yorDiagrams', 'yor3d', 'yorThreeEditor', 'yorCad', 'yorBooks'] },
   { label: 'Work', kinds: ['todos', 'workflow', 'scheduler', 'operationsBoard', 'julesTasks', 'calendar', 'leadHound', 'research', 'sheets', 'leads'] },
   // One row per engine; each opens the Search window set to that engine
   // (Tavily opens Research). `entries` rows carry their own props.
@@ -32,7 +33,7 @@ export const CATEGORIES = Object.freeze([
   // Social canvas: follow boards and friends, a feed, your profile.
   { label: 'People', kinds: ['social'] },
   { label: 'Media', kinds: ['shorts', 'music', 'studio', 'stream', 'teleprompter'] },
-  { label: 'Games', kinds: ['asteroids', 'racetrack', 'agentCompany', 'codeRobot', 'rhythmRun', 'driftholm', 'gamePlayground'] },
+  { label: 'Games', kinds: ['asteroids', 'racetrack', 'agentCompany', 'idleBlocks', 'codeRobot', 'rhythmRun', 'driftholm', 'gamePlayground'] },
   { label: 'System', kinds: ['mailcow', 'vex', 'sovereignTest', 'marketplace'] },
 ]);
 
@@ -63,6 +64,17 @@ export const PROPS_BY_KIND = Object.freeze({
   ...YORWARE_STARTERS,
   weewoo: { ...companyStarter(), seeded: true },
 });
+
+// Ready-made boards (spec 7): one pick lays out a whole board of windows,
+// groups and agents next to what is already there.
+export const BOARD_TEMPLATE_ITEMS = Object.freeze([
+  { id: 'board:developer', label: 'Developer', hint: 'Ready-made board: code, preview, terminal and code review', icon: 'Group', cover: 'developerBoard', action: { type: 'boardTemplate', id: 'developer' } },
+  { id: 'board:code-workspace', label: 'Code Workspace', hint: 'Ready-made board laid out like VS Code: files, code, terminal, AI side panel', icon: 'Group', cover: 'codeWorkspaceBoard', action: { type: 'boardTemplate', id: 'code-workspace' } },
+  { id: 'board:creative-studio', label: 'Creative Studio', hint: 'Ready-made board: brief, design, video and a content calendar', icon: 'Group', cover: 'creativeBoard', action: { type: 'boardTemplate', id: 'creative-studio' } },
+  { id: 'board:agent-team', label: 'Agent Team', hint: 'Ready-made board: four agents in one team room; the Lead hands out the work', icon: 'Group', cover: 'agentTeamBoard', action: { type: 'boardTemplate', id: 'agent-team' } },
+  { id: 'board:small-business', label: 'Small Business', hint: 'Ready-made board: find customers, money sheet and this week', icon: 'Group', cover: 'smallBusinessBoard', action: { type: 'boardTemplate', id: 'small-business' } },
+  { id: 'board:real-estate-team', label: 'Real Estate Team', hint: 'Ready-made board: listings, showings and follow-ups', icon: 'Group', cover: 'realEstateBoard', action: { type: 'boardTemplate', id: 'real-estate-team' } },
+]);
 
 export function manifestIcon(manifest) {
   return manifest?.launcher?.icon || manifest?.moduleMenu?.icon || manifest?.header?.icon || ICON_BY_KIND[manifest?.kind] || 'NewWindow';
@@ -134,7 +146,7 @@ export function buildAddSections({ query = '', manifests = [], recent = [], save
     id: `template:${t.id}`, label: t.manifest?.name || t.id, hint: t.manifest?.description || '',
     icon: t.manifest?.icon || 'Toolbox', cover: 'module', action: { type: 'template', id: t.id },
   }));
-  const everything = [...savedItems, ...builtIns.flatMap(g => g.items), ...templateItems];
+  const everything = [...savedItems, ...builtIns.flatMap(g => g.items), ...BOARD_TEMPLATE_ITEMS, ...templateItems];
   const byId = new Map(everything.map(i => [i.id, i]));
   const filter = items => items.filter(i => matches(q, i.label, i.hint, i.id));
 
@@ -149,6 +161,7 @@ export function buildAddSections({ query = '', manifests = [], recent = [], save
   }
   sections.push({ id: 'mine', label: 'My modules', items: filter(savedItems) });
   for (const group of builtIns) sections.push({ id: `cat:${group.label}`, label: group.label, items: filter(group.items) });
+  sections.push({ id: 'boards', label: 'Ready-made boards', items: filter(BOARD_TEMPLATE_ITEMS) });
   sections.push({ id: 'templates', label: 'Templates', items: filter(templateItems) });
 
   const anyMatch = sections.some(s => s.items.length > 0);

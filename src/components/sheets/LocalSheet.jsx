@@ -35,8 +35,16 @@ function ResearchColumnForm({ columns, onAdd, onCancel }) {
   );
 }
 
+// Keys that finish typing in a cell and where they send you, as in Excel:
+// Tab right, Shift+Tab left, Enter down, Shift+Enter up.
+const MOVE_KEYS = { Tab: [1, 0], Enter: [0, 1] };
+
 function Cell({ row, column, editing, onEdit, onCommit, onPaste }) {
   const cell = row.cells?.[column.id] || {};
+  const done = React.useRef(false);
+  React.useEffect(() => { if (editing) done.current = false; }, [editing]);
+  // Commit once: moving to the next cell unmounts this input and can blur it.
+  const finish = (value, move) => { if (done.current) return; done.current = true; onCommit(value, move); };
   if (editing) {
     return (
       <td className="hb-sheet-cell" data-editing="true">
@@ -45,8 +53,15 @@ function Cell({ row, column, editing, onEdit, onCommit, onPaste }) {
             const text = e.clipboardData.getData('text');
             if (/[\t\n]/.test(text.trim())) { e.preventDefault(); onPaste(text); }
           }}
-          onBlur={(e) => onCommit(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') onCommit(null); }} />
+          onBlur={(e) => finish(e.target.value)}
+          onKeyDown={(e) => {
+            const move = MOVE_KEYS[e.key];
+            if (move && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              const back = e.shiftKey ? -1 : 1;
+              finish(e.currentTarget.value, { dc: move[0] * back, dr: move[1] * back });
+            } else if (e.key === 'Escape') finish(null);
+          }} />
       </td>
     );
   }
@@ -59,6 +74,15 @@ function Cell({ row, column, editing, onEdit, onCommit, onPaste }) {
       )}
     </td>
   );
+}
+
+/** The cell `move` steps away, or null at the edge of the sheet (typing stops there). */
+function neighbour(sheet, rowId, colId, move) {
+  if (!move) return null;
+  const r = sheet.rows.findIndex((row) => row.id === rowId) + move.dr;
+  const c = sheet.columns.findIndex((col) => col.id === colId) + move.dc;
+  if (r < 0 || c < 0 || r >= sheet.rows.length || c >= sheet.columns.length) return null;
+  return { rowId: sheet.rows[r].id, colId: sheet.columns[c].id };
 }
 
 /** The board's own spreadsheet, with Research columns filled by Tavily. */
@@ -83,8 +107,8 @@ export function LocalSheet({ win, onUpdate, readOnly = false }) {
     })();
   }, []);
 
-  const commitCell = (rowId, colId, value) => {
-    setEditing(null);
+  const commitCell = (rowId, colId, value, move) => {
+    setEditing(neighbour(sheet, rowId, colId, move));
     if (value === null || value === cellValue(sheet.rows.find((r) => r.id === rowId), colId)) return;
     commit(setCell(sheet, rowId, colId, { v: value, src: null, srcTitle: null, status: null }));
   };
@@ -146,7 +170,7 @@ export function LocalSheet({ win, onUpdate, readOnly = false }) {
                   <Cell key={c.id} row={row} column={c}
                     editing={!readOnly && editing?.rowId === row.id && editing?.colId === c.id}
                     onEdit={() => !readOnly && setEditing({ rowId: row.id, colId: c.id })}
-                    onCommit={(value) => commitCell(row.id, c.id, value)}
+                    onCommit={(value, move) => commitCell(row.id, c.id, value, move)}
                     onPaste={(text) => { setEditing(null); commit(pasteGrid(sheet, row.id, c.id, text)); }} />
                 ))}
               </tr>

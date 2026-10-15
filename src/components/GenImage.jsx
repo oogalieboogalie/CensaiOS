@@ -73,10 +73,10 @@ export function GenImageWindow({ win, onUpdate }) {
     <>
       <WindowTitle accent="var(--ps-pink)" icon={<GenIcon size={14}/>} label="Image" subtitle={finalPrompt ? 'nanobanana' : 'awaiting prompt'} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'oklch(0.20 0.02 280)', margin: '6px 8px 0 8px', borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'var(--surface-sunken)', margin: '6px 8px 0 8px', borderRadius: 'var(--radius-lg)' }}>
           {generatedImage && !loading && <img src={generatedImage} alt={finalPrompt} draggable="true" onDragStart={handleDragStart} onDragEnd={handleDragEnd} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', animation: 'gen-fade 0.5s ease-out both', cursor: dragImage ? 'grabbing' : 'grab' }} />}
           {loading && <CookingOverlay />}
-          {!finalPrompt && !loading && !generatedImage && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: 'oklch(0.7 0.04 280)', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)' }}>type a prompt below</div>}
+          {!finalPrompt && !loading && !generatedImage && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: 'var(--ink-faint)', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)' }}>type a prompt below</div>}
           {error && !loading && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 20, textAlign: 'center', color: 'var(--ps-red)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>Error: {error}</div>}
         </div>
         <div style={{ padding: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -106,12 +106,12 @@ export function GenImageWindow({ win, onUpdate }) {
 
 function CookingOverlay() {
   return (
-    <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: 'linear-gradient(120deg, oklch(0.22 0.04 280), oklch(0.18 0.03 320), oklch(0.20 0.04 200))', backgroundSize: '200% 200%', animation: 'gen-shimmer 2.5s ease infinite' }}>
-      <div style={{ textAlign: 'center', color: 'oklch(0.95 0.05 320)' }}>
+    <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: 'linear-gradient(120deg, var(--surface-sunken), var(--accent-soft), var(--surface-2))', backgroundSize: '200% 200%', animation: 'gen-shimmer 2.5s ease infinite' }}>
+      <div style={{ textAlign: 'center', color: 'var(--accent-ink)' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 600, marginBottom: 4 }}>cooking…</div>
         <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', opacity: 0.7 }}>nanobanana · diffusion</div>
         <div style={{ marginTop: 14, display: 'flex', gap: 6, justifyContent: 'center' }}>
-          {[0,1,2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'oklch(0.85 0.18 320)', animation: `gen-bounce 1.2s ease-in-out ${i * 0.15}s infinite` }}/>)}
+          {[0,1,2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', animation: `gen-bounce 1.2s ease-in-out ${i * 0.15}s infinite` }}/>)}
         </div>
       </div>
     </div>

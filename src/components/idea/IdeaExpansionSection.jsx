@@ -6,7 +6,7 @@ export function IdeaExpansionSection({ expansion, status, error, expansionStale,
     <section style={panelStyle}>
       <div style={sectionHeaderStyle}>
         <span>Expansion</span>
-        <span>{status || 'Gemini 2.5 Flash'}</span>
+        <span>{status}</span>
       </div>
       {error && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)', lineHeight: 1.4, marginBottom: 8 }}>{error}</div>}
       {expansionStale && (

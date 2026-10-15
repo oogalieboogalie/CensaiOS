@@ -5,15 +5,9 @@ import { ModelAccessError, resolveChatModelConfig } from '../../aiGateway/index.
 import { filterToolsForAgent } from '../../tools.js';
 import { buildSubAgentSystemPrompt } from './prompts.js';
 import pool from '../../db.js';
-import {
-  capabilityProviderFor,
-  getModelCapabilities,
-} from '../../../src/lib/chat/modelCapabilities.js';
+import { capabilityProviderFor, getModelCapabilities } from '../../../src/lib/chat/modelCapabilities.js';
 import { buildContentParts, messageAttachments } from '../../aiGateway/multimodal.js';
-import {
-  getUserApiKeyConfig,
-  inferUserApiKeyProvider,
-} from '../../security/userApiKeys.js';
+import { getUserApiKeyConfig, inferUserApiKeyProvider } from '../../security/userApiKeys.js';
 import { requiresPersonalApiKey } from '../../security/byokPolicy.js';
 import {
   analyzeChangeImpact,
@@ -22,6 +16,7 @@ import {
 import { resolveWorkspaceContext } from '../../workspaces/context.js';
 import { resolveFreeTierRuntime } from '../../aiGateway/freeTierRuntime.js';
 import { borrowKeyedModel } from './keyFallback.js';
+import { scopeServerKey } from '../../security/serverKeys.js';
 import {
   enforceCoreChatBoundary,
   requireAgentContextRuntime,
@@ -126,7 +121,8 @@ export async function prepareChatContext(
       }
 
       // Cloud SaaS users must supply credentials for paid providers.
-      // Local and private-server installs deliberately use the server-managed route.
+      // Private servers use the server-managed route; a local install only for
+      // its owner and whom they share keys with (scopeServerKey below).
       const centralFreeAccessEnabled = resolveFreeTierRuntime().enabled;
       if (userId && requiresPersonalApiKey(effectiveRole) && !centralFreeAccessEnabled) {
         const isLocalProvider = reqBaseUrl.includes('localhost') || reqBaseUrl.includes('127.0.0.1') || reqBaseUrl.includes('host.docker.internal');
@@ -163,7 +159,7 @@ export async function prepareChatContext(
       if (agent) {
         const memoryPrompt = await buildSystemPrompt(agentId, lastUserMsg, {
           workspaceId: authorizedWorkspaceId,
-          userId,
+          userId, historyInRequest: (messages?.length || 0) > 1,
           onProjectContext: (contexts) => {
             projectContext = contexts.map((context) => ({ ...context, prewarmed: true }));
           },
@@ -192,6 +188,9 @@ export async function prepareChatContext(
   // No Ollama answering here: use a model the person has a key for.
   const borrowed = await borrowKeyedModel({ userId, baseUrl: reqBaseUrl });
   if (borrowed) ({ provider, model: reqModel, baseUrl: reqBaseUrl, apiKey: reqApiKey } = borrowed);
+
+  // Local install: the .env keys are the owner's; a teammate uses their own unless shared.
+  if (userId) reqApiKey = (await scopeServerKey({ provider, baseUrl: reqBaseUrl, apiKey: reqApiKey }, { userId, userRole: effectiveRole })).apiKey;
 
   const impactPrompt = formatChangeImpactForPrompt(changeImpact);
   if (impactPrompt) systemPrompt += `\n\n${impactPrompt}`;

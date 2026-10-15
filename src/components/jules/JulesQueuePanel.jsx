@@ -63,9 +63,18 @@ export function JulesQueuePanel({ queue, includeCompleted }) {
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
           {counts.pending || 0} pending · {counts.inflight || 0} active · {counts.blocked || 0} blocked
         </span>
-        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: queue?.autoMerge ? 'var(--ps-green)' : 'var(--ps-yellow)' }}>
-          auto-merge {queue?.autoMerge ? 'on' : 'off'}
-        </span>
+        {/* The queue file's own setting, used by scheduled queue runs. Overseer
+            Watcher runs merge only when its own box is ticked. Unknown until loaded. */}
+        {queue && (
+          <span
+            title={queue.autoMerge
+              ? 'Scheduled queue runs merge pull requests that pass their checks. Overseer Watcher merges only when its own box is ticked.'
+              : 'Queue runs merge nothing; ready pull requests wait for you.'}
+            style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: queue.autoMerge ? 'var(--ps-yellow)' : 'var(--ps-green)' }}
+          >
+            {queue.autoMerge ? 'queue merges ready PRs' : 'queue merges nothing'}
+          </span>
+        )}
       </div>
       <Section title="In flight" items={queue?.inflight || []} empty="No Jules task is currently running." />
       <Section title="Pending" items={queue?.pending || []} empty="No pending handoff briefs." />

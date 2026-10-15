@@ -174,3 +174,20 @@ export function groupMembers(wins = [], group) {
     return cx >= group.x && cx <= group.x + group.w && cy >= group.y && cy <= group.y + group.h;
   });
 }
+
+/**
+ * Board-wide defaults: a group can carry its own `hotkey` (a template's
+ * Listings group is F1), which every person on the board gets unless they
+ * bound that slot to something else themselves. Returns a new object.
+ */
+export function withGroupDefaultHotkeys(bindings = {}, canvasGroups = []) {
+  const next = { ...bindings };
+  const taken = new Set(Object.values(next));
+  for (const group of canvasGroups) {
+    const slot = String(group?.hotkey || '');
+    if (!GROUP_HOTKEY_SLOTS.includes(slot) || next[slot] || taken.has(group.id)) continue;
+    next[slot] = group.id;
+    taken.add(group.id);
+  }
+  return next;
+}

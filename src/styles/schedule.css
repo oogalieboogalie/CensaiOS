@@ -1,0 +1,97 @@
+/* Scheduling: one look for every screen that plans a run (Scheduler,
+   Workflow start, Calendar event, Live Operations). Shared pickers and the
+   "coming up" list live in src/components/schedule/. */
+
+.hb-sched-field { display: flex; flex-direction: column; gap: var(--space-1-5); min-width: 0; }
+.hb-sched-label { font-family: var(--font-label); font-size: var(--label-size); font-weight: var(--label-weight); letter-spacing: var(--label-tracking); text-transform: var(--label-case); color: var(--ink-soft); }
+.hb-sched-input { box-sizing: border-box; width: 100%; min-height: var(--control-h); padding: var(--space-1-5) var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-soft-50); color: var(--ink); font: inherit; font-size: var(--text-md); resize: none; }
+.hb-sched-input:focus, .hb-sched-time:focus-within { outline: none; border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-10); }
+.hb-sched-input::placeholder { color: var(--ink-faint); }
+
+/* Time: hour : minute  AM|PM */
+.hb-sched-time { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-1) var(--space-1) var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-soft-50); }
+.hb-sched-time select { all: unset; cursor: pointer; padding: var(--space-0-5) var(--space-1); border-radius: var(--radius-sm); font-size: var(--text-lg); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+.hb-sched-time select:hover { background: var(--glass-hover); }
+.hb-sched-time select::picker-icon { display: none; }
+.hb-sched-colon { color: var(--ink-faint); font-weight: 600; }
+.hb-sched-ampm { margin-left: auto; }
+
+/* Segmented choices and chips share one pressed look: the accent, nothing else. */
+.hb-sched-seg { display: flex; padding: var(--space-0-5); gap: var(--space-0-5); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-soft-30); }
+.hb-sched-seg button, .hb-sched-chip, .hb-sched-days button { all: unset; box-sizing: border-box; cursor: pointer; text-align: center; white-space: nowrap; font-size: var(--text-sm); font-weight: 500; color: var(--ink-soft); border-radius: var(--radius-sm); transition: background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard); }
+.hb-sched-seg button { flex: 1; padding: var(--space-1) var(--space-2); }
+.hb-sched-seg button:hover, .hb-sched-chip:hover, .hb-sched-days button:hover { color: var(--ink); background: var(--glass-hover); }
+.hb-sched-seg button[aria-pressed="true"], .hb-sched-chip[aria-pressed="true"], .hb-sched-days button[aria-pressed="true"] { color: var(--accent-text); background: var(--accent-10); box-shadow: inset 0 0 0 1px var(--accent-30); }
+.hb-sched-repeat { display: grid; grid-template-columns: repeat(5, 1fr); }
+.hb-sched-repeat button { padding: var(--space-1) var(--space-0-5); font-size: var(--text-xs); }
+.hb-sched-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.hb-sched-chip { padding: var(--space-0-5) var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-full); font-size: var(--text-xs); }
+.hb-sched-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--space-1); }
+.hb-sched-days button { padding: var(--space-1) 0; border: 1px solid var(--hairline); font-size: var(--text-xs); }
+.hb-sched-every { display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--space-1-5); }
+.hb-sched-seg button:focus-visible, .hb-sched-chip:focus-visible, .hb-sched-days button:focus-visible, .hb-sched-btn:focus-visible { outline: 2px solid var(--accent-50); outline-offset: 1px; }
+
+/* The plain-words summary and next runs. */
+.hb-sched-preview { display: flex; flex-direction: column; gap: var(--space-1-5); padding: var(--space-2-5) var(--space-3); border: 1px solid var(--hairline); border-left: 2px solid var(--accent-line); border-radius: var(--radius-md); background: var(--surface-soft-30); }
+.hb-sched-sentence { font-size: var(--text-base); font-weight: 600; color: var(--ink); }
+
+/* Coming up. */
+.hb-sched-upcoming { display: flex; flex-direction: column; gap: var(--space-4); }
+.hb-sched-group { margin: 0 0 var(--space-1-5); font-family: var(--font-label); font-size: var(--label-size); font-weight: var(--label-weight); letter-spacing: var(--label-tracking); text-transform: var(--label-case); color: var(--ink-faint); }
+.hb-sched-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.hb-sched-row { display: grid; grid-template-columns: var(--space-20) 1fr auto; align-items: start; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--hairline-soft); }
+.hb-sched-rows > .hb-sched-row:first-child { border-top: none; }
+.hb-sched-preview .hb-sched-row { grid-template-columns: var(--space-20) 1fr auto; padding: var(--space-1) 0; }
+.hb-sched-when { display: flex; flex-direction: column; gap: var(--space-0-5); }
+.hb-sched-clock { font-size: var(--text-md); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+.hb-sched-day { font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-sched-main { min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.hb-sched-title { font-size: var(--text-md); color: var(--ink); line-height: 1.4; overflow-wrap: anywhere; }
+.hb-sched-detail { font-size: var(--text-xs); color: var(--ink-soft); line-height: 1.45; }
+.hb-sched-soon { font-size: var(--text-xs); color: var(--ink-faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hb-sched-row[data-status="inactive"] .hb-sched-clock, .hb-sched-row[data-status="inactive"] .hb-sched-title,
+.hb-sched-row[data-status="completed"] .hb-sched-title { color: var(--ink-soft); }
+.hb-sched-row[data-status="running"] .hb-sched-clock { color: var(--accent-text); }
+.hb-sched-empty { margin: 0; padding: var(--space-3) 0; font-size: var(--text-sm); color: var(--ink-faint); }
+.hb-sched-note { margin: 0; padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-sm); background: var(--surface-soft-30); font-size: var(--text-xs); line-height: 1.45; color: var(--ink-soft); white-space: pre-wrap; max-height: var(--space-24); overflow: auto; }
+.hb-sched-note[data-tone="danger"] { color: var(--danger); background: var(--status-danger-10); }
+.hb-sched-actions { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.hb-sched-status { font-size: var(--text-xs); font-weight: 600; color: var(--accent-text); }
+.hb-sched-status[data-tone="danger"] { color: var(--danger); }
+
+/* Buttons. */
+.hb-sched-btn { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1-5); padding: var(--space-0-5) var(--space-2); border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 500; color: var(--ink-soft); }
+.hb-sched-btn:hover { color: var(--ink); background: var(--glass-hover); }
+.hb-sched-btn[data-danger="true"]:hover { color: var(--danger); background: var(--status-danger-10); }
+.hb-sched-btn[data-primary="true"] { padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--accent); color: var(--accent-contrast); font-size: var(--text-md); font-weight: 600; }
+.hb-sched-btn[data-primary="true"]:hover { background: color-mix(in oklab, var(--accent) 88%, var(--color-white)); color: var(--accent-contrast); }
+.hb-sched-btn[disabled] { cursor: not-allowed; opacity: 0.5; }
+
+/* The Scheduler window. */
+.hb-sched-window { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(var(--space-72), 340px) 1fr; color: var(--ink); }
+.hb-sched-pane { min-height: 0; display: flex; flex-direction: column; }
+.hb-sched-pane + .hb-sched-pane { border-left: 1px solid var(--hairline); }
+.hb-sched-pane-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-4) var(--space-2); }
+.hb-sched-pane-title { margin: 0; font-size: var(--text-base); font-weight: 600; color: var(--ink); }
+.hb-sched-pane-sub { font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-sched-pane-body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-1) var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+.hb-sched-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.hb-sched-agents { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-1); }
+.hb-sched-agent { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-1-5) var(--space-0-5); border: 1px solid var(--hairline); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--ink-soft); text-align: center; }
+.hb-sched-agent:hover { color: var(--ink); background: var(--glass-hover); }
+.hb-sched-agent[aria-pressed="true"] { color: var(--ink); border-color: var(--accent-line); background: var(--accent-10); }
+.hb-sched-glyph { width: var(--space-6); height: var(--space-6); display: grid; place-items: center; border-radius: var(--radius-full); background: var(--surface-soft-50); border: 1px solid var(--hairline); font-family: var(--font-mono); font-weight: 600; font-size: var(--text-sm); }
+.hb-sched-agent[aria-pressed="true"] .hb-sched-glyph { background: var(--accent); border-color: transparent; color: var(--accent-contrast); }
+.hb-sched-agent-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-sched-error { margin: 0; padding: var(--space-2) var(--space-2-5); border-radius: var(--radius-md); background: var(--status-danger-10); color: var(--danger); font-size: var(--text-xs); line-height: 1.4; }
+.hb-sched-addproject { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-soft-30); }
+.hb-sched-inline { display: flex; gap: var(--space-1-5); align-items: stretch; }
+.hb-sched-more { all: unset; cursor: pointer; font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-sched-more:hover { color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .hb-sched-seg button, .hb-sched-chip, .hb-sched-days button { transition: none; } }
+
+/* The Calendar's new-event card. */
+.hb-sched-composer { position: absolute; left: var(--space-3); right: var(--space-3); bottom: var(--space-3); z-index: 20; max-height: calc(100% - var(--space-6)); display: flex; flex-direction: column; border: 1px solid var(--glass-line); border-radius: var(--radius-xl); background: var(--glass-bg-strong); backdrop-filter: var(--glass-filter); box-shadow: var(--shadow-pop); }
+.hb-sched-composer .hb-sched-pane-body { gap: var(--space-2-5); }
+.hb-sched-composer .hb-sched-time select { font-size: var(--text-md); }
+.hb-sched-composer .hb-sched-sentence { margin: 0; font-size: var(--text-sm); }

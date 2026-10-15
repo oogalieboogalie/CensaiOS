@@ -12,6 +12,17 @@ export const LAUNCHPAD_STARTS = [
   { kind: 'marketplace', label: 'Browse modules' },
 ];
 
+// Ready-made boards a newcomer can start from (spec 7); each opens the
+// template dialog on that board.
+export const LAUNCHPAD_BOARDS = [
+  { id: 'developer', label: 'Developer' },
+  { id: 'code-workspace', label: 'Code Workspace' },
+  { id: 'creative-studio', label: 'Creative Studio' },
+  { id: 'agent-team', label: 'Agent Team' },
+  { id: 'small-business', label: 'Small Business' },
+  { id: 'real-estate-team', label: 'Real Estate' },
+];
+
 export function CanvasLaunchpad({ manifests = [], onSpawn, onTour, suggestModules, chipKinds }) {
   const canSpawn = typeof onSpawn === 'function';
   const byKind = new Map((manifests || []).filter((m) => m?.launcher).map((m) => [m.kind, m]));
@@ -98,6 +109,24 @@ export function CanvasLaunchpad({ manifests = [], onSpawn, onTour, suggestModule
         fontSize: 'var(--text-xs)', letterSpacing: '0.035em', lineHeight: 1.6,
       }}>
         Open a project from the top bar · drag to pan · Ctrl+scroll to zoom
+      </div>
+      <div data-testid="launchpad-templates" style={{
+        marginTop: 14, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 6,
+        fontSize: 'var(--text-sm)',
+      }}>
+        <span style={{ color: 'var(--ink-faint)', flexBasis: '100%', marginBottom: 2 }}>Start from a ready-made board</span>
+        {LAUNCHPAD_BOARDS.map((board) => (
+          <button
+            key={board.id}
+            type="button"
+            data-testid={`launchpad-board-${board.id}`}
+            onClick={() => window.dispatchEvent(new CustomEvent('censai:open-templates', { detail: { id: board.id } }))}
+            style={{
+              all: 'unset', cursor: 'pointer', padding: '5px 12px', borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--hairline)', color: 'var(--ink)', background: 'var(--surface)',
+            }}
+          >{board.label}</button>
+        ))}
       </div>
     </div>
   );

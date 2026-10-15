@@ -12,6 +12,7 @@ import {
 } from './imageGeneration.js';
 import { bestEffortUsageSink } from './usageSink.js';
 import { tagRejectedKey } from './missingKey.js';
+import { scopeServerKey } from '../security/serverKeys.js';
 import {
   applyModelAccess,
   resolveModelAccess,
@@ -22,6 +23,12 @@ import {
 export const CHAT_COMPLETION_MODEL_KIND = 'chat.completion';
 export { EMBEDDING_MODEL_KIND };
 export { IMAGE_GENERATION_MODEL_KIND };
+
+// A person's agents and workflows follow the same key rule as their chat: on
+// a local install the server's own keys are the owner's (serverKeys.js).
+function forCaller(config, accessContext) {
+  return accessContext?.userId ? scopeServerKey(config, { userId: accessContext.userId }) : config;
+}
 
 export async function callModel({
   kind = CHAT_COMPLETION_MODEL_KIND,
@@ -65,10 +72,10 @@ export async function callModel({
   }
 
   if (kind === IMAGE_GENERATION_MODEL_KIND) {
-    const resolvedConfig = config || resolveImageGenerationModelConfig({
+    const resolvedConfig = await forCaller(config || resolveImageGenerationModelConfig({
       modelProvider,
       modelName: modelName || body?.model || null,
-    });
+    }), accessContext);
     const prepared = applyModelAccess(access, { config: resolvedConfig, body, retry });
 
     return requestImageGeneration({
@@ -83,10 +90,10 @@ export async function callModel({
 
   if (kind !== CHAT_COMPLETION_MODEL_KIND) throw new Error(`Unsupported model call kind: ${kind}`);
 
-  const resolvedConfig = config || resolveChatModelConfig({
+  const resolvedConfig = await forCaller(config || resolveChatModelConfig({
     modelProvider,
     modelName: modelName || body?.model || null,
-  });
+  }), accessContext);
   const prepared = applyModelAccess(access, { config: resolvedConfig, body, retry });
 
   let result;

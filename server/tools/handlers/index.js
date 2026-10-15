@@ -36,6 +36,7 @@ import { handleResearchTool } from './research.js';
 import { handleAgentNetworkTool } from './agentNetwork.js';
 import { handleWeewooTool } from './weewoo.js';
 import { handleVideoTool } from './video.js';
+import { handleRealEstateTool } from './realEstate.js';
 
 
 export const TOOL_REGISTRY = {
@@ -158,6 +159,12 @@ export const TOOL_REGISTRY = {
   'dispatch_squad': handleDispatchTool,
   'squad_status': handleDispatchTool,
   'task_done': handleDispatchTool,
+
+  // Real Estate Team board (spec 7)
+  'fair_housing_check': handleRealEstateTool,
+  'post_team_chat': handleRealEstateTool,
+  'draft_client_message': handleRealEstateTool,
+  'deal_deadlines': handleRealEstateTool,
 
   // Shared canvas collaboration
   'canvas_list_writable_windows': handleCanvasCollaborationTool,

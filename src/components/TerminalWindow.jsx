@@ -1,40 +1,40 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { api } from '../lib/api.js';
-import { DEFAULT_THEME } from './windows/WindowThemePanel.jsx';
-import { MOODS, useTheme } from './Theme.jsx';
-import {
-  accentOklch,
-  buildCanvasTerminalTheme,
-  resolveCssColor,
-  themeVarsFor,
-} from './terminal/canvasTerminalTheme.js';
-import { useTerminal } from './terminal/useTerminal.js';
+import { pickedWindowTheme, useLookCodeTheme } from './terminal/lookCodeTheme.js';
+import { glowTheme } from './terminal/terminalGlow.js';
 import { TerminalHeader, TerminalToolbar, AgentRunBar } from './terminal/TerminalUI.jsx';
+import { TerminalPane } from './terminal/TerminalPane.jsx';
+import { TerminalTabBar, terminalTabKeyAction } from './terminal/TerminalTabBar.jsx';
+import {
+  terminalTabs, activeTerminalTabId, tabSessionId,
+  addTerminalTab, closeTerminalTab, switchTerminalTab,
+} from './terminal/terminalTabs.js';
 import { useWorkspaceStore } from '../lib/store.js';
 
 export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
-  const hostRef = useRef(null);
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
   const cwd = win.cwd || currentProject?.path || '';
   const agentEnabled = Boolean(win.agentEnabled);
+  const glow = Boolean(win.terminalGlow);
   const [projects, setProjects] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showAgentBar, setShowAgentBar] = useState(false);
-  const { theme: canvasTheme } = useTheme();
-  // Uncustomized terminals follow the canvas theme; a per-window custom
-  // theme (set from the terminal settings menu) always wins.
-  const canvasTerminalTheme = useMemo(() => {
-    if (win.terminalTheme) return null;
-    const raw = themeVarsFor(canvasTheme, MOODS);
-    return buildCanvasTerminalTheme(DEFAULT_THEME, {
-      background: resolveCssColor(raw.background, ''),
-      foreground: resolveCssColor(raw.foreground, ''),
-      cursor: resolveCssColor(accentOklch(canvasTheme.hue, canvasTheme.chroma, canvasTheme.lightness), ''),
-      selection: resolveCssColor(raw.selection, ''),
-    });
-    // Recompute when the canvas look changes (mood, accent, fine-tune).
-  }, [win.terminalTheme, canvasTheme.hue, canvasTheme.chroma, canvasTheme.lightness, canvasTheme.mood, JSON.stringify(canvasTheme.customVars || {})]);
-  const theme = win.terminalTheme || canvasTerminalTheme || DEFAULT_THEME;
+  // Uncustomized terminals follow the board's look; a per-window theme
+  // (picked from the terminal's gear menu) always wins. The Glow look brings
+  // its own neon colors unless the window picked some.
+  const lookTheme = useLookCodeTheme();
+  const picked = pickedWindowTheme(win.terminalTheme);
+  const theme = glow ? glowTheme(picked, lookTheme) : (picked || lookTheme);
+
+  const tabs = terminalTabs(win);
+  const activeTab = activeTerminalTabId(win);
+  const tabAction = useCallback((action, tabId) => {
+    const change = action === 'add' ? addTerminalTab(win)
+      : action === 'close' ? closeTerminalTab(win, tabId || activeTab)
+        : action === 'select' ? { activeTerminalTab: tabId }
+          : switchTerminalTab(win, action === 'prev' ? -1 : 1);
+    if (change) onUpdate?.(change);
+  }, [win, activeTab, onUpdate]);
 
   const handleThemeChange = useCallback((newTheme) => {
     onUpdate({ terminalTheme: newTheme });
@@ -62,8 +62,6 @@ export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
     });
   }, [projects, currentProject?.path]);
 
-  const { termRef } = useTerminal(hostRef, win, cwd, theme, workspaceId);
-
   React.useEffect(() => {
     if (cwd && win.cwd !== cwd) onUpdate?.({ cwd });
   }, [cwd]);
@@ -74,6 +72,7 @@ export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
         win={win} cwd={cwd} onUpdate={onUpdate}
         showSettings={showSettings} setShowSettings={setShowSettings}
         handleThemeChange={handleThemeChange} theme={theme}
+        onAddTab={() => tabAction('add')}
       />
       <TerminalToolbar
         theme={theme} win={win} currentProject={currentProject}
@@ -98,41 +97,32 @@ export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
           }}
         />
       )}
-      <div
-        ref={hostRef}
-        className={win.opacity !== undefined ? 'terminal-translucent' : ''}
-        onPointerDown={(event) => {
-          event.stopPropagation();
-          termRef.current?.focus();
-        }}
-        onPointerMove={(event) => {
-          event.stopPropagation();
-        }}
-        onPointerUp={(event) => {
-          event.stopPropagation();
-        }}
-        onContextMenu={(event) => {
-          event.stopPropagation();
-        }}
-        onPaste={(event) => {
-          event.preventDefault();
-          const text = event.clipboardData?.getData('text');
-          if (text && termRef.current) termRef.current.paste(text);
-        }}
-        style={{
-          flex: 1,
-          minHeight: 0,
-          padding: 0,
-          background: win.opacity !== undefined ? 'transparent' : theme.background,
-          overflow: 'hidden',
-          cursor: 'text',
-          userSelect: 'text',
-          WebkitUserSelect: 'text',
-          MozUserSelect: 'text',
-          msUserSelect: 'text',
-          zoom: 1,
-        }}
+      <TerminalTabBar
+        win={win} tabs={tabs} activeId={activeTab} theme={theme}
+        onSelect={(id) => tabAction('select', id)}
+        onClose={(id) => tabAction('close', id)}
+        onAdd={() => tabAction('add')}
       />
+      <div
+        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+        onKeyDownCapture={(event) => {
+          const action = terminalTabKeyAction(event);
+          if (!action) return;
+          event.preventDefault();
+          event.stopPropagation();
+          tabAction(action);
+        }}
+      >
+        {tabs.map((tab) => (
+          <TerminalPane
+            key={tab.id}
+            win={win} cwd={cwd} theme={theme} workspaceId={workspaceId} glow={glow}
+            sessionId={tabSessionId(win, tab)}
+            plain={tab.id !== 'main'}
+            active={tab.id === activeTab}
+          />
+        ))}
+      </div>
     </>
   );
 }

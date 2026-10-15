@@ -8,7 +8,7 @@
 import express from 'express';
 import { getUserApiKeyConfig } from '../security/userApiKeys.js';
 import { getSecret } from '../secrets.js';
-import { requiresPersonalApiKey } from '../security/byokPolicy.js';
+import { mayUseServerKeys } from '../security/serverKeys.js';
 import { parseAgentFile, AgentImportError } from '../../src/lib/agentImport/index.js';
 import { AccountImportError, listElevenLabsAgents } from '../agent-import/elevenlabs.js';
 
@@ -28,7 +28,9 @@ export function createAgentImportRouter(deps = {}) {
     }
     try {
       let apiKey = (await vault(userId, 'elevenlabs').catch(() => null))?.apiKey || null;
-      if (!apiKey && !requiresPersonalApiKey(req.session?.userRole)) apiKey = getSecret('ELEVENLABS_API_KEY') || null;
+      if (!apiKey && await mayUseServerKeys({ userId, userRole: req.session?.userRole || null })) {
+        apiKey = getSecret('ELEVENLABS_API_KEY') || null;
+      }
       const definitions = await list({ apiKey });
       const agents = [];
       const skipped = [];

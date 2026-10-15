@@ -12,6 +12,7 @@ import { CREATIVE_WINDOW_MANIFESTS } from './manifest/creativeWindows.js';
 import { YORWARE_WINDOW_MANIFESTS } from './manifest/yorwareWindows.js';
 import { WEEWOO_WINDOW_MANIFESTS } from './manifest/weewooWindows.js';
 import { SEARCH_WINDOW_MANIFESTS } from './manifest/searchWindows.js';
+import { VERTICAL_WINDOW_MANIFESTS } from './manifest/verticalWindows.js';
 
 export const WINDOW_MANIFEST_VERSION = 2;
 
@@ -42,6 +43,7 @@ export const WINDOW_MANIFESTS = Object.freeze([
   ...YORWARE_WINDOW_MANIFESTS,
   ...WEEWOO_WINDOW_MANIFESTS,
   ...SEARCH_WINDOW_MANIFESTS,
+  ...VERTICAL_WINDOW_MANIFESTS,
 ]);
 
 export const WINDOW_MANIFEST_BY_KIND = Object.freeze(Object.fromEntries(

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Icon } from '../../Icons.jsx';
 import { MessageBody } from '../../chat/MessageBody.jsx';
-import { estimateCost, formatCost, formatMs, tokensPerSecond, PROVIDER_LABELS } from '../../../lib/modelArena/arenaCatalog.js';
+import { CUT_OFF_REASONS, estimateCost, formatCost, formatMs, tokensPerSecond, PROVIDER_LABELS } from '../../../lib/modelArena/arenaCatalog.js';
 
 // The gateway's key errors are worded for a chat box; say it the arena's way.
 function laneError(error, provider) {
@@ -42,14 +42,14 @@ function Stat({ label, value, title }) {
 }
 
 /** One column: the model, its numbers once it finishes, and its reply. */
-export function ArenaLane({ index, lane, result, badges = [], models, running, onPick, onRemove }) {
+export function ArenaLane({ index, lane, result, badges = [], models, running, onPick, onRemove, children = null }) {
   const status = result?.status;
   const usage = result?.usage;
   const cost = estimateCost(lane.provider, lane.model, usage);
   const speed = tokensPerSecond(result);
   const approx = usage?.estimated ? '~' : '';
   return (
-    <section className="hb-arena-lane" aria-label={`Model ${index + 1}`} data-status={status || 'idle'}>
+    <section className="hb-arena-lane" aria-label={`Model ${index + 1}`} data-status={status || 'idle'} data-cut-off={CUT_OFF_REASONS.has(result?.finishReason) || undefined}>
       <header className="hb-arena-lane-head">
         <ModelPicker label={`Model ${index + 1}`} value={`${lane.provider}:${lane.model}`} models={models} onChange={onPick} disabled={running} />
         {onRemove && (
@@ -61,13 +61,14 @@ export function ArenaLane({ index, lane, result, badges = [], models, running, o
       {badges.length > 0 && (
         <div className="hb-arena-badges">{badges.map((b) => <span key={b} className="hb-arena-badge">{b}</span>)}</div>
       )}
+      {children}
       <div className="hb-arena-stats">
         <Stat label="First word" value={formatMs(result?.firstTokenMs)} title="Time from sending until the first word arrived" />
         <Stat label="Finished" value={status === 'done' ? formatMs(result.totalMs) : '—'} title="Time until the whole reply was in" />
         <Stat label="Tokens" value={usage ? `${approx}${usage.input} in · ${approx}${usage.output} out` : '—'}
           title={usage?.estimated ? 'This provider sent no token counts, so these are estimated (about 4 letters a token)' : 'Token counts from the provider'} />
         <Stat label="Speed" value={speed ? `${speed} tok/s` : '—'} title="Reply tokens a second, from the first word to the last" />
-        <Stat label="Cost" value={usage ? `${approx}${formatCost(cost)}` : '—'} title="Estimated from list prices; your provider's bill is the real cost" />
+        <Stat label="Cost" value={usage ? `${cost && cost >= 0.0001 ? approx : ''}${formatCost(cost)}` : '—'} title="Estimated from list prices; your provider's bill is the real cost" />
       </div>
       <div className="hb-arena-reply">
         {status === 'error' ? (
@@ -76,6 +77,9 @@ export function ArenaLane({ index, lane, result, badges = [], models, running, o
           <MessageBody text={result.text} streaming={status === 'streaming'} />
         ) : (
           <p className="hb-arena-hint">{STATUS_WORDS[status] || 'The reply shows up here.'}</p>
+        )}
+        {status === 'done' && CUT_OFF_REASONS.has(result.finishReason) && (
+          <p className="hb-arena-cutoff" role="status">Cut off at the limit: this model ran out of room before it finished.</p>
         )}
         {status && STATUS_WORDS[status] && result?.text && status !== 'error' && (
           <p className="hb-arena-hint">{STATUS_WORDS[status]}</p>

@@ -16,6 +16,7 @@ import {
 import { PostgresSessionStore } from '../security/postgresSessionStore.js';
 import { createCsrfOriginGuard } from '../middleware/csrfOriginGuard.js';
 import { doorAllowsOrigin } from '../webOs/door.js';
+import { isPlaygroundRead } from './playgroundAssets.js';
 
 const log = createLogger('http');
 const APP_ORIGIN = process.env.APP_ORIGIN || 'http://localhost:5173';
@@ -23,7 +24,7 @@ const QUIET_PATHS = [/^\/api\/health$/, /^\/api\/client-state/, /^\/api\/local-d
 
 export function setupMiddleware(app) {
   app.set('trust proxy', getProxyTrustSetting());
-  app.use(cors((req, callback) => {
+  const appCors = cors((req, callback) => {
     const origin = req.get('origin');
     // Open anywhere (server/webOs/door.js): only when the owner turns it on,
     // a computer on the home network may open this copy by its own address.
@@ -33,7 +34,9 @@ export function setupMiddleware(app) {
     } else {
       callback(new Error('Not allowed by CORS'));
     }
-  }));
+  });
+  // Game Playground files load from a sandboxed frame (server/boot/playgroundAssets.js).
+  app.use((req, res, next) => (isPlaygroundRead(req) ? next() : appCors(req, res, next)));
   // Chat turns can carry images, PDFs, audio and video (capped at 20 MB raw,
   // ~27 MB as base64); everything else keeps the 10mb default.
   app.use('/api/chat', express.json({ limit: '32mb' }));

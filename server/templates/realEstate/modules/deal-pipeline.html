@@ -1,0 +1,189 @@
+<!-- module {"request": "a deal pipeline for my real estate team with a deadline checklist per deal", "manifest": {"manifest": 3, "version": "1.1.0", "author": "censaiOS", "id": "deal-pipeline", "name": "Deal pipeline", "description": "Deals from lead to closed, with each contract's deadlines.", "icon": "List", "size": {"w": 1060, "h": 560}, "permissions": ["storage"], "state": {"deals": "list of {id, client, address, price, stage, contractDate, checklist}"}, "tools": [{"name": "add_deal", "description": "Add a deal to the pipeline as a lead.", "input": {"type": "object", "properties": {"client": {"type": "string", "description": "Client's last name"}, "address": {"type": "string", "description": "Property address"}, "price": {"type": "number", "description": "Price in dollars"}}, "required": ["client", "address"]}}, {"name": "move_deal", "description": "Move a deal to another stage, found by its address or client.", "input": {"type": "object", "properties": {"deal": {"type": "string", "description": "Address or client name"}, "stage": {"type": "string", "enum": ["Lead", "Showing", "Offer", "Under contract", "Closed"]}}, "required": ["deal", "stage"]}}, {"name": "list_deals", "description": "Read every deal with its stage, price and next open deadline.", "input": {"type": "object", "properties": {}}}]}} -->
+<div class="spread" style="margin-bottom: var(--space-3)">
+  <div class="row" style="gap: var(--space-3)"><h2 style="margin:0">Deal pipeline</h2><span class="faint" id="summary"></span></div>
+  <form class="row" id="add" style="width: 520px">
+    <input id="client" placeholder="Client" required>
+    <input id="address" placeholder="Address" required>
+    <input id="price" placeholder="Price" inputmode="numeric" style="width: 120px">
+    <button class="primary" type="submit" style="flex:none">Add deal</button>
+  </form>
+</div>
+<div class="layout">
+  <div class="board" id="board"></div>
+  <aside class="detail card" id="detail"></aside>
+</div>
+<style>
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: var(--space-3); height: calc(100% - 46px); }
+  .board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); min-height: 0; }
+  .col { background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); display: flex; flex-direction: column; min-height: 0; }
+  .col header { padding: var(--space-2) var(--space-3); display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--hairline); }
+  .col.over { border-color: var(--accent); }
+  .cards { padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-2); overflow: auto; flex: 1; }
+  .deal { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); cursor: pointer; }
+  .deal:hover { border-color: var(--hairline-strong); }
+  .deal.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .deal .who { font-weight: 500; }
+  .due { font-size: var(--text-xs); margin-top: var(--space-1); }
+  .due.late { color: var(--danger); }
+  .due.soon { color: var(--warning); }
+  .empty { color: var(--ink-faint); font-size: var(--text-xs); padding: var(--space-2); }
+  .detail { overflow: auto; display: flex; flex-direction: column; gap: var(--space-2); }
+  .check { display: grid; grid-template-columns: 18px 1fr auto; gap: var(--space-2); align-items: center; padding: var(--space-1) 0; border-bottom: 1px solid var(--hairline); }
+  .check input { width: 14px; min-height: 14px; margin: 0; }
+  .check.done span { color: var(--ink-faint); text-decoration: line-through; }
+  .stage-row { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+  .stage-row button { min-height: 24px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+  .stage-row button.on { border-color: var(--accent); color: var(--accent); }
+</style>
+<script>
+  const STAGES = ['Lead', 'Showing', 'Offer', 'Under contract', 'Closed'];
+  // Days after the contract date. Edit per deal once it is under contract.
+  const DEADLINES = [
+    ['Earnest money due', 3], ['Inspection period ends', 10], ['Appraisal due', 21],
+    ['Financing contingency', 25], ['Final walkthrough', 29], ['Closing', 30],
+  ];
+  const DAY = 86400000;
+  const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; };
+  const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const parseDay = (s) => { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, m - 1, d); };
+  const shortDay = (s) => parseDay(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+  function checklistFrom(contractDate) {
+    const start = parseDay(contractDate);
+    return DEADLINES.map(([label, days], i) => ({ id: 'd' + i, label, due: iso(new Date(start.getTime() + days * DAY)), done: false }));
+  }
+
+  let deals = censai.storage.get('deals', null);
+  if (!Array.isArray(deals)) {
+    const contract = iso(new Date(today().getTime() - 8 * DAY));
+    deals = [
+      { id: 'alder', client: 'Rivera', address: '14 Alder Way', price: 465000, stage: 'Under contract', contractDate: contract, checklist: checklistFrom(contract) },
+      { id: 'harbor', client: 'Okafor', address: '902 Harbor St, Unit 4', price: 389000, stage: 'Offer' },
+      { id: 'quarry', client: 'Lindqvist', address: '7 Quarry Rd', price: 712000, stage: 'Showing' },
+      { id: 'birch', client: 'Nguyen', address: '31 Birch Ct', price: 0, stage: 'Lead' },
+    ];
+    deals[0].checklist[0].done = true;
+  }
+  let selected = deals[0] ? deals[0].id : null; // per person, not shared
+
+  function save() { censai.storage.set('deals', deals); render(); }
+  function patch(id, fn) { deals = deals.map((d) => d.id === id ? fn({ ...d }) : d); save(); }
+
+  function nextDue(deal) {
+    return (deal.checklist || []).filter((c) => !c.done).sort((a, b) => a.due.localeCompare(b.due))[0] || null;
+  }
+  function dueClass(item) {
+    const days = Math.round((parseDay(item.due) - today()) / DAY);
+    return days < 0 ? 'late' : days <= 3 ? 'soon' : '';
+  }
+  function dueText(item) {
+    const days = Math.round((parseDay(item.due) - today()) / DAY);
+    const when = days < 0 ? Math.abs(days) + 'd late' : days === 0 ? 'today' : days === 1 ? 'tomorrow' : 'in ' + days + 'd';
+    return item.label + ' ' + when;
+  }
+
+  function setStage(id, stage) {
+    patch(id, (d) => {
+      d.stage = stage;
+      if (stage === 'Under contract' && !d.checklist) { d.contractDate = iso(today()); d.checklist = checklistFrom(d.contractDate); }
+      return d;
+    });
+  }
+
+  function render() {
+    const open = deals.filter((d) => d.stage !== 'Closed');
+    const volume = open.reduce((s, d) => s + (d.price || 0), 0);
+    $('summary').textContent = open.length + ' open · ' + (volume ? money.format(volume) : '$0') + ' in play';
+    const board = $('board');
+    board.innerHTML = '';
+    STAGES.forEach((stage) => {
+      const items = deals.filter((d) => d.stage === stage);
+      const col = document.createElement('section');
+      col.className = 'col';
+      col.innerHTML = '<header><span class="label">' + stage + '</span><span class="num faint">' + items.length + '</span></header><div class="cards"></div>';
+      const cards = col.querySelector('.cards');
+      if (!items.length) cards.innerHTML = '<div class="empty">Drag a deal here</div>';
+      items.forEach((d) => {
+        const card = document.createElement('div');
+        card.className = 'deal' + (d.id === selected ? ' selected' : '');
+        card.draggable = true;
+        card.ondragstart = (e) => e.dataTransfer.setData('text/plain', d.id);
+        card.onclick = () => { selected = d.id; render(); };
+        const due = nextDue(d);
+        card.innerHTML = '<div class="who">' + esc(d.client) + '</div><div class="muted">' + esc(d.address) + '</div>'
+          + '<div class="num faint">' + (d.price ? money.format(d.price) : 'No price yet') + '</div>'
+          + (due ? '<div class="due ' + dueClass(due) + '">' + esc(dueText(due)) + '</div>' : '');
+        cards.appendChild(card);
+      });
+      col.ondragover = (e) => { e.preventDefault(); col.classList.add('over'); };
+      col.ondragleave = () => col.classList.remove('over');
+      col.ondrop = (e) => { e.preventDefault(); col.classList.remove('over'); setStage(e.dataTransfer.getData('text/plain'), stage); };
+      board.appendChild(col);
+    });
+    renderDetail();
+  }
+
+  function renderDetail() {
+    const box = $('detail');
+    const d = deals.find((x) => x.id === selected);
+    if (!d) { box.innerHTML = '<div class="faint">Pick a deal to see its deadlines.</div>'; return; }
+    let html = '<div><div class="label">Deal</div><h3 style="margin:2px 0 0">' + esc(d.client) + '</h3><div class="muted">' + esc(d.address) + '</div></div>';
+    html += '<div class="stage-row">' + STAGES.map((s) => '<button data-stage="' + s + '" class="' + (s === d.stage ? 'on' : '') + '">' + s + '</button>').join('') + '</div>';
+    if (d.checklist) {
+      const left = d.checklist.filter((c) => !c.done).length;
+      html += '<div class="spread"><span class="label">Deadlines</span><span class="faint">' + left + ' open</span></div>';
+      html += '<label class="stack" style="gap:2px"><span class="faint">Contract date</span><input type="date" id="contract" value="' + esc(d.contractDate) + '"></label>';
+      html += '<div>' + d.checklist.map((c) => '<label class="check ' + (c.done ? 'done' : '') + '"><input type="checkbox" data-check="' + c.id + '"' + (c.done ? ' checked' : '') + '><span>' + esc(c.label) + '</span><span class="num ' + (c.done ? 'faint' : dueClass(c) === 'late' ? 'due late' : dueClass(c) === 'soon' ? 'due soon' : 'faint') + '">' + shortDay(c.due) + '</span></label>').join('') + '</div>';
+    } else {
+      html += '<div class="faint">Deadlines start when the deal goes under contract.</div>';
+    }
+    html += '<button class="ghost danger" id="remove" style="align-self:flex-start">Remove deal</button>';
+    box.innerHTML = html;
+    box.querySelectorAll('[data-stage]').forEach((b) => { b.onclick = () => setStage(d.id, b.dataset.stage); });
+    box.querySelectorAll('[data-check]').forEach((c) => {
+      c.onchange = () => patch(d.id, (x) => { x.checklist = x.checklist.map((i) => i.id === c.dataset.check ? { ...i, done: c.checked } : i); return x; });
+    });
+    const contract = $('contract');
+    if (contract) contract.onchange = () => patch(d.id, (x) => {
+      const done = new Set(x.checklist.filter((i) => i.done).map((i) => i.id));
+      x.contractDate = contract.value;
+      x.checklist = checklistFrom(contract.value).map((i) => ({ ...i, done: done.has(i.id) }));
+      return x;
+    });
+    $('remove').onclick = () => { deals = deals.filter((x) => x.id !== d.id); selected = null; save(); };
+  }
+
+  $('add').onsubmit = (e) => {
+    e.preventDefault();
+    const client = $('client').value.trim();
+    const address = $('address').value.trim();
+    if (!client || !address) return;
+    const price = parseInt($('price').value.replace(/[^0-9]/g, ''), 10) || 0;
+    const deal = { id: Date.now().toString(36), client, address, price, stage: 'Lead' };
+    deals = [...deals, deal];
+    selected = deal.id;
+    e.target.reset();
+    save();
+    censai.toast('Added ' + client);
+  };
+  censai.storage.onChange((key, value) => {
+    if (key === 'deals' && Array.isArray(value)) { deals = value; render(); }
+  });
+  function findDeal(q) { const k = String(q || '').toLowerCase(); return deals.find((d) => d.address.toLowerCase().includes(k) || d.client.toLowerCase().includes(k)); }
+  censai.tools.handle('add_deal', ({ client, address, price }) => {
+    const deal = { id: Date.now().toString(36), client, address, price: Number(price) || 0, stage: 'Lead' };
+    deals = [...deals, deal]; save();
+    return { client, address, stage: 'Lead' };
+  });
+  censai.tools.handle('move_deal', ({ deal, stage }) => {
+    const d = findDeal(deal);
+    if (!d) throw new Error('No deal matches "' + deal + '".');
+    setStage(d.id, stage);
+    return { client: d.client, address: d.address, stage };
+  });
+  censai.tools.handle('list_deals', () => deals.map((d) => { const due = nextDue(d); return { client: d.client, address: d.address, price: d.price, stage: d.stage, nextDeadline: due ? due.label + ' ' + due.due : null }; }));
+  render();
+</script>

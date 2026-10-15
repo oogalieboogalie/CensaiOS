@@ -60,5 +60,31 @@ test('renders LeadsWindow and toggles scout panel', async () => {
   });
 
   // Verify scout panel toggled open
-  expect(screen.getByPlaceholderText(/Ideal customer/i)).toBeTruthy();
+  expect(screen.getByLabelText('Who you sell to')).toBeTruthy();
+});
+
+test('Draft asks for what you sell before calling the server', async () => {
+  await act(async () => {
+    render(<LeadsWindow win={{}} onUpdate={jest.fn()} />);
+  });
+  await screen.findByText('Apex Innovations');
+  await act(async () => {
+    fireEvent.click(screen.getByTitle('Draft an outreach email for this lead'));
+  });
+  expect(screen.getByText(/Fill in "What you sell"/)).toBeTruthy();
+  expect(screen.getByLabelText('What you sell')).toBeTruthy();
+  expect(fetchCalls.some((c) => c.url.includes('/api/scout/draft'))).toBe(false);
+});
+
+test('Draft sends the saved business and target', async () => {
+  const win = { leadQueue: { business: 'Window cleaning', target: 'Office buildings' } };
+  await act(async () => {
+    render(<LeadsWindow win={win} onUpdate={jest.fn()} />);
+  });
+  await screen.findByText('Apex Innovations');
+  await act(async () => {
+    fireEvent.click(screen.getByTitle('Draft an outreach email for this lead'));
+  });
+  const call = fetchCalls.find((c) => c.url.includes('/api/scout/draft'));
+  expect(JSON.parse(call.body)).toEqual({ lead_id: 'lead-101', business: 'Window cleaning', target: 'Office buildings' });
 });

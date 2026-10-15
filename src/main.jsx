@@ -1,3 +1,5 @@
+// Must run first: on the try-it board it answers /api calls in the browser.
+import './lib/demo/installDemo.js';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
@@ -5,10 +7,16 @@ import { ThemeProvider } from './components/Theme.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import App from './app.jsx';
 import { createLogger } from './lib/logger.js';
+import { installBoardErrorCapture } from './lib/inbox/boardErrors.js';
+import { DEMO } from './lib/demo/demoMode.js';
 import { registerOfflineScreen, watchInstallOffer } from './lib/webOs.js';
 import { isTeleprompterPage, TeleprompterPage } from './components/teleprompter/TeleprompterPage.jsx';
+import { installSelfFixReporter } from './lib/selfFix/reporter.js';
 
 const log = createLogger('boot');
+
+// Count this browser's errors for the Inbox window.
+installBoardErrorCapture();
 
 // Catch-all so nothing fails silently in the browser console.
 window.addEventListener('error', (e) => {
@@ -39,8 +47,13 @@ if ((window.__TAURI_INTERNALS__ || window.__TAURI__) && servedByTauri) {
 
 // Open anywhere: keep the browser's install offer, and show a censaiOS screen
 // when the computer running it can't be reached.
-watchInstallOffer();
-registerOfflineScreen();
+// The try-it board has no computer behind it, so it skips both.
+if (!DEMO) {
+  // Self-fix: errors go quietly to this computer's censaiOS as reports.
+  installSelfFixReporter();
+  watchInstallOffer();
+  registerOfflineScreen();
+}
 
 // The Teleprompter pop-out (/?teleprompter=1) is the reader alone.
 const Root = isTeleprompterPage() ? TeleprompterPage : App;

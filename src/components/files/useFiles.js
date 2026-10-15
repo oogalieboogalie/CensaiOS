@@ -7,6 +7,27 @@ export function normalizeSearchResults(data) {
   return [];
 }
 
+function folderKey(p) {
+  return String(p || '').replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+}
+
+export function isInsideFolder(target, root) {
+  const t = folderKey(target);
+  const r = folderKey(root);
+  return !!r && (t === r || t.startsWith(`${r}/`));
+}
+
+/** The folder above this one, written with the path's own slashes. */
+export function parentFolder(dirPath) {
+  const raw = String(dirPath || '');
+  const sep = raw.includes('\\') || /^[a-z]:/i.test(raw) ? '\\' : '/';
+  const parts = raw.replace(/[\\/]+$/, '').split(/[\\/]/);
+  if (parts.length <= 1) return '';
+  if (parts.length === 2 && parts[0] === '') return '/';
+  if (parts.length === 2 && /^[a-z]:$/i.test(parts[0])) return `${parts[0]}\\`;
+  return parts.slice(0, -1).join(sep);
+}
+
 export function useFiles({ win, onUpdate, currentProject }) {
   const mode = win.mode || 'local';
   const [tree, setTree] = React.useState(null);
@@ -19,6 +40,12 @@ export function useFiles({ win, onUpdate, currentProject }) {
   const [searchLoading, setSearchLoading] = React.useState(false);
 
   const seededWindowRef = React.useRef(null);
+
+  // The path bar follows the window's folder ("set root", Up, a project
+  // switch) so it never shows a folder the tree has already left.
+  React.useEffect(() => {
+    if (win.dirPath) setPathInput(win.dirPath);
+  }, [win.dirPath]);
 
   // Each file tree owns its root (win.dirPath). The global project only seeds
   // a window that never had a root — switching projects from the dropdown
@@ -76,9 +103,17 @@ export function useFiles({ win, onUpdate, currentProject }) {
     return () => clearTimeout(timer);
   }, [searchInput, mode, win.dirPath, win.githubRepo]);
 
-  const loadDir = async () => {
-    const next = pathInput.trim();
+  const loadDir = async (target) => {
+    const next = (typeof target === 'string' ? target : pathInput).trim();
     if (!next) return;
+    setPathInput(next);
+    // Moving inside the folder this window already works in needs no new
+    // project: the tree just re-roots there.
+    const root = win.project?.path;
+    if (root && isInsideFolder(next, root)) {
+      onUpdate({ dirPath: next });
+      return;
+    }
     // Multi-project board: a typed folder joins the board's open projects
     // (without changing the default), so this tree can read it while other
     // trees stay where they are.

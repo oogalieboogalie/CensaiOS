@@ -15,6 +15,7 @@ export function CanvasGroupResizeHandle({ group, allWins, allGroups, zoom, borde
 
   return (
     <div
+      data-pane-passthrough
       onPointerDown={(e) => {
         e.stopPropagation();
         e.target.setPointerCapture(e.pointerId);

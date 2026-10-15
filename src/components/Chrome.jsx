@@ -5,6 +5,7 @@ import { FileMenu } from './chrome/FileMenu.jsx';
 import { WindowMenu } from './topbar/WindowMenu.jsx';
 import { PresentButton } from './topbar/PresentButton.jsx';
 import { ShareButton } from './topbar/ShareButton.jsx';
+import { TemplateDialogHost } from './templates/TemplateDialog.jsx';
 import { useEscapeDismiss } from '../lib/useEscapeDismiss.js';
 import { GLASS_HOST, glossButton, glossContainer } from '../lib/theme/gloss.js';
 import { STATUS_TRAY_ID } from './status/SystemStatusWidget.jsx';
@@ -53,6 +54,7 @@ export function Chrome({
 
   return (
     <>
+      <TemplateDialogHost />
       <div style={{ position: 'fixed', top: 0, left: 12, transform: `translateY(${folded ? '-100%' : '0'})`, transition: 'transform 0.4s cubic-bezier(.4,.0,.2,1), opacity 0.4s', opacity: fade ? 0 : 1, zIndex: 50 }}
         onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }} onMouseLeave={(e) => { if (fade) e.currentTarget.style.opacity = 0; }}>
         <div className={GLASS_HOST} style={glossContainer({ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: 'var(--radius-float)', borderBottomRightRadius: 'var(--radius-float)', padding: '7px 12px 9px', display: 'inline-flex', alignItems: 'center', gap: 10, width: 'max-content' })}>

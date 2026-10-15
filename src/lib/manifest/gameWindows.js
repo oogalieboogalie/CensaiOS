@@ -72,4 +72,14 @@ export const GAME_WINDOW_MANIFESTS = [
     lab: {"title":"Driftholm","props":{}},
     moduleMenu: {"show":true,"status":"ready","order":65,"icon":"Gamepad","label":"Driftholm","hint":"A slow island game: chop, fish, fight cows and cook with everyone on the board"},
   },
+  {
+    kind: 'idleBlocks',
+    canvasType: 'idleBlocks',
+    label: 'Blockyard',
+    componentName: 'IdleBlocksWindow',
+    componentPath: 'src/components/windows/idleBlocks/index.jsx',
+    defaultSize: { w: 960, h: 680 },
+    lab: {"title":"Blockyard","props":{}},
+    moduleMenu: {"show":true,"status":"ready","order":66,"icon":"Cube","label":"Blockyard","hint":"Idle building game. Dig blocks, stack them up, watch the yard turn 3D"},
+  },
 ];

@@ -11,7 +11,7 @@ export const OFFICE_WINDOW_MANIFESTS = [
     defaultSize: { w: 760, h: 640 },
     header: { title: 'Writer', icon: 'Files' },
     lab: {"title":"Launch plan","props":{"title":"Launch plan"}},
-    moduleMenu: {"show":true,"status":"ready","order":40,"icon":"Files","label":"Writer","hint":"Letters and long documents on real pages; open and save Word, PDF"},
+    moduleMenu: {"show":true,"status":"ready","order":40,"icon":"Files","label":"Writer","hint":"Letters and long documents on real pages; open and save Word, save PDF"},
   },
   {
     kind: 'officeSheets',

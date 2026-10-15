@@ -11,6 +11,7 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
   const [selectedModel, setSelectedModel] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openAlertId, setOpenAlertId] = useState(null);
 
   useEffect(() => {
     fetchModels();
@@ -129,14 +130,21 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
                 <div style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 12 }}>Drift Alerts</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {alerts.map(a => (
-                    <div key={a.id} style={{ padding: 12, background: 'color-mix(in oklab, var(--danger) 10%, transparent)', border: '1px solid color-mix(in oklab, var(--danger) 20%, transparent)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--red)' }}>Drift Detected: {a.data.maxDrift.toFixed(4)}</div>
-                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>{new Date(a.created_at).toLocaleString()}</div>
+                    <div key={a.id} style={{ padding: 12, background: 'color-mix(in oklab, var(--danger) 10%, transparent)', border: '1px solid color-mix(in oklab, var(--danger) 20%, transparent)', borderRadius: 'var(--radius-lg)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--red)' }}>Drift Detected: {a.data.maxDrift.toFixed(4)}</div>
+                          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>{new Date(a.created_at).toLocaleString()}</div>
+                        </div>
+                        <button
+                          onClick={() => setOpenAlertId(openAlertId === a.id ? null : a.id)}
+                          aria-expanded={openAlertId === a.id}
+                          style={{ padding: '4px 12px', borderRadius: 'var(--radius-md)', background: 'var(--red)', color: 'var(--on-fill)', fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer' }}
+                        >
+                          {openAlertId === a.id ? 'Hide' : 'Investigate'}
+                        </button>
                       </div>
-                      <button style={{ padding: '4px 12px', borderRadius: 'var(--radius-md)', background: 'var(--red)', color: 'var(--on-fill)', fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer' }}>
-                        Investigate
-                      </button>
+                      {openAlertId === a.id && <DriftBreakdown results={a.data.driftResults} threshold={selectedModel.data.thresholds?.driftScore} />}
                     </div>
                   ))}
                   {alerts.length === 0 && (
@@ -156,5 +164,33 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
         </div>
       </div>
     </>
+  );
+}
+
+// Which inputs drifted, worst first: the alert's own per-input scores.
+function DriftBreakdown({ results, threshold }) {
+  const rows = Object.entries(results || {}).sort(([, x], [, y]) => (y?.score || 0) - (x?.score || 0));
+  if (rows.length === 0) {
+    return <div style={{ marginTop: 10, fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>This alert has no per-input details saved.</div>;
+  }
+  return (
+    <table style={{ marginTop: 10, width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
+      <thead>
+        <tr style={{ color: 'var(--ink-faint)', textAlign: 'left' }}>
+          <th style={{ padding: '4px 6px' }}>Input</th><th style={{ padding: '4px 6px' }}>Drift</th>
+          <th style={{ padding: '4px 6px' }}>Seen</th><th style={{ padding: '4px 6px' }}>Usual</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(([name, r]) => (
+          <tr key={name} style={{ borderTop: '1px solid var(--hairline)', color: threshold != null && r?.score > threshold ? 'var(--red)' : 'var(--ink)' }}>
+            <td style={{ padding: '4px 6px', fontFamily: 'var(--font-mono)' }}>{name.replace(/_/g, ' ')}</td>
+            <td style={{ padding: '4px 6px' }}>{Number(r?.score || 0).toFixed(3)}</td>
+            <td style={{ padding: '4px 6px' }}>{typeof r?.value === 'number' ? r.value.toFixed(3) : String(r?.value ?? '')}</td>
+            <td style={{ padding: '4px 6px' }}>{typeof r?.baselineMean === 'number' ? r.baselineMean.toFixed(3) : 'n/a'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

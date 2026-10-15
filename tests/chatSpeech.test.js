@@ -180,6 +180,21 @@ describe('chat media routes', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  test('on a local install a teammate cannot spend the owner\'s key for voice; the owner can', async () => {
+    resolveChatTarget.mockResolvedValue({ ...openaiTarget, personalKey: false, apiKey: 'owner-env-key' });
+    const teammate = mockRes();
+    await handleSpeech({ body: { agentId: 'a', text: 'hello' }, session: { userId: 'u2', userRole: 'user' } }, teammate);
+    expect(teammate.statusCode).toBe(403);
+    expect(teammate.body.code).toBe('SPEECH_PERSONAL_KEY_REQUIRED');
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fetchMock.mockResolvedValue(response({ bytes: Buffer.from('mp3') }));
+    const owner = mockRes();
+    await handleSpeech({ body: { agentId: 'a', text: 'hello' }, session: { userId: 'u1', userRole: 'admin' } }, owner);
+    expect(owner.statusCode).toBe(200);
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer owner-env-key');
+  });
+
   test('speech returns a playable data URL', async () => {
     resolveChatTarget.mockResolvedValue(openaiTarget);
     fetchMock.mockResolvedValue(response({ bytes: Buffer.from('mp3') }));

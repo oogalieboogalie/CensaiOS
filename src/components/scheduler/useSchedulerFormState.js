@@ -1,4 +1,12 @@
 import React from 'react';
+import { localDay } from '../../lib/schedule/plainWords.js';
+
+/** Starts on the next whole hour, once, so the first preview is never in the past. */
+function nextWholeHour() {
+  const d = new Date();
+  d.setHours(d.getHours() + 1, 0, 0, 0);
+  return { time: `${String(d.getHours()).padStart(2, '0')}:00`, date: localDay(d), repeat: 'once', days: [d.getDay()] };
+}
 
 export function useSchedulerFormState() {
   const [selectedAgentId, setSelectedAgentId] = React.useState('architect');
@@ -13,14 +21,8 @@ export function useSchedulerFormState() {
   const [addingProject, setAddingProject] = React.useState(false);
   const [addProjectError, setAddProjectError] = React.useState('');
 
-  const [hour, setHour] = React.useState('12');
-  const [minute, setMinute] = React.useState('45');
-  const [ampm, setAmpm] = React.useState('PM');
-  const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0]);
-
-  const [repeat, setRepeat] = React.useState(false);
-  const [repeatDays, setRepeatDays] = React.useState({ s: false, m: false, t: false, w: false, th: false, f: false, sat: false });
-  const [repeatFreq, setRepeatFreq] = React.useState('weekly');
+  // When it runs, in the shared shape from lib/schedule/plainWords.js.
+  const [when, setWhen] = React.useState(nextWholeHour);
 
   const [createGithubImmediately, setCreateGithubImmediately] = React.useState(false);
   const [githubRepo, setGithubRepo] = React.useState('');
@@ -39,13 +41,7 @@ export function useSchedulerFormState() {
     newProjectRepo, setNewProjectRepo,
     addingProject, setAddingProject,
     addProjectError, setAddProjectError,
-    hour, setHour,
-    minute, setMinute,
-    ampm, setAmpm,
-    selectedDate, setSelectedDate,
-    repeat, setRepeat,
-    repeatDays, setRepeatDays,
-    repeatFreq, setRepeatFreq,
+    when, setWhen,
     createGithubImmediately, setCreateGithubImmediately,
     githubRepo, setGithubRepo,
     submittingGithub, setSubmittingGithub,

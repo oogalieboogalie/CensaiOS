@@ -7,7 +7,7 @@ import { ScoutPanel } from './leads/ScoutPanel.jsx';
 
 const STATUS_DOT = { new: 'var(--ps-green)', contacted: 'var(--accent)', qualified: 'var(--ps-teal)', dead: 'var(--ink-faint)' };
 
-export function LeadsWindow() {
+export function LeadsWindow({ win = {}, onUpdate }) {
   const workspaceId = useWorkspaceStore((s) => s.workspaceId);
   const [leads, setLeads] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -16,6 +16,10 @@ export function LeadsWindow() {
   const [scoutOpen, setScoutOpen] = React.useState(false);
   const [drafts, setDrafts] = React.useState({});
   const [copiedId, setCopiedId] = React.useState(null);
+  // What the user sells and who to: saved on the window so drafts and scouts
+  // pitch the user's own business (and teammates see the same settings).
+  const settings = React.useMemo(() => win.leadQueue || {}, [win.leadQueue]);
+  const saveSettings = React.useCallback((next) => onUpdate?.({ leadQueue: next }), [onUpdate]);
 
   const load = React.useCallback(async () => {
     if (!workspaceId) {
@@ -48,12 +52,17 @@ export function LeadsWindow() {
 
   const draftEmail = React.useCallback(async (lead) => {
     if (!workspaceId || drafts[lead.id]?.loading) return;
+    if (!String(settings.business || '').trim()) {
+      setScoutOpen(true);
+      setDrafts((current) => ({ ...current, [lead.id]: { loading: false, error: 'Fill in "What you sell" above first, so the email pitches your business.' } }));
+      return;
+    }
     setDrafts((current) => ({ ...current, [lead.id]: { loading: true } }));
     try {
       const res = await fetch(`/api/scout/draft?workspaceId=${encodeURIComponent(workspaceId)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead_id: lead.id }),
+        body: JSON.stringify({ lead_id: lead.id, business: settings.business, target: settings.target || '' }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Draft failed');
@@ -61,7 +70,7 @@ export function LeadsWindow() {
     } catch (err) {
       setDrafts((current) => ({ ...current, [lead.id]: { loading: false, error: err.message || 'Draft failed' } }));
     }
-  }, [workspaceId, drafts]);
+  }, [workspaceId, drafts, settings]);
 
   const copyDraft = React.useCallback(async (lead) => {
     const draft = drafts[lead.id];
@@ -121,7 +130,7 @@ export function LeadsWindow() {
           ⌖ Scout
         </button>
       </WindowTitle>
-      {scoutOpen && <ScoutPanel workspaceId={workspaceId} onScouted={load} />}
+      {scoutOpen && <ScoutPanel workspaceId={workspaceId} onScouted={load} settings={settings} onSettings={saveSettings} />}
       <div style={{ display: 'flex', gap: 4, padding: '8px 10px 0', flexWrap: 'wrap' }}>
         {['all', 'new', 'contacted', 'qualified', 'dead'].map((s) => (
           <button

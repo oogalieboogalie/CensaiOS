@@ -118,9 +118,11 @@ export class TaskStore extends EventEmitter {
   }
 
   summary(task) {
-    const { items: _items, raw: _raw, prompt: _prompt, permissions, ...meta } = task;
+    const { items, raw: _raw, prompt: _prompt, permissions, ...meta } = task;
+    const lastError = task.status === 'failed' ? [...(items || [])].reverse().find((i) => i.kind === 'error')?.text : null;
     return {
       ...meta,
+      lastError: lastError ? String(lastError).slice(-400) : null,
       pendingApprovals: (permissions || []).filter((p) => p.status === 'pending').length,
       running: RUNNING.has(task.status),
     };

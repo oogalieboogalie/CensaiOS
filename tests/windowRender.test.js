@@ -127,6 +127,8 @@ describe('Window Render Smoke Tests', () => {
     });
 
     expect(screen.getByText(/open a workspace to scope schedules and agent tasks/i)).toBeInTheDocument();
+    expect(screen.getByText(/all quiet/i)).toBeInTheDocument();
+    await act(async () => { screen.getByRole('button', { name: /under the hood/i }).click(); });
     expect(screen.getByText(/workspace schedules and agent tasks are unavailable/i)).toBeInTheDocument();
     expect(screen.queryByText(/no delegated agent tasks/i)).not.toBeInTheDocument();
   });

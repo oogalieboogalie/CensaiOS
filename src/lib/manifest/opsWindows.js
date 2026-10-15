@@ -97,7 +97,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'OverseerWindow',
     componentPath: 'src/components/OverseerWindow.jsx',
     defaultSize: { w: 560, h: 460 },
-    launcher: { show: true, order: 120, icon: 'Eye', label: 'Overseer Watcher', hint: 'repo auditor', sizeOverride: { w: 560, h: 460 } },
+    launcher: { show: true, order: 120, icon: 'Eye', label: 'Overseer Watcher', hint: 'runs Jules hourly, can merge PRs', sizeOverride: { w: 560, h: 460 } },
   },
   {
     kind: 'automation',
@@ -206,5 +206,15 @@ export const OPS_WINDOW_MANIFESTS = [
     componentPath: 'src/components/MlopsDashboardWindow.jsx',
     defaultSize: { w: 800, h: 600 },
     launcher: { show: true, order: 190, icon: 'Activity', label: 'MLOps', hint: 'drift detection & retraining' },
+  },
+  {
+    kind: 'inbox',
+    canvasType: 'inbox',
+    label: 'Inbox',
+    componentName: 'InboxWindow',
+    componentPath: 'src/components/windows/inbox/index.jsx',
+    defaultSize: { w: 900, h: 560 },
+    lab: { title: 'Inbox', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 18, icon: 'Inbox', label: 'Inbox', hint: 'Only what needs you: red checks, conflicts, agents waiting for an OK, errors' },
   },
 ];

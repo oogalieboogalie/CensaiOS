@@ -1,7 +1,8 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React, { useState, useCallback } from 'react';
 import { Icon } from './Icons.jsx';
-import { DEFAULT_THEME, SettingsPanel } from './windows/WindowThemePanel.jsx';
+import { SettingsPanel } from './windows/WindowThemePanel.jsx';
+import { pickedWindowTheme, useLookCodeTheme } from './terminal/lookCodeTheme.js';
 import { WindowTitle } from './windows/WindowTitle.jsx';
 import { normalizeCodeServerUrl } from '../lib/codeServerUrl.js';
 import { CodeServerIframeView } from './CodeServerIframeView.jsx';
@@ -29,11 +30,14 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
   const [code, setCode] = React.useState(win.code || DEFAULT_CODE);
   const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [saveNote, setSaveNote] = React.useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [menu, setMenu] = useState(null);
   const editorRef = React.useRef(null);
 
-  const theme = win.editorTheme || { ...DEFAULT_THEME };
+  // Follows the board's look unless a theme was picked for this window.
+  const lookTheme = useLookCodeTheme();
+  const theme = pickedWindowTheme(win.editorTheme) || lookTheme;
   const fileLabel = win.fileName || win.title || 'Code Editor';
   const codeServerUrl = win.codeServerUrl ? normalizeCodeServerUrl(win.codeServerUrl) : '';
   const isIframeMode = codeServerUrl.length > 0;
@@ -62,7 +66,9 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
     const url = win.isGithub
       ? `/api/github/file?repo=${encodeURIComponent(win.githubRepo)}&path=${encodeURIComponent(win.filePath)}`
       : `/api/files/content?path=${encodeURIComponent(win.filePath)}`;
-    if (codeContentCache.has(url)) {
+    // Local files are read fresh every time: an agent or a terminal may
+    // have changed them since this browser last looked.
+    if (win.isGithub && codeContentCache.has(url)) {
       const cached = codeContentCache.get(url);
       setCode(cached);
       onUpdate?.({ code: cached });
@@ -91,15 +97,17 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
     if (!win.filePath || win.isGithub) return;
     setSaving(true);
     try {
-      await fetch('/api/files/content', {
+      const res = await fetch('/api/files/content', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: win.filePath, content: code })
       });
-      const url = `/api/files/content?path=${encodeURIComponent(win.filePath)}`;
-      codeContentCache.set(url, code);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `the server said ${res.status}`);
+      setSaveNote({ kind: 'ok', text: `Saved ${fileLabel}.` });
+      setTimeout(() => setSaveNote((n) => (n?.kind === 'ok' ? null : n)), 3000);
     } catch (e) {
-      console.error('Failed to save code file:', e);
+      setSaveNote({ kind: 'error', text: `Couldn't save ${fileLabel}: ${e.message}` });
     }
     setSaving(false);
   };
@@ -170,12 +178,15 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
 
       {showSettings && <SettingsPanel title="Editor Theme" theme={theme} onThemeChange={handleThemeChange} onClose={() => setShowSettings(false)} />}
       {win.typingActor && !win.typingActor.shared && !isIframeMode && <div style={{ padding: '5px 12px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{win.typingActor.label} — read-only while they type, so your saves never collide.</div>}
+      {saveNote && !isIframeMode && <div data-testid="code-save-note" style={{ padding: '4px 12px', background: saveNote.kind === 'error' ? 'color-mix(in oklab, var(--danger) 12%, transparent)' : 'var(--accent-soft)', color: saveNote.kind === 'error' ? 'var(--danger)' : 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{saveNote.text}</div>}
       {formatStatus && !isIframeMode && <div style={{ padding: '4px 12px', background: formatStatus.kind === 'error' ? 'color-mix(in oklab, var(--danger) 12%, transparent)' : 'var(--accent-soft)', color: formatStatus.kind === 'error' ? 'var(--danger)' : 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{formatStatus.text}</div>}
 
       {isIframeMode ? (
         <CodeServerIframeView url={codeServerUrl} theme={theme} winOpacity={win.opacity} />
       ) : (
-      <div onContextMenu={openMenu} style={{ flex: 1, minHeight: 0, display: 'flex', background: win.opacity !== undefined ? 'transparent' : theme.background }}>
+      <div onContextMenu={openMenu} onKeyDown={(e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveFile(); }
+      }} style={{ flex: 1, minHeight: 0, display: 'flex', background: win.opacity !== undefined ? 'transparent' : theme.background }}>
         {useLegacyPane ? (
           <LegacyCodePane code={code} theme={theme} winOpacity={win.opacity} readOnly={Boolean(win.typingActor && !win.typingActor.shared)} onChange={updateCode} focusProps={focusProps} />
         ) : (

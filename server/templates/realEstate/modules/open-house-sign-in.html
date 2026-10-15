@@ -1,0 +1,54 @@
+<!-- module {"request": "an open-house sign-in sheet for the listing", "manifest": {"manifest": 3, "version": "1.1.0", "author": "censaiOS", "id": "open-house-sign-in", "name": "Open house sign-in", "description": "Visitors sign in on a tablet; the team sees the list live.", "icon": "Person", "size": {"w": 480, "h": 560}, "permissions": ["storage"], "state": {"visitors": "list of {name, email, phone, agent, timeline, at}", "property": "address shown at the top"}, "tools": [{"name": "list_visitors", "description": "Read who signed in, newest last, with who to follow up first.", "input": {"type": "object", "properties": {}}}]}} -->
+<div class="stack" style="gap: var(--space-3); height: 100%">
+  <div class="spread">
+    <div><div class="label">Open house</div><h2 style="margin:2px 0 0" id="property">14 Alder Way</h2></div>
+    <span class="pill" id="count">0 visitors</span>
+  </div>
+  <form class="stack" id="form">
+    <input id="name" placeholder="Your name" required autocomplete="off">
+    <div class="grid" style="grid-template-columns: 1fr 1fr">
+      <input id="email" type="email" placeholder="Email">
+      <input id="phone" placeholder="Phone">
+    </div>
+    <div class="grid" style="grid-template-columns: 1fr 1fr auto">
+      <select id="agent"><option value="no">Working with an agent? No</option><option value="yes">Working with an agent? Yes</option></select>
+      <select id="timeline"><option value="">Buying when?</option><option>0-3 months</option><option>3-6 months</option><option>6+ months</option><option>Just looking</option></select>
+      <button class="primary" type="submit">Sign in</button>
+    </div>
+    <div class="muted" id="msg" style="min-height:1.4em"></div>
+  </form>
+  <div class="spread"><span class="label">Signed in</span><span class="faint" id="hot"></span></div>
+  <div style="flex:1; overflow:auto; min-height: 0"><table><tbody id="list"></tbody></table></div>
+</div>
+<script>
+  let visitors = censai.storage.get('visitors', []);
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; };
+  $('property').textContent = censai.storage.get('property', '14 Alder Way');
+  function isHot(v) { return v.agent !== 'yes' && v.timeline === '0-3 months'; }
+  function render() {
+    $('count').textContent = visitors.length + (visitors.length === 1 ? ' visitor' : ' visitors');
+    const hot = visitors.filter(isHot).length;
+    $('hot').textContent = hot ? hot + ' to follow up first' : '';
+    $('list').innerHTML = visitors.length ? visitors.slice().reverse().map((v) => '<tr><td>' + esc(v.name) + (isHot(v) ? ' <span class="pill">Follow up</span>' : '') + '</td><td class="muted">' + esc(v.email || v.phone || '') + '</td><td class="faint">' + (v.agent === 'yes' ? 'Has agent' : esc(v.timeline || '')) + '</td><td class="num faint">' + new Date(v.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '</td></tr>').join('') : '<tr><td class="faint">No one yet. The first visitor signs in above.</td></tr>';
+  }
+  $('form').onsubmit = (e) => {
+    e.preventDefault();
+    const name = $('name').value.trim();
+    const email = $('email').value.trim();
+    if (!name) { $('msg').textContent = 'Add your name to sign in.'; return; }
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('msg').textContent = 'That email looks off.'; return; }
+    visitors = [...visitors, { name, email, phone: $('phone').value.trim(), agent: $('agent').value, timeline: $('timeline').value, at: new Date().toISOString() }];
+    censai.storage.set('visitors', visitors);
+    censai.toast(name + ' signed in');
+    e.target.reset();
+    $('msg').textContent = 'Thanks, ' + name.split(' ')[0] + '. Enjoy the tour.';
+    render();
+  };
+  censai.storage.onChange((k, v) => {
+    if (k === 'visitors' && Array.isArray(v)) { visitors = v; render(); }
+    if (k === 'property' && v) $('property').textContent = v;
+  });
+  censai.tools.handle('list_visitors', () => visitors.map((v) => ({ name: v.name, email: v.email, phone: v.phone, hasAgent: v.agent === 'yes', timeline: v.timeline, followUpFirst: isHot(v), at: v.at })));
+  render();
+</script>

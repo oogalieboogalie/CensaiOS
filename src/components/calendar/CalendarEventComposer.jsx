@@ -1,12 +1,14 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
 import { useEscapeDismiss } from '../../lib/useEscapeDismiss.js';
+import { TimePicker } from '../schedule/TimePicker.jsx';
+import { clockWords, localDay, whenWords } from '../../lib/schedule/plainWords.js';
 
 export function CalendarEventComposer({ onSuccess, onClose, prefillData, onClearPrefill }) {
   useEscapeDismiss(true, onClose);
 
   const [composingTitle, setComposingTitle] = React.useState('');
-  const [composingDate, setComposingDate] = React.useState(new Date().toISOString().split('T')[0]);
+  const [composingDate, setComposingDate] = React.useState(localDay());
   const [composingStartTime, setComposingStartTime] = React.useState('09:00');
   const [composingEndTime, setComposingEndTime] = React.useState('10:00');
   const [composingDescription, setComposingDescription] = React.useState('');
@@ -52,56 +54,42 @@ const handleSubmit = async (e) => {
   };
 
   return (
-    <div style={{ position: 'absolute', bottom: 60, left: 12, right: 12, background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-xl)', padding: 12, boxShadow: 'var(--shadow-pop)', zIndex: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>New Event</span>
-              <button onClick={onClose} style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)' }}>✕</button>
-            </div>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <input
-                autoFocus
-                type="text"
-                placeholder="Event Title"
-                value={composingTitle}
-                onChange={e => setComposingTitle(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-md)', outline: 'none' }}
-              />
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input
-                  type="date"
-                  value={composingDate}
-                  onChange={e => setComposingDate(e.target.value)}
-                  style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-xs)', outline: 'none' }}
-                />
-                <input
-                  type="time"
-                  value={composingStartTime}
-                  onChange={e => setComposingStartTime(e.target.value)}
-                  style={{ width: 80, padding: '4px 8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-xs)', outline: 'none' }}
-                />
-                <span style={{ alignSelf: 'center', fontSize: 'var(--text-xs)' }}>–</span>
-                <input
-                  type="time"
-                  value={composingEndTime}
-                  onChange={e => setComposingEndTime(e.target.value)}
-                  style={{ width: 80, padding: '4px 8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-xs)', outline: 'none' }}
-                />
-              </div>
-              <textarea
-                placeholder="Description / Context Link"
-                value={composingDescription}
-                onChange={e => setComposingDescription(e.target.value)}
-                rows={2}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-sm)', outline: 'none', resize: 'none' }}
-              />
-              <button
-                type="submit"
-                disabled={!composingTitle || submitting}
-                style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-lg)', background: 'var(--ps-blue)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 'var(--text-sm)', fontWeight: 600, opacity: (!composingTitle || submitting) ? 0.6 : 1 }}
-              >
-                {submitting ? 'Adding...' : 'Create Google Calendar Event'}
-              </button>
-            </form>
-          </div>
+    <div className="hb-sched-composer">
+      <div className="hb-sched-pane-head">
+        <h3 className="hb-sched-pane-title">New event</h3>
+        <button type="button" className="hb-sched-btn" aria-label="Close" onClick={onClose}>Close</button>
+      </div>
+      <form onSubmit={handleSubmit} className="hb-sched-pane-body">
+        <input
+          autoFocus
+          className="hb-sched-input"
+          type="text"
+          placeholder="What is it?"
+          aria-label="Event title"
+          value={composingTitle}
+          onChange={e => setComposingTitle(e.target.value)}
+        />
+        <label className="hb-sched-field">
+          <span className="hb-sched-label">Day</span>
+          <input className="hb-sched-input" type="date" value={composingDate} onChange={e => setComposingDate(e.target.value)} />
+        </label>
+        <div className="hb-sched-pair">
+          <TimePicker label="Starts" value={composingStartTime} onChange={setComposingStartTime} quick={false} />
+          <TimePicker label="Ends" value={composingEndTime} onChange={setComposingEndTime} quick={false} />
+        </div>
+        <p className="hb-sched-sentence">{whenWords(new Date(`${composingDate}T${composingStartTime}:00`))} to {clockWords(composingEndTime)}</p>
+        <textarea
+          className="hb-sched-input"
+          placeholder="Notes or a link (optional)"
+          aria-label="Notes"
+          value={composingDescription}
+          onChange={e => setComposingDescription(e.target.value)}
+          rows={2}
+        />
+        <button type="submit" className="hb-sched-btn" data-primary="true" disabled={!composingTitle || submitting}>
+          {submitting ? 'Adding...' : 'Add to Google Calendar'}
+        </button>
+      </form>
+    </div>
   );
 }

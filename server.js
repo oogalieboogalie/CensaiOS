@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { httpMiddleware } from './server/httpTelemetry.js';
+import { recordCrashSync } from './server/selfFix/index.js';
 import { 
   setupMiddleware, 
   mountRouters, 
@@ -41,6 +42,8 @@ if (process.env.NODE_ENV !== 'test') {
         meta: { message: err?.message || String(err), stack: err?.stack || null },
       };
       fs.appendFileSync(file, `${JSON.stringify(record)}\n`);
+      // Self-fix turns this crash into an error report at the next start.
+      recordCrashSync(kind, err);
     } catch {
       // crash logging must never throw
     }

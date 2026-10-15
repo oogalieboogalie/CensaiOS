@@ -127,6 +127,20 @@ describe('diffPresenceNotices', () => {
     const notices = diffPresenceNotices([], [{ clientId: 'x', actor: {} }]);
     expect(notices[0].text).toBe('Someone joined the canvas');
   });
+
+  test('your own other window never toasts as someone joining or leaving', () => {
+    const me = { clientId: 'a', actor: { type: 'human', id: '7', label: 'test' } };
+    const meAgain = { clientId: 'c', actor: { type: 'human', id: '7', label: 'test' } };
+    expect(diffPresenceNotices([], [meAgain], { selfId: '7' })).toEqual([]);
+    expect(diffPresenceNotices([me, meAgain], [me], { selfId: 7 })).toEqual([]);
+    const sam = { clientId: 'b', actor: { type: 'human', id: '9', label: 'Sam' } };
+    expect(diffPresenceNotices([meAgain], [meAgain, sam], { selfId: '7' }).map((n) => n.text)).toEqual(['Sam joined the canvas']);
+  });
+
+  test('a guest is announced even when the id happens to match', () => {
+    const guest = { clientId: 'g', actor: { type: 'guest', id: '7', label: 'test' } };
+    expect(diffPresenceNotices([], [guest], { selfId: '7' })).toHaveLength(1);
+  });
 });
 
 describe('PresenceToasts', () => {

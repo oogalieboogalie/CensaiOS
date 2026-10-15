@@ -11,10 +11,11 @@ import {
   groupForSlot,
   pruneBindings,
   groupMembers,
+  withGroupDefaultHotkeys,
 } from '../../lib/groupHotkeys.js';
 
 // AoE-style control groups. Ctrl/Alt+1..9 binds the active window's group to
-// a slot (or turns the selected loose windows into a group first); F1..F9
+// a slot (also from inside a text box) (or turns the selected loose windows into a group first); F1..F9
 // opens that group full screen with everything else hidden; Escape, or the
 // same F-key again, goes back to the canvas as it was (Shift+Escape works
 // even while a window holds the keyboard). Bindings persist per workspace. Returns { bindings } so the canvas can badge assigned groups.
@@ -22,8 +23,10 @@ import {
 // Note: browsers reserve Ctrl+1..8 for tab switching and won't let pages
 // prevent it — Alt+1..9 is the reliable combo in a browser tab; Ctrl works
 // in the desktop (Tauri/Electron) shell. Both are bound.
+const isMac = () => /Mac|iPhone|iPad/.test(globalThis.navigator?.platform || '');
+
 export function useGroupHotkeys({ workspaceId }) {
-  const [bindings, setBindings] = React.useState(() => loadGroupHotkeys(workspaceId));
+  const [ownBindings, setBindings] = React.useState(() => loadGroupHotkeys(workspaceId));
 
   React.useEffect(() => {
     setBindings(loadGroupHotkeys(workspaceId));
@@ -32,6 +35,15 @@ export function useGroupHotkeys({ workspaceId }) {
     window.addEventListener('censai:group-hotkeys-changed', reload);
     return () => window.removeEventListener('censai:group-hotkeys-changed', reload);
   }, [workspaceId]);
+
+  // Groups that carry their own hotkey (template boards) fill free slots.
+  // Subscribe to just those groups so other group edits don't re-render.
+  const groupHotkeyKey = useWorkspaceStore((state) => state.canvasGroups
+    .filter((g) => g.hotkey).map((g) => `${g.hotkey}:${g.id}`).join('|'));
+  const bindings = React.useMemo(
+    () => withGroupDefaultHotkeys(ownBindings, groupHotkeyKey ? useWorkspaceStore.getState().canvasGroups : []),
+    [ownBindings, groupHotkeyKey]
+  );
 
   const bindingsRef = React.useRef(bindings);
   bindingsRef.current = bindings;
@@ -112,16 +124,21 @@ export function useGroupHotkeys({ workspaceId }) {
         if (focusSlot(fnMatch[1])) e.preventDefault();
         return;
       }
+      const digitMatch = /^Digit([1-9])$/.exec(e.code || '');
+      // Ctrl/Alt+digit types nothing either, so it binds from inside a chat
+      // box too (clicking into a chat and pressing Alt+1 is the natural way).
+      // Only swallow the key when it did something: Alt+digit with no group
+      // stays the browser's. Keys that do type a character in a text box
+      // (AltGr, which arrives as Ctrl+Alt, and Option on a Mac) bind only
+      // outside text boxes.
+      if (digitMatch && (e.ctrlKey || e.altKey) && !e.metaKey && !e.shiftKey
+        && !(isEditing(e.target) && e.altKey && (e.ctrlKey || isMac()))) {
+        if (assignSlot(digitMatch[1])) e.preventDefault();
+        return;
+      }
       if (isEditing(e.target)) return;
       if (e.key === 'Escape' && !e.defaultPrevented) {
         if (store().exitGroupFocus()) e.preventDefault();
-        return;
-      }
-      const digitMatch = /^Digit([1-9])$/.exec(e.code || '');
-      // Only swallow the key when it did something: an unbound F5 must still
-      // refresh the page, and Alt+digit with no group stays the browser's.
-      if (digitMatch && (e.ctrlKey || e.altKey) && !e.metaKey && !e.shiftKey) {
-        if (assignSlot(digitMatch[1])) e.preventDefault();
       }
     };
     window.addEventListener('keydown', onKey);

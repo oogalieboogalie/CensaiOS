@@ -15,6 +15,7 @@ import { useCanvasViewport } from './canvas/useCanvasViewport.js';
 import { useCanvasWorkspaceHandlers } from './canvas/useCanvasWorkspaceHandlers.js';
 import { useCanvasZoomControls } from './canvas/useCanvasZoomControls.js';
 import { ZoomHud } from './canvas/CanvasZoomHud.jsx';
+import { CanvasMinimap, useMinimapOpen } from './canvas/CanvasMinimap.jsx';
 import { CanvasCursors } from './canvas/CanvasCursors.jsx';
 import { AgentCursors } from './canvas/AgentCursors.jsx';
 import { useTheme } from './Theme.jsx';
@@ -25,7 +26,7 @@ import { getWindowBounds } from '../lib/layoutAlgo.js';
 import { isPointInRect, screenToCanvas } from '../lib/canvasMath.js';
 
 export function Canvas({ wins, activeId, selectedIds = [], workspaceRevision, onUpdate, onClose, onSelect, onSelection, onDeleteSelected, onSpawn, onRubberBand, onRequestNewAgent, onCreateAgent, onWindowMovePreview, onCursorMove, cursors = {}, agentCursors = {}, dockState, pan, zoom, onPanZoom, onFitView, onJumpNearestCluster, canvasGroups = [], onSpawnGroup, onUpdateGroup, onResizeGroup, onCloseGroup, onMoveGroup, onAutoArrangeGroup, onDockWindow, onUndockWindow, onSetGroupSeam, onShowGroupTab, onSaveGroupPreset, onLoadGroupPreset, onDeleteGroupPreset, onSetDefaultGroupPreset, paths = [], setPaths, links = [], onLinkCreate, onLinkDelete, currentProject = null, activeTool, penColor, penSize, penMode = false, groupHotkeySlotById = {}, inkActions = true, pinnedRailOffset = { top: 24,
-left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules, launchpadChipKinds, worldOverlay = null }) {
+left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules, launchpadChipKinds, worldOverlay = null, minimapHidden = false }) {
   const ref = React.useRef(null);
   const themeContext = useTheme();
   const theme = themeContext?.theme || { canvasPanMode: 'both' };
@@ -67,6 +68,7 @@ left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules
     trackGroupHover.current?.(point);
   }, [onPointerMove, onCursorMove, pan.x, pan.y, zoom]);
   const trackGroupHover = React.useRef(null);
+  const [mapOpen, setMapOpen] = useMinimapOpen();
   const { zoomIn, zoomOut, resetView } = useCanvasZoomControls({ ref, pan, zoom, onPanZoom, onFitView });
   const {
     handleAssign, handleDragEnd, handleWireStart, handleWireDrag, handleWireEnd, handleGroupDragEnd, getProjectContextForWindow,
@@ -183,6 +185,8 @@ onSpawn={onSpawn} onTour={onLaunchpadTour} suggestModules={launchpadSuggestModul
         <CanvasRubberBand band={band} zoom={zoom} />
     </CanvasShell>
 
-    <ZoomHud zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={resetView} onJumpNearestCluster={onJumpNearestCluster} />
+    {mapOpen && !minimapHidden && wins.length > 0 && <CanvasMinimap wins={wins} canvasGroups={canvasGroups} activeId={activeId} pan={pan} zoom={zoom} onPanZoom={onPanZoom}
+      onSelect={onSelect} cursors={cursors} agentCursors={theme.agentCursors !== false ? agentCursors : {}} groupHotkeySlotById={groupHotkeySlotById} onClose={() => setMapOpen(false)} />}
+    <ZoomHud zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={resetView} onJumpNearestCluster={onJumpNearestCluster} mapOpen={mapOpen} onToggleMap={() => setMapOpen((open) => !open)} />
   </>);
 }

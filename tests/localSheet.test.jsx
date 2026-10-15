@@ -49,6 +49,26 @@ describe('Spreadsheet window: board sheet with Research columns', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
+  test('Tab, Shift+Tab and Enter move typing to the next cell like Excel', async () => {
+    await act(async () => { render(<Harness initial={{ sheet: makeSheet({ rows: 3 }) }} />); });
+    fireEvent.click(document.querySelectorAll('td.hb-sheet-cell')[0]);
+    const typeAndPress = (value, key, shiftKey = false) => {
+      const input = document.querySelector('td[data-editing="true"] input');
+      fireEvent.change(input, { target: { value } });
+      fireEvent.keyDown(input, { key, shiftKey });
+    };
+    typeAndPress('Acme', 'Tab');
+    expect(screen.getByLabelText('Notes cell')).toBeTruthy();
+    typeAndPress('Called', 'Tab', true);
+    expect(screen.getByLabelText('Company cell').value).toBe('Acme');
+    typeAndPress('Acme', 'Enter');
+    typeAndPress('Globex', 'Tab');
+    typeAndPress('Demo', 'Escape');
+    expect(document.querySelector('td[data-editing="true"]')).toBeNull();
+    const cells = [...document.querySelectorAll('td.hb-sheet-cell')].map((td) => td.textContent);
+    expect(cells.slice(0, 4)).toEqual(['Acme', 'Called', 'Globex', '']);
+  });
+
   test('a Google Sheet can still be connected from the header menu path', async () => {
     await act(async () => { render(<Harness initial={{ sheetMode: 'google' }} />); });
     expect(screen.getByPlaceholderText('Spreadsheet ID...')).toBeTruthy();

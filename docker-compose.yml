@@ -98,6 +98,11 @@ services:
     volumes:
       - homebase_state:/app/.homebase-state
       - .:/workspace/CensaiHub
+      # Your projects folder: "New project" makes folders here, and any
+      # folder inside it opens on the board. Set CENSAI_PROJECTS_FOLDER_ON_PC
+      # in .env (for example D:\Projects, or D:\ for the whole drive);
+      # without it, projects live in censai-projects next to this file.
+      - ${CENSAI_PROJECTS_FOLDER_ON_PC:-./censai-projects}:/workspace/projects
       - runner_secret:/run/censai-runner:ro
     # Lets the app reach Ollama (or anything else) running on this computer
     # at host.docker.internal on Linux too; Docker Desktop has it already.
@@ -141,6 +146,8 @@ services:
       # Open anywhere as the address other computers type.
       CENSAI_HOST_NAME: ${CENSAI_HOST_NAME:-${COMPUTERNAME:-}}
       HOMEBASE_CONTAINER_PROJECT_ROOT: ${HOMEBASE_CONTAINER_PROJECT_ROOT:-/workspace/CensaiHub}
+      CENSAI_PROJECTS_FOLDER: /workspace/projects
+      CENSAI_PROJECTS_FOLDER_ON_PC: ${CENSAI_PROJECTS_FOLDER_ON_PC:-}
       # Optional host<->container path mapping for the terminal/runner.
       # Set these if you mount a host project directory into the container.
       # HOMEBASE_HOST_PROJECT_ROOT: /path/to/your/project

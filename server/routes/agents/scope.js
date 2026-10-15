@@ -6,7 +6,7 @@ export async function resolveAgentRouteScope(req) {
     userId: req.session.userId,
     workspaceId: req.query.workspaceId || req.body?.workspaceId || null,
   });
-  return { userId: req.session.userId, workspaceId: workspace.id };
+  return { userId: req.session.userId, workspaceId: workspace.id, role: workspace.role };
 }
 
 export function agentRouteError(res, error) {

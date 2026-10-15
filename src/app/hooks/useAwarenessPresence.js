@@ -19,6 +19,8 @@ export function useAwarenessPresence({ awareness, user, selectedIds }) {
   const typingTimer = React.useRef(null);
   const baseline = React.useRef(null);
   const identity = React.useMemo(() => presenceIdentity(user), [user?.id, user?.name, user?.email]);
+  const selfIdRef = React.useRef(identity.id);
+  selfIdRef.current = identity.id;
 
   React.useEffect(() => {
     if (!awareness) {
@@ -30,7 +32,7 @@ export function useAwarenessPresence({ awareness, user, selectedIds }) {
       const next = readAwarenessPresence(awareness.getStates(), awareness.clientID);
       const others = next.participants.filter((p) => !p.self);
       if (baseline.current) {
-        const joinedOrLeft = diffPresenceNotices(baseline.current, others);
+        const joinedOrLeft = diffPresenceNotices(baseline.current, others, { selfId: selfIdRef.current });
         if (joinedOrLeft.length) setNotices((current) => [...current, ...joinedOrLeft].slice(-5));
       }
       baseline.current = others;

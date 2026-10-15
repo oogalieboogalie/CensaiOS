@@ -71,6 +71,7 @@ export const TRY_STEPS = [
   { id: 'doc', title: "Open the top lead's plan as a document", detail: 'The whole plan in one page you can edit, copy or export.', run: openLeadPlan },
   { id: 'key', title: 'Add your AI key', detail: 'Your own key, your own bill. Chat and LeadHound start working with it.', run: () => openSettings('vault') },
   { id: 'hello', title: 'Say hi to Censai', detail: 'Ask it anything, or ask it to open a window for you.', run: sayHello },
+  { id: 'board', title: 'Start a ready-made board', detail: 'Developer, Code Workspace, Creative Studio, Agent Team and more: windows, groups and AI teammates in one click.', run: () => window.dispatchEvent(new CustomEvent('censai:open-templates')) },
   { id: 'modules', title: 'Browse every module', detail: 'Docs, sheets, music, games, agents and more, all on this board.', run: () => window.dispatchEvent(new CustomEvent('censai:open-add-palette')) },
   { id: 'tour', title: 'Take the one-minute tour', detail: 'Open, arrange and group windows with a guide.', run: () => window.dispatchEvent(new CustomEvent('censai:first-mission', { detail: { action: 'start' } })) },
 ];

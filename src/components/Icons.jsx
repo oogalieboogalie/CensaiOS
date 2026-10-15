@@ -84,6 +84,7 @@ export const Icon = {
   Helm: (p) => <I {...p}><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.8"/><path d="M12 3v3.2M12 17.8V21M3 12h3.2M17.8 12H21M5.6 5.6l2.3 2.3M16.1 16.1l2.3 2.3M18.4 5.6l-2.3 2.3M7.9 16.1l-2.3 2.3"/></I>,
   Toolbox: (p) => <I {...p}><rect x="3" y="8" width="18" height="11" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M12 12v4"/></I>,
   ImportTray: (p) => <I {...p}><path d="M12 3v10m0 0L8.5 9.5M12 13l3.5-3.5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></I>,
+  Inbox: (p) => <I {...p}><path d="M3 13l2.6-7.2A2 2 0 0 1 7.5 4.5h9a2 2 0 0 1 1.9 1.3L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/></I>,
   Monitor: (p) => <I {...p}><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 12h2l1.5-3 2.5 5 1.5-2H17"/><path d="M12 16v4M9 20h6"/></I>,
   Flask: (p) => <I {...p}><path d="M9.5 3h5"/><path d="M10.5 3v5.5L5.7 17a2 2 0 0 0 1.8 3h9a2 2 0 0 0 1.8-3L13.5 8.5V3"/><path d="M8 14.5h8"/></I>,
   Mail: (p) => <I {...p}><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="M22 7.5l-10 6-10-6"/></I>,

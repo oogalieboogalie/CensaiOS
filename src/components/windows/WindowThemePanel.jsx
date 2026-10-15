@@ -5,21 +5,28 @@ import { useEscapeDismiss } from '../../lib/useEscapeDismiss.js';
 
 export { TERMINAL_THEME_PRESETS } from './terminalThemePresets.jsx';
 
+// Fallback colors only (the brand's black, white and Ultem). A terminal or
+// editor with no theme of its own follows the board's look instead, see
+// src/components/terminal/lookCodeTheme.js.
 export const DEFAULT_THEME = {
-  background: '#0b1020',
-  foreground: '#d7deea',
-  cursor: '#f8fafc',
-  selectionBackground: '#475569',
-  black: '#111827',
-  blue: '#60a5fa',
-  cyan: '#22d3ee',
-  green: '#34d399',
-  magenta: '#c084fc',
-  red: '#fb7185',
-  white: '#e5e7eb',
-  yellow: '#fbbf24',
+  background: '#181818',
+  foreground: '#eaeaea',
+  cursor: '#e5a83a',
+  selectionBackground: '#3a3a3a',
+  black: '#282828',
+  blue: '#7aa7f0',
+  cyan: '#5cc8d4',
+  green: '#7ccb8f',
+  magenta: '#d68ad0',
+  red: '#ef7b72',
+  white: '#cfcfcf',
+  yellow: '#e5a83a',
   fontSize: 'var(--text-md)',
 };
+
+// The old slate-blue default background. "Reset to Default" used to save it
+// into a window, so a window carrying it has not really picked a theme.
+export const LEGACY_DEFAULT_BACKGROUNDS = Object.freeze(['#0b1020', '#0B1020']);
 
 export const THEME_COLOR_LABELS = [
   { key: 'background', label: 'Background' },
@@ -67,7 +74,7 @@ export function ColorPicker({ value, onChange, label }) {
           background: 'transparent',
         }}
       />
-      <span style={{ fontSize: 'var(--text-xs)', color: '#94a3b8', flex: 1 }}>{label}</span>
+      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', flex: 1 }}>{label}</span>
       <input
         type="text"
         value={draft}
@@ -88,9 +95,9 @@ export function ColorPicker({ value, onChange, label }) {
           padding: '4px 6px',
           fontSize: 'var(--text-xs)',
           fontFamily: 'var(--font-label)',
-          background: '#1e293b',
-          color: '#d7deea',
-          border: '1px solid rgba(148,163,184,0.2)',
+          background: 'var(--surface-sunken)',
+          color: 'var(--ink)',
+          border: '1px solid var(--hairline)',
           borderRadius: 'var(--radius-sm)',
           textTransform: 'var(--label-case)',
         }}
@@ -117,12 +124,13 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
     onThemeChange({ ...theme, [key]: newColor });
   }, [theme, onThemeChange]);
 
+  // Drop this window's own theme so it follows the board's look again.
   const handleResetTheme = useCallback(() => {
-    onThemeChange({ ...DEFAULT_THEME });
+    onThemeChange(null);
   }, [onThemeChange]);
 
   const handlePresetApply = useCallback((preset) => {
-    onThemeChange({ ...theme, ...preset.theme, fontSize: theme.fontSize || DEFAULT_THEME.fontSize });
+    onThemeChange({ ...theme, ...preset.theme, mode: 'dark', fontSize: theme.fontSize || DEFAULT_THEME.fontSize });
   }, [theme, onThemeChange]);
 
   const handleFontSizeChange = useCallback((e) => {
@@ -135,6 +143,7 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
   return (
     <div
       ref={panelRef}
+      className="hb-glass"
       onPointerDown={(event) => event.stopPropagation()}
       style={{
         position: 'absolute',
@@ -143,22 +152,21 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
         width: 220,
         maxHeight: 400,
         overflow: 'auto',
-        background: '#0f172a',
-        border: '1px solid rgba(148,163,184,0.2)',
+        color: 'var(--ink)',
+        border: '1px solid var(--glass-line)',
         borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
         zIndex: 100,
         padding: 12,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: '#e2e8f0' }}>{title}</span>
+        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--ink)' }}>{title}</span>
         <button
           onClick={onClose}
           style={{
             background: 'transparent',
             border: 'none',
-            color: '#64748b',
+            color: 'var(--ink-faint)',
             cursor: 'pointer',
             padding: 2,
           }}
@@ -168,7 +176,7 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <span style={{ fontSize: 'var(--text-xs)', color: '#94a3b8', flex: 1 }}>Font Size</span>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', flex: 1 }}>Font Size</span>
         <input
           type="number"
           min="8"
@@ -180,9 +188,9 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
             padding: '4px 6px',
             fontSize: 'var(--text-xs)',
             fontFamily: 'var(--font-mono)',
-            background: '#1e293b',
-            color: '#d7deea',
-            border: '1px solid rgba(148,163,184,0.2)',
+            background: 'var(--surface-sunken)',
+            color: 'var(--ink)',
+            border: '1px solid var(--hairline)',
             borderRadius: 'var(--radius-sm)',
           }}
         />
@@ -190,8 +198,7 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
 
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: 'var(--text-xs)', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Presets</span>
-          <span style={{ fontSize: 'var(--text-xs)', color: '#64748b' }}>.team ideas</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Presets</span>
         </div>
         <div style={{ display: 'grid', gap: 6 }}>
           {TERMINAL_THEME_PRESETS.map((preset) => (
@@ -218,28 +225,21 @@ export function SettingsPanel({ title = 'Theme Settings', theme, onThemeChange, 
 
       <button
         onClick={handleResetTheme}
+        className="hb-glass-row"
         style={{
           width: '100%',
           padding: '8px 12px',
           fontSize: 'var(--text-xs)',
           fontWeight: 500,
-          background: '#1e293b',
-          color: '#94a3b8',
-          border: '1px solid rgba(148,163,184,0.2)',
+          background: 'transparent',
+          color: 'var(--ink)',
+          border: '1px solid var(--glass-line)',
           borderRadius: 'var(--radius-md)',
           cursor: 'pointer',
-          transition: 'all 0.15s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.background = '#334155';
-          e.target.style.color = '#d7deea';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = '#1e293b';
-          e.target.style.color = '#94a3b8';
+          transition: 'background var(--dur-fast)',
         }}
       >
-        Reset to Default
+        Match the board's look
       </button>
     </div>
   );
