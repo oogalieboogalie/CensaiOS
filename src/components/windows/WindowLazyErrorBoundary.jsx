@@ -1,4 +1,5 @@
 import React from 'react';
+import { reportError } from '../../lib/selfFix/reporter.js';
 
 function describeWindow(win, type) {
   const label = win?.title || win?.kind || type || 'window';
@@ -15,8 +16,13 @@ export class WindowLazyErrorBoundary extends React.Component {
     return { error };
   }
 
-  componentDidCatch(error) {
+  componentDidCatch(error, info) {
     console.error('[WindowLazyErrorBoundary] window render failed:', error);
+    reportError({ kind: 'window-crash', error, windowKind: this.props.win?.kind || this.props.type || null, componentStack: info?.componentStack });
+    // Show it in the Inbox window as a board error.
+    window.dispatchEvent(new CustomEvent('censai:board-error', {
+      detail: { message: `${this.props.type || 'A window'} crashed: ${error?.message || error}`, detail: error?.stack || '' },
+    }));
   }
 
   componentDidUpdate(prevProps) {

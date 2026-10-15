@@ -31,7 +31,7 @@ export const VSCodeLikeEditor = React.forwardRef(function VSCodeLikeEditor(
     [editorTheme?.background, editorTheme?.foreground, editorTheme?.cursor,
       editorTheme?.selectionBackground, editorTheme?.black, editorTheme?.blue,
       editorTheme?.cyan, editorTheme?.green, editorTheme?.magenta,
-      editorTheme?.red, editorTheme?.white, editorTheme?.yellow, fontSize],
+      editorTheme?.red, editorTheme?.white, editorTheme?.yellow, editorTheme?.mode, fontSize],
   );
   const languageExtensions = React.useMemo(() => extensionsForLanguage(language), [language]);
   const baseExtensions = React.useMemo(

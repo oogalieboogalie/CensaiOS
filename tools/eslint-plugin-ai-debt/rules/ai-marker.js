@@ -41,7 +41,7 @@ function reportMissingMarker(context, node) {
 function create(context) {
   return {
     Program(node) {
-      const text = context.getSourceCode().text;
+      const text = (context.sourceCode ?? context.getSourceCode()).text;
 
       if (shouldReportMissingMarker(text)) {
         reportMissingMarker(context, node);

@@ -1,0 +1,24 @@
+/* The try-it board's note (src/components/demo/DemoBanner.jsx): one quiet
+   pill under the top line, one accent on the button. */
+.hb-demo-bar {
+  position: fixed; left: 50%; top: 44px; transform: translateX(-50%); z-index: 330;
+  display: flex; align-items: center; gap: var(--space-3, 12px);
+  max-width: calc(100vw - 32px); padding: 8px 8px 8px 12px;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--hairline); border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-card);
+  font: var(--text-xs) var(--font-ui, inherit);
+}
+.hb-demo-tag {
+  padding: 2px 8px; border-radius: var(--radius-pill);
+  background: var(--accent-soft); color: var(--accent-ink); font-weight: 650; white-space: nowrap;
+}
+.hb-demo-text { color: var(--ink-soft); line-height: 1.4; }
+.hb-demo-get {
+  padding: 6px 12px; border-radius: var(--radius-pill); white-space: nowrap;
+  background: var(--accent); color: var(--accent-contrast); font-weight: 650; text-decoration: none;
+}
+.hb-demo-get:focus-visible, .hb-demo-x:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+.hb-demo-x { all: unset; cursor: pointer; padding: 0 6px; font-size: 18px; color: var(--ink-faint); }
+.hb-demo-x:hover { color: var(--ink); }
+@media (max-width: 640px) { .hb-demo-text { display: none; } }

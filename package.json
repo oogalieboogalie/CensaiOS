@@ -30,7 +30,8 @@
     "window:sync": "node scripts/window-sync.mjs",
     "window:check": "node scripts/window-sync.mjs --check",
     "dev:tauri": "node scripts/tauri-dev.mjs",
-    "desktop": "node scripts/tauri-dev.mjs"
+    "desktop": "node scripts/tauri-dev.mjs",
+    "build:demo": "npx vite build --config vite.demo.config.js"
   },
   "dependencies": {
     "@a2a-js/sdk": "0.3.14",
@@ -42,6 +43,7 @@
     "@codemirror/lang-markdown": "^6.5.2",
     "@codemirror/lang-python": "^6.2.1",
     "@excalidraw/excalidraw": "^0.18.1",
+    "@fontsource/vt323": "^5.3.0",
     "@google/genai": "^2.6.0",
     "@hocuspocus/extension-redis": "^4.7.0",
     "@hocuspocus/provider": "^4.7.0",
@@ -76,7 +78,7 @@
     "lru-cache": "^11.5.1",
     "mammoth": "^1.13.0",
     "node-pty": "^1.1.0",
-    "otplib": "^12.0.1",
+    "otplib": "^13.5.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.3.289",
     "perfect-freehand": "^1.2.3",
@@ -97,16 +99,18 @@
   "devDependencies": {
     "@babel/preset-env": "^7.29.7",
     "@babel/preset-react": "^7.29.7",
+    "@eslint/js": "^10.0.1",
     "@tauri-apps/cli": "^2.11.3",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^6.0.2",
     "autoprefixer": "^10.5.0",
-    "babel-jest": "^30.4.1",
+    "babel-jest": "^30.5.2",
     "concurrently": "^10.0.3",
-    "eslint": "^8.57.0",
-    "jest": "^30.4.2",
-    "jest-environment-jsdom": "^30.4.1",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2",
     "postcss": "^8.5.15",
     "supertest": "^7.2.2",
     "tailwindcss": "^3.4.19",
@@ -120,10 +124,32 @@
       "nanoid": "3.3.19"
     },
     "@excalidraw/excalidraw": {
-      "nanoid": "3.3.19"
+      "nanoid": "3.3.19",
+      "sass": "1.79.6"
     },
     "@excalidraw/mermaid-to-excalidraw": {
       "nanoid": "3.3.19"
+    },
+    "exceljs": {
+      "uuid": "^11.1.1",
+      "unzipper": "^0.12.5",
+      "fast-csv": "^5.0.8"
+    },
+    "test-exclude": {
+      "glob": "^13.0.6"
+    },
+    "archiver-utils": {
+      "glob": "^13.0.6"
+    },
+    "katex": "0.18.10",
+    "mammoth": {
+      "argparse": "^2.0.1"
+    },
+    "@istanbuljs/load-nyc-config": {
+      "argparse": "^2.0.1"
+    },
+    "tailwindcss": {
+      "postcss-selector-parser": "^7.1.6"
     }
   },
   "license": "Apache-2.0"

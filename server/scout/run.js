@@ -1,7 +1,8 @@
-import { getSecret } from '../secrets.js';
+import { createTavilyClient, resolveTavilyKey } from '../leadhound/tavily.js';
 import { saveLead } from '../salesLeads/store.js';
 
-const AGGREGATORS = /realtor\.com|zillow\.com|redfin\.com|homes\.com|trulia\.com/i;
+// Directory and listing sites list other people's businesses, not the lead's own page.
+const AGGREGATORS = /realtor\.com|zillow\.com|redfin\.com|homes\.com|trulia\.com|yelp\.com|yellowpages\.com|bbb\.org|angi\.com/i;
 
 export function extractEmails(text = '') {
   return [...new Set((String(text).match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || []))]
@@ -28,16 +29,6 @@ export function pickTeamPages(results = [], limit = 2) {
   return results.filter((r) => r?.url && !AGGREGATORS.test(r.url)).slice(0, limit);
 }
 
-async function tavily(pathname, body, apiKey) {
-  const res = await fetch(`https://api.tavily.com/${pathname}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`Tavily ${pathname} failed (${res.status})`);
-  return res.json();
-}
-
 function leadNameFrom(page) {
   const title = String(page.title || '').split('|')[0].split('-')[0].trim();
   if (title) return title.slice(0, 200);
@@ -48,47 +39,51 @@ function leadNameFrom(page) {
   }
 }
 
-/**
- * Run one scout pass: search an area, extract the top team pages, save leads.
- * Returns { leads, actionsUsed }. Bounded: 1 search + up to topK extracts.
- */
-export async function scoutArea({ area, icp = '', scope, topK = 3 }) {
-  const apiKey = getSecret('TAVILY_API_KEY');
-  if (!apiKey) throw Object.assign(new Error('TAVILY_API_KEY not configured in .env'), { statusCode: 424 });
-  if (!area || typeof area !== 'string') throw Object.assign(new Error('Area is required.'), { statusCode: 400 });
+export function buildScoutQueries({ area, target, business = '' }) {
+  return {
+    search: `${target} ${area}`.trim(),
+    extract: `contact phone email facebook instagram linkedin ${target}${business ? ` (prospect for ${business})` : ''}`.trim(),
+  };
+}
 
+/**
+ * Run one scout pass: search an area for the user's target customers, extract
+ * the top pages, save leads. Returns { leads, actionsUsed }.
+ * Bounded: 1 search + up to topK extracts. The Tavily key is the user's own
+ * saved key first, then the server's TAVILY_API_KEY.
+ */
+export async function scoutArea({ area, target = '', business = '', scope, topK = 3, resolveKey = resolveTavilyKey, makeClient = createTavilyClient, save = saveLead }) {
+  if (!area || typeof area !== 'string') throw Object.assign(new Error('Area is required.'), { statusCode: 400 });
+  if (!target || typeof target !== 'string' || !target.trim()) {
+    throw Object.assign(new Error('Say who you sell to first, for example "dental offices" or "roofing companies".'), { statusCode: 400 });
+  }
+  const { apiKey } = await resolveKey(scope?.userId);
+  const client = makeClient(apiKey, { purpose: 'scout for leads (paste it in LeadHound, or Settings, Vault)' });
+
+  const queries = buildScoutQueries({ area, target: target.trim(), business: String(business || '').trim() });
   let actionsUsed = 0;
-  const search = await tavily('search', {
-    query: `realtor team ${area} open house`,
-    search_depth: 'basic',
-    max_results: 5,
-  }, apiKey);
+  const search = await client.searchFull(queries.search, { depth: 'basic', includeAnswer: false, maxResults: 5 });
   actionsUsed += 1;
 
   const pages = pickTeamPages(search.results, Math.max(1, Math.min(topK, 5)));
   const leads = [];
   for (const page of pages) {
-    const extracted = await tavily('extract', {
-      urls: [page.url],
-      query: `realtor team contact phone email facebook instagram linkedin ${icp}`.trim(),
-      extract_depth: 'advanced',
-    }, apiKey);
+    const content = await client.extract(page.url, queries.extract);
     actionsUsed += 1;
-    const content = ((extracted.results || [])[0] || {}).raw_content || '';
     const emails = extractEmails(content);
     const phones = extractPhones(content);
     const socials = extractSocials(content);
-    const saved = await saveLead({
+    const saved = await save({
       name: leadNameFrom(page),
       city: area,
       phone: phones[0] || null,
       email: emails[0] || null,
       website: page.url,
       ...socials,
-      buying_signals: ['open houses'],
+      buying_signals: [],
       icp_score: (emails.length > 0 || phones.length > 0) ? 0.7 : 0.5,
       source_url: page.url,
-      notes: `Scout pass ${new Date().toISOString().slice(0, 10)}`,
+      notes: `Scout pass ${new Date().toISOString().slice(0, 10)} for "${target.trim().slice(0, 200)}"`,
     }, scope);
     leads.push({ id: saved.id, deduped: saved.deduped, url: page.url, emails, phones, ...socials });
   }

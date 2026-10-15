@@ -64,7 +64,8 @@ export function OfficeSheetsWindow({ win = {}, onUpdate }) {
             onFocus={() => { if (!s.edit) s.startEdit(undefined, 'bar'); }}
             onChange={(e) => s.setEdit({ address: s.edit?.address || s.active, from: s.edit?.from || 'bar', value: e.target.value })}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); s.commitEdit(0, 1); refocus(); }
+              if (e.key === 'Enter') { e.preventDefault(); s.commitEdit(0, e.shiftKey ? -1 : 1); refocus(); }
+              if (e.key === 'Tab') { e.preventDefault(); s.commitEdit(e.shiftKey ? -1 : 1, 0); refocus(); }
               if (e.key === 'Escape') { e.preventDefault(); s.setEdit(null); refocus(); }
             }}
             onBlur={() => s.commitEdit(0, 0)} />

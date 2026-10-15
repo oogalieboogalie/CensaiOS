@@ -29,6 +29,7 @@ function useStageWidth(ref) {
 export function OfficeSlidesWindow({ win = {}, onUpdate }) {
   const d = useSlides(win, onUpdate);
   const stageRef = React.useRef(null);
+  const rootRef = React.useRef(null);
   const stageW = useStageWidth(stageRef);
   const [presenting, setPresenting] = React.useState(false);
   const [layout, setLayout] = React.useState('titleBody');
@@ -56,7 +57,8 @@ export function OfficeSlidesWindow({ win = {}, onUpdate }) {
     <>
       <WindowTitle icon={<Icon.Monitor size={12} />} label={title} subtitle="Censai Slides"
         actions={[{ id: 'present', label: 'Present', icon: <Icon.Play size={11} />, onSelect: () => deck.order.length && setPresenting(true) }]} />
-      <div className="hb-of" data-app="slides" onKeyDown={onKeyDown}>
+      <div className="hb-of" data-app="slides" ref={rootRef} tabIndex={-1} onKeyDown={onKeyDown}
+        onPointerDownCapture={(e) => { if (!e.target.closest('input, textarea, select, button')) rootRef.current?.focus({ preventScroll: true }); }}>
         <OfficeBar title={title} formats={formats}>
           <select className="hb-of-select" aria-label="New slide layout" value={layout} onChange={(e) => setLayout(e.target.value)}>
             {Object.entries(LAYOUTS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
@@ -74,7 +76,7 @@ export function OfficeSlidesWindow({ win = {}, onUpdate }) {
               <span className="hb-of-align" data-align={a} aria-hidden="true"><i /><i /><i /></span>
             </OfficeButton>
           ))}
-          <OfficeButton label="Remove" title="Remove the selected box (Delete)" disabled={!block} icon={<Icon.Close size={10} />} onClick={() => d.removeBlock()} />
+          <OfficeButton wide label="Delete" title="Delete the selected picture or text box (Delete key)" disabled={!block} icon={<Icon.Close size={10} />} onClick={() => d.removeBlock()} />
           <OfficeSep />
           <select className="hb-of-select" aria-label="Theme" value={deck.theme} onChange={(e) => d.setTheme(e.target.value)}>
             {Object.entries(THEMES).map(([k, t]) => <option key={k} value={k}>{t.label}</option>)}

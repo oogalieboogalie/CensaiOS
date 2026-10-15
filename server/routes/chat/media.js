@@ -9,9 +9,9 @@ import { publicChatError } from './httpErrors.js';
 import { parseDataUrl } from '../../aiGateway/multimodal.js';
 import { ATTACHMENT_LIMITS } from '../../../src/lib/chat/modelCapabilities.js';
 import { SpeechError, synthesizeElevenLabs, synthesizeSpeech, transcribeAudio } from '../../aiGateway/speech.js';
-import { requiresPersonalApiKey } from '../../security/byokPolicy.js';
 import { getUserApiKeyConfig } from '../../security/userApiKeys.js';
 import { getSecret } from '../../secrets.js';
+import { mayUseServerKeys } from '../../security/serverKeys.js';
 
 function sendError(res, error) {
   const { status, body } = publicChatError(error);
@@ -26,10 +26,15 @@ function targetArgs(req, source) {
   };
 }
 
-// Hosted (cloud) users pay for their own voice calls: a server key is never
-// spent on speech for them.
-function assertSpeechKey(req, target) {
-  if (requiresPersonalApiKey(req.session?.userRole) && !target.personalKey) {
+// Voice spends the person's own key. The server's keys (the computer
+// owner's on a local install) only for those allowed (security/serverKeys.js).
+async function assertSpeechKey(req, target) {
+  if (target.personalKey) return;
+  const allowed = await mayUseServerKeys({
+    userId: req.session?.userId || null,
+    userRole: req.session?.userRole || null,
+  });
+  if (!allowed) {
     throw new SpeechError(
       `Voice needs your own ${target.provider} key. Add one in Settings → Vault.`,
       'SPEECH_PERSONAL_KEY_REQUIRED',
@@ -48,7 +53,9 @@ async function elevenLabsVoice(req, target) {
   if (userId) {
     try { apiKey = (await getUserApiKeyConfig(userId, 'elevenlabs'))?.apiKey || null; } catch { /* best effort */ }
   }
-  if (!apiKey && !requiresPersonalApiKey(req.session?.userRole)) apiKey = getSecret('ELEVENLABS_API_KEY') || null;
+  if (!apiKey && await mayUseServerKeys({ userId, userRole: req.session?.userRole || null })) {
+    apiKey = getSecret('ELEVENLABS_API_KEY') || null;
+  }
   return { voiceId: voice.voiceId, model: voice.model || null, apiKey };
 }
 
@@ -81,7 +88,7 @@ export async function handleTranscribe(req, res) {
     if (target.capabilities.voiceInput !== 'transcribe') {
       throw new SpeechError(`${target.model} has no speech-to-text.`, 'SPEECH_UNSUPPORTED', 400);
     }
-    assertSpeechKey(req, target);
+    await assertSpeechKey(req, target);
     const result = await transcribeAudio({
       provider: target.provider,
       apiKey: target.apiKey,
@@ -107,7 +114,7 @@ export async function handleSpeech(req, res) {
     if (!target.capabilities.voiceOutput) {
       throw new SpeechError(`${target.model} has no text-to-speech.`, 'SPEECH_UNSUPPORTED', 400);
     }
-    assertSpeechKey(req, target);
+    await assertSpeechKey(req, target);
     const result = await synthesizeSpeech({
       provider: target.provider,
       apiKey: target.apiKey,

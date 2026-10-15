@@ -104,3 +104,55 @@ export async function getDirectoryTree(dirPath) {
   });
   return { name, path: dirPath, children };
 }
+
+const WINDOWS_PATH = /^[a-z]:[\\/]/i;
+
+// Drop trailing slashes without a regex (a /[\\/]+$/ test is slow on long runs of slashes).
+function trimTrailingSeparators(value) {
+  let end = value.length;
+  while (end > 0 && (value[end - 1] === '/' || value[end - 1] === '\\')) end -= 1;
+  return value.slice(0, end);
+}
+
+/**
+ * File trees speak the path the window asked with. On a Windows PC running
+ * censaiOS in Docker that is D:\Homebase\CensaiHub\src, not the container's
+ * /workspace/CensaiHub/src, so the header, "Up" and new folders stay in
+ * the user's own words. Other paths pass through as the server sees them.
+ */
+export function shownPathFor(requested, resolved, ...names) {
+  if (requested && WINDOWS_PATH.test(requested) && process.platform !== 'win32') {
+    const base = trimTrailingSeparators(String(requested)).replace(/\//g, '\\');
+    return [base, ...names].join('\\');
+  }
+  return names.length ? path.join(resolved, ...names) : resolved;
+}
+
+export function shownParentFor(requested, resolved) {
+  if (requested && WINDOWS_PATH.test(requested) && process.platform !== 'win32') {
+    const parts = trimTrailingSeparators(String(requested)).split(/[\\/]/);
+    if (parts.length <= 1) return null;
+    return parts.length === 2 ? `${parts[0]}\\` : parts.slice(0, -1).join('\\');
+  }
+  const parent = path.dirname(resolved);
+  return parent !== resolved ? parent : null;
+}
+
+/** A plain-words reason a folder could not be listed, or null. */
+export function folderErrorMessage(err, requested) {
+  if (isUnseenWindowsFolder(err, requested)) {
+    return `censaiOS can't see ${requested} yet. It runs in Docker and only sees the folder it was started from and your projects folder. To share more, set CENSAI_PROJECTS_FOLDER_ON_PC to the folder that holds your projects (for example D:\\) in the .env file, then open censaiOS again.`;
+  }
+  if (err?.code === 'ENOENT') return `This folder doesn't exist: ${requested}`;
+  if (err?.message?.startsWith('Access denied')) {
+    return `${requested} isn't in a project open on this board. Type it in the path bar and press Enter to open it.`;
+  }
+  return null;
+}
+
+/** A Windows folder this (Docker) server has no copy of at all. */
+export function isUnseenWindowsFolder(err, requested) {
+  if (!requested || !WINDOWS_PATH.test(requested) || process.platform === 'win32') return false;
+  if (err?.code === 'ENOENT') return true;
+  return !!err?.message?.startsWith('Access denied') && !fs.existsSync(resolveProjectPathForRuntime(requested));
+}

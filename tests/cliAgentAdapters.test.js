@@ -11,7 +11,7 @@ function run(adapter, events) {
 
 describe('CLI agent adapters', () => {
   test('registry covers the four coding CLIs from spec 8', () => {
-    expect(CLI_IDS).toEqual(['claudecode', 'codex', 'gemini', 'opencode']);
+    expect(CLI_IDS).toEqual(['claudecode', 'codex', 'gemini', 'opencode', 'copilot']);
     expect(getAdapter('CODEX')).toBe(codex);
     expect(getAdapter('nope')).toBeNull();
   });

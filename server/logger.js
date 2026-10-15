@@ -84,7 +84,24 @@ function writePersistentLog(record) {
   stream.write(`${JSON.stringify(record)}\n`);
 }
 
+// Listeners see every record before the level gate (self-fix keeps a short
+// tail of recent lines for error reports). A listener can never break logging.
+const listeners = new Set();
+export function onLogRecord(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+function notify(level, namespace, message, meta) {
+  if (!listeners.size) return;
+  const record = { time: new Date().toISOString(), level, namespace, message, meta };
+  for (const fn of listeners) {
+    try { fn(record); } catch { /* never let a listener break logging */ }
+  }
+}
+
 function emit(level, namespace, message, meta) {
+  notify(level, namespace, message, meta);
   if (process.env.NODE_ENV === 'test') return;
   if (LEVELS[level] > activeLevel) return;
   const time = new Date().toISOString();

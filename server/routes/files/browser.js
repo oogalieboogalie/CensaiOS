@@ -2,7 +2,10 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { requireLocalFilesystem } from '../../middleware/runtimeMode.js';
-import { readCurrentProject, validateProjectPath, getDirectoryTree, projectRootContaining } from './pathUtils.js';
+import {
+  readCurrentProject, validateProjectPath, getDirectoryTree, projectRootContaining,
+  shownPathFor, shownParentFor, folderErrorMessage, isUnseenWindowsFolder,
+} from './pathUtils.js';
 import { resolveProjectPathForRuntime } from '../../workspaces/shared.js';
 
 export const browserRouter = express.Router();
@@ -161,11 +164,12 @@ browserRouter.get('/files/browse', requireLocalFilesystem, async (req, res) => {
     const entries = await fs.promises.readdir(resolved, { withFileTypes: true });
     const children = entries
       .filter(e => !e.name.startsWith('.') && e.name !== 'node_modules' && e.name !== '$Recycle.Bin' && e.name !== 'System Volume Information')
-      .map(e => ({ name: e.name, isDir: e.isDirectory(), path: path.join(resolved, e.name) }))
+      .map(e => ({ name: e.name, isDir: e.isDirectory(), path: shownPathFor(dirPath, resolved, e.name) }))
       .sort((a, b) => { if (a.isDir && !b.isDir) return -1; if (!a.isDir && b.isDir) return 1; return a.name.localeCompare(b.name); });
-    const parent = path.dirname(resolved);
-    res.json({ path: resolved, parent: parent !== resolved ? parent : null, children });
+    res.json({ path: shownPathFor(dirPath, resolved), parent: shownParentFor(dirPath, resolved), children });
   } catch (err) {
-    res.status(err.message?.startsWith('Access denied') ? 403 : 500).json({ error: err.message });
+    const status = err.code === 'ENOENT' || isUnseenWindowsFolder(err, dirPath) ? 404
+      : err.message?.startsWith('Access denied') ? 403 : 500;
+    res.status(status).json({ error: folderErrorMessage(err, dirPath) || err.message });
   }
 });

@@ -59,6 +59,7 @@ export function useSlides(win, onUpdate) {
     onSelect: (id) => { setSelectedId(id); if (id !== editingId) setEditingId(null); },
     onEdit: (id) => { setSelectedId(id); setEditingId(id); },
     onBox: (id, box) => changeBlock(id, { x: box.x, y: box.y, w: box.w, h: box.h }),
+    onRemove: (id) => removeBlock(id),
     onText: (id, text) => { changeBlock(id, { text }); setEditingId(null); },
   };
 

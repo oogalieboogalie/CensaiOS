@@ -75,11 +75,14 @@ export function VaultSection() {
         </div>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', marginTop: 12, lineHeight: 1.5, maxWidth: '90%' }}>
           Bring Your Own Key (BYOK). Keys are AES-256-GCM encrypted at rest and stored in your private account.
+          {keys.some(k => k.source === 'env') && ' Keys marked "From your .env file" come straight from the .env on this computer and are only used for you; nothing is copied.'}
         </p>
       </div>
 
       {BYOK_PROVIDERS.map(p => {
         const userKey = keys.find(k => k.provider === p.id);
+        // A local install's owner: the key is in the server's .env file.
+        const fromEnv = userKey?.source === 'env';
         const isEditing = addingProvider?.id === p.id;
 
         return (
@@ -105,7 +108,7 @@ export function VaultSection() {
                   <div style={{ fontSize: 'var(--text-base)', fontWeight: 800, color: 'var(--ink)' }}>{p.name}</div>
                   <div style={{ fontSize: 'var(--text-xs)', color: userKey ? 'var(--ps-green)' : 'var(--ink-faint)', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>
                     {userKey ? (
-                      <><Icon.Check size={10} stroke={3} /> Configured</>
+                      <><Icon.Check size={10} stroke={3} /> {fromEnv ? 'From your .env file' : 'Configured'}</>
                     ) : (
                       'Not configured'
                     )}
@@ -113,7 +116,7 @@ export function VaultSection() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                {userKey && !isEditing && (
+                {userKey && !fromEnv && !isEditing && (
                   <button 
                     onClick={() => handleDelete(p.id)}
                     style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', color: 'var(--ps-red)', display: 'grid', placeItems: 'center', border: '1px solid var(--hairline)' }}
@@ -132,7 +135,7 @@ export function VaultSection() {
                     boxShadow: isEditing ? 'none' : '3px 3px 0 var(--ink)'
                   }}
                 >
-                  {isEditing ? 'Cancel' : (userKey ? 'Update' : 'Add key')}
+                  {isEditing ? 'Cancel' : (fromEnv ? 'Use another key' : userKey ? 'Update' : 'Add key')}
                 </button>
               </div>
             </div>

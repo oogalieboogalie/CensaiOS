@@ -3,6 +3,32 @@ import React from 'react';
 // Terminal theme presets captured from the .team ideas palette
 // (.team/ideas/color-codes-4-windows). Pure data + the preset picker button —
 // kept out of WindowThemePanel.jsx so the panel stays within its size budget.
+// The Glow look's own colors: near-black glass and bright, saturated ANSI
+// colors so every word glows in its own hue. Used when a glowing terminal has
+// not picked colors of its own.
+export const GLOW_TERMINAL_COLORS = Object.freeze({
+  background: '#07080D',
+  foreground: '#C8FFE9',
+  cursor: '#FF4FD8',
+  selectionBackground: '#2A2F5A',
+  black: '#1A1C2C',
+  red: '#FF5577',
+  green: '#3DFF9A',
+  yellow: '#FFE55C',
+  blue: '#55A8FF',
+  magenta: '#FF6BF0',
+  cyan: '#4CF2FF',
+  white: '#F2F4FF',
+  brightBlack: '#5A6080',
+  brightRed: '#FF8AA0',
+  brightGreen: '#8CFFC4',
+  brightYellow: '#FFF199',
+  brightBlue: '#8CC6FF',
+  brightMagenta: '#FFA3F5',
+  brightCyan: '#9AF8FF',
+  brightWhite: '#FFFFFF',
+});
+
 export const TERMINAL_THEME_PRESETS = [
   {
     id: 'render',
@@ -127,6 +153,7 @@ export function PresetButton({ preset, active, onApply }) {
     <button
       type="button"
       onClick={() => onApply(preset)}
+      className="hb-glass-row"
       style={{
         all: 'unset',
         cursor: 'pointer',
@@ -136,15 +163,15 @@ export function PresetButton({ preset, active, onApply }) {
         gap: 8,
         padding: '8px 9px',
         borderRadius: 'var(--radius-md)',
-        border: `1px solid ${active ? preset.theme.cursor : 'rgba(148,163,184,0.2)'}`,
-        background: active ? 'rgba(148,163,184,0.12)' : '#111827',
-        color: '#e2e8f0',
+        border: `1px solid ${active ? 'var(--accent)' : 'var(--glass-line)'}`,
+        background: active ? 'var(--glass-hover)' : 'transparent',
+        color: 'var(--ink)',
       }}
       title={preset.description}
     >
       <span style={{ minWidth: 0 }}>
         <span style={{ display: 'block', fontSize: 'var(--text-xs)', fontWeight: 700 }}>{preset.name}</span>
-        <span style={{ display: 'block', marginTop: 2, fontSize: 'var(--text-xs)', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{preset.description}</span>
+        <span style={{ display: 'block', marginTop: 2, fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{preset.description}</span>
       </span>
       <span style={{ display: 'flex', gap: 3 }}>
         {swatches.map((color) => (
@@ -155,7 +182,7 @@ export function PresetButton({ preset, active, onApply }) {
               height: 12,
               borderRadius: 'var(--radius-xs)',
               background: color,
-              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18)',
+              boxShadow: 'inset 0 0 0 1px var(--hairline-strong)',
             }}
           />
         ))}

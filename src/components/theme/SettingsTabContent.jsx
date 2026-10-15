@@ -3,9 +3,12 @@ import { ThemeAppearanceContent } from './ThemeAppearanceContent.jsx';
 import { WorkspaceSection } from './ThemeWorkspaceSection.jsx';
 import { WorkspaceSharingSection } from './WorkspaceSharingSection.jsx';
 import { VaultSection } from './VaultSection.jsx';
+import { KeySharingSection } from './KeySharingSection.jsx';
 import { OpenAnywhereSection } from './OpenAnywhereSection.jsx';
 import { MarketplaceWindow } from '../MarketplaceWindow.jsx';
 import { TrustModeSection } from './TrustModeSection.jsx';
+import { SelfFixSection } from './SelfFixSection.jsx';
+import { HotkeysSection } from './HotkeysSection.jsx';
 
 const scrollStyle = { overflowY: 'auto', flex: 1 };
 
@@ -43,6 +46,17 @@ export function SettingsTabContent({
     return (
       <div style={scrollStyle}>
         <TrustModeSection />
+        <div style={{ height: 12 }} />
+        <SelfFixSection />
+      </div>
+    );
+  }
+
+  // Alt keys that open a coding agent terminal (Claude Code, Codex, Copilot…).
+  if (tab === 'hotkeys') {
+    return (
+      <div style={scrollStyle}>
+        <HotkeysSection />
       </div>
     );
   }
@@ -76,6 +90,7 @@ export function SettingsTabContent({
   return (
     <div style={scrollStyle}>
       <VaultSection />
+      <KeySharingSection />
     </div>
   );
 }

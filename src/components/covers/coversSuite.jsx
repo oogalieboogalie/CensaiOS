@@ -122,4 +122,14 @@ export const SUITE_COVERS = {
       <path d="M12 4.5 H30" {...H} strokeDasharray="1.4 1.2" />
     </>
   ),
+  // A ledger page with its rows, and the year's line going up beside it.
+  yorBooks: (
+    <>
+      <rect x="5" y="4" width="16" height="16" rx="1" {...S} />
+      <path d="M8 8 H18 M8 12 H18 M8 16 H18" {...H} />
+      <path d="M15 6 V18" {...F} />
+      <path d="M25 18 L30 14 L34 15.5 L39 7" {...A} />
+      <path d="M25 20 H39" {...F} />
+    </>
+  ),
 };

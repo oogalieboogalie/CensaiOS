@@ -143,15 +143,22 @@ authRouter.post('/developer', authSecurityRateLimiter, rateLimiter, async (req, 
 
 // "Open censaiOS": the one-click sign-in for censaiOS on this computer. The
 // first use makes this computer's owner account; later uses sign back in to it.
-authRouter.post('/local', authSecurityRateLimiter, rateLimiter, async (req, res) => {
+// The first start on a slow computer can take minutes to get the database
+// ready. Answering "still starting" ahead of the sign-in rate limits lets the
+// login screen keep waiting without being locked out as too many attempts.
+function localSignInGate(req, res, next) {
   const oauthConfigured = !!(process.env.G_CLIENT_ID && process.env.G_SECRET);
   if (!isLocalSignInAllowed(req, { oauthConfigured })) {
     return res.status(403).json({ error: 'Sign-in on this computer is not available here.' });
   }
   if (!dbReady()) {
-    res.setHeader('Retry-After', '2');
+    res.setHeader('Retry-After', '3');
     return res.status(503).json({ error: 'censaiOS is still starting, please retry in a moment.' });
   }
+  next();
+}
+
+authRouter.post('/local', localSignInGate, authSecurityRateLimiter, rateLimiter, async (req, res) => {
   try {
     const access = await findOrCreateLocalOwner({ db: pool, name: req.body?.name });
     if (!access.allowed) {

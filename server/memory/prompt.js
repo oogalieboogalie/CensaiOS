@@ -171,15 +171,29 @@ export async function buildSystemPrompt(agentId, currentMessage, runtimeContext 
     }
   }
 
-  // Recent conversation context
-  if (recentConvos.length > 0) {
-    prompt += '\n\n## Recent conversation';
-    for (const c of recentConvos.slice(-6)) {
-      prompt += `\n${c.role === 'user' ? 'Human' : (blueprintAgent?.name || agent.name)}: ${clipTurnContent(c.content)}`;
-    }
-  }
+  prompt += buildRecentConversationPrompt(recentConvos, blueprintAgent?.name || agent.name, runtimeContext);
 
   return prompt;
+}
+
+/**
+ * Earlier turns from the conversation log. When the request already carries
+ * the chat window's own history, these are the same turns a second time, and
+ * a transcript at the end of the system prompt makes models open every reply
+ * by recapping it ("Looking back at our conversation..."). So they are left
+ * out then, and otherwise labelled as background from earlier chats.
+ */
+export function buildRecentConversationPrompt(recentConvos = [], agentName = 'Assistant', { historyInRequest = false } = {}) {
+  if (historyInRequest || !recentConvos?.length) return '';
+  const lines = [
+    '',
+    '## Earlier chats (background only)',
+    'These are from before this chat. Use them only if they help; do not recap or mention them unless asked.',
+  ];
+  for (const c of recentConvos.slice(-6)) {
+    lines.push(`${c.role === 'user' ? 'Human' : agentName}: ${clipTurnContent(c.content)}`);
+  }
+  return `\n${lines.join('\n')}`;
 }
 
 /**

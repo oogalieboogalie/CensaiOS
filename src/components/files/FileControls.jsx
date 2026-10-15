@@ -29,7 +29,7 @@ export function LocalPathBar({ pathInput, setPathInput, loadDir, clearDir }) {
         onKeyDown={e => { if (e.key === 'Enter') loadDir(); }}
         style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '4px 8px', font: '10px var(--font-mono)', color: 'var(--ink)', outline: 'none' }}
       />
-      <button onClick={loadDir} style={{ all: 'unset', cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-md)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontWeight: 600 }}>Reload</button>
+      <button onClick={loadDir} style={{ all: 'unset', cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-md)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontWeight: 600 }}>Open</button>
       <button onClick={clearDir} style={{ all: 'unset', cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-md)', background: 'transparent', color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>Reset</button>
     </div>
   );

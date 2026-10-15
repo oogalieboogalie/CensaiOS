@@ -1,4 +1,4 @@
-import { clipTurnContent } from '../server/memory/prompt.js';
+import { buildRecentConversationPrompt, clipTurnContent } from '../server/memory/prompt.js';
 import { clipProjectText } from '../server/workspaces/prewarm.js';
 
 describe('prompt history clipping', () => {
@@ -38,5 +38,29 @@ describe('project context clipping', () => {
     const text = 'y'.repeat(7000);
     const clipped = clipProjectText(text, 6000);
     expect(clipped).toBe(`${'y'.repeat(6000)}\n[truncated]`);
+  });
+});
+
+describe('earlier chats in the system prompt', () => {
+  const convos = [
+    { role: 'user', content: 'what is my name?' },
+    { role: 'assistant', content: 'You are Alex.' },
+  ];
+
+  test('left out when the chat window already sends its own history', () => {
+    expect(buildRecentConversationPrompt(convos, 'Atlas', { historyInRequest: true })).toBe('');
+  });
+
+  test('labelled as background, not a transcript to recap, in a fresh chat', () => {
+    const block = buildRecentConversationPrompt(convos, 'Atlas');
+    expect(block).toContain('## Earlier chats (background only)');
+    expect(block).toContain('do not recap');
+    expect(block).toContain('Human: what is my name?');
+    expect(block).toContain('Atlas: You are Alex.');
+    expect(block).not.toContain('## Recent conversation');
+  });
+
+  test('nothing when there is no log', () => {
+    expect(buildRecentConversationPrompt([], 'Atlas')).toBe('');
   });
 });

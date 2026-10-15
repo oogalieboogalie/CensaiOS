@@ -1,5 +1,6 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
+import { rowFieldsFromSpec } from '../../lib/schedule/fromScheduler.js';
 import { buildSchedulerProjectOptions, getSchedulerProjectReference } from '../schedulerProjects.js';
 
 export function useSchedulerActions(data, formState, currentProject, workspaceId) {
@@ -12,7 +13,7 @@ export function useSchedulerActions(data, formState, currentProject, workspaceId
     setAddingProject, setAddProjectError, setShowAddProject,
     setNewProjectName, setNewProjectPath, setNewProjectRepo, setNewProjectMode,
     taskText, setTaskText, documentTarget, setDocumentTarget,
-    hour, minute, ampm, selectedDate, repeat, repeatDays, repeatFreq,
+    when,
     selectedAgentId
   } = formState;
 
@@ -73,10 +74,9 @@ export function useSchedulerActions(data, formState, currentProject, workspaceId
   };
 
   const handleAddSchedule = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     if (!taskText.trim()) return;
 
-    const timeStr = `${hour}:${minute} ${ampm}`;
     const projectRef = getSchedulerProjectReference(selectedProject);
     const newSchedule = {
       agent_id: selectedAgentId,
@@ -87,11 +87,7 @@ export function useSchedulerActions(data, formState, currentProject, workspaceId
       project_ref: projectRef || null,
       task_text: taskText.trim(),
       document_target: documentTarget.trim() || null,
-      scheduled_time: timeStr,
-      scheduled_date: selectedDate,
-      repeat_enabled: repeat,
-      repeat_days: repeat ? repeatDays : null,
-      repeat_freq: repeat ? repeatFreq : null,
+      ...rowFieldsFromSpec(when),
       status: 'active'
     };
 
@@ -111,7 +107,8 @@ export function useSchedulerActions(data, formState, currentProject, workspaceId
       const s = schedules.find(x => x.id === id);
       if (!s) return;
 
-      const newStatus = s.status === 'inactive' ? 'active' : 'inactive';
+      // Pause what is waiting or running; resume or retry anything else.
+      const newStatus = s.status === 'active' || s.status === 'running' ? 'inactive' : 'active';
       setSchedulesError('');
       await api.updateSchedule(id, { status: newStatus }, workspaceId);
       fetchSchedules({ quiet: true });

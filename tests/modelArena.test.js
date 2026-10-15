@@ -36,9 +36,11 @@ let server;
 let base;
 
 beforeAll(async () => {
-  gemini = await startOpenAiStandin((body) => (body.model === 'broken-model'
-    ? { status: 404, error: 'model not found' }
-    : { words: ['Edit ', 'src/lib/tax.js', ' line 2.'], delayMs: 5 }));
+  gemini = await startOpenAiStandin((body) => {
+    if (body.model === 'broken-model') return { status: 404, error: 'model not found' };
+    if (body.model === 'short-model') return { words: ['<!DOCTYPE html>', '\n<head>'], finishReason: 'length' };
+    return { words: ['Edit ', 'src/lib/tax.js', ' line 2.'], delayMs: 5 };
+  });
   claude = await startAnthropicStandin(() => ({ blocks: [{ type: 'text', text: 'src/lib/tax.js:2:24' }], usage: { input_tokens: 120, output_tokens: 9 } }));
   process.env.GEMINI_OPENAI_BASE_URL = gemini.baseUrl;
   process.env.ANTHROPIC_BASE_URL = claude.baseUrl;
@@ -73,7 +75,9 @@ describe('request checks', () => {
     expect(parseArenaRequest({ prompt: 'hi', models: Array(5).fill({ provider: 'google', model: 'x' }) }).error).toMatch(/at most 4/);
     expect(parseArenaRequest({ prompt: 'hi', models: [{ provider: 'nope', model: 'x' }] }).error).toMatch(/not one the arena knows/);
     expect(parseArenaRequest({ prompt: 'hi', models: [{ provider: 'Google', model: 'gemini-3.8-flash' }], maxTokens: 99999 }))
-      .toEqual({ prompt: 'hi', system: '', lanes: [{ provider: 'google', model: 'gemini-3.8-flash' }], maxTokens: 4096 });
+      .toEqual({ prompt: 'hi', system: '', lanes: [{ provider: 'google', model: 'gemini-3.8-flash' }], maxTokens: 32000 });
+    // Thinking models spend budget before writing: the default leaves room for a whole page of code.
+    expect(parseArenaRequest({ prompt: 'hi', models: [{ provider: 'google', model: 'x' }] }).maxTokens).toBe(8192);
   });
 
   test('a saved personal key wins and the picked model is kept', async () => {
@@ -115,7 +119,7 @@ describe('POST /api/model-arena/run', () => {
     }
     // Each provider got the picked model, the instructions and the right key.
     const sent = gemini.requests.at(-1);
-    expect(sent.body).toMatchObject({ model: 'gemini-3.8-flash', stream: true });
+    expect(sent.body).toMatchObject({ model: 'gemini-3.8-flash', stream: true, max_tokens: 8192 });
     expect(sent.body.messages[0]).toEqual({ role: 'system', content: 'Be brief.' });
     expect(sent.headers.authorization).toBe('Bearer server-gemini-key');
     expect(claude.requests.at(-1).body.model).toBe('claude-haiku-5-5');
@@ -131,6 +135,11 @@ describe('POST /api/model-arena/run', () => {
     expect(errors.map((e) => e.lane).sort()).toEqual([0, 1]);
     expect(errors.find((e) => e.lane === 1).error).toMatchObject({ code: 'MODEL_KEY_MISSING', keyProvider: 'anthropic' });
     expect(events.find((e) => e.type === 'done')).toMatchObject({ lane: 2 });
+  });
+
+  test('an answer that hits the length limit is reported as cut off', async () => {
+    const { events } = await race({ prompt: 'design me a single html sign in form', models: [{ provider: 'google', model: 'short-model' }] });
+    expect(events.find((e) => e.type === 'done')).toMatchObject({ lane: 0, finishReason: 'length' });
   });
 });
 
@@ -162,5 +171,7 @@ describe('the window\'s numbers', () => {
     expect(results[0]).toMatchObject({ status: 'done', text: 'Hi there' });
     expect(applyArenaEvent(results, { type: 'delta', lane: 7, text: 'x' })).toBe(results);
     expect(catalog.laneBadges(lanes, results)).toEqual([['First to finish'], ['First to answer', 'Cheapest']]);
+    const cut = applyArenaEvent(results, { type: 'done', lane: 0, firstTokenMs: 300, totalMs: 900, usage: { input: 100, output: 50 }, finishReason: 'length' });
+    expect(catalog.laneBadges(lanes, cut)).toEqual([[], ['First to answer', 'Cheapest']]);
   });
 });

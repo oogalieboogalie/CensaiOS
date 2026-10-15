@@ -7,6 +7,8 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
   const [projectNameInput, setProjectNameInput] = React.useState(currentProject?.name || '');
   const [projectError, setProjectError] = React.useState('');
   const [projectsList, setProjectsList] = React.useState([]);
+  const [newName, setNewName] = React.useState(null); // null = form closed
+  const [making, setMaking] = React.useState(false);
   const projectInputRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -55,9 +57,43 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
     }
   };
 
+  // A brand new empty project: its own folder in the projects folder, with
+  // version saving on, made the default and opened in a file tree.
+  const makeNewProject = async () => {
+    const name = String(newName || '').trim();
+    if (!name || making) return;
+    setMaking(true);
+    setProjectError('');
+    try {
+      const made = await api.createNewProject(name);
+      if (await switchToProject({ path: made.path, name: made.name })) {
+        setNewName(null);
+        onClose();
+      }
+    } catch (err) {
+      setProjectError(err.message || 'Could not make the project');
+    }
+    setMaking(false);
+  };
+
   return (
     <>
       <div style={{ padding: '6px 10px 4px', display: 'grid', gap: 6 }}>
+        {newName === null ? (
+          <button data-testid="new-project" onClick={() => setNewName('')} style={{ all: 'unset', cursor: 'pointer', padding: '7px 10px', borderRadius: 'var(--radius-md)', background: 'var(--accent)', color: 'var(--accent-contrast)', fontSize: 'var(--text-xs)', fontWeight: 700, textAlign: 'center' }}>
+            New project
+          </button>
+        ) : (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input autoFocus data-testid="new-project-name" value={newName} onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') makeNewProject(); if (e.key === 'Escape') setNewName(null); }}
+              placeholder="Name it, like Lead form"
+              style={{ all: 'unset', flex: 1, minWidth: 0, border: '1px solid var(--hairline)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', padding: '6px 8px', fontSize: 'var(--text-xs)', color: 'var(--ink)' }} />
+            <button data-testid="new-project-make" onClick={makeNewProject} disabled={!newName.trim() || making} style={{ all: 'unset', cursor: 'pointer', padding: '6px 10px', borderRadius: 'var(--radius-md)', background: 'var(--accent)', color: 'var(--accent-contrast)', fontSize: 'var(--text-xs)', fontWeight: 700, opacity: newName.trim() ? 1 : 0.45 }}>
+              {making ? 'Making...' : 'Make it'}
+            </button>
+          </div>
+        )}
         <div style={{ fontSize: 'var(--text-xs)', fontWeight: 650, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Default for new windows
         </div>

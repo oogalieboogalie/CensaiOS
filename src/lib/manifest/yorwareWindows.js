@@ -82,4 +82,15 @@ export const YORWARE_WINDOW_MANIFESTS = [
     lab: {"title":"Wall bracket","props":{"title":"Wall bracket"}},
     moduleMenu: {"show":true,"status":"ready","order":51,"icon":"Toolbox","label":"CAD","hint":"Parts with sizes you dial in; STL for 3D printers, STEP for machine shops"},
   },
+  {
+    kind: 'yorBooks',
+    canvasType: 'yorBooks',
+    label: 'Books',
+    componentName: 'YorBooksWindow',
+    componentPath: 'src/components/windows/yorBooks/index.jsx',
+    defaultSize: { w: 1180, h: 780 },
+    header: { title: 'Open Books', icon: 'List' },
+    lab: {"title":"Studio books","props":{"title":"Studio books"}},
+    moduleMenu: {"show":true,"status":"ready","order":53,"icon":"List","label":"Books","hint":"Bookkeeping: bank files sorted into tax categories, timeline, receipts, Schedule C report"},
+  },
 ];

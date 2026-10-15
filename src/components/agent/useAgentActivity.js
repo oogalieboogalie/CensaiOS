@@ -1,16 +1,18 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
 import { useVisibilityAwareInterval } from '../../lib/usePolling.js';
+import { useWorkspaceStore } from '../../lib/store.js';
 
 export function useAgentActivity(agentId) {
   const [activity, setActivity] = React.useState({ wakeups: [], unread: 0 });
+  const workspaceId = useWorkspaceStore((s) => s.workspaceId);
 
   const load = React.useCallback(() => {
     if (!agentId) return;
-    api.getAgentActivity(agentId)
+    api.getAgentActivity(agentId, { workspaceId })
       .then(data => setActivity(data))
       .catch(() => {});
-  }, [agentId]);
+  }, [agentId, workspaceId]);
 
   React.useEffect(() => {
     load();

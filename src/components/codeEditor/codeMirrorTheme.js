@@ -14,7 +14,7 @@ function withAlpha(hex, alpha) {
 export function buildEditorTheme(editorTheme = {}) {
   const theme = { ...DEFAULT_THEME, ...editorTheme };
   return createTheme({
-    theme: 'dark',
+    theme: theme.mode === 'light' ? 'light' : 'dark',
     settings: {
       background: theme.background,
       foreground: theme.foreground,
@@ -25,7 +25,7 @@ export function buildEditorTheme(editorTheme = {}) {
       gutterBackground: theme.background,
       gutterForeground: withAlpha(theme.foreground, '66'),
       gutterActiveForeground: theme.foreground,
-      gutterBorder: withAlpha(theme.black, 'FF'),
+      gutterBorder: withAlpha(theme.foreground, '22'),
       fontFamily: 'var(--font-mono)',
     },
     styles: [

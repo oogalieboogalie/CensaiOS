@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { jest } from '@jest/globals';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { FilesWindow } from '../src/components/FilesWindow.jsx';
 import { useWorkspaceStore } from '../src/lib/store.js';
 
@@ -35,5 +35,32 @@ describe('FilesWindow', () => {
     fireEvent.click(githubButton);
 
     expect(onUpdate).toHaveBeenCalledWith({ mode: 'github' });
+  });
+
+  test('a window moved to another folder lists that folder, not the old one', async () => {
+    const listings = {
+      'D:\\Homebase\\CensaiHub': [{ name: 'docs', isDir: true, path: 'D:\\Homebase\\CensaiHub\\docs' }, { name: 'README.md', isDir: false, path: 'D:\\Homebase\\CensaiHub\\README.md' }],
+      'D:\\Homebase\\CensaiHub\\docs': [{ name: 'spec.md', isDir: false, path: 'D:\\Homebase\\CensaiHub\\docs\\spec.md' }],
+    };
+    global.fetch = jest.fn(async (url) => {
+      const asked = decodeURIComponent(String(url).split('path=')[1] || '');
+      return { ok: true, json: async () => ({ children: listings[asked] || [] }) };
+    });
+    const win = { id: 'w-files', kind: 'files', mode: 'local', dirPath: 'D:\\Homebase\\CensaiHub' };
+    const { rerender } = render(<FilesWindow win={win} onUpdate={jest.fn()} wins={[]} />);
+    await screen.findByText(/README\.md/);
+
+    await act(async () => {
+      rerender(<FilesWindow win={{ ...win, dirPath: 'D:\\Homebase\\CensaiHub\\docs' }} onUpdate={jest.fn()} wins={[]} />);
+    });
+    await screen.findByText(/spec\.md/);
+    expect(screen.queryByText(/README\.md/)).toBeNull();
+    expect(screen.getByDisplayValue('D:\\Homebase\\CensaiHub\\docs')).toBeInTheDocument();
+  });
+
+  test('a folder that cannot be listed says why instead of looking empty', async () => {
+    global.fetch = jest.fn(async () => ({ ok: false, status: 404, json: async () => ({ error: "censaiOS can't see D:\\Nexus-Delta." }) }));
+    render(<FilesWindow win={{ id: 'w', kind: 'files', mode: 'local', dirPath: 'D:\\Nexus-Delta' }} onUpdate={jest.fn()} wins={[]} />);
+    await waitFor(() => expect(screen.getByTestId('tree-folder-note')).toHaveTextContent("can't see D:\\Nexus-Delta"));
   });
 });

@@ -111,7 +111,7 @@ test('Try this ticks off a step and one click clears every welcome window', () =
   expect(useWorkspaceStore.getState().activeId).toBe(hound.id);
   expect(listWin().tried).toEqual({ sample: true });
   view.rerender(<TryThisWindow win={listWin()} onUpdate={onUpdate} />);
-  expect(screen.getByText('1 of 6 tried')).toBeTruthy();
+  expect(screen.getByText('1 of 7 tried')).toBeTruthy();
 
   fireEvent.click(screen.getByText("Open the top lead's plan as a document"));
   const doc = useWorkspaceStore.getState().wins.find((w) => w.kind === 'doc');

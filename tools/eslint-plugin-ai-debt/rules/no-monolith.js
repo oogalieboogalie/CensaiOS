@@ -31,7 +31,7 @@ module.exports = {
 
   create(context) {
     const maxLines = (context.options[0] && context.options[0].maxLines) || 250;
-    const sourceCode = context.getSourceCode();
+    const sourceCode = (context.sourceCode ?? context.getSourceCode());
     const lineCount = sourceCode.lines.length;
 
     return {

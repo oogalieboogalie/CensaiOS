@@ -1,4 +1,4 @@
-import { buildInkStroke, cachedInkPath, coalescedSamples, inkPath, inkPoint, strokeBounds, tiltAmount } from '../src/lib/ink/stroke.js';
+import { buildInkStroke, cachedInkPath, coalescedSamples, feltPressure, inkOutline, inkPath, inkPoint, strokeBounds, tiltAmount } from '../src/lib/ink/stroke.js';
 
 const line = (n, p = 0.5) => Array.from({ length: n }, (_, i) => ({ x: i * 4, y: Math.sin(i / 3) * 10, p }));
 
@@ -25,6 +25,28 @@ describe('pressure ink', () => {
       return b.h;
     };
     expect(width(0.95)).toBeGreaterThan(width(0.2) * 1.5);
+  });
+
+  test('a light tap leaves a round dot', () => {
+    const tap = buildInkStroke([{ x: 10, y: 10, p: 0.03 }], { size: 4 });
+    const outline = inkOutline(tap);
+    expect(outline.length).toBeGreaterThanOrEqual(8);
+    expect(inkPath(tap).endsWith('Z')).toBe(true);
+    const xs = outline.map((pt) => pt[0]);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(3); // not a speck
+  });
+
+  test('a light, short flick keeps its ink instead of tapering away', () => {
+    const flick = { id: 'f', pts: [0, 1, 2, 3, 4, 5].map((i) => ({ x: i * 1.2, y: 0, p: 0.05 })), size: 6 };
+    const ys = inkOutline(flick).map((pt) => pt[1]);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(3);
+  });
+
+  test('light pressure is lifted, medium and hard stay put', () => {
+    expect(feltPressure(0.05)).toBeGreaterThan(0.15);
+    expect(feltPressure(0.5)).toBe(0.5);
+    expect(feltPressure(0.9)).toBe(0.9);
+    expect(feltPressure(0)).toBe(0);
   });
 
   test('outline is a closed SVG path and the cache follows moves', () => {

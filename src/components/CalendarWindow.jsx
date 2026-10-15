@@ -7,6 +7,7 @@ import { CalendarListView } from './calendar/CalendarListView.jsx';
 import { CalendarWeekHeader } from './calendar/CalendarWeekHeader.jsx';
 import { CalendarDateModal } from './calendar/CalendarDateModal.jsx';
 import { CalendarToolbar } from './calendar/CalendarToolbar.jsx';
+import { toCalendarEvent } from './calendar/calendarEvents.js';
 
 // A beautifully minimal calendar UI for the infinite canvas
 export function CalendarWindow({ win, onUpdate, onSpawn }) {
@@ -78,13 +79,7 @@ export function CalendarWindow({ win, onUpdate, onSpawn }) {
 
     api.getCalendarEvents(start.toISOString(), end.toISOString())
       .then(data => {
-        const formatted = data.map(ev => {
-          const start = new Date(ev.start);
-          const end = new Date(ev.end);
-          const timeString = `${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-          return { id: ev.id, title: ev.title, description: ev.description, time: timeString, date: start.toISOString().split('T')[0], link: ev.link, color: ev.color };
-        });
-        setEvents(formatted);
+        setEvents(data.map((ev) => toCalendarEvent(ev)));
         setLoading(false);
       })
       .catch(err => {
@@ -176,7 +171,7 @@ export function CalendarWindow({ win, onUpdate, onSpawn }) {
             </div>
           ) : events.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>
-              No events scheduled for this week.
+              {viewMode === 'month' ? 'No events scheduled this month.' : 'No events scheduled this week.'}
             </div>
           ) : viewMode === 'month' ? (
             <CalendarMonthView monthDays={monthDays} groupedEvents={groupedEvents} isToday={isToday} onSelectDate={setSelectedDateStr} />

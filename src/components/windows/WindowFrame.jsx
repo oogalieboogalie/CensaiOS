@@ -135,7 +135,7 @@ export const WindowFrame = React.memo(({ win, onUpdate, onClose, onSelect, onDra
   }), [win.chromeVariant, usesTrafficLights, isActive, headerMode, titleEl, actionsEl, menuEl, claimTitle, brand]);
 
   return (
-    <div ref={ref} data-win-id={win.id} data-win-frame data-render-count={renderCount.current} data-window-chrome="low-profile"
+    <div ref={ref} data-win-id={win.id} data-win-kind={win.kind} data-win-frame data-render-count={renderCount.current} data-window-chrome="low-profile"
       data-chrome-variant={win.chromeVariant || 'default'} data-header-mode={headerMode}
       data-active={isActive ? 'true' : 'false'} data-tile-group={tiled ? tileGroupId : undefined} data-pinned={win.pinned ? 'true' : 'false'} data-wake-up={glideOrder(win)} data-menu-open={menuOpen ? 'true' : 'false'}
       onPointerDownCapture={onAltDown} onPointerDown={onFrameDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}

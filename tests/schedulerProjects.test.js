@@ -1,4 +1,3 @@
-/* eslint-env jest */
 
 import { buildSchedulerProjectOptions, getSchedulerProjectReference } from '../src/components/schedulerProjects.js';
 

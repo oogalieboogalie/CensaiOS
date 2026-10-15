@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 const logConversation = jest.fn().mockResolvedValue();
 const runHealingCascadeIfMentioned = jest.fn().mockResolvedValue();
 const getAgentsByIds = jest.fn().mockResolvedValue([{ id: 'atlas' }]);
+const getSubAgentById = jest.fn().mockResolvedValue(null);
 const buildSystemPrompt = jest.fn().mockResolvedValue('Scoped prompt');
 const pool = { query: jest.fn(), on: jest.fn(), end: jest.fn() };
 const runChatLoop = jest.fn().mockResolvedValue({ finalText: 'Scoped reply', toolActions: [] });
@@ -18,6 +19,7 @@ jest.unstable_mockModule('../server/memory.js', () => ({
   runHealingCascadeIfMentioned,
   getAgentsByIds,
   buildSystemPrompt,
+  getSubAgentById,
 }));
 jest.unstable_mockModule('../server/routes/chat/shared.js', () => ({
   getApiKey: () => 'key',
@@ -96,7 +98,7 @@ describe('chat memory tenancy propagation', () => {
     await handleGroupChat(req, responseDouble());
 
     expect(buildSystemPrompt).toHaveBeenCalledWith('atlas', 'Plan.', {
-      workspaceId: 'workspace-owner', userId: 7,
+      workspaceId: 'workspace-owner', userId: 7, historyInRequest: false,
     });
     expect(createModelAccessContext).toHaveBeenCalledWith({
       userId: 7, workspaceId: 'workspace-owner', source: 'group-chat',
@@ -167,7 +169,7 @@ describe('chat memory tenancy propagation', () => {
     });
   });
 
-  test('group chat rejects non-family agent ids before provider work', async () => {
+  test('group chat rejects ids that are neither family agents nor on this board before provider work', async () => {
     const res = responseDouble();
 
     await handleGroupChat({
@@ -177,8 +179,9 @@ describe('chat memory tenancy propagation', () => {
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      code: 'FAMILY_AGENT_NOT_FOUND',
+      code: 'GROUP_CHAT_AGENT_NOT_FOUND',
     }));
+    expect(getSubAgentById).toHaveBeenCalledWith('guardian', { workspaceId: 'workspace-owner', userId: 7 });
     expect(callModel).not.toHaveBeenCalled();
   });
 

@@ -7,6 +7,7 @@ import {
 } from './cohere.js';
 import { ANTHROPIC_DEFAULT_BASE_URL } from './anthropicChat.js';
 import { anthropicModelFor } from './anthropicRequest.js';
+import { isSubscriptionToken } from '../security/envKeys.js';
 
 export const DEFAULT_CHAT_MODEL = process.env.AI_MODEL || 'minimax-m2.5:cloud';
 export const DEFAULT_CHAT_BASE_URL = normalizeBaseUrl(process.env.AI_BASE_URL || 'http://localhost:11434/v1');
@@ -25,6 +26,12 @@ export function normalizeProviderName(modelProvider) {
 
 export function getDefaultChatApiKey() {
   return getSecret('AI_API_KEY') || 'ollama';
+}
+
+// A Claude subscription token (sk-ant-oat) in .env is never used as a key.
+function serverAnthropicKey() {
+  const key = getSecret('ANTHROPIC_API_KEY');
+  return isSubscriptionToken('anthropic', key) ? '' : key;
 }
 
 const providerAdapters = {
@@ -74,7 +81,7 @@ const providerAdapters = {
       provider: 'anthropic',
       model: anthropicModelFor(model),
       baseUrl: process.env.ANTHROPIC_BASE_URL || ANTHROPIC_DEFAULT_BASE_URL,
-      apiKey: getSecret('ANTHROPIC_API_KEY') || '',
+      apiKey: serverAnthropicKey(),
     };
   },
   // xAI Grok: OpenAI-compatible chat completions (BYOK key or XAI_API_KEY).

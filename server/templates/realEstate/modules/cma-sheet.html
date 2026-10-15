@@ -1,0 +1,132 @@
+<!-- module {"request": "a CMA sheet that prices a home from pasted comparable sales", "manifest": {"manifest": 3, "version": "1.1.0", "author": "censaiOS", "id": "cma-sheet", "name": "CMA sheet", "description": "Paste recent sales; get adjusted values and a suggested list range.", "icon": "Activity", "size": {"w": 900, "h": 620}, "permissions": ["storage", "agent"], "state": {"subject": "the home being priced", "comps": "list of comparable sales", "notes": "the analyst's write-up"}}} -->
+<div class="stack" style="gap: var(--space-3); height: 100%">
+  <div class="spread">
+    <div><div class="label">Comparative market analysis</div><h2 style="margin:2px 0 0" id="title">Subject property</h2></div>
+    <div class="row" style="width:auto"><button id="summary">Ask Market Analyst for a summary</button></div>
+  </div>
+  <div class="grid" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr">
+    <label class="stack" style="gap:2px"><span class="label">Address</span><input id="s-address"></label>
+    <label class="stack" style="gap:2px"><span class="label">Sq ft</span><input id="s-sqft" inputmode="numeric"></label>
+    <label class="stack" style="gap:2px"><span class="label">Beds</span><input id="s-beds" inputmode="numeric"></label>
+    <label class="stack" style="gap:2px"><span class="label">Baths</span><input id="s-baths" inputmode="decimal"></label>
+    <label class="stack" style="gap:2px"><span class="label">$ per bed</span><input id="adj-bed" inputmode="numeric"></label>
+    <label class="stack" style="gap:2px"><span class="label">$ per bath</span><input id="adj-bath" inputmode="numeric"></label>
+  </div>
+  <div class="grid" style="grid-template-columns: minmax(0, 1fr) 260px; flex: 1; min-height: 0">
+    <div class="stack" style="min-height:0">
+      <div style="flex:1; overflow:auto; min-height:0" class="card"><table>
+        <thead><tr><th>Comp</th><th>Sold</th><th>Sq ft</th><th>Bd/Ba</th><th>$/sq ft</th><th>Adjusted</th><th></th></tr></thead>
+        <tbody id="comps"></tbody></table></div>
+      <details id="paste-box">
+        <summary class="faint" style="cursor:pointer">Paste comps from a spreadsheet or MLS export</summary>
+        <div class="stack" style="margin-top: var(--space-2)">
+          <textarea id="paste" rows="4" placeholder="address, sold price, sq ft, beds, baths, sold date (one per line, commas or tabs)"></textarea>
+          <div class="row"><button class="primary" id="add">Add comps</button><span class="faint" id="paste-msg"></span></div>
+        </div>
+      </details>
+    </div>
+    <aside class="stack">
+      <div class="card stack">
+        <span class="label">Suggested list range</span>
+        <div class="big" id="range"></div>
+        <div class="muted" id="basis"></div>
+      </div>
+      <div class="card stack"><span class="label">Median $ per sq ft</span><div class="big" id="ppsf"></div></div>
+      <div class="card stack" style="flex:1; overflow:auto"><span class="label">Analyst notes</span><div class="muted" id="notes" style="white-space:pre-wrap"></div></div>
+    </aside>
+  </div>
+</div>
+<script>
+  const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; };
+  const num = (v) => Number(String(v == null ? '' : v).replace(/[^0-9.]/g, '')) || 0;
+  const SUBJECT = { address: '14 Alder Way', sqft: '1850', beds: '3', baths: '2', adjBed: '12000', adjBath: '8000' };
+  const SAMPLE = [
+    { address: '22 Alder Way', price: 452000, sqft: 1780, beds: 3, baths: 2, date: '2026-08-14' },
+    { address: '5 Linden Ct', price: 489000, sqft: 1920, beds: 4, baths: 2, date: '2026-07-30' },
+    { address: '118 Fern St', price: 438000, sqft: 1710, beds: 3, baths: 1.5, date: '2026-09-02' },
+    { address: '40 Quarry Rd', price: 471000, sqft: 1880, beds: 3, baths: 2.5, date: '2026-06-21' },
+  ];
+  let subject = Object.assign({}, SUBJECT, censai.storage.get('subject', {}));
+  let comps = censai.storage.get('comps', SAMPLE);
+  let notes = censai.storage.get('notes', '');
+
+  function median(list) {
+    const s = list.slice().sort((a, b) => a - b);
+    if (!s.length) return 0;
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+  // Each comp, adjusted to the subject: size at the comp's own $/sq ft, then beds and baths.
+  function adjusted(c) {
+    const ppsf = c.sqft ? c.price / c.sqft : 0;
+    return c.price + (num(subject.sqft) - c.sqft) * ppsf * 0.5
+      + (num(subject.beds) - c.beds) * num(subject.adjBed)
+      + (num(subject.baths) - c.baths) * num(subject.adjBath);
+  }
+  function analysis() {
+    const values = comps.filter((c) => c.price && c.sqft).map(adjusted);
+    const mid = median(values);
+    const spread = values.length > 1 ? Math.min(0.04, (Math.max(...values) - Math.min(...values)) / mid / 2) : 0.03;
+    const round = (v) => Math.round(v / 1000) * 1000;
+    return { count: values.length, mid, low: round(mid * (1 - Math.max(spread, 0.015))), high: round(mid * (1 + Math.max(spread, 0.015))), ppsf: median(comps.filter((c) => c.sqft).map((c) => c.price / c.sqft)) };
+  }
+
+  function render() {
+    $('title').textContent = subject.address || 'Subject property';
+    $('comps').innerHTML = comps.length ? comps.map((c, i) => '<tr><td>' + esc(c.address) + '<div class="faint num">' + money.format(c.price) + '</div></td><td class="faint">' + esc(c.date || '') + '</td><td class="num">' + (c.sqft || '') + '</td><td class="num">' + c.beds + '/' + c.baths + '</td><td class="num">' + (c.sqft ? money.format(c.price / c.sqft) : '') + '</td><td class="num">' + money.format(adjusted(c)) + '</td><td><button class="ghost" data-remove="' + i + '">Remove</button></td></tr>').join('')
+      : '<tr><td colspan="7" class="faint">No comps yet. Paste them below.</td></tr>';
+    document.querySelectorAll('[data-remove]').forEach((b) => { b.onclick = () => { comps = comps.filter((_, i) => i !== Number(b.dataset.remove)); censai.storage.set('comps', comps); render(); }; });
+    const a = analysis();
+    $('range').textContent = a.count ? money.format(a.low) + ' – ' + money.format(a.high) : '—';
+    $('basis').textContent = a.count ? 'From ' + a.count + ' adjusted comps, midpoint ' + money.format(a.mid) : 'Add at least one comp.';
+    $('ppsf').textContent = a.ppsf ? money.format(a.ppsf) : '—';
+    $('notes').textContent = notes || 'Ask the Market Analyst for a written summary to send the seller.';
+  }
+
+  // "addr, price, sqft, beds, baths, date" per line; commas or tabs; a header row is skipped.
+  function parseComps(text) {
+    return String(text).split(/\r?\n/).map((line) => line.split(/\t|,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map((s) => s.replace(/^"|"$/g, '').trim()))
+      .filter((cells) => cells.length >= 3 && num(cells[1]) > 1000)
+      .map((cells) => ({ address: cells[0], price: num(cells[1]), sqft: num(cells[2]), beds: num(cells[3]), baths: num(cells[4]), date: cells[5] || '' }));
+  }
+
+  const MAP = { 's-address': 'address', 's-sqft': 'sqft', 's-beds': 'beds', 's-baths': 'baths', 'adj-bed': 'adjBed', 'adj-bath': 'adjBath' };
+  Object.keys(MAP).forEach((id) => {
+    $(id).value = subject[MAP[id]];
+    $(id).oninput = () => { subject[MAP[id]] = $(id).value; censai.storage.set('subject', subject); render(); };
+  });
+  $('add').onclick = () => {
+    const found = parseComps($('paste').value);
+    $('paste-msg').textContent = found.length ? 'Added ' + found.length : 'No rows with a price found.';
+    if (!found.length) return;
+    comps = comps.concat(found);
+    $('paste').value = '';
+    censai.storage.set('comps', comps);
+    render();
+  };
+  $('summary').onclick = async () => {
+    const a = analysis();
+    $('summary').disabled = true;
+    $('notes').textContent = 'Asking the Market Analyst…';
+    try {
+      notes = await censai.agent.ask('You are the Market Analyst on a real estate team. In 4 short sentences for the seller, explain the suggested list range ' + money.format(a.low) + ' to ' + money.format(a.high) + ' for ' + subject.address + ' (' + subject.sqft + ' sq ft, ' + subject.beds + ' bd, ' + subject.baths + ' ba) using these comps: ' + comps.map((c) => c.address + ' sold ' + money.format(c.price) + ', ' + c.sqft + ' sq ft, ' + c.beds + '/' + c.baths).join('; ') + '. Plain words, no hype, no claims about the neighborhood\'s people.');
+      censai.storage.set('notes', notes);
+    } catch (err) {
+      notes = notes || '';
+      $('notes').textContent = 'The analyst could not answer: ' + (err && err.message ? err.message : 'unknown error');
+      $('summary').disabled = false;
+      return;
+    }
+    $('summary').disabled = false;
+    render();
+  };
+  censai.storage.onChange((key, value) => {
+    if (key === 'comps' && Array.isArray(value)) comps = value;
+    if (key === 'subject' && value) subject = Object.assign({}, SUBJECT, value);
+    if (key === 'notes') notes = value || '';
+    render();
+  });
+  render();
+</script>

@@ -92,7 +92,7 @@ export const PROVIDER_BRAND = Object.freeze({
 
 // Coding CLIs in the Agent Console. Codex is OpenAI's; Simple Icons has no
 // OpenAI mark, so it keeps a monogram.
-export const CLI_BRAND = Object.freeze({ claudecode: 'claude', codex: 'codex', gemini: 'googlegemini', opencode: 'opencode' });
+export const CLI_BRAND = Object.freeze({ claudecode: 'claude', codex: 'codex', gemini: 'googlegemini', opencode: 'opencode', copilot: 'githubcopilot' });
 
 /** The brand a window shows in its header, or null for the board's own windows. */
 export function windowBrand(win) {

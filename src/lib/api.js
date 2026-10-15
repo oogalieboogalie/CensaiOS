@@ -20,6 +20,7 @@ import * as workspaceMembers from './api/workspaceMembers.js';
 import * as agentIcons from './api/agentIcons.js';
 import * as shareLinks from './api/shareLinks.js';
 import * as lessons from './api/lessons.js';
+import * as projectGit from './api/projectGit.js';
 
 export const api = {
   ...agents,
@@ -44,4 +45,5 @@ export const api = {
   ...agentIcons,
   ...shareLinks,
   ...lessons,
+  ...projectGit,
 };

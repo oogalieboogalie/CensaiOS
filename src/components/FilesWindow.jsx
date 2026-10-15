@@ -9,6 +9,8 @@ import {
 } from './files/index.js';
 import { FileCreateRow } from './files/FileCreateRow.jsx';
 import { fileWindowKind, fileWindowProps } from './files/fileRouting.js';
+import { parentFolder } from './files/useFiles.js';
+import { ProjectVersions } from './files/ProjectVersions.jsx';
 
 export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject, wins, onSelect }) {
   const {
@@ -32,6 +34,9 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
   const [switchError, setSwitchError] = React.useState('');
   const canCreate = mode === 'local' && win.dirPath;
   const openLocalProject = useWorkspaceStore(s => s.openLocalProject);
+
+  const [liveTick, setLiveTick] = React.useState(0);
+  const refreshTree = React.useCallback(() => setLiveTick(t => t + 1), []);
 
   const handleCreated = (made) => {
     setCreating(null);
@@ -68,11 +73,10 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
           <div style={{ display: 'flex', gap: 6, padding: '0 10px 6px', alignItems: 'center' }}>
             <button
               onClick={() => {
-                const clean = win.dirPath.replace(/[\\/]+$/, '');
-                const parent = clean.split(/[\\/]/).slice(0, -1).join('\\');
-                if (parent) setPathInput(parent);
+                const parent = parentFolder(win.dirPath);
+                if (parent) loadDir(parent);
               }}
-              title="Go up one folder (fills the path bar; open as project if outside the current root)"
+              title="Go up one folder"
               style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', padding: '3px 8px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }}
             >
               ↑ Up
@@ -137,11 +141,11 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
             {searchLoading && <div style={{ padding: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>Searching...</div>}
             {!searchLoading && searchResults.length === 0 && <div style={{ padding: 12, color: 'var(--ink-faint)' }}>No matches.</div>}
             {!searchLoading && searchResults.map(node => (
-               <Tree key={`${node.path}-${refreshTick}`} node={node} depth={0} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={mode === 'github' ? win.githubRepo : null} mode={mode} rootDirPath={win.dirPath} wins={wins} onSelect={onSelect} onSetRoot={(p) => onUpdate({ dirPath: p })} />
+               <Tree key={`${node.path}-${refreshTick}`} node={node} depth={0} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={mode === 'github' ? win.githubRepo : null} mode={mode} rootDirPath={win.dirPath} wins={wins} onSelect={onSelect} onSetRoot={(p) => onUpdate({ dirPath: p })} reloadTick={liveTick} />
             ))}
           </div>
         ) : (
-          tree && <Tree key={`root-${win.dirPath}-${refreshTick}`} node={tree} depth={0} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={mode === 'github' ? win.githubRepo : null} mode={mode} rootDirPath={win.dirPath} wins={wins} onSelect={onSelect} onSetRoot={(p) => onUpdate({ dirPath: p })} />
+          tree && <Tree key={`root-${mode}-${tree.name}-${tree.path}-${refreshTick}`} node={tree} depth={0} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={mode === 'github' ? win.githubRepo : null} mode={mode} rootDirPath={win.dirPath} wins={wins} onSelect={onSelect} onSetRoot={(p) => onUpdate({ dirPath: p })} reloadTick={liveTick} />
         )}
 
         {(tree || searchResults) && (
@@ -151,6 +155,7 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
           </div>
         )}
       </div>
+      {mode === 'local' && win.dirPath && <ProjectVersions dirPath={win.dirPath} onChanged={refreshTree} onSpawn={onSpawn} />}
     </>
   );
 }

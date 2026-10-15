@@ -59,7 +59,7 @@ export class CliTaskManager extends TaskStore {
   }
 
   // ── starting work ──────────────────────────────────────────────────────
-  async start({ cli, folder, prompt, model = null, user = {}, handoffFrom = null, patch = '', baseOverride = null }) {
+  async start({ cli, folder, prompt, model = null, user = {}, handoffFrom = null, patch = '', baseOverride = null, title = null, prepare = null }) {
     const adapter = getAdapter(cli);
     if (!adapter) throw httpError('Pick Claude Code, Codex, Gemini CLI or OpenCode.');
     const text = String(prompt || '').trim();
@@ -72,9 +72,10 @@ export class CliTaskManager extends TaskStore {
     const baseSha = baseOverride || repo.head;
     const worktree = await this.wt.createWorktree({ repoRoot: repo.repoRoot, baseSha, taskId: id, cli: adapter.id, patch, env: this.env });
     const cwd = repo.subdir ? path.join(worktree.dir, repo.subdir) : worktree.dir;
+    if (prepare) await prepare(worktree.dir);
 
     const task = {
-      id, cli: adapter.id, cliLabel: adapter.label, title: titleFrom(text), prompt: text,
+      id, cli: adapter.id, cliLabel: adapter.label, title: title || titleFrom(text), prompt: text,
       folder: path.resolve(String(folder)), repoRoot: repo.repoRoot, subdir: repo.subdir, baseSha,
       worktree: { dir: worktree.dir, branch: worktree.branch, cwd },
       status: 'starting', createdAt: Date.now(), updatedAt: Date.now(), finishedAt: null,
@@ -108,7 +109,7 @@ export class CliTaskManager extends TaskStore {
     return this.summary(task);
   }
 
-  decide(id, permissionId, { allow, user = {} }) {
+  decide(id, permissionId, { allow, user = {}, message = null }) {
     const task = this.get(id);
     const request = task.permissions.find((p) => p.id === permissionId);
     if (!request) throw httpError('No such permission request.', 404);
@@ -119,7 +120,7 @@ export class CliTaskManager extends TaskStore {
       throw httpError('The agent is no longer waiting for this answer.', 409);
     }
     const who = user.name || 'A teammate';
-    rt.child.stdin.write(`${rt.adapter.permissionReply(request, { allow: Boolean(allow), message: `${who} denied this in Homebase.` })}\n`);
+    rt.child.stdin.write(`${rt.adapter.permissionReply(request, { allow: Boolean(allow), message: message || `${who} denied this in Homebase.` })}\n`);
     this.closePermission(task, request, allow ? 'allowed' : 'denied', who);
     if (!task.permissions.some((p) => p.status === 'pending') && task.status === 'needs_approval') this.setStatus(task, 'running');
     return request;

@@ -20,10 +20,20 @@ describe('Jules queue panel', () => {
     }));
 
     expect(screen.getByText('1 pending · 1 active · 1 blocked')).toBeInTheDocument();
-    expect(screen.getByText('auto-merge on')).toBeInTheDocument();
+    expect(screen.getByText('queue merges ready PRs')).toBeInTheDocument();
     expect(screen.getByText('Next task')).toBeInTheDocument();
     expect(screen.getByText('Active task')).toBeInTheDocument();
     expect(screen.getByText('Blocked task')).toBeInTheDocument();
     expect(screen.getByText('Merged task')).toBeInTheDocument();
+  });
+
+  test('says nothing about merging until the queue has loaded', () => {
+    render(React.createElement(JulesQueuePanel, { queue: null, includeCompleted: false }));
+    expect(screen.queryByText(/merges/)).toBeNull();
+  });
+
+  test('a queue with merging turned off says it merges nothing', () => {
+    render(React.createElement(JulesQueuePanel, { queue: { autoMerge: false, counts: {} }, includeCompleted: false }));
+    expect(screen.getByText('queue merges nothing')).toBeInTheDocument();
   });
 });

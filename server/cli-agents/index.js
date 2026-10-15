@@ -7,6 +7,7 @@ import { agentHome } from './paths.js';
 import { readToolchainConfig } from '../sandbox/toolchainConfig.js';
 import { getUserApiKeyConfig } from '../security/userApiKeys.js';
 import { LOCAL_STATE_DIR } from '../routes/files/pathUtils.js';
+import { claimCliLogin } from './loginOwner.js';
 
 export { CliTaskManager, buildHandoffPrompt } from './taskManager.js';
 export { CLI_ADAPTERS, getAdapter } from './adapters/index.js';
@@ -14,7 +15,8 @@ export { CLI_ADAPTERS, getAdapter } from './adapters/index.js';
 /**
  * Where a CLI's key comes from, in order: the user's key vault (Settings →
  * keys), the Toolchains config, the server environment. Returning null is
- * fine: the CLI then uses its own login (claude login, codex login…).
+ * fine: the CLI then uses its own login (claude login, codex login…), but only
+ * for the person who owns that login (loginOwner.js).
  * The key goes into the CLI's environment only; it is never stored on the
  * task and the transcript redacts it.
  */
@@ -28,8 +30,14 @@ export async function resolveCliKey({ adapter, userId }) {
   const config = readToolchainConfig();
   if (config.apiKeys?.[adapter.keyEnv]) return { key: config.apiKeys[adapter.keyEnv], source: 'toolchains' };
   if (process.env[adapter.keyEnv]) return { key: process.env[adapter.keyEnv], source: 'env' };
-  return null;
+  // No key: the CLI falls back to its own sign-in, which belongs to one person.
+  const blocked = claimCliLogin({
+    file: LOGIN_OWNERS_FILE, adapter, userId, signedIn: hasCliLogin(adapter.id, agentHome() || os.homedir()),
+  });
+  return blocked ? { key: null, source: 'cli-login', blocked } : null;
 }
+
+export const LOGIN_OWNERS_FILE = path.join(LOCAL_STATE_DIR, 'cli-agents', 'login-owners.json');
 
 const SWEEP_EVERY_MS = 5 * 60 * 1000;
 let manager = null;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { GLASS_HOST, glossButton, glossContainer } from '../../lib/theme/gloss.js';
 
-export function ZoomHud({ zoom, onZoomIn, onZoomOut, onReset, onJumpNearestCluster }) {
+export function ZoomHud({ zoom, onZoomIn, onZoomOut, onReset, onJumpNearestCluster, mapOpen, onToggleMap }) {
   const pct = Math.round(zoom * 100);
   return (
     <div data-present-hide className={GLASS_HOST} style={glossContainer({
@@ -32,13 +32,20 @@ export function ZoomHud({ zoom, onZoomIn, onZoomOut, onReset, onJumpNearestClust
       <ZoomBtn onClick={onZoomIn} title="Zoom in">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </ZoomBtn>
+      {onToggleMap && (
+        <ZoomBtn onClick={onToggleMap} title={mapOpen ? 'Hide the board map' : 'Show the board map'} testId="board-map-toggle">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>
+          </svg>
+        </ZoomBtn>
+      )}
     </div>
   );
 }
 
-function ZoomBtn({ onClick, title, children }) {
+function ZoomBtn({ onClick, title, children, testId }) {
   return (
-    <button onClick={onClick} title={title} style={{
+    <button onClick={onClick} title={title} data-testid={testId} style={{
       all: 'unset',
       ...glossButton({
         cursor: 'pointer',

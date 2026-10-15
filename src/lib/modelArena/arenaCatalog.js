@@ -4,6 +4,9 @@ import { MODEL_OPTIONS } from '../agentModelOptions.js';
 
 export const MAX_LANES = 4;
 
+// Finish reasons that mean the answer hit its length limit.
+export const CUT_OFF_REASONS = new Set(['length', 'max_tokens', 'MAX_TOKENS']);
+
 export const PROVIDER_LABELS = Object.freeze({
   anthropic: 'Claude', google: 'Gemini', openai: 'OpenAI', openrouter: 'OpenRouter', ollama: 'Ollama (this computer)',
   xai: 'Grok', moonshot: 'Kimi', opencode: 'OpenCode Zen', zai: 'Z.ai', cohere: 'Cohere',
@@ -144,7 +147,8 @@ export function laneBadges(lanes, results) {
     scored.filter((entry) => entry.value === min).forEach((entry) => badges[entry.index].push(label));
   };
   best('First to answer', ({ result }) => result.firstTokenMs);
-  best('First to finish', ({ result }) => result.totalMs);
+  // An answer cut off at its length limit did not really finish.
+  best('First to finish', ({ result }) => (CUT_OFF_REASONS.has(result.finishReason) ? NaN : result.totalMs));
   best('Cheapest', ({ result, lane }) => estimateCost(lane.provider, lane.model, result.usage) ?? NaN);
   return badges;
 }

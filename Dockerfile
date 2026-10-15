@@ -4,7 +4,14 @@ COPY package*.json ./
 COPY scripts/ ./scripts/
 COPY tools/ ./tools/
 RUN apk add --no-cache python3 make g++
-RUN npm ci
+# Installs exactly what package-lock.json pins (npm ci checks every file's
+# hash). --ignore-scripts: no package gets to run code during install; only
+# our own postinstall (it swaps in the audited nanoid/qs copies) runs after.
+# --loglevel=error hides the two "npm warn deprecated" lines left (sliced via
+# excalidraw, node-domexception via Google's sign-in library); only those
+# packages' owners can drop them. Real install errors still print.
+RUN npm ci --ignore-scripts --loglevel=error --no-audit --no-fund \
+ && npm run postinstall
 COPY . .
 RUN npm run build
 
@@ -25,7 +32,11 @@ ENV CENSAI_IN_CONTAINER=1 USE_BUILTIN_RIPGREP=0
 # never matches the container's user; let git work in them (and only them).
 RUN git config --system --add safe.directory /workspace/CensaiHub \
  && git config --system --add safe.directory '/workspace/*'
-RUN npm ci --omit=dev
+# Same locked, no-scripts install as above. node-pty (the terminal window) is
+# the one package that must build itself, so it alone is rebuilt.
+RUN npm ci --omit=dev --ignore-scripts --loglevel=error --no-audit --no-fund \
+ && npm rebuild node-pty \
+ && npm run postinstall
 COPY server.js ./
 COPY server/ ./server/
 COPY docker/ ./docker/

@@ -16,6 +16,16 @@ export function setPlaygroundHeaders(res) {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
 }
 
+/**
+ * A read of a playground file. The runner frame has an opaque origin, so its
+ * requests say `Origin: null`; these public files skip the app's CORS check
+ * (they carry their own open headers above) or the game engine never loads.
+ */
+export function isPlaygroundRead(req) {
+  const method = String(req.method || '').toUpperCase();
+  return (method === 'GET' || method === 'HEAD') && String(req.path || req.url || '').startsWith(PLAYGROUND_PREFIX);
+}
+
 export function playgroundHeaders(req, res, next) {
   if (String(req.url || '').startsWith(PLAYGROUND_PREFIX)) setPlaygroundHeaders(res);
   next();

@@ -101,6 +101,16 @@ test('hosted users without their own Google key are asked for one; the server ke
   }
 });
 
+test('on a local install a teammate cannot spend the owner\'s Google key for video; the owner can', async () => {
+  const teammate = JSON.parse(await handleVideoTool('atlas', 'make_video', { prompt: 'x' }, { userId: 9, workspaceId: 'w', userRole: 'user' }, { serverKey: 'owner-env-key', fetchImpl: fakeVeo().fetchImpl }));
+  expect(teammate).toMatchObject({ code: 'VIDEO_KEY_REQUIRED' });
+
+  const { fetchImpl, calls } = fakeVeo();
+  const owner = JSON.parse(await handleVideoTool('atlas', 'make_video', { prompt: 'x' }, { userId: 1, workspaceId: 'w', userRole: 'admin' }, { serverKey: 'owner-env-key', fetchImpl }));
+  expect(owner).toMatchObject({ status: 'working' });
+  expect(JSON.stringify(calls[0].init)).toContain('owner-env-key');
+});
+
 test('agent flow through the tool handler: make_video then video_status returns a link', async () => {
   const { fetchImpl } = fakeVeo({ polls: 1 });
   const started = JSON.parse(await handleVideoTool('atlas', 'make_video', { prompt: 'a cat surfing', aspect_ratio: '16:9' }, { userId: 7, workspaceId: 'w2' }, { fetchImpl }));

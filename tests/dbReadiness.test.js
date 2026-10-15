@@ -46,6 +46,9 @@ jest.unstable_mockModule('../server/agentMemory/schema.js', () => ({
 jest.unstable_mockModule('../server/approvals/trustSchema.js', () => ({
   ensureAgentTrustSchema: jest.fn().mockResolvedValue(undefined),
 }));
+jest.unstable_mockModule('../server/workflows/schema.js', () => ({
+  ensureBoardWorkflowSchema: jest.fn().mockResolvedValue(undefined),
+}));
 jest.unstable_mockModule('../server/repoScout/schema.js', () => ({
   ensureAgentScoutSchema: jest.fn().mockResolvedValue(undefined),
 }));

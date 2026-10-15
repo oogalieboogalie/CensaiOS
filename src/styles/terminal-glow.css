@@ -1,0 +1,81 @@
+/* Terminal Glow look (src/components/terminal/terminalGlow.js): a gentle
+   glow around each character in its own color, kept subtle on purpose. xterm draws text as DOM spans, so a
+   text-shadow in currentColor is all it takes. */
+.terminal-glow .xterm-rows {
+  text-shadow:
+    0 0 1px color-mix(in srgb, currentColor 50%, transparent),
+    0 0 6px color-mix(in srgb, currentColor 30%, transparent);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+/* xterm measures each letter by drawing it many times in a row; the pixel
+   font joins "ff" into one glyph, which made every f look too narrow. */
+.terminal-glow .xterm,
+.terminal-glow .xterm * {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "clig" 0, "calt" 0;
+}
+
+.terminal-glow .xterm-cursor {
+  box-shadow: 0 0 6px color-mix(in srgb, currentColor 40%, transparent);
+}
+
+/* Tab strip: shown once a terminal has two or more tabs. It sits on the
+   terminal's own colors (--term-bg / --term-fg, set by TerminalTabBar). */
+.terminal-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 3px 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--term-fg) 14%, transparent);
+  background: var(--term-bg);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.terminal-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 160px;
+  padding: 3px 6px 3px 10px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--term-fg) 55%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.terminal-tab:hover { color: var(--term-fg); background: color-mix(in srgb, var(--term-fg) 8%, transparent); }
+
+.terminal-tab[aria-selected="true"] {
+  color: var(--term-fg);
+  border-color: color-mix(in srgb, var(--term-fg) 14%, transparent);
+  background: color-mix(in srgb, var(--term-fg) 10%, var(--term-bg));
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.terminal-tab-name { overflow: hidden; text-overflow: ellipsis; }
+
+.terminal-tab-close,
+.terminal-tab-add {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  color: inherit;
+  cursor: pointer;
+}
+
+.terminal-tab-close { width: 16px; height: 16px; }
+.terminal-tab-add { padding: 0 8px; }
+.terminal-tab-add { color: color-mix(in srgb, var(--term-fg) 55%, transparent); }
+.terminal-tab-close:hover,
+.terminal-tab-add:hover { color: var(--term-fg); background: color-mix(in srgb, var(--term-fg) 12%, transparent); }

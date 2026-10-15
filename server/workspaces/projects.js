@@ -50,10 +50,12 @@ export async function findExistingLocalProject(name, projectPath) {
  *   { } (no repo, no existingPath)          → Auto-create local folder under workspaces
  */
 export async function openProject(ownerAgentId, { name, repo, existingPath, summary } = {}) {
-  if (!name && !repo) throw new Error('Provide a project name or a repo');
+  // A folder on its own is enough: it is named after its last part, so
+  // "Open a folder" in a window's project chip or a file tree just works.
+  const folderName = existingPath ? path.basename(path.resolve(String(existingPath))) : '';
+  if (!name && !repo && !folderName) throw new Error('Provide a project name, a repo or a folder');
 
-  // Default the project name from the repo if none supplied
-  const projectName = name || repo.split('/')[1] || repo;
+  const projectName = name || (repo ? repo.split('/')[1] || repo : folderName);
 
   if (repo) {
     return openGithubProject(ownerAgentId, { name: projectName, repo, summary });

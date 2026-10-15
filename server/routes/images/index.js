@@ -7,6 +7,7 @@ import {
   resolveImageGenerationModelConfig,
   workspaceUsageSink,
 } from '../../aiGateway/index.js';
+import { imageConfigForCaller } from '../../aiGateway/imageKeys.js';
 import {
   deleteGalleryImage,
   listGalleryImages,
@@ -16,7 +17,7 @@ import {
   buildImagePrompt,
   imageRecordFromResponse,
 } from './imageRecords.js';
-import { sendPublicModelError } from '../chat/httpErrors.js';
+import { sendImageModelError } from '../chat/httpErrors.js';
 import { resolveWorkspaceContext } from '../../workspaces/context.js';
 
 export const imagesRouter = express.Router();
@@ -74,7 +75,10 @@ imagesRouter.post('/generate', async (req, res) => {
       workspaceId: scope.workspaceId,
       source: 'image-studio',
     });
-    const config = resolveImageGenerationModelConfig({ modelProvider: 'google', modelName: model });
+    const config = await imageConfigForCaller(
+      resolveImageGenerationModelConfig({ modelProvider: 'google', modelName: model }),
+      { userId: scope.userId, userRole: req.session?.userRole || null },
+    );
     const finalPrompt = buildImagePrompt({ prompt, additionalInstructions, canvasState, canvasImage });
     const response = await callModel({
       accessContext,
@@ -103,7 +107,7 @@ imagesRouter.post('/generate', async (req, res) => {
     const saved = await saveGalleryImage(image, scope);
     res.json({ image: saved });
   } catch (err) {
-    sendPublicModelError(res, err, 'IMAGE_GENERATION_FAILED');
+    sendImageModelError(res, err, 'IMAGE_GENERATION_FAILED');
   }
 });
 

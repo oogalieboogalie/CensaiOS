@@ -9,6 +9,7 @@ import { depTools } from './definitions/deps.js';
 import { discoveryTools } from './definitions/discovery.js';
 import { reliabilityTools } from './definitions/reliability.js';
 import { canvasCollaborationTools } from './definitions/canvas.js';
+import { realEstateTools } from './definitions/realEstate.js';
 import { researchTools } from './definitions/research.js';
 import { agentNetworkTools } from './definitions/agentNetwork.js';
 import { weewooTools } from './definitions/weewoo.js';
@@ -39,6 +40,7 @@ export const TOOL_DEFINITIONS = [
   ...depTools,
   ...reliabilityTools,
   ...canvasCollaborationTools,
+  ...realEstateTools,
   ...researchTools,
   ...agentNetworkTools,
   ...weewooTools,

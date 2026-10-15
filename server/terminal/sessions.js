@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { WebSocketServer } from 'ws';
 import { startBackend, startAgentBackend } from './backends.js';
+import { startCliBackend, terminalCliAdapter } from './cliBackend.js';
 import { publishWorkspaceEvent } from '../collaboration/workspaceHub.js';
 import { filterAgentChunk, flushAgentCarry, agentTailText } from './agentOutput.js';
 import { defaultAuthenticate } from '../ws/agentRegistry.js';
@@ -20,11 +21,12 @@ export function getTerminalSession(sessionId) {
 }
 
 async function createSession(sessionId, {
-  cwd, hasProject, size, owner, clientSessionId, startBackendImpl, agentRun,
+  cwd, hasProject, size, owner, clientSessionId, startBackendImpl, agentRun, cli, write,
 }) {
-  const backend = agentRun
-    ? await startAgentBackend(cwd, agentRun.prompt, size)
-    : await startBackendImpl(cwd, hasProject, size);
+  let backend;
+  if (agentRun) backend = await startAgentBackend(cwd, agentRun.prompt, size);
+  else if (cli) backend = await startCliBackend({ cli, cwd, size, userId: owner?.userId, write });
+  else backend = await startBackendImpl(cwd, hasProject, size);
   const session = {
     id: sessionId,
     clientSessionId,
@@ -37,6 +39,7 @@ async function createSession(sessionId, {
     shell: backend.shell || 'bash',
     agentEnabled: false,
     agentRun: agentRun ? { prompt: agentRun.prompt } : null,
+    cli: backend.cli || null,
     boundAgentIds: new Set(),
     busy: false,
     scrollback: '',
@@ -163,6 +166,7 @@ export function attachTerminalServer(server, options = {}) {
     const agentKind = (params.get('agent') || '').trim().toLowerCase();
     const agentPrompt = (params.get('prompt') || '').trim();
     const agentRun = agentKind === 'opencode' && agentPrompt ? { prompt: agentPrompt } : null;
+    const cli = agentRun ? null : terminalCliAdapter(params.get('cli'))?.id || null; // `?cli=claudecode`: open into that CLI
     if (agentKind && !agentRun) {
       safeJsonSend(ws, { type: 'error', reason: 'Agent run requires agent=opencode and a non-empty prompt.' });
       ws.close(1008, 'invalid agent run');
@@ -179,7 +183,7 @@ export function attachTerminalServer(server, options = {}) {
       sessions.delete(sessionId);
       session = null;
     }
-    if (session && (session.agentRun?.prompt || null) !== (agentRun?.prompt || null)) {
+    if (session && ((session.agentRun?.prompt || null) !== (agentRun?.prompt || null) || session.cli !== cli)) {
       try { session.pty.kill(); } catch { /* already gone */ }
       sessions.delete(sessionId);
       session = null;
@@ -188,8 +192,8 @@ export function attachTerminalServer(server, options = {}) {
     if (!session) {
       try {
         session = await createSession(sessionId, {
-          cwd, hasProject, size, owner, clientSessionId, startBackendImpl, agentRun,
-        });
+          cwd, hasProject, size, owner, clientSessionId, startBackendImpl, agentRun, cli,
+          write: (data) => safeJsonSend(ws, { type: 'output', data }) });
       } catch (error) {
         log.error('failed to start any backend', { sessionId, cwd, error: error.message });
         safeJsonSend(ws, { type: 'output', data: `\r\nFailed to start a terminal: ${error.message}\r\n` });
@@ -205,7 +209,7 @@ export function attachTerminalServer(server, options = {}) {
     safeJsonSend(ws, {
       type: 'meta', cwd: session.cwd, backend: session.backendLabel,
       workspaceId: owner.workspaceId, sessionId: clientSessionId,
-      agent: session.agentRun ? 'opencode' : null,
+      agent: session.agentRun ? 'opencode' : null, cli: session.cli,
     });
     if (!isNew && session.scrollback) {
       safeJsonSend(ws, { type: 'output', data: session.scrollback, replay: true });
@@ -221,7 +225,7 @@ export function attachTerminalServer(server, options = {}) {
         return;
       }
       if (message.type === 'input' && typeof message.data === 'string') {
-        session.lastActivity = Date.now();
+        session.lastActivity = session.lastInputAt = Date.now();
         session.pty.write(message.data);
       } else if (message.type === 'resize') {
         const cols = Math.max(2, parseInt(message.cols, 10) || size.cols);

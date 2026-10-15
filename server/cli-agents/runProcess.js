@@ -41,6 +41,7 @@ export const processMethods = {
     }
 
     const keyInfo = await this.resolveKey({ adapter, userId: user.userId }).catch(() => null);
+    if (keyInfo?.blocked) throw new Error(keyInfo.blocked);
     task.keySource = keyInfo?.source || 'cli-login';
     const home = agentHome(this.env);
     if (home) fs.mkdirSync(home, { recursive: true });

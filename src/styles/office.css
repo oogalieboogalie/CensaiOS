@@ -144,6 +144,8 @@ textarea.hb-of-text::placeholder { color: var(--ink-faint); }
 .hb-of-bullet { position: absolute; }
 .hb-of-sblock-hint { display: grid; place-items: center; width: 100%; height: 100%; font-size: var(--text-sm); color: var(--ink-faint); border: 1px dashed var(--hairline-strong); box-sizing: border-box; }
 .hb-of-handle { position: absolute; right: -5px; bottom: -5px; width: 10px; height: 10px; border-radius: var(--radius-xs); background: var(--accent); cursor: nwse-resize; }
+.hb-of-sblock-del { all: unset; position: absolute; top: -11px; right: -11px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: var(--radius-full); background: var(--surface); color: var(--ink); border: 1px solid var(--hairline-strong); font-size: var(--text-md); line-height: 1; cursor: pointer; z-index: 1; }
+.hb-of-sblock-del:hover, .hb-of-sblock-del:focus-visible { background: var(--danger); color: var(--accent-contrast); border-color: var(--danger); }
 .hb-of-present { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; outline: none; cursor: pointer; }
 .hb-of-present-hud { position: fixed; bottom: var(--space-4); right: var(--space-4); display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2); border-radius: var(--radius-md); background: color-mix(in oklab, var(--canvas) 80%, transparent); color: var(--ink-soft); font-size: var(--text-xs); opacity: 0.35; cursor: default; }
 .hb-of-present-hud:hover { opacity: 1; }

@@ -9,10 +9,19 @@ import {
   getTerminalSocketUrl,
   installTerminalInteractionBridge,
 } from './terminalInteractions.js';
+import { openTerminalSocket, stillSignedIn } from './terminalSocket.js';
+import { terminalFont, whenGlowFontReady } from './terminalGlow.js';
 
 const log = createLogger('terminal');
 
-export function useTerminal(hostRef, win, cwd, theme, workspaceId) {
+// One shell in a terminal window. A window with tabs runs one of these per
+// tab: `tab.sessionId` picks the shell, and only the window's first tab runs
+// the window's CLI or agent run (the others are plain shells).
+export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
+  const sessionId = tab.sessionId || win.agentSessionId || win.id;
+  const launchCli = tab.plain ? undefined : win.launchCli;
+  const agentPrompt = tab.plain ? undefined : win.agentRun?.prompt;
+  const glow = Boolean(win.terminalGlow);
   const termRef = useRef(null);
   const socketRef = useRef(null);
   const fitAddonRef = useRef(null);
@@ -24,8 +33,7 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId) {
   bindStateRef.current = { agentEnabled, agentIds: attachedAgents };
   
   const sendBind = useCallback(() => {
-    const s = socketRef.current;
-    if (s && s.readyState === 1) s.send(JSON.stringify({ type: 'bind', ...bindStateRef.current }));
+    socketRef.current?.send({ type: 'bind', ...bindStateRef.current });
   }, []);
 
   React.useEffect(() => {
@@ -34,8 +42,7 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId) {
     const term = new Terminal({
       cursorBlink: true,
       convertEol: true,
-      fontFamily: '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace',
-      fontSize: Math.round((theme.fontSize || 13) * (win.fontScale || 1.0)),
+      ...terminalFont(glow, theme.fontSize, win.fontScale),
       lineHeight: 1.25,
       // eslint-disable-next-line no-restricted-syntax -- xterm needs a parseable transparent color for its canvas theme
       theme: win.opacity !== undefined ? { ...theme, background: 'rgba(0,0,0,0)' } : theme,
@@ -55,69 +62,81 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId) {
     }));
     term.open(hostRef.current);
     const cleanupInteractions = installTerminalInteractionBridge(term, hostRef.current);
+    // Just opened by an Alt hotkey: type straight into the CLI, no click needed.
+    if (launchCli && Date.now() - Date.parse(win.createdAt || 0) < 5000) term.focus();
 
     termRef.current = term;
 
-    const agentRun = win.agentRun?.prompt ? { agent: 'opencode', prompt: win.agentRun.prompt } : {};
-    const socketUrl = getTerminalSocketUrl(cwd, win.agentSessionId || win.id, workspaceId, agentRun);
-    const socket = new WebSocket(socketUrl);
-    socketRef.current = socket;
+    // Alt hotkeys open a terminal straight into a coding CLI (win.launchCli).
+    const agentRun = agentPrompt ? { agent: 'opencode', prompt: agentPrompt } : { cli: launchCli || undefined };
+    const socketUrl = getTerminalSocketUrl(cwd, sessionId, workspaceId, agentRun);
     log.debug('connecting', { cwd });
-
-    socket.addEventListener('open', () => {
-      log.info('socket open', { cwd });
-      term.writeln('Connecting to shell…');
-      sendBind();
-    });
-    socket.addEventListener('message', (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        if (message.type === 'meta' && message.backend) {
-          log.info('backend connected', { backend: message.backend });
-          term.writeln(`Connected — ${message.backend}.`);
-        }
-        if (message.type === 'output') {
-          if (message.replay) {
-            replayingScrollbackRef.current = true;
-            term.write(message.data, () => { replayingScrollbackRef.current = false; });
-          } else {
-            term.write(message.data);
+    const sendSize = () => link.send({ type: 'resize', cols: term.cols, rows: term.rows });
+    const link = openTerminalSocket(socketUrl, {
+      onOpen(isReconnect) {
+        log.info('socket open', { cwd, isReconnect });
+        if (!isReconnect) term.writeln('Connecting to shell…');
+        sendBind();
+        sendSize();
+      },
+      onMessage(event, isReconnect) {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === 'meta' && message.backend) {
+            log.info('backend connected', { backend: message.backend });
+            if (isReconnect) term.writeln(`\x1b[2mReconnected.\x1b[0m`);
+            else term.writeln(message.cli ? `Starting ${message.backend}…` : `Connected — ${message.backend}.`);
           }
+          if (message.type === 'output') {
+            if (message.replay) {
+              // Same shell after a drop: redraw its screen instead of
+              // printing everything twice.
+              if (isReconnect) term.reset();
+              replayingScrollbackRef.current = true;
+              term.write(message.data, () => { replayingScrollbackRef.current = false; });
+            } else {
+              term.write(message.data);
+            }
+          }
+          if (message.type === 'exit') {
+            log.info('shell exited', { code: message.code ?? 0 });
+            term.writeln(`\r\nProcess exited with code ${message.code ?? 0}. Press Enter to start it again.`);
+          }
+        } catch {
+          term.write(String(event.data || ''));
         }
-        if (message.type === 'exit') {
-          log.info('shell exited', { code: message.code ?? 0 });
-          term.writeln(`\r\nProcess exited with code ${message.code ?? 0}.`);
+      },
+      onDrop(attempt, delay) {
+        log.info('socket closed, reconnecting', { cwd, attempt, delay });
+        if (attempt === 0) term.writeln('\r\n\x1b[2mConnection lost. Reconnecting…\x1b[0m');
+        if (attempt === 3) {
+          stillSignedIn().then((ok) => {
+            if (!ok && termRef.current === term) term.writeln('\x1b[33mYou are signed out. Sign in again and this terminal reconnects.\x1b[0m');
+          });
         }
-      } catch {
-        term.write(String(event.data || ''));
-      }
+      },
     });
-    socket.addEventListener('close', () => {
-      log.info('socket closed', { cwd });
-      term.writeln('\r\nTerminal disconnected.');
-    });
-    socket.addEventListener('error', () => {
-      log.error('socket error', { cwd, url: socketUrl });
-      term.writeln('\r\nTerminal connection failed.');
-    });
+    socketRef.current = link;
 
     const inputDisposable = term.onData((data) => {
       if (replayingScrollbackRef.current) return;
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'input', data }));
+      if (data === '\r' && !link.isOpen() && (link.hasExited() || link.isWaiting())) {
+        link.reconnectNow();
+        return;
       }
+      link.send({ type: 'input', data });
     });
 
     const resize = () => {
-      if (!hostRef.current) return;
+      // A hidden tab has no size; fitting it would shrink its shell to one
+      // column. It fits again when it is shown.
+      if (!hostRef.current || !hostRef.current.clientWidth) return;
       try {
         fitAddon.fit();
       } catch {
         return;
       }
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
-      }
+      sendSize();
     };
     const observer = new ResizeObserver(resize);
     observer.observe(hostRef.current);
@@ -127,13 +146,13 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId) {
       cleanupInteractions();
       observer.disconnect();
       inputDisposable.dispose();
-      socket.close();
+      link.close();
       term.dispose(); // also cleans up key handlers, addons, etc.
       termRef.current = null;
       socketRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [cwd, win.id, win.agentSessionId, win.agentRun?.prompt, workspaceId, sendBind]);
+  }, [cwd, win.id, sessionId, agentPrompt, launchCli, workspaceId, sendBind]);
 
   // Live-apply color changes (canvas theme follows, terminal settings
   // tweaks) without tearing down the shell session.
@@ -150,23 +169,32 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId) {
 
   React.useEffect(() => {
     const term = termRef.current;
-    if (term) {
-      const baseSize = theme.fontSize || 13;
-      const scale = win.fontScale || 1.0;
-      term.options.fontSize = Math.round(baseSize * scale);
-      if (fitAddonRef.current) {
+    if (!term) return undefined;
+    let cancelled = false;
+    const apply = (fontArrived) => {
+      if (cancelled || termRef.current !== term) return;
+      const font = terminalFont(glow, theme.fontSize, win.fontScale);
+      // Setting the same family again is ignored, so step off it first to
+      // make xterm re-measure with the font that just arrived.
+      if (fontArrived) term.options.fontFamily = 'monospace';
+      term.options.fontFamily = font.fontFamily;
+      term.options.fontSize = font.fontSize;
+      term.options.fontWeightBold = font.fontWeightBold;
+      if (fitAddonRef.current && hostRef.current?.clientWidth) {
         try {
           fitAddonRef.current.fit();
-          const socket = socketRef.current;
-          if (socket && socket.readyState === 1) {
-            socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
-          }
+          socketRef.current?.send({ type: 'resize', cols: term.cols, rows: term.rows });
         } catch (err) {
-          log.warn('Failed to resize terminal on font scale change', err);
+          log.warn('Failed to resize terminal on font change', err);
         }
       }
-    }
-  }, [win.fontScale, theme.fontSize]);
+    };
+    // Glow: re-measure once the pixel font has arrived (and right away, so
+    // the change shows even if it is still loading).
+    apply(false);
+    if (glow) whenGlowFontReady().then(() => apply(true));
+    return () => { cancelled = true; };
+  }, [win.fontScale, theme.fontSize, glow]);
 
   return { termRef };
 }

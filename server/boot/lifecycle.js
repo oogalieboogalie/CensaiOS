@@ -6,6 +6,7 @@ import { startSchedulerWorker } from '../schedulerWorker.js';
 import { startAgentWakeupWorker } from '../agent-wakeups/worker.js';
 import { startAgentCardRunWorker } from '../agent-card-runs/worker.js';
 import { startOsvMirrorWorker } from '../osvMirror/worker.js';
+import { startWorkflowTriggerWorker } from '../workflows/triggers.js';
 import { checkDb } from './database.js';
 import { tickJulesWatcher } from './julesWatcher.js';
 import { attachTerminalServer } from '../terminal/index.js';
@@ -14,6 +15,7 @@ import { attachWorkspaceCollaborationWs } from '../ws/workspaceCollaboration.js'
 import { attachHocuspocusWs } from '../collab/hocuspocus.js';
 import { startDevServerReaper, stopAllDevServers } from '../devServers/reaper.js';
 import { stopAllCliAgents } from '../cli-agents/index.js';
+import { startSelfFix } from '../selfFix/index.js';
 import { closeAll as closeOutsideTools } from '../outsideTools/connections.js';
 import { initializeDynamicTools, initializeMcpTools, shutdownMcpTools } from '../tools.js';
 import { startOutsideListener } from '../agentEndpoints/outsideListener.js';
@@ -47,6 +49,10 @@ export async function startServer(app, options = {}) {
   const shouldStartWatchers = options.startWatchers ?? shouldStartWorkers;
 
   await checkDb();
+  // Self-fix: save error reports, and apply fixes the owner's switch let through.
+  if (shouldStartWorkers && getRuntimeMode() !== RUNTIME_MODES.CLOUD_SAAS) {
+    await startSelfFix().catch((err) => log.warn('self-fix did not start', { error: err.message }));
+  }
   await initializeDynamicTools();
   await initializeMcpTools();
 
@@ -90,6 +96,7 @@ export async function startServer(app, options = {}) {
         startAgentWakeupWorker();
         startAgentCardRunWorker();
         startOsvMirrorWorker();
+        startWorkflowTriggerWorker();
         startDevServerReaper();
         // Agent endpoints' own port, the one a tunnel points at.
         startOutsideListener();

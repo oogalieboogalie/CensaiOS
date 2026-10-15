@@ -131,5 +131,6 @@ export function getTerminalSocketUrl(cwd, sessionId, workspaceId, extra = {}) {
   if (workspaceId) params.set('workspaceId', workspaceId);
   if (extra.agent) params.set('agent', extra.agent);
   if (extra.prompt) params.set('prompt', extra.prompt);
+  if (extra.cli) params.set('cli', extra.cli);
   return `${protocol}//${window.location.host}/api/terminal?${params.toString()}`;
 }

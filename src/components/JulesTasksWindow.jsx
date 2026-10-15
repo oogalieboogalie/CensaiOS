@@ -26,6 +26,7 @@ export function JulesTasksWindow({ win, isActive }) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
   const [lastLoadedAt, setLastLoadedAt] = React.useState(null);
+  const [keyMissing, setKeyMissing] = React.useState(false);
 
   const load = React.useCallback(async ({ refresh = false, quiet = false } = {}) => {
     if (!quiet) setLoading(true);
@@ -36,6 +37,7 @@ export function JulesTasksWindow({ win, isActive }) {
     ]);
     if (sessionResult.status === 'fulfilled') {
       setSessions(sessionResult.value.sessions || []);
+      setKeyMissing(sessionResult.value.canRefreshRemote === false);
     }
     if (queueResult.status === 'fulfilled') {
       setQueue(queueResult.value);
@@ -100,8 +102,16 @@ export function JulesTasksWindow({ win, isActive }) {
         {error && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)' }}>{error}</div>}
 
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'grid', alignContent: 'start', gap: 8 }}>
+          {keyMissing && (
+            <div role="status" style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', padding: 12, color: 'var(--ink)', fontSize: 'var(--text-sm)', display: 'grid', gap: 4 }}>
+              <strong>Jules needs an API key.</strong>
+              <span style={{ color: 'var(--ink-soft)' }}>
+                Get a key at jules.google.com (Settings, API keys), add a line JULES_API_KEY=your key to the .env file in your censaiOS folder, then restart censaiOS.
+              </span>
+            </div>
+          )}
           <JulesQueuePanel queue={queue} includeCompleted={includeCompleted} />
-          {!loading && sessions.length === 0 && !queue && (
+          {!loading && !keyMissing && sessions.length === 0 && !queue && (
             <div style={{ border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 18, color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
               No Jules queue or session data.
             </div>

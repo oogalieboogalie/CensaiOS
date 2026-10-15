@@ -3,7 +3,7 @@ import React from 'react';
 export function SetupGuide() {
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 640, margin: '0 auto', lineHeight: 1.5 }}>
-      <div style={{ padding: 16, background: 'oklch(0.97 0.02 260)', border: '1px solid oklch(0.85 0.05 260)', borderRadius: 'var(--radius-xl)', color: 'oklch(0.3 0.08 260)' }}>
+      <div style={{ padding: 16, background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--radius-xl)', color: 'var(--accent-ink)' }}>
         <h3 style={{ margin: '0 0 8px', fontSize: 'var(--text-base)' }}>Welcome to the Censai Mailcow Integration!</h3>
         <p style={{ margin: 0, fontSize: 'var(--text-md)' }}>
           This panel enables you and your agents to manage email domains, create mailboxes, redirect aliases, and flush the mail queues right from the infinite canvas.

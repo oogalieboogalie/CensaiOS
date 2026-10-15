@@ -37,9 +37,12 @@ export async function logout() {
 
 // "Open censaiOS" on this computer. Retries while the server is still
 // starting, like developerLogin below.
-export async function localSignIn({ name } = {}) {
+// Waits while censaiOS is still starting: the first start on a slow computer
+// can take several minutes. onWaiting is called once when it has to wait.
+export async function localSignIn({ name, onWaiting } = {}) {
   let lastErr = null;
-  for (let attempt = 1; attempt <= 10; attempt++) {
+  const giveUpAt = Date.now() + 15 * 60 * 1000;
+  while (Date.now() < giveUpAt) {
     const res = await fetch('/api/auth/local', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -49,6 +52,7 @@ export async function localSignIn({ name } = {}) {
     if (res.ok) return data;
     lastErr = new Error(data?.error || 'Could not open censaiOS');
     if (res.status !== 503) throw lastErr;
+    if (onWaiting) { onWaiting(); onWaiting = null; }
     const retryAfter = Number(res.headers.get('Retry-After')) || 2;
     await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
   }

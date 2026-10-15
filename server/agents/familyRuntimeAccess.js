@@ -13,6 +13,11 @@ function exactFamilyAgent(agentId) {
   return agent?.id === id ? agent : null;
 }
 
+/** True when the id is one of the built-in family agents (not a board's own sub-agent). */
+export function isFamilyAgentId(agentId) {
+  return Boolean(exactFamilyAgent(agentId));
+}
+
 export function requireAgentContextRuntime(isReady) {
   if (!isReady) {
     throw accessError(
