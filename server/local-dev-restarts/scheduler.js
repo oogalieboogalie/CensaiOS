@@ -10,12 +10,16 @@ export function scheduleLocalDevRestart({ id, cwd, noticeSeconds = 5, port = 300
   const runnerLogPath = `${process.env.TEMP || cwd}\\homebase-local-dev-restart.log`;
   const timeZone = (process.env.LOCAL_DEV_TIME_ZONE || 'America/Chicago').replace(/'/g, "''");
   const hasDockerCompose = fs.existsSync(path.join(cwd, 'docker-compose.yml'));
+  // Only plain numbers and quoted strings go into the script below.
+  const safeId = String(id).replace(/'/g, "''");
+  const excludePid = Number.parseInt(process.env.LOCAL_DEV_RESTART_EXCLUDE_PID, 10) || 0;
+  const healthPort = Number.parseInt(port, 10) || 3001;
 
   const script = `
 $ErrorActionPreference = 'Continue'
 $env:DATABASE_URL = '${databaseUrl.replace(/'/g, "''")}'
-$env:LOCAL_DEV_RESTART_ID = '${id}'
-$restartId = '${id}'
+$env:LOCAL_DEV_RESTART_ID = '${safeId}'
+$restartId = '${safeId}'
 $repo = '${safeCwd}'
 $log = '${logPath.replace(/'/g, "''")}'
 $runnerLog = '${runnerLogPath.replace(/'/g, "''")}'
@@ -85,7 +89,7 @@ if (${hasDockerCompose ? '$true' : '$false'}) {
     Where-Object {
       (($_.CommandLine -match '${escapedCwd}') -or
        ($_.CommandLine -match 'node\\s+server\\.js')) -and
-      ($_.ProcessId -ne ${process.env.LOCAL_DEV_RESTART_EXCLUDE_PID || 0})
+      ($_.ProcessId -ne ${excludePid})
     }
   $nodes | ForEach-Object {
     try { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } catch {}
@@ -100,7 +104,7 @@ if (${hasDockerCompose ? '$true' : '$false'}) {
 
 $deadline = (Get-Date).AddSeconds(45)
 $healthy = $false
-$healthUrls = @("http://127.0.0.1:${port}/api/health")
+$healthUrls = @("http://127.0.0.1:${healthPort}/api/health")
 if (${hasDockerCompose ? '$true' : '$false'}) {
   try {
     $published = docker compose port homebase 3001 2>$null
@@ -133,14 +137,12 @@ if ($healthy) {
   const runnerPath = path.join(runnerDir, `${id}.ps1`);
   fs.writeFileSync(runnerPath, script, 'utf8');
 
-  const child = spawn('cmd.exe', [
-    '/d',
-    '/c',
-    'start',
-    '""',
-    '/min',
-    'powershell.exe',
+  // PowerShell is started directly (no cmd.exe in between), so nothing in the
+  // folder path is ever read as a shell command.
+  const child = spawn('powershell.exe', [
     '-NoProfile',
+    '-WindowStyle',
+    'Minimized',
     '-ExecutionPolicy',
     'Bypass',
     '-File',

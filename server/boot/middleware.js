@@ -43,7 +43,6 @@ export function setupMiddleware(app) {
   // Stripe signs the exact bytes it sends, so its webhook keeps a raw body.
   app.use('/api/billing/stripe/webhook', express.raw({ type: '*/*', limit: '1mb' }));
   app.use(express.json({ limit: '10mb' }));
-  app.use(createCsrfOriginGuard({ appOrigin: APP_ORIGIN }));
 
   // Request logging
   app.use((req, res, next) => {
@@ -81,4 +80,7 @@ export function setupMiddleware(app) {
     proxy: true,
     cookie: getSessionCookieOptions(APP_ORIGIN),
   }));
+  // Cross-site write check runs after the session cookie is read and before
+  // any route handler.
+  app.use(createCsrfOriginGuard({ appOrigin: APP_ORIGIN }));
 }
