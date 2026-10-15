@@ -29,6 +29,7 @@ export function CanvasGroupSeams({ group, zoom, onSetSeam }) {
       <div
         key={split.path || 'root'}
         data-group-seam={split.path || 'root'}
+        data-pane-passthrough
         role="separator"
         aria-orientation={vertical ? 'vertical' : 'horizontal'}
         onPointerEnter={() => setActive(split.path)}

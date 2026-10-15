@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { spawnSync } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -171,8 +171,29 @@ describe('the launcher inside the container', () => {
     expect(r.stdout).toContain('[censai] Starting: pnpm run dev -H 0.0.0.0 -p 3000');
   });
 
+  test('a folder of plain pages (no package.json) is served as it is', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rundev-plain-'));
+    fs.writeFileSync(path.join(dir, 'index.html'), '<h1>Lead form</h1>');
+    fs.writeFileSync(path.join(dir, 'style.css'), 'h1{}');
+    const port = String(41000 + Math.floor(Math.random() * 2000));
+    const child = spawn(process.execPath, [launcher], { env: { ...process.env, CENSAI_APP_DIR: dir, PORT: port, CENSAI_DEV_CMD: '' } });
+    try {
+      await new Promise((resolve, reject) => {
+        child.stdout.on('data', (d) => { if (/Serving this folder/.test(String(d))) resolve(); });
+        child.on('exit', () => reject(new Error('launcher stopped')));
+      });
+      const page = await fetch(`http://127.0.0.1:${port}/`);
+      expect(await page.text()).toBe('<h1>Lead form</h1>');
+      expect((await fetch(`http://127.0.0.1:${port}/style.css`)).headers.get('content-type')).toBe('text/css');
+      expect((await fetch(`http://127.0.0.1:${port}/missing.js`)).status).toBe(404);
+    } finally {
+      child.kill();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   test('explains a folder without package.json or without a dev script', () => {
-    expect(runIn({ 'README.md': 'hi' }).stdout).toMatch(/no package\.json/);
+    expect(runIn({ 'README.md': 'hi' }).stdout).toMatch(/no package\.json and no index\.html/);
     const r = runIn({ 'package.json': JSON.stringify({ scripts: { test: 'jest' } }) });
     expect(r.status).toBe(2);
     expect(r.stdout).toMatch(/no dev, start or serve script/);

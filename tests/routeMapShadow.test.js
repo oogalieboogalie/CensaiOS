@@ -35,11 +35,12 @@ describe('route map shadow contract', () => {
       '/tool-approvals|/tool-approvals/:id/decision|/agent-trust|/agent-trust',
       '/workspaces/:workspaceId/members|/workspaces/:workspaceId/members|/workspaces/personal|/workspaces/:workspaceId/members/me',
       '/workspaces/:workspaceId/history|/workspaces/:workspaceId/history/:seq|/workspaces/:workspaceId/history/:seq/restore',
+      '/workspaces/:workspaceId/workflows/:windowId/run|/workspaces/:workspaceId/workflows/:windowId/review|/workspaces/:workspaceId/workflows/:windowId/stop|/workspaces/:workspaceId/workflows/:windowId/trigger|/workspaces/:workspaceId/workflows/:windowId/trigger|/workspaces/:workspaceId/workflows/:windowId/runs',
       '/workspaces/:workspaceId/share-links|/workspaces/:workspaceId/share-links|/workspaces/:workspaceId/share-links/:linkId|/workspaces/:workspaceId/share-links/:linkId/joins|/workspaces/:workspaceId/live|/workspaces/:workspaceId/windows/:windowId/public|/workspaces/:workspaceId/comments|/workspaces/:workspaceId/comments|/workspaces/:workspaceId/comments/:commentId/resolve',
       '/workspaces/:workspaceId/classes|/workspaces/:workspaceId/classes|/classes/:classId/roster|/classes/:classId/invite-codes|/classes/:classId/students/:enrollmentId/checkpoints/:checkpointId|/classes/:classId/students/:enrollmentId/hand|/classes/:classId/students/:enrollmentId/remove|/classes/:classId/end',
       '/image|/ideas/expand|/chat|/chat/capabilities|/chat/transcribe|/chat/speech|/group-chat',
-      // agentsRouter: 17 sub-routers (incl. communication + sales-leads + scout + leadhound + research).
-      'layers:17',
+      // agentsRouter: 18 sub-routers (incl. communication + sales-leads + scout + leadhound + research + board templates).
+      'layers:18',
       '/local-dev-restarts/notifications',
       '/window-sdk/scaffold|/window-sdk/new|/window-sdk/validate',
       '/jules/queue|/jules/sessions',

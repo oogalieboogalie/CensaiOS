@@ -24,6 +24,7 @@ import { ensureOutsideToolSchema } from '../outsideTools/schema.js';
 import { ensureAgentMemorySchema } from '../agentMemory/schema.js';
 import { ensureAgentScoutSchema } from '../repoScout/schema.js';
 import { ensureAgentTrustSchema } from '../approvals/trustSchema.js';
+import { ensureBoardWorkflowSchema } from '../workflows/schema.js';
 import { ensureAgentNetworkSchema } from '../agentNetwork/schema.js';
 import { ensureSocialSchema } from '../social/schema.js';
 import { ensureLessonSchema } from '../lessons/schema.js';
@@ -66,6 +67,7 @@ async function probeDb() {
   await ensureAgentMemorySchema(pool);
   await ensureAgentScoutSchema(pool);
   await ensureAgentTrustSchema(pool);
+  await ensureBoardWorkflowSchema(pool);
   await ensureAgentNetworkSchema(pool);
   await ensureSocialSchema(pool);
   await ensureLessonSchema(pool);

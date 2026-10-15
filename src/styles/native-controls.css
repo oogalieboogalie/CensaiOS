@@ -1,0 +1,69 @@
+/*
+ * Native controls follow the look. Without this the browser drew drop-down
+ * lists, scrollbars, number and date fields in its own default colours: a
+ * light list with a blue highlight on a dark board.
+ *
+ *  - color-scheme tells the browser whether the board is light or dark, so
+ *    any control it still draws itself matches.
+ *  - Browsers that let a page style its drop-downs (appearance: base-select)
+ *    get the menu in the look's own colours on frosted glass, like the
+ *    other menus; the others still get the look's colours on each row.
+ */
+
+:root { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+select option,
+select optgroup {
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
+select option:checked {
+  background-color: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+@supports (appearance: base-select) {
+  select:not([multiple]):not([size]),
+  select:not([multiple]):not([size])::picker(select) {
+    appearance: base-select;
+  }
+
+  select:not([multiple]):not([size])::picker(select) {
+    margin-block: var(--space-1);
+    padding: var(--space-1);
+    border: 1px solid var(--glass-line);
+    border-radius: var(--radius-md);
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--glass-filter);
+    box-shadow: var(--glass-shadow);
+    color: var(--ink);
+  }
+
+  select:not([multiple]):not([size])::picker-icon {
+    color: var(--ink-faint);
+    font-size: 0.8em;
+  }
+
+  select:not([multiple]):not([size]) option {
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font: inherit;
+  }
+
+  select:not([multiple]):not([size]) option:hover,
+  select:not([multiple]):not([size]) option:focus-visible {
+    background: var(--glass-hover);
+    outline: none;
+  }
+
+  select:not([multiple]):not([size]) option:checked {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+  }
+
+  select:not([multiple]):not([size]) option::checkmark { color: var(--accent); }
+}

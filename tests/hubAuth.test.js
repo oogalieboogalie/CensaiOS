@@ -27,12 +27,10 @@ jest.unstable_mockModule('../server/hubAccounts/password.js', () => ({
   verifyPassword: async (pwd) => pwd !== 'WrongPass123!',
 }));
 
-jest.unstable_mockModule('otplib', () => ({
-  authenticator: {
-    generateSecret: () => 'TESTSECRET',
-    keyuri: () => 'otpauth://totp/Test?secret=TESTSECRET',
-    check: () => true,
-  },
+jest.unstable_mockModule('../server/hubAccounts/totp.js', () => ({
+  newTotpSecret: () => 'TESTSECRET',
+  totpUri: () => 'otpauth://totp/Test?secret=TESTSECRET',
+  checkTotp: () => true,
 }));
 
 jest.unstable_mockModule('qrcode', () => ({

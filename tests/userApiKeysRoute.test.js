@@ -51,6 +51,16 @@ describe('user API key routes', () => {
     expect(params[3]).toBeNull();
   });
 
+  test('refuses a Claude subscription sign-in token in place of an API key', async () => {
+    const response = await request(createApp())
+      .post('/api/keys')
+      .send({ provider: 'claude', apiKey: 'sk-ant-oat01-abcdefghijklmnop' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toMatch(/subscription sign-in token/);
+    expect(mockPool.query).not.toHaveBeenCalled();
+  });
+
   test('lists key metadata without returning ciphertext', async () => {
     mockPool.query.mockResolvedValueOnce({
       rows: [{
@@ -68,6 +78,7 @@ describe('user API key routes', () => {
     expect(response.body).toEqual([{
       provider: 'google',
       hasKey: true,
+      source: 'vault',
       baseUrl: null,
       modelName: 'gemini-2.5-pro',
       updatedAt: '2026-06-17T12:00:00.000Z',

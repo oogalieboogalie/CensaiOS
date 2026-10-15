@@ -1,0 +1,64 @@
+<!-- module {"request": "a commission calculator with brokerage and team splits", "manifest": {"manifest": 3, "version": "1.1.0", "author": "censaiOS", "id": "commission-calculator", "name": "Commission calculator", "description": "Sale price to each agent's take-home, after splits and fees.", "icon": "Activity", "size": {"w": 440, "h": 560}, "permissions": ["storage"], "state": {"inputs": "the calculator's fields"}}} -->
+<div class="stack" style="gap: var(--space-3)">
+  <h2 style="margin:0">Commission</h2>
+  <div class="grid" style="grid-template-columns: 1fr 1fr">
+    <label class="stack" style="gap:2px"><span class="label">Sale price</span><input id="price" inputmode="numeric"></label>
+    <label class="stack" style="gap:2px"><span class="label">Commission %</span><input id="rate" inputmode="decimal"></label>
+    <label class="stack" style="gap:2px"><span class="label">Our side</span>
+      <select id="side"><option value="list">Listing side</option><option value="buy">Buyer side</option><option value="both">Both sides</option></select></label>
+    <label class="stack" style="gap:2px"><span class="label">Listing side share %</span><input id="listShare" inputmode="decimal"></label>
+    <label class="stack" style="gap:2px"><span class="label">Brokerage split %</span><input id="broker" inputmode="decimal"></label>
+    <label class="stack" style="gap:2px"><span class="label">Flat fees $</span><input id="fees" inputmode="numeric"></label>
+    <label class="stack" style="gap:2px"><span class="label">Team lead split %</span><input id="team" inputmode="decimal"></label>
+    <label class="stack" style="gap:2px"><span class="label">Referral fee %</span><input id="referral" inputmode="decimal"></label>
+  </div>
+  <div class="card">
+    <table><tbody id="out"></tbody></table>
+  </div>
+  <div class="spread"><span class="label">Agent take-home</span><span class="big" id="net"></span></div>
+</div>
+<script>
+  const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const FIELDS = ['price', 'rate', 'side', 'listShare', 'broker', 'fees', 'team', 'referral'];
+  const DEFAULTS = { price: '465000', rate: '5', side: 'list', listShare: '50', broker: '30', fees: '495', team: '0', referral: '0' };
+  let values = Object.assign({}, DEFAULTS, censai.storage.get('inputs', {}));
+  const $ = (id) => document.getElementById(id);
+  const num = (v) => Number(String(v || '').replace(/[^0-9.]/g, '')) || 0;
+
+  // Pure math, in order: gross, our side, referral off the top, brokerage split, flat fees, team split.
+  function calc(v) {
+    const gross = num(v.price) * num(v.rate) / 100;
+    const listPart = gross * num(v.listShare) / 100;
+    const side = v.side === 'both' ? gross : v.side === 'list' ? listPart : gross - listPart;
+    const referral = side * num(v.referral) / 100;
+    const afterReferral = side - referral;
+    const brokerage = afterReferral * num(v.broker) / 100;
+    const fees = num(v.fees);
+    const beforeTeam = Math.max(0, afterReferral - brokerage - fees);
+    const team = beforeTeam * num(v.team) / 100;
+    return { gross, side, referral, brokerage, fees, team, net: beforeTeam - team };
+  }
+
+  function render() {
+    const r = calc(values);
+    const rows = [
+      ['Gross commission', r.gross], ['Our side', r.side], ['Referral fee', -r.referral],
+      ['Brokerage split', -r.brokerage], ['Flat fees', -r.fees], ['Team lead split', -r.team],
+    ];
+    $('out').innerHTML = rows.filter(([, v], i) => i < 2 || v).map(([label, v]) => '<tr><td>' + label + '</td><td class="num" style="text-align:right">' + (v < 0 ? '−' : '') + money.format(Math.abs(v)) + '</td></tr>').join('');
+    $('net').textContent = money.format(r.net);
+  }
+
+  FIELDS.forEach((f) => {
+    const el = $(f);
+    el.value = values[f];
+    el.oninput = el.onchange = () => { values[f] = el.value; censai.storage.set('inputs', values); render(); };
+  });
+  censai.storage.onChange((key, value) => {
+    if (key !== 'inputs' || !value) return;
+    values = Object.assign({}, DEFAULTS, value);
+    FIELDS.forEach((f) => { if (document.activeElement !== $(f)) $(f).value = values[f]; });
+    render();
+  });
+  render();
+</script>

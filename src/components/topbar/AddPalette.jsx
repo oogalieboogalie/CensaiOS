@@ -11,6 +11,7 @@ import { clampModuleSize } from '../../lib/modules/moduleFormat.js';
 import { moduleWindowFromSaved, newModuleWindowProps } from '../../lib/modules/moduleWindowState.js';
 import { getCollaborationClientId } from '../../lib/collaboration/clientIdentity.js';
 import { useWorkspaceStore } from '../../lib/store.js';
+import { OPEN_TEMPLATES_EVENT } from '../templates/TemplateDialog.jsx';
 
 const RECENT_KEY = 'homebase.addPalette.recent.v1';
 
@@ -61,6 +62,7 @@ export function AddPalette({ open, onClose, onSpawn }) {
     if (action.type === 'noop') return;
     rememberRecent(item.id);
     if (action.type === 'spawn') onSpawn?.(action.kind, action.props || PROPS_BY_KIND[action.kind] || {});
+    if (action.type === 'boardTemplate') window.dispatchEvent(new CustomEvent(OPEN_TEMPLATES_EVENT, { detail: { id: action.id } }));
     if (action.type === 'make') openModule(newModuleWindowProps(action.request, getCollaborationClientId()));
     if (action.type === 'template') {
       const t = templates.find(x => x.id === action.id);

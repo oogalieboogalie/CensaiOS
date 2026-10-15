@@ -6,8 +6,11 @@ import { useCanvasWorkspacePersistence } from './useCanvasWorkspacePersistence.j
 import { useWorkspaceCollaboration } from './useWorkspaceCollaboration.js';
 import { useYjsCanvas } from './useYjsCanvas.js';
 import { emitBoardEvent } from '../../lib/collaboration/boardEvents.js';
+import { DEMO } from '../../lib/demo/demoMode.js';
 
-export function useAppCollaboration({ enabled, workspaceId, wins, revision, onRevision, activeId, user, selectedIds }) {
+export function useAppCollaboration({ enabled: wanted, workspaceId, wins, revision, onRevision, activeId, user, selectedIds }) {
+  // The try-it board has no server to share with, so it stays local.
+  const enabled = wanted && !DEMO;
   // The shared Yjs doc is the only source of truth for windows, groups, ink,
   // links and dock. The snapshot save only carries the settings beside them
   // (it merges server-side, so it never conflicts), and while the doc is not

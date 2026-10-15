@@ -3,8 +3,10 @@ import pool from '../db.js';
 import { encryptKey } from '../security/vault.js';
 import {
   normalizeUserApiKeyProvider,
+  subscriptionTokenProblem,
   USER_API_KEY_PROVIDERS,
 } from '../security/userApiKeys.js';
+import { ownerEnvKeyProviders } from '../security/envKeys.js';
 
 export const keysRouter = express.Router();
 
@@ -26,10 +28,17 @@ keysRouter.get('/keys', async (req, res) => {
     const keys = rows.map(r => ({
       provider: r.provider,
       hasKey: true,
+      source: 'vault',
       baseUrl: r.base_url,
       modelName: r.model_name,
       updatedAt: r.updated_at
     }));
+    // A local install's owner also has the keys in the server's .env. Only
+    // which providers, never the key itself; a saved key still wins.
+    const saved = new Set(keys.map(k => k.provider));
+    for (const provider of await ownerEnvKeyProviders(pool, userId)) {
+      if (!saved.has(provider)) keys.push({ provider, hasKey: true, source: 'env' });
+    }
 
     res.json(keys);
   } catch (err) {
@@ -60,6 +69,10 @@ keysRouter.post('/keys', async (req, res) => {
   }
   if (modelName.length > 100) {
     return res.status(400).json({ error: 'Model name is too long' });
+  }
+  const tokenProblem = subscriptionTokenProblem(provider, apiKey);
+  if (tokenProblem) {
+    return res.status(400).json({ error: tokenProblem });
   }
 
   try {

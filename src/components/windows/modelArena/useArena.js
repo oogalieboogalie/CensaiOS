@@ -39,6 +39,8 @@ export function useArena(win = {}, onUpdate) {
     setResults(start);
     setError('');
     setRunning(true);
+    // Live Operations shows the race as running for everyone on the board.
+    onUpdate?.({ racing: { at: new Date().toISOString(), lanes: lanes.length } });
     try {
       await runArena({
         prompt, system, models: lanes, signal: controller.signal,
@@ -56,7 +58,7 @@ export function useArena(win = {}, onUpdate) {
       latest.current = latest.current.map((r) => (r.status === 'done' || r.status === 'error' ? r : { ...r, status: 'stopped' }));
       setResults(latest.current);
       const saved = latest.current.map((r) => ({ ...r, text: String(r.text || '').slice(0, SAVED_TEXT_LIMIT) }));
-      onUpdate?.({ prompt, system, lastRun: { at: new Date().toISOString(), lanes, results: saved } });
+      onUpdate?.({ prompt, system, racing: null, lastRun: { at: new Date().toISOString(), lanes, results: saved } });
     }
   }, [running, prompt, system, lanes, onUpdate]);
 

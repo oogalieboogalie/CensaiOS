@@ -105,7 +105,7 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
           }
         }
       `}</style>
-      <WindowTitle accent="var(--ps-green)" icon={<Icon.Folder size={14}/>} label={win.title || 'Project To-Dos'} subtitle={win.subtitle || 'Newsletter / weekly'} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} />
+      <WindowTitle accent="var(--ps-green)" icon={<Icon.Folder size={14}/>} label={win.title || 'Project To-Dos'} subtitle={win.subtitle} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 12, background: 'var(--surface)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 12px', background: completedCount > 0 ? 'var(--ps-green)' : 'var(--surface-2)', borderRadius: 'var(--radius-lg)', color: completedCount > 0 ? 'white' : 'var(--ink-faint)', fontSize: 'var(--text-sm)', fontWeight: 500, transition: 'background 0.3s ease' }}>
           <Icon.Check size={14} stroke={2.5} />

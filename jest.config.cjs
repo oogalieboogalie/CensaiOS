@@ -6,6 +6,7 @@ module.exports = {
     '/node_modules/',
     '/dist/',
     '/dist-landing/',
+    '/dist-demo/',
     '/tools/db-tools/',
   ],
   transform: {

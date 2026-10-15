@@ -51,12 +51,12 @@ export function buildFixPrompt({ pr, repo }) {
   ].join('\n');
 }
 
-function publicJob(job) {
+export function publicJob(job) {
   const { token: _token, timer: _timer, ...rest } = job;
   return rest;
 }
 
-function setJob(job, patch) {
+export function setJob(job, patch) {
   Object.assign(job, patch, { updatedAt: Date.now() });
   return job;
 }
@@ -79,7 +79,7 @@ export function fixApprovals(job, manager) {
   }
 }
 
-async function ensureClone({ owner, repo, token, root, remoteUrl, git }) {
+export async function ensureClone({ owner, repo, token, root, remoteUrl, git }) {
   const dir = path.join(root, `${owner}__${repo}`.replace(/[^A-Za-z0-9._-]/g, '-'));
   if (!fs.existsSync(path.join(dir, '.git'))) {
     fs.mkdirSync(root, { recursive: true });
@@ -110,7 +110,17 @@ export async function finishAndPush({ job, task, git, token }) {
   return (await git(['rev-parse', 'HEAD'], dir)).trim();
 }
 
-function watchTask(job, { manager, git }) {
+const AGENT_TEXT = 'An agent is merging master in and resolving conflicts.';
+const RETRY_TEXT = 'Tap Fix conflicts to try again.';
+
+/** Keep a job so /desk/fix/:id can follow it (the CI fixer in server/inbox uses this too). */
+export function trackFixJob(job) {
+  if (jobs.size >= MAX_JOBS) jobs.delete(jobs.keys().next().value);
+  jobs.set(job.id, job);
+  return job;
+}
+
+export function watchTask(job, { manager, git, finish = finishAndPush, agentText = AGENT_TEXT, retryText = RETRY_TEXT, doneText = 'Fixed and pushed. Checks are re-running; Merge turns on when they pass.' }) {
   job.timer = setInterval(async () => {
     let task;
     try { task = manager.get(job.taskId); } catch { task = null; }
@@ -120,17 +130,17 @@ function watchTask(job, { manager, git }) {
       return;
     }
     if (task.status === 'needs_approval') setJob(job, { status: 'needs_approval', text: 'The agent wants your OK to continue.' });
-    else if (task.status === 'running' || task.status === 'starting' || task.status === 'installing') setJob(job, { status: 'agent', text: 'An agent is merging master in and resolving conflicts.' });
+    else if (task.status === 'running' || task.status === 'starting' || task.status === 'installing') setJob(job, { status: 'agent', text: agentText });
     if (task.status === 'running' || task.status === 'starting' || task.status === 'installing' || task.status === 'needs_approval') return;
     clearInterval(job.timer);
     if (task.status !== 'done') {
-      setJob(job, { status: 'failed', text: task.status === 'stopped' ? 'The agent was stopped. Tap Fix conflicts to try again.' : 'The agent could not finish. Open the Agent Console to see why.' });
+      setJob(job, { status: 'failed', text: task.status === 'stopped' ? `The agent was stopped. ${retryText}` : 'The agent could not finish. Open the Agent Console to see why.' });
       return;
     }
     setJob(job, { status: 'pushing', text: 'Checking the agent’s merge and pushing it.' });
     try {
-      const sha = await finishAndPush({ job, task, git, token: job.token });
-      setJob(job, { status: 'done', sha, agentSummary: task.summary || null, text: 'Fixed and pushed. Checks are re-running; Merge turns on when they pass.' });
+      const sha = await finish({ job, task, git, token: job.token });
+      setJob(job, { status: 'done', sha, agentSummary: task.summary || null, text: doneText });
     } catch (err) {
       setJob(job, { status: 'failed', text: err.message });
     } finally {
@@ -155,8 +165,7 @@ export async function startFix({ octokit, token, owner, repo, number, user = {} 
     by: user.name || 'Someone', startedAt: Date.now(), updatedAt: Date.now(),
     status: 'updating', text: `Bringing ${info.baseRef} into this PR.`, taskId: null, sha: null,
   };
-  if (jobs.size >= MAX_JOBS) jobs.delete(jobs.keys().next().value);
-  jobs.set(job.id, job);
+  trackFixJob(job);
 
   const update = await updateBranch(octokit, { owner, repo, number, headSha: pr.head.sha });
   if (update.updated) {
@@ -178,7 +187,7 @@ export async function startFix({ octokit, token, owner, repo, number, user = {} 
     cli: deps.cli || 'claudecode', folder: dir, prompt: buildFixPrompt({ pr: info, repo: job.repo }),
     user, baseOverride: headSha,
   });
-  setJob(job, { taskId: task.id, token, text: 'An agent is merging master in and resolving conflicts.' });
+  setJob(job, { taskId: task.id, token, text: AGENT_TEXT });
   watchTask(job, { manager: deps.manager, git });
   return publicJob(job);
 }

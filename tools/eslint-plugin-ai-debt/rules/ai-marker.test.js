@@ -20,7 +20,7 @@ function loadRule() {
 const rule = loadRule();
 
 const tester = new RuleTester({
-  parserOptions: { ecmaVersion: 2022, sourceType: 'module' },
+  languageOptions: { ecmaVersion: 2022, sourceType: 'module' },
 });
 
 describe('ai-marker rule', () => {

@@ -8,7 +8,7 @@ import { ChangesPanel } from './ChangesPanel.jsx';
 import { cliAgentsApi } from './cliAgentsApi.js';
 import { refreshCliRoster } from './useCliRoster.js';
 
-const CLI_LABEL = { claudecode: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode' };
+const CLI_LABEL = { claudecode: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI' };
 
 function formatCost(usd) {
   if (typeof usd !== 'number') return null;

@@ -1,0 +1,66 @@
+/* Blockyard, the board's idle building game. Tokens only, so every look
+   applies; block colours come from the --block-* tokens. The shop, wallet,
+   dig button and floaters reuse Agent Company's .hb-idle-* styles. */
+.hb-blocks { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 270px); background: var(--surface-sunken); }
+.hb-blocks-main { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--space-5); }
+.hb-blocks-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.hb-blocks-stats { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.hb-blocks-dig { width: 88px; height: 88px; }
+.hb-blocks-dig-top { fill: var(--block-ground); }
+.hb-blocks-dig-left { fill: var(--block-soil); }
+.hb-blocks-dig-right { fill: color-mix(in oklab, var(--block-soil) 70%, var(--color-black)); }
+.hb-blocks-views { display: inline-flex; border: 1px solid var(--hairline); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+.hb-blocks-views button { all: unset; cursor: pointer; padding: var(--space-1-5) var(--space-3); font-size: var(--text-sm); color: var(--ink-soft); }
+.hb-blocks-views button + button { border-left: 1px solid var(--hairline); }
+.hb-blocks-views button[aria-pressed="true"] { background: var(--accent-10); color: var(--ink); font-weight: 600; }
+.hb-blocks-views button:disabled { cursor: default; color: var(--ink-faint); }
+.hb-blocks-views button:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
+.hb-blocks-goal { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-xs); }
+.hb-blocks-goal-bar { height: 6px; border-radius: var(--radius-full); background: var(--surface); border: 1px solid var(--hairline); overflow: hidden; }
+.hb-blocks-goal-bar span { display: block; height: 100%; background: var(--accent); transition: width var(--dur-fast) var(--ease-standard); }
+.hb-blocks-palette { display: flex; flex-wrap: wrap; gap: var(--space-1-5); }
+.hb-blocks-swatch { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-1-5); padding: var(--space-1) var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); font-size: var(--text-xs); color: var(--ink); }
+.hb-blocks-swatch[aria-checked="true"] { border-color: var(--accent-line); box-shadow: 0 0 0 1px var(--accent-line); }
+.hb-blocks-swatch:disabled { cursor: default; color: var(--ink-faint); }
+.hb-blocks-swatch:disabled .hb-blocks-chip { opacity: 0.35; }
+.hb-blocks-swatch:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.hb-blocks-chip { width: 12px; height: 12px; border-radius: var(--radius-xs); background: var(--block-color); box-shadow: inset 0 -3px 0 color-mix(in oklab, var(--block-color) 70%, var(--color-black)); }
+.hb-blocks-stage { flex: 1 1 0; min-height: 220px; display: grid; place-items: center; container-type: size; }
+
+/* Every block kind sets one colour; faces and cells shade from it. */
+[data-block="soil"] { --block-color: var(--block-soil); }
+[data-block="stone"] { --block-color: var(--block-stone); }
+[data-block="timber"] { --block-color: var(--block-timber); }
+[data-block="glass"] { --block-color: var(--block-glass); }
+[data-block="brick"] { --block-color: var(--block-brick); }
+[data-block="crystal"] { --block-color: var(--block-crystal); }
+
+/* Flat view: squares from above, the number is how many are stacked. */
+.hb-blocks-flat { width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); display: grid; grid-template-columns: repeat(var(--size), 1fr); gap: 3px; padding: 3px; background: var(--hairline); border-radius: var(--radius-md); }
+.hb-blocks-cell { all: unset; box-sizing: border-box; position: relative; display: grid; place-items: center; cursor: pointer; border-radius: var(--radius-xs); background: var(--surface); transition: transform var(--dur-fast) var(--ease-standard); }
+.hb-blocks-cell[data-block] { background: color-mix(in oklab, var(--block-color) calc(70% + var(--stack) * 2.5%), var(--color-black)); box-shadow: inset 0 0 0 calc(min(var(--stack), 6) * 1px) color-mix(in oklab, var(--block-color) 80%, var(--color-white)); }
+.hb-blocks-cell:hover:not(:disabled) { transform: scale(1.06); outline: 1px solid var(--accent-line); }
+.hb-blocks-cell:focus-visible { outline: 2px solid var(--accent-line); }
+.hb-blocks-cell:disabled { cursor: default; }
+.hb-blocks-count { min-width: 1.4em; padding: 0 var(--space-1); border-radius: var(--radius-full); background: var(--surface); color: var(--ink); font-size: var(--text-xs); font-weight: 600; text-align: center; line-height: 1.5; }
+
+/* Isometric view: the same plot drawn as cubes. */
+.hb-blocks-iso { width: 100cqw; height: 100cqh; overflow: visible; }
+.hb-blocks-plot { fill: color-mix(in oklab, var(--block-ground) 70%, var(--color-black)); }
+.hb-blocks-ground { fill: var(--block-ground); stroke: color-mix(in oklab, var(--block-ground) 80%, var(--color-black)); stroke-width: 0.6; }
+.hb-blocks-iso[data-playable="true"] .hb-blocks-ground,
+.hb-blocks-iso[data-playable="true"] [data-face="top"] { cursor: pointer; }
+.hb-blocks-iso[data-playable="true"] .hb-blocks-ground:hover { fill: color-mix(in oklab, var(--block-ground) 75%, var(--color-white)); }
+.hb-blocks-face { stroke: color-mix(in oklab, var(--block-color) 60%, var(--color-black)); stroke-width: 0.5; stroke-linejoin: round; }
+.hb-blocks-face[data-face="top"] { fill: var(--block-color); }
+.hb-blocks-face[data-face="left"] { fill: color-mix(in oklab, var(--block-color) 78%, var(--color-black)); }
+.hb-blocks-face[data-face="right"] { fill: color-mix(in oklab, var(--block-color) 62%, var(--color-black)); }
+.hb-blocks-cube[data-block="glass"] .hb-blocks-face { fill-opacity: 0.8; }
+.hb-blocks-iso[data-playable="true"] [data-face="top"]:hover { fill: color-mix(in oklab, var(--block-color) 75%, var(--color-white)); }
+.hb-blocks-cube { animation: hb-blocks-drop 220ms var(--ease-standard); }
+@keyframes hb-blocks-drop { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .hb-blocks-cube { animation: none; } }
+
+.hb-blocks-team { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-sm); }
+.hb-blocks-team li { display: flex; justify-content: space-between; gap: var(--space-2); }
+.hb-blocks-team li[data-self="true"] .hb-game-board-name { color: var(--accent-text); }

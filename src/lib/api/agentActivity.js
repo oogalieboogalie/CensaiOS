@@ -1,5 +1,6 @@
-export async function getAgentActivity(agentId) {
-  const res = await fetch(`/api/agent-wakeups/${encodeURIComponent(agentId)}`);
+export async function getAgentActivity(agentId, { workspaceId } = {}) {
+  const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
+  const res = await fetch(`/api/agent-wakeups/${encodeURIComponent(agentId)}${qs}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || 'Failed to load agent activity');
   return data;

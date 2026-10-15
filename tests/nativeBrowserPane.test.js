@@ -47,4 +47,21 @@ describe('isAreaClear', () => {
     const area = setup(box(0, 0, 150, 150));
     expect(isAreaClear(area, box(-200, 100, 600, 400), { clip: true })).toBe(false);
   });
+
+  test('a group\'s hover-only resize corner over a Browser tile does not blank the page', () => {
+    // The corner shows when the mouse moves into the group from another window.
+    const corner = { closest: (sel) => (sel === '[data-pane-passthrough]' ? corner : null) };
+    const area = { contains: (node) => node === 'area' };
+    global.window = { innerWidth: 1000, innerHeight: 800 };
+    global.document = { elementFromPoint: (x, y) => (x > 470 && y > 370 ? corner : 'area') };
+    expect(isAreaClear(area, box(100, 100, 400, 300), { clip: true })).toBe(true);
+  });
+
+  test('a real window over the same corner still hides the page', () => {
+    const other = { closest: () => null };
+    const area = { contains: (node) => node === 'area' };
+    global.window = { innerWidth: 1000, innerHeight: 800 };
+    global.document = { elementFromPoint: (x, y) => (x > 470 && y > 370 ? other : 'area') };
+    expect(isAreaClear(area, box(100, 100, 400, 300), { clip: true })).toBe(false);
+  });
 });

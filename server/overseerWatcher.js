@@ -12,11 +12,13 @@ const state = {
   lastRunTime: null,
   lastRunStatus: 'idle', // 'idle' | 'running' | 'success' | 'failed'
   logs: '',
+  // Off until the user turns it on: when on, each run merges ready PRs.
+  autoMerge: false,
   timerId: null
 };
 
 // Start the daemon timer loop
-export function startWatcher(repo = state.repo, interval = state.intervalSeconds) {
+export function startWatcher(repo = state.repo, interval = state.intervalSeconds, { autoMerge = false } = {}) {
   if (state.timerId) {
     clearInterval(state.timerId);
   }
@@ -24,6 +26,7 @@ export function startWatcher(repo = state.repo, interval = state.intervalSeconds
   state.isRunning = true;
   state.repo = repo;
   state.intervalSeconds = interval;
+  state.autoMerge = autoMerge === true;
   state.countdown = interval;
 
   state.timerId = setInterval(() => {
@@ -50,8 +53,9 @@ export function stopWatcher() {
 }
 
 // Run the configured overseer script silently.
-export function runAuditNow() {
+export function runAuditNow({ autoMerge } = {}) {
   if (state.isAuditing) return;
+  if (typeof autoMerge === 'boolean') state.autoMerge = autoMerge;
 
   if (!state.repo) {
     state.lastRunStatus = 'failed';
@@ -64,7 +68,7 @@ export function runAuditNow() {
   state.lastRunTime = new Date().toISOString();
 
   const formattedTime = new Date().toLocaleString();
-  state.logs = `[${formattedTime}] Starting silent Overseer audit for repository: ${state.repo}...\n`;
+  state.logs = `[${formattedTime}] Starting Overseer run for ${state.repo} (${state.autoMerge ? 'merges ready pull requests' : 'checks only, merges nothing'})...\n`;
 
   const token = getSecret('GITHUB_TOKEN') || process.env.GITHUB_TOKEN;
 
@@ -72,6 +76,7 @@ export function runAuditNow() {
     scriptPath: process.env.OVERSEER_SCRIPT_PATH,
     cwd: process.env.OVERSEER_SCRIPT_CWD,
     repo: state.repo,
+    autoMerge: state.autoMerge,
   });
   const child = spawn(runner.executable, runner.args, {
     cwd: runner.cwd,
@@ -101,7 +106,7 @@ export function runAuditNow() {
     state.isAuditing = false;
     state.lastRunStatus = code === 0 ? 'success' : 'failed';
     const completionTime = new Date().toLocaleString();
-    state.logs += `\n[${completionTime}] Overseer audit finished with code: ${code}.\n`;
+    state.logs += `\n[${completionTime}] Overseer run finished with code: ${code}.\n`;
     
     // Reset countdown to the interval so it counts down again
     if (state.isRunning) {
@@ -130,6 +135,7 @@ export function getStatus() {
     countdown: state.countdown,
     intervalSeconds: state.intervalSeconds,
     repo: state.repo,
+    autoMerge: state.autoMerge,
     lastRunTime: state.lastRunTime,
     lastRunStatus: state.lastRunStatus,
     logs: state.logs

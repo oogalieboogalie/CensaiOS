@@ -3,7 +3,29 @@ import { Icon } from '../Icons.jsx';
 import { WindowTitle } from '../Windows.jsx';
 import { SettingsPanel } from '../windows/WindowThemePanel.jsx';
 
-export function TerminalHeader({ win, cwd, onUpdate, showSettings, setShowSettings, handleThemeChange, theme }) {
+function HeaderButton({ on, title, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onPointerDown={(e) => e.stopPropagation()}
+      title={title}
+      aria-pressed={on}
+      style={{
+        background: on ? 'color-mix(in oklab, var(--accent) 15%, transparent)' : 'transparent',
+        border: 'none', borderRadius: 'var(--radius-sm)', padding: '2px 5px', cursor: 'pointer',
+        color: on ? 'var(--accent)' : 'var(--ink-faint)', display: 'flex', alignItems: 'center', gap: 3,
+        fontSize: 'var(--text-xs)', fontFamily: 'var(--font-label)', textTransform: 'var(--label-case)',
+        letterSpacing: 'var(--label-tracking)',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function TerminalHeader({ win, cwd, onUpdate, showSettings, setShowSettings, handleThemeChange, theme, onAddTab }) {
+  const glow = Boolean(win.terminalGlow);
   return (
     <>
       <WindowTitle
@@ -14,6 +36,16 @@ export function TerminalHeader({ win, cwd, onUpdate, showSettings, setShowSettin
         attachedAgentIds={win.attachedAgents}
         onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
       >
+        <HeaderButton title="New tab: another shell in this window (Ctrl+Shift+T)" onClick={onAddTab}>
+          <Icon.Plus size={13} />
+        </HeaderButton>
+        <HeaderButton
+          on={glow}
+          title={glow ? 'Glow look is on: pixel font, glowing colors. Click for the normal look.' : 'Glow look: pixel font with glowing colors'}
+          onClick={() => onUpdate({ terminalGlow: !glow })}
+        >
+          Glow
+        </HeaderButton>
         <button
           onClick={() => setShowSettings(!showSettings)}
           onPointerDown={(e) => e.stopPropagation()}
@@ -71,7 +103,7 @@ export function TerminalToolbar({ theme, win, currentProject, mountableProjects,
         onChange={(e) => mountProject(e.target.value)}
         onPointerDown={(e) => e.stopPropagation()}
         title="Mount this terminal to a project directory"
-        style={{ flex: 1, minWidth: 0, background: 'var(--surface-sunken)', color: 'var(--ink)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', padding: '3px 6px' }}
+        style={{ flex: 1, minWidth: 72, background: 'var(--surface-sunken)', color: 'var(--ink)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', padding: '3px 6px' }}
       >
         <option value="">{currentProject?.path ? `current project (${currentProject.name || currentProject.path})` : 'sandbox (server cwd)'}</option>
         {mountableProjects.map((p) => (

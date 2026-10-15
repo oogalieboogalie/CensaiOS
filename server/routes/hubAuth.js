@@ -7,6 +7,7 @@ import { validateUsername, validateEmail, validatePassword } from '../hubAccount
 import { generateToken, hashPassword, verifyPassword } from '../hubAccounts/password.js';
 import { authSecurityRateLimiter } from '../middleware/standardRateLimits.js';
 import { establishAuthenticatedSession } from '../security/authSession.js';
+import { checkTotp, newTotpSecret, totpUri } from '../hubAccounts/totp.js';
 
 const HUB_LIMITER = rateLimit({ windowMs: 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Too many requests. Please try again shortly.' } });
 
@@ -82,8 +83,7 @@ hubAuthRouter.post('/login', authSecurityRateLimiter, HUB_LIMITER, async (req, r
     if (!account.email_confirmed) return res.status(403).json({ error: 'Email not confirmed', needsConfirmation: true });
     if (account.mfa_enabled) {
       if (!mfaCode) return res.status(400).json({ error: 'MFA code required', mfaRequired: true });
-      const { authenticator } = await import('otplib');
-      if (!authenticator.check(mfaCode, account.mfa_secret)) return res.status(401).json({ error: 'Invalid MFA code' });
+      if (!checkTotp(mfaCode, account.mfa_secret)) return res.status(401).json({ error: 'Invalid MFA code' });
     }
     const encRow = await pool.query('SELECT email_encrypted FROM hub_accounts WHERE id = $1', [account.id]);
     const email = decryptEmail(encRow.rows[0]?.email_encrypted);
@@ -116,9 +116,8 @@ hubAuthRouter.post('/mfa-setup', async (req, res) => {
     const { rows } = await pool.query('SELECT mfa_secret, mfa_enabled FROM hub_accounts WHERE id = $1', [req.session.userId]);
     if (rows.length === 0) return res.status(404).json({ error: 'Account not found' });
     if (rows[0].mfa_enabled) return res.status(400).json({ error: 'MFA already enabled' });
-    const { authenticator } = await import('otplib');
-    const secret = authenticator.generateSecret();
-    const otpauth = authenticator.keyuri(`user_${req.session.userId}`, 'CensaiHub', secret);
+    const secret = newTotpSecret();
+    const otpauth = totpUri(`user_${req.session.userId}`, 'CensaiHub', secret);
     await pool.query('UPDATE hub_accounts SET mfa_secret = $1, updated_at = NOW() WHERE id = $2', [secret, req.session.userId]);
     const qrMod = await import('qrcode');
     const toDataURL = qrMod.toDataURL || qrMod.default?.toDataURL;
@@ -138,8 +137,7 @@ hubAuthRouter.post('/mfa-verify', async (req, res) => {
     const { rows } = await pool.query('SELECT mfa_secret, mfa_enabled FROM hub_accounts WHERE id = $1', [req.session.userId]);
     if (rows.length === 0) return res.status(404).json({ error: 'Account not found' });
     if (rows[0].mfa_enabled) return res.status(400).json({ error: 'MFA already enabled' });
-    const { authenticator } = await import('otplib');
-    if (!authenticator.check(code, rows[0].mfa_secret)) return res.status(401).json({ error: 'Invalid MFA code' });
+    if (!checkTotp(code, rows[0].mfa_secret)) return res.status(401).json({ error: 'Invalid MFA code' });
     await pool.query('UPDATE hub_accounts SET mfa_enabled = TRUE, updated_at = NOW() WHERE id = $1', [req.session.userId]);
     res.json({ ok: true, message: 'MFA enabled successfully' });
   } catch (err) {
@@ -157,8 +155,7 @@ hubAuthRouter.post('/mfa-disable', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'Account not found' });
     if (!rows[0].mfa_enabled) return res.status(400).json({ error: 'MFA not enabled' });
     if (!(await verifyPassword(password, rows[0].password_hash))) return res.status(401).json({ error: 'Invalid password' });
-    const { authenticator } = await import('otplib');
-    if (!authenticator.check(mfaCode, rows[0].mfa_secret)) return res.status(401).json({ error: 'Invalid MFA code' });
+    if (!checkTotp(mfaCode, rows[0].mfa_secret)) return res.status(401).json({ error: 'Invalid MFA code' });
     await pool.query('UPDATE hub_accounts SET mfa_enabled = FALSE, mfa_secret = NULL, updated_at = NOW() WHERE id = $1', [req.session.userId]);
     res.json({ ok: true, message: 'MFA disabled' });
   } catch (err) {

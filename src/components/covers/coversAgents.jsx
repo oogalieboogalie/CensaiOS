@@ -59,6 +59,14 @@ export const AGENT_COVERS = {
       <path d="M38 4 V20" {...H} strokeDasharray="1.5 1.5" />
     </>
   ),
+  // A results table: three bars, the leader in accent.
+  arenaBenchmarks: (
+    <>
+      <path d="M5 20 H39" {...H} />
+      <path d="M10 20 V12" {...F} strokeWidth="3" /><path d="M19 20 V5" {...A} strokeWidth="3" />
+      <path d="M28 20 V9" {...F} strokeWidth="3" /><path d="M35 20 V14" {...F} strokeWidth="3" />
+    </>
+  ),
   // A terminal with teammate tabs and a waiting cursor.
   agentConsole: (
     <>
@@ -66,6 +74,14 @@ export const AGENT_COVERS = {
       <path d="M5 6 V4.5 Q5 3.5 6 3.5 H13 V6 M13 6 V3.5 H21 V6" {...F} />
       <path d="M9 11 L11.5 13 L9 15" {...S} /><path d="M14 15 H22" {...F} />
       <rect x="24" y="13.5" width="3" height="3" fill={ACCENT} />
+    </>
+  ),
+  // A list beside a detail pane, the top row flagged, a dock of dots.
+  inbox: (
+    <>
+      <rect x="4" y="4" width="32" height="16" rx="1.5" {...S} /><path d="M15 4 V20" {...H} />
+      <path d="M7 8 H12" {...A} /><path d="M7 12 H12 M7 16 H11 M18 8 H31 M18 12 H28" {...F} />
+      <circle cx="39.5" cy="7" r="1.2" fill={ACCENT} /><circle cx="39.5" cy="11" r="1.2" fill={SOFT} /><circle cx="39.5" cy="15" r="1.2" fill={FAINT} />
     </>
   ),
   // Agents finding each other across a network.

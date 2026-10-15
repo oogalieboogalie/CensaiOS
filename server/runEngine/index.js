@@ -33,7 +33,7 @@ import { beginAgentPresence } from '../collab/agentPresence.js';
 import { getAgent } from '../memory/core/agents.js';
 import { noteAgentWork } from '../social/agentNotes.js';
 
-export const RUN_ORIGINS = Object.freeze(['chat', 'help', 'endpoint']);
+export const RUN_ORIGINS = Object.freeze(['chat', 'help', 'endpoint', 'workflow']);
 
 export function newTimings() {
   return { total_ms: 0, setup_ms: 0, model_ms: 0, tool_ms: 0, model_calls: [], tool_calls: [] };

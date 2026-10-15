@@ -32,6 +32,19 @@ export const GAME_COVERS = {
       <circle cx="37" cy="12" r="3.2" fill="none" stroke="var(--accent-line)" strokeWidth="1.1" />
     </>
   ),
+  // A flat grid of stack counts turning into a little isometric build.
+  idleBlocks: (
+    <>
+      {[0, 1, 2].map((r) => [0, 1, 2].map((c) => (
+        <rect key={`${r}${c}`} x={6 + c * 4} y={6 + r * 4} width="3.2" height="3.2" rx="0.5"
+          fill={(r + c) % 3 === 0 ? 'var(--accent)' : 'var(--ink-faint)'} />
+      )))}
+      <path d="M20 12 H23 M21.8 10.6 L23.2 12 L21.8 13.4" fill="none" stroke="var(--ink-soft)" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M32 7 L37 9.5 L32 12 L27 9.5 Z" fill="var(--accent)" />
+      <path d="M27 9.5 L32 12 L32 18 L27 15.5 Z" fill="var(--ink-soft)" />
+      <path d="M37 9.5 L32 12 L32 18 L37 15.5 Z" fill="var(--ink-faint)" />
+    </>
+  ),
   // A few lines of code steering a robot to a goal.
   codeRobot: (
     <>

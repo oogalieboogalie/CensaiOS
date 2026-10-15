@@ -8,6 +8,7 @@ import { makePhotoLib } from './photoLibModel.js';
 import { makeLayoutDoc } from './layoutModel.js';
 import { makeDiagram } from './diagramModel.js';
 import { makeModelScene } from './modelBoard.js';
+import { makeBooks } from './books/booksModel.js';
 
 export const YORWARE_STARTERS = Object.freeze({
   yorPdf: { title: 'Untitled PDF', ...makePdfDoc() },
@@ -18,4 +19,6 @@ export const YORWARE_STARTERS = Object.freeze({
   yorThreeEditor: { title: 'Untitled scene' },
   // A CAD window opens on its ready-made parts.
   yorCad: { title: 'Untitled part' },
+  // A Books window starts with one checking account and the welcome page.
+  yorBooks: { title: 'Open Books', ...makeBooks() },
 });

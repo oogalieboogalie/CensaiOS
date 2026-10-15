@@ -4,7 +4,8 @@ import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { fmtTime } from './operations/OperationsShared.jsx';
 import { useWorkspaceStore } from '../lib/store.js';
-import { convertTraceToTest, getTraceEvents, getTraces } from '../lib/api/tracing.js';
+import { getTraceEvents, getTraces } from '../lib/api/tracing.js';
+import { traceToTestMarkdown } from './tracing/traceToTestDoc.js';
 const emptyStyle = { flex: 1, height: '100%', display: 'grid', placeItems: 'center', padding: 24, textAlign: 'center', color: 'var(--ink-faint)' };
 const cardStyle = { padding: 8, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)' };
 const workspaceStillActive = workspaceId => useWorkspaceStore.getState().workspaceId === workspaceId;
@@ -44,14 +45,15 @@ export function TracingWindow({ win, onUpdate }) {
       if (workspaceStillActive(workspaceId)) setLoading(false);
     }
   }, [workspaceId]);
-  const convertToTest = async (id) => {
-    setNotice('');
-    try {
-      await convertTraceToTest(workspaceId, id);
-      if (workspaceStillActive(workspaceId)) setNotice('Regression test created.');
-    } catch (err) {
-      if (workspaceStillActive(workspaceId)) setNotice(err.message);
-    }
+  const spawnAt = useWorkspaceStore(state => state.spawnAt);
+  // The test steps open as a Document window just right of this one.
+  const openTestSteps = (trace) => {
+    const pos = Number.isFinite(win.x) ? { x: win.x + (win.w || 820) + 24, y: win.y || 0 } : null;
+    spawnAt('doc', {
+      title: `Test: ${trace.title || 'agent run'}`,
+      fileName: `test-${String(trace.id || 'trace').slice(0, 12)}.md`,
+      text: traceToTestMarkdown(trace, events),
+    }, pos, { w: 560, h: 600 });
   };
   React.useEffect(() => {
     setTraces([]);
@@ -111,14 +113,14 @@ export function TracingWindow({ win, onUpdate }) {
                   <h3 style={{ margin: 0, fontSize: 'var(--text-base)' }}>{selectedTrace.title}</h3>
                   <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>ID: {selectedTrace.id}</div>
                 </div>
-                <button type="button" onClick={() => convertToTest(selectedTrace.id)}
+                <button type="button" onClick={() => openTestSteps(selectedTrace)} title="Open this run as test steps you can rerun"
                   style={{
                     background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none',
                     padding: '4px 8px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)',
                     cursor: 'pointer'
                   }}
                 >
-                  Convert to Regression Test
+                  Open as test steps
                 </button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginBottom: 16 }}>

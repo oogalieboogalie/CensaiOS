@@ -1,0 +1,101 @@
+<!-- module {"request": "a showing schedule for the team's week", "manifest": {"manifest": 3, "version": "1.1.0", "author": "censaiOS", "id": "showing-schedule", "name": "Showing schedule", "description": "This week's showings by day, shared with the team.", "icon": "Calendar", "size": {"w": 560, "h": 520}, "permissions": ["storage"], "state": {"showings": "list of {id, day, time, address, client, status}"}, "tools": [{"name": "add_showing", "description": "Book a showing. Day is YYYY-MM-DD, time is HH:MM (24 hour).", "input": {"type": "object", "properties": {"address": {"type": "string", "description": "Property address"}, "client": {"type": "string", "description": "Who is coming"}, "day": {"type": "string", "description": "YYYY-MM-DD"}, "time": {"type": "string", "description": "HH:MM"}}, "required": ["address", "day", "time"]}}, {"name": "set_showing_status", "description": "Mark a showing requested, confirmed or shown, found by address.", "input": {"type": "object", "properties": {"address": {"type": "string"}, "status": {"type": "string", "enum": ["requested", "confirmed", "done"]}}, "required": ["address", "status"]}}, {"name": "list_showings", "description": "Read upcoming showings in time order.", "input": {"type": "object", "properties": {}}}]}} -->
+<div class="stack" style="gap: var(--space-3); height: 100%">
+  <div class="spread"><h2 style="margin:0">Showings</h2><span class="pill" id="count"></span></div>
+  <form class="grid" id="add" style="grid-template-columns: 116px 92px 1fr 1fr auto">
+    <input id="day" type="date" required>
+    <input id="time" type="time" required value="10:00">
+    <input id="address" placeholder="Address" required>
+    <input id="client" placeholder="Client">
+    <button class="primary" type="submit">Add</button>
+  </form>
+  <div id="days" style="flex:1; overflow:auto; min-height:0"></div>
+</div>
+<style>
+  .day { margin-bottom: var(--space-3); }
+  .day h3 { display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--ink-soft); font-weight: 500; margin: 0 0 var(--space-1); }
+  .day.today h3 span:first-child { color: var(--accent); }
+  .slot { display: grid; grid-template-columns: 64px 1fr auto auto; gap: var(--space-2); align-items: center; padding: var(--space-2) var(--space-1); border-bottom: 1px solid var(--hairline); }
+  .slot.done { opacity: .55; }
+  .slot button { min-height: 24px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+  .status { font-size: var(--text-xs); color: var(--ink-faint); }
+  .status.confirmed { color: var(--success); }
+</style>
+<script>
+  const DAY = 86400000;
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; };
+  const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const parseDay = (s) => { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, m - 1, d); };
+  const todayIso = iso(new Date());
+  const NEXT = { requested: 'confirmed', confirmed: 'done', done: 'requested' };
+  const LABEL = { requested: 'Requested', confirmed: 'Confirmed', done: 'Shown' };
+
+  let showings = censai.storage.get('showings', null);
+  if (!Array.isArray(showings)) {
+    const t = new Date();
+    const plus = (n) => iso(new Date(t.getTime() + n * DAY));
+    showings = [
+      { id: 's1', day: plus(0), time: '10:30', address: '7 Quarry Rd', client: 'Lindqvist', status: 'confirmed' },
+      { id: 's2', day: plus(0), time: '16:00', address: '31 Birch Ct', client: 'Nguyen', status: 'requested' },
+      { id: 's3', day: plus(1), time: '11:00', address: '902 Harbor St, Unit 4', client: 'Okafor', status: 'confirmed' },
+      { id: 's4', day: plus(3), time: '13:00', address: '14 Alder Way', client: 'Open house', status: 'confirmed' },
+    ];
+  }
+  $('day').value = todayIso;
+
+  function save() { censai.storage.set('showings', showings); render(); }
+  function clock(t) {
+    const [h, m] = String(t).split(':').map(Number);
+    const d = new Date(); d.setHours(h || 0, m || 0, 0, 0);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function render() {
+    const upcoming = showings.filter((s) => s.day >= todayIso);
+    $('count').textContent = upcoming.length + ' upcoming';
+    const byDay = {};
+    upcoming.slice().sort((a, b) => (a.day + a.time).localeCompare(b.day + b.time)).forEach((s) => { (byDay[s.day] = byDay[s.day] || []).push(s); });
+    const days = Object.keys(byDay);
+    if (!days.length) { $('days').innerHTML = '<div class="faint">Nothing booked. Add a showing above.</div>'; return; }
+    $('days').innerHTML = days.map((day) => {
+      const name = day === todayIso ? 'Today' : parseDay(day).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+      return '<section class="day' + (day === todayIso ? ' today' : '') + '"><h3><span>' + name + '</span><span class="num">' + byDay[day].length + '</span></h3>'
+        + byDay[day].map((s) => '<div class="slot ' + (s.status === 'done' ? 'done' : '') + '"><span class="num">' + clock(s.time) + '</span>'
+          + '<span><div>' + esc(s.address) + '</div><div class="faint">' + esc(s.client || '') + '</div></span>'
+          + '<button class="ghost status ' + s.status + '" data-next="' + s.id + '">' + LABEL[s.status] + '</button>'
+          + '<button class="ghost" data-remove="' + s.id + '" aria-label="Remove">Remove</button></div>').join('')
+        + '</section>';
+    }).join('');
+    document.querySelectorAll('[data-next]').forEach((b) => {
+      b.onclick = () => { showings = showings.map((s) => s.id === b.dataset.next ? { ...s, status: NEXT[s.status] } : s); save(); };
+    });
+    document.querySelectorAll('[data-remove]').forEach((b) => {
+      b.onclick = () => { showings = showings.filter((s) => s.id !== b.dataset.remove); save(); };
+    });
+  }
+
+  $('add').onsubmit = (e) => {
+    e.preventDefault();
+    const address = $('address').value.trim();
+    if (!address) return;
+    showings = [...showings, { id: Date.now().toString(36), day: $('day').value, time: $('time').value, address, client: $('client').value.trim(), status: 'requested' }];
+    $('address').value = ''; $('client').value = '';
+    save();
+    censai.toast('Showing added');
+  };
+  censai.storage.onChange((key, value) => { if (key === 'showings' && Array.isArray(value)) { showings = value; render(); } });
+  censai.tools.handle('add_showing', ({ address, client, day, time }) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !/^\d{1,2}:\d{2}$/.test(time)) throw new Error('Day must be YYYY-MM-DD and time HH:MM.');
+    showings = [...showings, { id: Date.now().toString(36), day, time, address, client: client || '', status: 'requested' }]; save();
+    return { address, day, time, status: 'requested' };
+  });
+  censai.tools.handle('set_showing_status', ({ address, status }) => {
+    const k = address.toLowerCase();
+    const hit = showings.find((s) => s.day >= todayIso && s.address.toLowerCase().includes(k)) || showings.find((s) => s.address.toLowerCase().includes(k));
+    if (!hit) throw new Error('No showing at "' + address + '".');
+    showings = showings.map((s) => s.id === hit.id ? { ...s, status } : s); save();
+    return { address: hit.address, day: hit.day, status };
+  });
+  censai.tools.handle('list_showings', () => showings.filter((s) => s.day >= todayIso).sort((a, b) => (a.day + a.time).localeCompare(b.day + b.time)).map(({ day, time, address, client, status }) => ({ day, time, address, client, status })));
+  render();
+</script>

@@ -39,6 +39,18 @@ describe('useGroupHotkeys', () => {
     expect(loadGroupHotkeys('ws-other')).toEqual({});
   });
 
+  test('Alt+digit binds from inside a chat box too, and types nothing', () => {
+    const { result } = renderHook(() => useGroupHotkeys({ workspaceId: 'ws-1' }));
+    const box = document.createElement('textarea');
+    document.body.appendChild(box);
+    const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, code: 'Digit4', key: '4', altKey: true });
+    act(() => { box.dispatchEvent(event); });
+    expect(event.defaultPrevented).toBe(true);
+    expect(result.current.bindings).toEqual({ 4: 'g1' });
+    // Plain Escape inside a text box still belongs to the box.
+    box.remove();
+  });
+
   test('assigning with no grouped active window does nothing and leaves the key alone', () => {
     useWorkspaceStore.setState({ activeId: 'loose' });
     const { result } = renderHook(() => useGroupHotkeys({ workspaceId: 'ws-1' }));
@@ -155,13 +167,17 @@ describe('useGroupHotkeys', () => {
     expect(loadGroupHotkeys('ws-1')).toEqual({});
   });
 
-  test('typing in an input never triggers a hotkey', () => {
+  test('keys that type a character in a text box never trigger a hotkey', () => {
     const { result } = renderHook(() => useGroupHotkeys({ workspaceId: 'ws-1' }));
     const input = document.createElement('input');
     document.body.appendChild(input);
-    const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, code: 'Digit1', key: '1', altKey: true });
-    act(() => { input.dispatchEvent(event); });
-    expect(event.defaultPrevented).toBe(false);
+    // AltGr+2 types "@" on many keyboards; it arrives as Ctrl+Alt.
+    const altGr = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, code: 'Digit2', key: '@', altKey: true, ctrlKey: true });
+    act(() => { input.dispatchEvent(altGr); });
+    expect(altGr.defaultPrevented).toBe(false);
+    const plain = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, code: 'Digit1', key: '1' });
+    act(() => { input.dispatchEvent(plain); });
+    expect(plain.defaultPrevented).toBe(false);
     expect(result.current.bindings).toEqual({});
     input.remove();
   });

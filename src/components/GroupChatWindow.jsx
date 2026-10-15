@@ -83,10 +83,12 @@ export function GroupChatWindow({ win, onUpdate }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: withUser, agentIds: activeMembers, workspaceId }),
       });
-      const data = await res.json();
-      setMsgs([...withUser, ...(data.replies || []).map(reply => ({ from: reply.agentId, text: reply.text }))]);
-    } catch {
-      setMsgs([...withUser, { from: 'system', text: 'Group chat failed to process.' }]);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || 'Group chat failed to process.');
+      const replies = (data.replies || []).map(reply => ({ from: reply.agentId, text: reply.text }));
+      setMsgs(replies.length ? [...withUser, ...replies] : [...withUser, { from: 'system', text: 'Nobody answered. Check that an AI key is set in Settings.' }]);
+    } catch (err) {
+      setMsgs([...withUser, { from: 'system', text: err?.message || 'Group chat failed to process.' }]);
     }
     setSending(false);
   };
@@ -102,7 +104,7 @@ export function GroupChatWindow({ win, onUpdate }) {
 
   return (
     <>
-      <WindowTitle icon={<Icon.Group size={14} />} label="Group chat" subtitle={`${members.length} agent${members.length === 1 ? '' : 's'}`}>
+      <WindowTitle icon={<Icon.Group size={14} />} label={win.title || 'Group chat'} subtitle={`${members.length} agent${members.length === 1 ? '' : 's'}`}>
         <MemberPicker allAgents={allAgents} activeMembers={activeMembers} onToggle={toggleMember} />
       </WindowTitle>
       <div className="hb-chat" data-chat-root>

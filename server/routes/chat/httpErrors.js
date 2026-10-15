@@ -88,3 +88,14 @@ export function sendPublicModelError(res, error, fallbackCode) {
     retryAfter: normalized.retryAfter,
   });
 }
+
+/** Image routes: a missing key says so in image words, with whose key. */
+export function sendImageModelError(res, error, fallbackCode = 'IMAGE_GENERATION_FAILED') {
+  if (error?.code !== MODEL_KEY_MISSING) return sendPublicModelError(res, error, fallbackCode);
+  return res.status(400).json({
+    error: String(error.message || missingKeyMessage(error.keyProvider)).slice(0, 300),
+    code: MODEL_KEY_MISSING,
+    keyProvider: error.keyProvider || null,
+    retryAfter: null,
+  });
+}

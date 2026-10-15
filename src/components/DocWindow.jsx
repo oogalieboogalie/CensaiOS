@@ -14,6 +14,7 @@ import { RelatedContext } from './doc/RelatedContext.jsx';
 import { reportTyping, reportTextPreview } from '../lib/collaboration/liveText.js';
 import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
 import { mergeWithLatest } from '../lib/collaboration/sharedTextEdit.js';
+import { localDay } from '../lib/schedule/plainWords.js';
 
 export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, workspaceId }) {
   const bodyRef = React.useRef(null);
@@ -75,7 +76,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
             const prefill = {
               title: `Review: ${win.fileName}`,
               description: `Review document ${win.fileName} on Censai canvas.\n\nhb://doc/${win.fileName}`,
-              date: new Date().toISOString().split('T')[0],
+              date: localDay(), // today on this computer's clock, not London's
               startTime: '09:00',
               endTime: '10:00'
             };

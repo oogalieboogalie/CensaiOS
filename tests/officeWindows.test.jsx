@@ -95,4 +95,30 @@ describe('Censai Slides window', () => {
     fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  test('a picture on a slide can be deleted with the Delete key, the toolbar or its little x', () => {
+    const pic = (id) => ({ id, type: 'image', x: 30, y: 20, w: 40, h: 30, src: 'data:image/png;base64,AA==', alt: id });
+    const deck = readDeck({ id: 'w1', ...OFFICE_STARTERS.officeSlides });
+    const first = deck.order[0];
+    const slide = deck.slides[first];
+    render(<Harness Window={OfficeSlidesWindow} initial={{ ...OFFICE_STARTERS.officeSlides, [`os.${first}`]: { ...slide, blocks: [...slide.blocks, pic('p1'), pic('p2'), pic('p3')] } }} />);
+    const pics = () => readDeck(latest).slides[first].blocks.filter((b) => b.type === 'image').map((b) => b.id);
+    const stage = screen.getByRole('group', { name: 'Slide editor' });
+    const box = (alt) => screen.getAllByAltText(alt).find((img) => stage.contains(img)).parentElement;
+
+    fireEvent.pointerDown(box('p1'));
+    fireEvent.pointerUp(window);
+    fireEvent.keyDown(document.activeElement, { key: 'Delete' });
+    expect(pics()).toEqual(['p2', 'p3']);
+
+    fireEvent.pointerDown(box('p2'));
+    fireEvent.pointerUp(window);
+    fireEvent.click(screen.getByRole('button', { name: /Delete the selected/ }));
+    expect(pics()).toEqual(['p3']);
+
+    fireEvent.pointerDown(box('p3'));
+    fireEvent.pointerUp(window);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete this picture' }));
+    expect(pics()).toEqual([]);
+  });
 });

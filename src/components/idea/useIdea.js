@@ -98,7 +98,7 @@ export function useIdea({ win, onUpdate, currentProject }) {
       return;
     }
 
-    setStatus('Expanding with Gemini 2.5 Flash...');
+    setStatus('Expanding...');
     setError('');
     try {
       const res = await fetch('/api/ideas/expand', {

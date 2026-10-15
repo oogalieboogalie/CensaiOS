@@ -8,6 +8,7 @@ import { dbReady } from '../../dbState.js';
 import { resolveChatModelConfig } from '../../aiGateway/index.js';
 import { isLocalBaseUrl } from '../../aiGateway/missingKey.js';
 import { getUserApiKeyConfig } from '../../security/userApiKeys.js';
+import { ownerEnvKeyProviders } from '../../security/envKeys.js';
 import { MODEL_OPTIONS } from '../../../src/lib/agentModelOptions.js';
 
 // Best first: the providers whose first listed model is a sound default.
@@ -40,7 +41,10 @@ export async function borrowKeyedModel({ userId, baseUrl, reachable = localModel
   if (!userId || !isLocalBaseUrl(baseUrl) || !dbReady()) return null;
   try {
     const { rows } = await pool.query('SELECT provider FROM user_api_keys WHERE user_id = $1', [userId]);
-    const provider = pickFallbackProvider(rows.map(row => row.provider));
+    // The owner's .env keys count too (envKeys.js), so a fresh install whose
+    // keys live in .env never asks for one.
+    const envProviders = await ownerEnvKeyProviders(pool, userId);
+    const provider = pickFallbackProvider([...rows.map(row => row.provider), ...envProviders]);
     if (!provider || await reachable(baseUrl)) return null;
     const key = await getUserApiKeyConfig(userId, provider);
     if (!key) return null;

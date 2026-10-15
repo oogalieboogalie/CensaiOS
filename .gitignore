@@ -42,3 +42,6 @@ docs-site/site/
 .docs-venv/
 /desktop-stack-out/
 desktop-app/
+/censai-projects/
+ai-review-*.json
+dist-demo

@@ -14,7 +14,7 @@
  * src/lib/theme/presetEntries/; the values below are the light fallback that
  * shows before the theme engine runs.
  *
- * Lint (.eslintrc.json) fails the build on raw hex / rgba() colors and
+ * Lint (eslint.config.js) fails the build on raw hex / rgba() colors and
  * numeric borderRadius / fontSize in src/components and src/app.
  */
 
@@ -221,6 +221,14 @@
   --canvas-pen-blue: oklch(0.66 0.16 250);
   --canvas-pen-purple: oklch(0.62 0.18 300);
   --canvas-pen-pink: oklch(0.68 0.2 5);
+  /* Blockyard's building blocks (src/styles/idleBlocks.css). */
+  --block-ground: oklch(0.74 0.1 140);
+  --block-soil: oklch(0.56 0.08 60);
+  --block-stone: oklch(0.68 0.012 250);
+  --block-timber: oklch(0.66 0.11 70);
+  --block-glass: oklch(0.86 0.07 210);
+  --block-brick: oklch(0.56 0.14 30);
+  --block-crystal: oklch(0.72 0.15 300);
 
   /* Opacity variants are explicit because Tailwind cannot alpha-compose var(). */
   --accent-05: color-mix(in oklab, var(--accent) 5%, transparent);
@@ -259,11 +267,11 @@
 
   /* ── Frosted glass (src/styles/glass.css): menus, pop-ups, the palette and
      the floating bars show the board through a strong blur, like a macOS
-     menu. Light is milky white, dark follows the look's surface. Window
+     menu. Light is the look's own surface, milky; dark is smoked in the look's hue. Window
      bodies stay solid. Settings > Appearance "Frosted glass" turns it off
      (data-frost="off"), and so do reduce-transparency and old browsers. ── */
-  --glass-bg: color-mix(in oklab, var(--color-white) 70%, transparent);
-  --glass-bg-strong: color-mix(in oklab, var(--color-white) 82%, transparent);
+  --glass-bg: color-mix(in oklab, var(--surface) 70%, transparent);
+  --glass-bg-strong: color-mix(in oklab, var(--surface) 82%, transparent);
   --glass-filter: blur(calc(24px * var(--glass-blur-scale, 1))) saturate(180%);
   --glass-line: oklch(0 0 0 / 0.1);
   --glass-hover: oklch(0 0 0 / 0.06);
@@ -311,6 +319,16 @@
   --glass-line: oklch(1 0 0 / 0.09);
   --glass-hover: oklch(1 0 0 / 0.09);
   --glass-shadow: inset 0 1px 0 oklch(1 0 0 / 0.07), 0 1px 2px oklch(0 0 0 / 0.4), 0 20px 48px -12px oklch(0 0 0 / 0.75);
+}
+
+/* Glass follows the look: on a coloured dark look the bars and menus are
+   the look's own surface, a shade deeper, so they match its windows instead
+   of sitting on the board as black slabs. The brand look keeps the black
+   smoked glass above. Older engines keep the plain mix for every look. */
+@supports (color: oklch(from red l c h)) {
+  [data-theme="dark"]:not([data-mood="censai"]) {
+    --glass-tint: oklch(from var(--surface) calc(l * 0.85) c h);
+  }
 }
 
 /* Glass off: the same surfaces, solid. Switched off in Settings, asked for by

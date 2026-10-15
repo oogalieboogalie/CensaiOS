@@ -34,7 +34,7 @@ async function octokitFor(req) {
   return { octokit: createOctokit(token), token };
 }
 
-async function actorName(req) {
+export async function actorName(req) {
   const userId = req.session?.userId;
   const email = String(req.session?.userEmail || '');
   let name = email ? email.split('@')[0] : 'Someone';
@@ -85,7 +85,7 @@ mergeDeskRouter.post('/desk/merge', wrap(async (req, res) => {
 }));
 
 /** Agents may run here: local filesystem allowed and the caller is a system admin. */
-async function canRunAgents(req) {
+export async function canRunAgents(req) {
   let allowed = true;
   requireLocalFilesystem(req, { status: () => ({ json: () => { allowed = false; } }) }, () => {});
   if (!allowed) return false;

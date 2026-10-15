@@ -6,10 +6,13 @@ import { requestChatCompletion, resolveChatModelConfig } from '../aiGateway/inde
 import { isLocalBaseUrl, missingKeyError, tagRejectedKey } from '../aiGateway/missingKey.js';
 import { getUserApiKeyConfig, inferUserApiKeyProvider } from '../security/userApiKeys.js';
 import { requiresPersonalApiKey } from '../security/byokPolicy.js';
+import { scopeServerKey } from '../security/serverKeys.js';
 import { publicChatError } from '../routes/chat/httpErrors.js';
 
 export const ARENA_MAX_LANES = 4;
-export const ARENA_TIMEOUT_MS = 90_000;
+export const ARENA_TIMEOUT_MS = 120_000;
+export const ARENA_MAX_TOKENS = 8192;
+export const ARENA_MAX_TOKENS_CEILING = 32_000;
 export const ARENA_PROVIDERS = Object.freeze([
   'anthropic', 'google', 'openai', 'openrouter', 'ollama', 'xai', 'moonshot', 'opencode', 'zai', 'cohere',
 ]);
@@ -30,7 +33,9 @@ export function parseArenaRequest(body = {}) {
     if (!ARENA_PROVIDERS.includes(provider) || !model) return { error: 'One of the picked models is not one the arena knows.' };
     lanes.push({ provider, model });
   }
-  const maxTokens = Math.min(4096, Math.max(64, Number(body.maxTokens) || 1024));
+  // Thinking models (Gemini 3.x, Claude) spend part of this budget thinking
+  // before they write, so a small cap cuts answers off mid-code.
+  const maxTokens = Math.min(ARENA_MAX_TOKENS_CEILING, Math.max(256, Number(body.maxTokens) || ARENA_MAX_TOKENS));
   return { prompt, system: text(body.system, 8000), lanes, maxTokens };
 }
 
@@ -45,7 +50,8 @@ export async function laneConfig({ provider, model }, { userId = null, role = 'u
   // Keep the model picked here, not the default saved with the key.
   if (personal) return { ...config, apiKey: personal.apiKey };
   if (requiresPersonalApiKey(role) && !isLocalBaseUrl(config.baseUrl)) throw missingKeyError(keyProvider);
-  return config;
+  // On a local install a teammate races on the owner's keys only if shared.
+  return scopeServerKey(config, { userId, userRole: role });
 }
 
 function usageOf(data, prompt, reply) {

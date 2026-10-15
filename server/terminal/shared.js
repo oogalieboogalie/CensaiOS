@@ -1,6 +1,7 @@
 import path from 'path';
 import { WebSocket } from 'ws';
 import { createLogger } from '../logger.js';
+import { resolveProjectPathForRuntime } from '../workspaces/shared.js';
 
 export const log = createLogger('terminal');
 
@@ -13,7 +14,10 @@ export function safeJsonSend(ws, payload) {
 export function resolveCwd(rawCwd) {
   const fallback = process.cwd();
   if (!rawCwd || typeof rawCwd !== 'string') return fallback;
-  const resolved = path.resolve(rawCwd);
+  // The board stores folders the way the person sees them (D:\Sites\shop
+  // on a Windows PC running censaiOS in Docker); the shell needs the path
+  // this server sees.
+  const resolved = resolveProjectPathForRuntime(rawCwd) || path.resolve(rawCwd);
   return resolved || fallback;
 }
 

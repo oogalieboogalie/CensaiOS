@@ -13,6 +13,12 @@ export async function buildSubAgentSystemPrompt(sub, context = {}) {
   if (sub.role) lines.push(`Role: ${sub.role}`);
   if (sub.specialty) lines.push(`Specialty: ${sub.specialty}`);
   lines.push('');
+  // The job a template or designer gave this agent comes first; without it a
+  // starter board's Lead or Code Reviewer would answer as a generic helper.
+  if (sub.system_prompt) {
+    lines.push(String(sub.system_prompt));
+    lines.push('');
+  }
 
   let project = null;
   if (sub.project_id && context.workspaceId === sub.workspace_id) {
@@ -72,7 +78,7 @@ export async function buildSubAgentSystemPrompt(sub, context = {}) {
         lines.push(brief);
       }
     } catch {}
-  } else {
+  } else if (!sub.system_prompt) {
     lines.push('You are not bound to a project. Ask your parent to recreate you with a project binding.');
   }
 

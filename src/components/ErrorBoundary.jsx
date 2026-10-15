@@ -1,5 +1,6 @@
 /* eslint-disable no-restricted-syntax -- the crash screen must not depend on the theme that may have crashed */
 import React from 'react';
+import { reportError } from '../lib/selfFix/reporter.js';
 
 // Surfaces otherwise-invisible render errors. Without this, an uncaught render
 // throw makes React 18 unmount the whole tree -> blank white page with the real
@@ -16,6 +17,7 @@ export class ErrorBoundary extends React.Component {
     this.setState({ info });
     // eslint-disable-next-line no-console
     console.error('[ErrorBoundary] render crash:', error, info);
+    reportError({ kind: 'app-crash', error, componentStack: info?.componentStack });
   }
   render() {
     const { error, info } = this.state;

@@ -71,7 +71,7 @@ export function OfficeBar({ title, formats = [], onImport, importHint, children 
           {open && (
             <div className="hb-of-menu" role="menu">
               {formats.map((f) => (
-                <button key={f.ext} type="button" role="menuitem" className="hb-of-menu-item" onClick={() => run(f)}>
+                <button key={`${f.ext}-${f.label}`} type="button" role="menuitem" className="hb-of-menu-item" onClick={() => run(f)}>
                   <span className="hb-of-menu-ext">.{f.ext}</span>
                   <span className="hb-of-menu-text"><span>{f.label}</span>{f.hint && <span className="hb-of-menu-hint">{f.hint}</span>}</span>
                 </button>

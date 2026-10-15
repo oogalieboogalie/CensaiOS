@@ -1,6 +1,6 @@
 import React from 'react';
 
-function cursorColor(clientId) {
+export function cursorColor(clientId) {
   let hash = 0;
   for (const ch of String(clientId)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
   return `hsl(${hash % 360} 80% 55%)`;

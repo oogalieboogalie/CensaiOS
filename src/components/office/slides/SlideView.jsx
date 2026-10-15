@@ -45,7 +45,7 @@ function startDrag(e, block, frame, mode, onChange) {
 
 /**
  * One slide drawn at any width. With `edit` it becomes the editing stage:
- * { selectedId, editingId, onSelect, onEdit, onBox, onText }.
+ * { selectedId, editingId, onSelect, onEdit, onBox, onText, onRemove }.
  */
 export function SlideView({ slide, theme, width, edit, label }) {
   const frame = React.useRef(null);
@@ -91,6 +91,10 @@ export function SlideView({ slide, theme, width, edit, label }) {
                 : <TextBody block={block} theme={theme} scale={scale} />}
             {selected && !editing && (
               <span className="hb-of-handle" onPointerDown={(e) => startDrag(e, block, frame.current, 'size', onBoxChange(block.id))} aria-hidden="true" />
+            )}
+            {selected && !editing && edit.onRemove && (
+              <button type="button" className="hb-of-sblock-del" aria-label={block.type === 'image' ? 'Delete this picture' : 'Delete this text box'}
+                title="Delete (Delete key)" onPointerDown={(e) => e.stopPropagation()} onClick={() => edit.onRemove(block.id)}>{'×'}</button>
             )}
           </div>
         );

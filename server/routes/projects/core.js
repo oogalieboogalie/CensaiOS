@@ -93,7 +93,8 @@ export async function openProjectHandler(req, res) {
   try {
     const existingPath = projectPath ? await assertDirectory(projectPath) : undefined;
     const project = await openProject(CORE_PROJECT_OWNERS[0], {
-      name: String(name || '').trim() || undefined,
+      // A folder opened by its path alone is named after the folder.
+      name: String(name || '').trim() || (existingPath ? inferProjectName(existingPath) : undefined),
       repo: String(repo || '').trim() || undefined,
       existingPath,
       summary: String(summary || '').trim() || undefined,

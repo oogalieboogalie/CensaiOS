@@ -25,19 +25,27 @@ jest.unstable_mockModule('../server/aiGateway/index.js', () => ({
   workspaceUsageSink,
 }));
 jest.unstable_mockModule('../server/db.js', () => ({ default: { query: jest.fn() } }));
+const getUserApiKeyConfig = jest.fn(async () => null);
+jest.unstable_mockModule('../server/security/userApiKeys.js', () => ({
+  getUserApiKeyConfig,
+  inferUserApiKeyProvider: jest.fn(),
+}));
 jest.unstable_mockModule('../server/workspaces/context.js', () => ({ resolveWorkspaceContext }));
 
 const { imagesRouter } = await import('../server/routes/images/index.js');
 
+let session = { userId: 7, userRole: 'admin' };
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use((req, _res, next) => {
-  req.session = { userId: 7 };
+  req.session = { ...session };
   next();
 });
 app.use('/api/images', imagesRouter);
 
 beforeEach(() => {
+  session = { userId: 7, userRole: 'admin' };
+  getUserApiKeyConfig.mockResolvedValue(null);
   resolveWorkspaceContext.mockImplementation(async (_db, { workspaceId }) => ({ id: workspaceId }));
 });
 
@@ -171,5 +179,35 @@ describe('/api/images routes', () => {
       code: 'PLATFORM_MODEL_KIND_DENIED',
       retryAfter: null,
     });
+  });
+
+  test('a teammate without a Google key cannot spend the owner\'s key', async () => {
+    session = { userId: 8, userRole: 'user' };
+
+    const res = await request(app).post('/api/images/generate').send({
+      prompt: 'a clean app icon', workspaceId: 'workspace-1',
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ code: 'MODEL_KEY_MISSING', keyProvider: 'google' });
+    expect(res.body.error).toMatch(/Google Gemini key/);
+    expect(callModel).not.toHaveBeenCalled();
+  });
+
+  test('a teammate with their own Google key spends that key', async () => {
+    session = { userId: 8, userRole: 'user' };
+    getUserApiKeyConfig.mockImplementation(async (userId, provider) => (
+      userId === 8 && provider === 'google' ? { apiKey: 'teammate-key' } : null
+    ));
+    callModel.mockResolvedValue({
+      generatedImages: [{ image: { imageBytes: 'abc', mimeType: 'image/png' } }],
+    });
+
+    const res = await request(app).post('/api/images/generate').send({
+      prompt: 'a clean app icon', workspaceId: 'workspace-1',
+    });
+
+    expect(res.status).toBe(200);
+    expect(callModel.mock.calls[0][0].config.apiKey).toBe('teammate-key');
   });
 });

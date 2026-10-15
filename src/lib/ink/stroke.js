@@ -45,29 +45,76 @@ export function coalescedSamples(event) {
   return [event];
 }
 
+/**
+ * A light hand on a real pen (Surface, Wacom) reports 0.02-0.15, which used
+ * to draw a hairline. Lift the light end so a gentle stroke still reads,
+ * leave medium (0.5) and hard presses where they were.
+ */
+export function feltPressure(p) {
+  const raw = Math.max(0, Math.min(1, Number(p) || 0));
+  return raw >= 0.5 ? raw : 0.5 * Math.sqrt(raw * 2);
+}
+
+const THINNING = 0.5;
+
+function strokeLength(pts) {
+  let len = 0;
+  for (let i = 1; i < pts.length; i += 1) len += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+  return len;
+}
+
 // Settings tuned to feel like a fine felt pen: noticeable taper, no wobble.
+// Short flicks and ticks get round ends instead of a taper (a taper on both
+// ends of a short stroke used to leave nothing), and on longer strokes it
+// never eats more than a quarter of the line from each end.
+function taperFor(stroke) {
+  const size = stroke.size || 4;
+  const len = strokeLength(stroke.pts || []);
+  if (stroke.sim || len < size * 4) return 0;
+  return Math.min(Math.max(4, size * 1.5), len / 4);
+}
+
 export function freehandOptions(stroke, { last = true } = {}) {
+  const taper = taperFor(stroke);
   return {
     size: stroke.size || 4,
-    thinning: stroke.sim ? 0.5 : 0.62,
+    thinning: stroke.sim ? 0.5 : THINNING,
     smoothing: 0.55,
     streamline: 0.4,
     simulatePressure: Boolean(stroke.sim),
-    start: { taper: stroke.sim ? 0 : Math.max(4, stroke.size * 1.5), cap: true },
-    end: { taper: stroke.sim ? 0 : Math.max(4, stroke.size * 1.5), cap: true },
+    start: { taper, cap: true },
+    end: { taper, cap: true },
     last,
   };
 }
 
 function samplesFor(stroke) {
   return (stroke.pts || []).map((pt) => {
-    const pressure = Math.min(1, (pt.p ?? 0.5) * (1 + TILT_WIDEN * (pt.t || 0)));
+    const pressure = Math.min(1, feltPressure(pt.p ?? 0.5) * (1 + TILT_WIDEN * (pt.t || 0)));
     return [pt.x, pt.y, pressure];
+  });
+}
+
+/**
+ * A tap: a round dot at least the pen's normal width (a tap is short, so the
+ * pen rarely reports much pressure), bigger if pressed harder.
+ */
+function dotOutline(stroke) {
+  const pts = stroke.pts;
+  const pressure = stroke.sim ? 0.5 : Math.max(0.5, ...samplesFor(stroke).map((s) => s[2]));
+  const r = Math.max(0.5, ((stroke.size || 4) / 2) * (0.5 + THINNING * (pressure - 0.5)) * 2);
+  const cx = pts.reduce((sum, pt) => sum + pt.x, 0) / pts.length;
+  const cy = pts.reduce((sum, pt) => sum + pt.y, 0) / pts.length;
+  return Array.from({ length: 16 }, (_, i) => {
+    const a = (i / 16) * Math.PI * 2;
+    return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
   });
 }
 
 export function inkOutline(stroke, options) {
   if (!stroke?.pts?.length) return [];
+  // Anything shorter than the pen is wide is a dot, not a line.
+  if (strokeLength(stroke.pts) < Math.max(1, (stroke.size || 4) / 2)) return dotOutline(stroke);
   return getStroke(samplesFor(stroke), freehandOptions(stroke, options));
 }
 

@@ -28,6 +28,7 @@ export function WhiteboardCanvas({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         style={{
           flex: 1,
           width: '100%',
@@ -35,6 +36,7 @@ export function WhiteboardCanvas({
           outline: 'none',
           cursor: activeMode === 'select' ? 'default' : 'crosshair',
           userSelect: 'none',
+          touchAction: 'none',
         }}
       >
         {/* Background dot pattern */}

@@ -34,6 +34,18 @@ export const CORE_WINDOW_MANIFESTS = [
     lab: { title: 'Model arena', props: {} },
     moduleMenu: { show: true, status: 'ready', order: 8, icon: 'Activity', label: 'Model arena', hint: 'Send one request to up to four models and watch them race: speed, tokens and cost side by side' },
   },
+  // Benchmarks: recorded arena runs and a per-model table, on the board.
+  {
+    kind: 'arenaBenchmarks',
+    canvasType: 'arenaBenchmarks',
+    label: 'Benchmarks',
+    componentName: 'ArenaBenchmarksWindow',
+    componentPath: 'src/components/windows/arenaBenchmarks/index.jsx',
+    defaultSize: { w: 860, h: 560 },
+    header: { title: 'Benchmarks', icon: 'History' },
+    lab: { title: 'Benchmarks', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 9, icon: 'History', label: 'Benchmarks', hint: 'A distributed benchmark from your own real tasks: which models were fastest, most accurate and cheapest' },
+  },
   {
     kind: 'todos',
     canvasType: 'todo',
@@ -68,8 +80,8 @@ export const CORE_WINDOW_MANIFESTS = [
     label: 'Workflow',
     componentName: 'WorkflowWindow',
     componentPath: 'src/components/WorkflowWindow.jsx',
-    defaultSize: { w: 480, h: 560 },
-    launcher: { show: true, order: 40, icon: 'NewWorkflow', label: 'Workflow', hint: 'multi-step pipeline' },
+    defaultSize: { w: 980, h: 560 },
+    launcher: { show: true, order: 40, icon: 'NewWorkflow', label: 'Workflow', hint: 'chain agents on a node canvas' },
   },
   {
     kind: 'files',

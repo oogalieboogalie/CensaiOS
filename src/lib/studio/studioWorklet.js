@@ -1,4 +1,3 @@
-/* global sampleRate */
 import { Engine } from './engine.js';
 
 // The Studio's audio thread: one worklet runs the whole engine (sources,
