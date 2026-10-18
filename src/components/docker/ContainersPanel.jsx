@@ -52,7 +52,7 @@ export function ContainersPanel({ containers, stats, history, busy, run, selecte
   if (list.length === 0) {
     return (
       <EmptyState icon={<DIcon.Box size={30} />} title="No containers yet">
-        <p>Run one with <code>docker run</code> or bring up a compose project and it shows up here within a few seconds.</p>
+        <p>Start one from the Images tab with its Run button, or bring up a compose project, and it shows up here within a few seconds.</p>
       </EmptyState>
     );
   }

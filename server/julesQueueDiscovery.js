@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { briefWave } from '../src/lib/jules/waves.js';
 
 const EXCLUDED_NAMES = new Set([
   'JULES_TASK_TEMPLATE.md',
@@ -55,6 +56,7 @@ export function classifyHandoff({ filePath, text, stat, repoRoot }) {
     source: 'handoff-directory',
     priority: field(text, 'Priority') || 'normal',
     assignee: field(text, 'Assignee') || null,
+    wave: briefWave(text),
     handoffStatus: statusText || 'open',
     discoveredAt: stat.mtime.toISOString(),
     fingerprint: fingerprint(text, filePath),

@@ -188,4 +188,13 @@ export const WORK_COVERS = {
       <rect x="23" y="13" width="7" height="6" rx="0.8" {...F} /><rect x="32" y="13" width="7" height="6" rx="0.8" {...F} />
     </>
   ),
+  // A blueprint card: the name bar, the ID boxed in accent, three lines.
+  blueprints: (
+    <>
+      <rect x="6" y="3.5" width="32" height="17" rx="1.5" {...S} />
+      <path d="M9.5 7 H27" {...H} />
+      <rect x="9" y="9.5" width="13" height="3.5" rx="0.6" {...A} />
+      <path d="M10 16.5 H20 M24 16.5 H34 M24 12 H34" {...F} />
+    </>
+  ),
 };

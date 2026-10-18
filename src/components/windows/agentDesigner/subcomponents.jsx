@@ -168,14 +168,19 @@ export function ToolChipBar({ selectedToolRows, toggleTool, toolSearch, setToolS
           <span style={{ color: 'var(--ink-soft)' }}>x</span>
         </button>
       ))}
-      <input value={toolSearch} onChange={e => setToolSearch(e.target.value)} placeholder="Search available tools" style={toolSearchStyle} />
+      <input value={toolSearch} onChange={e => setToolSearch(e.target.value)} placeholder="Search tools by what you need, like send a message" style={toolSearchStyle} />
     </div>
   );
 }
 
-export function ToolCatalog({ filteredCategories, selectedTools, toggleTool }) {
+export function ToolCatalog({ filteredCategories, selectedTools, toggleTool, meanings = [] }) {
   return (
     <div style={catalogStyle}>
+      {meanings.length > 0 && (
+        <div data-testid="tool-meanings" style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
+          Also found by meaning: {meanings.join(' · ')}
+        </div>
+      )}
       {filteredCategories.map(category => (
         <ToolCategory key={category.id} category={category} selectedTools={selectedTools} toggleTool={toggleTool} />
       ))}

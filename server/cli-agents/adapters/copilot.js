@@ -27,8 +27,8 @@ export const copilot = {
   aliases: {},
   taskInArgs: true,
 
-  buildRun({ task, model }) {
-    const args = ['-p', task, '--allow-tool', 'write'];
+  buildRun({ task, model, readOnly = false }) {
+    const args = readOnly ? ['-p', task] : ['-p', task, '--allow-tool', 'write'];
     if (model && SAFE_ID.test(model)) args.push('--model', model);
     return { args, stdin: [], keepStdinOpen: false };
   },

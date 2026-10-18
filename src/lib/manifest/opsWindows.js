@@ -217,4 +217,26 @@ export const OPS_WINDOW_MANIFESTS = [
     lab: { title: 'Inbox', props: {} },
     moduleMenu: { show: true, status: 'ready', order: 18, icon: 'Inbox', label: 'Inbox', hint: 'Only what needs you: red checks, conflicts, agents waiting for an OK, errors' },
   },
+  {
+    kind: 'apiBar',
+    canvasType: 'apiBar',
+    label: 'API Bar',
+    componentName: 'ApiBarWindow',
+    componentPath: 'src/components/windows/apiBar/index.jsx',
+    defaultSize: { w: 940, h: 640 },
+    lab: { title: 'API Bar', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 19, icon: 'Plug', label: 'API Bar', hint: 'One door for every censaiOS API: a doorman passes your note to the right one and brings the answer back, signed' },
+  },
+  // Blueprints (Alex's diagram 08): a shelf of recipes with IDs; "Do we have ..." looks here.
+  {
+    kind: 'blueprints',
+    canvasType: 'blueprints',
+    label: 'Blueprints',
+    componentName: 'BlueprintsWindow',
+    componentPath: 'src/components/windows/blueprints/index.jsx',
+    defaultSize: { w: 940, h: 620 },
+    header: { title: 'Blueprints', icon: 'Files' },
+    lab: { title: 'Blueprints', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 67, icon: 'Files', label: 'Blueprints', hint: 'A shelf of recipes that worked, each with its own ID. Ask "Do we have any budget blueprints?" and agents look here first' },
+  },
 ];

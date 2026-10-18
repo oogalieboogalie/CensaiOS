@@ -9,7 +9,7 @@ import {
   getTerminalSocketUrl,
   installTerminalInteractionBridge,
 } from './terminalInteractions.js';
-import { openTerminalSocket, stillSignedIn } from './terminalSocket.js';
+import { openTerminalSocket, terminalRefusal } from './terminalSocket.js';
 import { terminalFont, whenGlowFontReady } from './terminalGlow.js';
 
 const log = createLogger('terminal');
@@ -86,6 +86,7 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
             log.info('backend connected', { backend: message.backend });
             if (isReconnect) term.writeln(`\x1b[2mReconnected.\x1b[0m`);
             else term.writeln(message.cli ? `Starting ${message.backend}…` : `Connected — ${message.backend}.`);
+            if (message.note && !isReconnect) term.writeln(`\x1b[2m${message.note}\x1b[0m`);
           }
           if (message.type === 'output') {
             if (message.replay) {
@@ -109,9 +110,15 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
       onDrop(attempt, delay) {
         log.info('socket closed, reconnecting', { cwd, attempt, delay });
         if (attempt === 0) term.writeln('\r\n\x1b[2mConnection lost. Reconnecting…\x1b[0m');
-        if (attempt === 3) {
-          stillSignedIn().then((ok) => {
-            if (!ok && termRef.current === term) term.writeln('\x1b[33mYou are signed out. Sign in again and this terminal reconnects.\x1b[0m');
+        if (attempt === 0 || attempt === 3) {
+          terminalRefusal().then((why) => {
+            if (termRef.current !== term) return;
+            if (why === 'owner-only') {
+              link.close();
+              term.writeln("\x1b[33mOnly this computer's owner can open a terminal here.\x1b[0m");
+            } else if (why === 'signed-out' && attempt === 3) {
+              term.writeln('\x1b[33mYou are signed out. Sign in again and this terminal reconnects.\x1b[0m');
+            }
           });
         }
       },

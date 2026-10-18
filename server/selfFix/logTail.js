@@ -43,7 +43,9 @@ export function watchServerLog(onError) {
   detach?.();
   detach = onLogRecord((record) => {
     recordLine(record);
-    if (record.level !== 'error' || String(record.namespace).startsWith('self-fix')) return;
+    // Copied console lines and the board's own errors (server/appLog/) are
+    // kept in the tail but are not reports: the board reports its own.
+    if (record.level !== 'error' || /^(self-fix|console|browser)/.test(String(record.namespace))) return;
     const meta = record.meta;
     const err = meta instanceof Error ? meta : meta?.error instanceof Error ? meta.error : null;
     const detail = err ? err.message : typeof meta?.error === 'string' ? meta.error : '';

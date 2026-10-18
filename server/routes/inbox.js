@@ -8,9 +8,15 @@ import { startCiFix } from '../inbox/ciFix.js';
 import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
 import { assertSystemAdmin } from '../security/systemAdmin.js';
 import { registerSelfFixSource } from '../inbox/selfFixSource.js';
+import { registerJulesStuckSource } from '../inbox/julesStuckSource.js';
+import { registerSpeakUpSource } from '../inbox/speakUpSource.js';
 
 // The self-fixing error reports show up as Inbox items for the owner.
 registerSelfFixSource();
+// Jules tasks the overnight runner parked, so a stuck task reaches a person.
+registerJulesStuckSource();
+// Short notes agents posted on their own (diagram 17, speak up).
+registerSpeakUpSource();
 
 /**
  * The Inbox window: pull requests, coding agents and error reports in one list.

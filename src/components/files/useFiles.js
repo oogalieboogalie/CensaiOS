@@ -1,5 +1,6 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
+import { searchFiles } from './listFolder.js';
 
 export function normalizeSearchResults(data) {
   if (Array.isArray(data)) return data;
@@ -38,6 +39,7 @@ export function useFiles({ win, onUpdate, currentProject }) {
   const [searchInput, setSearchInput] = React.useState('');
   const [searchResults, setSearchResults] = React.useState(null);
   const [searchLoading, setSearchLoading] = React.useState(false);
+  const [searchError, setSearchError] = React.useState('');
 
   const seededWindowRef = React.useRef(null);
 
@@ -89,15 +91,13 @@ export function useFiles({ win, onUpdate, currentProject }) {
     const timer = setTimeout(() => {
       setSearchLoading(true);
       if (mode === 'local') {
-        fetch(`/api/files/search?path=${encodeURIComponent(win.dirPath || '')}&q=${encodeURIComponent(searchInput)}`)
-          .then(res => res.json())
-          .then(data => { setSearchResults(normalizeSearchResults(data)); setSearchLoading(false); })
-          .catch(() => { setSearchResults([]); setSearchLoading(false); });
+        searchFiles(`/api/files/search?path=${encodeURIComponent(win.dirPath || '')}&q=${encodeURIComponent(searchInput)}`)
+          .then(data => { setSearchError(''); setSearchResults(normalizeSearchResults(data)); setSearchLoading(false); })
+          .catch((err) => { setSearchError(err.message); setSearchResults([]); setSearchLoading(false); });
       } else if (mode === 'github' && win.githubRepo) {
-        fetch(`/api/github/search?repo=${encodeURIComponent(win.githubRepo)}&q=${encodeURIComponent(searchInput)}`)
-          .then(res => res.json())
-          .then(data => { setSearchResults(normalizeSearchResults(data)); setSearchLoading(false); })
-          .catch(() => { setSearchResults([]); setSearchLoading(false); });
+        searchFiles(`/api/github/search?repo=${encodeURIComponent(win.githubRepo)}&q=${encodeURIComponent(searchInput)}`)
+          .then(data => { setSearchError(''); setSearchResults(normalizeSearchResults(data)); setSearchLoading(false); })
+          .catch((err) => { setSearchError(err.message); setSearchResults([]); setSearchLoading(false); });
       }
     }, 400);
     return () => clearTimeout(timer);
@@ -151,6 +151,7 @@ export function useFiles({ win, onUpdate, currentProject }) {
     setSearchInput,
     searchResults,
     searchLoading,
+    searchError,
     loadDir,
     clearDir,
     onUpdate,

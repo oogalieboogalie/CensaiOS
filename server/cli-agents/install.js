@@ -57,6 +57,7 @@ function findOnPath(binary, env = process.env) {
  * That sidesteps Windows .cmd shims, which would need a shell and quoting.
  */
 function managedEntry(adapter, env = process.env) {
+  if (!adapter.npmPackage) return null;
   const pkgDir = path.join(managedPrefix(env), 'node_modules', ...adapter.npmPackage.split('/'));
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8'));
@@ -151,6 +152,7 @@ export function installState(id) {
 export function installCli(id, env = process.env) {
   const adapter = getAdapter(id);
   if (!adapter) return Promise.reject(new Error('Unknown CLI.'));
+  if (!adapter.npmPackage) return Promise.reject(new Error(adapter.installHint || `${adapter.label} is not installed on this computer.`));
   const existing = installs.get(id);
   if (existing?.status === 'installing') return existing.promise;
 

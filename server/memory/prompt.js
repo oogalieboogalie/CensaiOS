@@ -7,6 +7,10 @@ import {
 } from './promptCompiler.js';
 import { buildSubAgentRosterPrompt } from './subagentRoster.js';
 import { loadAgentEquippedDefinitions } from '../attributes/registry.js';
+import { loadEquippedSkillSets } from '../skillSets/store.js';
+import { buildSkillSetsPrompt } from '../skillSets/normalize.js';
+import { lookupBlueprintsForMessage } from '../blueprints/store.js';
+import { buildBlueprintsPrompt } from '../blueprints/prompt.js';
 import pool from '../db.js';
 import { buildAuthorizedProjectContext } from '../workspaces/prewarm.js';
 import {
@@ -62,6 +66,16 @@ export async function buildSystemPrompt(agentId, currentMessage, runtimeContext 
   let prompt = compilePromptTemplate(template, equippedAttributes);
   prompt += buildOperatingAttributesPrompt(equippedAttributeDefinitions);
   prompt += buildOperatingMindsetsPrompt(equippedMindsets);
+  try {
+    prompt += buildSkillSetsPrompt(await loadEquippedSkillSets(pool, runtimeContext?.workspaceId || null, agentId));
+  } catch (err) {
+    console.error('Failed to load equipped skill sets:', err.message);
+  }
+  try {
+    prompt += buildBlueprintsPrompt(await lookupBlueprintsForMessage(pool, runtimeContext?.workspaceId || null, currentMessage));
+  } catch (err) {
+    console.error('Failed to look up blueprints:', err.message);
+  }
   prompt += TOOL_AUTONOMY_CONTRACT;
   prompt += `\n\n${await buildSubAgentRosterPrompt(agentId, runtimeContext)}`;
 

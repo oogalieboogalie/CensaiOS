@@ -33,6 +33,9 @@ export const opencode = {
   aliases: ALIASES,
   taskInArgs: true,
 
+  // No read-only switch on the command line, so it is not offered as a reviewer.
+  noReadOnly: true,
+
   buildRun({ task, resumeSessionId, model }) {
     const args = ['run', '--format', 'json'];
     if (model && SAFE_ID.test(model)) args.push('--model', model);

@@ -13,11 +13,17 @@ import { ImportCard } from './ImportAgentCard.jsx';
 
 const HINTS = {
   'google-adk': 'agent.py with Agent(...) or root_agent.yaml',
-  openai: 'Assistant JSON or an Agents SDK .py file',
+  openai: 'Assistant JSON or an Agents SDK .py file, or pull your Assistants from your account',
   claude: 'Subagent .md file or Agent SDK JSON',
   grok: 'Agent JSON with a grok model',
   elevenlabs: 'Agent JSON, or pull from your account',
 };
+
+// Platforms whose agents can be pulled straight from the person's account.
+const ACCOUNT_PULLS = [
+  { platform: 'elevenlabs', label: 'ElevenLabs' },
+  { platform: 'openai', label: 'OpenAI' },
+];
 
 const chipStyle = (active) => ({
   all: 'unset', cursor: 'pointer', padding: '6px 11px', borderRadius: 'var(--radius-full)',
@@ -82,20 +88,21 @@ export function ImportAgentPanel({ onCreateAgent, onUpdate }) {
     }
   };
 
-  const pullFromAccount = async () => {
-    setBusy(true);
+  const pullFromAccount = async (source = 'elevenlabs') => {
+    const label = ACCOUNT_PULLS.find((item) => item.platform === source)?.label || source;
+    setBusy(source);
     setError('');
     setStates({});
     try {
       const res = await fetch('/api/agent-import/account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform: 'elevenlabs' }),
+        body: JSON.stringify({ platform: source }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Could not reach ElevenLabs.');
-      if (!data.agents?.length) throw new Error('No agents found in that ElevenLabs account.');
-      setResult({ platform: 'elevenlabs', agents: data.agents });
+      if (!res.ok) throw new Error(data.error || `Could not reach ${label}.`);
+      if (!data.agents?.length) throw new Error(`No agents found in that ${label} account.`);
+      setResult({ platform: source, agents: data.agents });
     } catch (err) {
       setResult(null);
       setError(err.message);
@@ -160,11 +167,11 @@ export function ImportAgentPanel({ onCreateAgent, onUpdate }) {
           <button type="button" style={primaryBtnStyle} onClick={() => read(text, fileName, platform)} data-testid="import-read">Read it</button>
           <button type="button" style={ghostBtnStyle} onClick={() => fileRef.current?.click()}>Choose a file</button>
           <input ref={fileRef} type="file" accept=".json,.yaml,.yml,.md,.py,.txt" style={{ display: 'none' }} onChange={e => { onFile(e.target.files?.[0]); e.target.value = ''; }} />
-          {(platform === 'elevenlabs' || !platform) && (
-            <button type="button" style={ghostBtnStyle} onClick={pullFromAccount} disabled={busy} data-testid="import-elevenlabs-account">
-              {busy ? 'Asking ElevenLabs...' : 'Pull from my ElevenLabs'}
+          {ACCOUNT_PULLS.filter((item) => !platform || platform === item.platform).map((item) => (
+            <button key={item.platform} type="button" style={ghostBtnStyle} onClick={() => pullFromAccount(item.platform)} disabled={Boolean(busy)} data-testid={`import-${item.platform}-account`}>
+              {busy === item.platform ? `Asking ${item.label}...` : `Pull from my ${item.label}`}
             </button>
-          )}
+          ))}
           {fileName && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>{fileName}</span>}
         </div>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { PillBtn } from './AgentStats.jsx';
 import { modelOptionsFor, defaultModelForProvider } from './AgentData.js';
+import { searchToolCatalog } from '../../lib/tools/toolSearch.js';
 import { AgentIconPicker } from './AgentIconPicker.jsx';
 
 export function AgentEditor({
@@ -18,11 +19,8 @@ export function AgentEditor({
     .map(toolName => (toolCatalog.tools || []).find(tool => tool.name === toolName) || { name: toolName, label: toolName, category: 'Selected' })
     .filter(Boolean);
 
-  const filteredToolRows = (toolCatalog.tools || []).filter(tool => {
-    if (draftTools.includes(tool.name)) return false;
-    const needle = `${tool.label} ${tool.name} ${tool.description} ${tool.category} ${tool.type} ${tool.kit} ${(tool.tags || []).join(' ')}`.toLowerCase();
-    return needle.includes(toolSearch.toLowerCase());
-  }).slice(0, 18);
+  const unpicked = (toolCatalog.tools || []).filter(tool => !draftTools.includes(tool.name));
+  const filteredToolRows = (toolSearch.trim() ? searchToolCatalog(unpicked, toolSearch, { limit: 18 }) : unpicked).slice(0, 18);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

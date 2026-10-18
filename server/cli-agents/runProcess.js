@@ -28,6 +28,7 @@ export const processMethods = {
     this.setStatus(task, 'starting');
 
     let launch = this.resolveLaunch(adapter.id);
+    if (!launch && !adapter.npmPackage) throw new Error(adapter.installHint || `${adapter.label} is not installed on this computer.`);
     if (!launch) {
       this.setStatus(task, 'installing');
       task.install = { progress: 0.02, phase: `Installing ${adapter.label}` };
@@ -48,7 +49,7 @@ export const processMethods = {
     const env = buildAgentEnv({ source: this.env, key: keyInfo?.key || null, keyEnv: adapter.keyEnv, managedBin: managedBinDir(this.env), home });
     const redact = createRedactor([keyInfo?.key]);
 
-    const run = adapter.buildRun({ task: text, resumeSessionId: resume ? task.sessionId : null, model: task.model });
+    const run = adapter.buildRun({ task: text, resumeSessionId: resume ? task.sessionId : null, model: task.model, readOnly: Boolean(task.readOnly) });
     const args = [...launch.prefixArgs, ...run.args];
     log.info('starting cli agent', { id: task.id, cli: adapter.id, resume, source: launch.source, keySource: task.keySource });
 

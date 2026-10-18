@@ -29,6 +29,9 @@ import { agentEndpointPublicRouter } from '../routes/agentEndpointsPublic.js';
 import { refuseEmailSignInFromAnotherComputer, webOsPublicRouter } from '../routes/webOs.js';
 import { doorGuard } from '../webOs/doorListener.js';
 import { socialPublicRouter } from '../routes/socialPublic.js';
+import { apiBarRouter } from '../routes/apiBar.js';
+import { legionViewRouter } from '../routes/legion.js';
+import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
 
 export function mountRouters(app) {
   // Pre-guard: /api/auth and /api/hub-auth must come before the guard
@@ -54,6 +57,13 @@ export function mountRouters(app) {
   app.use('/api/mcp', agentEndpointPublicRouter);
   // Social canvas: another censaiOS reads a profile with a key its owner gave out.
   app.use('/api/social/v1', socialPublicRouter);
+  // API Bar: one front door. A bar key stands in for a sign-in, but only for
+  // the branches its owner picked; without a key the bar checks the sign-in
+  // itself (server/routes/apiBar.js).
+  app.use('/api/bar', apiBarRouter);
+  // Legion: what a Legion built, opened by its run's secret link in a sandbox
+  // that sends no cookies (server/routes/legion.js).
+  app.use('/api/legion-view', requireLocalFilesystem, legionViewRouter);
 
   // Authentication guard for all other API endpoints. Express matches in
   // declaration order, so every subsequent `app.use('/api/...')` mount

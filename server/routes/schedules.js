@@ -20,7 +20,11 @@ async function scheduleScope(req, { write = false } = {}) {
       statusCode: 403,
     });
   }
-  return { userId: req.session.userId, workspaceId: workspace.id };
+  return {
+    userId: req.session.userId,
+    workspaceId: workspace.id,
+    seeAgentWakeUps: ['owner', 'admin'].includes(workspace.role),
+  };
 }
 
 function routeError(res, error) {

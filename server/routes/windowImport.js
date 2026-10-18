@@ -15,6 +15,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createLogger } from '../logger.js';
+import { requireSystemAdmin } from '../security/systemAdmin.js';
 import { callModel } from '../aiGateway/callModel.js';
 import { validateGeneratedWindow, windowComponentName } from '../window-import/validation.js';
 import {
@@ -219,7 +220,7 @@ windowImportRouter.post('/import', async (req, res) => {
  * POST /api/windows/sync
  * Runs window:sync manually (e.g. after a manual folder drop).
  */
-windowImportRouter.post('/sync', async (_req, res) => {
+windowImportRouter.post('/sync', requireSystemAdmin, async (_req, res) => {
   const result = await runWindowSync();
   res.json(result);
 });

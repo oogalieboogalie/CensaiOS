@@ -25,6 +25,9 @@ COPY tools/ ./tools/
 # git, libgcc, libstdc++, ripgrep: the Agent Console gives each coding agent
 # its own git worktree, and Claude Code on Alpine needs these to start.
 RUN apk add --no-cache python3 make g++ docker-cli git libgcc libstdc++ ripgrep
+# chromium, ttf-freefont: the Legion window opens what its agents built in a
+# headless browser and takes a screenshot for Echo to judge (server/legion/browser.js).
+RUN apk add --no-cache chromium ttf-freefont
 # Tells the Agent Console to keep installs, worktrees and CLI logins in the
 # state volume, which survives the rebuild at every launch.
 ENV CENSAI_IN_CONTAINER=1 USE_BUILTIN_RIPGREP=0

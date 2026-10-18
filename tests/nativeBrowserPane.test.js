@@ -1,4 +1,4 @@
-import { isAreaClear } from '../src/lib/nativeBrowserPane.js';
+import { isAreaClear, paneScale } from '../src/lib/nativeBrowserPane.js';
 
 // A 1000 x 800 app window. `covered` is a box that sits on top of the page
 // area; every other point lands inside it.
@@ -63,5 +63,20 @@ describe('isAreaClear', () => {
     global.window = { innerWidth: 1000, innerHeight: 800 };
     global.document = { elementFromPoint: (x, y) => (x > 470 && y > 370 ? other : 'area') };
     expect(isAreaClear(area, box(100, 100, 400, 300), { clip: true })).toBe(false);
+  });
+});
+
+describe('paneScale', () => {
+  test('a board zoomed out to 40% zooms the page to 40%', () => {
+    expect(paneScale({ offsetWidth: 800 }, { width: 320 })).toBe(0.4);
+  });
+
+  test('a board at 100% leaves the page at 100%', () => {
+    expect(paneScale({ offsetWidth: 800 }, { width: 800 })).toBe(1);
+  });
+
+  test('a collapsed area falls back to 100%', () => {
+    expect(paneScale({ offsetWidth: 0 }, { width: 0 })).toBe(1);
+    expect(paneScale(null, { width: 300 })).toBe(1);
   });
 });

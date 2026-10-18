@@ -6,8 +6,14 @@ const INTERNAL_PATCH_FIELDS = new Set([
   'agent_id', 'project_id', 'project_name', 'project_path', 'project_repo',
   'project_ref', 'task_text', 'document_target', 'scheduled_time', 'scheduled_date',
   'repeat_enabled', 'repeat_days', 'repeat_freq', 'status', 'next_run_at',
-  'github_url', 'github_number', 'last_error', 'last_run_id',
+  'github_url', 'github_number', 'last_error', 'last_run_id', 'tag',
 ]);
+
+/** A short label like "Maintenance" shown on the run's card; empty means none. */
+export function cleanScheduleTag(value) {
+  const tag = String(value || '').replace(/\s+/g, ' ').trim().slice(0, 32);
+  return tag || null;
+}
 
 export class ScheduleContractError extends Error {
   constructor(message, statusCode = 400) {
@@ -17,14 +23,17 @@ export class ScheduleContractError extends Error {
   }
 }
 
-function scope({ userId, workspaceId } = {}) {
+function scope({ userId, workspaceId, seeAgentWakeUps = false } = {}) {
   const ownerId = Number(userId);
   const workspace = String(workspaceId || '').trim();
   if (!Number.isInteger(ownerId) || ownerId <= 0 || !workspace) {
     throw new ScheduleContractError('Authenticated schedule workspace is required.', 403);
   }
-  return { userId: ownerId, workspaceId: workspace };
+  return { userId: ownerId, workspaceId: workspace, manager: Boolean(seeAgentWakeUps) };
 }
+
+// Your own runs, plus (for the board's owner or admins) every wake-up an agent set.
+const MINE = '(created_by_user_id=$1 OR ($3::boolean AND set_by_agent IS NOT NULL)) AND workspace_id=$2';
 
 function scheduleInput(input = {}) {
   const agentId = String(input.agent_id || '').trim().toLowerCase();
@@ -46,8 +55,8 @@ export async function createSchedule(input, options = {}) {
       agent_id, project_id, project_name, project_path, project_repo, project_ref,
       task_text, document_target, scheduled_time, scheduled_date,
       repeat_enabled, repeat_days, repeat_freq, status, next_run_at,
-      github_url, github_number, workspace_id, created_by_user_id
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'active',$14,$15,$16,$17,$18)
+      github_url, github_number, tag, workspace_id, created_by_user_id
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'active',$14,$15,$16,$17,$18,$19)
     RETURNING *`,
     [
       clean.agentId, input.project_id || null, input.project_name || null, input.project_path || null,
@@ -55,7 +64,7 @@ export async function createSchedule(input, options = {}) {
       input.document_target || null, input.scheduled_time, input.scheduled_date,
       Boolean(input.repeat_enabled), input.repeat_days || null, input.repeat_freq || null,
       clean.nextRunAt, input.github_url || null, input.github_number || null,
-      owner.workspaceId, owner.userId,
+      cleanScheduleTag(input.tag), owner.workspaceId, owner.userId,
     ]
   );
   return rows[0];
@@ -66,9 +75,9 @@ export async function getSchedules(options = {}) {
   const owner = scope(options);
   const { rows } = await db.query(
     `SELECT * FROM schedules
-      WHERE created_by_user_id=$1 AND workspace_id=$2
+      WHERE ${MINE}
       ORDER BY next_run_at ASC`,
-    [owner.userId, owner.workspaceId]
+    [owner.userId, owner.workspaceId, owner.manager]
   );
   return rows;
 }
@@ -81,10 +90,10 @@ export async function updateOwnedSchedule(id, patch, options = {}) {
     throw new ScheduleContractError('Schedules can only be activated or paused from this endpoint.');
   }
   const { rows } = await db.query(
-    `UPDATE schedules SET status=$1, updated_at=NOW()
-      WHERE id=$2 AND created_by_user_id=$3 AND workspace_id=$4
+    `UPDATE schedules SET status=$5, updated_at=NOW()
+      WHERE id=$4 AND ${MINE}
       RETURNING *`,
-    [status, id, owner.userId, owner.workspaceId]
+    [owner.userId, owner.workspaceId, owner.manager, id, status]
   );
   return rows[0] || null;
 }
@@ -93,8 +102,8 @@ export async function deleteOwnedSchedule(id, options = {}) {
   const db = options.db || pool;
   const owner = scope(options);
   const result = await db.query(
-    'DELETE FROM schedules WHERE id=$1 AND created_by_user_id=$2 AND workspace_id=$3',
-    [id, owner.userId, owner.workspaceId]
+    `DELETE FROM schedules WHERE id=$4 AND ${MINE}`,
+    [owner.userId, owner.workspaceId, owner.manager, id]
   );
   return result.rowCount > 0;
 }

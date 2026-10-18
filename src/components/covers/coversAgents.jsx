@@ -4,6 +4,15 @@ import { S, F, A, H, INK, SOFT, FAINT, ACCENT } from './kit.js';
 
 // Chat and agent windows.
 export const AGENT_COVERS = {
+  // Diagram 03: three agents on one shared line, the router below sends a job up to one of them.
+  agentRouter: (
+    <>
+      <rect x="5" y="3" width="9" height="5" rx="1" {...S} /><rect x="17.5" y="3" width="9" height="5" rx="1" {...A} /><rect x="30" y="3" width="9" height="5" rx="1" {...S} />
+      <path d="M5 10.5 H39" {...H} />
+      <rect x="14" y="15" width="16" height="6" rx="1.2" {...S} /><path d="M17 18 H23" {...F} />
+      <path d="M22 15 V8.5" {...A} />
+    </>
+  ),
   // Two speech bubbles, the answer in accent.
   chat: (
     <>
@@ -20,6 +29,16 @@ export const AGENT_COVERS = {
       <circle cx="34" cy="8" r="2.4" {...S} /><path d="M30 15 Q34 10.5 38 15" {...S} />
       <circle cx="22" cy="6.5" r="2.4" {...A} /><path d="M18 13.5 Q22 9 26 13.5" {...A} />
       <path d="M14 19 H30" {...F} /><path d="M17 21 H27" {...H} />
+    </>
+  ),
+  // A team card: group badge and name, member rows, a milestones box.
+  group: (
+    <>
+      <rect x="5" y="3" width="34" height="18" rx="2" {...S} />
+      <circle cx="10" cy="7.5" r="2.4" {...A} /><path d="M14.5 7.5 H24" {...S} />
+      <path d="M8 12 H20 M8 15 H20 M8 18 H20" {...F} />
+      <rect x="24" y="11" width="12" height="8" rx="1" {...F} />
+      <circle cx="27" cy="14" r="0.9" fill={ACCENT} /><path d="M29 14 H34 M27 16.5 H32" {...H} />
     </>
   ),
   // An agent's card with three tuning sliders.
@@ -59,6 +78,14 @@ export const AGENT_COVERS = {
       <path d="M38 4 V20" {...H} strokeDasharray="1.5 1.5" />
     </>
   ),
+  // The build order as four steps, and Echo's check mark in accent.
+  legion: (
+    <>
+      <path d="M5 6 H17 M5 10 H21 M5 14 H25 M5 18 H29" {...F} strokeWidth="2" />
+      <circle cx="35" cy="12" r="5" {...A} />
+      <path d="M32.5 12 L34.4 14 L37.8 10" {...A} />
+    </>
+  ),
   // A results table: three bars, the leader in accent.
   arenaBenchmarks: (
     <>
@@ -76,12 +103,30 @@ export const AGENT_COVERS = {
       <rect x="24" y="13.5" width="3" height="3" fill={ACCENT} />
     </>
   ),
+  // Two panes split by a red line: grey lines on the left, green and red on the right.
+  gitDiff: (
+    <>
+      <rect x="3" y="3" width="16" height="18" rx="1.5" {...S} /><rect x="25" y="3" width="16" height="18" rx="1.5" {...S} />
+      <path d="M22 2 V22" stroke="var(--danger)" strokeWidth="1" />
+      <path d="M6 8 H15 M6 11 H13 M6 14 H16" {...F} />
+      <path d="M28 8 H37 M28 14 H36" stroke="var(--success)" strokeWidth="1.2" strokeLinecap="round" /><path d="M28 11 H35" stroke="var(--danger)" strokeWidth="1.2" strokeLinecap="round" />
+    </>
+  ),
   // A list beside a detail pane, the top row flagged, a dock of dots.
   inbox: (
     <>
       <rect x="4" y="4" width="32" height="16" rx="1.5" {...S} /><path d="M15 4 V20" {...H} />
       <path d="M7 8 H12" {...A} /><path d="M7 12 H12 M7 16 H11 M18 8 H31 M18 12 H28" {...F} />
       <circle cx="39.5" cy="7" r="1.2" fill={ACCENT} /><circle cx="39.5" cy="11" r="1.2" fill={SOFT} /><circle cx="39.5" cy="15" r="1.2" fill={FAINT} />
+    </>
+  ),
+  // The API Bar as first sketched: one door (the note comes in), one bar of five APIs.
+  apiBar: (
+    <>
+      <path d="M22 2 V7 M19.5 4.5 L22 7 L24.5 4.5" {...A} />
+      <rect x="3" y="9" width="38" height="12" rx="3" {...S} />
+      <path d="M6 12 H11 V18 H6 Z M13 12 H18 V18 H13 Z M20 12 H25 V18 H20 Z M27 12 H32 V18 H27 Z M34 12 H39 V18 H34 Z" {...F} />
+      <rect x="20" y="12" width="5" height="6" fill={ACCENT} />
     </>
   ),
   // Agents finding each other across a network.

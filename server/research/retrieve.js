@@ -51,7 +51,8 @@ export function tokenize(text) {
 export function bm25Scores(query, chunks, { k1 = 1.4, b = 0.75 } = {}) {
   const terms = [...new Set(tokenize(query))];
   if (!terms.length || !chunks.length) return chunks.map(() => 0);
-  const docs = chunks.map((chunk) => tokenize(chunk.text));
+  // Tags count as words of the chunk, so "dog" finds a step tagged dog.
+  const docs = chunks.map((chunk) => tokenize(`${chunk.text} ${(chunk.tags || []).join(' ')}`));
   const avg = docs.reduce((sum, doc) => sum + doc.length, 0) / docs.length || 1;
   const df = new Map(terms.map((term) => [term, docs.filter((doc) => doc.includes(term)).length]));
   return docs.map((doc) => {

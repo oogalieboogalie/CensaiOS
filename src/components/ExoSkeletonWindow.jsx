@@ -7,6 +7,9 @@ import { ExoSkeletonAttributes } from './ExoSkeletonAttributes.jsx';
 import { useAgentConfiguration } from './exoskeleton/useAgentConfiguration.js';
 import { FamilyModulesLocked } from './exoskeleton/FamilyModulesLocked.jsx';
 import { FAMILY_AGENTS, FAMILY_AGENT_BY_ID } from '../data/family-agents.js';
+import { SkillSetsTab } from './exoskeleton/SkillSetsTab.jsx';
+
+const TABS = [['modules', 'Exo-Modules'], ['attributes', 'Identity & Mindsets'], ['skills', 'Skill Sets']];
 
 // Only the eight built-in agents can be configured here (the server refuses
 // any other id), so the picker lists exactly those.
@@ -39,30 +42,22 @@ export function ExoSkeletonWindow({ win, onUpdate }) {
         display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--hairline)',
         background: 'var(--surface)', padding: '0 16px', gap: 16, zIndex: 4
       }}>
-        <button
-          onClick={() => setActiveTab('modules')}
-          style={{
-            all: 'unset', cursor: 'pointer', padding: '12px 8px', fontSize: 'var(--text-xs)', fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: 1,
-            color: activeTab === 'modules' ? 'var(--accent)' : 'var(--ink-soft)',
-            borderBottom: activeTab === 'modules' ? '2px solid var(--accent)' : '2px solid transparent',
-            transition: 'all 0.2s'
-          }}
-        >
-          Exo-Modules
-        </button>
-        <button
-          onClick={() => setActiveTab('attributes')}
-          style={{
-            all: 'unset', cursor: 'pointer', padding: '12px 8px', fontSize: 'var(--text-xs)', fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: 1,
-            color: activeTab === 'attributes' ? 'var(--accent)' : 'var(--ink-soft)',
-            borderBottom: activeTab === 'attributes' ? '2px solid var(--accent)' : '2px solid transparent',
-            transition: 'all 0.2s'
-          }}
-        >
-          Identity & Mindsets
-        </button>
+        {TABS.map(([id, label]) => (
+          <button
+            key={id}
+            data-testid={`exo-tab-${id}`}
+            onClick={() => { setActiveTab(id); if (id === 'attributes') config.refreshConfiguration(); }}
+            style={{
+              all: 'unset', cursor: 'pointer', padding: '12px 8px', fontSize: 'var(--text-xs)', fontWeight: 700,
+              textTransform: 'uppercase', letterSpacing: 1,
+              color: activeTab === id ? 'var(--accent)' : 'var(--ink-soft)',
+              borderBottom: activeTab === id ? '2px solid var(--accent)' : '2px solid transparent',
+              transition: 'all 0.2s'
+            }}
+          >
+            {label}
+          </button>
+        ))}
         <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>
           Agent
           <select
@@ -77,7 +72,9 @@ export function ExoSkeletonWindow({ win, onUpdate }) {
       </div>
 
       <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden', background: 'var(--surface-2)' }}>
-        {activeTab === 'modules' ? (
+        {activeTab === 'skills' ? (
+          config.scopeBlocked ? React.createElement(FamilyModulesLocked, { agent, loading: false }) : <SkillSetsTab agent={agent} />
+        ) : activeTab === 'modules' ? (
           config.scopeBlocked || !config.modulesReady ? (
             React.createElement(FamilyModulesLocked, { agent, loading: !config.scopeBlocked })
           ) : (

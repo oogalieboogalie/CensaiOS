@@ -10,6 +10,7 @@ import { authorizeToolInvocation } from './tools/rbac/runtimeAccess.js';
 import { requestToolApprovalIfRequired } from './approvals/requests.js';
 import { assertApprovedToolExecution } from './approvals/decisions.js';
 import { assertFamilyToolAvailable } from './tools/rbac/executionBoundary.js';
+import { assertHostToolAllowed } from './tools/rbac/hostOwnerOnly.js';
 
 export { TOOL_DEFINITIONS, filterToolsForAgent, listToolCatalog } from './tools/definitions.js';
 export { initializeDynamicTools, initializeMcpTools, shutdownMcpTools };
@@ -62,6 +63,7 @@ async function executeRegisteredTool(agentId, name, args, context) {
   const done = log.startTimer();
   try {
     await authorizeToolInvocation(pool, { name, context });
+    await assertHostToolAllowed(pool, { name, args, context });
     log.debug('tool call', { agentId, name, ...safeToolLogMetadata(name, args) });
     const requiredProjectPermission = PROJECT_WORK_TOOLS.has(name) ? 'work' : 'read';
     if (context.workspaceId && DIRECT_REPO_TOOLS.has(name)) {
@@ -82,7 +84,7 @@ async function executeRegisteredTool(agentId, name, args, context) {
     return result;
   } catch (err) {
     log.error('tool failed', { agentId, name, ms: done(), failed: true });
-    const code = err?.code === 'TOOL_ACCESS_DENIED' || err?.code === 'TOOL_ACCESS_UNAVAILABLE'
+    const code = ['TOOL_ACCESS_DENIED', 'TOOL_ACCESS_UNAVAILABLE', 'COMPUTER_OWNER_ONLY'].includes(err?.code)
       ? `${err.code}: `
       : '';
     return `Error: ${code}${err.message}`;
@@ -94,6 +96,8 @@ export async function executeTool(agentId, name, args, context = {}) {
   if (blocked) return blocked;
   try {
     await assertFamilyToolAvailable(agentId, name, context);
+    // Refuse a teammate before an approval card ever reaches the owner.
+    await assertHostToolAllowed(pool, { name, args, context });
     const gate = await requestToolApprovalIfRequired(pool, { agentId, toolName: name, args, context });
     if (gate.required) {
       return `APPROVAL_REQUIRED: ${gate.approval.id} is pending owner/admin review. No action was executed.`;

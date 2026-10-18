@@ -2,6 +2,8 @@ import { readProjectBrief } from '../../workspaces.js';
 import pool from '../../db.js';
 import { resolveAuthorizedWorkspaceProject } from '../../workspaces/projectAccess.js';
 import { resolveChatModelConfig } from '../../aiGateway/index.js';
+import { getSubAgents } from '../../memory.js';
+import { boxNumbers } from '../../../src/lib/agents/dataBoxes.js';
 import {
   MODEL,
   FORCE_TOOL_SYNTHESIS_AFTER_ROUNDS, DIRECT_SYNTHESIS_TOOLS
@@ -89,6 +91,10 @@ export async function buildSubAgentSystemPrompt(sub, context = {}) {
   } else {
     lines.push('For large files, prefer `project_file_outline` before `project_read`. If you need content, read targeted chunks with `max_chars` and `offset` instead of loading the whole file.');
   }
+  // Its own data box (diagram 15): working notes its main agent can read.
+  let box = '';
+  try { box = boxNumbers(await getSubAgents(sub.parent_id, context)).get(sub.id) || ''; } catch {}
+  lines.push(`You have your own data box${box ? ` (${box})` : ''}. Keep working notes and results there with \`scratchpad_write\` (leave sub_agent out) and read them back with \`scratchpad_read\`. Your main agent can read and write it too. For one small job (create, review, read, write, edit or search some text), start a helper with \`start_helper\`; its answer lands in your data box.`);
   lines.push('Be concise. Do the work, file a report or write the change, then explain what you did.');
   return lines.join('\n');
 }
@@ -140,8 +146,19 @@ export function summarizeToolActions(toolActions) {
   return lines.join('\n');
 }
 
+// Project file writes may come in a short run (index.html, style.css, then
+// index.html again) so the chat's live preview builds up as the agent works.
+// The turn is still wrapped up after a few writes, after a failed write, or
+// as soon as a write repeats exactly (a model stuck in a loop).
+const PROJECT_WRITE_TOOLS = new Set(['project_write', 'project_edit', 'project_multi_edit']);
+export const MAX_PROJECT_WRITES_PER_TURN = 4;
+const writeKey = ({ tool, args = {} }) => `${tool}:${JSON.stringify([args.path, args.content, args.old_string, args.new_string, args.edits])}`;
+
 export function shouldSynthesizeAfterToolBatch(actions, round) {
-  if (actions.some(action => DIRECT_SYNTHESIS_TOOLS.has(action.tool))) return true;
+  if (actions.some(action => DIRECT_SYNTHESIS_TOOLS.has(action.tool) && !PROJECT_WRITE_TOOLS.has(action.tool))) return true;
+  const writes = actions.filter(action => PROJECT_WRITE_TOOLS.has(action.tool));
+  if (writes.length >= MAX_PROJECT_WRITES_PER_TURN || writes.some(action => action.ok === false)) return true;
+  if (new Set(writes.map(writeKey)).size < writes.length) return true;
   return round >= FORCE_TOOL_SYNTHESIS_AFTER_ROUNDS;
 }
 

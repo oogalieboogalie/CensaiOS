@@ -8,6 +8,7 @@ const fmt = (n) => Number(n || 0).toLocaleString('en-US');
  * { id, title, detail?, count, lastHour, firstSeen, lastSeen, users?, source, fixing? }
  */
 export function errorItem(report) {
+  if (report.note) return noteItem(report);
   // lastHour can be null when a source only knows a total and the last time.
   const hour = Number.isFinite(report.lastHour) ? report.lastHour : null;
   const escalating = hour != null && (hour >= 10 || (report.count >= 3 && hour / report.count > 0.5));
@@ -33,5 +34,27 @@ export function errorItem(report) {
     ],
     fixable: Boolean(report.fixable),
     actions: report.fixable ? ['fix_error', 'acknowledge'] : ['acknowledge'],
+  };
+}
+
+/** A note an agent posted on its own (diagram 17): read it, nothing to fix. */
+function noteItem(report) {
+  return {
+    id: `note:${report.source || 'speak-up'}:${report.id}`,
+    kind: 'note',
+    reportId: report.id,
+    source: report.source || 'speak-up',
+    repo: report.repo || 'this board',
+    by: report.agent || '',
+    at: report.lastSeen,
+    title: report.title,
+    summary: report.detail || '',
+    state: 'agent_note',
+    group: 'needs',
+    tone: 'accent',
+    subtitle: report.detail || '',
+    stats: [{ label: 'Posted', value: new Date(report.lastSeen).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) }],
+    fixable: false,
+    actions: ['acknowledge'],
   };
 }

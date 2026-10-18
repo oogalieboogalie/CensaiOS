@@ -12,11 +12,15 @@ import { DEMO } from './lib/demo/demoMode.js';
 import { registerOfflineScreen, watchInstallOffer } from './lib/webOs.js';
 import { isTeleprompterPage, TeleprompterPage } from './components/teleprompter/TeleprompterPage.jsx';
 import { installSelfFixReporter } from './lib/selfFix/reporter.js';
+import { installBrowserLog } from './lib/appLog/browserLog.js';
+import { installStaleBuildReload } from './lib/appUpdate/staleBuild.js';
 
 const log = createLogger('boot');
 
 // Count this browser's errors for the Inbox window.
 installBoardErrorCapture();
+// A window opened before an update reloads into the new build.
+installStaleBuildReload();
 
 // Catch-all so nothing fails silently in the browser console.
 window.addEventListener('error', (e) => {
@@ -49,6 +53,9 @@ if ((window.__TAURI_INTERNALS__ || window.__TAURI__) && servedByTauri) {
 // when the computer running it can't be reached.
 // The try-it board has no computer behind it, so it skips both.
 if (!DEMO) {
+  // The board's errors and warnings go into censaiOS's log file. First, so
+  // its own sends stay out of self-fix's list of recent steps.
+  installBrowserLog();
   // Self-fix: errors go quietly to this computer's censaiOS as reports.
   installSelfFixReporter();
   watchInstallOffer();

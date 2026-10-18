@@ -1,8 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { api } from '../lib/api.js';
+import React, { useState, useCallback } from 'react';
 import { pickedWindowTheme, useLookCodeTheme } from './terminal/lookCodeTheme.js';
 import { glowTheme } from './terminal/terminalGlow.js';
-import { TerminalHeader, TerminalToolbar, AgentRunBar } from './terminal/TerminalUI.jsx';
+import { TerminalHeader, AgentRunBar } from './terminal/TerminalUI.jsx';
 import { TerminalPane } from './terminal/TerminalPane.jsx';
 import { TerminalTabBar, terminalTabKeyAction } from './terminal/TerminalTabBar.jsx';
 import {
@@ -14,9 +13,7 @@ import { useWorkspaceStore } from '../lib/store.js';
 export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
   const cwd = win.cwd || currentProject?.path || '';
-  const agentEnabled = Boolean(win.agentEnabled);
   const glow = Boolean(win.terminalGlow);
-  const [projects, setProjects] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showAgentBar, setShowAgentBar] = useState(false);
   // Uncustomized terminals follow the board's look; a per-window theme
@@ -41,43 +38,16 @@ export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
   }, [onUpdate]);
 
   React.useEffect(() => {
-    let cancelled = false;
-    api.getProjects()
-      .then((list) => { if (!cancelled) setProjects(Array.isArray(list) ? list : []); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
-
-  const mountProject = (nextPath) => {
-    const proj = projects.find((p) => p.path === nextPath);
-    onUpdate?.({ cwd: nextPath, title: proj?.name ? `Terminal · ${proj.name}` : 'Terminal' });
-  };
-
-  const mountableProjects = useMemo(() => {
-    const seen = new Set(currentProject?.path ? [currentProject.path] : []);
-    return projects.filter((p) => {
-      if (!p.path || seen.has(p.path)) return false;
-      seen.add(p.path);
-      return true;
-    });
-  }, [projects, currentProject?.path]);
-
-  React.useEffect(() => {
     if (cwd && win.cwd !== cwd) onUpdate?.({ cwd });
   }, [cwd]);
 
   return (
     <>
       <TerminalHeader
-        win={win} cwd={cwd} onUpdate={onUpdate}
+        win={win} onUpdate={onUpdate}
         showSettings={showSettings} setShowSettings={setShowSettings}
         handleThemeChange={handleThemeChange} theme={theme}
         onAddTab={() => tabAction('add')}
-      />
-      <TerminalToolbar
-        theme={theme} win={win} currentProject={currentProject}
-        mountableProjects={mountableProjects} mountProject={mountProject}
-        agentEnabled={agentEnabled} onUpdate={onUpdate}
         onRunAgent={() => setShowAgentBar(s => !s)}
       />
       {showAgentBar && (

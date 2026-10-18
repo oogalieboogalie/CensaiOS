@@ -1,0 +1,55 @@
+/* "Mount to" folder picker (terminal toolbar and the window project chip). */
+.hb-folder-picker {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: min(var(--space-80), 90vw);
+  max-height: 60vh;
+  padding: var(--space-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--elevation-3);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  cursor: default;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.hb-folder-picker-head,
+.hb-folder-picker-here,
+.hb-folder-picker-foot { display: flex; align-items: center; gap: var(--space-1-5); }
+.hb-folder-picker-title { flex: 1; font-family: var(--font-label); text-transform: var(--label-case); letter-spacing: var(--label-tracking); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-folder-picker-icon,
+.hb-folder-picker-place,
+.hb-folder-picker-row,
+.hb-folder-picker-mount { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-1-5); border-radius: var(--radius-sm); }
+.hb-folder-picker-icon { padding: var(--space-1); color: var(--ink-faint); }
+.hb-folder-picker-icon:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.hb-folder-picker-icon:disabled { opacity: 0.4; cursor: default; }
+.hb-folder-picker-places { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.hb-folder-picker-place { padding: var(--space-0-5) var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-full); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-folder-picker-place:hover { background: var(--surface-2); color: var(--ink); }
+.hb-folder-picker-place[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: transparent; }
+.hb-folder-picker-here { padding: var(--space-1) 0; border-bottom: 1px solid var(--hairline); }
+.hb-folder-picker-current { display: flex; flex-direction: column; min-width: 0; }
+.hb-folder-picker-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-folder-picker-path { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); word-break: break-all; }
+.hb-folder-picker-list { display: flex; flex-direction: column; gap: var(--space-0-5); min-height: var(--space-16); overflow: auto; }
+.hb-folder-picker-row { padding: var(--space-1) var(--space-2); color: var(--ink); }
+.hb-folder-picker-row:hover,
+.hb-folder-picker-row:focus-visible { background: var(--surface-2); }
+.hb-folder-picker-row svg { flex-shrink: 0; color: var(--ink-faint); }
+.hb-folder-picker-note { flex: 1; font-size: var(--text-xs); color: var(--ink-faint); padding: var(--space-1) 0; }
+.hb-folder-picker-error { font-size: var(--text-xs); color: var(--danger); }
+.hb-folder-picker-mount { flex-shrink: 0; padding: var(--space-1) var(--space-3); background: var(--accent); color: var(--on-fill); font-family: var(--font-label); text-transform: var(--label-case); letter-spacing: var(--label-tracking); font-size: var(--text-xs); }
+.hb-folder-picker-mount:disabled { opacity: 0.5; cursor: default; }
+
+/* A terminal's header chip reads "Mount to <folder>". */
+.hb-win-project-verb { flex-shrink: 0; color: var(--ink-faint); }
+.hb-win-project-chip:has(.hb-win-project-verb) { max-width: var(--space-64); }
+.hb-win-project .hb-folder-picker { left: auto; right: 0; }

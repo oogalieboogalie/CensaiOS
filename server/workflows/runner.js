@@ -215,6 +215,11 @@ export function activeRun(workspaceId, windowId) {
   return active.get(keyOf(workspaceId, windowId)) || null;
 }
 
+/** Every workflow run in flight in this server, for the update check. */
+export function activeRuns() {
+  return [...active.values()];
+}
+
 export function resetWorkflowRuns() {
   active.clear();
 }

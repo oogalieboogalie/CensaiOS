@@ -1,0 +1,48 @@
+/* Git Diff Viewer (Alex's diagram 16): wordmark, two panes, a red line between. */
+.gdv { display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; padding: 12px 14px 14px; background: var(--surface-sunken); color: var(--ink); }
+.gdv-mark { align-self: center; padding: 6px 22px; border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); font-family: var(--font-display); font-weight: 900; font-size: var(--text-xl); letter-spacing: 0.04em; line-height: 1.1; }
+.gdv-mark-git { color: var(--success); }
+.gdv-mark-diff { color: var(--danger); }
+.gdv-mark-viewer { color: var(--ink-faint); }
+.gdv-bar { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: var(--text-xs); }
+.gdv-select { flex-shrink: 0; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 4px 8px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; }
+.gdv-files { display: flex; gap: 4px; min-width: 0; overflow-x: auto; }
+.gdv-file { all: unset; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; padding: 3px 8px; border: 1px solid var(--hairline); border-radius: var(--radius-full); white-space: nowrap; font-family: var(--font-mono); }
+.gdv-file--on { border-color: var(--ink-soft); background: var(--surface); }
+.gdv-file-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+.gdv-totals { margin-left: auto; font-family: var(--font-mono); }
+.gdv-add { color: var(--success); font-family: var(--font-mono); }
+.gdv-del { color: var(--danger); font-family: var(--font-mono); }
+.gdv-note { margin: 24px auto; color: var(--ink-soft); font-size: var(--text-sm); }
+.gdv-note[data-tone="danger"] { color: var(--danger); }
+
+/* The split: one vertical scroller so left and right rows stay level. */
+.gdv-split { position: relative; flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr); gap: 0 14px; overflow-y: auto; align-items: start; font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; }
+.gdv-split--compact { flex: none; max-height: 420px; gap: 0 8px; }
+.gdv-divider { align-self: stretch; width: 1px; background: var(--danger); }
+.gdv-pane { min-width: 0; border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--surface); overflow-x: auto; }
+.gdv-pane-label { position: sticky; left: 0; display: block; padding: 6px 12px; color: var(--ink-faint); font-family: var(--font-label); text-transform: var(--label-case); font-size: var(--text-xs); border-bottom: 1px solid var(--hairline); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gdv-pane-body { min-width: max-content; padding: 6px 0 10px; }
+.gdv-cell { display: flex; white-space: pre; padding: 0 12px 0 0; min-height: 1.6em; }
+.gdv-n { width: 40px; flex-shrink: 0; padding-right: 10px; text-align: right; color: var(--ink-faint); opacity: 0.6; user-select: none; }
+.gdv-cell--same .gdv-text, .gdv-cell--was .gdv-text { color: var(--ink-soft); }
+.gdv-cell--was { box-shadow: inset 2px 0 0 var(--danger); }
+.gdv-cell--add { background: color-mix(in oklab, var(--success) 12%, transparent); }
+.gdv-cell--add .gdv-text { color: var(--success); font-weight: 600; }
+.gdv-cell--del { background: color-mix(in oklab, var(--danger) 12%, transparent); }
+.gdv-cell--del .gdv-text { color: var(--danger); font-weight: 600; text-decoration: line-through; text-decoration-thickness: 1px; }
+.gdv-gap { min-height: 1.6em; margin: 4px 0; padding: 0 12px; color: var(--ink-faint); background: var(--surface-2); white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+
+/* Paste mode */
+.gdv-split--edit { grid-template-rows: 1fr auto; overflow: hidden; align-items: stretch; }
+.gdv-split--edit .gdv-pane { display: flex; flex-direction: column; overflow: hidden; }
+.gdv-input { flex: 1; min-height: 0; resize: none; border: 0; outline: 0; padding: 8px 12px; background: transparent; color: var(--ink); font: inherit; white-space: pre; }
+.gdv-btn { padding: 5px 14px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
+.gdv-btn--go { grid-column: 3; justify-self: end; margin-top: 10px; background: var(--success); border-color: var(--success); color: var(--on-fill); font-family: var(--font-sans); font-weight: 600; }
+.gdv-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Inside the Agent Console's Changes tab */
+.ac-view-toggle { margin-left: auto; display: inline-flex; gap: 4px; }
+.ac-file .gdv-split { padding: 8px; border-top: 1px solid var(--hairline); }
+.ac-view-btn { all: unset; cursor: pointer; padding: 2px 8px; border: 1px solid var(--hairline); border-radius: var(--radius-full); font-weight: 500; color: var(--ink-soft); }
+.ac-view-btn--on { color: var(--ink); border-color: var(--ink-soft); background: var(--surface); }

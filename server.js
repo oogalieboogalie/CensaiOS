@@ -5,6 +5,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { httpMiddleware } from './server/httpTelemetry.js';
 import { recordCrashSync } from './server/selfFix/index.js';
+import { getLogFilePath } from './server/logRetention.js';
+import { scrubText } from './server/selfFix/scrubText.js';
+import { installConsoleCapture } from './server/appLog/consoleCapture.js';
 import { 
   setupMiddleware, 
   mountRouters, 
@@ -20,11 +23,11 @@ const app = express();
 // daily JSONL log so they survive restarts. Skipped under NODE_ENV=test so
 // suites that intentionally trigger rejections keep working.
 if (process.env.NODE_ENV !== 'test') {
+  // Plain console output goes to the same file (server/appLog/).
+  installConsoleCapture();
   const crashLogPath = () => {
     try {
-      const now = new Date();
-      const day = now.toISOString().slice(0, 10);
-      return path.join(__dirname, '.homebase-state', 'logs', `homebase-${day}.jsonl`);
+      return getLogFilePath(new Date());
     } catch {
       return null;
     }
@@ -39,7 +42,7 @@ if (process.env.NODE_ENV !== 'test') {
         level: 'fatal',
         namespace: 'process',
         message: kind,
-        meta: { message: err?.message || String(err), stack: err?.stack || null },
+        meta: { message: scrubText(err?.message || String(err)), stack: err?.stack ? scrubText(err.stack, 6000) : null },
       };
       fs.appendFileSync(file, `${JSON.stringify(record)}\n`);
       // Self-fix turns this crash into an error report at the next start.

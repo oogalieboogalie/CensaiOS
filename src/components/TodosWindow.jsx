@@ -3,6 +3,7 @@ import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { useTodos } from './todos/useTodos.js';
 import { TodoRow } from './todos/TodoRow.jsx';
+import { ErrorNote } from './ErrorNote.jsx';
 
 const ChevronIcon = ({ expanded }) => (
   <svg
@@ -28,7 +29,7 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
   const {
     items,
     newText, setNewText,
-    handoffError,
+    handoffError, clearError,
     editingId, editText, setEditText,
     completedCount, totalCount,
     toggle, assign, add, startEdit, saveEdit, cancelEdit, handoff
@@ -113,7 +114,7 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
           {totalCount > 0 && <span style={{ marginLeft: 'auto', opacity: 0.7, fontSize: 'var(--text-xs)' }}>({completedCount}/{totalCount})</span>}
         </div>
         {!currentProject?.path && <div style={{ marginBottom: 8, color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', lineHeight: 1.4 }}>Open a local project before handing off todos.</div>}
-        {handoffError && <div style={{ marginBottom: 8, color: 'var(--ps-red)', fontSize: 'var(--text-xs)', lineHeight: 1.4 }}>{handoffError}</div>}
+        <ErrorNote error={handoffError} where={`${win.title || 'Project To-Dos'} window (to-do list)`} onDismiss={clearError} />
 
         {/* Active Tasks List */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>

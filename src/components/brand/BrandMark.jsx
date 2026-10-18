@@ -18,13 +18,14 @@ export function BrandMark({ size = 32, title = 'censaiOS', style }) {
   );
 }
 
-// "censaiOS" set in Inter Semibold, tracked -2.2%, as in docs/brand/.
+// "censaiOS" set in Inter Semibold, tracked -2.2%, as in docs/brand/, with
+// "OS" in Ultem (Ultem on paper on light).
 export function BrandWordmark({ size = 'var(--text-xl)', style }) {
   return (
     <span style={{
       fontFamily: '"Inter", var(--font-sans)', fontWeight: 600, fontSize: size,
       letterSpacing: '-0.022em', lineHeight: 1, color: 'var(--brand-ink)', ...style,
-    }}>censaiOS</span>
+    }}>censai<span style={{ color: 'var(--brand-ultem-text)' }}>OS</span></span>
   );
 }
 

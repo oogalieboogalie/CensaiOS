@@ -59,6 +59,26 @@ export const FAMILY_NETWORK_TOOL_POLICIES = Object.freeze([
   policy('agent_help_status', 'read'),
   // WeeWoo: pick the avatar this agent shows up as on the board.
   policy('choose_avatar', 'write', 'autonomous_internal'),
+  // Speak up (diagram 17): a short Inbox note, only once a person turns it on.
+  policy('speak_up', 'write', 'autonomous_internal'),
+  // The app's log: read what broke before answering a bug report.
+  policy('read_app_log', 'read'),
+  // Exo-Skeleton: note what worked in a skill set; drive an equipped Browser window.
+  policy('skill_set_log', 'write', 'autonomous_internal'),
+  policy('browser_go', 'write', 'autonomous_internal'),
+  // Chat live preview: show a file beside the chat, point at a window, start Run dev.
+  policy('project_window', 'write', 'autonomous_internal'),
+  // Blueprints: look on the board's shelf; save one when asked.
+  policy('find_blueprints', 'read'),
+  policy('save_blueprint', 'write', 'autonomous_internal'),
+]);
+
+// Wake-ups: only Censai, the orchestrator, schedules himself or wakes a
+// family agent, and only once a person turns it on (server/wakeUps).
+export const FAMILY_WAKE_UP_TOOL_POLICIES = Object.freeze([
+  policy('wake_me_up', 'write', 'autonomous_internal'),
+  policy('my_wake_ups', 'read'),
+  policy('cancel_wake_up', 'write', 'autonomous_internal'),
 ]);
 
 // Modules on demand (spec 6): every family member can build a sandboxed
@@ -81,6 +101,7 @@ const ORCHESTRATION = FAMILY_ORCHESTRATION_TOOL_POLICIES.map(entry => entry.name
 const LIFECYCLE = FAMILY_LIFECYCLE_TOOL_POLICIES.map(entry => entry.name);
 const PROJECT_READ = FAMILY_PROJECT_READ_TOOL_POLICIES.map(entry => entry.name);
 const BUILD = FAMILY_BUILD_TOOL_POLICIES.map(entry => entry.name);
+const WAKE_UPS = FAMILY_WAKE_UP_TOOL_POLICIES.map(entry => entry.name);
 
 const BUILDERS = Object.freeze([...ORCHESTRATION, ...LIFECYCLE, ...PROJECT_READ, ...BUILD]);
 
@@ -91,7 +112,7 @@ const ROLE_ADDITIONS = Object.freeze({
   nexus: BUILDERS,
   phoenix: BUILDERS,
   echo: Object.freeze(['dispatch_squad', 'squad_status', ...LIFECYCLE, ...PROJECT_READ]),
-  censai: Object.freeze([...LIFECYCLE, ...PROJECT_READ]),
+  censai: Object.freeze([...LIFECYCLE, ...PROJECT_READ, ...WAKE_UPS]),
   foundation: Object.freeze([...LIFECYCLE, ...PROJECT_READ]),
   guardian: Object.freeze([...LIFECYCLE, ...PROJECT_READ]),
 });
@@ -107,7 +128,7 @@ const POLICY_BY_NAME = Object.freeze(Object.fromEntries(
   [...FAMILY_INTRINSIC_TOOL_POLICIES, ...FAMILY_NETWORK_TOOL_POLICIES, ...FAMILY_MODULE_TOOL_POLICIES,
    ...FAMILY_ORCHESTRATION_TOOL_POLICIES,
    ...FAMILY_LIFECYCLE_TOOL_POLICIES, ...FAMILY_PROJECT_READ_TOOL_POLICIES,
-   ...FAMILY_BUILD_TOOL_POLICIES]
+   ...FAMILY_BUILD_TOOL_POLICIES, ...FAMILY_WAKE_UP_TOOL_POLICIES]
     .map(entry => [entry.name, entry]),
 ));
 

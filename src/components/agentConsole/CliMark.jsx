@@ -5,7 +5,7 @@ import { CLI_BRAND, brandFor } from '../../lib/brands/index.js';
 
 // Each CLI shows its maker's mark in the board's ink (src/lib/brands), or a
 // plain monogram when no official mark can be used (Codex).
-export const CLI_MONOGRAM = { claudecode: 'CC', codex: 'CX', gemini: 'GM', opencode: 'OC', copilot: 'GH' };
+export const CLI_MONOGRAM = { claudecode: 'CC', codex: 'CX', gemini: 'GM', opencode: 'OC', copilot: 'GH', grok: 'GK' };
 
 export function CliMark({ cli, size = 'md', active = false }) {
   const brand = brandFor(CLI_BRAND[cli]);

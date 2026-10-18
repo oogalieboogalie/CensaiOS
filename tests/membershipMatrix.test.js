@@ -90,6 +90,12 @@ describe('requireWorkspaceMember role matrix (Hocuspocus pre-flight)', () => {
       .rejects.toThrow('workspaceId is required');
     expect(db.query).not.toHaveBeenCalled();
   });
+
+  test('missing workspaceId is a 400 for routes, not a 500', async () => {
+    const db = makeDb({ 'u-owner': 'owner' });
+    await expect(requireWorkspaceMember(db, { userId: 'u-owner', workspaceId: '' }))
+      .rejects.toMatchObject({ statusCode: 400 });
+  });
 });
 
 describe('listWorkspaceMembers read path', () => {

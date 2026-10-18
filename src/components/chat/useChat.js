@@ -12,6 +12,7 @@ import { useModelCapabilities } from './useModelCapabilities.js';
 import { useSpeaker } from './useVoice.js';
 import { useChatAttachments } from './useChatAttachments.js';
 import { useChatActions } from './useChatActions.js';
+import { useAutoPick } from './useAutoPick.js';
 import { runEnded, runStarted, runTool, toolNameFrom } from '../../lib/weewoo/agentRun.js';
 
 function useAgent(agentId) {
@@ -41,6 +42,7 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
   const chatAttachments = useChatAttachments({ capabilities, agentId: agent.id, workspaceId, setDraft });
   const { attachments, setAttachments, setAttachError } = chatAttachments;
   const speaker = useSpeaker(agent.id, { workspaceId });
+  const autoPick = useAutoPick({ win, onUpdate, agent });
 
   const scrollRef = React.useRef(null);
 
@@ -93,7 +95,7 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
     if (sending) return;
     if (!isAuto && !text && !win.imageAttachment && attachments.length === 0) return;
 
-    const userMsg = isAuto ? null : { from: 'me', text, image: win.imageAttachment, ...(attachments.length ? { attachments } : {}) };
+    const userMsg = isAuto ? null : { from: 'me', text, at: new Date().toISOString(), image: win.imageAttachment, ...(attachments.length ? { attachments } : {}) };
     const displayMsgs = isAuto ? autoSendMessages : [...msgs, userMsg];
     // Stored state keeps large attachments as name-only stubs; the request still carries their data.
     const storedMsgs = isAuto ? displayMsgs : [...msgs, persistableMessage(userMsg)];
@@ -110,7 +112,7 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
       if (isAuto) return;
       setSending(true);
       setTimeout(() => {
-        setMsgs([...storedMsgs, { from: agent.id, text: scriptedReply(text) }]);
+        setMsgs([...storedMsgs, { from: agent.id, text: scriptedReply(text), at: new Date().toISOString() }]);
         setSending(false);
       }, replyDelayMs());
       return;
@@ -125,6 +127,8 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
 
     setSending(true);
     setLiveStatus({ status: 'thinking', detail: null });
+    // Diagram 14: with Auto-pick on, switch to the model best at this task first.
+    if (!isAuto) await autoPick.beforeSend(text);
     // WeeWoo: a small shared run record so everyone's office sees this
     // agent pick the task up, call tools and finish.
     let run = runStarted(win.agentRun, { prompt: isAuto ? displayMsgs[displayMsgs.length - 1]?.text : text });
@@ -138,6 +142,7 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
       const { msgs: payloadMsgs, sources } = await withBoardKnowledge(grouped, lastText, { enabled: Boolean(win.knowledge), workspaceId });
       const reply = await sendMessageWithMeta(agent.id, payloadMsgs, {
         windowId: win.id,
+        conversationId: win.chatId || `chat:${win.id}`,
         workspaceId,
         currentProject,
         signal: controller.signal,
@@ -161,7 +166,7 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
         },
         onChangeImpact: impact => setLiveStatus({ status: 'thinking', detail: { changeImpact: impact } }),
       });
-      const nextMsgs = [...storedMsgs, { from: agent.id, text: reply.text, activity: buildActivity(reply), ...(sources.length ? { knowledge: sources } : {}) }];
+      const nextMsgs = [...storedMsgs, { from: agent.id, text: reply.text, at: new Date().toISOString(), activity: buildActivity(reply), ...(sources.length ? { knowledge: sources } : {}) }];
       setMsgs(nextMsgs);
       onUpdate({ agentRun: runEnded(run, { state: 'done', text: reply.text }) });
       if (win.autoSpeak && capabilities.voiceOutput && reply.text) {
@@ -170,10 +175,10 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
     } catch (error) {
       onUpdate({ agentRun: runEnded(run, { state: error?.code === 'CHAT_ABORTED' ? 'stopped' : 'error', text: error?.code === 'CHAT_ABORTED' ? streamed : error?.message }) });
       if (error?.code === 'CHAT_ABORTED') {
-        setMsgs([...storedMsgs, { from: agent.id, text: streamed || '(stopped before replying)', stopped: true, activity: buildActivity({ tools: log.map(toolFromEvent) }) }]);
+        setMsgs([...storedMsgs, { from: agent.id, text: streamed || '(stopped before replying)', at: new Date().toISOString(), stopped: true, activity: buildActivity({ tools: log.map(toolFromEvent) }) }]);
       } else {
         setMsgs([...storedMsgs, {
-          from: agent.id,
+          from: agent.id, at: new Date().toISOString(),
           text: error?.message || 'Something went wrong. Try again.',
           error: { code: error?.code, status: error?.status, retryAfter: error?.retryAfter, keyProvider: error?.details?.keyProvider || null },
         }]);
@@ -182,7 +187,7 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
     if (abortRef.current === controller) abortRef.current = null;
     setStreamText('');
     setSending(false);
-  }, [msgs, draft, attachments, sending, win.agentRun, win.imageAttachment, win.demoMode, win.autoSpeak, win.knowledge, win.id, agent.id, workspaceId, currentProject, canvasGroups, allWins, onUpdate, setMsgs, capabilities.voiceOutput, speaker]);
+  }, [msgs, draft, attachments, sending, win.agentRun, win.imageAttachment, win.demoMode, win.autoSpeak, win.knowledge, win.id, win.chatId, agent.id, workspaceId, currentProject, canvasGroups, allWins, onUpdate, setMsgs, capabilities.voiceOutput, speaker, autoPick]);
 
   const stop = React.useCallback(() => abortRef.current?.abort(), []);
 
@@ -208,6 +213,7 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
     setAutoSpeak: (value) => onUpdate({ autoSpeak: Boolean(value) }),
     knowledge: Boolean(win.knowledge),
     setKnowledge: (value) => onUpdate({ knowledge: Boolean(value) }),
+    autoPick,
     ...actions,
   };
 }
@@ -219,7 +225,7 @@ function toolFromEvent(detail) {
 function buildActivity(reply) {
   const timings = reply?.timings;
   const tools = reply?.tools || [];
-  if (!timings && tools.length === 0) return null;
+  if (!timings && tools.length === 0 && !reply?.sevenContexts) return null;
   return {
     totalMs: timings?.total_ms,
     modelMs: timings?.model_ms,
@@ -228,6 +234,7 @@ function buildActivity(reply) {
     rounds: timings?.model_calls?.length || 0,
     changeImpact: reply?.changeImpact || null,
     projectContext: reply?.projectContext || [],
+    sevenContexts: reply?.sevenContexts || null,
     tools: tools.map(t => ({
       name: t.tool,
       ms: t.ms,

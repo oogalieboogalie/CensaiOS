@@ -178,7 +178,7 @@ export async function runChatLoop({
         const toolMs = Date.now() - toolStartedAt;
         timings.tool_ms += toolMs;
         const ok = toolCallOk(result); summary = withWaitingFlag(summary, result);
-        toolSession.observe(toolName, args, ok);
+        toolSession.observe(toolName, args, ok, result);
         sendEvent({ type: 'status', status: 'completed_tool', detail: { tool: toolName, ms: toolMs, ok, ...(summary ? { summary } : {}) } });
 
         if (traceId) {

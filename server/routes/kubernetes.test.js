@@ -119,6 +119,36 @@ describe('Kubernetes API Router', () => {
     expect(res.body.deployments[0].replicas).toBe(3);
   });
 
+  it('reads the list the current client returns directly (no .body wrapper)', async () => {
+    mockLoadFromDefault.mockImplementation(() => {});
+    mockGetCurrentCluster.mockReturnValue({ name: 'test-cluster' });
+    mockListNamespace.mockResolvedValue({
+      items: [{ metadata: { name: 'default' }, status: { phase: 'Active' } }],
+    });
+    mockListPodForAllNamespaces.mockResolvedValue({
+      items: [{ metadata: { name: 'web-1', namespace: 'default' }, status: { phase: 'Running' } }],
+    });
+    mockListDeploymentForAllNamespaces.mockResolvedValue({
+      items: [{ metadata: { name: 'web', namespace: 'default' }, spec: { replicas: 1 }, status: { readyReplicas: 1 } }],
+    });
+
+    const res = await request(app).get('/api/kubernetes/status');
+    expect(res.statusCode).toBe(200);
+    expect(res.body.namespaces.map((n) => n.name)).toEqual(['default']);
+    expect(res.body.pods.map((p) => p.name)).toEqual(['web-1']);
+    expect(res.body.deployments[0]).toMatchObject({ name: 'web', readyReplicas: 1, replicas: 1 });
+  });
+
+  it('says the cluster could not be reached when it is switched off', async () => {
+    mockLoadFromDefault.mockImplementation(() => {});
+    mockGetCurrentCluster.mockReturnValue({ name: 'docker-desktop' });
+    mockListNamespace.mockRejectedValue(Object.assign(new TypeError('fetch failed'), { cause: { code: 'ECONNREFUSED' } }));
+
+    const res = await request(app).get('/api/kubernetes/status');
+    expect(res.statusCode).toBe(503);
+    expect(res.body.message).toBe('Could not connect to the Kubernetes cluster');
+  });
+
   it('should not allow non-GET requests', async () => {
      const resPost = await request(app).post('/api/kubernetes/status');
      expect(resPost.statusCode).toBe(404); // the route is only registered for GET

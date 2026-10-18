@@ -160,6 +160,9 @@
      recoloured. */
   --brand-ink: oklch(0.191 0 0);
   --brand-ultem: oklch(0.771 0.14 78);
+  /* The "OS" in the wordmark and "everyone" / "everything" in the tagline:
+     Ultem on dark, Ultem on paper on light, so it stays readable. */
+  --brand-ultem-text: oklch(0.514 0.108 76);
 
   --ps-green: oklch(0.72 0.16 148);
   --ps-blue: oklch(0.66 0.16 250);
@@ -293,6 +296,7 @@
 [data-theme="dark"] {
   --brand-ink: oklch(0.937 0 0);
   --brand-ultem: oklch(0.771 0.14 78);
+  --brand-ultem-text: oklch(0.771 0.14 78);
   --bg: oklch(0.17 0.004 260);
   --canvas: oklch(0.15 0.004 260);
   --surface: oklch(0.205 0.004 260);
@@ -371,6 +375,7 @@
     --ink: oklch(0.937 0 0);
     --ink-faint: oklch(0.661 0 0);
     --brand-ink: oklch(0.937 0 0);
+    --brand-ultem-text: oklch(0.771 0.14 78);
   }
 }
 

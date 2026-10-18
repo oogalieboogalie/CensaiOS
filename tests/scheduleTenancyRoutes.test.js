@@ -48,7 +48,7 @@ describe('schedule tenancy routes', () => {
       userId: 7, workspaceId: 'workspace-1',
     });
     expect(getSchedules).toHaveBeenCalledWith({
-      db: pool, userId: 7, workspaceId: 'workspace-1',
+      db: pool, userId: 7, workspaceId: 'workspace-1', seeAgentWakeUps: false,
     });
   });
 
@@ -60,7 +60,7 @@ describe('schedule tenancy routes', () => {
     expect(response.status).toBe(200);
     expect(createSchedule).toHaveBeenCalledWith(expect.objectContaining({
       created_by_user_id: 999,
-    }), { db: pool, userId: 7, workspaceId: 'workspace-1' });
+    }), { db: pool, userId: 7, workspaceId: 'workspace-1', seeAgentWakeUps: false });
   });
 
   test('fails closed when workspace membership is denied', async () => {

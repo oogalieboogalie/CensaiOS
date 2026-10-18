@@ -7,6 +7,7 @@ import {
   containerAction, removeContainer, execInContainer, removeImage, pullImage,
   removeVolume, removeNetwork, prune, composeAction,
 } from '../docker/actions.js';
+import { runContainer } from '../docker/run.js';
 
 // /api/docker — the Docker window's API. Mounted behind requireLocalFilesystem
 // in routeMap.js: it drives the host's Docker engine, so cloud_saas never
@@ -42,6 +43,9 @@ dockerRouter.delete('/containers/:id', handle((req) => removeContainer(req.param
 
 dockerRouter.get('/images', handle(async () => ({ images: await listImages() })));
 dockerRouter.post('/images/pull', handle((req) => pullImage(req.body?.ref)));
+dockerRouter.post('/images/run', handle((req) => runContainer({
+  image: req.body?.image, name: req.body?.name, ports: req.body?.ports,
+})));
 // Image refs carry slashes (ghcr.io/org/app:tag), so the ref rides the query.
 dockerRouter.delete('/images', handle((req) => removeImage(req.query.ref, { force: truthy(req.query.force) })));
 

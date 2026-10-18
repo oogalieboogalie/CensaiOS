@@ -28,7 +28,7 @@ function MenuItem({ children, onSelect, checked, title }) {
  *   menu     the window's overflow items, shown above the frame's own items
  */
 export function WindowHeader({
-  win, mode, traffic, chromeHeader, fallback, titleClaimed, slotRefs, headerRef,
+  win, mode, modeFixed = false, traffic, chromeHeader, fallback, titleClaimed, slotRefs, headerRef,
   menuOpen, setMenuOpen, onClose, onUpdate, onOpenStyleMenu,
 }) {
   const menuRef = React.useRef(null);
@@ -101,7 +101,7 @@ export function WindowHeader({
             <MenuItem onSelect={run(() => onUpdate({ fontScale: 1 }))}>Reset text size</MenuItem>
           )}
         </div>
-        {!win.bare && <div className="hb-win-menu-section">
+        {!win.bare && !modeFixed && <div className="hb-win-menu-section">
           <span className="hb-win-menu-label">Header</span>
           <div className="hb-win-menu-row" role="group" aria-label="Header style">
             {HEADER_MODES.map((m) => (

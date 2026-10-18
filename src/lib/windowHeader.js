@@ -10,14 +10,16 @@
  *   strip — a slim row the color of the window body, always shown
  *   ghost — content runs to the top edge; the header fades in on hover
  *   bare  — no header at all; a small control pill appears on hover
+ *   edge  — no header bar; the controls hang as small tabs off the right edge
+ *           (Alex's wireframe, diagram 05)
  */
 
-export const HEADER_MODES = Object.freeze(['strip', 'ghost', 'bare']);
-export const HEADER_MODE_LABELS = Object.freeze({ strip: 'Strip', ghost: 'Ghost', bare: 'Bare' });
+export const HEADER_MODES = Object.freeze(['strip', 'ghost', 'bare', 'edge']);
+export const HEADER_MODE_LABELS = Object.freeze({ strip: 'Strip', ghost: 'Ghost', bare: 'Bare', edge: 'Edge' });
 export const DEFAULT_HEADER_MODE = 'strip';
 export const MAX_HEADER_ACTIONS = 3;
 
-const HEADER_KEYS = new Set(['title', 'icon', 'mode']);
+const HEADER_KEYS = new Set(['title', 'icon', 'mode', 'fixed']);
 
 /** Which header mode a window uses: its own override, then the theme's. */
 export function resolveHeaderMode(win = {}, themeMode = DEFAULT_HEADER_MODE) {
@@ -39,12 +41,17 @@ export function cleanHeaderText(text) {
 
 /** Header fields a manifest entry declares, with fallbacks from the entry. */
 export function resolveHeaderMeta(manifest) {
-  if (!manifest) return { title: '', icon: null, mode: null };
+  if (!manifest) return { title: '', icon: null, mode: null, fixed: false };
   const header = manifest.header || {};
+  const mode = HEADER_MODES.includes(header.mode) ? header.mode : null;
   return {
     title: cleanHeaderText(header.title || manifest.label || ''),
     icon: header.icon || manifest.launcher?.icon || null,
-    mode: HEADER_MODES.includes(header.mode) ? header.mode : null,
+    mode,
+    // `fixed`: the window needs this mode (a docked desktop app sits over the
+    // whole body, so a header floating over the body would hide it), so
+    // neither the theme nor the window's own menu can change it.
+    fixed: Boolean(mode) && header.fixed === true,
   };
 }
 
@@ -60,7 +67,7 @@ export function validateHeaderMeta(kind, header, { iconNames = null } = {}) {
   }
   for (const key of Object.keys(header)) {
     if (!HEADER_KEYS.has(key)) {
-      errors.push(`${kind}: header.${key} is not allowed (only title, icon and mode; actions are passed to WindowTitle)`);
+      errors.push(`${kind}: header.${key} is not allowed (only title, icon, mode and fixed; actions are passed to WindowTitle)`);
     }
   }
   if (header.title !== undefined && (typeof header.title !== 'string' || !header.title.trim())) {
@@ -78,6 +85,9 @@ export function validateHeaderMeta(kind, header, { iconNames = null } = {}) {
   }
   if (header.mode !== undefined && !HEADER_MODES.includes(header.mode)) {
     errors.push(`${kind}: header.mode must be one of [${HEADER_MODES.join(', ')}]`);
+  }
+  if (header.fixed !== undefined && (typeof header.fixed !== 'boolean' || (header.fixed && header.mode === undefined))) {
+    errors.push(`${kind}: header.fixed must be true or false, and needs a header.mode`);
   }
   return errors;
 }

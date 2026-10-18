@@ -2,6 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { requireLocalFilesystem } from '../../middleware/runtimeMode.js';
+import { requireSystemAdmin } from '../../security/systemAdmin.js';
 import {
   readCurrentProject, validateProjectPath, getDirectoryTree, projectRootContaining,
   shownPathFor, shownParentFor, folderErrorMessage, isUnseenWindowsFolder,
@@ -138,7 +139,7 @@ browserRouter.get('/files/image', requireLocalFilesystem, async (req, res) => {
   }
 });
 
-browserRouter.put('/files/content', requireLocalFilesystem, async (req, res) => {
+browserRouter.put('/files/content', requireLocalFilesystem, requireSystemAdmin, async (req, res) => {
   const { path: filePath, content } = req.body;
   if (!filePath || typeof content !== 'string') return res.status(400).json({ error: 'Missing path or content in body' });
   try {

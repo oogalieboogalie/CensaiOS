@@ -23,6 +23,11 @@ export function decideJulesSteward(input = {}) {
         gate.mergeable === false ? 'GitHub reports merge conflicts.' : 'GitHub has not confirmed mergeability.'),
     };
   }
+  // Diagram 01: the review's verdict decides the merge. A "no" sends the PR
+  // back to Jules for a fix (the runner asks); nobody reviewing yet holds nothing.
+  if (gate.review === 'fail') {
+    return { outcome: 'needs_fix', reason: reason('review_said_no', gate.reviewReasons?.join(' ') || 'The review turned the PR down.') };
+  }
   if (gate.checksGreen === false) {
     return { outcome: 'blocked', reason: reason('checks_red', 'Required checks are not green.') };
   }

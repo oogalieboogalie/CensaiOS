@@ -28,3 +28,29 @@
 .hb-amem-summary { font-size: var(--text-sm); line-height: 1.5; color: var(--ink); }
 .hb-amem-since { display: flex; align-items: center; gap: var(--space-2); }
 .hb-amem-date { flex: none; width: auto; }
+/* Connections (the knowledge graph) and Look back. */
+.hb-amem-link-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1-5); }
+.hb-amem-thing { color: var(--ink); font-weight: 600; }
+.hb-amem-rel { color: var(--accent); font-size: var(--text-sm); }
+.hb-amem-past .hb-amem-thing { color: var(--ink-soft); }
+.hb-amem-asof { display: flex; flex-direction: column; gap: var(--space-2); }
+/* Shelves (diagram 20): one card per shelf, a quiet colored edge each. */
+.hb-amem-shelves { display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-amem-shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--space-56), 1fr)); gap: var(--space-2); }
+.hb-amem-shelf { --shelf-c: oklch(0.66 0.13 var(--shelf-h, 265)); display: flex; flex-direction: column; gap: var(--space-1-5); padding: var(--space-2) var(--space-3); border: 1px solid var(--hairline); border-top: 3px solid var(--shelf-c); border-radius: var(--radius-md); background: color-mix(in oklab, var(--shelf-c) 6%, var(--surface)); }
+.hb-amem-shelf[data-shelf='personal'] { --shelf-h: 265; }
+.hb-amem-shelf[data-shelf='project'] { --shelf-h: 230; }
+.hb-amem-shelf[data-shelf='team'] { --shelf-h: 25; }
+.hb-amem-shelf[data-shelf='accomplishments'] { --shelf-h: 150; }
+.hb-amem-shelf[data-shelf='tooling'] { --shelf-h: 75; }
+.hb-amem-shelf-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.hb-amem-shelf-name { font-weight: 600; color: var(--ink); }
+.hb-amem-shelf-count { font-size: var(--text-xs); font-variant-numeric: tabular-nums; color: color-mix(in oklab, var(--shelf-c) 70%, var(--ink)); }
+.hb-amem-shelf-parts { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.hb-amem-shelf-parts span { padding: 0 var(--space-1-5); border-radius: var(--radius-sm); font-size: var(--text-xs); color: var(--ink-soft); background: color-mix(in oklab, var(--shelf-c) 14%, var(--surface)); }
+.hb-amem-shelf-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.hb-amem-shelf-items li { display: flex; flex-direction: column; padding: var(--space-1) 0; border-top: 1px solid var(--hairline-soft); }
+.hb-amem-shelf-attr { font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-amem-shelf-attr::first-letter { text-transform: uppercase; }
+.hb-amem-shelf-val { font-size: var(--text-sm); color: var(--ink); overflow-wrap: anywhere; }
+.hb-amem-shelf-add { display: flex; flex-direction: column; gap: var(--space-1-5); }

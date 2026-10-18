@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+# censaiOS Starter Box helper. Type `starter-box help` for the list.
+set -uo pipefail
+
+CENSAIOS_DIR="${CENSAIOS_DIR:-/opt/censaios}"
+KEYS="${HOME}/.config/starter-box/keys.env"
+NAME="$(hostname 2>/dev/null || cat /etc/hostname)"
+ME="${STARTER_BOX_USER:-$(id -un)}"
+[ "$ME" = root ] && [ -n "${SUDO_USER:-}" ] && ME="$SUDO_USER"
+have() { command -v "$1" >/dev/null 2>&1; }
+bold() { printf '\033[1m%s\033[0m' "$*"; }
+
+welcome() {
+  echo
+  echo "  $(bold 'censaiOS Starter Box') ($NAME)"
+  echo
+  if [ -n "${SSH_CONNECTION:-}" ]; then
+    echo "  To open censaiOS on the computer you are using now, sign in like this instead:"
+    echo "      $(bold "ssh -L 3002:localhost:3002 $ME@$NAME.local")"
+    echo "  then open $(bold 'http://localhost:3002') in your browser."
+  else
+    echo "  Open this in the browser:  $(bold 'http://localhost:3002')"
+  fi
+  echo
+  echo "  Talk to an AI here:        claude   (or codex, or: ollama run llama3.2:3b)"
+  echo "  Your AI keys, private:     starter-box keys"
+  echo "  Reach it from anywhere:    starter-box remote"
+  echo "  Is everything healthy?     starter-box doctor"
+  echo "  Get the newest versions:   starter-box update"
+  echo
+  echo "  Plug this box into your router, never in between your computer and the router."
+  echo "  Hide this message: touch ~/.config/starter-box/quiet"
+  echo
+}
+
+FAILS=0
+ok()   { printf '  \033[32m[ok]\033[0m %s\n' "$*"; }
+bad()  { printf '  \033[31m[no]\033[0m %s\n' "$*"; FAILS=$((FAILS + 1)); }
+info() { printf '  \033[33m[--]\033[0m %s\n' "$*"; }
+
+doctor() {
+  echo; bold "  Checking this box"; echo; echo
+  if docker info >/dev/null 2>&1 || sudo -n docker info >/dev/null 2>&1; then ok "Docker is running"
+  else bad "Docker is not running. Fix: sudo systemctl start docker (or sign out and back in once)"; fi
+
+  if curl -fs -o /dev/null --max-time 5 http://127.0.0.1:3002/; then ok "censaiOS answers at http://localhost:3002"
+  else bad "censaiOS is not answering yet. Fix: cd $CENSAIOS_DIR && docker compose up -d"; fi
+
+  if curl -fs -o /dev/null --max-time 3 http://127.0.0.1:11434/api/version; then ok "Ollama is running (free local AI)"
+  elif have ollama; then bad "Ollama is installed but not running. Fix: sudo systemctl start ollama"
+  else info "Ollama is not installed (optional)"; fi
+
+  for t in git node claude codex; do
+    if have "$t"; then ok "$t is installed"; else bad "$t is missing. Fix: run the setup again"; fi
+  done
+
+  if systemctl is-active --quiet ssh 2>/dev/null; then ok "SSH is on (reach it at $ME@$NAME.local)"
+  else bad "SSH is off. Fix: sudo systemctl enable --now ssh"; fi
+
+  if grep -qs '^ENABLED=yes' /etc/ufw/ufw.conf; then ok "Firewall is on"
+  else bad "Firewall is off. Fix: sudo ufw enable"; fi
+
+  if have tailscale; then
+    if tailscale status >/dev/null 2>&1; then ok "Tailscale is on: reach this box from anywhere"
+    else info "Tailscale is off. Turn it on with: starter-box remote"; fi
+  fi
+
+  if [ -f "$KEYS" ] && [ "$(stat -c %a "$KEYS")" = 600 ]; then ok "Your keys file is private"
+  elif [ -f "$KEYS" ]; then bad "Your keys file can be read by others. Fix: chmod 600 $KEYS"
+  else info "No keys file yet (fine if you sign in to claude or codex instead)"; fi
+
+  local free_gb; free_gb=$(df -Pk / | awk 'NR==2 {print int($4/1048576)}')
+  if [ "$free_gb" -ge 10 ]; then ok "$free_gb GB of space free"
+  else bad "Only $free_gb GB of space left. Fix: docker system prune"; fi
+
+  network_path
+  echo
+  if [ "$FAILS" -eq 0 ]; then echo "  Everything looks good."; else echo "  $FAILS thing(s) to fix above."; fi
+  echo
+  [ "$FAILS" -eq 0 ]
+}
+
+# The box must be a plain computer on the router, never something the rest of
+# the house's internet passes through.
+network_path() {
+  local routes bridged="" dev
+  routes=$(ip -4 route show default 2>/dev/null | wc -l)
+  if [ "$routes" -eq 0 ]; then bad "Not connected to the internet. Fix: plug the cable into your router or join Wi-Fi"
+  elif [ "$routes" -gt 1 ]; then bad "This box has $routes ways out to the internet. Fix: plug in only one cable, into the router"
+  else ok "One way out to the internet, through your router"; fi
+
+  for dev in /sys/class/net/*; do
+    [ -e "$dev/brport" ] && [ -e "$dev/device" ] && bridged="$bridged ${dev##*/}"
+  done
+  if [ -n "$bridged" ]; then bad "Network port(s)$bridged are joined into a pass-through. Your other computers' internet would squeeze through this box. Fix: plug the box into the router only"
+  else ok "Nothing passes through this box"; fi
+
+  if have ss && [ -n "$(ss -H -lun 'sport = :67' 2>/dev/null)" ]; then
+    bad "This box is handing out network addresses like a router. Fix: turn off the DHCP server on it"
+  else ok "This box is not acting as a router"; fi
+
+  if have tailscale && tailscale debug prefs 2>/dev/null | grep -q '"AdvertiseRoutes": \[$'; then
+    bad "Tailscale is sharing this box's network with others. Fix: sudo tailscale set --advertise-routes= --advertise-exit-node=false"
+  fi
+}
+
+keys() {
+  if [ ! -f "$KEYS" ]; then echo "No keys file yet. Run the setup again to make it."; exit 1; fi
+  "${EDITOR:-nano}" "$KEYS"
+  echo "Saved. Open a new terminal (or type: source ~/.bashrc) to use the new keys."
+}
+
+remote() {
+  have tailscale || { echo "Tailscale is not installed. Run the setup again."; exit 1; }
+  echo "A sign-in link will appear. Open it on any device and sign in (Google, Microsoft or GitHub all work)."
+  sudo tailscale up --ssh=false || exit 1
+  echo
+  echo "Done. From any of your devices with Tailscale: ssh $ME@$(tailscale ip -4 2>/dev/null | head -1)"
+}
+
+update() {
+  echo "Getting the newest censaiOS, Claude Code and Codex. This can take a few minutes."
+  if [ -d "$CENSAIOS_DIR/.git" ]; then
+    git -C "$CENSAIOS_DIR" pull --ff-only -q || echo "  Could not update censaiOS (local edits?). Keeping the one you have."
+    (cd "$CENSAIOS_DIR" && sudo docker compose up -d --build --quiet-pull)
+  fi
+  sudo npm install -g --no-fund --no-audit --loglevel=error @anthropic-ai/claude-code@latest @openai/codex@latest
+  if have ollama; then curl -fsSL https://ollama.com/install.sh | sh; fi
+  echo "Up to date."
+}
+
+open_board() {
+  if have xdg-open && [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then xdg-open http://localhost:3002 >/dev/null 2>&1 &
+  else welcome; fi
+}
+
+first_login() {
+  local flag="$HOME/.config/starter-box/welcomed"
+  [ -f "$flag" ] && exit 0
+  mkdir -p "${flag%/*}" && touch "$flag"
+  for _ in $(seq 1 60); do
+    curl -fs -o /dev/null http://127.0.0.1:3002/ && break
+    sleep 5
+  done
+  open_board
+}
+
+case "${1:-welcome}" in
+  welcome) welcome ;;
+  doctor) doctor ;;
+  keys) keys ;;
+  remote) remote ;;
+  update) update ;;
+  open) open_board ;;
+  first-login) first_login ;;
+  help|-h|--help)
+    echo "starter-box [welcome|doctor|keys|remote|update|open]"
+    echo "  welcome  show the address to open and the main commands"
+    echo "  doctor   check everything is installed and healthy"
+    echo "  keys     add your AI keys (they stay on this box)"
+    echo "  remote   turn on Tailscale so you can reach the box from anywhere"
+    echo "  update   get the newest censaiOS, Claude Code, Codex and Ollama"
+    echo "  open     open censaiOS in the browser" ;;
+  *) echo "Unknown: $1. Try: starter-box help"; exit 1 ;;
+esac

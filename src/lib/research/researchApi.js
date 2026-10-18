@@ -25,6 +25,8 @@ export const researchApi = {
   search: (input) => call('/search', { method: 'POST', body: input }),
   save: ({ query, results }) => call('/kb/save', { method: 'POST', body: { query, results } }),
   list: () => call('/kb'),
+  saveFile: ({ name, text }) => call('/kb/file', { method: 'POST', body: { name, text } }),
+  chunks: (id) => call(`/kb/${encodeURIComponent(id)}/chunks`),
   remove: (id) => call(`/kb/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   query: ({ query, k = 6, asPrompt = false, workspaceId } = {}) => call('/kb/query', { method: 'POST', body: { query, k, asPrompt }, workspaceId }),
   ask: ({ question, web = true, workspaceId } = {}) => call('/ask', { method: 'POST', body: { question, web }, workspaceId }),
@@ -37,6 +39,7 @@ export function kbSummary(sources = []) {
   return (Array.isArray(sources) ? sources : []).slice(0, 200).map((s) => ({
     id: s.id, url: s.url || null, title: s.title, query: s.query || null,
     publishedAt: s.publishedAt || null, savedAt: s.savedAt || null, chunkCount: s.chunkCount || 0,
+    tags: Array.isArray(s.tags) ? s.tags.slice(0, 6) : [], kind: s.kind || null,
   }));
 }
 

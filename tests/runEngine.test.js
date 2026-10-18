@@ -87,6 +87,18 @@ describe('runAgentTurn', () => {
     ]);
   });
 
+  test('adds the seven-contexts block to the instructions and hands its report on', async () => {
+    const gatherContexts = jest.fn(async () => ({ block: '## Looked up before answering\n- Nugget: x', report: { addedChars: 40 } }));
+    const onPrepared = jest.fn(async () => ({}));
+    await runAgentTurn({
+      agentId: 'atlas', messages: [{ from: 'me', text: 'flowers' }], userId: 7, workspaceId: 'ws-1',
+      loadOutside: async () => weather, gatherContexts, onPrepared,
+    });
+    expect(gatherContexts).toHaveBeenCalledWith(expect.objectContaining({ agentId: 'atlas', workspaceId: 'ws-1', systemPrompt: 'sys' }));
+    expect(loopCalls[0].chatMessages[0].content).toBe('sys\n\n## Looked up before answering\n- Nugget: x');
+    expect(onPrepared).toHaveBeenCalledWith(expect.objectContaining({ sevenContexts: { addedChars: 40 } }));
+  });
+
   test('a time limit aborts the run', async () => {
     loopImpl = (input) => new Promise((_resolve, reject) => {
       input.signal.addEventListener('abort', () => reject(Object.assign(new Error('stopped'), { code: 'CHAT_ABORTED' })));

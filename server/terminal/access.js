@@ -1,6 +1,7 @@
 import pool from '../db.js';
 import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
 import { requireWorkspaceMember } from '../workspaces/context.js';
+import { assertSystemAdmin } from '../security/systemAdmin.js';
 
 export const TERMINAL_WS_PATH = '/api/terminal';
 
@@ -28,6 +29,13 @@ export async function authorizeTerminalConnection(requestUrl, actor, {
   const userId = Number(actor?.userId);
   if (!Number.isInteger(userId) || userId <= 0) {
     throw accessError('Authentication is required.', 401, 'TERMINAL_AUTH_REQUIRED');
+  }
+  // A terminal runs commands on this computer (or in a sandbox holding its
+  // folders), so only the computer's owner may open one, whatever the board.
+  try {
+    await assertSystemAdmin({ session: { userId } }, { db });
+  } catch (error) {
+    throw accessError(error.message, error.statusCode || 500, 'TERMINAL_OWNER_ONLY');
   }
   const workspaceId = String(requestUrl?.searchParams?.get('workspaceId') || '').trim();
   if (!workspaceId) {

@@ -12,7 +12,8 @@
 //   3. add the agent's memory (server/agentMemory): who it is, the facts it
 //      knows with their dates, related earlier conversations, and the
 //      memory tools
-//   4. narrow the tools for the caller when the caller is outside censaiOS
+//   4. narrow the tools for the caller when the caller is outside censaiOS,
+//      then look the ask's keywords up in seven places (server/sevenContexts)
 //   5. run the model and tool loop, with a time limit when one is set
 //   6. record the run as an episode, and remember the exchange when asked to
 //
@@ -29,8 +30,11 @@ import { runChatLoop } from '../routes/chat/chatExecution.js';
 import { loadOutsideTools, EMPTY_OUTSIDE_TOOLS } from '../outsideTools/forAgent.js';
 import { loadRunMemory, NO_MEMORY } from '../agentMemory/forRun.js';
 import { withMemoryBlock } from '../agentMemory/recall.js';
+import { stampMessages } from '../agentMemory/recallTurns.js';
+import { gatherSevenContexts } from '../sevenContexts/index.js';
 import { beginAgentPresence } from '../collab/agentPresence.js';
 import { getAgent } from '../memory/core/agents.js';
+import { agentTurnStarted } from '../appUpdate/busy.js';
 import { noteAgentWork } from '../social/agentNotes.js';
 
 export const RUN_ORIGINS = Object.freeze(['chat', 'help', 'endpoint', 'workflow']);
@@ -100,8 +104,10 @@ async function remember({ agentId, question, answer, workspaceId, userId }) {
 export async function runAgentTurn({
   origin = 'chat', agentId, messages, currentProject = null, userId = null, userRole = null,
   workspaceId = null, windowId = null, loopWorkspaceId = null, sendEvent = () => {}, onModelAccepted,
+  conversationId = null, timeZone = undefined,
   signal = null, timeoutMs = 0, toolFilter = null, onPrepared = null, rememberQuestion = null,
   timings = newTimings(), loadOutside = loadOutsideTools, loadMemory = loadRunMemory,
+  gatherContexts = gatherSevenContexts,
 }) {
   const setupStartedAt = Date.now();
   const context = await prepareChatContext(agentId, currentProject, messages, userId, userRole, workspaceId);
@@ -109,11 +115,24 @@ export async function runAgentTurn({
     ? await loadOutside({ db: pool, userId, agentId, origin })
     : EMPTY_OUTSIDE_TOOLS;
   const memory = agentId && userId && dbReady()
-    ? await loadMemory({ db: pool, userId, agentId, origin, messages, workspaceId: context.workspaceId || workspaceId })
+    ? await loadMemory({
+      db: pool, userId, agentId, origin, messages, workspaceId: context.workspaceId || workspaceId,
+      conversationId, windowId, timeZone,
+    })
     : NO_MEMORY;
-  context.chatMessages = withMemoryBlock(context.chatMessages, memory.block);
+  // Each message from the person carries the time it was sent, so the agent can tell how long ago things were said.
+  context.chatMessages = withMemoryBlock(stampMessages(context.chatMessages, messages, timeZone), memory.block);
   let tools = withOutsideTools(context.toolsForCaller, outside, memory.tools);
   if (toolFilter) tools = toolFilter(tools);
+  // Drawing 07: look the ask's keywords up in seven places; only matches are added.
+  const looked = agentId && dbReady()
+    ? await gatherContexts({
+      db: pool, agentId, origin, messages, currentProject, tools, memory,
+      workspaceId: context.workspaceId || null, systemPrompt: context.chatMessages?.[0]?.content || '',
+    }).catch(() => null)
+    : null;
+  context.chatMessages = withMemoryBlock(context.chatMessages, looked?.block);
+  context.sevenContexts = looked?.report || null;
   timings.setup_ms = Date.now() - setupStartedAt;
   const hooks = (await onPrepared?.(context)) || {};
 
@@ -122,6 +141,7 @@ export async function runAgentTurn({
     workspaceId: context.workspaceId, agentId, windowId, describe: () => getAgent(agentId),
   });
   let answer = '';
+  const working = agentTurnStarted({ agentId, origin });
   try {
     const authorized = context.workspaceId;
     const { finalText, toolActions } = await runChatLoop({
@@ -159,6 +179,7 @@ export async function runAgentTurn({
     return { finalText, toolActions, context, timings };
   } finally {
     limit.done();
+    working();
     cursor.finish(answer);
   }
 }

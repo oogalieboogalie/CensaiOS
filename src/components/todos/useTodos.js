@@ -9,7 +9,7 @@ export function useTodos(win, onUpdate, currentProject) {
   const items = React.useMemo(() => normalizeTodos(win.items), [win.items]);
   const operational = useOperationalTodos(win, onUpdate, items);
   const [newText, setNewText] = React.useState('');
-  const [handoffError, setHandoffError] = React.useState('');
+  const [handoffError, setHandoffError] = React.useState(null);
   const [editingId, setEditingId] = React.useState(null);
   const [editText, setEditText] = React.useState('');
   const pendingHandoffs = React.useRef(new Set());
@@ -48,7 +48,7 @@ export function useTodos(win, onUpdate, currentProject) {
     const sourceId = `${win.id || win.kind || 'todos'}:${item.id}`;
     if (item.handingOff || pendingHandoffs.current.has(sourceId)) return;
     pendingHandoffs.current.add(sourceId);
-    setHandoffError('');
+    setHandoffError(null);
     updateViewItem(item.id, { handingOff: true });
     try {
       if (operational.enabled) {
@@ -83,7 +83,7 @@ export function useTodos(win, onUpdate, currentProject) {
       window.dispatchEvent(new Event('tasks-updated'));
     } catch (err) {
       updateViewItem(item.id, { handingOff: false });
-      setHandoffError(err.message || 'Failed to create handoff');
+      setHandoffError(err?.message ? err : 'Failed to create handoff');
     } finally {
       pendingHandoffs.current.delete(sourceId);
     }
@@ -93,6 +93,7 @@ export function useTodos(win, onUpdate, currentProject) {
     items,
     newText, setNewText,
     handoffError: handoffError || operational.error,
+    clearError: () => { setHandoffError(null); operational.clearError(); },
     editingId, editText, setEditText,
     completedCount, totalCount,
     toggle, assign, add, startEdit, saveEdit, cancelEdit, handoff

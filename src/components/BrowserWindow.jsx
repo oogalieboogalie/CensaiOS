@@ -3,6 +3,8 @@ import { WindowTitle } from './Windows.jsx';
 import { hasNativeBrowserPane, useNativeBrowserPane } from '../lib/nativeBrowserPane.js';
 import { BrowserStartPage } from './BrowserStartPage.jsx';
 import { BrowserSignInPanel } from './BrowserSignInPanel.jsx';
+import { BrowserEquipButton, BrowserEquipMenu } from './BrowserEquipMenu.jsx';
+import { parseUrl as parseAddress } from '../lib/browserUrl.js';
 
 export function GlobeIcon({ size = 14 }) {
   return (
@@ -15,31 +17,7 @@ export function GlobeIcon({ size = 14 }) {
 }
 
 export function parseUrl(url) {
-  if (!url) return '';
-  let finalUrl = url.trim();
-  
-  // Convert standard youtube links to embed links
-  const ytMatch = finalUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
-  // (iframe mode only; the desktop build shows the real page)
-  if (ytMatch && ytMatch[1] && !hasNativeBrowserPane()) {
-    return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  }
-  
-  // Local dev servers (localhost:5173, 127.0.0.1:3000) are addresses, not searches.
-  const local = finalUrl.match(/^(https?:\/\/)?((localhost|127\.\d+\.\d+\.\d+|\[::1\])(:\d+)?(\/\S*)?)$/i);
-  if (local) return `${local[1] || 'http://'}${local[2]}`;
-
-  // If it contains spaces or has no dot, treat it as a web search query
-  if (/\s/.test(finalUrl) || !finalUrl.includes('.')) {
-    return `https://html.duckduckgo.com/html/?q=${encodeURIComponent(finalUrl)}`;
-  }
-  
-  // Ensure protocol exists
-  if (!/^https?:\/\//i.test(finalUrl)) {
-    finalUrl = 'https://' + finalUrl;
-  }
-  
-  return finalUrl;
+  return parseAddress(url, { embedYoutube: !hasNativeBrowserPane() });
 }
 
 export function BrowserWindow({ win, onUpdate }) {
@@ -48,11 +26,13 @@ export function BrowserWindow({ win, onUpdate }) {
   const areaRef = React.useRef(null);
   const inputFocusedRef = React.useRef(false);
   const [signInOpen, setSignInOpen] = React.useState(false);
+  const [equipOpen, setEquipOpen] = React.useState(false);
 
   const pane = useNativeBrowserPane({
     winId: win.id,
     areaRef,
     url: activeUrl,
+    coverWhenSmall: Boolean(win.iconCoverZoomedOut),
     onNavigated: (url, loading) => {
       if (!inputFocusedRef.current) setDraftUrl(url);
       if (!loading) {
@@ -61,6 +41,14 @@ export function BrowserWindow({ win, onUpdate }) {
       }
     },
   });
+
+  // An equipped agent (or a teammate) changed the address on the live board.
+  React.useEffect(() => {
+    if (!win.url || win.url === activeUrl) return;
+    setActiveUrl(win.url);
+    if (!inputFocusedRef.current) setDraftUrl(win.url);
+    pane.navigate(win.url);
+  }, [win.url]);
 
   const go = (raw) => {
     const parsed = parseUrl(raw);
@@ -106,6 +94,12 @@ export function BrowserWindow({ win, onUpdate }) {
         subtitle={getSubtitle()} 
         attachedAgentIds={win.attachedAgents} 
         onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} 
+        menu={pane.enabled ? [{
+          id: 'icon-cover',
+          label: win.iconCoverZoomedOut ? 'Show the page when zoomed far out' : 'Show only the icon when zoomed far out',
+          title: 'When the board is zoomed far out, cover this page with its icon',
+          onSelect: () => onUpdate({ iconCoverZoomedOut: !win.iconCoverZoomedOut }),
+        }] : undefined}
       />
       
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
@@ -129,6 +123,7 @@ export function BrowserWindow({ win, onUpdate }) {
             placeholder="Enter URL (e.g. youtube.com/watch?v=...)"
             style={{ flex: 1, border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '4px 10px', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-mono)', outline: 'none', background: 'var(--surface)', color: 'var(--ink)' }}
           />
+          <BrowserEquipButton equippedAgentId={win.equippedAgentId} open={equipOpen} onToggle={() => setEquipOpen((o) => !o)} />
           {pane.blocked > 0 && (
             <span data-testid="ads-blocked" title="Ads and trackers blocked on this page. Switch off in Settings, Canvas tab." style={{ flexShrink: 0, fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', whiteSpace: 'nowrap' }}>{pane.blocked} blocked</span>
           )}
@@ -167,13 +162,18 @@ export function BrowserWindow({ win, onUpdate }) {
             </button>
           )}
         </form>
+        {equipOpen && (
+          <BrowserEquipMenu equippedAgentId={win.equippedAgentId} onEquip={(id) => onUpdate({ equippedAgentId: id })} onClose={() => setEquipOpen(false)} />
+        )}
         {signInOpen && pane.enabled && activeUrl && (
           <BrowserSignInPanel winId={win.id} url={activeUrl} onClose={() => setSignInOpen(false)} />
         )}
 
         {/* Page area: a native webview sits on top of this in the desktop build */}
         <div ref={areaRef} style={{ flex: 1, position: 'relative', background: pane.enabled ? 'var(--surface)' : 'white' }}>
-          {activeUrl && pane.enabled ? (
+          {activeUrl && pane.enabled && pane.covered ? (
+            <BrowserIconCover host={getSubtitle()} />
+          ) : activeUrl && pane.enabled ? (
             <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 20, textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--ink-faint)' }}>
               {pane.visible ? 'Loading page' : 'The page is hidden while something covers this window.'}
             </div>
@@ -207,5 +207,16 @@ function NavButton({ title, disabled, onClick, active, children }) {
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
     </button>
+  );
+}
+
+// Shown instead of the page when the board is zoomed far out and the window's
+// "Show only the icon when zoomed far out" setting is on.
+function BrowserIconCover({ host }) {
+  return (
+    <div data-testid="browser-icon-cover" style={{ position: 'absolute', inset: 0, display: 'grid', placeContent: 'center', justifyItems: 'center', gap: 16, padding: 20, textAlign: 'center', color: 'var(--ps-blue)', background: 'var(--surface-2)' }}>
+      <GlobeIcon size={120} />
+      <span style={{ fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--ink)', overflowWrap: 'anywhere' }}>{host}</span>
+    </div>
   );
 }

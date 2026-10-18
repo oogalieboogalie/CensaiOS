@@ -32,6 +32,15 @@ function QueueItem({ entry }) {
           {entry.detail || entry.note || entry.reason}
         </div>
       )}
+      {/* Diagram 01: the review decides the merge. */}
+      {entry.reviewNote && (
+        <div data-testid="jules-review-note" style={{ fontSize: 'var(--text-xs)', color: 'var(--ps-yellow)' }}>
+          {entry.reviewNote}
+        </div>
+      )}
+      {!entry.reviewNote && entry.review === 'pass' && (
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ps-green)' }}>Review passed.</div>
+      )}
       {entry.duplicateBriefs?.length > 0 && (
         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
           {entry.duplicateBriefs.length} duplicate brief{entry.duplicateBriefs.length === 1 ? '' : 's'} collapsed

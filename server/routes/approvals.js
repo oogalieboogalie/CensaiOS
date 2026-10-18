@@ -6,6 +6,8 @@ import { executeApprovedTool } from '../tools.js';
 import { requireWorkspaceMember } from '../workspaces/context.js';
 import { toolCallOk } from './chat/toolOutcome.js';
 import { readTrustMode, setTrustMode } from '../approvals/trustMode.js';
+import { readSpeakUp, setSpeakUp } from '../speakUp/store.js';
+import { readWakeUps, setWakeUps } from '../wakeUps/store.js';
 
 const STATUSES = new Set(['pending', 'executing', 'succeeded', 'failed', 'denied', 'cancelled']);
 export const approvalsRouter = express.Router();
@@ -107,6 +109,60 @@ approvalsRouter.put('/agent-trust', async (req, res) => {
     }
     const state = await setTrustMode(pool, {
       workspaceId: auth.workspaceId, agentId: req.body?.agentId || '*', trusted, userId: auth.userId,
+    });
+    res.json({ workspaceId: auth.workspaceId, canChange: true, ...state });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// Speak up (diagram 17): which agents may post a short note to the Inbox on
+// their own. Off for every agent until an owner or admin turns it on.
+approvalsRouter.get('/agent-speak-up', async (req, res) => {
+  try {
+    const auth = await scope(req);
+    res.json({ workspaceId: auth.workspaceId, canChange: ['owner', 'admin'].includes(auth.role),
+      ...(await readSpeakUp(pool, auth.workspaceId)) });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+approvalsRouter.put('/agent-speak-up', async (req, res) => {
+  try {
+    const auth = await scope(req, true);
+    if (typeof req.body?.enabled !== 'boolean' || !req.body?.agentId) {
+      throw new ToolApprovalError('Say which agent, on or off.', 400, 'AGENT_SPEAK_UP_INVALID');
+    }
+    const state = await setSpeakUp(pool, {
+      workspaceId: auth.workspaceId, agentId: req.body.agentId, enabled: req.body.enabled, userId: auth.userId,
+    });
+    res.json({ workspaceId: auth.workspaceId, canChange: true, ...state });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+// Wake-ups: whether Censai may schedule himself and wake family agents.
+// Off until an owner or admin turns it on.
+approvalsRouter.get('/agent-wake-ups', async (req, res) => {
+  try {
+    const auth = await scope(req);
+    res.json({ workspaceId: auth.workspaceId, canChange: ['owner', 'admin'].includes(auth.role),
+      ...(await readWakeUps(pool, auth.workspaceId)) });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+approvalsRouter.put('/agent-wake-ups', async (req, res) => {
+  try {
+    const auth = await scope(req, true);
+    if (typeof req.body?.enabled !== 'boolean' || !req.body?.agentId) {
+      throw new ToolApprovalError('Say which agent, on or off.', 400, 'AGENT_WAKE_UPS_INVALID');
+    }
+    const state = await setWakeUps(pool, {
+      workspaceId: auth.workspaceId, agentId: req.body.agentId, enabled: req.body.enabled, userId: auth.userId,
     });
     res.json({ workspaceId: auth.workspaceId, canChange: true, ...state });
   } catch (error) {

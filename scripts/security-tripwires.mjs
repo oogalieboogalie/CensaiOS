@@ -34,6 +34,10 @@ const ALLOW = new Set([
   'public/install.sh:piped-shell',
   'tests/installCommand.test.jsx:piped-shell',
   'src/components/landing/InstallCommand.jsx:piped-shell',
+  // The starter-box setup runs Ollama's and Tailscale's own official
+  // installers (their documented "curl -fsSL https://... | sh"), only when the
+  // box owner runs setup and the tool is missing.
+  'starter-box/setup.sh:piped-shell',
   // Compiles a CAD recipe only to report typing mistakes; it is never called.
   'server/collaboration/cadAgent.js:dynamic-code',
   // Boots the repo's own launcher.cjs (passed by env) inside the throwaway

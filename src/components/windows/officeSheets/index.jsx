@@ -27,7 +27,12 @@ export function OfficeSheetsWindow({ win = {}, onUpdate }) {
     const mod = e.ctrlKey || e.metaKey;
     const moves = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
     if (moves[e.key]) { e.preventDefault(); s.moveBy(...moves[e.key], e.shiftKey); return; }
-    if (e.key === 'Tab') { e.preventDefault(); s.moveBy(e.shiftKey ? -1 : 1, 0); return; }
+    if (e.key === 'Tab') {
+      // At the first or last column Tab lets go, so the keyboard can reach the toolbar and sheet tabs.
+      const atEdge = e.shiftKey ? s.sel.ac === 0 : s.sel.ac === s.sheet.cols - 1;
+      if (!atEdge) { e.preventDefault(); s.moveBy(e.shiftKey ? -1 : 1, 0); }
+      return;
+    }
     if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); s.startEdit(); return; }
     if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); s.clearSelection(); return; }
     if (mod && ['b', 'i', 'u'].includes(e.key.toLowerCase())) { e.preventDefault(); s.style(e.key.toLowerCase()); return; }
@@ -64,8 +69,10 @@ export function OfficeSheetsWindow({ win = {}, onUpdate }) {
             onFocus={() => { if (!s.edit) s.startEdit(undefined, 'bar'); }}
             onChange={(e) => s.setEdit({ address: s.edit?.address || s.active, from: s.edit?.from || 'bar', value: e.target.value })}
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
               if (e.key === 'Enter') { e.preventDefault(); s.commitEdit(0, e.shiftKey ? -1 : 1); refocus(); }
-              if (e.key === 'Tab') { e.preventDefault(); s.commitEdit(e.shiftKey ? -1 : 1, 0); refocus(); }
+              // Tab saves and moves right; Shift+Tab leaves the bar backwards (blur saves).
+              if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); s.commitEdit(1, 0); refocus(); }
               if (e.key === 'Escape') { e.preventDefault(); s.setEdit(null); refocus(); }
             }}
             onBlur={() => s.commitEdit(0, 0)} />

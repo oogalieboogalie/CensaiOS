@@ -1,0 +1,72 @@
+/*
+ * Edge header mode (Alex's wireframe, diagram 05): no header bar. The
+ * window's controls hang as a column of small tabs centred on its right
+ * edge, and a thin lip above the top edge reads as a second sheet behind
+ * the window. WindowFrame lets the frame overflow in this mode and clips
+ * the content itself, so the tabs can sit half outside.
+ */
+
+[data-header-mode="edge"]::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: calc(-1 * var(--space-1-5));
+  left: 0;
+  right: 0;
+  height: var(--space-6);
+  border: 1px solid var(--hairline);
+  border-radius: var(--window-radius, var(--radius-window));
+  background: color-mix(in oklab, var(--window-bg, var(--surface)) 70%, transparent);
+  /* Only the sliver above the window shows. */
+  clip-path: inset(0 0 calc(100% - var(--space-1-5)) 0);
+  pointer-events: none;
+}
+
+[data-header-mode="edge"] > .hb-win-header {
+  position: absolute;
+  top: var(--space-3);
+  right: calc(-1 * var(--window-control-size) / 2 - var(--space-0-5));
+  flex-direction: column;
+  height: auto;
+  padding: 0;
+  gap: var(--space-1);
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+[data-header-mode="edge"] > .hb-win-header .hb-win-title,
+[data-header-mode="edge"] > .hb-win-header .hb-win-project { display: none; }
+[data-header-mode="edge"] > .hb-win-header .hb-win-actions:empty { display: none; }
+
+[data-header-mode="edge"] > .hb-win-header .hb-win-controls,
+[data-header-mode="edge"] > .hb-win-header .hb-win-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  opacity: 1;
+}
+
+[data-header-mode="edge"] > .hb-win-header .hb-win-grip,
+[data-header-mode="edge"] > .hb-win-header .hb-win-control,
+[data-header-mode="edge"] > .hb-win-header .hb-win-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--window-control-size);
+  min-height: var(--window-control-size);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg, var(--surface));
+  -webkit-backdrop-filter: var(--glass-filter, none);
+  backdrop-filter: var(--glass-filter, none);
+  box-shadow: var(--elevation-1);
+  box-sizing: border-box;
+}
+[data-header-mode="edge"] > .hb-win-header .hb-win-action { padding: 0 var(--space-1); font-size: var(--text-xs); }
+/* Actions with an icon show just the icon, so the column stays narrow. */
+[data-header-mode="edge"] > .hb-win-header .hb-win-action:has(svg) { gap: 0; font-size: 0; }
+[data-header-mode="edge"] > .hb-win-header .hb-win-grip { cursor: grab; color: var(--ink-faint); }
+
+/* The overflow menu opens to the left of the tab column. */
+[data-header-mode="edge"] .hb-win-menu { top: 0; right: calc(100% + var(--space-1)); }

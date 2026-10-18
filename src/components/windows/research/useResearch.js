@@ -71,6 +71,14 @@ export function useResearch({ win = {}, onUpdate }) {
     return data;
   }), [run, patch]);
 
+  // Feed a file in (diagram 13): the server cuts it into tagged pieces.
+  const saveFile = React.useCallback((file) => run('save', async () => {
+    const text = await file.text();
+    const data = await researchApi.saveFile({ name: file.name, text });
+    patch({ kb: kbSummary(data.sources), kbAt: new Date().toISOString(), lastSave: { count: 1, embedder: null } });
+    return data.source;
+  }), [run, patch]);
+
   const remove = React.useCallback((id) => run('save', async () => {
     const data = await researchApi.remove(id);
     patch({ kb: kbSummary(data.sources), kbAt: new Date().toISOString() });
@@ -110,6 +118,6 @@ export function useResearch({ win = {}, onUpdate }) {
     recipe: saved.recipe || null,
     lastSave: saved.lastSave || null,
     readOnly: !status.loaded,
-    search, save, remove, ask, runRecipe, saveTavilyKey, refreshKb,
+    search, save, saveFile, remove, ask, runRecipe, saveTavilyKey, refreshKb,
   };
 }

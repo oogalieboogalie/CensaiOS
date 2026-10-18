@@ -21,6 +21,9 @@ import * as agentIcons from './api/agentIcons.js';
 import * as shareLinks from './api/shareLinks.js';
 import * as lessons from './api/lessons.js';
 import * as projectGit from './api/projectGit.js';
+import * as skillSets from './api/skillSets.js';
+import * as blueprints from './api/blueprints.js';
+import * as agentRouter from './api/agentRouter.js';
 
 export const api = {
   ...agents,
@@ -46,4 +49,7 @@ export const api = {
   ...shareLinks,
   ...lessons,
   ...projectGit,
+  ...skillSets,
+  ...blueprints,
+  ...agentRouter,
 };

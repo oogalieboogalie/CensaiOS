@@ -2,6 +2,7 @@ import React from 'react';
 import { ThemePanelCard } from './ThemeControls.jsx';
 import { useAdBlockEnabled } from '../../lib/adBlock.js';
 import { hasNativeBrowserPane } from '../../lib/nativeBrowserPane.js';
+import { YorName } from '../yorware/YorSecurity.jsx';
 
 /** Settings > Canvas: the "Block ads on web pages" switch. */
 export function AdBlockCard() {
@@ -14,7 +15,7 @@ export function AdBlockCard() {
     <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 11 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div>
-          <div style={{ fontSize: 'var(--text-md)', fontWeight: 750, color: 'var(--ink)' }}>Block ads on web pages</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 'var(--text-md)', fontWeight: 750, color: 'var(--ink)' }}>Block ads on web pages <YorName id="dunedain" /></div>
           <div style={{ marginTop: 3, fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>{where}</div>
         </div>
         <button

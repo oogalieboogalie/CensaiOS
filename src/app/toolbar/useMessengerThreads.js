@@ -3,6 +3,7 @@ import { getAgents } from '../../lib/agentStore.js';
 import { sendMessageWithMeta } from '../../lib/chat.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { needsKey } from '../../lib/chat/keyNeeded.js';
+import { handoffsFromTools } from '../../lib/censai/handoffs.js';
 
 const STORAGE_KEY = 'homebase.messenger.v1';
 
@@ -18,11 +19,12 @@ function loadThreads() {
 
 // Shared thread state for messenger-style agent chats (same /api/chat pipe
 // as canvas chat windows, threads persist in localStorage under one key so
-// every entry point sees the same conversations).
-export function useMessengerThreads() {
+// every entry point sees the same conversations). `initialId` opens one
+// agent's thread straight away (the pinned chat opens on Censai).
+export function useMessengerThreads({ initialId = null } = {}) {
   const workspaceId = useWorkspaceStore((s) => s.workspaceId);
   const currentProject = useWorkspaceStore((s) => s.currentProject);
-  const [activeId, setActiveId] = React.useState(null);
+  const [activeId, setActiveId] = React.useState(initialId);
   const [threads, setThreads] = React.useState(loadThreads);
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -51,10 +53,9 @@ export function useMessengerThreads() {
     setSending(true);
     try {
       const reply = await sendMessageWithMeta(agent.id, history, { workspaceId, currentProject });
-      setThreads((t) => ({
-        ...t,
-        [agent.id]: [...(t[agent.id] || history), { from: agent.id, text: reply.text || '(empty reply)', ts: Date.now() }],
-      }));
+      const handoffs = handoffsFromTools(reply.tools);
+      const answer = { from: agent.id, text: reply.text || '(empty reply)', ts: Date.now(), ...(handoffs.length ? { handoffs } : {}) };
+      setThreads((t) => ({ ...t, [agent.id]: [...(t[agent.id] || history), answer] }));
     } catch (err) {
       if (needsKey(err)) {
         setKeyNeeded({ agentId: agent.id, keyProvider: err.details?.keyProvider || null, message: err.message });

@@ -205,17 +205,18 @@ export function CanvasGroup({ group, zoom, allWins, allGroups, visible = true, t
         onSetDefaultPreset={onSetDefaultPreset}
       />
 
-      {showLabel && (
-        <CanvasGroupResizeHandle
-          group={group}
-          allWins={allWins}
-          allGroups={allGroups}
-          zoom={zoom}
-          borderColor="var(--ink-faint)"
-          dragRef={dragRef}
-          onResize={onResize}
-        />
-      )}
+      {/* Always mounted (the icon only shows on hover) so a desktop Browser
+          tile under it keeps the corner free; see src/lib/paneGrips.js. */}
+      <CanvasGroupResizeHandle
+        shown={showLabel}
+        group={group}
+        allWins={allWins}
+        allGroups={allGroups}
+        zoom={zoom}
+        borderColor="var(--ink-faint)"
+        dragRef={dragRef}
+        onResize={onResize}
+      />
     </div>
   );
 }

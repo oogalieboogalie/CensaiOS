@@ -92,13 +92,22 @@ export function openTerminalSocket(url, handlers, { WebSocketImpl = WebSocket, w
 // failing, ask the server whether this browser is still signed in, so the
 // terminal can say "signed out" instead of retrying in silence.
 export async function stillSignedIn(fetchImpl = typeof fetch === 'undefined' ? null : fetch) {
-  if (!fetchImpl) return true;
+  return (await terminalRefusal(fetchImpl)) !== 'signed-out';
+}
+
+// Why the server would refuse this terminal, as far as the browser can tell:
+// 'signed-out', 'owner-only' (the terminal runs on the computer, so only its
+// owner may open one), or null (nothing known: keep retrying).
+export async function terminalRefusal(fetchImpl = typeof fetch === 'undefined' ? null : fetch) {
+  if (!fetchImpl) return null;
   try {
     const res = await fetchImpl('/api/auth/session', { credentials: 'include' });
-    if (!res.ok) return true;
+    if (!res.ok) return null;
     const body = await res.json();
-    return body?.authenticated !== false;
+    if (body?.authenticated === false) return 'signed-out';
+    if (body?.user?.role && body.user.role !== 'admin') return 'owner-only';
+    return null;
   } catch {
-    return true; // server still down: keep quietly retrying
+    return null; // server still down: keep quietly retrying
   }
 }

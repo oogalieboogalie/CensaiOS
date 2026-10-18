@@ -18,13 +18,13 @@ export const STATE_LABEL = {
   green: 'Ready to land', draft_green: 'Draft, green',
   needs_approval: 'Needs your OK', agent_failed: 'Agent stopped', agent_running: 'In progress',
   agent_done: 'Finished', agent_stopped: 'Stopped',
-  error: 'Error', error_escalating: 'Escalating', error_fixing: 'Being fixed',
+  agent_note: 'Note', error: 'Error', error_escalating: 'Escalating', error_fixing: 'Being fixed',
 };
 
 /** The small mark at the start of a row: GitHub for PRs, the CLI's own mark for agents. */
 export function ItemMark({ item }) {
   if (item.kind === 'agent') return <CliMark cli={item.cli} size="sm" active={item.group === 'working'} />;
-  const Mark = item.kind === 'pr' ? Icon.Github : Icon.Alert;
+  const Mark = item.kind === 'pr' ? Icon.Github : item.kind === 'note' ? Icon.Bot : Icon.Alert;
   return <span className="hb-inbox-mark" data-tone={item.tone} aria-hidden="true"><Mark size={13} /></span>;
 }
 

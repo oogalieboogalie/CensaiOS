@@ -4,7 +4,6 @@ import { useWorkspaceStore } from '../lib/store.js';
 import { Canvas } from '../components/Canvas.jsx';
 import { Chrome } from '../components/Chrome.jsx';
 import { MultiGroupDock, DEFAULT_GROUPS } from '../components/Dock.jsx';
-import { Icon } from '../components/Icons.jsx';
 import { inferLayout, cleanLayout, fitGroupToLayout, getGroupInnerBounds, makeGroupBoundsForWindows } from '../lib/layoutAlgo.js';
 import { MIN_ZOOM, computeFitView, clusterWindows, boundsForItems, computeFitBounds } from '../lib/canvasMath.js';
 import { getCanvasObjectType, legacyKindForCanvasType } from '../lib/canvasObjectTypes.js';
@@ -23,7 +22,8 @@ import { Toolbar } from './Toolbar.jsx';
 import { Hud } from './Hud.jsx';
 import { AgentRunToasts } from '../components/AgentRunToasts.jsx';
 import { SelfFixNotice } from '../components/SelfFixNotice.jsx';
-import { AgentMailToasts } from '../components/AgentMailToasts.jsx';
+import { AppUpdateNotice, TrayUpdatePanel } from '../components/AppUpdateNotice.jsx';
+import { AgentMailToasts } from '../components/AgentMailToasts.jsx'; import { CensaiPinnedChat } from '../components/censai/CensaiPinnedChat.jsx';
 import SystemStatusWidget from '../components/status/SystemStatusWidget.jsx';
 import { useAppActions } from './hooks/useAppActions.js';
 import { useAppBootstrap } from './hooks/useAppBootstrap.js';
@@ -267,7 +267,7 @@ export function AppContent() {
 
       <Hud focusMode={chromeHidden} collaboration={collaboration} />
       <AgentRunToasts collaboration={collaboration} onOpenWindow={(id) => setActiveId(id)} />
-      <AgentMailToasts workspaceId={workspaceId} /><SelfFixNotice />
+      <AgentMailToasts workspaceId={workspaceId} /><SelfFixNotice /><AppUpdateNotice /><TrayUpdatePanel /><CensaiPinnedChat workspaceId={workspaceId} />
       <SystemStatusWidget focusMode={chromeHidden} />
       <GroupFocusBar /><PresentMode workspaceId={workspaceId} />
       <Toolbar

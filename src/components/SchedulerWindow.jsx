@@ -17,7 +17,7 @@ export function SchedulerWindow({ win, onUpdate, onSpawn, onSelect, wins, curren
         subtitle={waiting ? `${waiting} coming up` : undefined}
       />
       <div className="hb-sched-window">
-        <SchedulerForm state={state} />
+        <SchedulerForm state={state} onSpawn={onSpawn} />
         <SchedulerTimeline state={state} onSpawn={onSpawn} onSelect={onSelect} wins={wins} />
       </div>
     </>

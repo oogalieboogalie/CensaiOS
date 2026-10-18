@@ -1,0 +1,46 @@
+/* YorWare security names (diagram 11): name badges + the overview card. */
+
+.hb-yor-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-0-5) var(--space-2);
+  border: 1px solid color-mix(in oklab, var(--brand-ultem) 45%, var(--hairline));
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--brand-ultem) 12%, transparent);
+  color: var(--brand-ultem-text);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: help;
+}
+.hb-yor-name-dot {
+  width: var(--space-1-5);
+  height: var(--space-1-5);
+  border-radius: var(--radius-full);
+  background: var(--brand-ultem);
+}
+
+.hb-yor-card {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.hb-yor-card-title { font-size: var(--text-md); font-weight: 750; color: var(--ink); }
+.hb-yor-card-sub { margin-top: var(--space-0-5); font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-yor-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.hb-yor-row {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.hb-yor-line { font-size: var(--text-sm); color: var(--ink); line-height: 1.45; }
+.hb-yor-where { font-size: var(--text-xs); color: var(--ink-faint); }

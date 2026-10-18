@@ -4,11 +4,18 @@ import { WindowTitle } from './Windows.jsx';
 import { useLinkedPreviewSource } from './preview/linkedPreviewSource.js';
 import { useLinkedPreviewSnapshot } from './preview/useLinkedPreviewSnapshot.js';
 
+function agentDisplayName(id) {
+  const clean = String(id || '').trim();
+  return clean ? `${clean[0].toUpperCase()}${clean.slice(1)}` : 'The agent';
+}
+
 export function HtmlPreviewWindow({ win, onUpdate }) {
   const [html, setHtml] = React.useState(win.html || '');
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
   const preview = useLinkedPreviewSource({ ...win, html });
+  // The chat's own live preview: the agent writes, this refreshes.
+  const chatLive = win.chatId ? agentDisplayName(win.previewAgentId) : '';
   useLinkedPreviewSnapshot(preview, win.html, onUpdate);
   React.useEffect(() => {
     if (win.html !== undefined) setHtml(win.html);
@@ -37,11 +44,18 @@ export function HtmlPreviewWindow({ win, onUpdate }) {
         accent="var(--accent)"
         icon={<Icon.Files size={14} />}
         label={win.title || 'Shared Preview'}
-        subtitle={preview.linked ? `Live from ${preview.label}` : preview.label}
+        subtitle={chatLive ? `Live from ${chatLive} · ${win.fileName || 'preview'}` : preview.linked ? `Live from ${preview.label}` : preview.label}
         attachedAgentIds={win.attachedAgents}
         onDetach={(id) => onUpdate?.({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
       />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'white' }}>
+        {chatLive && (
+          <div role="status" data-testid="chat-live-preview" style={{ padding: '6px 10px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)' }}>
+            <span key={win.previewRevision || 0} className="hb-live-preview-chip">
+              {chatLive} is working on {win.fileName || 'this'}. This refreshes on every change (update {win.previewRevision || 1}).
+            </span>
+          </div>
+        )}
         {(preview.linked || preview.missing) && (
           <div role="status" style={{ padding: '6px 10px', color: preview.missing ? 'var(--ps-red)' : 'var(--accent-ink)', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)' }}>
             {preview.missing

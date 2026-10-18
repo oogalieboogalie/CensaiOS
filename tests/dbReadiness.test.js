@@ -37,6 +37,9 @@ jest.unstable_mockModule('../server/shareLinks/schema.js', () => ({
 jest.unstable_mockModule('../server/agentEndpoints/schema.js', () => ({
   ensureAgentEndpointSchema: jest.fn(async () => {}),
 }));
+jest.unstable_mockModule('../server/apiBar/schema.js', () => ({
+  ensureApiBarSchema: jest.fn(async () => {}),
+}));
 jest.unstable_mockModule('../server/outsideTools/schema.js', () => ({
   ensureOutsideToolSchema: jest.fn(async () => {}),
 }));
@@ -46,8 +49,20 @@ jest.unstable_mockModule('../server/agentMemory/schema.js', () => ({
 jest.unstable_mockModule('../server/approvals/trustSchema.js', () => ({
   ensureAgentTrustSchema: jest.fn().mockResolvedValue(undefined),
 }));
+jest.unstable_mockModule('../server/speakUp/schema.js', () => ({
+  ensureSpeakUpSchema: jest.fn().mockResolvedValue(undefined),
+}));
+jest.unstable_mockModule('../server/wakeUps/schema.js', () => ({
+  ensureWakeUpSchema: jest.fn().mockResolvedValue(undefined),
+}));
 jest.unstable_mockModule('../server/workflows/schema.js', () => ({
   ensureBoardWorkflowSchema: jest.fn().mockResolvedValue(undefined),
+}));
+jest.unstable_mockModule('../server/skillSets/schema.js', () => ({
+  ensureSkillSetSchema: jest.fn().mockResolvedValue(undefined),
+}));
+jest.unstable_mockModule('../server/blueprints/schema.js', () => ({
+  ensureBlueprintSchema: jest.fn().mockResolvedValue(undefined),
 }));
 jest.unstable_mockModule('../server/repoScout/schema.js', () => ({
   ensureAgentScoutSchema: jest.fn().mockResolvedValue(undefined),

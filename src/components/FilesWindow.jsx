@@ -25,6 +25,7 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
     setSearchInput,
     searchResults,
     searchLoading,
+    searchError,
     loadDir,
     clearDir,
   } = useFiles({ win, onUpdate, currentProject });
@@ -139,7 +140,7 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
         {searchResults ? (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {searchLoading && <div style={{ padding: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>Searching...</div>}
-            {!searchLoading && searchResults.length === 0 && <div style={{ padding: 12, color: 'var(--ink-faint)' }}>No matches.</div>}
+            {!searchLoading && searchResults.length === 0 && <div style={{ padding: 12, color: searchError ? 'var(--ps-red)' : 'var(--ink-faint)' }}>{searchError || 'No matches.'}</div>}
             {!searchLoading && searchResults.map(node => (
                <Tree key={`${node.path}-${refreshTick}`} node={node} depth={0} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={mode === 'github' ? win.githubRepo : null} mode={mode} rootDirPath={win.dirPath} wins={wins} onSelect={onSelect} onSetRoot={(p) => onUpdate({ dirPath: p })} reloadTick={liveTick} />
             ))}

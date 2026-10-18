@@ -85,3 +85,11 @@ test('signed-out check reads the session, and stays quiet when the server is dow
   expect(await stillSignedIn(reply({ authenticated: true }))).toBe(true);
   expect(await stillSignedIn(async () => { throw new Error('down'); })).toBe(true);
 });
+
+test("says owner-only for a signed-in teammate, nothing for the computer's owner", async () => {
+  const { terminalRefusal } = await import('../src/components/terminal/terminalSocket.js');
+  const reply = (body) => async () => ({ ok: true, json: async () => body });
+  expect(await terminalRefusal(reply({ authenticated: true, user: { role: 'user' } }))).toBe('owner-only');
+  expect(await terminalRefusal(reply({ authenticated: true, user: { role: 'admin' } }))).toBe(null);
+  expect(await terminalRefusal(reply({ authenticated: false }))).toBe('signed-out');
+});

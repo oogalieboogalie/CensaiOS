@@ -17,6 +17,9 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
         messages, 
         agentId, 
         windowId: opts.windowId,
+        conversationId: opts.conversationId,
+        // The person's own time zone, so the agent reads times the way they do.
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         workspaceId: opts.workspaceId,
         currentProject: opts.currentProject,
         stream: true 
@@ -35,6 +38,7 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
         tools: data.tools,
         changeImpact: data.changeImpact,
         projectContext: data.projectContext || [],
+        sevenContexts: data.sevenContexts || null,
       };
     }
 
@@ -43,6 +47,7 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
     let finalTools = [];
     let finalChangeImpact = null;
     let finalProjectContext = [];
+    let finalSevenContexts = null;
     let finalError = null;
     let receivedResult = false;
 
@@ -67,6 +72,7 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
           finalTools = event.tools;
           finalChangeImpact = event.changeImpact || finalChangeImpact;
           finalProjectContext = event.projectContext || [];
+          finalSevenContexts = event.sevenContexts || null;
         } else if (event.type === 'error') {
           finalError = chatStreamError(event);
         }
@@ -106,6 +112,7 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
       tools: finalTools,
       changeImpact: finalChangeImpact,
       projectContext: finalProjectContext,
+      sevenContexts: finalSevenContexts,
     };
   } catch (err) {
     if (err instanceof ChatRequestError) throw err;

@@ -1,0 +1,27 @@
+/* An agent pointed the person at this window (project_window point): a
+   soft accent ring pulses a few times, then fades. Outline, not box-shadow,
+   so it never fights the frame's own shadow. */
+@keyframes hb-agent-point {
+  0% { outline-color: color-mix(in oklch, var(--accent) 90%, transparent); outline-offset: 2px; }
+  50% { outline-color: color-mix(in oklch, var(--accent) 35%, transparent); outline-offset: 8px; }
+  100% { outline-color: color-mix(in oklch, var(--accent) 90%, transparent); outline-offset: 2px; }
+}
+[data-win-frame][data-pointed="true"] {
+  outline: 3px solid var(--accent);
+  animation: hb-agent-point 1.2s var(--ease-standard) 4;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-win-frame][data-pointed="true"] { animation: none; }
+}
+
+/* The chat's live preview: a small "updated" chip that blinks on each refresh. */
+.hb-live-preview-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--text-xs); color: var(--ink-faint);
+}
+.hb-live-preview-chip::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); animation: hb-live-blink 1.4s var(--ease-standard) 1;
+}
+@keyframes hb-live-blink { from { opacity: 0.2; transform: scale(1.6); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .hb-live-preview-chip::before { animation: none; } }

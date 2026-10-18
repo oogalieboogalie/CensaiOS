@@ -40,6 +40,7 @@ jest.unstable_mockModule('@xterm/addon-web-links', () => ({
 
 const { TerminalWindow } = await import('../src/components/TerminalWindow.jsx');
 const { useWorkspaceStore } = await import('../src/lib/store.js');
+const { WindowProjectChip } = await import('../src/components/windows/WindowProjectChip.jsx');
 
 if (typeof global.ResizeObserver === 'undefined') {
   global.ResizeObserver = class {
@@ -85,8 +86,10 @@ test('renders TerminalWindow and triggers an agent run task', async () => {
   // Verify title / main header element rendered
   expect(screen.getByText('Terminal')).toBeTruthy();
 
-  // Click the Agent run button in toolbar
-  const agentButton = screen.getByText('▶ Run agent');
+  // One header, no second bar: "Run an agent here…" lives in the header's menu.
+  expect(screen.queryByText('▶ Run agent')).toBeNull();
+  expect(screen.queryByText('Mount to')).toBeNull();
+  const agentButton = screen.getByText('Run an agent here…');
   await act(async () => {
     fireEvent.click(agentButton);
   });
@@ -110,4 +113,41 @@ test('renders TerminalWindow and triggers an agent run task', async () => {
       agentSessionId: expect.any(String),
     })
   );
+});
+
+test('"Mount to" opens a folder picker and mounts the terminal to the picked folder', async () => {
+  const onUpdate = jest.fn();
+  const win = { id: 'term-2', kind: 'terminal', title: 'Terminal', cwd: '/workspace/projects' };
+  const listing = {
+    places: [{ name: 'Projects folder', path: '/workspace/projects', mountPath: 'D:\\Projects' }],
+    path: '/workspace/projects', mountPath: 'D:\\Projects', name: 'Projects folder', parent: null,
+    folders: [{ name: 'shop', path: '/workspace/projects/shop', mountPath: 'D:\\Projects\\shop' }],
+  };
+  const shop = { ...listing, path: '/workspace/projects/shop', mountPath: 'D:\\Projects\\shop', name: 'shop', parent: '/workspace/projects', folders: [] };
+  global.fetch = jest.fn(async (url, opts) => {
+    if (String(url).startsWith('/api/files/folders')) {
+      return { ok: true, json: async () => (String(url).includes('shop') ? shop : listing) };
+    }
+    if (url === '/api/projects/open') {
+      const body = JSON.parse(opts.body);
+      return { ok: true, json: async () => ({ project: { id: 'p1', name: 'shop', path: body.path } }) };
+    }
+    return { ok: true, json: async () => [] };
+  });
+
+  // The terminal's one folder control is the header chip: "Mount to <folder>",
+  // and a click opens the picker straight away (no menu, no dropdown).
+  await act(async () => { render(<WindowProjectChip win={win} onUpdate={onUpdate} />); });
+  expect(screen.getByText('Mount to')).toBeTruthy();
+  expect(screen.queryByRole('combobox')).toBeNull();
+  await act(async () => { fireEvent.click(screen.getByTitle(/Click to mount it to another folder/)); });
+  expect(screen.queryByRole('menu')).toBeNull();
+  await act(async () => { fireEvent.click(await screen.findByText('shop')); });
+  await screen.findByText('D:\\Projects\\shop');
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Mount here' })); });
+
+  expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
+    cwd: 'D:\\Projects\\shop',
+    title: 'Terminal · shop',
+  }));
 });

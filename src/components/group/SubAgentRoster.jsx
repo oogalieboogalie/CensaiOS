@@ -3,6 +3,8 @@ import { Icon } from '../Icons.jsx';
 import { getAgentById } from '../../lib/agentStore.js';
 import { groupAccent, groupSoft, fieldStyle, smallSelectStyle } from './styles.js';
 import { useWorkspaceStore } from '../../lib/store.js';
+import { boxNumbers } from '../../lib/agents/dataBoxes.js';
+import { SubAgentDataBox } from './SubAgentDataBox.jsx';
 
 // Sub-agent listing grouped by parent agent, plus the inline create form.
 export function SubAgentRoster({ subAgents, setSubAgents, members, groupHue, creating, setCreating, newParent, setNewParent }) {
@@ -10,6 +12,8 @@ export function SubAgentRoster({ subAgents, setSubAgents, members, groupHue, cre
   const [newName, setNewName] = React.useState('');
   const [newRole, setNewRole] = React.useState('');
   const nameRef = React.useRef(null);
+  const [openBox, setOpenBox] = React.useState(null);
+  const boxes = boxNumbers(subAgents);
   const accentColor = groupAccent(groupHue);
   const softColor = groupSoft(groupHue);
 
@@ -59,7 +63,8 @@ export function SubAgentRoster({ subAgents, setSubAgents, members, groupHue, cre
               </div>
             )}
             {subs.map(s => (
-              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 'var(--radius-md)', transition: 'background 0.1s' }}
+              <React.Fragment key={s.id}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 'var(--radius-md)', transition: 'background 0.1s' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                 <div style={{ width: 24, height: 24, borderRadius: '50%', background: `oklch(0.88 0.06 ${s.hue || groupHue})`, border: `1px solid oklch(0.72 0.10 ${s.hue || groupHue})`, display: 'grid', placeItems: 'center', fontSize: 'var(--text-xs)', fontWeight: 700, color: `oklch(0.40 0.10 ${s.hue || groupHue})` }}>
@@ -69,12 +74,18 @@ export function SubAgentRoster({ subAgents, setSubAgents, members, groupHue, cre
                   <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--ink)' }}>{s.name}</div>
                   {s.role && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>{s.role}</div>}
                 </div>
+                <button type="button" className="hb-databox-chip" aria-expanded={openBox === s.id} onClick={() => setOpenBox(openBox === s.id ? null : s.id)}
+                  title={`Open ${s.name}'s data box`}>
+                  {boxes.get(s.id)} Data
+                </button>
                 <button onClick={() => removeSub(s.id)} title="Remove" style={{ all: 'unset', cursor: 'pointer', width: 18, height: 18, borderRadius: 'var(--radius-sm)', display: 'grid', placeItems: 'center', color: 'var(--ink-faint)', opacity: 0.5, transition: 'opacity 0.15s' }}
                   onMouseEnter={e => e.currentTarget.style.opacity = 1}
                   onMouseLeave={e => e.currentTarget.style.opacity = 0.5}>
                   <Icon.Close size={10} />
                 </button>
               </div>
+              {openBox === s.id && <SubAgentDataBox sub={s} box={boxes.get(s.id)} />}
+              </React.Fragment>
             ))}
           </div>
         );

@@ -63,8 +63,8 @@ export const codex = {
   gate: 'sandbox',
   gateNote: 'Runs sandboxed: it can write only inside this task’s worktree, with no network.',
 
-  buildRun({ resumeSessionId, model, task }) {
-    const args = ['exec', '--json', '--sandbox', 'workspace-write', '--skip-git-repo-check'];
+  buildRun({ resumeSessionId, model, task, readOnly = false }) {
+    const args = ['exec', '--json', '--sandbox', readOnly ? 'read-only' : 'workspace-write', '--skip-git-repo-check'];
     if (model && SAFE_ID.test(model)) args.push('--model', model);
     if (resumeSessionId && SAFE_ID.test(resumeSessionId)) args.push('resume', resumeSessionId);
     args.push('-');

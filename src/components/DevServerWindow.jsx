@@ -6,6 +6,7 @@ import { LogsView } from './docker/LogsView.jsx';
 import { useDevServer } from './devServer/useDevServer.js';
 import { PHASE_COPY, folderName } from './devServer/devServerApi.js';
 import './docker/docker.css';
+import { autoStartIsMine } from '../lib/chat/agentPointer.js';
 
 /**
  * Run dev: pick a project folder, press one button, and its dev server runs
@@ -35,9 +36,9 @@ export function DevServerWindow({ win, onUpdate, onSpawn, currentProject }) {
     dev.start({ folder: folder.trim(), command, port: port || undefined, image: image || undefined });
   }, [folder, command, port, image, onUpdate, dev]);
 
-  // Opened from Project files with a folder: start straight away.
+  // Opened from Project files (or by an agent for this person): start straight away.
   useEffect(() => {
-    if (win.autoStart && engine.checked && !engine.error && !win.devName && folder.trim()) {
+    if (win.autoStart && autoStartIsMine(win) && engine.checked && !engine.error && !win.devName && folder.trim()) {
       onUpdate({ autoStart: false });
       run();
     }
