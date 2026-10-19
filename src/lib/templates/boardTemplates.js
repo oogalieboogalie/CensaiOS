@@ -8,6 +8,7 @@ import { addAgent, getAgentById, updateAgent } from '../agentStore.js';
 import { canvasObjectToLegacyWindow, getCanvasObjectType, patchWindow } from '../canvasObjectTypes.js';
 import { cleanLayout, fitGroupToLayout, getGroupInnerBounds } from '../layoutAlgo.js';
 import { PROPS_BY_KIND } from '../modules/addPaletteItems.js';
+import { getDefaultWindowSize } from '../windowManifest.js';
 
 export const TEMPLATE_GAP = 240;
 
@@ -67,7 +68,8 @@ export function layoutTemplateBoard(board, { wins = [], canvasGroups = [], now =
     return { ...fitted, root, hotkey, templateId: board.templateId, templateAgents: board.agents || [] };
   });
   const windows = (board.windows || []).map((raw) => {
-    const place = placements.get(raw.id) || { x: origin.x, y: origin.y, w: 480, h: 420 };
+    // Outside a group a window opens at its usual size, as from the Add menu.
+    const place = placements.get(raw.id) || { x: origin.x, y: origin.y, ...getDefaultWindowSize(raw.kind) };
     return canvasObjectToLegacyWindow(patchWindow({
       type: getCanvasObjectType({ type: raw.kind }),
       zIndex: null,

@@ -1,16 +1,19 @@
 import React from 'react';
 import { SchedulerAgentSelect } from './SchedulerAgentSelect.jsx';
 import { SchedulerProjectOptions } from './SchedulerProjectOptions.jsx';
+import { SchedulerTodoPicker } from './SchedulerTodoPicker.jsx';
+import { SchedulerTagPicker } from './SchedulerTagPicker.jsx';
 import { TimePicker } from '../schedule/TimePicker.jsx';
 import { RepeatPicker } from '../schedule/RepeatPicker.jsx';
 import { NextRuns } from '../schedule/UpcomingList.jsx';
 import { describeSchedule, upcomingRuns } from '../../lib/schedule/plainWords.js';
 
-export function SchedulerForm({ state }) {
+export function SchedulerForm({ state, onSpawn }) {
   const {
     selectedAgentId, setSelectedAgentId,
     taskText, setTaskText,
     documentTarget, setDocumentTarget,
+    tag, setTag,
     when, setWhen,
     schedulesError,
     handleAddSchedule
@@ -37,6 +40,8 @@ export function SchedulerForm({ state }) {
             onChange={(e) => setTaskText(e.target.value)}
           />
         </label>
+        <SchedulerTodoPicker taskText={taskText} setTaskText={setTaskText} onSpawn={onSpawn} />
+        <SchedulerTagPicker tag={tag} setTag={setTag} />
         <SchedulerAgentSelect selectedAgentId={selectedAgentId} setSelectedAgentId={setSelectedAgentId} />
         <SchedulerProjectOptions state={state} />
         {showMore ? (

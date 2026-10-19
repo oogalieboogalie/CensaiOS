@@ -1,4 +1,5 @@
 import React from 'react';
+import { ReviewPanel } from './ReviewPanel.jsx';
 
 const CHECK_TONE = { passed: 'ok', none: 'quiet', running: 'wait', failed: 'bad' };
 
@@ -41,7 +42,7 @@ function Activity({ number, act, onApprove, onDismiss }) {
   );
 }
 
-export function PrRow({ pr, act, onMerge, onFix, onApprove, onDismiss }) {
+export function PrRow({ pr, act, onMerge, onFix, onApprove, onDismiss, team }) {
   const action = rowAction(pr, act);
   const checkTitle = pr.checks.failing?.length ? `Failing: ${pr.checks.failing.join(', ')}` : undefined;
   return (
@@ -59,6 +60,7 @@ export function PrRow({ pr, act, onMerge, onFix, onApprove, onDismiss }) {
           <span className="hb-gh-by">by {pr.author}</span>
         </div>
         <Activity number={pr.number} act={act} onApprove={onApprove} onDismiss={onDismiss} />
+        {team ? <ReviewPanel number={pr.number} roster={team.roster} state={team.byPr[pr.number]} team={team} /> : null}
       </div>
       <div className="hb-gh-row-action">
         {action.kind === 'merge' || action.kind === 'merge-anyway' ? (
@@ -70,6 +72,10 @@ export function PrRow({ pr, act, onMerge, onFix, onApprove, onDismiss }) {
         ) : (
           <button type="button" className="hb-btn" disabled>{action.label}</button>
         )}
+        {team ? (
+          <button type="button" className="hb-btn" aria-expanded={Boolean(team.byPr[pr.number]?.open)} onClick={() => team.toggle(pr.number)}
+            title="Have your coding agents read this PR for bugs">Review</button>
+        ) : null}
       </div>
     </li>
   );

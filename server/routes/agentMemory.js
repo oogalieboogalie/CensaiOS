@@ -3,13 +3,22 @@
 // The Memory panel's side of agent memory (behind the session guard): see
 // who an agent is, what it knows (with dates and history) and what it has
 // talked about; edit who it is; add, correct or forget a fact. Everything
-// is the signed-in person's own memory of that agent.
+// is the signed-in person's own memory of that agent. The knowledge graph
+// (connections, and what was true on a date) is in agentMemoryGraph.js.
 
 import express from 'express';
 import pool from '../db.js';
 import { dbReady } from '../dbState.js';
 import { FactError, normalizeFactInput } from '../agentMemory/facts.js';
 import * as store from '../agentMemory/store.js';
+import { shelfOf } from '../../src/lib/agentMemory/shelves.js';
+import { addGraphRoutes, graphSnapshot } from './agentMemoryGraph.js';
+
+import { chatView } from './recents.js';
+import * as turnStore from '../agentMemory/turns.js';
+
+// Recents (the person's latest chats across agents) live next door.
+export { recentsRouter } from './recents.js';
 
 const AGENT_ID = /^[A-Za-z0-9._-]{1,64}$/;
 
@@ -26,6 +35,7 @@ export function factView(row) {
     supersededAt: row.superseded_at,
     kind: row.change_kind,
     source: row.source,
+    shelf: shelfOf(row),
   };
 }
 
@@ -53,12 +63,13 @@ export function createAgentMemoryRouter({ db = pool, isReady = dbReady } = {}) {
   });
 
   async function snapshot(scope) {
-    const [identity, identities, facts, history, episodes] = await Promise.all([
+    const [identity, identities, facts, history, episodes, graph] = await Promise.all([
       store.getIdentity(db, scope),
       store.identityHistory(db, scope),
       store.currentFacts(db, { ...scope, limit: 200 }),
       store.factHistory(db, scope),
       store.recentEpisodes(db, { ...scope, limit: 30 }),
+      graphSnapshot(db, scope),
     ]);
     return {
       identity: identity ? { core: identity.core, recordedAt: identity.recorded_at } : null,
@@ -68,6 +79,7 @@ export function createAgentMemoryRouter({ db = pool, isReady = dbReady } = {}) {
       facts: facts.map(factView),
       history: history.map(factView),
       episodes: episodes.map(episodeView),
+      ...graph,
     };
   }
 
@@ -83,6 +95,19 @@ export function createAgentMemoryRouter({ db = pool, isReady = dbReady } = {}) {
         : await store.recentEpisodes(db, { ...req.memoryScope, limit: 30 });
       res.json({ episodes: rows.map(episodeView) });
     } catch (error) { fail(res, error); }
+  });
+
+  // Past conversations: whole chats with every message and its time (068).
+  router.get('/conversations', async (req, res) => {
+    try {
+      const query = String(req.query.q || '').slice(0, 300);
+      if (query.trim()) {
+        const rows = await turnStore.searchTurns(db, { ...req.memoryScope, query, limit: 30 });
+        return res.json({ matches: rows.map((t) => ({ id: String(t.id), chatId: t.conversation_id, speaker: t.speaker, text: t.text, at: t.at })) });
+      }
+      const rows = await turnStore.recentConversations(db, { ...req.memoryScope, limit: 30 });
+      return res.json({ chats: rows.map(chatView) });
+    } catch (error) { return fail(res, error); }
   });
 
   router.put('/identity', async (req, res) => {
@@ -107,6 +132,8 @@ export function createAgentMemoryRouter({ db = pool, isReady = dbReady } = {}) {
       res.json(await snapshot(req.memoryScope));
     } catch (error) { fail(res, error); }
   });
+
+  addGraphRoutes(router, { db, snapshot, fail, factView });
 
   return router;
 }

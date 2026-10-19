@@ -1,5 +1,6 @@
 import React from 'react';
 import { normalizeSettingsTab } from '../../components/theme/settingsTabs.js';
+import { newId } from '../../lib/ids/newId.js';
 
 export function useSettingsWindow({ wins, spawnAt, setActiveId, onUpdate }) {
   return React.useCallback((requestedTab = 'appearance') => {
@@ -11,7 +12,7 @@ export function useSettingsWindow({ wins, spawnAt, setActiveId, onUpdate }) {
       // focusing it then looks like the gear button does nothing.)
       onUpdate(existing.id, {
         settingsTab,
-        settingsRequestId: crypto.randomUUID(),
+        settingsRequestId: newId(),
         title: 'Settings',
         x: -480,
         y: -290,

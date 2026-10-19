@@ -3,9 +3,10 @@ import { codex } from './codex.js';
 import { gemini } from './gemini.js';
 import { opencode } from './opencode.js';
 import { copilot } from './copilot.js';
+import { grok } from './grok.js';
 
 /** Every coding CLI the Agent Console can drive, in picker order. */
-export const CLI_ADAPTERS = Object.freeze({ claudecode: claudeCode, codex, gemini, opencode, copilot });
+export const CLI_ADAPTERS = Object.freeze({ claudecode: claudeCode, codex, gemini, opencode, copilot, grok });
 export const CLI_IDS = Object.freeze(Object.keys(CLI_ADAPTERS));
 
 export function getAdapter(id) {

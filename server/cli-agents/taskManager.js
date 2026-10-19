@@ -59,9 +59,10 @@ export class CliTaskManager extends TaskStore {
   }
 
   // ── starting work ──────────────────────────────────────────────────────
-  async start({ cli, folder, prompt, model = null, user = {}, handoffFrom = null, patch = '', baseOverride = null, title = null, prepare = null }) {
+  async start({ cli, folder, prompt, model = null, user = {}, handoffFrom = null, patch = '', baseOverride = null, title = null, prepare = null, readOnly = false }) {
     const adapter = getAdapter(cli);
-    if (!adapter) throw httpError('Pick Claude Code, Codex, Gemini CLI or OpenCode.');
+    if (!adapter) throw httpError('Pick Claude Code, Codex, Gemini CLI, OpenCode, Copilot CLI or Grok.');
+    if (readOnly && adapter.noReadOnly) throw httpError(`${adapter.label} cannot run read-only.`);
     const text = String(prompt || '').trim();
     if (!text) throw httpError('Type a task for the agent.');
     if (text.length > MAX_PROMPT_CHARS) throw httpError(`Keep the task under ${MAX_PROMPT_CHARS} characters.`);
@@ -81,7 +82,7 @@ export class CliTaskManager extends TaskStore {
       status: 'starting', createdAt: Date.now(), updatedAt: Date.now(), finishedAt: null,
       createdBy: { userId: user.userId ?? null, name: user.name || 'You' },
       sessionId: null, model: model || null, costUsd: null, usage: null, durationMs: null, turns: 0,
-      summary: null, keySource: null, gate: adapter.gate, gateNote: adapter.gateNote,
+      summary: null, keySource: null, gate: adapter.gate, gateNote: adapter.gateNote, readOnly: Boolean(readOnly),
       handoffFrom, items: [], raw: [], permissions: [], rev: 0, install: null,
     };
     this.tasks.set(id, task);

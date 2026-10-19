@@ -8,6 +8,17 @@ Thanks for your interest! Censai is young and moving fast, so small, focused PRs
 2. `npm install`
 3. `npm run dev` — Express API on port 3001, Vite client on port 5173.
 
+## How changes get here
+
+censaiOS is developed in a private repository. Its release automation writes the two branches here:
+`nightly` every night, and `main` every Sunday, when the newest nightly build that passed every
+check becomes the next stable release ([CHANGELOG.md](CHANGELOG.md)). Nobody commits to them by
+hand, and the next release would replace anything that did.
+
+Pull requests are still welcome, against `main`. A change we take is carried into the development
+repository and comes back here with the next nightly build; the pull request is then closed with a
+link to that build.
+
 ## Before you open a PR
 
 Run the full check suite:

@@ -4,6 +4,10 @@ import { registerModelDeployment, ingestTelemetry, triggerRetraining } from '../
 import { resolveArtifact } from '../operational-intelligence/factories.js';
 import { operationalRouteError, resolveOperationalScope } from '../operational-intelligence/routeScope.js';
 import { resourceRateLimiter } from '../middleware/standardRateLimits.js';
+import { cleanModelInput } from '../operational-intelligence/mlopsModelInput.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('mlops');
 
 export const mlopsRouter = express.Router();
 mlopsRouter.use(resourceRateLimiter);
@@ -11,16 +15,22 @@ mlopsRouter.use(resourceRateLimiter);
 mlopsRouter.post('/models', async (req, res) => {
   try {
     const { actor, workspaceId } = await resolveOperationalScope(req, { write: true });
-    const { title, modelName, version, baseline, thresholds } = req.body || {};
+    const { title, baseline, thresholds } = req.body || {};
+    const { model, problem } = cleanModelInput(req.body);
+    if (problem) {
+      log.warn(`model not added: ${problem}`);
+      return res.status(400).json({ error: problem });
+    }
     const result = await registerModelDeployment({ db: pool }, {
       workspaceId,
       owner: actor,
       title,
-      modelName,
-      version,
+      ...model,
       baseline,
       thresholds,
     });
+    // Name and provider only; keys and baselines never reach the log.
+    log.info(`model added: ${model.modelName} v${model.version} (${model.provider})`);
     res.status(201).json(result);
   } catch (err) {
     operationalRouteError(res, err);

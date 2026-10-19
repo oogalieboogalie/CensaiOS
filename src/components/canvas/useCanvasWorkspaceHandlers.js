@@ -6,6 +6,7 @@ import { useTheme } from '../Theme.jsx';
 import { FIRST_MISSION_DRAG_EVENT } from '../../lib/firstMission.js';
 import { isDockAction, tiledMembers } from '../../lib/layout/dock.js';
 import { resolveWindowProject } from '../../lib/windowProject.js';
+import { newId } from '../../lib/ids/newId.js';
 
 export function useCanvasWorkspaceHandlers({
   ref,
@@ -28,7 +29,7 @@ export function useCanvasWorkspaceHandlers({
   const theme = themeContext?.theme || { groupSnapping: true };
   const handleAssign = React.useCallback((data) => {
     const item = {
-      id: crypto.randomUUID(),
+      id: newId(),
       text: data.text,
       done: false,
       assignee: data.assignee,

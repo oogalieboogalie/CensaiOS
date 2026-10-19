@@ -27,6 +27,11 @@ const TOOL_METADATA_OVERRIDES = {
     kit: 'Default Tools',
     tags: ['tools', 'schema', 'details', 'capabilities'],
   },
+  get_toolkit: {
+    type: 'toolDiscovery',
+    kit: 'Default Tools',
+    tags: ['tools', 'kit', 'load', 'capabilities'],
+  },
 };
 
 function unique(values) {

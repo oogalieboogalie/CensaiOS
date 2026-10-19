@@ -22,6 +22,7 @@ import { useTheme } from './Theme.jsx';
 import { CanvasSelectionOutline } from './canvas/CanvasSelectionOutline.jsx';
 import { CanvasInkActions } from './canvas/CanvasInkActions.jsx';
 import { useLiveInk } from './canvas/useLiveInk.js';
+import { usePointedWindowGlide } from './canvas/usePointedWindowGlide.js';
 import { getWindowBounds } from '../lib/layoutAlgo.js';
 import { isPointInRect, screenToCanvas } from '../lib/canvasMath.js';
 
@@ -34,6 +35,7 @@ left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules
   const [wireDrag, setWireDrag] = React.useState(null);
   const { spaceHeld, spaceRef } = useCanvasViewport({ ref, pan, zoom, onPanZoom, panMode: theme.canvasPanMode });
   const liveInk = useLiveInk(paths);
+  usePointedWindowGlide({ ref, wins, pan, zoom, onPanZoom });
   const {
     band,
     setBand,

@@ -160,10 +160,14 @@ describe('which addresses are allowed', () => {
   });
 
   test('private addresses are refused on the hosted version, allowed on the desktop app', async () => {
-    for (const ip of ['127.0.0.1', '10.1.2.3', '192.168.0.4', '172.20.0.1', '169.254.169.254', '::1', 'fd00::1', '::ffff:127.0.0.1']) {
+    for (const ip of ['127.0.0.1', '10.1.2.3', '192.168.0.4', '172.20.0.1', '169.254.169.254', '::1', 'fd00::1', '::ffff:127.0.0.1',
+      '::ffff:7f00:1', '[::ffff:a9fe:a9fe]', '::', 'fe80::1%eth0', '64:ff9b::a9fe:a9fe', 'ff02::1']) {
       expect(isPrivateAddress(ip)).toBe(true);
     }
     expect(isPrivateAddress('8.8.8.8')).toBe(false);
+    expect(isPrivateAddress('::ffff:8.8.8.8')).toBe(false);
+    expect(isPrivateAddress('2606:4700::1111')).toBe(false);
+    await expect(assertReachableUrl('http://[::ffff:127.0.0.1]:8765/mcp', { cloud: true })).rejects.toThrow(/public internet/);
     await expect(assertReachableUrl('http://127.0.0.1:8765/mcp', { cloud: true })).rejects.toThrow(/public internet/);
     await expect(assertReachableUrl('https://evil.test/mcp', { cloud: true, resolve: async () => [{ address: '10.0.0.5' }] }))
       .rejects.toThrow(/public internet/);

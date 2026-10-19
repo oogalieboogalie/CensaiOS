@@ -17,7 +17,7 @@ const PRIVATE_TOOL = /journal|secret|key|password|credential|private/i;
 
 // Plain words for the tools people see agents use most.
 const PLAIN = Object.freeze({
-  canvas_spawn_window: 'opened a window', canvas_append_window: 'wrote in a window', project_preview: 'made a preview',
+  canvas_spawn_window: 'opened a window', canvas_append_window: 'wrote in a window', project_preview: 'made a preview', project_window: 'showed a window',
   web_search: 'searched the web', remember: 'saved a memory', canvas_window_index: 'looked around the board', read_module: 'read a module', use_module: 'used a module',
 });
 

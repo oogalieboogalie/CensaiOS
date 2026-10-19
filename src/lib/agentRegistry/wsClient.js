@@ -22,6 +22,7 @@
 // Tests inject a `socketFactory` — see tests/wsClient.test.js.
 
 import { makeLifecycle, newClientId, defaultUrl } from './wsClient.lifecycle.js';
+import { newId } from '../ids/newId.js';
 
 /**
  * Create an agent-registry WS client.
@@ -179,7 +180,7 @@ export function createAgentRegistryClient(opts = {}) {
     },
     call(cardId, payload, options) {
       if (typeof cardId !== 'string' || !cardId) throw new TypeError('cardId required');
-      const taskId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `t-${Date.now()}`;
+      const taskId = newId();
       const iterable = createAsyncIterable(taskId);
       sendRaw({ type: 'call', cardId, payload, options, taskId });
       return iterable;

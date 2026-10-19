@@ -1,9 +1,13 @@
 name: CI
 
+# main carries the weekly stable releases and nightly the nightly builds.
+# Both are written by the release automation of the private development
+# repository; see CHANGELOG.md for what each release contains.
 on:
   push:
     branches:
       - main
+      - nightly
   pull_request:
   workflow_dispatch:
 
@@ -38,8 +42,13 @@ jobs:
   release:
     name: Publish self-host release
     needs: validate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    # One publish per branch at a time, so two quick nightly pushes never
+    # race on the "Nightly build" release.
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: write
       packages: write
@@ -47,63 +56,99 @@ jobs:
       - name: Check out the validated commit
         uses: actions/checkout@v4
 
-      - name: Build and publish the immutable container
-        id: package
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # release.json says whether this commit is a nightly build or a stable
+      # release; anything else on these branches publishes nothing.
+      - name: Read what this push publishes
+        id: card
+        run: >-
+          node scripts/release/card.mjs --branch "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY"
+          --sha "$GITHUB_SHA" --notes "$RUNNER_TEMP/release-notes.md" >> "$GITHUB_OUTPUT"
+
+      # Only the newest commit on the branch publishes (two quick pushes can
+      # finish their checks out of order), and a stable release never changes
+      # once it is out: a later commit on main that still says 0.4.0, or a
+      # re-run, leaves that release and its containers alone.
+      - name: Check this push still publishes
+        id: go
+        if: steps.card.outputs.channel == 'nightly' || steps.card.outputs.channel == 'stable'
         env:
           GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ steps.card.outputs.channel }}
+          TAG: ${{ steps.card.outputs.tag }}
         shell: bash
         run: |
           set -euo pipefail
-          short_sha="${GITHUB_SHA::12}"
-          release_date="$(date -u +%Y.%m.%d)"
-          release_tag="selfhost-${release_date}-${short_sha}"
-          image="ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          tip="$(git ls-remote origin "refs/heads/$GITHUB_REF_NAME" | cut -f1)"
+          if [ "$tip" != "$GITHUB_SHA" ]; then
+            echo "release: $GITHUB_REF_NAME has moved on to ${tip:0:12}, which publishes instead"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          elif [ "$CHANNEL" = stable ] && gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release: $TAG already exists; a stable release never changes"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
 
+      - name: Build and publish the container
+        if: steps.go.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGES: ${{ steps.card.outputs.images }}
+          VERSION: ${{ steps.card.outputs.version }}
+          CHANNEL: ${{ steps.card.outputs.channel }}
+        shell: bash
+        run: |
+          set -euo pipefail
           echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          tags=()
+          for image in $IMAGES; do tags+=(--tag "$image"); done
           docker build \
             --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
-            --tag "$image:$release_tag" \
-            --tag "$image:sha-$short_sha" \
-            --tag "$image:latest" \
+            --label "org.opencontainers.image.version=$VERSION" \
+            "${tags[@]}" \
             .
-          docker push "$image:$release_tag"
-          docker push "$image:sha-$short_sha"
-          docker push "$image:latest"
+          for image in $IMAGES; do docker push "$image"; done
 
           {
+            echo "version=$VERSION"
+            echo "channel=$CHANNEL"
             echo "source_commit=$GITHUB_SHA"
-            echo "release_tag=$release_tag"
-            echo "image=$image:$release_tag"
-            echo "sha_image=$image:sha-$short_sha"
+            for image in $IMAGES; do echo "image=$image"; done
           } > censai-self-host-release.txt
-
-          echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
-          echo "image=$image:$release_tag" >> "$GITHUB_OUTPUT"
+          echo "release: $CHANNEL $VERSION container pushed"
 
       - name: Publish the GitHub release
+        if: steps.go.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.package.outputs.release_tag }}
-          RELEASE_IMAGE: ${{ steps.package.outputs.image }}
+          CHANNEL: ${{ steps.card.outputs.channel }}
+          TAG: ${{ steps.card.outputs.tag }}
+          TITLE: ${{ steps.card.outputs.title }}
+          VERSION: ${{ steps.card.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "$RELEASE_TAG already exists; the immutable release is unchanged."
-            exit 0
+          notes="$RUNNER_TEMP/release-notes.md"
+          if [ "$CHANNEL" = nightly ]; then
+            # One "Nightly build" pre-release, moved to the newest build each night.
+            gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
+            gh release create "$TAG" censai-self-host-release.txt \
+              --target "$GITHUB_SHA" --prerelease --title "$TITLE" --notes-file "$notes"
+          else
+            gh release create "$TAG" censai-self-host-release.txt \
+              --target "$GITHUB_SHA" --latest --title "$TITLE" --notes-file "$notes"
           fi
-
-          gh release create "$RELEASE_TAG" \
-            censai-self-host-release.txt \
-            --target "$GITHUB_SHA" \
-            --generate-notes \
-            --title "Censai self-host ${RELEASE_TAG#selfhost-}" \
-            --notes "Validated container: \`$RELEASE_IMAGE\`"
+          echo "release: $CHANNEL $VERSION published as $TAG"
 
           {
-            echo "### Self-host release published"
-            echo "- Tag: \`$RELEASE_TAG\`"
-            echo "- Container: \`$RELEASE_IMAGE\`"
-            echo "- Source: \`$GITHUB_SHA\`"
+            echo "### $TITLE"
+            echo "- Release: $TAG"
+            echo "- Containers: $(grep '^image=' censai-self-host-release.txt | cut -d= -f2- | tr '\n' ' ')"
+            echo "- Source: $GITHUB_SHA"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { fileWindowKind, fileWindowProps, isImageFile } from './fileRouting.js';
 import { useWorkspaceStore } from '../../lib/store.js';
+import { listFolder } from './listFolder.js';
 
 export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, githubRepo, mode, rootDirPath, wins = [], onSelect, onSetRoot, reloadTick = 0 }) {
   const onUpdateWindow = useWorkspaceStore(s => s.onUpdate);
@@ -19,21 +20,14 @@ export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, git
     if (open && isDir && !children && !loading && mode) {
       setLoading(true);
       setLoadError('');
-      if (mode === 'local') {
+      const url = mode === 'local' ? `/api/files/browse?path=${encodeURIComponent(node.path)}`
+        : mode === 'github' && githubRepo ? `/api/github/browse?repo=${encodeURIComponent(githubRepo)}&path=${encodeURIComponent(node.path === '/' ? '' : node.path)}`
+        : null;
+      if (url) {
         // A folder that can't be listed says why instead of looking empty.
-        fetch(`/api/files/browse?path=${encodeURIComponent(node.path)}`)
-          .then(async res => {
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || `Could not open this folder (${res.status})`);
-            return data;
-          })
-          .then(data => { setChildren(data.children || []); setLoading(false); })
+        listFolder(url)
+          .then(list => { setChildren(list); setLoading(false); })
           .catch(err => { setLoadError(err.message || 'Could not open this folder'); setChildren([]); setLoading(false); });
-      } else if (mode === 'github' && githubRepo) {
-        fetch(`/api/github/browse?repo=${encodeURIComponent(githubRepo)}&path=${encodeURIComponent(node.path === '/' ? '' : node.path)}`)
-          .then(res => res.json())
-          .then(data => { setChildren(data.children || []); setLoading(false); })
-          .catch(() => { setChildren([]); setLoading(false); });
       } else {
         setLoading(false);
       }

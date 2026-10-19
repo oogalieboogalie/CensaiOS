@@ -10,12 +10,13 @@ import { patchWindow } from './canvasObjectTypes.js';
 import {
   applyDock, undockWindow, pruneAfterRemoval, setSeam, showTab, reconcileTiles,
 } from './layout/dock.js';
+import { newId } from './ids/newId.js';
 
 const log = createLogger('canvas-groups');
 
 export const createGroupActions = (set, get) => ({
   spawnGroup: (pos, size) => {
-    const id = crypto.randomUUID();
+    const id = newId();
     const hue = Math.floor(Math.random() * 360);
     const inside = get().wins.filter((win) => {
       const centerX = win.x + win.w / 2;
@@ -131,7 +132,7 @@ export const createGroupActions = (set, get) => ({
   // Drop a window on a dock target (see layout/dock.js resolveDockTarget).
   dockWindow: (winId, target) => {
     const next = applyDock(get(), winId, target, {
-      makeGroup: () => ({ id: crypto.randomUUID(), hue: Math.floor(Math.random() * 360), label: 'Group' }),
+      makeGroup: () => ({ id: newId(), hue: Math.floor(Math.random() * 360), label: 'Group' }),
     });
     if (!next) return false;
     set({ ...next, activeId: winId });

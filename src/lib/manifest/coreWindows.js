@@ -34,6 +34,18 @@ export const CORE_WINDOW_MANIFESTS = [
     lab: { title: 'Model arena', props: {} },
     moduleMenu: { show: true, status: 'ready', order: 8, icon: 'Activity', label: 'Model arena', hint: 'Send one request to up to four models and watch them race: speed, tokens and cost side by side' },
   },
+  // Legion: agents that keep working on a goal until Echo says OK.
+  {
+    kind: 'legion',
+    canvasType: 'legion',
+    label: 'Legion',
+    componentName: 'LegionWindow',
+    componentPath: 'src/components/windows/legion/index.jsx',
+    defaultSize: { w: 1180, h: 720 },
+    header: { title: 'Legion', icon: 'Group' },
+    lab: { title: 'Legion', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 9, icon: 'Group', label: 'Legion', hint: 'A team of agents that works until it is done: plan, build in order, check in a browser, fix, commit' },
+  },
   // Benchmarks: recorded arena runs and a per-model table, on the board.
   {
     kind: 'arenaBenchmarks',
@@ -117,7 +129,7 @@ export const CORE_WINDOW_MANIFESTS = [
     componentName: 'GroupWindow',
     componentPath: 'src/components/GroupWindow.jsx',
     defaultSize: { w: 380, h: 520 },
-    moduleMenu: { show: false, status: 'contextual' },
+    moduleMenu: { show: true, status: 'ready', icon: 'Group', label: 'Group', hint: 'Team card: members, recent milestones and goals' },
   },
   {
     kind: 'idea',
@@ -143,5 +155,39 @@ export const CORE_WINDOW_MANIFESTS = [
     componentPath: 'src/components/AppearanceWindow.jsx',
     defaultSize: { w: 960, h: 580 },
     launcher: { show: true, order: 60, icon: 'Gear', label: 'Settings', hint: 'appearance, sharing & AI keys' },
+  },
+  // Git Diff Viewer (Alex's diagram 16): before | after, split by a red line.
+  {
+    kind: 'gitDiff',
+    canvasType: 'gitDiff',
+    label: 'Git Diff Viewer',
+    componentName: 'GitDiffWindow',
+    componentPath: 'src/components/windows/gitDiff/index.jsx',
+    defaultSize: { w: 1000, h: 640 },
+    lab: { title: 'Git Diff Viewer', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 20, icon: 'Branch', label: 'Git Diff Viewer', hint: 'Before on the left, after on the right: green is added, red is removed' },
+  },
+  // Message Router (Alex's diagram 03): one shared line for the board's agents; the router hands each part of a request to the right one.
+  {
+    kind: 'agentRouter',
+    canvasType: 'agentRouter',
+    label: 'Message Router',
+    componentName: 'AgentRouterWindow',
+    componentPath: 'src/components/windows/agentRouter/index.jsx',
+    defaultSize: { w: 900, h: 640 },
+    header: { title: 'Message Router', icon: 'Send' },
+    lab: { title: 'Message Router', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 68, icon: 'Send', label: 'Message Router', hint: 'Say what you need in one line. The router cuts it into jobs and hands each to the right agent, with its memory and a template' },
+  },
+  {
+    kind: 'hosting',
+    canvasType: 'hosting',
+    label: 'Places to Host',
+    componentName: 'HostingWindow',
+    componentPath: 'src/components/windows/hosting/index.jsx',
+    defaultSize: { w: 920, h: 620 },
+    header: { title: 'Places to Host', icon: 'Server' },
+    lab: { title: 'Places to Host', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 155, icon: 'Server', label: 'Places to Host', hint: 'Put censaiOS online: Docker, Kubernetes, Railway, Render, Google Cloud, Supabase and Jupyter, each with its file and steps' },
   },
 ];

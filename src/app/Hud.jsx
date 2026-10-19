@@ -1,5 +1,6 @@
 import React from 'react';
 import { PresenceToasts } from '../components/PresenceToasts.jsx';
+import { InviteToasts } from '../components/InviteToasts.jsx';
 import { FirstMission } from '../components/onboarding/FirstMission.jsx';
 import { BoardWakeUp } from '../components/onboarding/BoardWakeUp.jsx';
 import { DemoBanner } from '../components/demo/DemoBanner.jsx';
@@ -16,6 +17,7 @@ export function Hud({ focusMode, collaboration }) {
   React.useEffect(() => { publishSelf(selfActor); }, [selfActor]);
   return (<>
     {!focusMode && <PresenceToasts collaboration={collaboration} />}
+    {!focusMode && <InviteToasts />}
     <BoardWakeUp />
     {DEMO && <DemoBanner />}
     <FirstMission focusMode={focusMode} />

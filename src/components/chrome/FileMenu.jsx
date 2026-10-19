@@ -56,6 +56,7 @@ export function FileMenu({ onClose, projectName, currentProject, onOpenLocalProj
           Current root: {currentProject.path}
         </div>
       )}
+      <MenuItem label="Recents…" onClick={() => { window.dispatchEvent(new CustomEvent('censai:open-recents')); onClose(); }} />
       <MenuItem label="New board from a template…" onClick={() => { window.dispatchEvent(new CustomEvent('censai:open-templates')); onClose(); }} />
       <MenuItem label="⚡ Summon Rook (OpenClaw)" onClick={() => { onSpawnRook(); onClose(); }} />
       <MenuItem label="New terminal" onClick={() => { onNewTerminal?.(); onClose(); }} />

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { useWorkspaceStore } from '../lib/store.js';
+import { AddModelForm } from './mlops/AddModelForm.jsx';
 
 const workspaceStillActive = workspaceId => useWorkspaceStore.getState().workspaceId === workspaceId;
 
@@ -12,12 +13,13 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openAlertId, setOpenAlertId] = useState(null);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     fetchModels();
   }, [workspaceId]);
 
-  const fetchModels = async () => {
+  const fetchModels = async (openId = null) => {
     setModels([]);
     setSelectedModel(null);
     setAlerts([]);
@@ -28,7 +30,10 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
       const res = await fetch(`/api/mlops/models?workspaceId=${encodeURIComponent(requestedScope)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'MLOps models unavailable');
-      if (workspaceStillActive(requestedScope)) setModels(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      if (workspaceStillActive(requestedScope)) setModels(list);
+      const added = openId && list.find((m) => m.id === openId);
+      if (added && workspaceStillActive(requestedScope)) selectModel(added);
     } catch (err) {
       console.error('Failed to fetch models:', err);
     } finally {
@@ -37,6 +42,7 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
   };
 
   const selectModel = async (model) => {
+    setAdding(false);
     setSelectedModel(model);
     const requestedScope = workspaceId;
     try {
@@ -72,8 +78,15 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
           flexDirection: 'column',
           background: 'var(--surface-1)',
         }}>
-          <div style={{ padding: '12px 16px', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-faint)', textTransform: 'uppercase' }}>
-            Deployed Models
+          <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-faint)', textTransform: 'uppercase' }}>Deployed Models</span>
+            <button
+              onClick={() => setAdding(true)}
+              disabled={!workspaceId}
+              style={{ padding: '3px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', color: 'var(--ink)', fontSize: 'var(--text-xs)', cursor: 'pointer' }}
+            >
+              Add a model
+            </button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {models.map(m => (
@@ -94,7 +107,7 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
             ))}
             {models.length === 0 && !loading && (
               <div style={{ padding: 20, fontSize: 'var(--text-sm)', color: 'var(--ink-faint)', textAlign: 'center' }}>
-                No models registered
+                No models yet. Press Add a model to start watching one.
               </div>
             )}
           </div>
@@ -102,10 +115,21 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
 
         {/* Detail View */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: 20 }}>
-          {selectedModel ? (
+          {adding ? (
+            <AddModelForm
+              workspaceId={workspaceId}
+              onCancel={() => setAdding(false)}
+              onAdded={(model) => { setAdding(false); fetchModels(model?.id); }}
+            />
+          ) : selectedModel ? (
             <>
               <div style={{ marginBottom: 24 }}>
                 <h2 style={{ margin: 0, fontSize: 'var(--text-xl)', fontWeight: 600 }}>{selectedModel.data.modelName} <span style={{ fontSize: 'var(--text-base)', fontWeight: 400, color: 'var(--ink-soft)' }}>v{selectedModel.data.version}</span></h2>
+                {(selectedModel.data.provider || selectedModel.data.purpose) && (
+                  <div style={{ fontSize: 'var(--text-base)', color: 'var(--ink)', marginTop: 6 }}>
+                    {[selectedModel.data.provider, selectedModel.data.purpose].filter(Boolean).join(' · ')}
+                  </div>
+                )}
                 <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', marginTop: 4 }}>Deployment ID: {selectedModel.id}</div>
               </div>
 
@@ -118,7 +142,7 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
                 </div>
                 <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--hairline)' }}>
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Threshold</div>
-                  <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{selectedModel.data.thresholds.driftScore}</div>
+                  <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{selectedModel.data.thresholds?.driftScore}</div>
                 </div>
                 <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--hairline)' }}>
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Last Seen</div>

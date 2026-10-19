@@ -27,6 +27,10 @@ jest.unstable_mockModule('../server/workspaces/shared.js', () => ({
   resolveProjectPathForRuntime: () => process.cwd(),
 }));
 
+jest.unstable_mockModule('../server/db.js', () => ({
+  default: { query: async () => ({ rows: [{ role: 'admin' }] }) },
+}));
+
 jest.unstable_mockModule('../server/routes/projects/shared.js', () => ({
   readOpenProjects: async () => [],
   registerOpenProject: jest.fn(),
@@ -38,6 +42,7 @@ const { validateEntryName } = await import('../server/routes/files/mkdir.js');
 function app() {
   const a = express();
   a.use(express.json());
+  a.use((req, _res, next) => { req.session = { userId: 1 }; next(); });
   a.use('/api', mkdirRouter);
   return a;
 }

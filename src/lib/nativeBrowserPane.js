@@ -1,5 +1,8 @@
 import React from 'react';
 import { isAdBlockEnabled } from './adBlock.js';
+import { gripRects } from './paneGrips.js';
+import { coverLogLine, fitPane } from './paneCover.js';
+import { logToApp } from './appLog/browserLog.js';
 
 // Desktop (Tauri) only: drives a native child webview layered over a Browser
 // window's content area (see src-tauri/src/browser_pane.rs). Real sites refuse
@@ -20,7 +23,9 @@ export function paneId(winId) {
 }
 
 // The native view always paints above the DOM, so it is hidden whenever its
-// area is collapsed or covered by another canvas window or menu.
+// area is collapsed or covered. The Browser window itself uses fitPane
+// (src/lib/paneCover.js), which shrinks the page back from small covers
+// instead; this all-or-nothing check stays for docked apps.
 //
 // Small canvas chrome that only shows on hover (a group's resize corner, the
 // seams between tiles) is marked `data-pane-passthrough`: it does not count as
@@ -60,15 +65,33 @@ export function isAreaClear(el, rect, { clip = false } = {}) {
   });
 }
 
-export function useNativeBrowserPane({ winId, areaRef, url, onNavigated }) {
+// How much the canvas has shrunk or grown this area: its size on screen over
+// its own layout size. The native page cannot see the canvas's CSS transform,
+// so it is zoomed by this much to match the rest of the board.
+export function paneScale(el, rect) {
+  const own = el?.offsetWidth || 0;
+  if (own < 1 || !(rect?.width > 0)) return 1;
+  return Math.round((rect.width / own) * 100) / 100;
+}
+
+// Below this canvas zoom a window may show its icon instead of the page
+// (an opt-in window setting; off by default).
+export const ICON_COVER_BELOW = 0.5;
+
+export function useNativeBrowserPane({ winId, areaRef, url, onNavigated, coverWhenSmall = false }) {
   const enabled = hasNativeBrowserPane();
   const id = paneId(winId);
   const [visible, setVisible] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [blocked, setBlocked] = React.useState(0);
+  const [covered, setCovered] = React.useState(false);
+  const [hiddenBy, setHiddenBy] = React.useState('');
+  const coverRef = React.useRef(coverWhenSmall);
+  coverRef.current = coverWhenSmall;
   const openedRef = React.useRef(false);
   const urlRef = React.useRef(url);
   const onNavigatedRef = React.useRef(onNavigated);
+  const zoomResetRef = React.useRef(() => {});
   urlRef.current = url;
   onNavigatedRef.current = onNavigated;
 
@@ -80,21 +103,37 @@ export function useNativeBrowserPane({ winId, areaRef, url, onNavigated }) {
     let frame = 0;
     let lastKey = '';
     let lastVisible = null;
+    let lastZoom = null;
+    let lastCovered = false;
+    let lastHiddenBy = '';
+    let lastLog = '';
     let opening = false;
 
     const tick = () => {
       frame = requestAnimationFrame(tick);
       const el = areaRef.current;
       if (!el || !urlRef.current) return;
-      const r = el.getBoundingClientRect();
-      const clear = isAreaClear(el, r, { clip: true });
+      const area = el.getBoundingClientRect();
+      const scale = paneScale(el, area);
+      const cover = Boolean(coverRef.current) && scale < ICON_COVER_BELOW;
+      if (cover !== lastCovered) { lastCovered = cover; setCovered(cover); }
+      // Leave resize corners and edges over the page grabbable, and shrink it
+      // back from anything small on top of it (Censai's button, a corner of
+      // another window) rather than blacking out the whole page.
+      const fit = cover ? { clear: false, hiddenBy: 'icon' } : fitPane(el, area, { clip: true, grips: gripRects() });
+      const clear = fit.clear;
+      const why = clear ? '' : fit.hiddenBy;
+      if (why !== lastHiddenBy) { lastHiddenBy = why; setHiddenBy(why); }
+      const line = coverLogLine(fit);
+      if (line !== lastLog) { lastLog = line; if (line) logToApp('info', line, { where: 'browser' }); }
+      const r = fit.rect || area;
       const box = { x: Math.round(r.left), y: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height) };
 
       if (!openedRef.current) {
         if (!clear || opening) return;
         opening = true;
         invoke('browser_pane_open', { id, url: urlRef.current, ...box, adblock: isAdBlockEnabled() })
-          .then(() => { openedRef.current = true; lastKey = JSON.stringify(box); lastVisible = true; setVisible(true); })
+          .then(() => { openedRef.current = true; lastKey = JSON.stringify(box); lastVisible = true; lastZoom = null; setVisible(true); })
           .catch((err) => console.error('[browser-pane] open failed', err))
           .finally(() => { opening = false; });
         return;
@@ -110,7 +149,13 @@ export function useNativeBrowserPane({ winId, areaRef, url, onNavigated }) {
         lastKey = key;
         invoke('browser_pane_set_bounds', { id, ...box }).catch(() => {});
       }
+      // Some pages reset the zoom when they load, so a navigation clears lastZoom.
+      if (clear && scale !== lastZoom) {
+        lastZoom = scale;
+        invoke('browser_pane_set_zoom', { id, zoom: scale }).catch(() => {});
+      }
     };
+    zoomResetRef.current = () => { lastZoom = null; };
     frame = requestAnimationFrame(tick);
 
     return () => {
@@ -133,6 +178,7 @@ export function useNativeBrowserPane({ winId, areaRef, url, onNavigated }) {
     });
     on('browser-pane://navigated', (payload) => {
       setLoading(Boolean(payload.loading));
+      zoomResetRef.current();
       onNavigatedRef.current?.(payload.url, Boolean(payload.loading));
     });
     on('browser-pane://blocked', (payload) => setBlocked(Number(payload.count) || 0));
@@ -149,6 +195,10 @@ export function useNativeBrowserPane({ winId, areaRef, url, onNavigated }) {
     enabled,
     visible,
     loading,
+    // True while the window shows its icon because the board is zoomed far out.
+    covered,
+    // Why the page is hidden right now: 'window', 'pinned', 'other' or ''.
+    hiddenBy,
     // Ads and trackers blocked on the current page (desktop app on Windows).
     blocked,
     // Before the pane exists, the frame loop opens it at urlRef.current.

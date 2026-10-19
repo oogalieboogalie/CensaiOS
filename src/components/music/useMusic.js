@@ -7,6 +7,7 @@ import {
 import { MUSIC_DEVICE_SIZE, useStreamPlayer } from './useStreamPlayer.js';
 import { useLocalAudio } from './useLocalAudio.js';
 import { useUsbTracks } from './useUsbTracks.js';
+import { directAudioKind, linkHost, logMusic } from './linkAudio.js';
 
 export * from './musicUrls.js';
 export { MUSIC_DEVICE_SIZE } from './useStreamPlayer.js';
@@ -30,6 +31,9 @@ export function useMusic({ win, onUpdate }) {
   const usbIndex = usb.tracks.findIndex(t => t.id === usbId);
   const usbTrack = usbIndex >= 0 ? usb.tracks[usbIndex] : null;
   const mode = usbTrack ? 'local' : (win.src ? 'stream' : null);
+  // Song and radio links play in our own player, not a web frame.
+  const direct = Boolean(directAudioKind(win.src));
+  const linkTrack = React.useMemo(() => (direct ? { id: win.src, url: win.src } : null), [direct, win.src]);
 
   const queue = React.useMemo(() => normalizeQueue(win.musicQueue), [win.musicQueue]);
   const queueIndex = queue.findIndex(item => item.url === win.src);
@@ -38,6 +42,8 @@ export function useMusic({ win, onUpdate }) {
     const url = parseMusicUrl(src);
     const source = sourceHint || detectMusicSource(src);
     const trackTitle = title || titleFromUrl(src);
+    const kind = directAudioKind(url);
+    if (kind) logMusic('info', `loaded a ${kind} link from ${linkHost(url)}`);
     onUpdate({
       src: url,
       trackTitle,
@@ -76,8 +82,21 @@ export function useMusic({ win, onUpdate }) {
   stepRef.current = step;
   const onEnded = React.useCallback(() => stepRef.current(1), []);
 
-  const stream = useStreamPlayer({ win, onUpdate, volume, muted: muted || mode === 'local', onEnded });
+  const stream = useStreamPlayer({ win, onUpdate, volume, muted: muted || mode === 'local' || direct, onEnded });
   const local = useLocalAudio({ track: usbTrack, volume, muted, onEnded });
+  const link = useLocalAudio({ track: linkTrack, volume, muted, onEnded, remote: true });
+
+  // The whole board shares play and pause of a link; a USB pick pauses it.
+  const { play: linkPlay, pause: linkPause } = link;
+  React.useEffect(() => {
+    if (!linkTrack) return;
+    if (usbTrack || win.musicPaused) linkPause(); else linkPlay();
+  }, [linkTrack, usbTrack?.id, win.musicPaused]);
+  const toggleLink = () => {
+    const nextPaused = link.playing;
+    if (nextPaused) linkPause(); else linkPlay();
+    onUpdate({ musicPaused: nextPaused });
+  };
 
   // A USB pick starts playing straight away (the click is the user gesture).
   const localPlay = local.play;
@@ -98,8 +117,9 @@ export function useMusic({ win, onUpdate }) {
   };
 
   const isLocal = mode === 'local';
-  const progress = isLocal ? { position: local.position, duration: local.duration } : stream.progress;
-  const seekTo = (seconds) => (isLocal ? local.seekTo(seconds) : stream.seekTo(seconds));
+  const player = isLocal ? local : (direct ? link : null);
+  const progress = player ? { position: player.position, duration: player.duration } : stream.progress;
+  const seekTo = (seconds) => (player ? player.seekTo(seconds) : stream.seekTo(seconds));
 
   const eject = () => {
     if (isLocal) {
@@ -128,12 +148,14 @@ export function useMusic({ win, onUpdate }) {
     source: isLocal ? 'local' : (win.musicSource || detectMusicSource(win.src)),
     title: isLocal ? usbTrack.title : (win.trackTitle || titleFromUrl(win.src)),
     usbTrack,
-    paused: isLocal ? !local.playing : stream.paused,
+    paused: player ? !player.playing : stream.paused,
     progress,
-    controllable: isLocal || stream.controllable,
+    controllable: Boolean(player) || stream.controllable,
     canStep: isLocal ? usb.tracks.length > 1 : queue.length > 1,
-    signal: isLocal ? local.signal : null,
-    togglePlayback: isLocal ? local.toggle : stream.togglePlayback,
+    signal: player ? player.signal : null,
+    togglePlayback: isLocal ? local.toggle : (direct ? toggleLink : stream.togglePlayback),
+    direct,
+    linkProblem: direct && !isLocal ? link.problem : '',
     seekTo,
     seekBy: (delta) => seekTo(progress.position + delta),
     next: () => step(1),

@@ -88,3 +88,39 @@ describe('ReliabilityWindow', () => {
     expect(card.className).toContain('ring-accent');
   });
 });
+
+describe('ReliabilityWindow Run a scan', () => {
+  test('runs a scan of the open project, says what it found, and reloads the list', async () => {
+    global.fetch = jest.fn().mockImplementation((url, opts) => {
+      if (url === '/api/reliability/scans/project') {
+        expect(opts.method).toBe('POST');
+        return jsonResponse({ project: 'jordan-shop', scanned: 12, findings: 3, capped: false, scans: [] }, true, 201);
+      }
+      return jsonResponse([]);
+    });
+    await act(async () => {
+      render(<ReliabilityWindow win={{ id: 'rel1', kind: 'reliability' }} onUpdate={jest.fn()} />);
+    });
+    expect(screen.getByText(/Press Run a scan/)).toBeInTheDocument();
+    const listCalls = () => global.fetch.mock.calls.filter(([u]) => u.startsWith('/api/reliability/scans') && !u.endsWith('/project')).length;
+    const before = listCalls();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Run a scan' }));
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Scanned 12 files in jordan-shop, 3 need review.');
+    expect(listCalls()).toBeGreaterThan(before);
+  });
+
+  test('says plainly when no project is open', async () => {
+    global.fetch = jest.fn().mockImplementation((url) => (url === '/api/reliability/scans/project'
+      ? jsonResponse({ error: 'Open a project first, then run a scan.' }, false, 400)
+      : jsonResponse([])));
+    await act(async () => {
+      render(<ReliabilityWindow win={{ id: 'rel1', kind: 'reliability' }} onUpdate={jest.fn()} />);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Run a scan' }));
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Open a project first, then run a scan.');
+  });
+});

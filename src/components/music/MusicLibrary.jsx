@@ -13,6 +13,8 @@ export const STATIONS = [
   { title: 'Synthwave Radio', url: 'https://www.youtube.com/embed/4xDzrJKXOOY?autoplay=1', source: 'youtube' },
   { title: 'Chillhop', url: 'https://www.youtube.com/embed/5yx6BWlEVcY?autoplay=1', source: 'youtube' },
   ...SPOTIFY_DEMO_PRESETS.map(p => ({ title: p.name, url: p.url, source: 'spotify' })),
+  { title: 'SomaFM Groove Salad', url: 'https://ice2.somafm.com/groovesalad-128-mp3', source: 'radio' },
+  { title: 'SomaFM Drone Zone', url: 'https://ice2.somafm.com/dronezone-128-mp3', source: 'radio' },
 ];
 
 const TABS = [
@@ -131,7 +133,7 @@ export function AddPanel({ music, tab, onPickFiles }) {
         <input
           type="text"
           className="hb-music-input"
-          placeholder="YouTube, YT Music, Spotify or SoundCloud URL"
+          placeholder="YouTube, Spotify, SoundCloud, song or radio link"
           value={inputUrl}
           onChange={e => setInputUrl(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleLoad(); }}

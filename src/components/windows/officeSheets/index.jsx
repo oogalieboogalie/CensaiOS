@@ -21,13 +21,44 @@ export function OfficeSheetsWindow({ win = {}, onUpdate }) {
   const title = win.title || 'Untitled sheet';
   const st = s.cellAt(s.active)?.s || {};
   const refocus = () => keysRef.current?.focus({ preventScroll: true });
+  // The browser sends Ctrl+C and Ctrl+V to the page's text selection when
+  // there is one, and a word double-clicked earlier can still hold it while
+  // the cells have the focus. So the cells listen on the whole page and take
+  // copy and paste whenever they are focused.
+  const sheetRef = React.useRef(s);
+  sheetRef.current = s;
+  React.useEffect(() => {
+    const mine = () => document.activeElement === keysRef.current && !sheetRef.current.edit;
+    const onCopy = (e) => {
+      if (!mine()) return;
+      e.preventDefault();
+      e.clipboardData?.setData('text/plain', sheetRef.current.copyText());
+    };
+    const onPaste = (e) => {
+      const text = mine() ? e.clipboardData?.getData('text/plain') : '';
+      if (!text) return;
+      e.preventDefault();
+      sheetRef.current.pasteText(text);
+    };
+    document.addEventListener('copy', onCopy, true);
+    document.addEventListener('paste', onPaste, true);
+    return () => {
+      document.removeEventListener('copy', onCopy, true);
+      document.removeEventListener('paste', onPaste, true);
+    };
+  }, []);
 
   const onKeyDown = (e) => {
     if (s.edit) return;
     const mod = e.ctrlKey || e.metaKey;
     const moves = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
     if (moves[e.key]) { e.preventDefault(); s.moveBy(...moves[e.key], e.shiftKey); return; }
-    if (e.key === 'Tab') { e.preventDefault(); s.moveBy(e.shiftKey ? -1 : 1, 0); return; }
+    if (e.key === 'Tab') {
+      // At the first or last column Tab lets go, so the keyboard can reach the toolbar and sheet tabs.
+      const atEdge = e.shiftKey ? s.sel.ac === 0 : s.sel.ac === s.sheet.cols - 1;
+      if (!atEdge) { e.preventDefault(); s.moveBy(e.shiftKey ? -1 : 1, 0); }
+      return;
+    }
     if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); s.startEdit(); return; }
     if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); s.clearSelection(); return; }
     if (mod && ['b', 'i', 'u'].includes(e.key.toLowerCase())) { e.preventDefault(); s.style(e.key.toLowerCase()); return; }
@@ -64,16 +95,16 @@ export function OfficeSheetsWindow({ win = {}, onUpdate }) {
             onFocus={() => { if (!s.edit) s.startEdit(undefined, 'bar'); }}
             onChange={(e) => s.setEdit({ address: s.edit?.address || s.active, from: s.edit?.from || 'bar', value: e.target.value })}
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
               if (e.key === 'Enter') { e.preventDefault(); s.commitEdit(0, e.shiftKey ? -1 : 1); refocus(); }
-              if (e.key === 'Tab') { e.preventDefault(); s.commitEdit(e.shiftKey ? -1 : 1, 0); refocus(); }
+              // Tab saves and moves right; Shift+Tab leaves the bar backwards (blur saves).
+              if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); s.commitEdit(1, 0); refocus(); }
               if (e.key === 'Escape') { e.preventDefault(); s.setEdit(null); refocus(); }
             }}
             onBlur={() => s.commitEdit(0, 0)} />
         </div>
         <div className="hb-of-sheetbody" ref={keysRef} tabIndex={0} onKeyDown={onKeyDown} data-no-drag
-          aria-label={`${s.sheet.name} cells`}
-          onCopy={(e) => { if (s.edit) return; e.preventDefault(); e.clipboardData.setData('text/plain', s.copyText()); }}
-          onPaste={(e) => { if (s.edit) return; e.preventDefault(); s.pasteText(e.clipboardData.getData('text/plain')); }}>
+          aria-label={`${s.sheet.name} cells`}>
           <SheetGrid sheet={s} refocus={refocus} />
         </div>
         {(s.sheet.charts || []).length > 0 && (

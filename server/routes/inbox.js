@@ -8,9 +8,24 @@ import { startCiFix } from '../inbox/ciFix.js';
 import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
 import { assertSystemAdmin } from '../security/systemAdmin.js';
 import { registerSelfFixSource } from '../inbox/selfFixSource.js';
+import { registerJulesStuckSource } from '../inbox/julesStuckSource.js';
+import { registerSpeakUpSource } from '../inbox/speakUpSource.js';
+import { registerMyTodosSource, myTodos } from '../inbox/myTodosSource.js';
+import { registerAuctionWatcherSource } from '../inbox/auctionWatcherSource.js';
+import { registerInviteInboxSource } from '../invites/inboxSource.js';
 
 // The self-fixing error reports show up as Inbox items for the owner.
 registerSelfFixSource();
+// Jules tasks the overnight runner parked, so a stuck task reaches a person.
+registerJulesStuckSource();
+// Short notes agents posted on their own (diagram 17, speak up).
+registerSpeakUpSource();
+// To-dos someone assigned to you, on every board you belong to.
+registerMyTodosSource();
+// New Auction Watcher matches, until the person opens that watch.
+registerAuctionWatcherSource();
+// Boards someone invited you to ("Invite to this board").
+registerInviteInboxSource();
 
 /**
  * The Inbox window: pull requests, coding agents and error reports in one list.
@@ -18,6 +33,7 @@ registerSelfFixSource();
  * GET  /api/inbox?repo=o/r          every item, grouped, plus the agent dock
  * POST /api/inbox/fix-ci            { repo, number }  an agent fixes red checks
  * POST /api/inbox/fix-error         { source, reportId } hand a report to its source
+ * GET  /api/inbox/my-todos          open to-dos assigned to me on every board (bottom-bar reminder)
  *
  * `serverErrors` tells the window that this browser's errors already reach
  * the server's self-fix reports, so it shows those instead of its own copy.
@@ -30,6 +46,7 @@ export function createInboxRouter({
   desk = buildDesk,
   agentsAllowed = canRunAgents,
   isOwner = (req) => assertSystemAdmin(req).then(() => true, () => false),
+  listMine = myTodos,
 } = {}) {
   const router = express.Router();
 
@@ -71,6 +88,15 @@ export function createInboxRouter({
     const { reports, sourceErrors } = await listReports(ctx);
     const serverErrors = ctx.isOwner && ctx.localFiles && process.env.CENSAI_SELF_FIX !== 'off';
     res.json({ ...out, ...buildInbox({ desk: deskData, tasks, reports }), sourceErrors, serverErrors });
+  });
+
+  router.get('/my-todos', async (req, res) => {
+    if (!req.session?.userId) return res.status(401).json({ error: 'Sign in first.' });
+    try {
+      res.json({ userId: req.session.userId, todos: await listMine({ userId: req.session.userId }) });
+    } catch {
+      res.status(500).json({ error: 'Could not read your to-dos.' });
+    }
   });
 
   router.post('/fix-ci', async (req, res) => {

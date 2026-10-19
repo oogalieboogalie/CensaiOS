@@ -85,3 +85,31 @@ test('signed-out check reads the session, and stays quiet when the server is dow
   expect(await stillSignedIn(reply({ authenticated: true }))).toBe(true);
   expect(await stillSignedIn(async () => { throw new Error('down'); })).toBe(true);
 });
+
+test("says owner-only for a signed-in teammate, nothing for the computer's owner", async () => {
+  const { terminalRefusal } = await import('../src/components/terminal/terminalSocket.js');
+  const reply = (body) => async () => ({ ok: true, json: async () => body });
+  expect(await terminalRefusal(reply({ authenticated: true, user: { role: 'user' } }))).toBe('owner-only');
+  expect(await terminalRefusal(reply({ authenticated: true, user: { role: 'admin' } }))).toBe(null);
+  expect(await terminalRefusal(reply({ authenticated: false }))).toBe('signed-out');
+});
+
+test('a refusal from the server is said once and not retried until Enter', () => {
+  const onRefused = jest.fn();
+  const onDrop = jest.fn();
+  const onMessage = jest.fn();
+  const link = openTerminalSocket('ws://x', { onRefused, onDrop, onMessage }, { WebSocketImpl: FakeSocket, win: fakeWindow() });
+  FakeSocket.all[0].open();
+  const refusal = { type: 'refused', reason: 'owner-only', message: 'Only the owner.' };
+  FakeSocket.all[0].emit('message', { data: JSON.stringify(refusal) });
+  FakeSocket.all[0].drop();
+  jest.advanceTimersByTime(60000);
+  expect(FakeSocket.all).toHaveLength(1);
+  expect(onRefused).toHaveBeenCalledWith(refusal);
+  expect(onDrop).not.toHaveBeenCalled();
+  expect(onMessage).not.toHaveBeenCalled();
+  expect(link.hasExited()).toBe(true);
+  link.reconnectNow();
+  expect(FakeSocket.all).toHaveLength(2);
+  link.close();
+});

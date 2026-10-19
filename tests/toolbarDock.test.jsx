@@ -128,31 +128,41 @@ describe('multitool dock', () => {
     expect(screen.queryByTitle('Pen color Ink')).not.toBeInTheDocument();
   });
 
-  test('chat button toggles the dock messenger popup without changing the active tool', () => {
+  test('chat button toggles Censai\'s pinned chat without changing the active tool', () => {
     const seen = [];
+    let toggles = 0;
     const listener = (e) => seen.push(e.detail.tool);
+    const onToggle = () => { toggles += 1; };
     window.addEventListener('canvas:tool-change', listener);
+    window.addEventListener('censai:pinned-chat-toggle', onToggle);
     try {
       const props = renderDock();
-      expect(screen.queryByTestId('dock-chat-popup')).not.toBeInTheDocument();
       fireEvent.click(screen.getByTitle('Chat (C)'));
-      expect(screen.getByTestId('dock-chat-popup')).toBeInTheDocument();
+      expect(toggles).toBe(1);
       expect(props.onSelectTool).not.toHaveBeenCalled();
       expect(seen).toEqual(['chat']);
       fireEvent.click(screen.getByTitle('Chat (C)'));
-      expect(screen.queryByTestId('dock-chat-popup')).not.toBeInTheDocument();
+      expect(toggles).toBe(2);
     } finally {
       window.removeEventListener('canvas:tool-change', listener);
+      window.removeEventListener('censai:pinned-chat-toggle', onToggle);
     }
   });
 
-  test('C shortcut toggles the dock messenger popup', () => {
-    const props = renderDock();
-    fireEvent.keyDown(document, { key: 'c' });
-    expect(screen.getByTestId('dock-chat-popup')).toBeInTheDocument();
-    expect(props.onSelectTool).not.toHaveBeenCalled();
-    fireEvent.keyDown(document, { key: 'c' });
-    expect(screen.queryByTestId('dock-chat-popup')).not.toBeInTheDocument();
+  test('C shortcut toggles Censai\'s pinned chat', () => {
+    let toggles = 0;
+    const onToggle = () => { toggles += 1; };
+    window.addEventListener('censai:pinned-chat-toggle', onToggle);
+    try {
+      const props = renderDock();
+      fireEvent.keyDown(document, { key: 'c' });
+      expect(toggles).toBe(1);
+      expect(props.onSelectTool).not.toHaveBeenCalled();
+      fireEvent.keyDown(document, { key: 'c' });
+      expect(toggles).toBe(2);
+    } finally {
+      window.removeEventListener('censai:pinned-chat-toggle', onToggle);
+    }
   });
 
   test('presence row is hidden without collaboration', () => {

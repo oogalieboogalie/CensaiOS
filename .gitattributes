@@ -26,3 +26,4 @@
 # Vendored game runtimes stay byte-for-byte as upstream shipped them
 public/playground/vendor/** binary
 *.wasm binary
+public/models/** binary

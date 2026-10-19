@@ -4,6 +4,8 @@ import { ClassApp } from './app/ClassApp.jsx';
 import { classJoinToken, guestJoinToken } from './lib/workspace/shareLink.js';
 import { PairApp } from './app/PairApp.jsx';
 import { pairCodeFromUrl } from './lib/webOs.js';
+import { InviteApp } from './app/InviteApp.jsx';
+import { inviteCodeFromUrl } from './lib/invites/index.js';
 
 export default function App() {
   // A share link (`?join=<token>`) opens the board as a guest, with no
@@ -16,5 +18,9 @@ export default function App() {
   // An "Add a computer" link (`?pair=<code>`) signs this computer in once.
   const pairCode = pairCodeFromUrl();
   if (pairCode) return <PairApp code={pairCode} />;
+  // An "Invite to this board" link (`?invite=<code>`) makes the person's
+  // own account and opens that board.
+  const inviteCode = inviteCodeFromUrl();
+  if (inviteCode) return <InviteApp code={inviteCode} />;
   return <AppContent />;
 }

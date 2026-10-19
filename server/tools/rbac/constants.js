@@ -4,6 +4,10 @@ export const SHARED_SUB_AGENT_TOOLS = [
   'remember', 'recall', 'journal', 'read_journal', 'read_journal_search',
   'feeling', 'message_to', 'reply_to', 'read_messages',
   'project_read', 'project_file_outline', 'project_list', 'read_brief', 'report',
+  // Its own data box (diagram 15); the handler keeps a sub-agent to its own box.
+  'scratchpad_write', 'scratchpad_read',
+  // Tiny one-job helpers whose answers land in that box (diagram 15).
+  'start_helper',
   'task_done',
 ];
 

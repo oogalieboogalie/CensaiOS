@@ -153,8 +153,11 @@ describe('the launcher inside the container', () => {
     const inputs = ['package.json', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock']
       .filter((f) => fs.existsSync(path.join(dir, f)))
       .map((f) => { const st = fs.statSync(path.join(dir, f)); return `${f}:${st.size}:${st.mtimeMs}`; }).join('|');
-    fs.mkdirSync(path.join(dir, 'node_modules'), { recursive: true });
+    fs.mkdirSync(path.join(dir, 'node_modules/.bin'), { recursive: true });
     fs.writeFileSync(path.join(dir, 'node_modules/.censai-install-stamp'), inputs);
+    // Stand-in dev tools that exit at once. Without them the real Vite from
+    // this repo starts, outlives the test and holds ports 3000 and 3001.
+    for (const bin of ['vite', 'next']) fs.writeFileSync(path.join(dir, 'node_modules/.bin', bin), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
     const r = spawnSync(process.execPath, [launcher], { env: { ...process.env, CENSAI_APP_DIR: dir, PORT: '3000', CENSAI_DEV_CMD: '' }, encoding: 'utf8', timeout: 20_000 });
     fs.rmSync(dir, { recursive: true, force: true });
     return r;

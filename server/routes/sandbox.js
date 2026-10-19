@@ -37,7 +37,7 @@ async function findRunningSandbox() {
  * GET /api/sandbox/toolchains
  * Returns full registry + current config + rebuild status.
  */
-sandboxRouter.get('/sandbox/toolchains', (_req, res) => {
+sandboxRouter.get('/toolchains', (_req, res) => {
   const config = readToolchainConfig();
   const rebuildState = getRebuildState();
   const tools = TOOLCHAIN_IDS.map((id) => ({
@@ -59,7 +59,7 @@ sandboxRouter.get('/sandbox/toolchains', (_req, res) => {
  * Body: { enabled: string[], apiKeys: Record<string, string> }
  * Saves config and auto-triggers a sandbox image rebuild.
  */
-sandboxRouter.post('/sandbox/toolchains', requireSystemAdmin, async (req, res) => {
+sandboxRouter.post('/toolchains', requireSystemAdmin, async (req, res) => {
   try {
     const { enabled = [], apiKeys = {} } = req.body;
 
@@ -96,7 +96,7 @@ sandboxRouter.post('/sandbox/toolchains', requireSystemAdmin, async (req, res) =
  * GET /api/sandbox/rebuild-status
  * Returns current rebuild progress for polling.
  */
-sandboxRouter.get('/sandbox/rebuild-status', (_req, res) => {
+sandboxRouter.get('/rebuild-status', (_req, res) => {
   const rebuildState = getRebuildState();
   res.json({
     status: rebuildState.status,
@@ -111,7 +111,7 @@ sandboxRouter.get('/sandbox/rebuild-status', (_req, res) => {
  * POST /api/sandbox/rebuild-cancel
  * Force-clears rebuild state (safety valve if a build gets stuck).
  */
-sandboxRouter.post('/sandbox/rebuild-cancel', requireSystemAdmin, async (_req, res) => {
+sandboxRouter.post('/rebuild-cancel', requireSystemAdmin, async (_req, res) => {
   try {
     await removeSandboxImage();
     resetRebuildState();
@@ -125,7 +125,7 @@ sandboxRouter.post('/sandbox/rebuild-cancel', requireSystemAdmin, async (_req, r
  * POST /api/sandbox/toolchains/detect
  * Probes the running sandbox container to see which CLIs are actually installed.
  */
-sandboxRouter.post('/sandbox/toolchains/detect', requireSystemAdmin, async (_req, res) => {
+sandboxRouter.post('/toolchains/detect', requireSystemAdmin, async (_req, res) => {
   try {
     const running = await findRunningSandbox();
 
@@ -167,7 +167,7 @@ sandboxRouter.post('/sandbox/toolchains/detect', requireSystemAdmin, async (_req
  * Runs the install command for one CLI in the active sandbox (session only).
  * Won't survive a rebuild unless "Bake in" is also toggled and saved.
  */
-sandboxRouter.post('/sandbox/toolchains/install', requireSystemAdmin, async (req, res) => {
+sandboxRouter.post('/toolchains/install', requireSystemAdmin, async (req, res) => {
   const { id } = req.body;
   const tool = TOOLCHAIN_REGISTRY[id];
   if (!tool) return res.status(400).json({ error: `Unknown tool: ${id}` });

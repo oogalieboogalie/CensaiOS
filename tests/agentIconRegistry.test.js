@@ -267,9 +267,9 @@ describe('agent icon registry', () => {
 
   describe('AgentAvatar integration (end-to-end render)', () => {
     // The avatar picker branch is the most important contract of this brief:
-    // family agents get the new <AgentIcon />, user agents without an icon
-    // fall back to the legacy AgentVectorIcon. We render both branches
-    // and assert which one fired based on which markup appears.
+    // agents without a picked icon wear the censaiOS mark; a picked iconRef
+    // gets the <AgentIcon />, and an unparseable one falls back to the
+    // legacy AgentVectorIcon. We assert which branch fired from the markup.
     let React;
     let renderToStaticMarkup;
     let AgentAvatar;
@@ -281,27 +281,32 @@ describe('agent icon registry', () => {
       AgentAvatar = (await import('../src/components/Agents.jsx')).AgentAvatar;
     });
 
-    test('family agent renders the new <AgentIcon /> branch (viewBox 0 0 64 64)', () => {
+    test('family agent without a picked icon wears the censaiOS mark in its colour', () => {
       const html = renderToStaticMarkup(
         React.createElement(AgentAvatar, { agent: BUILT_IN_AGENTS[0], size: 28 }),
       );
-      // New branch wrapper has class "agent-icon--agent"
-      expect(html).toMatch(/class="agent-icon agent-icon--agent/);
-      // Inner SVG uses the registry's viewBox
-      expect(html).toMatch(/viewBox="0 0 64 64"/);
-      // No legacy 24x24 viewBox would be present (sanity check)
-      expect(html).not.toMatch(/viewBox="0 0 24 24"/);
+      expect(html).toMatch(/class="hb-agent-mark"/);
+      expect(html).toMatch(new RegExp(`data-family-mark="${BUILT_IN_AGENTS[0].id}"`));
+      expect(html).toMatch(/fill="var\(--mark\)"/);
+      expect(html).not.toMatch(/class="agent-icon agent-icon--agent/);
     });
 
-    test('user agent (no iconRef) falls back to the legacy AgentVectorIcon (viewBox 0 0 24 24)', () => {
+    test('user agent (no iconRef) wears the mark in its own hue', () => {
       const userAgent = { id: 'user-1', name: 'User Agent', role: 'helper', glyph: 'U', hue: 200 };
       const html = renderToStaticMarkup(
         React.createElement(AgentAvatar, { agent: userAgent, size: 28 }),
       );
-      // No new agent-icon span — the legacy <svg> path is taken.
-      expect(html).not.toMatch(/class="agent-icon agent-icon--agent/);
-      // Legacy branch uses 24x24 viewBox
-      expect(html).toMatch(/viewBox="0 0 24 24"/);
+      expect(html).toMatch(/class="hb-agent-mark"/);
+      expect(html).not.toMatch(/data-family-mark/);
+      expect(html).toMatch(/--agent-h:200/);
+    });
+
+    test('family agent with a picked iconRef keeps the <AgentIcon /> branch', () => {
+      const html = renderToStaticMarkup(
+        React.createElement(AgentAvatar, { agent: { ...BUILT_IN_AGENTS[0], iconRef: BUILT_IN_AGENTS[0].id }, size: 28 }),
+      );
+      expect(html).toMatch(/class="agent-icon agent-icon--agent/);
+      expect(html).toMatch(/viewBox="0 0 64 64"/);
     });
 
     test('user agent with a valid iconRef uses the new <AgentIcon /> branch', () => {

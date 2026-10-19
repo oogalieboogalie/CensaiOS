@@ -1,0 +1,12 @@
+{
+  "searchResults": {
+    "itemCount": 4,
+    "items": [
+      { "itemId": 900000101, "title": "Lenovo ThinkPad T480 14in Laptop i5 8GB  - Powers On", "currentPrice": 61.0, "minimumBid": 5.99, "buyNowPrice": 0, "numBids": 7, "endTime": "2026-10-20T19:30:00", "imageURL": "https://shopgoodwillimages.azureedge.net/production/fake/t480.jpg", "sellerId": 1 },
+      { "itemId": 900000102, "title": "Lenovo ThinkPad X1 Carbon Laptop - Supervisor Password Set, Tamper Detected", "currentPrice": 24.5, "buyNowPrice": 0, "numBids": 2, "endTime": "2026-10-21T08:05:00", "imageURL": "fake/x1.jpg" },
+      { "itemId": 900000103, "title": "Lenovo IdeaPad 3 15in Laptop Charger Included", "currentPrice": 410.0, "buyNowPrice": 0, "numBids": 19, "endTime": "2026-10-19T02:15:00", "imageURL": "" },
+      { "itemId": "not-a-number", "title": "Broken row that should be skipped", "currentPrice": 1 },
+      { "itemId": 900000101, "title": "Duplicate of the first item", "currentPrice": 61.0 }
+    ]
+  }
+}

@@ -12,7 +12,7 @@ import { WINDOW_MANIFESTS } from '../src/lib/windowManifest.js';
 
 describe('window header rules', () => {
   test('three modes, three inline actions', () => {
-    expect(HEADER_MODES).toEqual(['strip', 'ghost', 'bare']);
+    expect(HEADER_MODES).toEqual(['strip', 'ghost', 'bare', 'edge']);
     expect(MAX_HEADER_ACTIONS).toBe(3);
   });
 
@@ -33,13 +33,22 @@ describe('window header rules', () => {
   });
 
   test('manifest meta falls back to label and launcher icon', () => {
-    expect(resolveHeaderMeta({ label: 'Chat', launcher: { icon: 'Chat' } })).toEqual({ title: 'Chat', icon: 'Chat', mode: null });
+    expect(resolveHeaderMeta({ label: 'Chat', launcher: { icon: 'Chat' } })).toEqual({ title: 'Chat', icon: 'Chat', mode: null, fixed: false });
     expect(resolveHeaderMeta({ label: 'X', header: { title: 'Design block', icon: 'Code', mode: 'bare' } }))
-      .toEqual({ title: 'Design block', icon: 'Code', mode: 'bare' });
-    expect(resolveHeaderMeta(undefined)).toEqual({ title: '', icon: null, mode: null });
+      .toEqual({ title: 'Design block', icon: 'Code', mode: 'bare', fixed: false });
+    expect(resolveHeaderMeta(undefined)).toEqual({ title: '', icon: null, mode: null, fixed: false });
   });
 
-  test('validation allows only title, icon and mode, all well formed', () => {
+  test('a fixed header mode needs a mode; the dock app window keeps a strip header', () => {
+    expect(resolveHeaderMeta({ label: 'D', header: { mode: 'strip', fixed: true } }).fixed).toBe(true);
+    expect(resolveHeaderMeta({ label: 'D', header: { fixed: true } }).fixed).toBe(false);
+    expect(validateHeaderMeta('a', { fixed: true })).toEqual([expect.stringContaining('needs a header.mode')]);
+    expect(validateHeaderMeta('a', { mode: 'strip', fixed: 'yes' })).toEqual([expect.stringContaining('header.fixed')]);
+    const dock = WINDOW_MANIFESTS.find((m) => m.kind === 'dockapp');
+    expect(resolveHeaderMeta(dock)).toMatchObject({ mode: 'strip', fixed: true });
+  });
+
+  test('validation allows only title, icon, mode and fixed, all well formed', () => {
     expect(validateHeaderMeta('a', undefined)).toEqual([]);
     expect(validateHeaderMeta('a', { title: 'Files', icon: 'Files', mode: 'ghost' }, { iconNames: ['Files'] })).toEqual([]);
     const errors = validateHeaderMeta('a', { title: '⚡ Fast', icon: 'Nope', mode: 'tall', actions: [] }, { iconNames: ['Files'] });

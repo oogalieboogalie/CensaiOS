@@ -1,4 +1,5 @@
 import { useWorkspaceStore } from '../store.js';
+import { newId } from '../ids/newId.js';
 
 /** Opens Settings on the "AI keys" tab, from anywhere on the board. */
 export function openKeySettings() {
@@ -7,7 +8,7 @@ export function openKeySettings() {
   if (existing) {
     state.onUpdate(existing.id, {
       settingsTab: 'vault',
-      settingsRequestId: crypto.randomUUID(),
+      settingsRequestId: newId(),
       title: 'Settings',
       x: -480,
       y: -290,

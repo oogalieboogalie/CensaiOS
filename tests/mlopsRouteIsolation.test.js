@@ -64,6 +64,7 @@ describe('MLOps route isolation', () => {
         workspace_id: 'workspace-owned',
         owner: { kind: 'system', id: 'attacker' },
         title: 'Model',
+        modelName: 'Pricer',
       });
 
     expect(response.status).toBe(201);
@@ -71,11 +72,23 @@ describe('MLOps route isolation', () => {
       workspaceId: 'workspace-owned',
       owner: { kind: 'user', id: '7' },
       title: 'Model',
-      modelName: undefined,
-      version: undefined,
+      modelName: 'Pricer',
+      version: '1',
+      provider: 'Other',
+      purpose: '',
       baseline: undefined,
       thresholds: undefined,
     });
+  });
+
+  test('a model with no name is refused in plain words, not saved', async () => {
+    const response = await request(app())
+      .post('/api/mlops/models')
+      .send({ workspaceId: 'workspace-owned', modelName: '  ' });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: 'Give the model a name.' });
+    expect(registerModelDeployment).not.toHaveBeenCalled();
   });
 
   test('denies foreign membership before model or artifact access', async () => {

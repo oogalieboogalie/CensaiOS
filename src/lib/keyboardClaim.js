@@ -4,6 +4,7 @@
 // (a game while you play it) claims the keyboard; page-level shortcut
 // handlers check keyboardClaimed() and stand down until it lets go. The
 // claiming window releases on Escape, on blur and when it unmounts.
+// Pastes follow the same contract: see pasteOwner.js.
 
 let owner = null;
 

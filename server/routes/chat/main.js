@@ -7,9 +7,10 @@ import { createSessionTrace, finalizeTrace } from '../../operational-intelligenc
 import { applyChatRetryHeader, publicChatError } from './httpErrors.js';
 import { resolveFreeTierRuntime } from '../../aiGateway/freeTierRuntime.js';
 import { isCloudRuntime } from '../../middleware/runtimeMode.js';
+import { safeTimeZone } from '../../../src/lib/agentMemory/timeWords.js';
 
 export async function handleChat(req, res) {
-  const { messages, agentId, windowId, workspaceId, currentProject, stream } = req.body;
+  const { messages, agentId, windowId, workspaceId, currentProject, stream, conversationId, timeZone } = req.body;
   const startedAt = Date.now();
   const timings = {
     total_ms: 0,
@@ -74,6 +75,7 @@ export async function handleChat(req, res) {
   try {
     let changeImpact = null;
     let projectContext = [];
+    let sevenContexts = null;
     let authorizedWorkspaceId = null;
     // The run engine (server/runEngine) builds the context, adds the outside
     // MCP tools this agent was given, and runs the model and tool loop.
@@ -86,12 +88,14 @@ export async function handleChat(req, res) {
       userRole: req.session?.userRole,
       workspaceId,
       windowId,
+      conversationId: typeof conversationId === 'string' ? conversationId : null,
+      timeZone: safeTimeZone(timeZone),
       sendEvent,
       onModelAccepted: beginStream,
       timings,
       signal: abort.signal,
       onPrepared: async (context) => {
-        ({ changeImpact, projectContext } = context);
+        ({ changeImpact, projectContext, sevenContexts } = context);
         authorizedWorkspaceId = context.workspaceId;
         if (process.env.NODE_ENV !== 'production') {
           console.log(`[Perf] Chat setup (prepareChatContext) for agent ${agentId} took ${timings.setup_ms}ms`);
@@ -154,6 +158,7 @@ export async function handleChat(req, res) {
         timings: safeTimings,
         changeImpact,
         projectContext,
+        sevenContexts,
       });
       res.end();
     } else {
@@ -163,6 +168,7 @@ export async function handleChat(req, res) {
         timings: safeTimings,
         changeImpact,
         projectContext,
+        sevenContexts,
       });
     }
   } catch (err) {

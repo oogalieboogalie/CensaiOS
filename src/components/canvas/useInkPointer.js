@@ -6,6 +6,7 @@ import { strokesInLasso } from '../../lib/ink/shapes.js';
 import { createLiveInkSender } from '../../lib/ink/live.js';
 import { reportInk } from '../../lib/collaboration/liveText.js';
 import { getCollaborationClientId } from '../../lib/collaboration/clientIdentity.js';
+import { newId } from '../../lib/ids/newId.js';
 
 // Spec 9 pen input for the canvas: pressure and tilt samples (all of them,
 // via coalesced events), palm rejection, the live stroke others watch, and
@@ -30,7 +31,7 @@ export function useInkPointer({ ref, pan, zoom, penColor, penSize, paths, setPat
   });
 
   const startStroke = (e) => {
-    const s = { id: crypto.randomUUID(), points: [inkPoint(toCanvas(e), e)], color: penColor, sim: e.pointerType !== 'pen' };
+    const s = { id: newId(), points: [inkPoint(toCanvas(e), e)], color: penColor, sim: e.pointerType !== 'pen' };
     strokeRef.current = s;
     setCurrentPath(s.points);
   };

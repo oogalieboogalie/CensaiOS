@@ -2,13 +2,23 @@
 import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { parsePatch } from './lineDiff.js';
+import { SideBySideDiff } from '../diffViewer/SideBySideDiff.jsx';
+import { rowsFromHunks } from '../diffViewer/sideBySide.js';
+
+const VIEW_KEY = 'homebase.changesView';
+function readView() {
+  try { return localStorage.getItem(VIEW_KEY) || 'split'; } catch { return 'split'; }
+}
 
 // Files changed in the task's worktree (git diff against the start commit):
-// a file list with +/- counts, then a unified diff per file.
+// a file list with +/- counts, then each file side by side (before | after)
+// like the Git Diff Viewer, or as one column. The choice is remembered.
 
-export function ChangesPanel({ changes, onOpenFile }) {
+export function ChangesPanel({ changes, onOpenFile, onOpenViewer }) {
   const parsed = React.useMemo(() => parsePatch(changes.patch || ''), [changes.patch]);
   const [openPath, setOpenPath] = React.useState(null);
+  const [view, setViewState] = React.useState(readView);
+  const setView = (next) => { setViewState(next); try { localStorage.setItem(VIEW_KEY, next); } catch { /* private mode */ } };
   const files = changes.files || [];
   if (!changes.loaded) return <div className="ac-empty">Reading changes…</div>;
   if (files.length === 0) return <div className="ac-empty">No file changes yet.</div>;
@@ -20,6 +30,15 @@ export function ChangesPanel({ changes, onOpenFile }) {
         <span className="ac-num-add">+{totals.add}</span>
         <span className="ac-num-del">-{totals.del}</span>
         {changes.truncated && <span className="ac-muted">diff truncated</span>}
+        <span className="ac-view-toggle" role="group" aria-label="How to show changes">
+          <button type="button" className={`ac-view-btn${view === 'split' ? ' ac-view-btn--on' : ''}`} aria-pressed={view === 'split'} onClick={() => setView('split')} data-testid="changes-split">Side by side</button>
+          <button type="button" className={`ac-view-btn${view === 'unified' ? ' ac-view-btn--on' : ''}`} aria-pressed={view === 'unified'} onClick={() => setView('unified')}>One column</button>
+          {onOpenViewer && (
+            <button type="button" className="ac-icon-btn" title="Open in Git Diff Viewer" aria-label="Open in Git Diff Viewer" onClick={onOpenViewer} data-testid="changes-open-viewer">
+              <Icon.OpenWindow size={12} />
+            </button>
+          )}
+        </span>
       </div>
       {files.map((file) => {
         const patch = parsed.find((p) => p.path === file.path);
@@ -40,7 +59,8 @@ export function ChangesPanel({ changes, onOpenFile }) {
                 </button>
               )}
             </header>
-            {open && patch && !patch.binary && (
+            {open && patch && !patch.binary && view === 'split' && <SideBySideDiff rows={rowsFromHunks(patch.hunks)} compact />}
+            {open && patch && !patch.binary && view !== 'split' && (
               <div className="ac-diff ac-diff--file">
                 {patch.hunks.map((hunk, h) => (
                   <React.Fragment key={h}>

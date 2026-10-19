@@ -30,12 +30,17 @@ const MONOGRAMS = {
   codex: { title: 'Codex', monogram: 'Cx' },
   zai: { title: 'Z.ai', monogram: 'Z' },
   elevenlabs: { title: 'ElevenLabs', monogram: '11' },
+  railway: { title: 'Railway', monogram: 'Rw' },
+  render: { title: 'Render', monogram: 'Rd' },
+  googlecloud: { title: 'Google Cloud', monogram: 'GC' },
+  jupyter: { title: 'Jupyter', monogram: 'Ju' },
+  langchain: { title: 'LangChain', monogram: 'LC' },
 };
 
 // Which shelf a brand sits on in the brand sheet (docs/brand/third-party.md).
 export const BRAND_CATEGORIES = Object.freeze({
-  'AI and agents': ['anthropic', 'claude', 'openai', 'codex', 'googlegemini', 'ollama', 'openrouter', 'cohere', 'mistralai', 'deepseek', 'groq', 'xai', 'together', 'huggingface', 'perplexity', 'moonshotai', 'zai', 'opencode', 'githubcopilot', 'lmstudio', 'elevenlabs'],
-  'Build and ship': ['github', 'gitlab', 'docker', 'kubernetes', 'vercel', 'cloudflare', 'netlify', 'linear', 'n8n', 'figma', 'googlejules', 'postgresql', 'redis', 'supabase', 'stripe', 'notion', 'mailcow', 'godotengine', 'threedotjs'],
+  'AI and agents': ['anthropic', 'claude', 'openai', 'codex', 'googlegemini', 'ollama', 'openrouter', 'cohere', 'mistralai', 'deepseek', 'groq', 'xai', 'together', 'huggingface', 'perplexity', 'moonshotai', 'zai', 'opencode', 'githubcopilot', 'lmstudio', 'elevenlabs', 'langchain'],
+  'Build and ship': ['github', 'gitlab', 'docker', 'kubernetes', 'vercel', 'cloudflare', 'netlify', 'linear', 'n8n', 'figma', 'googlejules', 'postgresql', 'redis', 'supabase', 'railway', 'render', 'googlecloud', 'jupyter', 'stripe', 'notion', 'mailcow', 'godotengine', 'threedotjs'],
   'Chat': ['discord', 'slack', 'telegram', 'whatsapp'],
   'Media': ['youtube', 'youtubemusic', 'youtubeshorts', 'spotify', 'soundcloud', 'applemusic', 'tiktok', 'twitch', 'vimeo'],
   'Search': ['google', 'duckduckgo', 'tavily', 'searxng', 'torproject', 'brave', 'bing', 'startpage', 'kagi', 'ecosia', 'mojeek', 'qwant', 'wikipedia', 'swisscows', 'metager', 'yandex'],
@@ -87,12 +92,12 @@ export const PROVIDER_BRAND = Object.freeze({
   openrouter: 'openrouter', ollama: 'ollama', cohere: 'cohere', mistral: 'mistralai',
   deepseek: 'deepseek', groq: 'groq', xai: 'xai', together: 'together', moonshot: 'moonshotai',
   zai: 'zai', opencode: 'opencode', huggingface: 'huggingface', perplexity: 'perplexity', lmstudio: 'lmstudio',
-  elevenlabs: 'elevenlabs',
+  elevenlabs: 'elevenlabs', langsmith: 'langchain', langchain: 'langchain', googlecloud: 'googlecloud',
 });
 
 // Coding CLIs in the Agent Console. Codex is OpenAI's; Simple Icons has no
 // OpenAI mark, so it keeps a monogram.
-export const CLI_BRAND = Object.freeze({ claudecode: 'claude', codex: 'codex', gemini: 'googlegemini', opencode: 'opencode', copilot: 'githubcopilot' });
+export const CLI_BRAND = Object.freeze({ claudecode: 'claude', codex: 'codex', gemini: 'googlegemini', opencode: 'opencode', copilot: 'githubcopilot', grok: 'xai' });
 
 /** The brand a window shows in its header, or null for the board's own windows. */
 export function windowBrand(win) {

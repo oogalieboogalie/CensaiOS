@@ -43,7 +43,7 @@
 .hb-inbox-stat { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); min-width: 0; }
 .hb-inbox-stat + .hb-inbox-stat { border-left: 1px solid var(--hairline); }
 .hb-inbox-stat span { color: var(--ink-faint); font-size: var(--text-xs); }
-.hb-inbox-stat strong { font-size: var(--text-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.hb-inbox-stat strong { font-size: var(--text-md); white-space: normal; overflow-wrap: anywhere; line-height: 1.3; font-variant-numeric: tabular-nums; }
 .hb-inbox-stat strong[data-tone="danger"] { color: var(--danger); }
 .hb-inbox-stat strong[data-tone="success"] { color: var(--success); }
 .hb-inbox-sub, .hb-inbox-summary { margin: 0; color: var(--ink-soft); line-height: 1.5; }

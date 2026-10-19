@@ -1,3 +1,5 @@
+import { apiError } from '../errorReport.js';
+
 const BASE = '/api/operational-intelligence';
 
 async function requestOperational(path, options = {}) {
@@ -10,7 +12,9 @@ async function requestOperational(path, options = {}) {
   });
   if (res.status === 404) return null;
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || 'Operational intelligence request failed');
+  if (!res.ok) {
+    throw apiError(res, data, 'Operational intelligence request failed', { method: options.method, path: `${BASE}${path}` });
+  }
   return data;
 }
 

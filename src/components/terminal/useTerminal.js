@@ -11,6 +11,7 @@ import {
 } from './terminalInteractions.js';
 import { openTerminalSocket, stillSignedIn } from './terminalSocket.js';
 import { terminalFont, whenGlowFontReady } from './terminalGlow.js';
+import { logToApp } from '../../lib/appLog/browserLog.js';
 
 const log = createLogger('terminal');
 
@@ -79,6 +80,12 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
         sendBind();
         sendSize();
       },
+      onRefused(refusal) {
+        logToApp('warn', `terminal refused: ${refusal.reason || 'unknown'}`, { detail: refusal.message || '' });
+        const sentences = String(refusal.message || 'censaiOS would not open this terminal.').split(/(?<=\.)\s+/);
+        for (const line of sentences) term.writeln(`\x1b[33m${line}\x1b[0m`);
+        term.writeln('\x1b[2mPress Enter to try again.\x1b[0m');
+      },
       onMessage(event, isReconnect) {
         try {
           const message = JSON.parse(event.data);
@@ -86,6 +93,7 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
             log.info('backend connected', { backend: message.backend });
             if (isReconnect) term.writeln(`\x1b[2mReconnected.\x1b[0m`);
             else term.writeln(message.cli ? `Starting ${message.backend}…` : `Connected — ${message.backend}.`);
+            if (message.note && !isReconnect) term.writeln(`\x1b[2m${message.note}\x1b[0m`);
           }
           if (message.type === 'output') {
             if (message.replay) {
@@ -109,9 +117,12 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
       onDrop(attempt, delay) {
         log.info('socket closed, reconnecting', { cwd, attempt, delay });
         if (attempt === 0) term.writeln('\r\n\x1b[2mConnection lost. Reconnecting…\x1b[0m');
-        if (attempt === 3) {
-          stillSignedIn().then((ok) => {
-            if (!ok && termRef.current === term) term.writeln('\x1b[33mYou are signed out. Sign in again and this terminal reconnects.\x1b[0m');
+        if (attempt === 0 || attempt === 3) {
+          // The owner-only refusal now comes from the server itself
+          // (onRefused); here only "signed out" is worth saying.
+          stillSignedIn().then((signedIn) => {
+            if (termRef.current !== term || signedIn || attempt !== 3) return;
+            term.writeln('\x1b[33mYou are signed out. Sign in again and this terminal reconnects.\x1b[0m');
           });
         }
       },

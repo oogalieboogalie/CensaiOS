@@ -50,11 +50,17 @@ describe('schedule tenancy store', () => {
     await deleteOwnedSchedule('schedule-1', owner);
 
     expect(db.query.mock.calls[0]).toEqual([
-      expect.stringMatching(/created_by_user_id=\$1 AND workspace_id=\$2/),
-      [7, 'workspace-1'],
+      expect.stringMatching(/created_by_user_id=\$1 OR \(\$3::boolean AND set_by_agent IS NOT NULL\)\) AND workspace_id=\$2/),
+      [7, 'workspace-1', false],
     ]);
-    expect(db.query.mock.calls[1][1]).toEqual(['inactive', 'schedule-1', 7, 'workspace-1']);
-    expect(db.query.mock.calls[2][1]).toEqual(['schedule-1', 7, 'workspace-1']);
+    expect(db.query.mock.calls[1][1]).toEqual([7, 'workspace-1', false, 'schedule-1', 'inactive']);
+    expect(db.query.mock.calls[2][1]).toEqual([7, 'workspace-1', false, 'schedule-1']);
+  });
+
+  test('board owners and admins also see and manage the wake-ups an agent set', async () => {
+    const db = fakeDb({ rows: [], rowCount: 1 });
+    await getSchedules({ db, userId: 7, workspaceId: 'workspace-1', seeAgentWakeUps: true });
+    expect(db.query.mock.calls[0][1]).toEqual([7, 'workspace-1', true]);
   });
 
   test('claims only ownership-complete due rows', async () => {

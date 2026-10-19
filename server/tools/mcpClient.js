@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { createLogger } from '../logger.js';
 import { TOOL_DEFINITIONS } from './definitions.js';
 import { TOOL_REGISTRY } from './handlers/index.js';
+import { registerHandAddedTool } from './rbac/hostOwnerOnly.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -204,6 +205,8 @@ export async function initializeMcpTools() {
         }
 
         TOOL_DEFINITIONS.push(definition);
+        // Owner-only for teammates unless the server marks it read-only.
+        registerHandAddedTool(namespacedName, { looksOnly: mcpTool.annotations?.readOnlyHint === true });
         TOOL_REGISTRY[namespacedName] = async (agentId, name, args) => {
           log.debug(`Executing namespaced MCP tool: ${namespacedName}`, { args });
           const response = await connection.callTool(mcpTool.name, args);

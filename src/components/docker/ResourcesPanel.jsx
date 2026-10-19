@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DIcon } from './dockerIcons.jsx';
 import { EmptyState, SkeletonRows, ConfirmButton, IconButton, Badge } from './DockerUi.jsx';
 import { dockerApi, formatBytes } from './dockerApi.js';
+import { RunImageForm } from './RunImageForm.jsx';
 
 // Images, volumes and networks share one table layout; each kind supplies
 // how to name a row, what to show beside it and how to remove it.
@@ -64,8 +65,9 @@ function PullBar({ run, busy }) {
   );
 }
 
-export function ResourcesPanel({ kind, rows, error, busy, run, query }) {
+export function ResourcesPanel({ kind, rows, error, busy, run, query, canRun = false, onStarted }) {
   const k = KINDS[kind];
+  const [running, setRunning] = useState(null);
   if (error && !rows) return <div className="dk-inline-error">{error}</div>;
   if (!rows) return <SkeletonRows count={5} />;
   const q = query.toLowerCase();
@@ -97,8 +99,10 @@ export function ResourcesPanel({ kind, rows, error, busy, run, query }) {
           const inUse = r.inUseBy.length > 0;
           const removable = k.canRemove ? k.canRemove(r) : true;
           const busyKey = `rm:${kind}:${k.removeRef(r)}`;
+          const runnable = kind === 'images' && canRun && !r.dangling;
           return (
-            <div key={k.key(r)} className={`dk-row dk-row--static ${inUse ? '' : 'is-idle'}`}>
+            <React.Fragment key={k.key(r)}>
+            <div className={`dk-row dk-row--static ${inUse ? '' : 'is-idle'}`}>
               <div className="dk-row-main">
                 <span className="dk-row-icon"><k.icon size={14} /></span>
                 <div className="dk-row-text">
@@ -111,6 +115,7 @@ export function ResourcesPanel({ kind, rows, error, busy, run, query }) {
               </div>
               <div className="dk-row-ports dk-mono">{k.aside(r)}</div>
               <div className="dk-actions">
+                {runnable && <IconButton icon={<DIcon.Play />} label={`Run ${r.ref}`} onClick={() => setRunning(running === r.ref ? null : r.ref)} />}
                 {removable ? (
                   <ConfirmButton icon={<DIcon.Trash />} label={`Remove ${k.noun}`} busy={busy[busyKey]}
                     ask={{
@@ -124,6 +129,11 @@ export function ResourcesPanel({ kind, rows, error, busy, run, query }) {
                 ) : <IconButton icon={<DIcon.Trash />} label="Built-in networks can't be removed" disabled />}
               </div>
             </div>
+            {runnable && running === r.ref && (
+              <RunImageForm image={r} run={run} busy={busy} onCancel={() => setRunning(null)}
+                onStarted={(result) => { setRunning(null); onStarted?.(result); }} />
+            )}
+            </React.Fragment>
           );
         })}
       </div>

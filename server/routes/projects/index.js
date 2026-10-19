@@ -1,5 +1,6 @@
 import express from 'express';
 import { requireLocalFilesystem } from '../../middleware/runtimeMode.js';
+import { requireSystemAdmin } from '../../security/systemAdmin.js';
 import { 
   getCurrentProject, listAllProjects, updateCurrentProject, openProjectHandler,
   listOpenProjectsHandler,
@@ -14,10 +15,10 @@ projectsRouter.get('/current-project', getCurrentProject);
 projectsRouter.get('/projects', listAllProjects);
 projectsRouter.get('/open-projects', requireLocalFilesystem, listOpenProjectsHandler);
 
-projectsRouter.put('/current-project', requireLocalFilesystem, updateCurrentProject);
-projectsRouter.post('/projects/open', requireLocalFilesystem, openProjectHandler);
+projectsRouter.put('/current-project', requireLocalFilesystem, requireSystemAdmin, updateCurrentProject);
+projectsRouter.post('/projects/open', requireLocalFilesystem, requireSystemAdmin, openProjectHandler);
 
-projectsRouter.post('/project-ideas', requireLocalFilesystem, createProjectIdea);
-projectsRouter.post('/project-handoffs', requireLocalFilesystem, createProjectHandoff);
+projectsRouter.post('/project-ideas', requireLocalFilesystem, requireSystemAdmin, createProjectIdea);
+projectsRouter.post('/project-handoffs', requireLocalFilesystem, requireSystemAdmin, createProjectHandoff);
 
 projectsRouter.use(projectMembershipsRouter);

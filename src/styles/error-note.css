@@ -1,0 +1,48 @@
+/* ErrorNote: a window's error in plain words, with a log snippet and "Send to Claude". */
+.hb-error-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  margin-bottom: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid color-mix(in oklab, var(--ps-red) 45%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--ps-red) 8%, var(--surface));
+  color: var(--ink);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+}
+.hb-error-note-line { color: var(--ps-red); font-weight: 600; }
+.hb-error-note-actions,
+.hb-error-note-details { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-1-5); }
+.hb-error-note-details { flex-direction: column; }
+.hb-error-note-btn {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  padding: var(--space-0-5) var(--space-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+}
+.hb-error-note-btn:hover { background: var(--surface-hover); color: var(--ink); }
+.hb-error-note-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hb-error-note-btn:disabled { cursor: default; opacity: 0.7; }
+.hb-error-note-send { border-color: color-mix(in oklab, var(--accent) 50%, transparent); color: var(--accent); }
+.hb-error-note-log {
+  width: 100%;
+  max-height: 180px;
+  margin: 0;
+  overflow: auto;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}

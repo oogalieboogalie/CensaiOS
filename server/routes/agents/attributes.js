@@ -1,4 +1,5 @@
 import express from 'express';
+import pool from '../../db.js';
 import { requireDb } from './shared.js';
 import { mindsetsRouter } from './mindsets.js';
 import { familyEquipmentRecipesRouter } from './familyEquipmentRecipes.js';
@@ -81,9 +82,13 @@ attributesRouter.post('/agents/:id/compile-prompt-preview', requireDb, async (re
     const attributes = definitions.filter(definition => definition.type !== 'mindset');
     const mindsets = definitions.filter(definition => definition.type === 'mindset');
     const attrMap = Object.fromEntries(attributes.map(definition => [definition.id, definition.value]));
+    const { loadEquippedSkillSets } = await import('../../skillSets/store.js');
+    const { buildSkillSetsPrompt } = await import('../../skillSets/normalize.js');
+    const skillSets = await loadEquippedSkillSets(pool, scope.workspaceId, scope.agentId).catch(() => []);
     const compiled = compilePromptTemplate(template, attrMap)
       + buildOperatingAttributesPrompt(attributes)
-      + buildOperatingMindsetsPrompt(mindsets);
+      + buildOperatingMindsetsPrompt(mindsets)
+      + buildSkillSetsPrompt(skillSets);
     res.json({ compiled, template, workspaceId: scope.workspaceId });
   } catch (err) {
     sendConfigurationError(res, err);

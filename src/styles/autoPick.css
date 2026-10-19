@@ -1,0 +1,37 @@
+/* Diagram 14, model strengths: the Auto-pick switch in the model menu and
+   the "why this model" note above the composer. */
+.hb-autopick-menu { padding-bottom: var(--space-1); margin-bottom: var(--space-1); border-bottom: 1px solid var(--hairline); }
+.hb-autopick-toggle { font-weight: 600; }
+.hb-autopick-state { font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-autopick-toggle[aria-checked="true"] .hb-autopick-state { color: var(--accent-ink); }
+.hb-autopick-sub { padding: 0 var(--space-2) var(--space-1); font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-autopick-list { list-style: none; margin: 0; padding: 0 var(--space-2); display: grid; gap: var(--space-1); }
+.hb-autopick-list li { display: grid; gap: var(--space-0-5); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-autopick-list strong { color: var(--ink); font-weight: 600; }
+.hb-model-chip[data-auto="true"] .hb-model-name::before { content: 'Auto · '; color: var(--accent-ink); }
+
+.hb-autopick-note {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0 var(--space-3) var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+}
+.hb-autopick-head { display: flex; align-items: center; gap: var(--space-2); color: var(--ink); font-size: var(--text-sm); }
+.hb-autopick-head > span { flex: 1; min-width: 0; }
+.hb-autopick-label { font-weight: 600; color: var(--ink); }
+.hb-autopick-hint { color: var(--ink-faint); }
+.hb-autopick-off {
+  all: unset;
+  cursor: pointer;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+}
+.hb-autopick-off:hover,
+.hb-autopick-off:focus-visible { background: var(--surface); color: var(--ink); }

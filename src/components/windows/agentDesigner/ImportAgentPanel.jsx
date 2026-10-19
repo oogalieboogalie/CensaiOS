@@ -1,5 +1,6 @@
 import React from 'react';
 import { api } from '../../../lib/api.js';
+import { HostedAgentImport } from './HostedAgentImport.jsx';
 import { getAgents } from '../../../lib/agentStore.js';
 import {
   AgentImportError,
@@ -10,14 +11,22 @@ import {
 import { uniqueAgentId } from './modelConfig.js';
 import { darkInputStyle, panelHeaderStyle, primaryBtnStyle, formContainerStyle, detailsStyle } from './styles.js';
 import { ImportCard } from './ImportAgentCard.jsx';
+import { ProjectHelpersPull } from './ProjectHelpersPull.jsx';
+import { GithubRepoPull } from './GithubRepoPull.jsx';
 
 const HINTS = {
   'google-adk': 'agent.py with Agent(...) or root_agent.yaml',
-  openai: 'Assistant JSON or an Agents SDK .py file',
-  claude: 'Subagent .md file or Agent SDK JSON',
+  openai: 'Assistant JSON or an Agents SDK .py file, or pull your Assistants from your account',
+  claude: 'Subagent .md file or Agent SDK JSON, or pull every helper from this project',
   grok: 'Agent JSON with a grok model',
   elevenlabs: 'Agent JSON, or pull from your account',
 };
+
+// Platforms whose agents can be pulled straight from the person's account.
+const ACCOUNT_PULLS = [
+  { platform: 'elevenlabs', label: 'ElevenLabs' },
+  { platform: 'openai', label: 'OpenAI' },
+];
 
 const chipStyle = (active) => ({
   all: 'unset', cursor: 'pointer', padding: '6px 11px', borderRadius: 'var(--radius-full)',
@@ -82,20 +91,21 @@ export function ImportAgentPanel({ onCreateAgent, onUpdate }) {
     }
   };
 
-  const pullFromAccount = async () => {
-    setBusy(true);
+  const pullFromAccount = async (source = 'elevenlabs') => {
+    const label = ACCOUNT_PULLS.find((item) => item.platform === source)?.label || source;
+    setBusy(source);
     setError('');
     setStates({});
     try {
       const res = await fetch('/api/agent-import/account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform: 'elevenlabs' }),
+        body: JSON.stringify({ platform: source }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Could not reach ElevenLabs.');
-      if (!data.agents?.length) throw new Error('No agents found in that ElevenLabs account.');
-      setResult({ platform: 'elevenlabs', agents: data.agents });
+      if (!res.ok) throw new Error(data.error || `Could not reach ${label}.`);
+      if (!data.agents?.length) throw new Error(`No agents found in that ${label} account.`);
+      setResult({ platform: source, agents: data.agents });
     } catch (err) {
       setResult(null);
       setError(err.message);
@@ -115,13 +125,46 @@ export function ImportAgentPanel({ onCreateAgent, onUpdate }) {
       onCreateAgent?.(created, { groupIds: [] });
       onUpdate?.({ createdAgentId: created.id, lastCreatedName: created.name, lastImportedFrom: agent.platform });
       setStates(prev => ({ ...prev, [key]: 'done' }));
+      return true;
     } catch (err) {
       setStates(prev => ({ ...prev, [key]: 'error' }));
       setError(`${agent.name}: ${err.message || 'could not be saved'}`);
+      return false;
     }
   };
 
   const doneCount = Object.values(states).filter(s => s === 'done').length;
+  const chips = (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      <button type="button" style={chipStyle(!platform)} onClick={() => setPlatform(null)}>Detect it for me</button>
+      {Object.values(PLATFORMS).map(p => (
+        <button key={p.id} type="button" style={chipStyle(platform === p.id)} onClick={() => setPlatform(p.id)} data-platform={p.id}>{p.label}</button>
+      ))}
+      <button type="button" style={chipStyle(platform === 'hosted')} onClick={() => setPlatform('hosted')} data-platform="hosted">Hosted agent</button>
+    </div>
+  );
+
+  // An agent that lives on a vendor's platform: it joins the board and its
+  // messages go to that vendor with the person's own key.
+  if (platform === 'hosted') {
+    const onHostedImported = (saved, vendor) => {
+      const created = { ...saved, glyph: saved.glyph || saved.name?.[0]?.toUpperCase(), kind: 'ai', agentType: 'core', tool_scopes: saved.tool_scopes };
+      onCreateAgent?.(created, { groupIds: [] });
+      onUpdate?.({ createdAgentId: created.id, lastCreatedName: created.name, lastImportedFrom: `hosted:${vendor.id}` });
+    };
+    return (
+      <div style={detailsStyle}>
+        <div style={formContainerStyle} data-testid="import-agent-panel">
+          <div style={panelHeaderStyle}>
+            <span>Import an agent</span>
+            <span style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>Your own keys · it keeps living on its platform</span>
+          </div>
+          {chips}
+          <HostedAgentImport onImported={onHostedImported} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={detailsStyle}>
@@ -131,12 +174,7 @@ export function ImportAgentPanel({ onCreateAgent, onUpdate }) {
           <span style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>Your own keys · nothing runs from the file</span>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          <button type="button" style={chipStyle(!platform)} onClick={() => setPlatform(null)}>Detect it for me</button>
-          {Object.values(PLATFORMS).map(p => (
-            <button key={p.id} type="button" style={chipStyle(platform === p.id)} onClick={() => setPlatform(p.id)} data-platform={p.id}>{p.label}</button>
-          ))}
-        </div>
+        {chips}
         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>
           {platform ? HINTS[platform] : 'Google ADK, OpenAI, Claude, Grok and ElevenLabs agent files all work. The platform is worked out from the file.'}
         </div>
@@ -160,13 +198,16 @@ export function ImportAgentPanel({ onCreateAgent, onUpdate }) {
           <button type="button" style={primaryBtnStyle} onClick={() => read(text, fileName, platform)} data-testid="import-read">Read it</button>
           <button type="button" style={ghostBtnStyle} onClick={() => fileRef.current?.click()}>Choose a file</button>
           <input ref={fileRef} type="file" accept=".json,.yaml,.yml,.md,.py,.txt" style={{ display: 'none' }} onChange={e => { onFile(e.target.files?.[0]); e.target.value = ''; }} />
-          {(platform === 'elevenlabs' || !platform) && (
-            <button type="button" style={ghostBtnStyle} onClick={pullFromAccount} disabled={busy} data-testid="import-elevenlabs-account">
-              {busy ? 'Asking ElevenLabs...' : 'Pull from my ElevenLabs'}
+          {ACCOUNT_PULLS.filter((item) => !platform || platform === item.platform).map((item) => (
+            <button key={item.platform} type="button" style={ghostBtnStyle} onClick={() => pullFromAccount(item.platform)} disabled={Boolean(busy)} data-testid={`import-${item.platform}-account`}>
+              {busy === item.platform ? `Asking ${item.label}...` : `Pull from my ${item.label}`}
             </button>
-          )}
+          ))}
           {fileName && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>{fileName}</span>}
         </div>
+
+        {platform === 'claude' && <ProjectHelpersPull importAgent={importAgent} />}
+        {(!platform || ['claude', 'google-adk', 'grok'].includes(platform)) && <GithubRepoPull importAgent={importAgent} />}
 
         {error && <div style={{ fontSize: 'var(--text-sm)', color: 'var(--danger)' }} data-testid="import-error">{error}</div>}
 

@@ -1,5 +1,22 @@
 import { truncate, readPackageJson, formatResult, runCommand, resolveLocalBin, resolveRunnerContext, resolveLinterContext } from './runnerUtils.js';
 
+// The runner hands back { stdout, stderr, code } and throws only when it could
+// not run at all, so a failing exit code has to be read, not caught.
+async function outcome({ passed, failed, timedOut }, command, args, options) {
+  try {
+    const { stdout, stderr, code = 0 } = await runCommand(command, args, options);
+    return code === 0
+      ? formatResult(passed, 0, truncate(stdout), truncate(stderr))
+      : formatResult(`${failed} (exit ${code})`, code, truncate(stdout), truncate(stderr));
+  } catch (err) {
+    if (err.code === 'ETIMEDOUT') return timedOut;
+    const exitCode = err.code ?? err.status ?? 1;
+    return formatResult(`${failed} (exit ${exitCode})`, exitCode, truncate(err.stdout || ''), truncate(err.stderr || ''));
+  }
+}
+
+const LINT_TIMEOUT = 'run_linter timed out after 60000ms.';
+
 export async function handleRunnerTool(agentId, name, args, context = {}) {
   switch (name) {
     case 'run_tests': {
@@ -11,14 +28,9 @@ export async function handleRunnerTool(agentId, name, args, context = {}) {
       if (!hasTestScript) return 'No test script found in package.json. Add a "test" script to enable this tool.';
       const npmArgs = ['test'];
       if (args.filter) npmArgs.push('--', args.filter);
-      try {
-        const { stdout, stderr } = await runCommand('npm', npmArgs, { cwd, timeout: timeoutMs });
-        return formatResult('TEST RUN — SUCCESS', 0, truncate(stdout), truncate(stderr));
-      } catch (err) {
-        if (err.code === 'ETIMEDOUT') return `run_tests timed out after ${timeoutMs}ms.`;
-        const exitCode = err.code ?? err.status ?? 1;
-        return formatResult(`TEST RUN — FAILED (exit ${exitCode})`, exitCode, truncate(err.stdout || ''), truncate(err.stderr || ''));
-      }
+      return outcome({
+        passed: 'TEST RUN — SUCCESS', failed: 'TEST RUN — FAILED', timedOut: `run_tests timed out after ${timeoutMs}ms.`,
+      }, 'npm', npmArgs, { cwd, timeout: timeoutMs });
     }
 
     case 'run_linter': {
@@ -29,36 +41,21 @@ export async function handleRunnerTool(agentId, name, args, context = {}) {
       const eslintBin = await resolveLocalBin('eslint', cwd);
 
       if (lintPath && lintPath !== '.' && eslintBin) {
-        try {
-          const { stdout, stderr } = await runCommand(eslintBin, [lintPath], { cwd, timeout: 60000 });
-          return formatResult('LINT (eslint scoped) — PASSED', 0, truncate(stdout), truncate(stderr));
-        } catch (err) {
-          if (err.code === 'ETIMEDOUT') return 'run_linter timed out after 60000ms.';
-          const exitCode = err.code ?? err.status ?? 1;
-          return formatResult(`LINT (eslint scoped) — ISSUES FOUND (exit ${exitCode})`, exitCode, truncate(err.stdout || ''), truncate(err.stderr || ''));
-        }
+        return outcome({
+          passed: 'LINT (eslint scoped) — PASSED', failed: 'LINT (eslint scoped) — ISSUES FOUND', timedOut: LINT_TIMEOUT,
+        }, eslintBin, [lintPath], { cwd, timeout: 60000 });
       }
 
       if (hasLintScript) {
-        try {
-          const { stdout, stderr } = await runCommand('npm', ['run', 'lint'], { cwd, timeout: 60000 });
-          return formatResult('LINT — PASSED', 0, truncate(stdout), truncate(stderr));
-        } catch (err) {
-          if (err.code === 'ETIMEDOUT') return 'run_linter timed out after 60000ms.';
-          const exitCode = err.code ?? err.status ?? 1;
-          return formatResult(`LINT — ISSUES FOUND (exit ${exitCode})`, exitCode, truncate(err.stdout || ''), truncate(err.stderr || ''));
-        }
+        return outcome({
+          passed: 'LINT — PASSED', failed: 'LINT — ISSUES FOUND', timedOut: LINT_TIMEOUT,
+        }, 'npm', ['run', 'lint'], { cwd, timeout: 60000 });
       }
 
       if (eslintBin) {
-        try {
-          const { stdout, stderr } = await runCommand(eslintBin, [lintPath], { cwd, timeout: 60000 });
-          return formatResult('LINT (eslint) — PASSED', 0, truncate(stdout), truncate(stderr));
-        } catch (err) {
-          if (err.code === 'ETIMEDOUT') return 'run_linter timed out after 60000ms.';
-          const exitCode = err.code ?? err.status ?? 1;
-          return formatResult(`LINT (eslint) — ISSUES FOUND (exit ${exitCode})`, exitCode, truncate(err.stdout || ''), truncate(err.stderr || ''));
-        }
+        return outcome({
+          passed: 'LINT (eslint) — PASSED', failed: 'LINT (eslint) — ISSUES FOUND', timedOut: LINT_TIMEOUT,
+        }, eslintBin, [lintPath], { cwd, timeout: 60000 });
       }
 
       return 'No lint script found in package.json and eslint is not installed in node_modules. ' +

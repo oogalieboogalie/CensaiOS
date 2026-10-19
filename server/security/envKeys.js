@@ -29,6 +29,7 @@ export const ENV_KEY_NAMES = Object.freeze({
   tavily: ['TAVILY_API_KEY'],
   figma: ['FIGMA_API_TOKEN', 'FIGMA_TOKEN', 'FIGMA_ACCESS_TOKEN'],
   github: ['GITHUB_TOKEN', 'GH_TOKEN', 'GITHUB_PAT'],
+  langsmith: ['LANGSMITH_API_KEY', 'LANGGRAPH_API_KEY', 'LANGCHAIN_API_KEY'],
 });
 
 // Stand-ins that mean "no key here", never a real key.

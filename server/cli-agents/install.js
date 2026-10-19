@@ -4,7 +4,7 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { createLogger } from '../logger.js';
 import { CLI_ADAPTERS, getAdapter } from './adapters/index.js';
-import { cliDataRoot } from './paths.js';
+import { agentHome, cliDataRoot } from './paths.js';
 
 /**
  * Finding, versioning and installing coding CLIs.
@@ -57,6 +57,7 @@ function findOnPath(binary, env = process.env) {
  * That sidesteps Windows .cmd shims, which would need a shell and quoting.
  */
 function managedEntry(adapter, env = process.env) {
+  if (!adapter.npmPackage) return null;
   const pkgDir = path.join(managedPrefix(env), 'node_modules', ...adapter.npmPackage.split('/'));
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8'));
@@ -84,7 +85,9 @@ export function resolveCli(id, env = process.env) {
   const entry = managedEntry(adapter, env);
   if (entry) return asLaunch(entry, 'managed');
   const onPath = findOnPath(adapter.binary, env);
-  return onPath ? asLaunch(onPath, 'path') : null;
+  if (onPath) return asLaunch(onPath, 'path');
+  const installed = (adapter.installedAt?.(env) || []).find(isFile);
+  return installed ? asLaunch(installed, 'installer') : null;
 }
 
 function run(command, args, { timeoutMs, env, onLine, shell = false } = {}) {
@@ -153,6 +156,8 @@ export function installCli(id, env = process.env) {
   if (!adapter) return Promise.reject(new Error('Unknown CLI.'));
   const existing = installs.get(id);
   if (existing?.status === 'installing') return existing.promise;
+  if (!adapter.npmPackage && adapter.installScript) return installWithScript(adapter, env);
+  if (!adapter.npmPackage) return Promise.reject(new Error(adapter.installHint || `${adapter.label} is not installed on this computer.`));
 
   const state = { status: 'installing', progress: 0.05, phase: 'Resolving packages', log: [], error: null, startedAt: Date.now() };
   const prefix = managedPrefix(env);
@@ -199,6 +204,37 @@ export function installCli(id, env = process.env) {
   })();
   state.promise.catch(() => {});
   installs.set(id, state);
+  return state.promise;
+}
+
+/**
+ * A CLI that is not on npm (Grok) installs with its maker's own one-line
+ * installer, run as the person would run it, with the lasting home (the
+ * state volume in Docker) so it is still there after the next rebuild.
+ */
+function installWithScript(adapter, env) {
+  const state = { status: 'installing', progress: 0.1, phase: `Running ${adapter.vendor}'s installer`, log: [], error: null, startedAt: Date.now() };
+  const win = process.platform === 'win32';
+  const home = agentHome(env);
+  const runEnv = { ...env, ...(home ? { HOME: home } : {}) };
+  if (home) fs.mkdirSync(home, { recursive: true });
+  state.promise = (async () => {
+    log.info('installing cli with its installer', { id: adapter.id });
+    const { code, out } = await run(win ? 'powershell.exe' : 'bash', win ? ['-NoProfile', '-Command', adapter.installScript.windows] : ['-c', adapter.installScript.posix], {
+      timeoutMs: INSTALL_TIMEOUT_MS, env: runEnv, onLine: (line) => { state.log.push(line.slice(0, 200)); if (state.log.length > 60) state.log.shift(); },
+    });
+    const detected = await detectVersion(adapter.id, env);
+    if (code !== 0 || !detected.installed) {
+      state.status = 'error';
+      state.error = out.split(/\r?\n/).filter(Boolean).slice(-4).join(' ') || `installer exited with ${code}`;
+      log.warn('cli installer failed', { id: adapter.id, code });
+      throw new Error(`Could not install ${adapter.label}: ${state.error}. ${adapter.installHint}`);
+    }
+    Object.assign(state, { status: 'done', progress: 1, phase: `Installed ${detected.version || ''}`.trim() });
+    return detected;
+  })();
+  state.promise.catch(() => {});
+  installs.set(adapter.id, state);
   return state.promise;
 }
 

@@ -5,8 +5,18 @@ import { useWorkspaceStore } from '../../lib/store.js';
 import { canvasWorkspaceSnapshot } from '../../lib/workspace/canvasWorkspaceSnapshot.js';
 import { notifyRemoteHistory } from '../../lib/workspace/historyMerge.js';
 import { SYNCED_KEYS, isDocEmpty, readDocState, writeStateToDoc } from '../../lib/collaboration/yCanvasSync.js';
+import { setListMergeReporter } from '../../lib/collaboration/windowLists.js';
+import { logToApp } from '../../lib/appLog/browserLog.js';
 
 const LOCAL_ORIGIN = 'censai-local-store';
+
+// One line in the app log when two people's list items (to-dos, Idea Pad
+// bullets) were merged.
+const LIST_NAMES = { items: ['to-dos', 'todos'], ideas: ['Idea Pad bullets', 'idea-pad'] };
+setListMergeReporter(({ field, kept }) => {
+  const [what, where] = LIST_NAMES[field] || ['list items', 'board'];
+  logToApp('info', `board sync: merged ${what}, kept ${kept} added by someone else at the same moment`, { where });
+});
 
 export function hocuspocusUrl(workspaceId, location = globalThis.location, { guest = false } = {}) {
   const protocol = location?.protocol === 'https:' ? 'wss:' : 'ws:';

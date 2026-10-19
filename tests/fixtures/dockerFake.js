@@ -189,6 +189,15 @@ export function createFakeDocker({ daemon = 'up', state, live = false } = {}) {
         st.images = st.images.filter((i) => `${i[1]}:${i[2]}` !== target && i[0] !== target);
         return before === st.images.length ? fail(`Error response from daemon: No such image: ${target}`) : ok(`Untagged: ${target}\n`);
       }
+      case 'run': {
+        const name = rest.includes('--name') ? rest[rest.indexOf('--name') + 1] : `fake_${st.containers.length}`;
+        if (st.containers.some((c) => c.Names === name)) return fail(`docker: Error response from daemon: Conflict. The container name "/${name}" is already in use.`);
+        if (!st.images.some((i) => `${i[1]}:${i[2]}` === target || i[1] === target)) return fail(`Unable to find image '${target}' locally`, 125);
+        const ports = rest.flatMap((a, i) => (rest[i - 1] === '-p' ? [`0.0.0.0:${a.split(':')[0]}->${a.split(':')[1]}/tcp`] : [])).join(', ');
+        const id = hex(String(st.containers.length % 10));
+        st.containers.push({ ...st.containers[0], ID: id, Names: name, Image: target, State: 'running', Status: 'Up Less than a second', Ports: ports, Networks: 'bridge', Mounts: '', Labels: '', RunningFor: 'Less than a second ago' });
+        return ok(`${id}\n`);
+      }
       case 'pull': st.images.push([Math.random().toString(16).slice(2, 14), target.split(':')[0], target.split(':')[1] || 'latest', 'Less than a second ago', '42.1MB']); return ok(`docker.io/library/${target}\n`);
       case 'volume':
         if (rest[0] === 'prune') return ok('Total reclaimed space: 220MB\n');

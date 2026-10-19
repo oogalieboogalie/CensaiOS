@@ -112,13 +112,21 @@ test.each([
     status: 503,
   }))],
   ['fetch failure', () => Promise.reject(new Error('socket internals leaked'))],
-])('shows one compact honest notice for %s', async (_label, result) => {
+])('says nothing in the chat for %s', async (_label, result) => {
   global.fetch.mockImplementation(result);
   render(<FreeAiAllowanceNotice workspaceId="workspace-active" refreshKey={0} />);
 
-  const notice = await screen.findByTestId('free-ai-allowance');
-  expect(notice).toHaveTextContent('Free AI allowance is temporarily unavailable.');
-  expect(notice).not.toHaveTextContent(/password|socket|database/i);
+  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  await act(async () => {});
+  expect(screen.queryByTestId('free-ai-allowance')).not.toBeInTheDocument();
+  expect(document.body).not.toHaveTextContent(/unavailable|password|socket|database/i);
+});
+
+test('a chat that never uses the allowance does not ask for it', async () => {
+  render(<FreeAiAllowanceNotice workspaceId="workspace-active" refreshKey={0} skip />);
+  await act(async () => {});
+  expect(global.fetch).not.toHaveBeenCalled();
+  expect(screen.queryByTestId('free-ai-allowance')).not.toBeInTheDocument();
 });
 
 test('discards an in-flight result from the previous workspace', async () => {

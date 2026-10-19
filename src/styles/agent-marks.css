@@ -1,0 +1,65 @@
+/* Agent marks: every agent wears the censaiOS Grid mark like Censai does,
+ * in its own colour (src/components/agent/AgentMarkAvatar.jsx). Censai keeps
+ * Ultem. The family colours sit well apart on the wheel and away from Ultem
+ * (hue 78) so they tell apart at 16 px; deeper on paper so the thin ring
+ * still reads. Agents people made use their own hue via --agent.
+ */
+
+:root {
+  --family-architect: oklch(0.6 0.17 355);
+  --family-atlas: oklch(0.58 0.16 255);
+  --family-genesis: oklch(0.58 0.17 305);
+  --family-nexus: oklch(0.6 0.12 175);
+  --family-foundation: oklch(0.62 0.12 220);
+  --family-echo: oklch(0.62 0.16 135);
+  --family-phoenix: oklch(0.62 0.18 35);
+}
+
+[data-theme="dark"] {
+  --family-architect: oklch(0.74 0.15 355);
+  --family-atlas: oklch(0.72 0.14 255);
+  --family-genesis: oklch(0.72 0.15 305);
+  --family-nexus: oklch(0.76 0.12 175);
+  --family-foundation: oklch(0.78 0.11 220);
+  --family-echo: oklch(0.78 0.16 135);
+  --family-phoenix: oklch(0.72 0.17 35);
+}
+
+.hb-agent-mark {
+  --mark: var(--agent);
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--glass-bg-strong);
+  border-style: solid;
+  border-color: var(--mark);
+  box-sizing: border-box;
+  user-select: none;
+}
+.hb-agent-mark[data-ring="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--mark); }
+
+.hb-agent-mark[data-family-mark="censai"] { --mark: var(--brand-ultem); }
+.hb-agent-mark[data-family-mark="architect"] { --mark: var(--family-architect); }
+.hb-agent-mark[data-family-mark="atlas"] { --mark: var(--family-atlas); }
+.hb-agent-mark[data-family-mark="genesis"] { --mark: var(--family-genesis); }
+.hb-agent-mark[data-family-mark="nexus"] { --mark: var(--family-nexus); }
+.hb-agent-mark[data-family-mark="foundation"] { --mark: var(--family-foundation); }
+.hb-agent-mark[data-family-mark="echo"] { --mark: var(--family-echo); }
+.hb-agent-mark[data-family-mark="phoenix"] { --mark: var(--family-phoenix); }
+
+/* Hosted agents: the vendor's mark in a corner badge (src/components/agent/HostedBadge.jsx). */
+.hb-hosted-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: var(--elevation-1);
+  pointer-events: none;
+}

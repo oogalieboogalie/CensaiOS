@@ -67,9 +67,18 @@ export function requireFeatureFlag(featureName, options = {}) {
   };
 }
 
+/**
+ * CENSAI_LOCAL_FILES=off turns this computer's files, terminal and tools off
+ * in every mode. The home-server install sets it (scripts/home-server.sh):
+ * the box is shared, so the board stays board-only unless its owner opts in.
+ */
+export function localFilesSwitchedOff(env = process.env) {
+  return String(env.CENSAI_LOCAL_FILES || '').trim().toLowerCase() === 'off';
+}
+
 /** Same rule as requireLocalFilesystem, for code that runs outside a route. */
 export function localFilesystemAllowed(mode = getRuntimeMode()) {
-  if (mode === RUNTIME_MODES.CLOUD_SAAS) return false;
+  if (mode === RUNTIME_MODES.CLOUD_SAAS || localFilesSwitchedOff()) return false;
   if (mode === RUNTIME_MODES.PRIVATE_SERVER) return process.env.HOMEBASE_ALLOW_LOCAL_FILES === 'true';
   return true;
 }
@@ -80,6 +89,13 @@ export function requireLocalFilesystem(req, res, next) {
   if (mode === RUNTIME_MODES.CLOUD_SAAS) {
     return res.status(403).json({
       error: 'Local filesystem access is disabled in cloud_saas mode',
+      mode,
+    });
+  }
+
+  if (localFilesSwitchedOff()) {
+    return res.status(403).json({
+      error: "This censaiOS is shared, so its computer's files and tools are switched off (CENSAI_LOCAL_FILES=off).",
       mode,
     });
   }

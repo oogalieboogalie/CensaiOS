@@ -8,7 +8,7 @@ import { ChangesPanel } from './ChangesPanel.jsx';
 import { cliAgentsApi } from './cliAgentsApi.js';
 import { refreshCliRoster } from './useCliRoster.js';
 
-const CLI_LABEL = { claudecode: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI' };
+const CLI_LABEL = { claudecode: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI', grok: 'Grok' };
 
 function formatCost(usd) {
   if (typeof usd !== 'number') return null;
@@ -165,7 +165,7 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
       </div>
       <div className="ac-task-body">
         {tab === 'transcript' && <Transcript items={items} onDecide={decide} onOpenFile={openFile} live={live && task.status !== 'needs_approval'} />}
-        {tab === 'changes' && <ChangesPanel changes={changes} onOpenFile={openFile} />}
+        {tab === 'changes' && <ChangesPanel changes={changes} onOpenFile={openFile} onOpenViewer={() => onSpawn?.('gitDiff', { taskId, title: `Diff · ${task.title}` })} />}
         {tab === 'raw' && <RawView taskId={taskId} live={live} />}
       </div>
       {actionError && <div className="ac-error ac-error--bar" role="alert"><Icon.Alert size={13} />{actionError}</div>}

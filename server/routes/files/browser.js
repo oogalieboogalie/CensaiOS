@@ -2,11 +2,20 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { requireLocalFilesystem } from '../../middleware/runtimeMode.js';
+import { requireSystemAdmin } from '../../security/systemAdmin.js';
 import {
   readCurrentProject, validateProjectPath, getDirectoryTree, projectRootContaining,
   shownPathFor, shownParentFor, folderErrorMessage, isUnseenWindowsFolder,
 } from './pathUtils.js';
 import { resolveProjectPathForRuntime } from '../../workspaces/shared.js';
+import { createLogger } from '../../logger.js';
+import { walkFiles, RESULT_LIMIT } from './limitedWalk.js';
+
+const log = createLogger('files');
+
+function logIfCapped(what, root, capped, started) {
+  if (capped) log.info(`${what}: stopped at the first ${RESULT_LIMIT} in ${root} (${Date.now() - started} ms)`);
+}
 
 export const browserRouter = express.Router();
 
@@ -49,21 +58,11 @@ browserRouter.get('/files/search', requireLocalFilesystem, async (req, res) => {
   if (!query) return res.status(400).json({ error: 'Missing query' });
   try {
     const root = await searchRoot(req.query.path);
-    const results = [];
-    const walk = async (dir) => {
-      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          await walk(fullPath);
-        } else if (entry.name.toLowerCase().includes(query.toLowerCase())) {
-          results.push({ name: entry.name, path: fullPath, relativePath: path.relative(root, fullPath) });
-        }
-      }
-    };
-    await walk(root);
-    res.json({ results: results.slice(0, 100) });
+    const needle = String(query).toLowerCase();
+    const started = Date.now();
+    const { results, capped } = await walkFiles(root, (entry) => entry.name.toLowerCase().includes(needle));
+    logIfCapped('search', root, capped, started);
+    res.json({ results, capped, limit: RESULT_LIMIT });
   } catch (err) {
     res.status(err.message?.startsWith('Access denied') ? 403 : 500).json({ error: err.message });
   }
@@ -75,24 +74,15 @@ browserRouter.get('/files/backlinks', requireLocalFilesystem, async (req, res) =
   try {
     const root = (await projectRootContaining(targetPath)) || await searchRoot();
     const targetName = path.basename(targetPath).replace(/\.md$/, '');
-    const results = [];
-    const walk = async (dir) => {
-      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          await walk(fullPath);
-        } else if (entry.name.endsWith('.md') && fullPath !== path.resolve(targetPath)) {
-          const content = await fs.promises.readFile(fullPath, 'utf8');
-          if (content.includes(`[[${targetName}]]`)) {
-            results.push({ name: entry.name, path: fullPath, relativePath: path.relative(root, fullPath) });
-          }
-        }
-      }
-    };
-    await walk(root);
-    res.json({ results });
+    const target = path.resolve(targetPath);
+    const started = Date.now();
+    const { results, capped } = await walkFiles(root, async (entry, fullPath) => {
+      if (!entry.name.endsWith('.md') || fullPath === target) return false;
+      const content = await fs.promises.readFile(fullPath, 'utf8').catch(() => '');
+      return content.includes(`[[${targetName}]]`);
+    });
+    logIfCapped('backlinks', root, capped, started);
+    res.json({ results, capped, limit: RESULT_LIMIT });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -138,7 +128,7 @@ browserRouter.get('/files/image', requireLocalFilesystem, async (req, res) => {
   }
 });
 
-browserRouter.put('/files/content', requireLocalFilesystem, async (req, res) => {
+browserRouter.put('/files/content', requireLocalFilesystem, requireSystemAdmin, async (req, res) => {
   const { path: filePath, content } = req.body;
   if (!filePath || typeof content !== 'string') return res.status(400).json({ error: 'Missing path or content in body' });
   try {

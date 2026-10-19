@@ -2,10 +2,16 @@
 import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { agentMemoryApi } from '../../lib/agentMemory/api.js';
-import { AddFactForm, EpisodeList, FactCard, IdentityEditor } from './AgentMemoryParts.jsx';
+import { AddFactForm, FactCard, IdentityEditor } from './AgentMemoryParts.jsx';
+import { ConversationList } from './AgentMemoryConversations.jsx';
+import { ConnectionsTab, LookBackTab } from './AgentMemoryGraph.jsx';
+import { ShelvesTab } from './AgentMemoryShelves.jsx';
 
 const TABS = [
+  { id: 'shelves', label: 'Shelves' },
   { id: 'facts', label: 'What it knows' },
+  { id: 'links', label: 'Connections' },
+  { id: 'asof', label: 'Look back' },
   { id: 'identity', label: 'Who it is' },
   { id: 'episodes', label: 'Past conversations' },
 ];
@@ -13,11 +19,13 @@ const TABS = [
 /**
  * "Memory": what this agent remembers for you. Facts carry two dates (when
  * it became true, when the agent learned it) and every earlier version stays
- * in the history. Who it is stays the same when its AI model changes.
+ * in the history. Connections between things (the knowledge graph) carry the
+ * same dates, and "Look back" shows what was true on any day. Who it is stays
+ * the same when its AI model changes.
  */
 export function AgentMemoryPanel({ agent, onClose }) {
   const [data, setData] = React.useState(null);
-  const [tab, setTab] = React.useState('facts');
+  const [tab, setTab] = React.useState('shelves');
   const [error, setError] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   const agentId = agent.id;
@@ -80,6 +88,9 @@ export function AgentMemoryPanel({ agent, onClose }) {
               </section>
             </>
           )}
+          {tab === 'shelves' && <ShelvesTab agent={agent} data={data} busy={busy} onSave={saveFact} />}
+          {tab === 'links' && <ConnectionsTab agent={agent} data={data} busy={busy} act={act} />}
+          {tab === 'asof' && <LookBackTab agent={agent} />}
           {tab === 'identity' && (
             <section className="hb-aep-section">
               <IdentityEditor agent={agent} identity={data.identity} versions={data.identityVersions} busy={busy}
@@ -88,7 +99,7 @@ export function AgentMemoryPanel({ agent, onClose }) {
           )}
           {tab === 'episodes' && (
             <section className="hb-aep-section">
-              <EpisodeList agentId={agentId} agentName={agent.name} initial={data.episodes} />
+              <ConversationList agentId={agentId} agentName={agent.name} episodes={data.episodes} />
             </section>
           )}
         </div>

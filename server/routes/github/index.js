@@ -6,6 +6,7 @@ import { searchTree } from './search.js';
 import { createIssue, listIssues, addLabels } from './issues.js';
 import { listPulls, getPullDetails, mergePull } from './pulls.js';
 import { mergeDeskRouter } from './mergeDesk.js';
+import { reviewTeamRouter } from './reviewTeam.js';
 import { resourceRateLimiter } from '../../middleware/standardRateLimits.js';
 
 export const githubRouter = express.Router();
@@ -24,3 +25,4 @@ githubRouter.put('/pulls/merge', mergePull);
 githubRouter.get('/browse', browseDir);
 githubRouter.get('/search', searchTree);
 githubRouter.use(mergeDeskRouter);
+githubRouter.use(reviewTeamRouter);

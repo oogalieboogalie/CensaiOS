@@ -175,6 +175,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     label: 'Dock app',
     componentName: 'DockAppWindow',
     componentPath: 'src/components/windows/dockapp/index.jsx',
+    header: { mode: 'strip', fixed: true }, // the docked app covers the body; keep the header above it
     defaultSize: { w: 960, h: 600 },
     lab: {"title":"Dock app","props":{}},
     moduleMenu: {"show":true,"status":"ready","order":62,"icon":"Dock","label":"Dock app","hint":"Put a real desktop app, like a game client or Discord, on the canvas"},

@@ -1,0 +1,8 @@
+{
+  "total": 3,
+  "itemSummaries": [
+    { "itemId": "v1|110000000001|0", "title": "Lenovo ThinkPad T14 Gen 1 Ryzen 5 16GB - No Bios Password", "price": { "value": "189.00", "currency": "USD" }, "currentBidPrice": { "value": "142.50", "currency": "USD" }, "bidCount": 11, "buyingOptions": ["AUCTION"], "itemEndDate": "2026-10-20T03:10:00.000Z", "image": { "imageUrl": "https://i.ebayimg.com/images/g/fake/s-l225.jpg" }, "itemWebUrl": "https://www.ebay.com/itm/110000000001" },
+    { "itemId": "v1|110000000002|0", "title": "Lenovo Yoga 7i - BIOS LOCKED for parts", "price": { "value": "79.99", "currency": "USD" }, "buyingOptions": ["FIXED_PRICE"], "itemEndDate": "2026-11-01T00:00:00.000Z", "thumbnailImages": [{ "imageUrl": "https://i.ebayimg.com/images/g/fake2/s-l225.jpg" }], "itemWebUrl": "https://evil.example.com/itm/2" },
+    { "title": "Row with no item id" }
+  ]
+}

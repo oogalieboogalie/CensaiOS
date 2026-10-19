@@ -3,6 +3,7 @@ import { WindowTitle } from './Windows.jsx';
 import { Icon } from './Icons.jsx';
 import { useToolchains } from './toolchain/useToolchains.js';
 import { ToolchainCard } from './toolchain/ToolchainCard.jsx';
+import { YorName } from './yorware/YorSecurity.jsx';
 
 export function ToolchainSettingsWindow() {
   const {
@@ -28,6 +29,7 @@ export function ToolchainSettingsWindow() {
         <span className={`tc-sandbox-pill ${sandboxUp === true ? 'tc-sandbox-pill--up' : sandboxUp === false ? 'tc-sandbox-pill--down' : ''}`}>
           {sandboxUp === true ? 'Sandbox running' : sandboxUp === false ? 'Sandbox offline' : (detectNote || 'Checking…')}
         </span>
+        <YorName id="bombadil" />
       </WindowTitle>
 
       {/* ── Rebuild progress panel ── */}

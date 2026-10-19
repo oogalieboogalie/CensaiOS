@@ -1,0 +1,94 @@
+/* Auction Watcher window and its "new match" toasts. Tokens only. */
+.hb-aw {
+  flex: 1; min-height: 0; display: flex; background: var(--surface); color: var(--ink);
+  font-family: var(--font-sans); font-size: var(--text-sm); container-type: inline-size;
+}
+.hb-aw-main { flex: 1; min-width: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--space-5) var(--space-5); }
+.hb-aw-h2 { margin: 0; font-size: var(--text-lg); font-weight: 650; letter-spacing: -0.01em; }
+.hb-aw-faint { color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-aw-label { font-family: var(--font-label); font-size: var(--text-xs); text-transform: var(--label-case); color: var(--ink-faint); }
+.hb-aw-empty { margin: auto; max-width: 360px; text-align: center; color: var(--ink-soft); line-height: 1.5; }
+.hb-aw-alert { color: var(--danger); background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: var(--space-1-5) var(--space-2-5); }
+.hb-aw-note { color: var(--ink-soft); background: var(--surface-2); border-radius: var(--radius-lg); padding: var(--space-1-5) var(--space-2-5); }
+
+.hb-aw-btn {
+  all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1-5);
+  min-height: var(--control-h); padding: 0 var(--space-3); border-radius: var(--radius-full); border: 1px solid var(--hairline);
+  background: var(--surface); color: var(--ink); font-size: var(--text-xs); font-weight: 500; cursor: pointer; white-space: nowrap;
+}
+.hb-aw-btn:hover { background: var(--surface-2); }
+.hb-aw-btn:focus-visible { outline: 2px solid var(--accent-soft); border-color: var(--accent-line); }
+.hb-aw-btn[data-primary="true"] { background: var(--accent); border-color: transparent; color: var(--accent-contrast); font-weight: 600; }
+.hb-aw-btn[data-danger="true"] { color: var(--danger); }
+.hb-aw-btn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); font-weight: 600; }
+.hb-aw-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.hb-aw-link { all: unset; cursor: pointer; align-self: flex-start; font-size: var(--text-xs); color: var(--accent-text); }
+.hb-aw-link:hover { text-decoration: underline; }
+.hb-aw-input {
+  box-sizing: border-box; width: 100%; min-height: var(--control-h); padding: var(--space-1) var(--space-2-5);
+  border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-2); color: var(--ink);
+  font: inherit; font-size: var(--text-sm);
+}
+.hb-aw-input:focus { outline: none; border-color: var(--accent-line); }
+select.hb-aw-input { width: auto; }
+
+/* Left: the saved watches. */
+.hb-aw-list { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3); border-right: 1px solid var(--hairline); overflow: auto; }
+.hb-aw-list > .hb-aw-btn { margin-bottom: var(--space-2); }
+.hb-aw-watch { all: unset; box-sizing: border-box; position: relative; display: flex; flex-direction: column; gap: var(--space-0-5); padding: var(--space-2) var(--space-2-5); border-radius: var(--radius-md); cursor: pointer; }
+.hb-aw-watch:hover { background: var(--surface-2); }
+.hb-aw-watch[aria-current] { background: var(--accent-soft); }
+.hb-aw-watch-q { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: var(--space-6); }
+.hb-aw-count { position: absolute; top: var(--space-2); right: var(--space-2); min-width: 18px; padding: 0 var(--space-1); border-radius: var(--radius-full); background: var(--accent); color: var(--accent-contrast); font-size: var(--text-xs); font-weight: 700; text-align: center; }
+
+/* The new-watch form. */
+.hb-aw-form { width: 100%; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-3); padding-top: var(--space-4); }
+.hb-aw-form-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.hb-aw-seg { display: inline-flex; gap: var(--space-1); }
+.hb-aw-field { display: flex; flex-direction: column; gap: var(--space-1); flex: 1; }
+.hb-aw-row { display: flex; gap: var(--space-3); }
+.hb-aw-actions { display: flex; gap: var(--space-2); }
+.hb-aw-fine { margin: 0; color: var(--ink-faint); font-size: var(--text-xs); line-height: 1.5; }
+.hb-aw-key { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2-5) var(--space-3); border: 1px dashed var(--hairline-strong); border-radius: var(--radius-xl); background: var(--surface-2); color: var(--ink-soft); line-height: 1.45; }
+.hb-aw-key-row { display: flex; gap: var(--space-2); }
+
+/* One watch: its header and its matches. */
+.hb-aw-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--hairline); }
+.hb-aw-head-main { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: var(--space-0-5); }
+.hb-aw-head-actions { display: flex; gap: var(--space-1-5); align-items: center; flex-wrap: wrap; }
+.hb-aw-head > .hb-aw-alert, .hb-aw-head > .hb-aw-key { flex-basis: 100%; }
+.hb-aw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-3); }
+
+.hb-aw-card { display: grid; grid-template-columns: 112px 1fr; gap: var(--space-3); padding: var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-xl); background: var(--surface); box-shadow: var(--elevation-1); }
+.hb-aw-card[data-ended] { opacity: 0.55; }
+.hb-aw-pic { all: unset; position: relative; width: 112px; height: 112px; border-radius: var(--radius-lg); overflow: hidden; background: var(--surface-2); cursor: pointer; display: grid; place-items: center; color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-aw-pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hb-aw-new { position: absolute; top: var(--space-1); left: var(--space-1); padding: 0 var(--space-1-5); border-radius: var(--radius-full); background: var(--accent); color: var(--accent-contrast); font-size: var(--text-xs); font-weight: 700; }
+.hb-aw-card-body { min-width: 0; display: flex; flex-direction: column; gap: var(--space-1-5); }
+.hb-aw-title { font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hb-aw-meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2-5); color: var(--ink-soft); font-size: var(--text-xs); align-items: baseline; }
+.hb-aw-price { font-size: var(--text-base); color: var(--ink); }
+.hb-aw-meta [data-soon] { color: var(--warning); font-weight: 600; }
+.hb-aw-flag { color: var(--danger); font-weight: 600; font-size: var(--text-xs); }
+.hb-aw-insights { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2); border-radius: var(--radius-md); background: var(--surface-2); font-size: var(--text-xs); }
+.hb-aw-verdict { font-weight: 600; color: var(--ink); }
+.hb-aw-pc { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.hb-aw-pc ul { margin: 0; padding-left: var(--space-3-5); display: flex; flex-direction: column; gap: var(--space-0-5); }
+.hb-aw-pc li[data-tone="good"]::marker { color: var(--success); }
+.hb-aw-pc li[data-tone="bad"]::marker { color: var(--danger); }
+.hb-aw-sold { font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-aw-card-actions { display: flex; flex-wrap: wrap; gap: var(--space-1-5); margin-top: auto; }
+
+@container (max-width: 640px) {
+  .hb-aw-list { width: 160px; }
+  .hb-aw-grid { grid-template-columns: 1fr; }
+}
+
+/* Board-wide toasts. */
+.hb-aw-toasts { position: fixed; right: var(--space-4); bottom: var(--space-16); z-index: 1300; display: flex; flex-direction: column; gap: var(--space-2); max-width: min(440px, 90vw); }
+.hb-aw-toast { display: flex; align-items: center; gap: var(--space-2-5); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-xl); box-shadow: var(--elevation-3); color: var(--ink); font-family: var(--font-sans); font-size: var(--text-sm); }
+.hb-aw-toast-dot { width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--accent); flex-shrink: 0; }
+.hb-aw-toast-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-0-5); }
+.hb-aw-toast-text strong, .hb-aw-toast-text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-aw-toast-text span { color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-aw-toast-x { all: unset; cursor: pointer; padding: 0 var(--space-1); color: var(--ink-faint); }

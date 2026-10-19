@@ -18,6 +18,8 @@ jest.unstable_mockModule('../server/workspaces/projectMemberships.js', () => ({ 
 jest.unstable_mockModule('../server/memory.js', () => ({ getSubAgentById: jest.fn() }));
 jest.unstable_mockModule('../server/tools/rbac/runtimeAccess.js', () => ({ authorizeToolInvocation: jest.fn() }));
 jest.unstable_mockModule('../server/tools/rbac/executionBoundary.js', () => ({ assertFamilyToolAvailable }));
+// The person here is the computer's owner (tests/agentHostToolsOwnerOnly.test.js covers teammates).
+jest.unstable_mockModule('../server/tools/rbac/hostOwnerOnly.js', () => ({ assertHostToolAllowed: jest.fn() }));
 jest.unstable_mockModule('../server/approvals/requests.js', () => ({ requestToolApprovalIfRequired }));
 jest.unstable_mockModule('../server/approvals/decisions.js', () => ({ assertApprovedToolExecution }));
 const { executeApprovedTool, executeTool } = await import('../server/tools.js');

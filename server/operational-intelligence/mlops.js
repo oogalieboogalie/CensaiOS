@@ -8,10 +8,12 @@ import { buildMLOpsWebhookBody, calculateDriftState } from './drift-utils.js';
 /**
  * Registers a new ML model deployment with its training baseline.
  */
-export async function registerModelDeployment(ctx, { workspaceId, title, modelName, version, baseline, thresholds, owner }) {
+export async function registerModelDeployment(ctx, { workspaceId, title, modelName, version, provider, purpose, baseline, thresholds, owner }) {
   const data = {
     modelName,
     version,
+    ...(provider ? { provider } : {}),
+    ...(purpose ? { purpose } : {}),
     baseline: baseline || {},
     thresholds: thresholds || { driftScore: 0.1 },
     status: 'deployed',

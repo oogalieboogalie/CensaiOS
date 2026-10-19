@@ -35,7 +35,8 @@ export function AutomationWindow({ win, onUpdate }) {
     try {
       const res = await fetch(`/api/automation/${task}/${action}`, { method: 'POST' });
       if (!res.ok) {
-        throw new Error(`Failed to ${action} ${task}`);
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || `Failed to ${action} ${task}`);
       }
       fetchStatus();
     } catch (err) {

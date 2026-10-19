@@ -3,10 +3,14 @@ import { Icon } from '../Icons.jsx';
 import { AgentAvatar } from '../Agents.jsx';
 import { getAgents, getAgentById } from '../../lib/agentStore.js';
 import { TodoAssignMenu } from './TodoAssignMenu.jsx';
+import { PersonBadge } from './PersonBadge.jsx';
+import { CliMark } from '../agentConsole/CliMark.jsx';
+import { codingAgentLabel, parseAssignee } from '../../lib/todos/assignees.js';
 
 const STATUS_CONFIG = {
   needs_contract: { label: 'needs contract', bg: 'var(--ps-orange)', color: 'var(--on-fill)' },
   queued:         { label: 'queued',          bg: 'var(--accent-soft)', color: 'var(--accent-ink)' },
+  cli_started:    { label: 'agent working',   bg: 'var(--accent-soft)', color: 'var(--accent-ink)' },
   dispatched:     { label: 'dispatched',      bg: 'oklch(0.55 0.15 280)', color: 'var(--on-fill)' },
   pr_open:        { label: 'PR',             bg: 'oklch(0.55 0.18 310)', color: 'var(--on-fill)' },
   blocked:        { label: 'blocked',         bg: 'var(--ps-red)', color: 'var(--on-fill)' },
@@ -24,6 +28,7 @@ function StatusBadge({ status, prUrl, prNumber, contractMissing, handoffWarning 
   const label = status === 'pr_open' && prNumber ? `PR #${prNumber}` : config.label;
   const title = status === 'needs_contract'
     ? (handoffWarning || (contractMissing ? `Missing: ${contractMissing}\n\n${CONTRACT_HINT}` : CONTRACT_HINT))
+    : status === 'cli_started' ? handoffWarning
     : status === 'blocked' ? (handoffWarning || 'Blocked — check the operations board')
     : status === 'failed' ? (handoffWarning || 'Task failed — check the operations board')
     : null;
@@ -53,10 +58,13 @@ function StatusBadge({ status, prUrl, prNumber, contractMissing, handoffWarning 
 
 export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAssign, onHandoff, onStartEdit, onSaveEdit, onCancelEdit, onEditChange }) {
   const agents = Array.isArray(getAgents()) ? getAgents() : [];
-  const agent = item.assignee ? getAgentById(item.assignee) : null;
+  const who = parseAssignee(item.assignee);
+  const agent = who?.type === 'agent' ? getAgentById(who.id) : null;
+  const whoName = who?.type === 'cli' ? codingAgentLabel(who.id) : who?.type === 'person' ? (item.assigneeName || 'a teammate') : agent?.name;
+  const canSend = canHandoff && who && who.type !== 'person' && !item.handingOff && !item.cliTaskId;
   const [showAssign, setShowAssign] = React.useState(false);
   const assignButtonRef = React.useRef(null);
-  const isSent = Boolean(item.handoffPath || item.handoffTaskId || item.handedOffAt);
+  const isSent = Boolean(item.handoffPath || item.handoffTaskId || item.handedOffAt || item.cliTaskId);
   const isEditing = editingId === item.id;
   const implementationStatus = item.implementationStatus || (isSent ? 'dispatched' : null);
   const contractMissing = Array.isArray(item.contractMissing) ? item.contractMissing.join(', ') : '';
@@ -119,18 +127,24 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
           </div>
         )}
       </div>
-      <button ref={assignButtonRef} onClick={(e) => { e.stopPropagation(); setShowAssign(s => !s); }} title={agent ? `Assigned to ${agent.name}` : 'Assign to agent'} style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-        {agent ? <AgentAvatar agent={agent} size={20} /> : <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px dashed var(--hairline-strong)', display: 'grid', placeItems: 'center', color: 'var(--ink-faint)' }}><Icon.ArrowAssign size={11}/></div>}
+      <button ref={assignButtonRef} onClick={(e) => { e.stopPropagation(); setShowAssign(s => !s); }} title={whoName ? `Assigned to ${whoName}` : 'Assign this to-do'} data-testid="todo-assign" style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+        {agent ? <AgentAvatar agent={agent} size={20} />
+          : who?.type === 'cli' ? <CliMark cli={who.id} size="sm" />
+          : who?.type === 'person' ? <PersonBadge name={item.assigneeName} size={20} />
+          : <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px dashed var(--hairline-strong)', display: 'grid', placeItems: 'center', color: 'var(--ink-faint)' }}><Icon.ArrowAssign size={11}/></div>}
       </button>
       <button
         onClick={(e) => { e.stopPropagation(); onHandoff(); }}
-        disabled={!canHandoff || !item.assignee || item.handingOff}
+        disabled={!canSend}
         title={
           !canHandoff ? 'Open a local project first'
-          : !item.assignee ? 'Assign to an agent first'
+          : !who ? 'Assign to an agent first'
+          : who.type === 'person' ? `This one is for ${whoName}, not an agent`
+          : who.type === 'cli' ? `Start ${whoName} on this to-do`
           : 'Create project handoff'
         }
-        style={{ all: 'unset', cursor: canHandoff && item.assignee && !item.handingOff ? 'pointer' : 'not-allowed', width: 24, height: 24, borderRadius: 'var(--radius-md)', display: 'grid', placeItems: 'center', background: item.handoffPath ? 'var(--accent-soft)' : 'var(--surface)', border: '1px solid var(--hairline)', color: item.handoffPath ? 'var(--accent-ink)' : 'var(--ink-faint)', opacity: canHandoff && item.assignee ? 1 : 0.45 }}
+        data-testid="todo-send"
+        style={{ all: 'unset', cursor: canSend ? 'pointer' : 'not-allowed', width: 24, height: 24, borderRadius: 'var(--radius-md)', display: 'grid', placeItems: 'center', background: item.handoffPath || item.cliTaskId ? 'var(--accent-soft)' : 'var(--surface)', border: '1px solid var(--hairline)', color: item.handoffPath || item.cliTaskId ? 'var(--accent-ink)' : 'var(--ink-faint)', opacity: canSend || item.handingOff ? 1 : 0.45 }}
       >
         {item.handingOff ? '...' : <Icon.ArrowAssign size={12} />}
       </button>
@@ -138,7 +152,7 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
         <TodoAssignMenu
           anchorRef={assignButtonRef}
           agents={agents}
-          onAssign={(agentId) => { onAssign(agentId); setShowAssign(false); }}
+          onAssign={(value, name) => { onAssign(value, name); setShowAssign(false); }}
           onClose={() => setShowAssign(false)}
         />
       )}

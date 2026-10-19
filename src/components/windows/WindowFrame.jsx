@@ -15,6 +15,7 @@ import { resolveHeaderMeta, resolveHeaderMode } from '../../lib/windowHeader.js'
 import { windowBrand } from '../../lib/brands/index.js';
 import { isHeaderDragTarget, isAltDragTarget } from './windowDragTargets.js';
 import { glideOrder } from '../../lib/wakeUp/boardWakeUp.js';
+import { pointedNow } from '../../lib/chat/agentPointer.js';
 
 // A tile in a group: only the group's outer corners stay rounded, so the
 // tiles read as one card. `corners` lists them ('tl tr br bl').
@@ -41,7 +42,7 @@ export const WindowFrame = React.memo(({ win, onUpdate, onClose, onSelect, onDra
   const manifest = WINDOW_MANIFEST_BY_KIND[win.kind] || WINDOW_MANIFEST_BY_CANVAS_TYPE[win.type];
   const headerMeta = resolveHeaderMeta(manifest);
   const brand = windowBrand(win);
-  const headerMode = resolveHeaderMode({ ...win, headerMode: win.headerMode || headerMeta.mode }, normalizeShape(theme).headerMode);
+  const headerMode = headerMeta.fixed ? headerMeta.mode : resolveHeaderMode({ ...win, headerMode: win.headerMode || headerMeta.mode }, normalizeShape(theme).headerMode);
 
   const [showColorMenu, setShowColorMenu] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -137,7 +138,7 @@ export const WindowFrame = React.memo(({ win, onUpdate, onClose, onSelect, onDra
   return (
     <div ref={ref} data-win-id={win.id} data-win-kind={win.kind} data-win-frame data-render-count={renderCount.current} data-window-chrome="low-profile"
       data-chrome-variant={win.chromeVariant || 'default'} data-header-mode={headerMode}
-      data-active={isActive ? 'true' : 'false'} data-tile-group={tiled ? tileGroupId : undefined} data-pinned={win.pinned ? 'true' : 'false'} data-wake-up={glideOrder(win)} data-menu-open={menuOpen ? 'true' : 'false'}
+      data-active={isActive ? 'true' : 'false'} data-tile-group={tiled ? tileGroupId : undefined} data-pinned={win.pinned ? 'true' : 'false'} data-wake-up={glideOrder(win)} data-pointed={pointedNow(win)} data-menu-open={menuOpen ? 'true' : 'false'}
       onPointerDownCapture={onAltDown} onPointerDown={onFrameDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
       onDoubleClick={(e) => { if (inHeader(e)) onUpdate({ maximized: !win.maximized }); }}
       onContextMenu={(e) => { if (!inHeader(e)) return; e.preventDefault(); e.stopPropagation(); setShowColorMenu(true); }}
@@ -154,7 +155,8 @@ export const WindowFrame = React.memo(({ win, onUpdate, onClose, onSelect, onDra
         backdropFilter: bare ? 'none' : customizedBackdrop,
         WebkitBackdropFilter: bare ? 'none' : customizedBackdrop,
         transition: 'box-shadow var(--dur-base) var(--ease-standard), border-color var(--dur-base) var(--ease-standard), background var(--dur-base) var(--ease-standard), backdrop-filter var(--dur-base) var(--ease-standard)',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        // Edge headers hang outside the frame, so the content does the clipping.
+        display: 'flex', flexDirection: 'column', overflow: headerMode === 'edge' ? 'visible' : 'hidden',
         '--window-accent': accentBorder,
         '--window-hue': winHue,
         '--accent': accentBorder,
@@ -168,7 +170,7 @@ export const WindowFrame = React.memo(({ win, onUpdate, onClose, onSelect, onDra
       <RemoteWindowActor actor={win.selectionActor} quiet />
 
       <span aria-hidden="true" key="header-strip" style={{ position: 'absolute', left: 0, top: 0, right: 0, height: 'var(--window-strip-height, 0px)', background: 'var(--window-strip-bg, transparent)', zIndex: 5, pointerEvents: 'none' }} />
-      <WindowHeader key="header" win={win} mode={headerMode} traffic={usesTrafficLights}
+      <WindowHeader key="header" win={win} mode={headerMode} modeFixed={headerMeta.fixed} traffic={usesTrafficLights}
         chromeHeader={win.chromeVariant === 'win98' ? 'win98' : 'low-profile'}
         fallback={{ title: headerMeta.title || win.title || 'Window', icon: headerMeta.icon, brand }}
         titleClaimed={titleClaims > 0} slotRefs={{ title: setTitleEl, actions: setActionsEl, menu: setMenuEl }} headerRef={headerRef}
@@ -185,7 +187,7 @@ export const WindowFrame = React.memo(({ win, onUpdate, onClose, onSelect, onDra
           }}
         />
       )}
-      <div key="content-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: win.pinned ? 'hidden' : 'visible', zoom: win.fontScale || 1.0 }}>
+      <div key="content-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: win.pinned || headerMode === 'edge' ? 'hidden' : 'visible', borderRadius: headerMode === 'edge' ? 'inherit' : undefined, zoom: win.fontScale || 1.0 }}>
         <div style={{
           display: 'flex', flexDirection: 'column',
           flexGrow: win.pinned ? 0 : 1, flexShrink: 0, flexBasis: win.pinned ? 'auto' : '0%', minHeight: 0,

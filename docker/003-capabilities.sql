@@ -57,7 +57,7 @@ INSERT INTO capabilities (name, syntax, description, category, examples) VALUES
    ARRAY[
      '[KNOW: Alex | prefers | practical code]',
      '[KNOW: Homebase | uses | PostgreSQL]',
-     '[KNOW: Censai | role | editorial lead]'
+     '[KNOW: Censai | role | Alex''s partner and mentor]'
    ]),
 
   ('NUGGET', '[NUGGET: title | content]',

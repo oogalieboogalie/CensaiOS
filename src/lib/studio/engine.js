@@ -1,5 +1,6 @@
 import { Chain } from './chain.js';
 import { Synth } from './dsp/synth.js';
+import { DrumKit } from './dsp/drums.js';
 import { Limiter } from './dsp/dynamics.js';
 import { Smoother, dbToGain } from './dsp/util.js';
 import { Metronome } from './metronome.js';
@@ -51,7 +52,11 @@ export class Engine {
       seen.add(t.id);
       st.def = t;
       st.chain.set(t.fx, ctx);
-      if (t.kind === 'synth') { st.synth = st.synth || new Synth(this.sr); st.synth.setParams(t.synth); } else st.synth = null;
+      if (t.kind === 'synth') {
+        const drums = t.synth?.preset === 'drums';
+        if (!st.synth || (st.synth instanceof DrumKit) !== drums) st.synth = drums ? new DrumKit(this.sr) : new Synth(this.sr);
+        st.synth.setParams(t.synth);
+      } else st.synth = null;
       st.notes = t.kind === 'synth' ? collectNotes(t) : [];
       const audible = !t.mute && (!anySolo || t.solo);
       st.gain.set(audible ? dbToGain(t.gain) : 0);

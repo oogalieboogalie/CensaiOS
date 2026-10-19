@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useWorkspaceStore } from '../lib/store.js';
+import { useProjectScan } from './reliability/useProjectScan.js';
 
 export function ReliabilityWindow() {
   const [scans, setScans] = useState([]);
@@ -28,6 +29,8 @@ export function ReliabilityWindow() {
     fetchScans();
   }, [workspaceId]);
 
+  const scan = useProjectScan({ workspaceId, onDone: fetchScans });
+
   // Review jumps to the file's full scan card above and highlights it.
   const review = (id) => {
     setReviewId(id);
@@ -44,13 +47,23 @@ export function ReliabilityWindow() {
     <div className="flex flex-col h-full bg-surface text-ink font-sans p-6 overflow-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">AI Code Reliability Dashboard</h1>
-        <button
-          onClick={fetchScans}
-          className="px-4 py-2 bg-accent text-accent-contrast rounded hover:opacity-90 transition-opacity"
-        >
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={scan.run}
+            disabled={scan.running}
+            className="px-4 py-2 bg-accent text-accent-contrast rounded hover:opacity-90 transition-opacity disabled:opacity-60"
+          >
+            {scan.running ? 'Scanning…' : 'Run a scan'}
+          </button>
+          <button
+            onClick={fetchScans}
+            className="px-4 py-2 border border-surface-soft rounded hover:bg-surface-soft/50 transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
+      {scan.message && <p role="status" className="-mt-4 mb-4 text-sm text-ink-soft">{scan.message}</p>}
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
@@ -59,7 +72,7 @@ export function ReliabilityWindow() {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {scans.length === 0 ? (
-            <div className="text-center py-12 text-ink-soft">No scans found yet.</div>
+            <div className="text-center py-12 text-ink-soft">{'No scans found yet. Press Run a scan to check the open project\'s code.'}</div>
           ) : (
             scans.map(scan => (
               <motion.div

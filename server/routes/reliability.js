@@ -5,6 +5,8 @@ import path from 'node:path';
 import { scanFile, loadConfig } from '../lib/reliability/engine.js';
 import { resourceRateLimiter } from '../middleware/standardRateLimits.js';
 import { operationalRouteError, resolveOperationalScope } from '../operational-intelligence/routeScope.js';
+import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
+import { projectScanHandler } from './reliabilityProject.js';
 
 export const reliabilityRouter = express.Router();
 reliabilityRouter.use(resourceRateLimiter);
@@ -111,6 +113,8 @@ reliabilityRouter.post('/scans', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+reliabilityRouter.post('/scans/project', requireLocalFilesystem, projectScanHandler(reliabilityScope, operationalRouteError));
 
 reliabilityRouter.post('/feedback', async (req, res) => {
   let scope;

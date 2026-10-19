@@ -1,6 +1,6 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
-import { initialIdeas, cleanIdeaList, ideaSignature } from './ideaUtils.js';
+import { initialIdeas, cleanIdeaList, ideaSignature, keepUnsavedIdeas } from './ideaUtils.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 
 export function useIdea({ win, onUpdate, currentProject }) {
@@ -30,10 +30,13 @@ export function useIdea({ win, onUpdate, currentProject }) {
     win.workItem || '', win.savedIdea || null, win.ideaAssignee || '',
   ]);
   const lastWrittenKey = React.useRef(remoteKey);
+  const lastSavedIdeas = React.useRef(win.ideas || []);
   React.useEffect(() => {
     if (remoteKey === lastWrittenKey.current) return;
     lastWrittenKey.current = remoteKey;
-    setIdeas(initialIdeas(win));
+    const shared = initialIdeas(win);
+    setIdeas(keepUnsavedIdeas(shared, ideas, lastSavedIdeas.current));
+    lastSavedIdeas.current = shared;
     setExpansion(win.expansion || '');
     setExpandedFromIdeas(Array.isArray(win.expandedFromIdeas) ? win.expandedFromIdeas : []);
     setWorkItem(win.workItem || '');
@@ -56,6 +59,7 @@ export function useIdea({ win, onUpdate, currentProject }) {
         sameSavedIdea
       ) return;
       lastWrittenKey.current = JSON.stringify([ideas, expansion, expandedFromIdeas, workItem, savedIdea, assignee]);
+      lastSavedIdeas.current = ideas;
       onUpdate({
         ideas,
         content,

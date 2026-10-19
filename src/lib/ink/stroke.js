@@ -3,6 +3,7 @@
 // scale with the board like real ink; perfect-freehand turns the samples into
 // a filled outline that tapers and thickens with pen pressure.
 import { getStroke } from 'perfect-freehand';
+import { newId } from '../ids/newId.js';
 
 // Tilting a pencil on its side lays down a broader line. Browsers report tilt
 // as tiltX/tiltY in degrees (0 = upright); 60 degrees or more counts as flat.
@@ -167,7 +168,7 @@ export function buildInkStroke(points, { color, size, zoom = 1, simulated = fals
     points = [points[0], { ...points[0], x: points[0].x + 0.01 }];
   }
   const stroke = {
-    id: crypto.randomUUID(),
+    id: newId(),
     ink: 1,
     pts: points,
     color,

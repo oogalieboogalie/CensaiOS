@@ -8,6 +8,7 @@ import { ContainersPanel, groupContainers } from './docker/ContainersPanel.jsx';
 import { ContainerDetail, DETAIL_TABS } from './docker/ContainerDetail.jsx';
 import { ComposePanel } from './docker/ComposePanel.jsx';
 import { ResourcesPanel } from './docker/ResourcesPanel.jsx';
+import { useComputerOwner } from './docker/useComputerOwner.js';
 import './docker/docker.css';
 
 const TABS = [
@@ -31,6 +32,7 @@ export function ContainersWindow({ win }) {
   const rootRef = useRef(null);
   const searchRef = useRef(null);
   const data = useDockerData(tab);
+  const isOwner = useComputerOwner();
   const { status, statusError, available, containers, resources } = data;
   const selected = useMemo(() => (containers || []).find((c) => c.id === selectedId) || null, [containers, selectedId]);
   useEffect(() => { if (containers && selectedId && !selected) setSelectedId(null); }, [containers, selectedId, selected]);
@@ -127,7 +129,8 @@ export function ContainersWindow({ win }) {
             {tab === 'compose' && <ComposePanel {...common} projects={resources.compose} error={data.resourceErrors.compose}
               stats={data.stats} onOpenContainer={openContainer} />}
             {['images', 'volumes', 'networks'].includes(tab) && (
-              <ResourcesPanel {...common} kind={tab} rows={resources[tab]} error={data.resourceErrors[tab]} />
+              <ResourcesPanel {...common} kind={tab} rows={resources[tab]} error={data.resourceErrors[tab]}
+                canRun={isOwner} onStarted={() => { setFilter('all'); setTab('containers'); }} />
             )}
           </div>
           {tab === 'containers' && selected && (

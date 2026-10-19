@@ -23,8 +23,15 @@ describe('terminal execution access boundary', () => {
     }).allowed).toBe(false);
   });
 
+  // Pretend people: 7 owns this computer (admin), 8 is a teammate.
+  const fakeDb = (membership, userRole = 'admin') => ({ query: jest.fn(async (sql) => (
+    sql.startsWith('SELECT role FROM users')
+      ? { rows: [{ role: userRole }] }
+      : { rows: membership ? [membership] : [] }
+  )) });
+
   test('requires explicit workspace scope and an executing membership role', async () => {
-    const db = { query: jest.fn(async () => ({ rows: [{ id: 'workspace-a', role: 'member' }] })) };
+    const db = fakeDb({ id: 'workspace-a', role: 'member' });
     await expect(authorizeTerminalConnection(url(), { userId: '7' }, {
       db, mode: RUNTIME_MODES.LOCAL_DESKTOP,
     })).rejects.toMatchObject({ statusCode: 400, code: 'TERMINAL_WORKSPACE_REQUIRED' });
@@ -34,12 +41,17 @@ describe('terminal execution access boundary', () => {
   });
 
   test.each(['viewer', null])('denies non-executing membership role %s', async (role) => {
-    const db = { query: jest.fn(async () => ({
-      rows: role ? [{ id: 'workspace-a', role }] : [],
-    })) };
+    const db = fakeDb(role ? { id: 'workspace-a', role } : null);
     await expect(authorizeTerminalConnection(url('workspace-a'), { userId: '7' }, {
       db, mode: RUNTIME_MODES.LOCAL_DESKTOP,
     })).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  test("a teammate who isn't the computer's owner can't open a terminal, even as a board member", async () => {
+    const db = fakeDb({ id: 'workspace-a', role: 'owner' }, 'user');
+    await expect(authorizeTerminalConnection(url('workspace-a'), { userId: '8' }, {
+      db, mode: RUNTIME_MODES.LOCAL_DESKTOP,
+    })).rejects.toMatchObject({ statusCode: 403, code: 'TERMINAL_OWNER_ONLY' });
   });
 
   test('same client id is isolated by signed actor and workspace', () => {

@@ -7,7 +7,8 @@ export function CanvasStarterGrid({ starters, onSpawn }) {
   const spawn = (manifest) => {
     if (!canSpawn) return;
     const launcher = manifest.launcher;
-    onSpawn(manifest.kind, launcher.props, undefined, launcher.sizeOverride);
+    // Same size as the Add menu: the one size table (getDefaultWindowSize).
+    onSpawn(manifest.kind, launcher.props);
   };
 
   return (

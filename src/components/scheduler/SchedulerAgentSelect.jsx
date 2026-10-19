@@ -1,5 +1,6 @@
 import React from 'react';
 import { SCHEDULER_AGENTS } from './constants.js';
+import { AgentAvatar } from '../Agents.jsx';
 
 export function SchedulerAgentSelect({ selectedAgentId, setSelectedAgentId }) {
   return (
@@ -15,7 +16,7 @@ export function SchedulerAgentSelect({ selectedAgentId, setSelectedAgentId }) {
             title={agent.role ? `${agent.name}: ${agent.role}` : agent.name}
             onClick={() => setSelectedAgentId(agent.id)}
           >
-            <span className="hb-sched-glyph">{agent.glyph}</span>
+            <AgentAvatar agent={agent} size={24} ring={selectedAgentId === agent.id} />
             <span className="hb-sched-agent-name">{agent.name.replace(/^The /, '')}</span>
           </button>
         ))}

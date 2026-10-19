@@ -1,0 +1,182 @@
+/*
+ * Censai's pinned chat: a messenger panel in the bottom-right corner that
+ * sits above every window and shrinks to Censai's face. Black glass via
+ * .hb-glass; everything else from tokens.
+ *
+ * data-censai-state (idle | working | talking) on the panel and on
+ * .hb-censai-avatar is the hook for Censai's animations later on. Today
+ * only the ring colour changes.
+ */
+
+.hb-censai-pinned {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 1250;
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+
+.hb-censai-pinned[data-open="true"] {
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100vw - 2 * var(--space-4)));
+  height: min(560px, calc(100vh - 6rem));
+  border: 1px solid var(--glass-line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  /* Strong glass: the panel floats over busy windows and must stay readable. */
+  background: var(--glass-bg-strong);
+}
+
+.hb-censai-bubble,
+.hb-censai-face,
+.hb-censai-heads button {
+  all: unset;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+}
+
+.hb-censai-bubble { display: block; box-shadow: var(--shadow-pop); }
+.hb-censai-bubble:focus-visible,
+.hb-censai-face:focus-visible,
+.hb-censai-heads button:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+
+.hb-censai-avatar {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--glass-bg-strong);
+  border: 2px solid var(--brand-ultem);
+  box-sizing: border-box;
+}
+.hb-censai-avatar[data-censai-state="working"] { border-color: var(--accent); }
+.hb-censai-avatar[data-censai-state="talking"] { border-color: var(--accent-line); }
+
+.hb-censai-unread {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  min-width: 16px;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-align: center;
+}
+
+.hb-censai-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-3) var(--space-2);
+}
+.hb-censai-title { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.2; }
+.hb-censai-title span { font-size: var(--text-xs); color: var(--ink-faint); }
+
+.hb-censai-ghost,
+.hb-censai-icon,
+.hb-censai-link,
+.hb-censai-primary,
+.hb-censai-tabs button {
+  all: unset;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-lg);
+}
+.hb-censai-ghost { padding: var(--space-1) var(--space-2); color: var(--ink-faint); border: 1px solid var(--glass-line); }
+.hb-censai-ghost:hover,
+.hb-censai-icon:hover,
+.hb-censai-tabs button:hover { background: var(--glass-hover); }
+.hb-censai-icon { padding: var(--space-0-5) var(--space-2); color: var(--ink-faint); font-size: var(--text-sm); }
+.hb-censai-link { color: var(--accent-line); text-decoration: underline; padding: var(--space-1) 0; }
+.hb-censai-primary { padding: var(--space-1-5) var(--space-3); background: var(--accent); color: var(--accent-contrast); font-weight: 600; }
+
+.hb-censai-tabs { display: flex; gap: var(--space-1); padding: 0 var(--space-3) var(--space-2); }
+.hb-censai-tabs button { padding: var(--space-1) var(--space-2-5); color: var(--ink-faint); }
+.hb-censai-tabs button[aria-pressed="true"] { color: var(--ink); background: var(--glass-hover); }
+
+.hb-censai-heads {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) var(--space-2-5);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--glass-line);
+}
+.hb-censai-heads button { flex-shrink: 0; }
+.hb-censai-heads button[aria-pressed="true"] { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+
+.hb-censai-thread,
+.hb-censai-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.hb-censai-msg {
+  max-width: 85%;
+  padding: var(--space-1-5) var(--space-2-5);
+  border-radius: var(--radius-xl);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.hb-censai-msg[data-from="me"] { align-self: flex-end; background: var(--accent); color: var(--accent-contrast); }
+.hb-censai-msg[data-from="agent"] { align-self: flex-start; background: var(--surface-2); white-space: normal; }
+.hb-censai-handoff {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+
+.hb-censai-empty { display: flex; flex-direction: column; gap: var(--space-1); color: var(--ink-faint); }
+.hb-censai-empty p { margin: 0; }
+.hb-censai-note { margin: 0; font-size: var(--text-xs); color: var(--ink-faint); font-style: italic; }
+.hb-censai-error { margin: 0; font-size: var(--text-xs); color: var(--danger); }
+
+.hb-censai-compose {
+  display: flex;
+  gap: var(--space-1-5);
+  padding: var(--space-2-5);
+  border-top: 1px solid var(--glass-line);
+}
+.hb-censai-compose input {
+  all: unset;
+  flex: 1;
+  padding: var(--space-1-5) var(--space-2-5);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.hb-censai-compose button {
+  all: unset;
+  cursor: pointer;
+  padding: var(--space-1-5) var(--space-3-5);
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 700;
+}
+.hb-censai-compose button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.hb-censai-tour { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); flex: 1; }
+.hb-censai-tour-count { font-family: var(--font-label); font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-censai-tour-title { margin: 0; font-size: var(--text-sm); }
+.hb-censai-tour-body { margin: 0; line-height: 1.5; }
+.hb-censai-tour-nav { display: flex; gap: var(--space-2); align-items: center; margin-top: auto; }
+
+.hb-censai-desk { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2-5); }
+.hb-censai-desk-row { display: flex; gap: var(--space-2); align-items: flex-start; }
+.hb-censai-desk-dot { width: 24px; height: 24px; border-radius: var(--radius-full); background: var(--surface-2); flex-shrink: 0; }
+.hb-censai-desk-body { display: flex; flex-direction: column; min-width: 0; }
+.hb-censai-desk-who { font-weight: 600; display: flex; gap: var(--space-2); }
+.hb-censai-desk-at { font-weight: 400; color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-censai-desk-text { color: var(--ink-faint); }

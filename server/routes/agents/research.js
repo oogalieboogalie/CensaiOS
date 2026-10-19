@@ -4,7 +4,7 @@ import { agentRouteError, resolveAgentRouteScope } from './scope.js';
 import { resolveTavilyKey } from '../../leadhound/tavily.js';
 import { resolveEmbedder } from '../../research/embedder.js';
 import { researchDeps } from '../../research/deps.js';
-import { askResearch, fillCell, knowledgePrompt, queryKnowledge, runSearch, saveToKnowledge } from '../../research/service.js';
+import { askResearch, fillCell, knowledgePrompt, queryKnowledge, runSearch, saveFile, saveToKnowledge } from '../../research/service.js';
 import { RECIPES } from '../../research/recipes.js';
 
 // Tavily Research: search, save to the board's knowledge base, ask over it,
@@ -39,6 +39,29 @@ researchRouter.post('/research/kb/save', requireDb, async (req, res) => {
     const deps = await researchDeps(scope);
     const out = await saveToKnowledge(scope, { query: req.body?.query, results: req.body?.results }, deps);
     res.json({ ok: true, ...out, sources: await deps.store.listSources(scope.workspaceId) });
+  } catch (err) {
+    agentRouteError(res, err);
+  }
+});
+
+// Feed a file in (diagram 13): cut into pieces, every piece tagged.
+researchRouter.post('/research/kb/file', requireDb, async (req, res) => {
+  try {
+    const scope = await resolveAgentRouteScope(req);
+    const deps = await researchDeps(scope, { tavily: 'none' });
+    const source = await saveFile(scope, { name: req.body?.name, text: req.body?.text }, deps);
+    res.json({ ok: true, source, sources: await deps.store.listSources(scope.workspaceId) });
+  } catch (err) {
+    agentRouteError(res, err);
+  }
+});
+
+// One source's pieces and their tags, for the Knowledge tab.
+researchRouter.get('/research/kb/:sourceId/chunks', requireDb, async (req, res) => {
+  try {
+    const scope = await resolveAgentRouteScope(req);
+    const { store } = await researchDeps(scope, { tavily: 'none' });
+    res.json({ chunks: await store.listChunks(scope.workspaceId, req.params.sourceId) });
   } catch (err) {
     agentRouteError(res, err);
   }

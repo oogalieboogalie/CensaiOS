@@ -7,7 +7,7 @@
 
 import { createHttpClient, OutsideToolError } from './httpClient.js';
 import { createStdioClient } from './stdioClient.js';
-import { assertReachableUrl } from './netGuard.js';
+import { reachableFetch } from './netGuard.js';
 
 const IDLE_MS = 5 * 60 * 1000;
 const MAX_RESULT_CHARS = 20000;
@@ -18,13 +18,13 @@ function fingerprint(server) {
   return `${server.updated_at ? new Date(server.updated_at).getTime() : 0}`;
 }
 
-export function makeClient(server, secret) {
+export function makeClient(server, secret, fetchImpl) {
   if (server.transport === 'stdio') {
     return createStdioClient({
       command: server.command, args: server.args || [], secret, secretEnv: server.secret_env || '',
     });
   }
-  return createHttpClient({ url: server.url, secret });
+  return createHttpClient({ url: server.url, secret, ...(fetchImpl ? { fetchImpl } : {}) });
 }
 
 function sweep() {
@@ -43,8 +43,8 @@ async function connection(server, secret) {
     return existing.client;
   }
   if (existing) { existing.client.close(); live.delete(server.id); }
-  if (server.transport !== 'stdio') await assertReachableUrl(server.url);
-  const client = makeClient(server, secret);
+  const pinned = server.transport === 'stdio' ? null : (await reachableFetch(server.url)).fetchImpl;
+  const client = makeClient(server, secret, pinned);
   const entry = { client, ready: client.connect(), lastUsed: Date.now(), fingerprint: fingerprint(server) };
   live.set(server.id, entry);
   if (!sweeper) { sweeper = setInterval(sweep, 60 * 1000); sweeper.unref?.(); }

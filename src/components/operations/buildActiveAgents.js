@@ -22,7 +22,7 @@ export function buildActiveAgents({ tasks, schedules, jules, subAgents }) {
   const add = ({ id, name, detail, kind, tone, hue }) => {
     if (!id) return;
     const existing = byId.get(id);
-    const next = { id, name: name || id, detail, kind, tone, hue, initial: (name || id || '?').slice(0, 1).toUpperCase() };
+    const next = { id, name: name || id, detail, kind, tone, hue };
     byId.set(id, existing
       ? { ...existing, detail: `${existing.detail}; ${detail}`, kind: existing.kind === kind ? kind : 'mixed', tone: existing.tone === 'live' ? 'live' : tone }
       : next);

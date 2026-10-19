@@ -1,0 +1,54 @@
+/**
+ * @jest-environment jsdom
+ */
+import { jest } from '@jest/globals';
+import { flushAppLog, formatArgs, installBrowserLog, logToApp, pendingAppLog } from '../src/lib/appLog/browserLog.js';
+
+describe('browserLog', () => {
+  test('console styling is dropped from the line', () => {
+    expect(formatArgs(['%c[chat]', 'color:#888', 'send failed', { status: 500 }])).toBe('[chat] send failed {"status":500}');
+    expect(formatArgs([new Error('boom')])).toMatch(/^Error: boom/);
+  });
+
+  test('errors, warnings and failed /api calls are sent in one batch', async () => {
+    jest.useFakeTimers();
+    const sent = [];
+    const target = new EventTarget();
+    target.console = { error: jest.fn(), warn: jest.fn() };
+    target.fetch = jest.fn(async (url, init) => {
+      if (url === '/api/logs/browser') { sent.push(JSON.parse(init.body)); return { status: 202 }; }
+      return { status: url.includes('missing') ? 404 : 200 };
+    });
+    installBrowserLog(target);
+
+    target.console.error('%c[todos]', 'color:#888', 'save failed');
+    target.console.warn('slow answer');
+    target.console.warn('slow answer'); // same line twice is kept once
+    await target.fetch('/api/todos/missing?x=1', { method: 'post' });
+    await target.fetch('/api/todos');
+    await target.fetch('/api/logs/browser-missing'); // its own address is never logged
+    target.dispatchEvent(Object.assign(new Event('censai:board-error'), { detail: { message: 'Hand off refused', detail: 'POST /api/project-handoffs 403' } }));
+
+    expect(pendingAppLog().map((e) => e.message)).toEqual([
+      '[todos] save failed',
+      'slow answer',
+      'POST /api/todos/missing returned 404',
+      'Hand off refused',
+    ]);
+    jest.advanceTimersByTime(3000);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].entries).toHaveLength(4);
+    expect(sent[0].entries[0]).toMatchObject({ level: 'error' });
+    expect(sent[0].entries[2]).toMatchObject({ level: 'warn' });
+    expect(pendingAppLog()).toHaveLength(0);
+    // The real console still printed everything.
+    expect(target.console.warn).toBeDefined();
+    jest.useRealTimers();
+  });
+
+  test('blank lines are not queued', () => {
+    logToApp('warn', '   ');
+    expect(pendingAppLog()).toHaveLength(0);
+    flushAppLog();
+  });
+});

@@ -16,7 +16,7 @@ export function PresenceToasts({ collaboration, onDismiss }) {
   };
 
   return (
-    <div style={{
+    <div data-pane-cover style={{
       position: 'fixed', top: 14, left: '50%', transform: 'translateX(-50%)',
       zIndex: 1300, display: 'flex', flexDirection: 'column', gap: 8,
       alignItems: 'center', pointerEvents: 'none',

@@ -15,6 +15,10 @@ jest.unstable_mockModule('../middleware/runtimeMode.js', () => ({
   requireLocalFilesystem: (req, res, next) => next(),
 }));
 
+jest.unstable_mockModule('../security/systemAdmin.js', () => ({
+  requireSystemAdmin: (req, res, next) => next(),
+}));
+
 describe('Containers Router', () => {
   let app;
 
@@ -36,6 +40,14 @@ describe('Containers Router', () => {
     expect(res.status).toBe(200);
     expect(res.body.containers).toEqual([{ Service: 'test-service', Status: 'Up' }]);
     expect(listContainers).toHaveBeenCalledTimes(1);
+  });
+
+  it('GET /api/containers answers 503, not 500, when the command runner is not set up', async () => {
+    const { listContainers } = await import('../tools/handlers/container.js');
+    listContainers.mockRejectedValueOnce(new Error('RUNNER_SECRET is required.'));
+    const res = await request(app).get('/api/containers');
+    expect(res.status).toBe(503);
+    expect(res.body.reason).toBe('runner-unreachable');
   });
 
   it('GET /api/containers/:id/logs should return logs for a container', async () => {

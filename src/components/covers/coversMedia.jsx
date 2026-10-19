@@ -85,6 +85,16 @@ export const MEDIA_COVERS = {
       ))}
     </>
   ),
+  // A hum (a wave from the left) turning into notes on a staff.
+  humBeat: (
+    <>
+      <path d="M4 12 Q6 7 8 12 T12 12 T16 12" {...A} />
+      <path d="M19 7 H40 M19 12 H40 M19 17 H40" {...F} />
+      <rect x="21" y="10.8" width="5" height="2.4" rx="0.6" fill={ACCENT} />
+      <rect x="28" y="5.8" width="4" height="2.4" rx="0.6" fill={INK} />
+      <rect x="34" y="15.8" width="5" height="2.4" rx="0.6" fill={SOFT} />
+    </>
+  ),
   // A live screen sending out its signal.
   stream: (
     <>

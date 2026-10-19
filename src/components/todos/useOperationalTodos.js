@@ -14,7 +14,7 @@ function hasInflightItems(items) {
 export function useOperationalTodos(win, onUpdate, localItems) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
   const [enabled, setEnabled] = React.useState(Boolean(win.artifactId));
-  const [error, setError] = React.useState('');
+  const [error, setError] = React.useState(null);
   const openedRef = React.useRef(null);
   const itemsRef = React.useRef(localItems);
   itemsRef.current = localItems;
@@ -40,7 +40,7 @@ export function useOperationalTodos(win, onUpdate, localItems) {
         return;
       }
       setEnabled(true);
-      setError('');
+      setError(null);
       onUpdate({
         artifactId: result.artifactId,
         operationalIntelligence: true,
@@ -49,7 +49,7 @@ export function useOperationalTodos(win, onUpdate, localItems) {
     }).catch(err => {
       if (!cancelled) {
         setEnabled(false);
-        setError(err.message || 'Operational save unavailable');
+        setError(err?.message ? err : 'Operational save unavailable');
       }
     });
 
@@ -62,7 +62,7 @@ export function useOperationalTodos(win, onUpdate, localItems) {
     try {
       const result = await api.refreshOperationalTodoList({ workspaceId, listArtifactId: win.artifactId });
       if (!result) return;
-      setError('');
+      setError(null);
       onUpdate({
         artifactId: result.artifactId,
         operationalIntelligence: true,
@@ -97,11 +97,11 @@ export function useOperationalTodos(win, onUpdate, localItems) {
         setEnabled(false);
         return null;
       }
-      setError('');
+      setError(null);
       onUpdate({ artifactId: result.artifactId, operationalIntelligence: true, items: normalizeTodos(result.items) });
       return result;
     } catch (err) {
-      setError(err.message || 'Operational save unavailable');
+      setError(err?.message ? err : 'Operational save unavailable');
       return null;
     }
   }, [enabled, workspaceId, win.artifactId, onUpdate]);
@@ -132,5 +132,5 @@ export function useOperationalTodos(win, onUpdate, localItems) {
     })
   )), [run, workspaceId, win.artifactId]);
 
-  return { enabled, error, addItem, updateItem, dispatchItem, refresh };
+  return { enabled, error, clearError: () => setError(null), addItem, updateItem, dispatchItem, refresh };
 }

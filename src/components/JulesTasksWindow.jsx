@@ -4,6 +4,7 @@ import { WindowTitle } from './Windows.jsx';
 import { api } from '../lib/api.js';
 import { useVisibilityAwareInterval } from '../lib/usePolling.js';
 import { JulesQueuePanel } from './jules/JulesQueuePanel.jsx';
+import { JulesWavesPanel } from './jules/JulesWavesPanel.jsx';
 
 function fmtDate(value) {
   if (!value) return 'not checked';
@@ -110,6 +111,7 @@ export function JulesTasksWindow({ win, isActive }) {
               </span>
             </div>
           )}
+          <JulesWavesPanel queue={queue} />
           <JulesQueuePanel queue={queue} includeCompleted={includeCompleted} />
           {!loading && !keyMissing && sessions.length === 0 && !queue && (
             <div style={{ border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 18, color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>

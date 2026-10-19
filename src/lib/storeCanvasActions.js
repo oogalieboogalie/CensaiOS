@@ -2,6 +2,9 @@ import { api } from './api.js';
 import { computeFitView, clusterWindows, boundsForItems, computeFitBounds } from './canvasMath.js';
 import { DEFAULT_WINDOW_SIZES } from './windowManifest.js';
 import { pinWindowsToProject } from './windowProject.js';
+import { newId } from './ids/newId.js';
+import { groupDragMembers } from './layout/groupDragMembers.js';
+import { logToApp } from './appLog/browserLog.js';
 
 const DEFAULT_HTML_PREVIEW = `<!DOCTYPE html><html><head><style>body{font-family:sans-serif;background:#0d1117;color:#c9d1d9;padding:2rem;display:grid;place-items:center;min-height:50vh;}</style></head><body><h1>Hello Genesis</h1></body></html>`;
 
@@ -10,7 +13,7 @@ let groupDragCache = null;
 export const createCanvasActions = (set, get) => ({
   createLink: (fromId, toId) => {
     set(state => ({
-      links: [...state.links.filter(l => !(l.fromId === fromId && l.toId === toId)), { id: crypto.randomUUID(), fromId, toId, timestamp: Date.now() }]
+      links: [...state.links.filter(l => !(l.fromId === fromId && l.toId === toId)), { id: newId(), fromId, toId, timestamp: Date.now() }]
     }));
   },
 
@@ -138,7 +141,7 @@ export const createCanvasActions = (set, get) => ({
         wins: [
           ...state.wins,
           {
-            id: crypto.randomUUID(),
+            id: newId(),
             kind: 'files',
             x: -180,
             y: -120,
@@ -160,18 +163,16 @@ export const createCanvasActions = (set, get) => ({
     if (!g) return;
 
     if (isFirstMove) {
-      // Sticky: a window counts as enclosed when it is explicitly assigned
-      // (groupId) OR its center is visually inside the group rect. That way
-      // windows dropped into a group travel with it even if the assignment
-      // hasn't synced yet, and group drags never leave members behind.
-      const isEnclosed = (w) => {
-        if (w.groupId === id) return true;
-        if (w.pinned) return false;
-        const cx = w.x + w.w / 2;
-        const cy = w.y + w.h / 2;
-        return cx >= g.x && cx <= g.x + g.w && cy >= g.y && cy <= g.y + g.h;
-      };
-      const enclosedWins = wins.filter(isEnclosed).map(w => ({ id: w.id, ox: w.x, oy: w.y }));
+      // A tiled group carries only its tiles; a loose window under it stays
+      // put (and loses a stale assignment) so the group keeps its layout.
+      // Groups without a layout also pick up windows whose center is inside.
+      const { carry, leftBehind, pickedUp } = groupDragMembers(g, wins);
+      const name = g.label || g.name || 'Group';
+      for (const w of pickedUp) logToApp('info', `groups: drag of "${name}" picked up ${w.title || w.kind} (not tiled)`, { where: 'canvas' });
+      for (const w of leftBehind) logToApp('info', `groups: drag of "${name}" left ${w.title || w.kind} behind (no tile for it)`, { where: 'canvas' });
+      const stale = new Set(leftBehind.filter(w => w.groupId === id).map(w => w.id));
+      if (stale.size) set(state => ({ wins: state.wins.map(w => stale.has(w.id) ? { ...w, groupId: null } : w) }));
+      const enclosedWins = carry.map(w => ({ id: w.id, ox: w.x, oy: w.y }));
       const enclosedGroups = canvasGroups.filter(otherG => otherG.groupId === id).map(otherG => ({ id: otherG.id, ox: otherG.x, oy: otherG.y }));
       groupDragCache = { id, ox: g.x, oy: g.y, enclosedWins, enclosedGroups };
     }

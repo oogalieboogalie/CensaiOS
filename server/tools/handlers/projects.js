@@ -16,6 +16,7 @@ import {
   isGithubProject
 } from '../../workspaces.js';
 import { resolveProjectForCall } from '../helpers.js';
+import { previewAfterWrite } from './projectWindow.js';
 import pool from '../../db.js';
 import { requireWorkspaceMember } from '../../workspaces/context.js';
 import {
@@ -136,7 +137,8 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
 
       await logProjectActivity(project.id, agentId, 'write', args.path);
       const onBranch = branch ? ` on \`${branch}\`` : '';
-      return `Wrote ${args.path} in ${project.name}${onBranch}. → ${where}`;
+      const shown = await previewAfterWrite(agentId, project, [args.path], context, { branch });
+      return `Wrote ${args.path} in ${project.name}${onBranch}. → ${where}${shown}`;
     }
     case 'project_edit': {
       const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
@@ -149,7 +151,8 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
       const where = await projectEdit(project, args.path, args.old_string, args.new_string, { branch, message: msg });
       await logProjectActivity(project.id, agentId, 'edit', args.path);
       const onBranch = branch ? ` on \`${branch}\`` : '';
-      return `Edited ${args.path} in ${project.name}${onBranch}. → ${where}`;
+      const shown = await previewAfterWrite(agentId, project, [args.path], context, { branch });
+      return `Edited ${args.path} in ${project.name}${onBranch}. → ${where}${shown}`;
     }
     case 'project_multi_edit': {
       const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
@@ -182,8 +185,10 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
         }
       }
 
+      const edited = args.edits.slice(0, results.length).map((edit) => edit.path);
+      const shown = results.length ? await previewAfterWrite(agentId, project, edited, context, { branch }) : '';
       const summary = [
-        `Multi-edit: ${results.length}/${args.edits.length} files edited in ${project.name}.`,
+        `Multi-edit: ${results.length}/${args.edits.length} files edited in ${project.name}.${shown}`,
         ...results,
         ...errors,
       ].join('\n');

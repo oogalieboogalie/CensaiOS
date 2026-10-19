@@ -10,12 +10,14 @@
 // anything else replaces the list.
 //
 // Window body text (doc `text`, code editor `code`) lives in a Y.Text, so two
-// people typing in the same window merge character by character. Fields in
+// people typing in the same window merge character by character. A To-do
+// list's `items` merge one to-do at a time (windowLists.js). Fields in
 // LOCAL_WINDOW_FIELDS (like whether *I* have the editor open) never sync.
 import * as Y from 'yjs';
 import { WINDOW_TEXT_FIELDS, applyTextDiff, diffText } from '../../../server/collab/textDiff.js';
 import { valueFromY, valueToY } from '../../../server/collab/seedFromSnapshot.js';
 import { CANVAS_ROOT, SCHEMA_VERSION, isValidId, isValidWindowGeometry } from '../../../server/collab/ySchema.js';
+import { WINDOW_LIST_FIELDS, syncById, writeWindowList } from './windowLists.js';
 
 export const SYNCED_KEYS = ['wins', 'canvasGroups', 'paths', 'links', 'dock'];
 export const LOCAL_WINDOW_FIELDS = new Set(['isEditing']);
@@ -67,6 +69,7 @@ function writeFields(target, prevEntry, nextEntry, isWindow = false) {
     const pair = isWindow ? PAIRED_WINDOW_FIELDS[field] : null;
     if (!changed(field) && !(pair && pair in nextEntry && changed(pair))) continue;
     if (isWindow && WINDOW_TEXT_FIELDS.has(field) && typeof value === 'string') writeText(target, field, value);
+    else if (isWindow && WINDOW_LIST_FIELDS.has(field) && writeWindowList(target, field, prevEntry?.[field], value)) continue;
     else target.set(field, valueToY(value));
   }
   for (const field of Object.keys(prevEntry || {})) {
@@ -111,33 +114,6 @@ function syncList(arr, prevList, nextList) {
   if (syncById(arr, prev, next)) return;
   arr.delete(0, arr.length);
   if (next.length) arr.push(next.map((item) => valueToY(item)));
-}
-
-// Erasing or editing strokes touches only those ids, so a stroke someone
-// else adds at the same moment survives the merge. False when the lists
-// aren't keyed by unique ids (fall back to replacing the list).
-function syncById(arr, prev, next) {
-  const ids = (list) => list.map((item) => (isValidId(item?.id) ? String(item.id) : null));
-  const prevIds = ids(prev);
-  const nextIds = ids(next);
-  if (prevIds.includes(null) || nextIds.includes(null)) return false;
-  if (new Set(prevIds).size !== prevIds.length || new Set(nextIds).size !== nextIds.length) return false;
-  const prevById = new Map(prev.map((item, i) => [prevIds[i], item]));
-  const nextById = new Map(next.map((item, i) => [nextIds[i], item]));
-  const kept = prevIds.filter((id) => nextById.has(id));
-  const keptInNext = nextIds.filter((id) => prevById.has(id));
-  if (kept.some((id, i) => keptInNext[i] !== id)) return false; // reordered
-  const docIds = arr.toArray().map((value) => String(valueFromY(value)?.id ?? ''));
-  for (let i = docIds.length - 1; i >= 0; i -= 1) {
-    const id = docIds[i];
-    if (prevById.has(id) && (!nextById.has(id) || !same(prevById.get(id), nextById.get(id)))) {
-      arr.delete(i, 1);
-      if (nextById.has(id)) arr.insert(i, [valueToY(nextById.get(id))]);
-    }
-  }
-  const added = next.filter((item, i) => !prevById.has(nextIds[i]));
-  if (added.length) arr.push(added.map((item) => valueToY(item)));
-  return true;
 }
 
 /** Push the local change prev -> next into the doc as one transaction. */

@@ -10,6 +10,7 @@
 // The board must also still be empty when the windows are about to land.
 
 import { SAMPLE_HUNT } from './sampleHunt.js';
+import { getDefaultWindowSize } from '../windowManifest.js';
 
 export const WAKE_UP_VERSION = 1;
 // How long after waking the windows still play their glide-in.
@@ -65,17 +66,29 @@ export function greetingText(name) {
 
 // World positions, laid out around the middle of the empty board (the empty
 // camera puts world 0,0 at the centre of the screen). Chat over the list on
-// the left, the sample hunt on the right.
-const LAYOUT = {
-  chat: { x: -660, y: -420, w: 400, h: 360 },
-  tryThis: { x: -660, y: -36, w: 400, h: 500 },
-  leadHound: { x: -236, y: -420, w: 900, h: 884 },
-};
+// the left, the sample hunt on the right. The chat and the list open at
+// their usual sizes (the same as from the Add menu); the sample hunt is
+// opened tall on purpose so its finished results show without scrolling.
+const GAP = 24;
+const TOP = -420;
+const HUNT = { x: -236, y: TOP, w: 900, h: 884 };
+
+function wakeUpLayout() {
+  const chat = getDefaultWindowSize('chat');
+  const tryThis = getDefaultWindowSize('tryThis');
+  const right = HUNT.x - GAP;
+  return {
+    chat: { x: right - chat.w, y: TOP, ...chat },
+    tryThis: { x: right - tryThis.w, y: TOP + chat.h + GAP, ...tryThis },
+    leadHound: HUNT,
+  };
+}
 
 /** The three windows, as spawnAt arguments, in the order they glide in. */
 export function wakeUpWindows({ name = '', now = Date.now() } = {}) {
   const tag = (order) => ({ wakeUp: true, wakeUpOrder: order, wakeUpAt: now });
   const at = ({ x, y, w, h }) => [{ x, y }, { w, h }];
+  const LAYOUT = wakeUpLayout();
   return [
     ['chat', { agentId: 'censai', title: 'Censai', msgs: [{ from: 'censai', text: greetingText(name) }], ...tag(1) }, ...at(LAYOUT.chat)],
     ['leadHound', { title: 'LeadHound · sample hunt', leadHound: { brief: SAMPLE_HUNT.brief, result: SAMPLE_HUNT, sample: true }, ...tag(2) }, ...at(LAYOUT.leadHound)],

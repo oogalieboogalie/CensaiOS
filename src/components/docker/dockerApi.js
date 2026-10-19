@@ -39,6 +39,7 @@ export const dockerApi = {
   exec: (id, command, size = {}) => request(`/containers/${enc(id)}/exec`, { method: 'POST', body: { command, cols: size.cols, rows: size.rows } }),
   images: () => request('/images').then((d) => d.images || []),
   pullImage: (ref) => request('/images/pull', { method: 'POST', body: { ref } }),
+  runImage: ({ image, name, ports }) => request('/images/run', { method: 'POST', body: { image, name, ports } }),
   removeImage: (ref, force = false) => request('/images', { method: 'DELETE', query: { ref, force: String(force) } }),
   volumes: () => request('/volumes').then((d) => d.volumes || []),
   removeVolume: (name) => request(`/volumes/${enc(name)}`, { method: 'DELETE' }),

@@ -37,6 +37,9 @@ export function snapToWindows(win, nx, ny, allWins, tolerance) {
 // Grouped tiles: a plain drag moves the whole group (`groupDrag`); Shift-drag
 // pulls the one window out. Loose windows report the pointer to dragState
 // so the canvas can show drop zones and dock the window on release.
+/** Screen pixels the pointer must travel before a press becomes a drag. */
+export const DRAG_START_PX = 4;
+
 export function useWindowFrameInteractions({ win, onUpdate, onSelect, onDragEnd, onMovePreview, onWireStart, onWireDrag, onWireEnd, zoom, pan = { x: 0, y: 0 }, theme, allWins, frameRef, tileGroupId = null, groupDrag = null }) {
   const dragRef = React.useRef(null);
 
@@ -94,6 +97,13 @@ export function useWindowFrameInteractions({ win, onUpdate, onSelect, onDragEnd,
     if (!dragRef.current) return;
     const d = dragRef.current;
     if (d.mode === 'wire') return onWireDrag?.({ x: e.clientX, y: e.clientY });
+    // A click with a few pixels of jitter is not a drag: until the pointer
+    // really travels, nothing moves, so a Shift-click on a tile never pulls
+    // it out of its group and a click never re-snaps a window.
+    if ((d.mode === 'move' || d.mode === 'group') && !d.started) {
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < DRAG_START_PX) return;
+      d.started = true;
+    }
     const dx = (e.clientX - d.x) / zoom, dy = (e.clientY - d.y) / zoom;
     if (d.mode === 'group') {
       groupDrag.move(d.groupId, dx, dy, d.first);

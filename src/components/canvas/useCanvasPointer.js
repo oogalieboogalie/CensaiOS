@@ -5,7 +5,7 @@ import { strokesInBox } from '../../lib/ink/shapes.js';
 import { useInkPointer } from './useInkPointer.js';
 import {
   blurActiveEditable, buildBandBox, buildPinchStart, buildRectStroke,
-  computePinchZoom, consumeSuppression, isInteractivePanTarget, shouldStartCanvasPan,
+  computePinchZoom, consumeSuppression, isInteractivePanTarget, leaveWindows, shouldStartCanvasPan,
 } from './pointerBuilders.js';
 
 // Re-exported so existing importers keep working after the builders extraction.
@@ -50,9 +50,9 @@ export function useCanvasPointer({
     const isTouch = e.pointerType === 'touch';
     const isPenEraser = penMode && isPen && (e.button === 5 || e.buttons === 32);
 
-    // Blur active input/textarea/contenteditable on canvas background click/pan
+    // A board click or pan start takes focus and selection off editors and windows
     const isPanningStart = shouldStartCanvasPan(e.button, spaceRef.current, panMode);
-    if (isCanvasBg || isPanningStart) blurActiveEditable();
+    if (isCanvasBg || isPanningStart) { blurActiveEditable(); leaveWindows(); }
 
     if (isTouch) {
       activeTouchPointsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });

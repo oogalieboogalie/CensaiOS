@@ -2,6 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { requireLocalFilesystem } from '../../middleware/runtimeMode.js';
+import { requireSystemAdmin } from '../../security/systemAdmin.js';
 import { validateProjectPath } from './pathUtils.js';
 
 export const mkdirRouter = express.Router();
@@ -27,7 +28,7 @@ export function validateEntryName(name) {
   return { ok: true, name: trimmed };
 }
 
-mkdirRouter.post('/files/mkdir', requireLocalFilesystem, async (req, res) => {
+mkdirRouter.post('/files/mkdir', requireLocalFilesystem, requireSystemAdmin, async (req, res) => {
   const { path: parentPath, name } = req.body || {};
   if (!parentPath) return res.status(400).json({ error: 'Missing path in body' });
   const valid = validateEntryName(name);

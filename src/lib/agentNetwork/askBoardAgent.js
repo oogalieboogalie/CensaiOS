@@ -15,6 +15,7 @@ import { FAMILY_AGENT_BY_ID } from '../../data/family-agents.js';
 import { researchReply } from '../../../server/agent-registry/researchReply.js';
 import { briefFromTask, huntSummary } from './leadHoundHelp.js';
 import { HELP_CARD_KIND, clipResult, findHelperWindow, helpCardLinks, helpCardWindow } from '../../../server/agent-registry/helpCardShape.js';
+import { newId } from '../ids/newId.js';
 
 function labelFor(win) {
   if (!win) return null;
@@ -27,7 +28,7 @@ function spawnCard(card) {
   const { x, y, w, h, ...props } = card;
   delete props.id;
   const id = store.spawnAt(HELP_CARD_KIND, props, { x, y }, { w, h });
-  for (const link of helpCardLinks({ ...card, id }, () => crypto.randomUUID())) store.createLink(link.fromId, link.toId);
+  for (const link of helpCardLinks({ ...card, id }, () => newId())) store.createLink(link.fromId, link.toId);
   return id;
 }
 

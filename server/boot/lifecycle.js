@@ -3,10 +3,12 @@ import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
 import { startLogCleanup } from '../logRetention.js';
 import { startTaskWorker } from '../taskWorker.js';
 import { startSchedulerWorker } from '../schedulerWorker.js';
+import { startIdeaFoundryWorker } from '../skillSets/worker.js';
 import { startAgentWakeupWorker } from '../agent-wakeups/worker.js';
 import { startAgentCardRunWorker } from '../agent-card-runs/worker.js';
 import { startOsvMirrorWorker } from '../osvMirror/worker.js';
 import { startWorkflowTriggerWorker } from '../workflows/triggers.js';
+import { startAuctionWatcherWorker } from '../auctionWatcher/worker.js';
 import { checkDb } from './database.js';
 import { tickJulesWatcher } from './julesWatcher.js';
 import { attachTerminalServer } from '../terminal/index.js';
@@ -97,6 +99,8 @@ export async function startServer(app, options = {}) {
         startAgentCardRunWorker();
         startOsvMirrorWorker();
         startWorkflowTriggerWorker();
+        startIdeaFoundryWorker();
+        startAuctionWatcherWorker();
         startDevServerReaper();
         // Agent endpoints' own port, the one a tunnel points at.
         startOutsideListener();

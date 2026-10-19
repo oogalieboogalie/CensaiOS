@@ -99,7 +99,7 @@ export function MusicWindow({ win, onUpdate }) {
   );
 }
 
-const showsEmbed = (music) => music.mode === 'stream' && music.stream.embedVisible;
+const showsEmbed = (music) => music.mode === 'stream' && !music.direct && music.stream.embedVisible;
 
 function StatusRow({ music }) {
   const { progress, source, usbTrack } = music;
@@ -121,11 +121,10 @@ function Stage({ music, compact, offscreen }) {
   const playing = Boolean(music.mode) && !music.paused;
   const seed = React.useMemo(() => seedFromString(usbTrack?.id || music.streamSrc), [usbTrack?.id, music.streamSrc]);
   const showEmbed = !offscreen && showsEmbed(music);
-  const hint = stream.kind === 'spotify' && music.mode === 'stream' && music.paused && !showEmbed
-    ? 'Press SCREEN for Spotify controls' : null;
+  const hint = stageHint(music, showEmbed);
   return (
     <div className="hb-music-stage" data-offscreen={offscreen ? 'true' : undefined} style={{ minHeight: compact ? 36 : 70 }}>
-      {music.mode === 'stream' && (
+      {music.mode === 'stream' && !music.direct && (
         <MusicEmbed ref={stream.frameRef} src={music.streamSrc} title={music.title} visible={showEmbed} onLoad={stream.handleFrameLoad} />
       )}
       {!offscreen && !showEmbed && (
@@ -134,6 +133,13 @@ function Stage({ music, compact, offscreen }) {
       {!offscreen && hint && <LcdLine size="xxs" className="hb-music-hint">{hint}</LcdLine>}
     </div>
   );
+}
+
+function stageHint(music, showEmbed) {
+  if (music.linkProblem) return "CAN'T PLAY THIS LINK";
+  if (music.direct && music.mode === 'stream' && !music.paused && !music.signal) return 'VISUALIZER IS GUESSING FOR THIS SITE';
+  if (music.stream.kind === 'spotify' && music.mode === 'stream' && music.paused && !showEmbed) return 'Press SCREEN for Spotify controls';
+  return null;
 }
 
 function Readout({ music }) {
@@ -178,7 +184,7 @@ function Controls({ music, compact }) {
             </DeviceKey>
           </>
         )}
-        {music.mode === 'stream' && (
+        {music.mode === 'stream' && !music.direct && (
           <DeviceKey title="Show the source player on the screen" active={music.stream.embedVisible} onClick={() => music.stream.setEmbedVisible(v => !v)}>
             SCREEN
           </DeviceKey>
