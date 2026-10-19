@@ -1,10 +1,10 @@
 {
   "channel": "nightly",
-  "version": "0.4.0-nightly.20261019",
+  "version": "0.5.0-nightly.20261019",
   "date": "2026-10-19",
   "source": "89c0ae87749ed7119207f8137585479ee16eee22",
   "stable": {
-    "version": "0.3.0",
-    "source": "aee94be9545b6630a5ececddcb49ccd14e20e812"
+    "version": "0.4.0",
+    "source": "89c0ae87749ed7119207f8137585479ee16eee22"
   }
 }
