@@ -27,8 +27,12 @@ import { runnerClient } from '../runner/client.js';
 import { requireAuthorizedSession } from '../security/sessionGuard.js';
 import { agentEndpointPublicRouter } from '../routes/agentEndpointsPublic.js';
 import { refuseEmailSignInFromAnotherComputer, webOsPublicRouter } from '../routes/webOs.js';
+import { boardInvitesPublicRouter, boardInvitesRouter } from '../routes/boardInvites.js';
 import { doorGuard } from '../webOs/doorListener.js';
 import { socialPublicRouter } from '../routes/socialPublic.js';
+import { apiBarRouter } from '../routes/apiBar.js';
+import { legionViewRouter } from '../routes/legion.js';
+import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
 
 export function mountRouters(app) {
   // Pre-guard: /api/auth and /api/hub-auth must come before the guard
@@ -40,6 +44,9 @@ export function mountRouters(app) {
   app.post('/api/auth/developer', refuseEmailSignInFromAnotherComputer);
   app.post('/api/auth/local', refuseEmailSignInFromAnotherComputer);
   app.use('/api/web-os', webOsPublicRouter);
+  // Board invites: someone without an account joins one board with a
+  // one-time link (server/routes/boardInvites.js).
+  app.use('/api/invites', boardInvitesPublicRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/hub-auth', hubAuthRouter);
   // Guest links (spec 5): people without an account open a share link and
@@ -54,6 +61,13 @@ export function mountRouters(app) {
   app.use('/api/mcp', agentEndpointPublicRouter);
   // Social canvas: another censaiOS reads a profile with a key its owner gave out.
   app.use('/api/social/v1', socialPublicRouter);
+  // API Bar: one front door. A bar key stands in for a sign-in, but only for
+  // the branches its owner picked; without a key the bar checks the sign-in
+  // itself (server/routes/apiBar.js).
+  app.use('/api/bar', apiBarRouter);
+  // Legion: what a Legion built, opened by its run's secret link in a sandbox
+  // that sends no cookies (server/routes/legion.js).
+  app.use('/api/legion-view', requireLocalFilesystem, legionViewRouter);
 
   // Authentication guard for all other API endpoints. Express matches in
   // declaration order, so every subsequent `app.use('/api/...')` mount
@@ -70,6 +84,9 @@ export function mountRouters(app) {
     }
     return requireAuthorizedSession(req, res, next);
   });
+
+  // "Invite to this board": invites sent and invites waiting for me.
+  app.use('/api', boardInvitesRouter);
 
   // Data-driven mounts: every other router + the consolidated
   // /api/windows guard chain (see ROUTE_MOUNTS in routeMap.js).

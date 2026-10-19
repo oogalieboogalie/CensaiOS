@@ -11,6 +11,10 @@ const PROVIDER_ALIASES = new Map([
   ['grok', 'xai'],
   ['x-ai', 'xai'],
   ['eleven-labs', 'elevenlabs'],
+  ['langchain', 'langsmith'],
+  ['langgraph', 'langsmith'],
+  ['google-cloud', 'googlecloud'],
+  ['vertex', 'googlecloud'],
 ]);
 
 export const USER_API_KEY_PROVIDERS = Object.freeze([
@@ -27,6 +31,9 @@ export const USER_API_KEY_PROVIDERS = Object.freeze([
   'zai',
   'xai',
   'elevenlabs',
+  'langsmith',
+  'googlecloud',
+  'ebay',
 ]);
 
 export function normalizeUserApiKeyProvider(value) {

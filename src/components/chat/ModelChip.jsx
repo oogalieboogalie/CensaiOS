@@ -6,11 +6,16 @@ import { BrandIcon } from '../brand/BrandIcon.jsx';
 import { PROVIDER_BRAND } from '../../lib/brands/index.js';
 import { describeCapabilities, getModelCapabilities } from '../../lib/chat/modelCapabilities.js';
 import { useEscapeDismiss, useOutsideDismiss } from '../../lib/useEscapeDismiss.js';
+import { StrengthsMenuItem } from './StrengthsMenuItem.jsx';
 
 const PROVIDER_LABELS = {
   openai: 'OpenAI', openrouter: 'OpenRouter', google: 'Google', cohere: 'Cohere',
   ollama: 'Ollama', moonshot: 'Moonshot', opencode: 'OpenCode Zen', anthropic: 'Anthropic',
 };
+
+const DICTATION_KEY_NAMES = { openai: 'OpenAI', google: 'Google' };
+// Claude and Grok dictate with the person's OpenAI or Google key.
+const dictationTitle = (provider) => (DICTATION_KEY_NAMES[provider] ? `Dictation (your ${DICTATION_KEY_NAMES[provider]} key)` : 'Dictation');
 
 /** Small icons for what a model takes in beyond text. Only supported ones show. */
 export function CapabilityIcons({ caps }) {
@@ -19,7 +24,7 @@ export function CapabilityIcons({ caps }) {
     caps.image ? ['image', Icon.Picture, 'Images'] : null,
     caps.pdf ? ['pdf', Icon.Files, 'PDFs'] : null,
     caps.video ? ['video', Icon.Video, 'Video'] : null,
-    caps.voiceInput ? ['voice', Icon.Mic, caps.voiceInput === 'native' ? 'Hears voice' : 'Dictation'] : null,
+    caps.voiceInput ? ['voice', Icon.Mic, caps.voiceInput === 'native' ? 'Hears voice' : dictationTitle(caps.dictationProvider)] : null,
     caps.voiceOutput ? ['speak', Icon.Speaker, 'Reads replies aloud'] : null,
     caps.tools ? ['tools', Icon.Tools, 'Uses tools'] : null,
   ].filter(Boolean);
@@ -34,9 +39,10 @@ export function CapabilityIcons({ caps }) {
 /**
  * The model chip in the composer (spec 3): the model's name and what it can
  * take in. Clicking it lists the models this agent can switch to; `onSelect`
- * saves the choice. Without `onSelect` it is a read-only label.
+ * saves the choice. Without `onSelect` it is a read-only label. With `auto`
+ * ({ on, toggle }) the menu starts with the Auto-pick by strengths switch.
  */
-export function ModelChip({ capabilities, provider, onSelect, status }) {
+export function ModelChip({ capabilities, provider, onSelect, status, auto }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef(null);
   useEscapeDismiss(open, () => setOpen(false));
@@ -62,6 +68,7 @@ export function ModelChip({ capabilities, provider, onSelect, status }) {
       <button type="button" className="hb-model-chip" data-testid="chat-capabilities"
         aria-haspopup={onSelect ? 'menu' : undefined} aria-expanded={onSelect ? open : undefined}
         title={`${current}: ${summary}${onSelect ? '. Click to switch model.' : ''}`}
+        data-auto={auto?.on ? 'true' : undefined}
         onClick={() => onSelect && setOpen(o => !o)} style={onSelect ? undefined : { cursor: 'default' }}>
         <span className="hb-model-name">{current}</span>
         <span className="hb-sr-only"> · {summary}</span>
@@ -71,6 +78,7 @@ export function ModelChip({ capabilities, provider, onSelect, status }) {
       {open && (
         <div className="hb-model-menu" role="menu" aria-label="Switch model">
           {status && <div className="hb-model-status">{status}</div>}
+          {auto && <StrengthsMenuItem on={auto.on} onToggle={(value) => { setOpen(false); auto.toggle(value); }} />}
           {[...providers, ...others].map(p => (
             <React.Fragment key={p}>
               <div className="hb-model-group"><BrandIcon brand={PROVIDER_BRAND[p]} size={12} title="" />{PROVIDER_LABELS[p] || p}</div>

@@ -5,13 +5,14 @@ import { patchWindow } from './canvasObjectTypes.js';
 import { windowsInGroup } from './layout/groupResize.js';
 import { computeFitView } from './canvasMath.js';
 import { applyPreset, fitGroupToLayout, getGroupInnerBounds, cleanLayout } from './layoutAlgo.js';
+import { newId } from './ids/newId.js';
 
 export const createPresetActions = (set, get) => ({
   saveAsPreset: async (rawName) => {
     const { wins, canvasGroups, paths, links, groups, dockOffset, extraAgents, pan, zoom, presets } = get();
     const name = (rawName || '').trim() || `Preset ${new Date().toLocaleString()}`;
     const preset = {
-      id: crypto.randomUUID(),
+      id: newId(),
       name,
       createdAt: new Date().toISOString(),
       wins: withoutUnsupportedWindows(wins),
@@ -82,7 +83,7 @@ export const createPresetActions = (set, get) => ({
     if (!g) return null;
     const inside = windowsInGroup(wins, g);
     return {
-      id: crypto.randomUUID(),
+      id: newId(),
       name,
       createdAt: new Date().toISOString(),
       groupBox: { x: g.x, y: g.y, w: g.w, h: g.h },

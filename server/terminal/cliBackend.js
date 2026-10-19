@@ -8,6 +8,7 @@ import { buildAgentEnv } from '../cli-agents/env.js';
 import { agentHome, cliDataRoot } from '../cli-agents/paths.js';
 import { resolveCliKey, LOGIN_OWNERS_FILE } from '../cli-agents/index.js';
 import { claimCliLogin } from '../cli-agents/loginOwner.js';
+import { personalSignedIn } from '../cli-agents/personalHome.js';
 import { USE_CONPTY_DLL } from './shared.js';
 
 /**
@@ -29,9 +30,10 @@ export function terminalCliAdapter(id) {
 }
 
 /** Interactive environment: the agent allowlist, plus a real color terminal. */
-export function interactiveCliEnv({ adapter, key = null, env = process.env, home = agentHome(env) } = {}) {
+export function interactiveCliEnv({ adapter, key = null, env = process.env, home = agentHome(env), userId = null } = {}) {
   if (home) fs.mkdirSync(home, { recursive: true });
-  const out = buildAgentEnv({ source: env, key, keyEnv: adapter.keyEnv, managedBin: managedBinDir(env), home });
+  const personal = adapter.personalHome ? { adapter, userId } : null;
+  const out = buildAgentEnv({ source: env, key, keyEnv: adapter.keyEnv, managedBin: managedBinDir(env), home, personal });
   delete out.NO_COLOR;
   delete out.CI;
   out.TERM = 'xterm-256color';
@@ -71,6 +73,8 @@ export async function ensureCliInstalled(adapter, write, env = process.env) {
  * no to using the key).
  */
 export async function cliCredentialFor(adapter, userId, env = process.env) {
+  // Grok: each person has their own sign-in folder, so it is always their own.
+  if (adapter.personalHome) return { key: null, home: agentHome(env) };
   const ownersFile = env.CENSAI_CLI_LOGIN_OWNERS_FILE || LOGIN_OWNERS_FILE;
   const signedIn = hasCliLogin(adapter.id, agentHome(env) || os.homedir());
   const blocked = claimCliLogin({ file: ownersFile, adapter, userId, signedIn });
@@ -98,12 +102,16 @@ export async function startCliBackend({ cli, cwd, size, userId, write = () => {}
     cols: size.cols,
     rows: size.rows,
     cwd,
-    env: interactiveCliEnv({ adapter, key, env, home }),
+    env: interactiveCliEnv({ adapter, key, env, home, userId }),
     useConptyDll: USE_CONPTY_DLL,
   };
+  // Not signed in to their own Grok yet: start with its code sign-in.
+  const signIn = Boolean(adapter.personalHome && adapter.loginArgs && !personalSignedIn(adapter, userId, env));
+  const args = signIn ? adapter.loginArgs : [];
   // A Windows .cmd shim needs cmd.exe to run it.
   const proc = launch.shell
-    ? spawn(env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', launch.command], options)
-    : spawn(launch.command, launch.prefixArgs, options);
-  return { proc, label: adapter.label, isSandbox: false, shell: 'bash', cli: adapter.id };
+    ? spawn(env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', launch.command, ...args], options)
+    : spawn(launch.command, [...launch.prefixArgs, ...args], options);
+  const note = signIn ? `Sign in to your own ${adapter.label} account: open the link below and enter the code. When it says you are signed in, press Enter to start ${adapter.label}.` : undefined;
+  return { proc, label: adapter.label, isSandbox: false, shell: 'bash', cli: adapter.id, note };
 }

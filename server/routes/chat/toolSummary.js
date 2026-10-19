@@ -52,6 +52,12 @@ export function summarizeToolCall(tool, args = {}) {
       return args.path ? { path: args.path } : null;
     case 'local_list_dir':
       return args.dir_path ? { path: args.dir_path } : null;
+    case 'search_tools':
+      return args.query ? { target: clipTarget(args.query) } : null;
+    case 'get_tool':
+      return args.name ? { target: clipTarget(args.name) } : null;
+    case 'get_toolkit':
+      return args.kit ? { target: clipTarget(args.kit) } : null;
     case 'web_search':
     case 'recall':
     case 'read_journal_search':

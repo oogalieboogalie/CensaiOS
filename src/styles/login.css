@@ -47,6 +47,11 @@
   font-size: var(--text-base);
 }
 
+.hb-login-tagline em {
+  font-style: normal;
+  color: var(--brand-ultem-text);
+}
+
 .hb-login-card {
   display: flex;
   flex-direction: column;

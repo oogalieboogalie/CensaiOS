@@ -16,6 +16,6 @@ export function Handle({ dir, zoom = 1, onPointerDown, onPointerMove, onPointerU
     tr: { right: offset, top: offset, width: corner, height: corner, cursor: 'nesw-resize' },
     tl: { left: offset, top: offset, width: corner, height: corner, cursor: 'nwse-resize' },
   };
-  return <div onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} style={{ position: 'absolute', zIndex: 2, touchAction: 'none', ...styles[dir] }} />;
+  return <div data-resize-grip={dir} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} style={{ position: 'absolute', zIndex: 2, touchAction: 'none', ...styles[dir] }} />;
 }
 

@@ -12,7 +12,7 @@ import {
   terminalSessionKey,
 } from './access.js';
 import { 
-  log, sessions, resolveCwd, safeJsonSend, broadcast, appendScrollback,
+  log, sessions, resolveTerminalCwd, safeJsonSend, broadcast, appendScrollback,
   AGENT_IDLE_REAP_MS, REAP_GRACE_MS
 } from './shared.js';
 
@@ -26,7 +26,7 @@ async function createSession(sessionId, {
   let backend;
   if (agentRun) backend = await startAgentBackend(cwd, agentRun.prompt, size);
   else if (cli) backend = await startCliBackend({ cli, cwd, size, userId: owner?.userId, write });
-  else backend = await startBackendImpl(cwd, hasProject, size);
+  else backend = await startBackendImpl(cwd, hasProject, size, owner);
   const session = {
     id: sessionId,
     clientSessionId,
@@ -39,7 +39,7 @@ async function createSession(sessionId, {
     shell: backend.shell || 'bash',
     agentEnabled: false,
     agentRun: agentRun ? { prompt: agentRun.prompt } : null,
-    cli: backend.cli || null,
+    cli: backend.cli || null, note: backend.note || null,
     boundAgentIds: new Set(),
     busy: false,
     scrollback: '',
@@ -59,6 +59,7 @@ async function createSession(sessionId, {
 
   backend.proc.onExit(({ exitCode }) => {
     session.alive = false;
+    session.exitCode = exitCode;
     log.info('shell exited', { sessionId, backend: backend.label, code: exitCode });
     broadcast(session, { type: 'exit', code: exitCode });
     if (session.agentRun && owner?.workspaceId) {
@@ -143,7 +144,7 @@ export function attachTerminalServer(server, options = {}) {
       })
       .catch(error => {
         log.warn('terminal upgrade rejected', { status: error.statusCode || 500, code: error.code || null });
-        rejectTerminalUpgrade(socket, error);
+        rejectTerminalUpgrade(socket, error, { wss, request, head });
       });
   });
 
@@ -151,12 +152,9 @@ export function attachTerminalServer(server, options = {}) {
     const { requestUrl, owner } = connection;
     const params = requestUrl.searchParams;
     const rawCwd = params.get('cwd');
-    const hasProject = Boolean(rawCwd && rawCwd.trim());
-    const cwd = resolveCwd(rawCwd);
-    const size = {
-      cols: Math.max(2, parseInt(params.get('cols'), 10) || 80),
-      rows: Math.max(1, parseInt(params.get('rows'), 10) || 24),
-    };
+    const { cwd, unreachable } = resolveTerminalCwd(rawCwd);
+    const hasProject = Boolean(rawCwd && rawCwd.trim()) && !unreachable;
+    const size = { cols: Math.max(2, parseInt(params.get('cols'), 10) || 80), rows: Math.max(1, parseInt(params.get('rows'), 10) || 24) };
     const clientSessionId = (params.get('sessionId') || '').trim() || `eph-${crypto.randomUUID()}`;
     const sessionId = terminalSessionKey({ ...owner, sessionId: clientSessionId });
 
@@ -197,7 +195,7 @@ export function attachTerminalServer(server, options = {}) {
       } catch (error) {
         log.error('failed to start any backend', { sessionId, cwd, error: error.message });
         safeJsonSend(ws, { type: 'output', data: `\r\nFailed to start a terminal: ${error.message}\r\n` });
-        ws.close();
+        safeJsonSend(ws, { type: 'exit', code: 1 }); ws.close(); // ended, not dropped: no retry loop, Enter tries again
         return;
       }
     }
@@ -209,8 +207,10 @@ export function attachTerminalServer(server, options = {}) {
     safeJsonSend(ws, {
       type: 'meta', cwd: session.cwd, backend: session.backendLabel,
       workspaceId: owner.workspaceId, sessionId: clientSessionId,
-      agent: session.agentRun ? 'opencode' : null, cli: session.cli,
+      agent: session.agentRun ? 'opencode' : null, cli: session.cli, sandbox: Boolean(session.isSandbox), note: session.note,
     });
+    if (unreachable && isNew) safeJsonSend(ws, { type: 'output', data: `\x1b[33mcensaiOS can't reach the folder ${unreachable} from here, so this shell starts in ${cwd}. Click "Mount to" above to pick a folder it can reach.\x1b[0m\r\n` });
+    if (!session.alive) safeJsonSend(ws, { type: 'exit', code: session.exitCode ?? 1 }); // died before this window joined: no reconnect loop
     if (!isNew && session.scrollback) {
       safeJsonSend(ws, { type: 'output', data: session.scrollback, replay: true });
     }

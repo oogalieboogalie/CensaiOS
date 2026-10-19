@@ -1,17 +1,14 @@
 import React from 'react';
 import { broadcastToolChange, isEditingTarget } from '../toolbarDefs.jsx';
-import { DockChatPopup } from './DockChatPopup.jsx';
+import { toggleCensaiChat } from '../../components/censai/usePinnedChat.js';
 
-// Chat entry in the multi-tool dock: owns its open state, renders the dock
-// button through the provided renderer, and pops the pick-agent messenger
-// above the dock. C toggles (ignored while typing); the dock bar itself
-// never treats chat as an active tool.
+// Chat entry in the multi-tool dock: opens or shrinks Censai's pinned chat
+// (bottom-right corner, above every window). C toggles it too (ignored
+// while typing); the dock bar itself never treats chat as an active tool.
 export function DockChat({ renderButton }) {
-  const [open, setOpen] = React.useState(false);
-
   const toggle = React.useCallback(() => {
     broadcastToolChange('chat');
-    setOpen((o) => !o);
+    toggleCensaiChat();
   }, []);
 
   React.useEffect(() => {
@@ -25,10 +22,5 @@ export function DockChat({ renderButton }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [toggle]);
 
-  return (
-    <>
-      {renderButton(toggle)}
-      {open && <DockChatPopup onClose={() => setOpen(false)} />}
-    </>
-  );
+  return renderButton(toggle);
 }

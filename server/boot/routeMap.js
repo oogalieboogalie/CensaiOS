@@ -68,7 +68,7 @@ import { keySharingRouter } from '../routes/keySharing.js';
 import { agentRegistryRouter } from '../routes/agentRegistry/index.js';
 import { agentEndpointsRouter } from '../routes/agentEndpoints.js';
 import { outsideToolsRouter } from '../routes/outsideTools.js';
-import { agentMemoryRouter } from '../routes/agentMemory.js';
+import { agentMemoryRouter, recentsRouter } from '../routes/agentMemory.js';
 import { agentScoutRouter } from '../routes/agentScout.js';
 import { commandsRouter } from '../routes/commands.js';
 import { keysRouter } from '../routes/keys.js';
@@ -84,17 +84,25 @@ import { boardHistoryRouter } from '../routes/boardHistory.js';
 import { workflowsRouter } from '../routes/workflows.js';
 import { liveOpsRouter } from '../routes/liveOps.js';
 import { inboxRouter } from '../routes/inbox.js';
+import { auctionWatcherRouter } from '../routes/auctionWatcher.js';
 import { shareLinksRouter } from '../routes/shareLinks.js';
 import { socialRouter } from '../routes/social.js';
 import { lessonsRouter } from '../routes/lessons.js';
 import { agentIconsRouter } from '../routes/agentIcons.js';
 import { cliAgentsRouter } from '../routes/cliAgents.js';
 import { selfFixRouter } from '../routes/selfFix.js';
+import { appLogRouter } from '../routes/appLog.js';
+import { appUpdateRouter } from '../routes/appUpdate.js';
 import { modelArenaRouter } from '../routes/modelArena.js';
-import {
-  requireFeatureFlag,
-  requireLocalFilesystem,
-} from '../middleware/runtimeMode.js';
+import { legionRouter } from '../routes/legion.js';
+import { requireFeatureFlag, requireLocalFilesystem } from '../middleware/runtimeMode.js';
+import { requireSystemAdminForChanges } from '../security/systemAdmin.js';
+
+// Routes that change this computer itself (Docker, dev servers and folder
+// mounts, git, Windows tasks, repo files, Legion's host browser) are for the
+// computer's owner only. Teammates can still look (GET), and board content
+// (windows, docs, sheets, chat) is board data with its own role checks.
+const ownerForChanges = requireSystemAdminForChanges;
 
 /**
  * Pre-built middleware references for the consolidated /api/windows guard
@@ -135,12 +143,14 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api', router: workflowsRouter },
   { method: 'use', path: '/api/live-ops', router: liveOpsRouter },
   { method: 'use', path: '/api/inbox', router: inboxRouter },
+  { method: 'use', path: '/api/auction-watcher', router: auctionWatcherRouter },
   { method: 'use', path: '/api', router: shareLinksRouter },
   { method: 'use', path: '/api/social', router: socialRouter },
   { method: 'use', path: '/api', router: lessonsRouter },
   { method: 'use', path: '/api/agent-icons', router: agentIconsRouter },
   { method: 'use', path: '/api', router: chatRouter },
   { method: 'use', path: '/api/model-arena', router: modelArenaRouter },
+  { method: 'use', path: '/api/legion', middleware: [requireLocalFilesystem, ownerForChanges], router: legionRouter },
   { method: 'use', path: '/api/images', router: imagesRouter },
   { method: 'use', path: '/api/videos', router: videosRouter },
   { method: 'use', path: '/api/agent-import', router: agentImportRouter },
@@ -152,17 +162,19 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api', router: julesRouter },
   { method: 'use', path: '/api', router: schedulesRouter },
   { method: 'use', path: '/api', router: overseerRouter },
-  { method: 'use', path: '/api/vex', router: vexRouter },
+  { method: 'use', path: '/api/vex', middleware: [ownerForChanges], router: vexRouter },
   { method: 'use', path: '/api', router: containersRouter },
-  { method: 'use', path: '/api/docker', middleware: [requireLocalFilesystem], router: dockerRouter },
-  { method: 'use', path: '/api/dev-servers', middleware: [requireLocalFilesystem], router: devServersRouter },
-  { method: 'use', path: '/api/project-git', middleware: [requireLocalFilesystem], router: projectGitRouter },
+  { method: 'use', path: '/api/docker', middleware: [requireLocalFilesystem, ownerForChanges], router: dockerRouter },
+  { method: 'use', path: '/api/dev-servers', middleware: [requireLocalFilesystem, ownerForChanges], router: devServersRouter },
+  { method: 'use', path: '/api/project-git', middleware: [requireLocalFilesystem, ownerForChanges], router: projectGitRouter },
   { method: 'use', path: '/api/system', router: systemStatusRouter },
   { method: 'use', path: '/api', router: kubernetesRouter },
-  { method: 'use', path: '/api/automation', router: automationRouter },
-  { method: 'use', path: '/api', middleware: [sandboxLocalFilesystem], router: sandboxRouter },
+  { method: 'use', path: '/api/automation', middleware: [ownerForChanges], router: automationRouter },
+  { method: 'use', path: '/api/sandbox', middleware: [sandboxLocalFilesystem], router: sandboxRouter },
   { method: 'use', path: '/api/cli-agents', middleware: [requireLocalFilesystem], router: cliAgentsRouter },
   { method: 'use', path: '/api/self-fix', middleware: [requireLocalFilesystem], router: selfFixRouter },
+  { method: 'use', path: '/api/logs', router: appLogRouter },
+  { method: 'use', path: '/api/app-update', middleware: [requireLocalFilesystem], router: appUpdateRouter },
 
   // CONSOLIDATED GUARD CHAIN — must stay in one entry.
   // Window import writes to disk and runs window:sync. The local-filesystem
@@ -187,13 +199,14 @@ export const ROUTE_MOUNTS = Object.freeze([
   },
   { method: 'use', path: '/api/mlops', router: mlopsRouter },
   { method: 'use', path: '/api/reliability', router: reliabilityRouter },
-  { method: 'use', path: '/api/ideas', router: ideasRouter },
+  { method: 'use', path: '/api/ideas', middleware: [ownerForChanges], router: ideasRouter },
   { method: 'use', path: '/api/ollama', router: ollamaRouter },
   { method: 'use', path: '/api/oauth', router: oauthRouter },
   { method: 'use', path: '/api/agent-registry', router: agentRegistryRouter },
   { method: 'use', path: '/api/agent-endpoints', router: agentEndpointsRouter },
   { method: 'use', path: '/api/outside-tools', router: outsideToolsRouter },
   { method: 'use', path: '/api/agent-memory', router: agentMemoryRouter },
+  { method: 'use', path: '/api/recents', router: recentsRouter },
   { method: 'use', path: '/api/agent-scout', router: agentScoutRouter },
   { method: 'use', path: '/api/design', router: designRouter },
   { method: 'use', path: '/api/modules', router: modulesRouter },
@@ -220,19 +233,8 @@ export function mountRoutes(app) {
     if (entry.router) handlers.push(entry.router);
     if (entry.handler) handlers.push(entry.handler);
 
-    if (method === 'get') {
-      app.get(entry.path, ...handlers);
-    } else if (method === 'post') {
-      app.post(entry.path, ...handlers);
-    } else if (method === 'put') {
-      app.put(entry.path, ...handlers);
-    } else if (method === 'delete') {
-      app.delete(entry.path, ...handlers);
-    } else if (method === 'patch') {
-      app.patch(entry.path, ...handlers);
-    } else {
-      app.use(entry.path, ...handlers);
-    }
+    const verb = ['get', 'post', 'put', 'delete', 'patch'].includes(method) ? method : 'use';
+    app[verb](entry.path, ...handlers);
   }
   return app;
 }

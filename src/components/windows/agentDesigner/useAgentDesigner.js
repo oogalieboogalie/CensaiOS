@@ -3,6 +3,7 @@ import { api } from '../../../lib/api.js';
 import { getAgentById, updateAgent } from '../../../lib/agentStore.js';
 import { DEFAULT_TOOLS, defaultModelForProvider, uniqueAgentId } from './modelConfig.js';
 import { useWorkspaceStore } from '../../../lib/store.js';
+import { filterToolGroups } from '../../../lib/tools/toolSearch.js';
 
 export function useAgentDesigner(win, onCreateAgent, onUpdate, agents, groups) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
@@ -189,13 +190,8 @@ export function useAgentDesigner(win, onCreateAgent, onUpdate, agents, groups) {
   };
 
   const toolGroups = toolCatalog.kits?.length ? toolCatalog.kits : (toolCatalog.categories || []);
-  const filteredCategories = toolGroups.map(category => ({
-    ...category,
-    tools: (category.tools || []).filter(tool => {
-      const needle = `${tool.label} ${tool.name} ${tool.description} ${tool.category} ${tool.type} ${tool.kit} ${(tool.tags || []).join(' ')}`.toLowerCase();
-      return needle.includes(toolSearch.toLowerCase());
-    }),
-  })).filter(category => category.tools.length > 0);
+  // Search by meaning (diagram 10): "send a message" also finds mail tools.
+  const { groups: filteredCategories, meanings: toolMeanings } = filterToolGroups(toolGroups, toolSearch);
 
   return {
     isEditMode,
@@ -220,6 +216,6 @@ export function useAgentDesigner(win, onCreateAgent, onUpdate, agents, groups) {
     saving, setSaving,
     inputRef,
     templateAgent, parentAgent, glyph, selectedToolRows, preview,
-    applyTemplate, toggleGroup, toggleTool, createAgent, filteredCategories,
+    applyTemplate, toggleGroup, toggleTool, createAgent, filteredCategories, toolMeanings,
   };
 }

@@ -1,6 +1,10 @@
 function text(value, label) {
   const result = String(value ?? '').trim();
-  if (!result) throw new Error(`${label} is required`);
+  if (!result) {
+    const error = new Error(`${label} is required`);
+    error.statusCode = 400;
+    throw error;
+  }
   return result;
 }
 

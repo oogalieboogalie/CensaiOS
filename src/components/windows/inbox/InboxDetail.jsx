@@ -54,7 +54,9 @@ function AgentLog({ taskId, label, onAnswer }) {
   );
 }
 
-export function InboxDetail({ item, act, onFix, onOpen, onAcknowledge, onAnswer }) {
+export function InboxDetail({ item, act, onFix, onOpen, onAcknowledge, onAnswer, onMarkDone }) {
+  const [note, setNote] = React.useState(null);
+  React.useEffect(() => setNote(null), [item?.id]);
   if (!item) {
     return (
       <div className="hb-inbox-detail hb-inbox-empty">
@@ -67,7 +69,12 @@ export function InboxDetail({ item, act, onFix, onOpen, onAcknowledge, onAnswer 
   const fixAction = fixActionFor(item);
   const fixing = act?.state === 'fixing';
   const taskId = item.taskId || act?.taskId || null;
-  const canOpen = item.kind === 'pr' || item.kind === 'agent';
+  const canOpen = ['pr', 'agent', 'invite', 'todo'].includes(item.kind) || (item.kind === 'note' && item.url);
+  const openLabel = { pr: 'Open PR', agent: 'Open agent', invite: 'Open board', todo: 'Open', note: 'Open listing' }[item.kind];
+  const markDone = () => {
+    const result = onMarkDone?.(item);
+    if (result && !result.ok) setNote(result.why);
+  };
   return (
     <div className="hb-inbox-detail">
       <header className="hb-inbox-detail-head">
@@ -79,7 +86,7 @@ export function InboxDetail({ item, act, onFix, onOpen, onAcknowledge, onAnswer 
             <span>{[item.repo, item.by, timeAgo(item.at) && `${timeAgo(item.at)} ago`.replace('now ago', 'just now')].filter(Boolean).join(' · ')}</span>
           </p>
         </div>
-        {canOpen ? <button type="button" className="hb-btn" onClick={() => onOpen(item)}>{item.kind === 'pr' ? 'Open PR' : 'Open agent'} <kbd>O</kbd></button> : null}
+        {canOpen ? <button type="button" className="hb-btn" onClick={() => onOpen(item)}>{openLabel} <kbd>O</kbd></button> : null}
       </header>
 
       <div className="hb-inbox-stats">
@@ -111,6 +118,12 @@ export function InboxDetail({ item, act, onFix, onOpen, onAcknowledge, onAnswer 
             {fixing ? 'Agent working…' : FIX_LABEL[fixAction]} <kbd>F</kbd>
           </button>
         ) : null}
+        {item.kind === 'todo' ? (
+          <button type="button" className="hb-btn" data-primary="true" onClick={markDone} data-testid="inbox-todo-done">
+            <Icon.Check size={12} /> Mark done <kbd>D</kbd>
+          </button>
+        ) : null}
+        {note ? <span className="hb-inbox-note" role="status">{note}</span> : null}
         <span className="hb-inbox-spacer" />
         <button type="button" className="hb-btn hb-inbox-ack" onClick={() => onAcknowledge(item)}>
           <Icon.Check size={12} /> Acknowledge <kbd>E</kbd>

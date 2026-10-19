@@ -17,6 +17,9 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
         messages, 
         agentId, 
         windowId: opts.windowId,
+        conversationId: opts.conversationId,
+        // The person's own time zone, so the agent reads times the way they do.
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         workspaceId: opts.workspaceId,
         currentProject: opts.currentProject,
         stream: true 
@@ -35,78 +38,11 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
         tools: data.tools,
         changeImpact: data.changeImpact,
         projectContext: data.projectContext || [],
+        sevenContexts: data.sevenContexts || null,
       };
     }
 
-    let finalText = '';
-    let finalTimings = null;
-    let finalTools = [];
-    let finalChangeImpact = null;
-    let finalProjectContext = [];
-    let finalError = null;
-    let receivedResult = false;
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    const handleLine = (line) => {
-      try {
-        const event = JSON.parse(line);
-        if (event.type === 'delta') {
-          opts.onDelta?.(String(event.text || ''), event.round || 1);
-        } else if (event.type === 'status' && opts.onStatusUpdate) {
-          opts.onStatusUpdate(event.status, event.detail);
-        } else if (event.type === 'change_impact') {
-          finalChangeImpact = event.impact;
-          opts.onChangeImpact?.(event.impact);
-        } else if (event.type === 'result') {
-          receivedResult = true;
-          finalText = event.text;
-          finalTimings = event.timings;
-          finalTools = event.tools;
-          finalChangeImpact = event.changeImpact || finalChangeImpact;
-          finalProjectContext = event.projectContext || [];
-        } else if (event.type === 'error') {
-          finalError = chatStreamError(event);
-        }
-      } catch (err) {
-        console.error('Failed to parse streaming line:', err, line);
-      }
-    };
-
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) {
-        if (buffer.trim()) {
-          handleLine(buffer.trim());
-        }
-        break;
-      }
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // save the partial line back to buffer
-      for (const line of lines) {
-        if (line.trim()) {
-          handleLine(line.trim());
-        }
-      }
-    }
-
-    if (finalError) throw finalError;
-    if (!receivedResult) {
-      throw new ChatRequestError('The AI response ended before a final result arrived. Try again.', {
-        code: 'CHAT_STREAM_INCOMPLETE',
-      });
-    }
-
-    return {
-      text: finalText,
-      timings: finalTimings,
-      tools: finalTools,
-      changeImpact: finalChangeImpact,
-      projectContext: finalProjectContext,
-    };
+    return await readChatStream(res, opts);
   } catch (err) {
     if (err instanceof ChatRequestError) throw err;
     if (err?.name === 'AbortError') {
@@ -117,6 +53,88 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
       details: { cause: err?.message || String(err) },
     });
   }
+}
+
+/**
+ * Reads a chat reply streamed as NDJSON (delta, status, change_impact,
+ * result, error lines). Shared by /api/chat and the Grok sign-in chat.
+ */
+export async function readChatStream(res, opts = {}) {
+  let finalText = '';
+  let finalTimings = null;
+  let finalTools = [];
+  let finalChangeImpact = null;
+  let finalProjectContext = [];
+  let finalSevenContexts = null;
+  let finalError = null;
+  let receivedResult = false;
+  let resultEvent = null;
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  const handleLine = (line) => {
+    try {
+      const event = JSON.parse(line);
+      if (event.type === 'delta') {
+        opts.onDelta?.(String(event.text || ''), event.round || 1);
+      } else if (event.type === 'status' && opts.onStatusUpdate) {
+        opts.onStatusUpdate(event.status, event.detail);
+      } else if (event.type === 'change_impact') {
+        finalChangeImpact = event.impact;
+        opts.onChangeImpact?.(event.impact);
+      } else if (event.type === 'result') {
+        receivedResult = true;
+        resultEvent = event;
+        finalText = event.text;
+        finalTimings = event.timings;
+        finalTools = event.tools;
+        finalChangeImpact = event.changeImpact || finalChangeImpact;
+        finalProjectContext = event.projectContext || [];
+        finalSevenContexts = event.sevenContexts || null;
+      } else if (event.type === 'error') {
+        finalError = chatStreamError(event);
+      }
+    } catch (err) {
+      console.error('Failed to parse streaming line:', err, line);
+    }
+  };
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) {
+      if (buffer.trim()) {
+        handleLine(buffer.trim());
+      }
+      break;
+    }
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // save the partial line back to buffer
+    for (const line of lines) {
+      if (line.trim()) {
+        handleLine(line.trim());
+      }
+    }
+  }
+
+  if (finalError) throw finalError;
+  if (!receivedResult) {
+    throw new ChatRequestError('The AI response ended before a final result arrived. Try again.', {
+      code: 'CHAT_STREAM_INCOMPLETE',
+    });
+  }
+
+  return {
+    text: finalText,
+    timings: finalTimings,
+    tools: finalTools,
+    changeImpact: finalChangeImpact,
+    projectContext: finalProjectContext,
+    sevenContexts: finalSevenContexts,
+    result: resultEvent,
+  };
 }
 
 async function postChatJson(path, body) {

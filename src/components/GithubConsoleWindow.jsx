@@ -3,6 +3,7 @@ import { WindowTitle } from './windows/WindowTitle.jsx';
 import { Icon } from './Icons.jsx';
 import { useGithubConsole } from './github/useGithubConsole.js';
 import { useMergeDesk } from './github/useMergeDesk.js';
+import { useReviewTeam } from './github/useReviewTeam.js';
 import { MergeDesk, ConnectGithub } from './github/MergeDesk.jsx';
 import { GithubIssuesList } from './github/GithubIssuesList.jsx';
 import { CreateIssueForm } from './github/CreateIssueForm.jsx';
@@ -37,6 +38,7 @@ function RepoPicker({ value, options, onPick, onCancel }) {
 export function GithubConsoleWindow({ win, onUpdate, currentProject }) {
   const gh = useGithubConsole(win, onUpdate, currentProject);
   const desk = useMergeDesk(win, onUpdate, gh.selectedRepo);
+  const team = useReviewTeam(gh.selectedRepo);
   const { connection } = desk;
   const showPicker = !gh.selectedRepo || gh.isEditingRepo;
   const showConnect = !showPicker && connection.checked && !connection.connected;
@@ -67,7 +69,7 @@ export function GithubConsoleWindow({ win, onUpdate, currentProject }) {
               ))}
             </nav>
             {gh.activeTab === 'pulls' ? (
-              <MergeDesk desk={desk} />
+              <MergeDesk desk={desk} team={team} />
             ) : (
               <div className="hb-gh-scroll hb-gh-pad">
                 {gh.error ? <p className="hb-gh-error">{gh.error}</p> : null}

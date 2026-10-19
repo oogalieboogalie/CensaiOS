@@ -19,9 +19,9 @@ cp .env.example .env
 docker compose -f docker-compose.yml -f docker-compose.ghcr.yml up -d
 ```
 
-Open <http://localhost:3002>. The GHCR override pulls the latest container that passed public CI.
-For a reproducible deployment, replace `latest` in `docker-compose.ghcr.yml` with the immutable
-image tag attached to a GitHub release.
+Open <http://localhost:3002>. The GHCR override pulls the newest stable release (`latest`). To stay
+on one version, replace `latest` in `docker-compose.ghcr.yml` with that version's tag (such as
+`0.4.0`); for the nightly builds, use `nightly`. See [Releases](#releases).
 
 To build the checked-out source instead:
 
@@ -84,9 +84,9 @@ the public internet to connect:
 ### Multiplayer beta status
 
 The current beta line adds workspace invitations, authenticated presence, live window movement, and
-durable human/agent canvas commits. It is not included in a public image until the beta source and
-its scrubbed export both pass review and merge. Check the release notes and immutable image tag
-instead of assuming `latest` contains an unreleased beta capability.
+durable human/agent canvas commits. New work reaches the `nightly` image first and the `latest`
+image with the next stable release, so check [CHANGELOG.md](CHANGELOG.md) for what a version
+contains instead of assuming `latest` already has a capability.
 
 The collaboration hub currently lives in one application process. Keep a shared beta deployment on
 one app replica; horizontal replicas require a shared pub/sub backplane for presence and WebSocket
@@ -111,12 +111,19 @@ docker compose -f docker-compose.yml -f docker-compose.ghcr.yml up -d
 The named Docker volumes hold Postgres, Qdrant, and application state across container updates.
 Back up those volumes before database or major-version changes.
 
-## Release receipts
+## Releases
 
-Every validated merge to public `main` creates:
+| | Stable release | Nightly build |
+|---|---|---|
+| When | Every Sunday | Every night something changed |
+| Branch | `main` | `nightly` |
+| GitHub release | `v<version>` (such as `v0.4.0`), never changed | `nightly-build` pre-release, moved to each new build |
+| Container tags | `<version>`, `stable`, `latest`, `sha-<commit>` | `nightly`, `<version>` (such as `0.5.0-nightly.20261026`), `sha-<commit>` |
 
-- an immutable `selfhost-<date>-<commit>` GitHub release;
-- matching `ghcr.io/oogalieboogalie/CensaiOS` release and commit tags;
-- a `censai-self-host-release.txt` asset tying the source commit to the image name.
+A stable release is the newest nightly build that passed every public check (CI and Security),
+promoted with a version number: its files are exactly that build's, apart from the version number
+and the changelog. Each GitHub release has its notes from [CHANGELOG.md](CHANGELOG.md) and a
+`censai-self-host-release.txt` asset naming the version, the source commit and every image tag.
 
-Use the immutable tag when you need repeatable deployments. `latest` is only a convenience pointer.
+Use a version tag when you need repeatable deployments. `latest` always points at the newest
+stable release.

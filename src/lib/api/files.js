@@ -33,3 +33,11 @@ export async function createFile(filePath, content = '') {
     if (!res.ok) throw new Error(data?.error || 'Failed to create file');
     return data;
   }
+
+/** Folders the "Mount to" picker can offer: places, or one folder's subfolders. */
+export async function listFolders(path = '') {
+    const res = await fetch(`/api/files/folders${path ? `?path=${encodeURIComponent(path)}` : ''}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw Object.assign(new Error(data?.error || 'Could not list folders'), { places: data?.places || [] });
+    return data;
+  }

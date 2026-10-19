@@ -11,6 +11,8 @@ import {
   resolveScheduledAssignee,
 } from './scheduler/assignees.js';
 import { enqueueCoreScheduleRun } from './scheduler/coreRuns.js';
+import { gateAgentWakeUp } from './wakeUps/store.js';
+import pool from './db.js';
 
 export { resolveScheduledAssignee, resolveScheduledAssigneeId } from './scheduler/assignees.js';
 
@@ -77,6 +79,14 @@ export async function tickScheduler() {
     }
 
     activeScheduleId = schedule.id;
+    // Censai's own wake-ups: paused when switched off, held back past the daily cap.
+    const hold = schedule.set_by_agent ? await gateAgentWakeUp(pool, schedule) : null;
+    if (hold) {
+      await updateSchedule(schedule.id, hold);
+      log.info('agent wake-up held', { scheduleId: schedule.id, status: hold.status });
+      lastPollError = null;
+      return;
+    }
     const coreAgents = await getAgents();
     const assignee = resolveScheduledAssignee(schedule.agent_id, coreAgents, []);
     if (!assignee) {

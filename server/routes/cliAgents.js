@@ -16,6 +16,7 @@
  * POST /api/cli-agents/tasks/:id/permissions/:requestId  { allow }
  * DELETE /api/cli-agents/tasks/:id            discard task + worktree
  * GET  /api/cli-agents/permissions            pending requests (Action Approvals)
+ * /api/cli-agents/grok-signin/*               the Grok chat on your own Grok sign-in (grokSignin.js)
  *
  * Reads are open to any signed-in member, so teammates see who is working.
  * Anything that runs a program on this machine (start, follow-up, install,
@@ -31,6 +32,7 @@ import { installCli } from '../cli-agents/install.js';
 import { allowedRoots, assertAllowedFolder } from '../cli-agents/folders.js';
 import { requireSystemAdmin } from '../security/systemAdmin.js';
 import { createLogger } from '../logger.js';
+import { grokSigninRouter } from './grokSignin.js';
 
 const log = createLogger('cli-agents-route');
 export const cliAgentsRouter = express.Router();
@@ -62,6 +64,9 @@ const wrap = (fn) => async (req, res) => {
     send(res, error);
   }
 };
+
+// The Grok chat's "Use my Grok sign-in": each person on their own Grok account.
+cliAgentsRouter.use('/grok-signin', grokSigninRouter);
 
 cliAgentsRouter.get('/roster', wrap(async (req, res) => {
   res.json({ clis: await cliRoster({ userId: req.session?.userId, force: req.query.refresh === '1' }) });

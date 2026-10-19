@@ -12,6 +12,7 @@ import { getSurfaceControlsView } from '../lib/theme/surfaceControls.js';
 import { DEFAULT_LOOK_ID, LIGHT_DEFAULT_LOOK_ID, lookPatch, resolveMood, shapeToCssVars, normalizeShape } from '../lib/theme/looks.js';
 import { syncDesktopTitleBar } from '../lib/desktopTitleBar.js';
 import { setGroupGap } from '../lib/layout/gap.js';
+import { newId } from '../lib/ids/newId.js';
 
 // Re-exported so the rest of the app can read PRESET_LIBRARY without coupling
 // to Theme.jsx. New surfaces (code editor, terminal, agent cards, …) should
@@ -109,7 +110,7 @@ function saveTheme(t) {
 }
 
 export function createId() {
-  return globalThis.crypto?.randomUUID?.() || `preset_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  return newId();
 }
 
 function applyTheme(t) {

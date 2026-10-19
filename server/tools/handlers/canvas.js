@@ -9,6 +9,7 @@ import {
 } from '../../collaboration/workspaceMutations.js';
 import { readDesignBlock, replaceDesignBlockSource } from '../../collaboration/designBlocks.js';
 import { buildPreviewWindow, normalizePreviewType } from '../../collaboration/previewBuilder.js';
+import { showInChatPreview } from '../../collaboration/chatPreview.js';
 import { formatCollaborationEpisodes } from '../../collaboration/episodePolicy.js';
 import { listRecentCollaborationEpisodesSafely } from '../../collaboration/episodeStore.js';
 
@@ -97,6 +98,14 @@ export async function handleCanvasCollaborationTool(agentId, name, args, context
     } catch (error) {
       return `Error: ${error.message}`;
     }
+    // From a chat: the chat's own live preview (opened once, refreshed after).
+    const shown = context.windowId && !args.near_window_id
+      ? await showInChatPreview(scope.workspaceId, {
+        chatWindowId: context.windowId, agentId, title: preview.title, fileName: preview.fileName,
+        html: preview.html, previewType: preview.previewType, source: null,
+      })
+      : null;
+    if (shown) return `${shown.created ? 'Projected' : 'Refreshed'} ${normalizePreviewType(args.preview_type)} preview "${shown.window.title}" in the live preview beside this chat — id: ${shown.window.id}.`;
     const result = await spawnCanvasWindow(pool, {
       workspaceId: scope.workspaceId,
       agentId,

@@ -15,7 +15,7 @@ export function AgentRunToasts({ collaboration, onOpenWindow }) {
   const tailLines = String(run.tail || '').split('\n').filter(Boolean).slice(-6);
 
   return (
-    <div style={{
+    <div data-pane-cover style={{
       position: 'fixed', right: 16, bottom: 64, zIndex: 1200, width: 340,
       background: 'var(--surface)', border: '1px solid var(--hairline)',
       borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-pop)', padding: 12,

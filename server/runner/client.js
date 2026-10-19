@@ -137,6 +137,8 @@ export class RunnerClient {
   async execRemote(command, args, options = {}) {
     const url = `${this.getRunnerUrl()}/exec`;
     const secret = this.requireRemoteSecret();
+    // An abort signal cannot travel to the runner; it ends the request here instead.
+    const { signal, ...rest } = options;
 
     const res = await fetch(url, {
       method: 'POST',
@@ -144,7 +146,8 @@ export class RunnerClient {
         'Content-Type': 'application/json',
         'x-runner-secret': secret,
       },
-      body: JSON.stringify({ command, args, options }),
+      body: JSON.stringify({ command, args, options: rest }),
+      ...(signal ? { signal } : {}),
     });
 
     if (!res.ok) {

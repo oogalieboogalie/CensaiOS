@@ -1,5 +1,5 @@
 // Alt hotkeys that open a terminal straight into a coding CLI (Claude Code,
-// Codex, Copilot CLI, Gemini CLI, OpenCode) or a plain shell. Each person
+// Codex, Copilot CLI, Gemini CLI, OpenCode, Grok) or a plain shell. Each person
 // can change or turn off any key in Settings → Hotkeys; their choice is
 // kept in this browser (localStorage), like the group hotkeys.
 //
@@ -15,6 +15,8 @@ export const AGENT_HOTKEY_ACTIONS = Object.freeze([
   { id: 'copilot', label: 'GitHub Copilot CLI', cli: 'copilot', defaultKey: 'Alt+G' },
   { id: 'gemini', label: 'Gemini CLI', cli: 'gemini', defaultKey: 'Alt+Shift+G' },
   { id: 'opencode', label: 'OpenCode', cli: 'opencode', defaultKey: 'Alt+O' },
+  // Grok on your own Grok sign-in (first time: xAI's code sign-in, then Grok).
+  { id: 'grok', label: 'Grok', cli: 'grok', defaultKey: 'Alt+X' },
   { id: 'terminal', label: 'Plain terminal', cli: null, defaultKey: 'Alt+Shift+T' },
 ]);
 

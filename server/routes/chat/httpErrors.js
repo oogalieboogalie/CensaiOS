@@ -8,7 +8,8 @@ import {
 const KEY_CODES = new Set([MODEL_KEY_MISSING, MODEL_KEY_REJECTED, 'MODEL_ACCESS_PERSONAL_KEY_REQUIRED']);
 
 const SAFE_ERROR_CODE = /^[A-Z][A-Z0-9_]{2,79}$/;
-const PUBLIC_SERVER_CODE = /^(FREE_TIER_|MODEL_ACCESS_|PLATFORM_MODEL_KIND_|SUB_AGENT_)/;
+// HOSTED_AGENT_ messages are written in server/hostedAgents and never carry a key or a vendor body.
+const PUBLIC_SERVER_CODE = /^(FREE_TIER_|MODEL_ACCESS_|PLATFORM_MODEL_KIND_|SUB_AGENT_|HOSTED_AGENT_)/;
 
 function statusCode(error) {
   const status = Number(error?.statusCode ?? error?.status);

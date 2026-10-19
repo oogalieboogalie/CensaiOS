@@ -58,8 +58,9 @@ test('a chat run reads memory, gets the memory tools, and is recorded as an epis
   expect(system).toMatch(/^sys\n\n# Your memory/);
   expect(system).toContain('I am Atlas, the planner.');
   expect(system).toContain('favorite color of the user: green (true since 2026-10-01, learned 2026-10-01)');
-  expect(system).toContain('2026-10-02: Asked: brand color | Answered: yellow');
-  expect(loopCalls[0].toolsForCaller.map((t) => t.function.name)).toEqual(['recall', 'remember_fact', 'recall_memory', 'fact_history']);
+  expect(system).toContain('2026-10-02 00:00:00 UTC: Asked: brand color | Answered: yellow');
+  expect(system).toContain('## Right now');
+  expect(loopCalls[0].toolsForCaller.map((t) => t.function.name)).toEqual(['recall', 'remember_fact', 'recall_memory', 'fact_history', 'link_things', 'end_link', 'what_was_true', 'recall_conversation']);
   expect(typeof loopCalls[0].runTool).toBe('function');
   expect(store.recordEpisode).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
     userId: 7, agentId: 'atlas', origin: 'chat', model: 'model-a', question: 'What is my favorite color?',

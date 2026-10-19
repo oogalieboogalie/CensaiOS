@@ -41,4 +41,4 @@ export const cliAgentsApi = {
 };
 
 /** Which key-vault provider holds each CLI's key (Settings → keys). */
-export const VAULT_PROVIDER = { claudecode: 'anthropic', codex: 'openai', gemini: 'google', opencode: 'opencode', copilot: 'github' };
+export const VAULT_PROVIDER = { claudecode: 'anthropic', codex: 'openai', gemini: 'google', opencode: 'opencode', copilot: 'github', grok: 'xai' };

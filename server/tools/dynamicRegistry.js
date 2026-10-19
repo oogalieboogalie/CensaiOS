@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import { createLogger } from '../logger.js';
 import { TOOL_DEFINITIONS } from './definitions.js';
 import { TOOL_REGISTRY } from './handlers/index.js';
+import { registerHandAddedTool } from './rbac/hostOwnerOnly.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +70,8 @@ export async function initializeDynamicTools() {
       TOOL_REGISTRY[toolName] = handler;
       dynamicToolsList.push(wrappedDefinition);
       dynamicHandlers[toolName] = handler;
+      // Owner-only for teammates unless the file says it only looks.
+      registerHandAddedTool(toolName, { looksOnly: module.looksOnly === true });
 
       log.info(`Successfully loaded dynamic tool: ${toolName} from ${file}`);
     } catch (err) {

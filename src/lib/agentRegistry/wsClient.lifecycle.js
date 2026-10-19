@@ -15,6 +15,7 @@
 // without coupling the public surface to test internals.
 
 import { RECONNECT_STEPS_MS, MAX_BACKOFF_MS } from './wsClient.constants.js';
+import { newId } from '../ids/newId.js';
 
 export function defaultUrl(path = '/ws/agent-registry') {
   if (typeof window === 'undefined') return `ws://localhost:3001${path}`;
@@ -24,8 +25,7 @@ export function defaultUrl(path = '/ws/agent-registry') {
 }
 
 export function newClientId() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-  return `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return newId();
 }
 
 export function makeLifecycle(ctx) {

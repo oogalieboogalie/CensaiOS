@@ -2,6 +2,7 @@ import React from 'react';
 import QRCode from 'qrcode';
 import { ThemePanelCard } from './ThemeControls.jsx';
 import { InstallAppRow } from './InstallAppRow.jsx';
+import { YorName } from '../yorware/YorSecurity.jsx';
 import {
   addressesFor,
   getOpenAnywhere,
@@ -114,7 +115,7 @@ export function OpenAnywhereSection() {
   return (
     <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 14 }} data-testid="open-anywhere">
       <div>
-        <div style={{ fontSize: 'var(--text-md)', fontWeight: 750, color: 'var(--ink)' }}>Open anywhere</div>
+        <div style={{ ...row, fontSize: 'var(--text-md)', fontWeight: 750, color: 'var(--ink)' }}>Open anywhere <YorName id="thangorodrim" /></div>
         <p style={{ ...muted, marginTop: 3 }}>
           Open this censaiOS from your other computers, tablet or phone on the same Wi-Fi, with nothing to install.
           Every device opens the same board where you left it, with your windows and agents. AI keys stay in the vault on this computer.

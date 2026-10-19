@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrandIcon } from '../../brand/BrandIcon.jsx';
 import { useNativeBrowserPane } from '../../../lib/nativeBrowserPane.js';
+import { hiddenMessage } from '../../../lib/paneCover.js';
 import { DDG_ONION, TOR_DOWNLOAD } from '../../../lib/search/engines.js';
 
 /** Before the first search: the engine's mark and where results will show. */
@@ -26,7 +27,7 @@ export function NativeResults({ winId, url }) {
   React.useEffect(() => { navigate(url); }, [url]);
   return (
     <div ref={areaRef} className="se-native">
-      <span className="se-faint">{pane.visible ? 'Loading results' : 'Results are hidden while something covers this window.'}</span>
+      <span className="se-faint">{pane.visible ? 'Loading results' : hiddenMessage(pane.hiddenBy)}</span>
     </div>
   );
 }

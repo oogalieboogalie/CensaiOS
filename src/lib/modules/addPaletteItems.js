@@ -15,7 +15,7 @@ import { BRAND_BY_KIND } from '../brands/index.js';
 import { searchPaletteEntries } from '../search/engines.js';
 
 export const CATEGORIES = Object.freeze([
-  { label: 'Chat and agents', kinds: ['chat', 'groupChat', 'agentDesigner', 'weewoo', 'rook', 'exoSkeleton', 'modelArena', 'arenaBenchmarks'] },
+  { label: 'Chat and agents', kinds: ['chat', 'groupChat', 'group', 'agentDesigner', 'weewoo', 'rook', 'exoSkeleton', 'modelArena', 'arenaBenchmarks'] },
   // Censai Office: spreadsheets and decks that export to real files.
   { label: 'Censai Office', kinds: ['officeSheets', 'officeSlides'] },
   // Censai Creative: picture, vector and video editors (the Adobe-style set).
@@ -23,23 +23,24 @@ export const CATEGORIES = Object.freeze([
   // YorWare Suite: open-source everyday apps (spec 13). Writer is the old
   // Censai Docs window (kind officeDocs) grown into the suite.
   { label: 'YorWare Suite', kinds: ['officeDocs', 'yorPdf', 'yorPhotos', 'yorLayout', 'yorDiagrams', 'yor3d', 'yorThreeEditor', 'yorCad', 'yorBooks'] },
-  { label: 'Work', kinds: ['todos', 'workflow', 'scheduler', 'operationsBoard', 'julesTasks', 'calendar', 'leadHound', 'research', 'sheets', 'leads'] },
+  { label: 'Work', kinds: ['todos', 'workflow', 'scheduler', 'operationsBoard', 'julesTasks', 'calendar', 'leadHound', 'research', 'sheets', 'leads', 'blueprints', 'agentRouter'] },
   // One row per engine; each opens the Search window set to that engine
   // (Tavily opens Research). `entries` rows carry their own props.
   { label: 'Search engines', kinds: [], entries: searchPaletteEntries(), claims: ['searchEngine'] },
-  { label: 'Build', kinds: ['terminal', 'code_editor', 'files', 'doc', 'htmlPreview', 'browser', 'vm', 'designBlock'] },
+  { label: 'Build', kinds: ['terminal', 'code_editor', 'files', 'doc', 'htmlPreview', 'browser', 'vm', 'designBlock', 'hosting'] },
   { label: 'Create', kinds: ['genImage', 'imageStudio', 'idea', 'analyticsBoard'] },
   { label: 'Teach', kinds: ['classroom'] },
   // Social canvas: follow boards and friends, a feed, your profile.
   { label: 'People', kinds: ['social'] },
-  { label: 'Media', kinds: ['shorts', 'music', 'studio', 'stream', 'teleprompter'] },
+  { label: 'Media', kinds: ['shorts', 'music', 'studio', 'humBeat', 'stream', 'teleprompter'] },
   { label: 'Games', kinds: ['asteroids', 'racetrack', 'agentCompany', 'idleBlocks', 'codeRobot', 'rhythmRun', 'driftholm', 'gamePlayground'] },
   { label: 'System', kinds: ['mailcow', 'vex', 'sovereignTest', 'marketplace'] },
 ]);
 
-// Kinds never added from the palette: agents come from the designer, groups
-// from a marquee, todo is a legacy alias, module needs a request.
-export const EXCLUDED_KINDS = new Set(['agent', 'group', 'todo', 'generic', 'chrome', 'module']);
+// Kinds never added from the palette: agents come from the designer, todo is
+// a legacy alias, module needs a request. The Group window (team card) is
+// listed; window groups themselves still come from a marquee.
+export const EXCLUDED_KINDS = new Set(['agent', 'todo', 'generic', 'chrome', 'module']);
 
 // Fallback icons for manifests that don't name one (names from Icons.jsx).
 const ICON_BY_KIND = {

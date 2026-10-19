@@ -29,6 +29,7 @@ jest.unstable_mockModule('../server/operational-intelligence/traces.js', () => (
 jest.unstable_mockModule('../server/middleware/runtimeMode.js', () => ({
   isCloudRuntime,
   isFeatureEnabled,
+  localFilesystemAllowed: () => true,
 }));
 jest.unstable_mockModule('../server/aiGateway/freeTierRuntime.js', () => ({
   resolveFreeTierRuntime,

@@ -13,6 +13,7 @@ export function useSchedulerFormState() {
   const [selectedProjectRef, setSelectedProjectRef] = React.useState('');
   const [taskText, setTaskText] = React.useState('');
   const [documentTarget, setDocumentTarget] = React.useState('');
+  const [tag, setTag] = React.useState('');
   const [showAddProject, setShowAddProject] = React.useState(false);
   const [newProjectMode, setNewProjectMode] = React.useState('local');
   const [newProjectName, setNewProjectName] = React.useState('');
@@ -34,6 +35,7 @@ export function useSchedulerFormState() {
     selectedProjectRef, setSelectedProjectRef,
     taskText, setTaskText,
     documentTarget, setDocumentTarget,
+    tag, setTag,
     showAddProject, setShowAddProject,
     newProjectMode, setNewProjectMode,
     newProjectName, setNewProjectName,

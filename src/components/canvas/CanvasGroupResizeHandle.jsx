@@ -4,7 +4,7 @@ import { captureGroupResize, resizeGroupContents } from '../../lib/layout/groupR
 
 const log = createLogger('group:resize');
 
-export function CanvasGroupResizeHandle({ group, allWins, allGroups, zoom, borderColor, dragRef, onResize }) {
+export function CanvasGroupResizeHandle({ shown = true, group, allWins, allGroups, zoom, borderColor, dragRef, onResize }) {
   const releaseResize = (e) => {
     if (!dragRef.current || dragRef.current.id !== e.pointerId) return;
     e.stopPropagation();
@@ -16,6 +16,7 @@ export function CanvasGroupResizeHandle({ group, allWins, allGroups, zoom, borde
   return (
     <div
       data-pane-passthrough
+      data-resize-grip="group"
       onPointerDown={(e) => {
         e.stopPropagation();
         e.target.setPointerCapture(e.pointerId);
@@ -44,7 +45,7 @@ export function CanvasGroupResizeHandle({ group, allWins, allGroups, zoom, borde
       onPointerCancel={releaseResize}
       style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, cursor: 'nwse-resize', pointerEvents: 'auto', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 6, color: borderColor }}
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 15 21 21 15 21"></polyline><line x1="21" y1="21" x2="15" y2="15"></line></svg>
+      <svg style={{ opacity: shown ? 1 : 0, transition: 'opacity var(--dur-fast, 120ms) var(--ease-standard)' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 15 21 21 15 21"></polyline><line x1="21" y1="21" x2="15" y2="15"></line></svg>
     </div>
   );
 }

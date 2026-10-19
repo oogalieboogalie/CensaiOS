@@ -59,6 +59,24 @@ export const canvasCollaborationTools = [
   {
     type: 'function',
     function: {
+      name: 'project_window',
+      description: 'Put a window in front of the person you are chatting with. Files you write with project_write/project_edit that can be shown (.html, .svg, .md, images; .css/.js refresh the page using them) already appear on their own in one live preview beside this chat that refreshes on every write. Use show_file to bring up a file you did not just write, point to make an existing window glow and slide their view to it, or run_app to start the project\'s dev server (Run dev) beside the chat for a full app.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: ['show_file', 'point', 'run_app'], description: 'show_file (default), point, or run_app' },
+          project: { type: 'string', description: 'Project name, for show_file and run_app (defaults to your current project)' },
+          path: { type: 'string', description: 'show_file: the file inside the project, like site/index.html' },
+          window_id: { type: 'string', description: 'point: exact window id (from canvas_window_index)' },
+          title: { type: 'string', description: 'point: or the window\'s title as people see it, like "Opening notes"' },
+          note: { type: 'string', description: 'point: optional short note on what to look at (max 140 chars)' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'canvas_window_index',
       description: 'Paginated alphabetical index of canvas windows (id, kind, label). Query and page through it instead of dumping full canvas state into context.',
       parameters: {

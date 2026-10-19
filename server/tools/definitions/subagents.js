@@ -70,16 +70,16 @@ export const subagentTools = [
     type: 'function',
     function: {
       name: 'scratchpad_write',
-      description: 'Write a key-value entry to a sub-agent\'s project scratchpad. Use for temporary notes, intermediate results, research findings, or any per-project working data.',
+      description: 'Write a key-value entry to a sub-agent\'s data box (its project scratchpad, numbered 001, 002...). Use for temporary notes, intermediate results, research findings, or any per-project working data. A sub-agent writing its own box leaves sub_agent out.',
       parameters: {
         type: 'object',
         properties: {
-          sub_agent: { type: 'string', description: 'Name of the sub-agent whose scratchpad to use' },
+          sub_agent: { type: 'string', description: 'Name, id or box number (001) of the sub-agent whose data box to use. Leave out to use your own box when you are a sub-agent.' },
           project: { type: 'string', description: 'Project name to scope the data to (default: "default")' },
           key: { type: 'string', description: 'Key name for this entry (e.g. "research-notes", "findings", "todo-list")' },
           value: { type: 'string', description: 'The content to store' },
         },
-        required: ['sub_agent', 'key', 'value'],
+        required: ['key', 'value'],
       },
     },
   },
@@ -87,15 +87,15 @@ export const subagentTools = [
     type: 'function',
     function: {
       name: 'scratchpad_read',
-      description: 'Read from a sub-agent\'s project scratchpad. Omit key to read all entries for that project.',
+      description: 'Read from a sub-agent\'s data box (its project scratchpad). Omit key to read all entries for that project. A sub-agent reading its own box leaves sub_agent out.',
       parameters: {
         type: 'object',
         properties: {
-          sub_agent: { type: 'string', description: 'Name of the sub-agent whose scratchpad to read' },
+          sub_agent: { type: 'string', description: 'Name, id or box number (001) of the sub-agent whose data box to read. Leave out to read your own box when you are a sub-agent.' },
           project: { type: 'string', description: 'Project name (default: "default")' },
           key: { type: 'string', description: 'Specific key to read (omit to read all)' },
         },
-        required: ['sub_agent'],
+        required: [],
       },
     },
   },
@@ -111,6 +111,23 @@ export const subagentTools = [
           project: { type: 'string', description: 'Project name (default: "default")' },
         },
         required: ['sub_agent'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'start_helper',
+      description: 'Sub-agents only: start a tiny one-job helper (a nano-agent) that answers once and ends. Jobs: create, review, read, write, edit, search. Pass the text it should work on as input. Its answer is saved in your data box and returned to you.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job: { type: 'string', enum: ['create', 'review', 'read', 'write', 'edit', 'search'], description: 'The one job the helper does.' },
+          task: { type: 'string', description: 'What the helper should do, in one or two sentences.' },
+          input: { type: 'string', description: 'The text the helper works on (a file you read, a draft, notes). It has no tools of its own.' },
+          project: { type: 'string', description: 'Data box project to save under (default: "default").' },
+        },
+        required: ['job', 'task'],
       },
     },
   },

@@ -17,10 +17,10 @@ import { PostgresSessionStore } from '../security/postgresSessionStore.js';
 import { createCsrfOriginGuard } from '../middleware/csrfOriginGuard.js';
 import { doorAllowsOrigin } from '../webOs/door.js';
 import { isPlaygroundRead } from './playgroundAssets.js';
+import { requestLogger } from './requestLog.js';
 
 const log = createLogger('http');
 const APP_ORIGIN = process.env.APP_ORIGIN || 'http://localhost:5173';
-const QUIET_PATHS = [/^\/api\/health$/, /^\/api\/client-state/, /^\/api\/local-dev-restarts/];
 
 export function setupMiddleware(app) {
   app.set('trust proxy', getProxyTrustSetting());
@@ -44,17 +44,7 @@ export function setupMiddleware(app) {
   app.use('/api/billing/stripe/webhook', express.raw({ type: '*/*', limit: '1mb' }));
   app.use(express.json({ limit: '10mb' }));
 
-  // Request logging
-  app.use((req, res, next) => {
-    const start = Date.now();
-    res.on('finish', () => {
-      const ms = Date.now() - start;
-      const quiet = QUIET_PATHS.some((re) => re.test(req.path));
-      const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : (quiet ? 'debug' : 'info');
-      log[level](`${req.method} ${req.originalUrl} ${res.statusCode} ${ms}ms`);
-    });
-    next();
-  });
+  app.use(requestLogger(log));
 
   const SESSION_SECRET = requireProductionSecret('SESSION_SECRET')
     || optionalSecret('SESSION_SECRET')

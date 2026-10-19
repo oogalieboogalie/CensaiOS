@@ -40,6 +40,16 @@ export const BYOK_PROVIDERS = Object.freeze([
     placeholder: 'sk_...',
   },
   {
+    id: 'googlecloud',
+    name: 'Google Cloud (Agent Engine)',
+    placeholder: 'Service account key JSON, or an AIza... express key',
+  },
+  {
+    id: 'langsmith',
+    name: 'LangSmith (LangChain agents)',
+    placeholder: 'lsv2_...',
+  },
+  {
     id: 'opencode',
     name: 'OpenCode Zen',
     placeholder: 'Zen API key',

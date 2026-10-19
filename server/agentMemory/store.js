@@ -5,20 +5,19 @@
 // separate memories for each person who uses it.
 
 import { FactError, planFactWrite } from './facts.js';
+import { inTransaction } from './tx.js';
 
 const EPISODE_COLUMNS = 'id, agent_id, workspace_id, origin, model, question, answer, summary, tools, created_at';
 const FACT_COLUMNS = `id, agent_id, subject, attribute, fact_key, value, valid_from, valid_to, recorded_at,
-  superseded_at, superseded_by, change_kind, source, episode_id`;
+  superseded_at, superseded_by, change_kind, source, episode_id, shelf`;
 const MAX_IDENTITY = 2000;
 
 // Agent ids are compared without case everywhere else (outside tools, Share).
 const aid = (agentId) => String(agentId).toLowerCase();
 
-/** Plain words to an "any of these words" search, safe for to_tsquery. */
-export function searchTerms(text, max = 12) {
-  const words = String(text || '').toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) || [];
-  return [...new Set(words)].slice(0, max).join(' | ');
-}
+import { searchTerms } from './searchTerms.js';
+
+export { searchTerms };
 
 export async function recordEpisode(db, { userId, agentId, workspaceId = null, origin, model = null, question, answer, summary, tools = [] }) {
   const { rows } = await db.query(
@@ -75,21 +74,6 @@ export async function factHistory(db, { userId, agentId, key = null }) {
   return rows;
 }
 
-async function inTransaction(db, work) {
-  const client = typeof db.connect === 'function' ? await db.connect() : db;
-  try {
-    await client.query('BEGIN');
-    const result = await work(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw error;
-  } finally {
-    if (client !== db) client.release?.();
-  }
-}
-
 /**
  * Remember a fact. Returns { status: 'same' | 'new' | 'change' | 'correction', fact, previous }.
  * `input` comes from normalizeFactInput.
@@ -114,11 +98,11 @@ export async function writeFact(db, { userId, agentId, input, source = 'agent', 
     for (const row of plan.rows) {
       const { rows } = await client.query(
         `INSERT INTO agent_facts (user_id, agent_id, subject, attribute, fact_key, value, valid_from, valid_to,
-           recorded_at, change_kind, source, episode_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           recorded_at, change_kind, source, episode_id, shelf)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          RETURNING ${FACT_COLUMNS}`,
         [userId, aid(agentId), row.subject, row.attribute, row.fact_key, row.value, row.valid_from,
-          row.valid_to || null, now, row.change_kind, source, episodeId],
+          row.valid_to || null, now, row.change_kind, source, episodeId, row.shelf || null],
       );
       written = rows[0];
     }

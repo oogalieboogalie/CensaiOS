@@ -1,5 +1,6 @@
 import os from 'os';
 import path from 'path';
+import { personalHomeEnv } from './personalHome.js';
 
 /**
  * The environment a coding CLI runs with. It starts from an allowlist, not
@@ -25,7 +26,11 @@ function operatorPassThrough(source) {
     .split(',').map((s) => s.trim()).filter((s) => /^[A-Z][A-Z0-9_]{1,63}$/.test(s));
 }
 
-export function buildAgentEnv({ source = process.env, key = null, keyEnv = null, managedBin = null, home = null } = {}) {
+/**
+ * `personal` ({ adapter, userId }) points a CLI with a per-person sign-in
+ * folder (Grok's GROK_HOME) at that person's own folder.
+ */
+export function buildAgentEnv({ source = process.env, key = null, keyEnv = null, managedBin = null, home = null, personal = null } = {}) {
   const env = {};
   for (const name of [...PASS_THROUGH, ...operatorPassThrough(source)]) {
     if (source[name] != null) env[name] = source[name];
@@ -41,6 +46,7 @@ export function buildAgentEnv({ source = process.env, key = null, keyEnv = null,
     const pathKey = env.Path && !env.PATH ? 'Path' : 'PATH';
     env[pathKey] = [managedBin, env[pathKey] || ''].filter(Boolean).join(path.delimiter);
   }
+  if (personal) Object.assign(env, personalHomeEnv(personal.adapter, personal.userId, source));
   if (key && keyEnv) env[keyEnv] = key;
   env.TERM = 'dumb';
   env.NO_COLOR = '1';

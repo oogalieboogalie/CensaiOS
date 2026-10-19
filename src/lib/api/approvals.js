@@ -36,3 +36,33 @@ export async function setAgentTrust({ workspaceId, agentId, trusted }) {
     body: JSON.stringify({ workspaceId, agentId, trusted }),
   }), 'Trust mode was not saved.');
 }
+
+export async function getAgentSpeakUp(workspaceId) {
+  return readConfigurationResponse(
+    await fetch(`/api/agent-speak-up?${configurationWorkspaceQuery(workspaceId)}`),
+    'Speak up could not be loaded.',
+  );
+}
+
+export async function setAgentSpeakUp({ workspaceId, agentId, enabled }) {
+  return readConfigurationResponse(await fetch('/api/agent-speak-up', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workspaceId, agentId, enabled }),
+  }), 'Speak up was not saved.');
+}
+
+export async function getAgentWakeUps(workspaceId) {
+  return readConfigurationResponse(
+    await fetch(`/api/agent-wake-ups?${configurationWorkspaceQuery(workspaceId)}`),
+    'Wake-ups could not be loaded.',
+  );
+}
+
+export async function setAgentWakeUps({ workspaceId, agentId, enabled }) {
+  return readConfigurationResponse(await fetch('/api/agent-wake-ups', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workspaceId, agentId, enabled }),
+  }), 'Wake-ups were not saved.');
+}

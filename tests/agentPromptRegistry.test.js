@@ -42,6 +42,10 @@ jest.unstable_mockModule('../server/memory/core.js', () => ({
   loadCapabilities: jest.fn(async () => ''),
 }));
 
+// Equipped skill sets have their own tests (tests/skillSets.test.js).
+jest.unstable_mockModule('../server/skillSets/store.js', () => ({ loadEquippedSkillSets: jest.fn(async () => []) }));
+jest.unstable_mockModule('../server/blueprints/store.js', () => ({ lookupBlueprintsForMessage: jest.fn(async () => null) }));
+
 const buildSubAgentRosterPrompt = jest.fn(async () => '');
 jest.unstable_mockModule('../server/memory/subagentRoster.js', () => ({ buildSubAgentRosterPrompt }));
 

@@ -3,12 +3,12 @@
 // session id, so windows saved before tabs existed open exactly as before.
 
 import { AGENT_HOTKEY_ACTIONS } from '../../lib/agentHotkeys.js';
+import { newId } from '../../lib/ids/newId.js';
 
 const MAX_TABS = 12;
 
 function newTabId() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID().slice(0, 8);
-  return Math.random().toString(36).slice(2, 10);
+  return newId().slice(0, 8);
 }
 
 export function terminalTabs(win = {}) {

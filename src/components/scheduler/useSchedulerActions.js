@@ -12,7 +12,7 @@ export function useSchedulerActions(data, formState, currentProject, workspaceId
     newProjectMode, newProjectName, newProjectPath, newProjectRepo,
     setAddingProject, setAddProjectError, setShowAddProject,
     setNewProjectName, setNewProjectPath, setNewProjectRepo, setNewProjectMode,
-    taskText, setTaskText, documentTarget, setDocumentTarget,
+    taskText, setTaskText, documentTarget, setDocumentTarget, tag,
     when,
     selectedAgentId
   } = formState;
@@ -87,6 +87,7 @@ export function useSchedulerActions(data, formState, currentProject, workspaceId
       project_ref: projectRef || null,
       task_text: taskText.trim(),
       document_target: documentTarget.trim() || null,
+      tag: tag || null,
       ...rowFieldsFromSpec(when),
       status: 'active'
     };

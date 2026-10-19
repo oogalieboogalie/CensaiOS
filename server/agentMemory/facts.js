@@ -12,6 +12,8 @@
 // gives the new value the old start date. Either way the history shows both
 // versions with their dates.
 
+import { cleanShelf, guessShelf } from '../../src/lib/agentMemory/shelves.js';
+
 const MAX_PART = 80;
 const MAX_VALUE = 500;
 
@@ -48,7 +50,8 @@ export function normalizeFactInput(input = {}, now = new Date()) {
   if (!value) throw new FactError('Say what the fact is (for example "green").');
   const kind = input.kind === 'correction' ? 'correction' : 'change';
   const validFrom = parseWhen(input.validFrom ?? input.valid_from, now);
-  return { subject, attribute, value, key: factKey(subject, attribute), kind, validFrom };
+  const shelf = cleanShelf(input.shelf) || guessShelf(subject, attribute, value);
+  return { subject, attribute, value, key: factKey(subject, attribute), kind, validFrom, shelf };
 }
 
 /**
@@ -60,7 +63,7 @@ export function normalizeFactInput(input = {}, now = new Date()) {
  *            the last row is the new current belief
  */
 export function planFactWrite(current, input, now = new Date()) {
-  const base = { subject: input.subject, attribute: input.attribute, fact_key: input.key };
+  const base = { subject: input.subject, attribute: input.attribute, fact_key: input.key, shelf: input.shelf || null };
   if (!current) {
     return { action: 'insert', rows: [{ ...base, value: input.value, valid_from: input.validFrom, change_kind: 'new' }] };
   }
@@ -124,3 +127,24 @@ export function describeHistory(rows) {
     return `- ${label} "${row.value}" (${row.valid_to ? `true ${day(row.valid_from)} to ${day(row.valid_to)}` : `true since ${day(row.valid_from)}`}; learned ${day(row.recorded_at)}; ${state})`;
   }).join('\n');
 }
+
+function words(text) {
+  return new Set(String(text || '').toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) || []);
+}
+
+/** Facts sharing at least one word with the query, most shared words first. */
+export function matchFacts(facts, query) {
+  const wanted = words(query);
+  if (!wanted.size) return [];
+  return facts
+    .map((fact) => {
+      const have = words(`${fact.subject} ${fact.attribute} ${fact.value}`);
+      let score = 0;
+      for (const w of wanted) if (have.has(w)) score += 1;
+      return { fact, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((x) => x.fact);
+}
+

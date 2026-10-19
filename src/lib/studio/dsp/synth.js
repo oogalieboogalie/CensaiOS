@@ -11,6 +11,8 @@ export const SYNTH_PRESETS = Object.freeze({
   bass: { label: 'Bass', osc1: 'saw', osc2: 'square', mix: 0.45, detune: 2, oct2: -1, cutoff: 380, res: 0.35, envAmt: 1600, a: 0.002, d: 0.25, s: 0.6, r: 0.12, fa: 0.001, fd: 0.18, fs: 0.1, fr: 0.12, level: -10 },
   pluck: { label: 'Pluck', osc1: 'square', osc2: 'saw', mix: 0.35, detune: 6, oct2: 1, cutoff: 900, res: 0.3, envAmt: 5200, a: 0.001, d: 0.28, s: 0, r: 0.25, fa: 0.001, fd: 0.16, fs: 0, fr: 0.2, level: -13 },
   lead: { label: 'Lead', osc1: 'saw', osc2: 'square', mix: 0.4, detune: 7, oct2: 0, cutoff: 2600, res: 0.4, envAmt: 2000, a: 0.01, d: 0.3, s: 0.7, r: 0.2, fa: 0.01, fd: 0.4, fs: 0.4, fr: 0.25, level: -14 },
+  // Played by the drum kit in drums.js; only its level is used.
+  drums: { label: 'Drum kit', osc1: 'sine', osc2: 'sine', mix: 0, detune: 0, oct2: 0, cutoff: 16000, res: 0, envAmt: 0, a: 0.001, d: 0.3, s: 0, r: 0.1, fa: 0.001, fd: 0.1, fs: 0, fr: 0.1, level: -6 },
 });
 
 const VOICES = 12;

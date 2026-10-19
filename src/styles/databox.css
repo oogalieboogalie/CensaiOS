@@ -1,0 +1,26 @@
+/* Sub-agent data boxes (diagram 15): the "001 Data" chip on each sub-agent
+   row in the Group window, and the box it opens. */
+.hb-databox-chip { all: unset; cursor: pointer; padding: var(--space-0-5) var(--space-2); border: 1px solid var(--hairline-strong); border-radius: var(--radius-full); font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-soft); white-space: nowrap; }
+.hb-databox-chip:hover, .hb-databox-chip[aria-expanded="true"] { color: var(--accent-ink); border-color: var(--accent-line); background: var(--accent-soft); }
+.hb-databox-chip:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+.hb-databox { margin: 0 var(--space-2) var(--space-2) 40px; padding: var(--space-2); border: 1px solid var(--hairline-strong); border-radius: var(--radius-md); background: var(--surface-2); display: flex; flex-direction: column; gap: var(--space-1-5); }
+.hb-databox-head { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-databox-empty, .hb-databox-error { margin: 0; font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-databox-error { color: var(--danger); }
+.hb-databox-list { margin: 0; display: flex; flex-direction: column; gap: var(--space-1); max-height: 180px; overflow: auto; }
+.hb-databox-entry { padding: var(--space-1) var(--space-1-5); border-radius: var(--radius-sm); background: var(--surface-1); }
+.hb-databox-entry dt { font-size: var(--text-xs); font-weight: 600; color: var(--ink); }
+.hb-databox-entry dd { margin: 0; font-size: var(--text-xs); color: var(--ink-soft); white-space: pre-wrap; word-break: break-word; }
+.hb-databox-add { display: flex; gap: var(--space-1); }
+.hb-databox-add input { flex: 1; min-width: 0; padding: var(--space-1) var(--space-1-5); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-1); color: var(--ink); font-size: var(--text-xs); }
+.hb-databox-add input:first-child { flex: 0 0 30%; }
+.hb-databox-door { display: flex; flex-direction: column; gap: var(--space-1); border-top: 1px solid var(--hairline); padding-top: var(--space-1-5); }
+.hb-databox-door-toggle { all: unset; cursor: pointer; align-self: flex-start; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-databox-door-toggle:hover { color: var(--accent-ink); }
+.hb-databox-door-toggle:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+.hb-databox-door-row { display: flex; align-items: center; gap: var(--space-1); }
+.hb-databox-door-verb { flex: 0 0 auto; min-width: 3.5em; font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 600; color: var(--accent-ink); }
+.hb-databox-door-row code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: var(--space-0-5) var(--space-1); border-radius: var(--radius-sm); background: var(--surface-1); font-size: var(--text-xs); color: var(--ink); }
+.hb-databox-add select { flex: 0 0 auto; padding: var(--space-1); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-1); color: var(--ink); font-size: var(--text-xs); }
+.hb-databox-helper .hb-databox-add input:first-child { flex: 1; }
+.hb-databox-helper-input { padding: var(--space-1) var(--space-1-5); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-1); color: var(--ink); font-size: var(--text-xs); font-family: inherit; resize: vertical; }

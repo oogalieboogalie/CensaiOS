@@ -33,16 +33,33 @@ function spawnHostShell(cwd, size) {
     : base.includes('cmd')
       ? 'cmd'
       : 'bash';
-  return { proc, label: `Host shell (${path.basename(shell)})`, isSandbox: false, shell: shellFamily };
+  return { proc, label: `Host shell (${path.basename(shell)})`, isSandbox: false, shell: shellFamily, note: hostShellNote() };
 }
 
-export async function startBackend(cwd, hasProject, size) {
+// Said once when a shell opens outside the sandbox, so nobody mistakes it
+// for one. In Docker, "root" is the app container's own root.
+export function hostShellNote(env = process.env) {
+  if (env.CENSAI_IN_CONTAINER === '1') {
+    return 'Not the sandbox: this shell runs inside the censaiOS app container (its own Linux, root there only). '
+      + 'It sees the CensaiHub folder and your projects folder, not the rest of your PC. It has internet.';
+  }
+  return 'Not the sandbox: this is a shell on this computer, with your own account\'s access.';
+}
+
+// A shell outside the sandbox can read the app's files, so only the board's
+// owner or an admin may open one; teammates get the sandbox or nothing.
+const HOST_SHELL_ROLES = new Set(['owner', 'admin']);
+
+export async function startBackend(cwd, hasProject, size, owner = null) {
   if (hasProject && await isDockerAvailable()) {
     try {
       return await spawnSandboxBackend(cwd, size);
     } catch (err) {
       log.warn('sandbox backend failed, falling back', { cwd, error: err.message });
     }
+  }
+  if (owner?.role && !HOST_SHELL_ROLES.has(owner.role)) {
+    throw new Error('The sandbox is not available, and only the board\'s owner can open a shell outside it. Mount this terminal to a project, or ask the owner.');
   }
   if (process.platform === 'win32') {
     try {

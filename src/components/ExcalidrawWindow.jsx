@@ -8,6 +8,7 @@ import { Icon } from './Icons.jsx';
 import { SketchpadActions } from './excalidraw/SketchpadActions.jsx';
 import { createPalmFilter } from '../lib/ink/palmFilter.js';
 import { coalescedSamples, inkPoint } from '../lib/ink/stroke.js';
+import { newId } from '../lib/ids/newId.js';
 
 // The board's copy is the shared one (spec 9); this browser's saved copy is
 // only a fallback for windows from before the scene was stored on the board.
@@ -97,7 +98,7 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
       return;
     }
 
-    const newId = crypto.randomUUID();
+    const newId = newId();
     let newEl = null;
     if (activeMode === 'pencil') newEl = { id: newId, type: 'pencil', x, y, pts: [inkPoint({ x, y }, e)], color, strokeWidth, pen: e.pointerType === 'pen' };
     else if (activeMode === 'rect') newEl = { id: newId, type: 'rect', x, y, w: 0, h: 0, color, strokeWidth };

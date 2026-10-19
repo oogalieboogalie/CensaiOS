@@ -4,6 +4,11 @@ import * as k8s from '@kubernetes/client-node';
 
 export const kubernetesRouter = express.Router();
 
+// @kubernetes/client-node 1.x and later answer with the list itself; older
+// versions wrapped it in { body }. Reading `.body.items` on the new shape
+// crashed, so the window never showed a real cluster.
+const itemsOf = (res) => (res?.body ?? res)?.items || [];
+
 // GET /api/kubernetes/status
 kubernetesRouter.get('/kubernetes/status', requireLocalFilesystem, async (req, res) => {
   try {
@@ -25,7 +30,7 @@ kubernetesRouter.get('/kubernetes/status', requireLocalFilesystem, async (req, r
 
     // Fetch namespaces
     const namespacesRes = await k8sCoreApi.listNamespace();
-    const namespaces = namespacesRes.body.items.map(ns => ({
+    const namespaces = itemsOf(namespacesRes).map(ns => ({
       name: ns.metadata.name,
       status: ns.status.phase,
       age: ns.metadata.creationTimestamp
@@ -33,7 +38,7 @@ kubernetesRouter.get('/kubernetes/status', requireLocalFilesystem, async (req, r
 
     // Fetch pods (all namespaces)
     const podsRes = await k8sCoreApi.listPodForAllNamespaces();
-    const pods = podsRes.body.items.map(pod => ({
+    const pods = itemsOf(podsRes).map(pod => ({
       name: pod.metadata.name,
       namespace: pod.metadata.namespace,
       status: pod.status.phase,
@@ -43,7 +48,7 @@ kubernetesRouter.get('/kubernetes/status', requireLocalFilesystem, async (req, r
 
     // Fetch deployments (all namespaces)
     const deploymentsRes = await k8sAppsApi.listDeploymentForAllNamespaces();
-    const deployments = deploymentsRes.body.items.map(dep => ({
+    const deployments = itemsOf(deploymentsRes).map(dep => ({
       name: dep.metadata.name,
       namespace: dep.metadata.namespace,
       readyReplicas: dep.status.readyReplicas || 0,
@@ -56,7 +61,10 @@ kubernetesRouter.get('/kubernetes/status', requireLocalFilesystem, async (req, r
 
   } catch (err) {
     // Check if error is from k8s client connection failure
-    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND' || (err.message && err.message.includes('ECONNREFUSED'))) {
+    // The current client uses fetch: a cluster that is off says "fetch failed"
+    // with the real code on err.cause.
+    const code = err.code || err.cause?.code;
+    if (code === 'ECONNREFUSED' || code === 'ENOTFOUND' || /ECONNREFUSED|fetch failed/.test(err.message || '')) {
         return res.status(503).json({ error: 'Connection failed', message: 'Could not connect to the Kubernetes cluster' });
     }
     if (err.message && err.message.includes('HTTP protocol is not allowed')) {

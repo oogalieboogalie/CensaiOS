@@ -3,6 +3,7 @@ import { Icon } from './Icons.jsx';
 import { AgentIcon } from '../lib/agentIcons/sprite.jsx';
 import { hasVectorIcon } from '../lib/agentIcons/registry.js';
 import { FAMILY_AGENTS, FAMILY_AGENT_SYSTEMS } from '../data/family-agents.js';
+import { AgentMarkAvatar } from './agent/AgentMarkAvatar.jsx';
 
 export const BUILT_IN_AGENTS = FAMILY_AGENTS;
 export const AGENT_SYSTEMS = { ...FAMILY_AGENT_SYSTEMS };
@@ -109,6 +110,9 @@ export function AgentVectorIcon({ id, size }) {
 
 export function AgentAvatar({ agent, size = 28, ring = false, dragHandle = false }) {
   if (!agent) return null;
+  // Default face is the censaiOS mark in the agent's colour; an icon the
+  // person picked for the agent (iconRef) keeps the icon tile below.
+  if (!agent.iconRef) return <AgentMarkAvatar agent={agent} size={size} ring={ring} dragHandle={dragHandle} />;
   const showBadge = size >= 30;
   const iconSize = Math.max(11, Math.round(size * 0.54));
   const badgeSize = Math.max(12, Math.round(size * 0.34));

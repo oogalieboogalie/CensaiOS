@@ -8,6 +8,7 @@ import { readToolchainConfig } from '../sandbox/toolchainConfig.js';
 import { getUserApiKeyConfig } from '../security/userApiKeys.js';
 import { LOCAL_STATE_DIR } from '../routes/files/pathUtils.js';
 import { claimCliLogin } from './loginOwner.js';
+import { personalSignedIn } from './personalHome.js';
 
 export { CliTaskManager, buildHandoffPrompt } from './taskManager.js';
 export { CLI_ADAPTERS, getAdapter } from './adapters/index.js';
@@ -30,6 +31,8 @@ export async function resolveCliKey({ adapter, userId }) {
   const config = readToolchainConfig();
   if (config.apiKeys?.[adapter.keyEnv]) return { key: config.apiKeys[adapter.keyEnv], source: 'toolchains' };
   if (process.env[adapter.keyEnv]) return { key: process.env[adapter.keyEnv], source: 'env' };
+  // A per-person sign-in folder (Grok) is never shared: nothing to claim.
+  if (adapter.personalHome) return null;
   // No key: the CLI falls back to its own sign-in, which belongs to one person.
   const blocked = claimCliLogin({
     file: LOGIN_OWNERS_FILE, adapter, userId, signedIn: hasCliLogin(adapter.id, agentHome() || os.homedir()),
@@ -88,7 +91,7 @@ export async function cliRoster({ userId, force = false, tasks = getCliTaskManag
   return Promise.all(Object.values(CLI_ADAPTERS).map(async (adapter) => {
     const detected = await cachedVersion(adapter.id, force);
     const key = await resolveCliKey({ adapter, userId }).catch(() => null);
-    const login = hasCliLogin(adapter.id, agentHome() || os.homedir());
+    const login = adapter.personalHome ? personalSignedIn(adapter, userId) : hasCliLogin(adapter.id, agentHome() || os.homedir());
     const mine = all.filter((t) => t.cli === adapter.id);
     const running = mine.filter((t) => t.running);
     const needsApproval = mine.filter((t) => t.status === 'needs_approval');

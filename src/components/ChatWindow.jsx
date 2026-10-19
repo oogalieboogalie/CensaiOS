@@ -7,7 +7,10 @@ import { ChatBubble } from './chat/ChatBubble.jsx';
 import { ChatInput } from './chat/ChatInput.jsx';
 import { ChatEmptyState } from './chat/ChatEmptyState.jsx';
 import { ModelChip } from './chat/ModelChip.jsx';
+import { AutoPickNote } from './chat/AutoPickNote.jsx';
 import { FreeAiAllowanceNotice } from './chat/FreeAiAllowanceNotice.jsx';
+import { GrokSourceBar } from './chat/GrokSourceBar.jsx';
+import { useGrokSource } from './chat/useGrokSource.js';
 import { RelatedContext } from './doc/RelatedContext.jsx';
 import { useWorkspaceStore } from '../lib/store.js';
 import { agentHueStyle } from '../lib/chat/persona.js';
@@ -15,20 +18,32 @@ import { AgentEndpointPanel } from './agentEndpoints/AgentEndpointPanel.jsx';
 import { OutsideToolsPanel } from './outsideTools/OutsideToolsPanel.jsx';
 import { AgentMemoryPanel } from './agentMemory/AgentMemoryPanel.jsx';
 import { AgentScoutPanel } from './agentScout/AgentScoutPanel.jsx';
+import { hostedVendorOf } from './agent/HostedBadge.jsx';
 
 export function ChatWindow({ win, onUpdate, allWins, canvasGroups, currentProject, isActive, workspaceId }) {
   const activeWorkspaceId = useWorkspaceStore(state => state.workspaceId);
-  const chat = useChat({ win, onUpdate, allWins, canvasGroups, currentProject, isActive });
+  const sendVia = React.useRef(null);
+  const chat = useChat({ win, onUpdate, allWins, canvasGroups, currentProject, isActive, sendVia });
   const { agent, msgs, sending, capabilities, speaker } = chat;
   const visible = msgs.filter(m => !m.hidden);
   const lastAgentIndex = msgs.reduce((last, m, i) => (m.from !== 'me' && !m.hidden ? i : last), -1);
   const provider = agent.model_provider || agent.modelProvider || null;
+  // A hosted agent answers from its vendor, so no model is picked here.
+  const hosted = hostedVendorOf(agent);
+  // Grok: run on the person's own Grok sign-in or on their xAI key.
+  const grok = useGrokSource({ win, onUpdate, provider });
+  sendVia.current = grok.sendVia;
   // One panel over the chat at a time: 'memory', 'scout', 'tools' (outside tools) or 'share' (Share agent).
   const [panel, setPanel] = React.useState(null);
   const sharing = panel === 'share';
   const toolsOpen = panel === 'tools';
   const memoryOpen = panel === 'memory';
   const scoutOpen = panel === 'scout';
+  // Picking a model by hand overrides Auto-pick, so it turns off.
+  const selectModel = (p, model) => {
+    if (chat.autoPick.on) chat.autoPick.setAuto(false);
+    chat.selectModel(p, model);
+  };
   const togglePanel = (name) => setPanel((open) => (open === name ? null : name));
   const boardId = workspaceId ?? activeWorkspaceId;
   const canShare = Boolean(win.agentId && boardId && !win.demoMode);
@@ -37,7 +52,7 @@ export function ChatWindow({ win, onUpdate, allWins, canvasGroups, currentProjec
     canShare ? { id: 'agent-scout', label: 'Scout', title: `${agent.name}'s scout: maps the code and points to the line to change`, icon: <Icon.Eye size={13} />, pressed: scoutOpen, onSelect: () => togglePanel('scout') } : null,
     canShare ? { id: 'agent-tools', label: 'Tools', title: `Give ${agent.name} tools from outside MCP servers`, icon: <Icon.Toolbox size={13} />, pressed: toolsOpen, onSelect: () => togglePanel('tools') } : null,
     canShare ? { id: 'share-agent', label: 'Share', title: `Let other apps ask ${agent.name}`, icon: <Icon.Plug size={13} />, pressed: sharing, onSelect: () => togglePanel('share') } : null,
-    msgs.length > 0 ? { id: 'new-chat', label: 'New chat', icon: <Icon.Plus size={13} />, onSelect: () => onUpdate({ msgs: [] }) } : null,
+    msgs.length > 0 ? { id: 'new-chat', label: 'New chat', icon: <Icon.Plus size={13} />, onSelect: () => onUpdate({ msgs: [], chatId: `chat:${win.id}:${Date.now()}`, grokSessionId: null }) } : null,
   ].filter(Boolean);
 
   return (
@@ -45,7 +60,7 @@ export function ChatWindow({ win, onUpdate, allWins, canvasGroups, currentProjec
       <WindowTitle
         agent={agent}
         label={agent.name}
-        subtitle={capabilities?.model || agent.role}
+        subtitle={hosted ? `Hosted on ${hosted.label}` : capabilities?.model || agent.role}
         attachedAgentIds={win.attachedAgents}
         onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
         actions={actions.length ? actions : undefined}
@@ -99,8 +114,11 @@ export function ChatWindow({ win, onUpdate, allWins, canvasGroups, currentProjec
         </div>
         <FreeAiAllowanceNotice
           workspaceId={workspaceId ?? activeWorkspaceId}
+          skip={Boolean(hosted) || grok.active || provider === 'ollama'}
           refreshKey={msgs.filter(message => message.from === 'agent').length}
         />
+        <AutoPickNote pick={chat.autoPick.pick} onTurnOff={() => chat.autoPick.setAuto(false)} />
+        <GrokSourceBar grok={grok} />
         <ChatInput
           draft={chat.draft}
           setDraft={chat.setDraft}
@@ -121,7 +139,8 @@ export function ChatWindow({ win, onUpdate, allWins, canvasGroups, currentProjec
           knowledge={win.demoMode ? null : { on: chat.knowledge, toggle: chat.setKnowledge }}
           speakerError={speaker.error}
           placeholder={`Message ${agent.name}`}
-          modelChip={<ModelChip capabilities={capabilities} provider={provider} onSelect={win.demoMode ? undefined : chat.selectModel} status={chat.modelStatus} />}
+          modelChip={hosted ? null : <ModelChip capabilities={capabilities} provider={provider} onSelect={win.demoMode ? undefined : selectModel} status={chat.modelStatus}
+            auto={win.demoMode ? undefined : { on: chat.autoPick.on, toggle: chat.autoPick.setAuto }} />}
         />
       </div>
     </>

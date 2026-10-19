@@ -3,9 +3,6 @@ import {
   getSubAgents,
   deleteSubAgent,
   updateSubAgent,
-  scratchpadWrite,
-  scratchpadRead,
-  scratchpadClear,
   createAgentTask,
   getAgent,
   getSubAgentById
@@ -19,6 +16,7 @@ import {
 import { findReusableSubAgents, formatReuseNotice } from './subagentReuse.js';
 import { REVIEW_SPECIALTY_PROMPTS } from './subagentPrompts.js';
 import { resolveModelDefaults } from './subagentModelDefaults.js';
+import { handleDataBoxTool } from './dataBox.js';
 import pool from '../../db.js';
 import { resolveAuthorizedWorkspaceProject } from '../../workspaces/projectAccess.js';
 
@@ -172,43 +170,11 @@ export async function handleSubagentTool(agentId, name, args, context = {}) {
       return `Successfully queued task "${task.title}" (ID: ${task.id}) for sub-agent "${match.name}"${projectName ? ` scoped to project "${projectName}"` : ''}. The task worker will execute it asynchronously.`;
     }
 
-    // ─── SUB-AGENT SCRATCHPAD ─────────────────────────────────────
-
-    case 'scratchpad_write': {
-      const subs = await getSubAgents(agentId, context);
-      const match = subs.find(s =>
-        s.name.toLowerCase() === args.sub_agent.toLowerCase() ||
-        s.id === args.sub_agent.toLowerCase()
-      );
-      if (!match) return `No sub-agent found matching "${args.sub_agent}". Create one first with create_sub_agent.`;
-      await scratchpadWrite(match.id, args.project || 'default', args.key, args.value, context);
-      return `Wrote "${args.key}" to ${match.name}'s scratchpad (project: ${args.project || 'default'}).`;
-    }
-    case 'scratchpad_read': {
-      const subs = await getSubAgents(agentId, context);
-      const match = subs.find(s =>
-        s.name.toLowerCase() === args.sub_agent.toLowerCase() ||
-        s.id === args.sub_agent.toLowerCase()
-      );
-      if (!match) return `No sub-agent found matching "${args.sub_agent}".`;
-      const data = await scratchpadRead(match.id, args.project || 'default', args.key, context);
-      if (!data) return `No data found${args.key ? ` for key "${args.key}"` : ''} in ${match.name}'s scratchpad.`;
-      if (Array.isArray(data)) {
-        if (data.length === 0) return `${match.name}'s scratchpad is empty for project "${args.project || 'default'}".`;
-        return data.map(d => `[${d.key}]: ${d.value}`).join('\n');
-      }
-      return `[${data.key}]: ${data.value}`;
-    }
-    case 'scratchpad_clear': {
-      const subs = await getSubAgents(agentId, context);
-      const match = subs.find(s =>
-        s.name.toLowerCase() === args.sub_agent.toLowerCase() ||
-        s.id === args.sub_agent.toLowerCase()
-      );
-      if (!match) return `No sub-agent found matching "${args.sub_agent}".`;
-      const count = await scratchpadClear(match.id, args.project || 'default', context);
-      return `Cleared ${count} entries from ${match.name}'s scratchpad (project: ${args.project || 'default'}).`;
-    }
+    // ─── SUB-AGENT DATA BOXES (scratchpad) ───────────────────────
+    case 'scratchpad_write':
+    case 'scratchpad_read':
+    case 'scratchpad_clear':
+      return handleDataBoxTool(agentId, name, args, context);
 
     default:
       throw new Error(`Unknown subagent tool: ${name}`);

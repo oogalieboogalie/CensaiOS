@@ -2,6 +2,7 @@ import express from 'express';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { requireSystemAdmin } from '../security/systemAdmin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -43,7 +44,7 @@ function cleanNumber(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? String(Math.round(parsed)) : String(fallback);
 }
 
-windowSdkRouter.post('/window-sdk/scaffold', async (req, res) => {
+windowSdkRouter.post('/window-sdk/scaffold', requireSystemAdmin, async (req, res) => {
   if (!isWriteAllowed()) {
     return res.status(403).json({ error: 'Window SDK writes are disabled in production.' });
   }
@@ -87,7 +88,7 @@ windowSdkRouter.post('/window-sdk/scaffold', async (req, res) => {
   }
 });
 
-windowSdkRouter.post('/window-sdk/new', async (req, res) => {
+windowSdkRouter.post('/window-sdk/new', requireSystemAdmin, async (req, res) => {
   if (!isWriteAllowed()) {
     return res.status(403).json({ error: 'Window SDK writes are disabled in production.' });
   }
@@ -132,7 +133,7 @@ windowSdkRouter.post('/window-sdk/new', async (req, res) => {
   }
 });
 
-windowSdkRouter.post('/window-sdk/validate', async (_req, res) => {
+windowSdkRouter.post('/window-sdk/validate', requireSystemAdmin, async (_req, res) => {
   try {
     const result = await runSdk(['validate']);
     res.json({ ok: true, stdout: result.stdout, stderr: result.stderr });

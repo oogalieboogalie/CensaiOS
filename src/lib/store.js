@@ -11,6 +11,7 @@ import { createPresetActions } from './storePresetActions.js';
 import { createCanvasActions } from './storeCanvasActions.js';
 import { createGroupActions } from './storeGroupActions.js';
 import { pruneAfterRemoval } from './layout/dock.js';
+import { newId } from './ids/newId.js';
 
 const log = createLogger('canvas-actions');
 
@@ -108,7 +109,7 @@ export const useWorkspaceStore = create((set, get) => ({
 
   // Named Actions for Canvas and Windows (Step 1 Multiplayer Canvas Roadmap)
   spawnAt: (kind, props = {}, pos = null, size = null) => {
-    const id = crypto.randomUUID();
+    const id = newId();
     const type = getCanvasObjectType({ type: kind });
     const legacyKind = legacyKindForCanvasType(type);
     const sz = size || getDefaultWindowSize(legacyKind || type);

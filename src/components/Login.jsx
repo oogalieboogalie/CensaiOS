@@ -124,7 +124,7 @@ export function Login({ onLoginSuccess, oauthConfigured, localSignIn = false, fr
         <div className="hb-login-brand">
           <BrandMark size={56} />
           <BrandWordmark size="var(--text-2xl)" />
-          <p className="hb-login-tagline">The canvas for everyone and everything.</p>
+          <p className="hb-login-tagline">The canvas for <em>everyone</em> and <em>everything</em>.</p>
         </div>
 
         {fromAnotherComputer ? (

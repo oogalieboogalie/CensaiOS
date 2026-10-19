@@ -12,7 +12,7 @@ jest.unstable_mockModule('../src/lib/chat.js', () => ({
   sendMessageWithMeta: jest.fn(),
 }));
 
-const { Toolbar } = await import('../src/app/Toolbar.jsx');
+const { CensaiPinnedChat } = await import('../src/components/censai/CensaiPinnedChat.jsx');
 const { sendMessageWithMeta } = await import('../src/lib/chat.js');
 const { ChatRequestError } = await import('../src/lib/chatErrors.js');
 const { KeyNeededCard } = await import('../src/components/chat/KeyNeededCard.jsx');
@@ -87,13 +87,13 @@ describe('the key card', () => {
   });
 });
 
-describe('the dock messenger', () => {
+describe('Censai\'s pinned chat (the dock messenger)', () => {
   test('asks for the key, then sends the same message again once it is saved', async () => {
     sendMessageWithMeta
       .mockRejectedValueOnce(keyError(null, 'No AI is set up for this chat yet.'))
       .mockResolvedValueOnce({ text: 'Hello from Atlas' });
-    render(<Toolbar activeTool="select" onSelectTool={jest.fn()} penColor="#EF4444" setPenColor={jest.fn()} penSize={4} setPenSize={jest.fn()} focusMode={false} onAiAgent={jest.fn()} />);
-    fireEvent.click(screen.getByTitle('Chat (C)'));
+    render(<CensaiPinnedChat />);
+    fireEvent.click(screen.getByLabelText('Open chat with Censai'));
     fireEvent.click(screen.getByRole('button', { name: 'Chat with Atlas' }));
     fireEvent.change(screen.getByLabelText('Message Atlas'), { target: { value: 'hello?' } });
     fireEvent.click(screen.getByLabelText('Send message'));

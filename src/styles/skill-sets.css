@@ -1,0 +1,43 @@
+/* Exo-Skeleton > Skill sets tab, the What worked log and the Idea Foundry card. */
+.hb-sk { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+.hb-sk-lib { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: var(--space-3, 12px); padding: var(--space-3, 12px); border-right: 1px solid var(--hairline); background: var(--surface); overflow-y: auto; }
+.hb-sk-main { flex: 1; min-width: 0; overflow-y: auto; padding: var(--space-4, 16px); display: flex; flex-direction: column; gap: var(--space-4, 16px); }
+.hb-sk-h { margin: 0; font-size: var(--text-md); font-weight: 750; color: var(--ink); }
+.hb-sk-sub { margin: 2px 0 0; font-size: var(--text-xs); color: var(--ink-soft); line-height: 1.45; }
+.hb-sk-eyebrow { font-size: var(--text-xs); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-faint); }
+.hb-sk-research { display: flex; flex-direction: column; gap: 6px; }
+.hb-sk-row { display: flex; gap: 6px; align-items: center; }
+.hb-sk-input, .hb-sk-text { font: inherit; font-size: var(--text-xs); color: var(--ink); background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: 6px 8px; min-width: 0; }
+.hb-sk-input { flex: 1; }
+.hb-sk-text { width: 100%; box-sizing: border-box; resize: vertical; line-height: 1.45; }
+.hb-sk-btn { all: unset; cursor: pointer; padding: 5px 11px; border-radius: var(--radius-md); font-size: var(--text-xs); font-weight: 700; border: 1px solid var(--hairline); background: var(--surface-2); color: var(--ink); white-space: nowrap; }
+.hb-sk-btn:hover { background: var(--surface-3); }
+.hb-sk-btn[disabled] { opacity: 0.5; cursor: default; }
+.hb-sk-btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+.hb-sk-btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
+.hb-sk-link { all: unset; cursor: pointer; font-size: var(--text-xs); color: var(--ink-soft); text-decoration: underline; }
+.hb-sk-list { display: flex; flex-direction: column; gap: 6px; }
+.hb-sk-item { all: unset; cursor: pointer; display: grid; gap: 3px; padding: 9px 10px; border-radius: var(--radius-lg); border: 1px solid var(--hairline); background: var(--surface-2); }
+.hb-sk-item:hover { border-color: var(--ink-faint); }
+.hb-sk-item[aria-current='true'] { border-color: var(--accent); background: var(--accent-soft); }
+.hb-sk-item-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.hb-sk-item-name { font-size: var(--text-xs); font-weight: 750; color: var(--ink); }
+.hb-sk-item-meta { font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-sk-badge { font-size: var(--text-xs); font-weight: 800; padding: 1px 7px; border-radius: var(--radius-pill); border: 1px solid var(--hairline); color: var(--ink-soft); white-space: nowrap; }
+.hb-sk-badge-on { border-color: var(--accent); color: var(--accent); }
+.hb-sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 9px; }
+.hb-sk-skill { display: grid; gap: 5px; padding: 10px 11px; border-radius: var(--radius-lg); border: 1px solid var(--hairline); background: var(--surface); box-shadow: var(--shadow-card); }
+.hb-sk-skill-n { font-size: var(--text-xs); font-weight: 800; color: var(--accent); }
+.hb-sk-skill-title { font-size: var(--text-xs); font-weight: 750; color: var(--ink); }
+.hb-sk-skill-detail { font-size: var(--text-xs); color: var(--ink-soft); line-height: 1.45; }
+.hb-sk-bench { padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--surface); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--ink); line-height: 1.5; font-style: italic; }
+.hb-sk-error { padding: 8px 10px; border-radius: var(--radius-lg); border: 1px solid var(--danger); color: var(--danger); background: var(--surface); font-size: var(--text-xs); }
+.hb-sk-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--radius-lg); border: 1px solid var(--hairline); background: var(--surface-2); }
+.hb-sk-log { display: flex; flex-direction: column; gap: 6px; }
+.hb-sk-log-row { display: flex; gap: 8px; align-items: baseline; font-size: var(--text-xs); color: var(--ink); line-height: 1.45; }
+.hb-sk-log-mark { flex-shrink: 0; font-weight: 800; }
+.hb-sk-worked { color: var(--success, var(--accent)); }
+.hb-sk-didnt { color: var(--danger); }
+.hb-sk-log-who { color: var(--ink-faint); white-space: nowrap; }
+.hb-sk-toggle { display: flex; align-items: center; gap: 8px; font-size: var(--text-xs); color: var(--ink); }
+.hb-sk-select { font: inherit; font-size: var(--text-xs); color: var(--ink); background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: 4px 6px; min-width: 0; }

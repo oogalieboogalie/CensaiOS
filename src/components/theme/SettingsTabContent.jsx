@@ -6,7 +6,10 @@ import { VaultSection } from './VaultSection.jsx';
 import { KeySharingSection } from './KeySharingSection.jsx';
 import { OpenAnywhereSection } from './OpenAnywhereSection.jsx';
 import { MarketplaceWindow } from '../MarketplaceWindow.jsx';
+import { YorSecurityCard } from '../yorware/YorSecurity.jsx';
 import { TrustModeSection } from './TrustModeSection.jsx';
+import { SpeakUpSection } from './SpeakUpSection.jsx';
+import { WakeUpSection } from './WakeUpSection.jsx';
 import { SelfFixSection } from './SelfFixSection.jsx';
 import { HotkeysSection } from './HotkeysSection.jsx';
 
@@ -47,6 +50,10 @@ export function SettingsTabContent({
       <div style={scrollStyle}>
         <TrustModeSection />
         <div style={{ height: 12 }} />
+        <SpeakUpSection />
+        <div style={{ height: 12 }} />
+        <WakeUpSection />
+        <div style={{ height: 12 }} />
         <SelfFixSection />
       </div>
     );
@@ -74,6 +81,7 @@ export function SettingsTabContent({
     return (
       <div style={scrollStyle}>
         <OpenAnywhereSection />
+        <YorSecurityCard />
       </div>
     );
   }

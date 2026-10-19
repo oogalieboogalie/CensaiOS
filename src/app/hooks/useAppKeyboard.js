@@ -1,10 +1,12 @@
 import React from 'react';
 import { keyboardClaimed } from '../../lib/keyboardClaim.js';
+import { notePress, pasteOwner, pasteOwnerLine } from '../../lib/pasteOwner.js';
+import { logToApp } from '../../lib/appLog/browserLog.js';
 import { classifyPastedDesign, suggestDesignSize } from '../../lib/design/designSource.js';
 import { useAgentHotkeys } from './useAgentHotkeys.js';
 
-// Global canvas keyboard shortcuts + paste-to-spawn, extracted from
-// AppContent.jsx with no logic changes.
+// Global canvas keyboard shortcuts + paste-to-spawn (only for pastes no
+// window owns, see pasteOwner.js), extracted from AppContent.jsx.
 export function useAppKeyboard({ onNewAgent, onNewWindow, redo, undo, setFocusMode, spawnAt }) {
   // Alt+C Claude Code, Alt+G Copilot CLI… (remappable in Settings → Hotkeys).
   useAgentHotkeys(spawnAt);
@@ -29,8 +31,13 @@ export function useAppKeyboard({ onNewAgent, onNewWindow, redo, undo, setFocusMo
 
   React.useEffect(() => {
     const handlePaste = (e) => {
-      const editing = ['INPUT', 'TEXTAREA'].includes(e.target.tagName) || e.target.contentEditable === 'true';
-      if (editing) return;
+      // A paste in a window (a sheet cell, a chat box) or right after a click
+      // on one is that window's; the canvas only takes the rest.
+      const owner = pasteOwner(e);
+      if (owner) {
+        logToApp('info', pasteOwnerLine(owner), { where: 'canvas-paste' });
+        return;
+      }
 
       const text = e.clipboardData?.getData('text');
       if (!text) return;
@@ -73,6 +80,10 @@ export function useAppKeyboard({ onNewAgent, onNewWindow, redo, undo, setFocusMo
       }
     };
     window.addEventListener('paste', handlePaste);
-    return () => window.removeEventListener('paste', handlePaste);
+    window.addEventListener('pointerdown', notePress, true);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+      window.removeEventListener('pointerdown', notePress, true);
+    };
   }, [spawnAt]);
 }

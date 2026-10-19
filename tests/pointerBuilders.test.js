@@ -7,6 +7,7 @@ import {
   computePinchZoom,
   consumeSuppression,
   isInteractivePanTarget,
+  leaveWindows,
   shouldStartCanvasPan,
 } from '../src/components/canvas/pointerBuilders.js';
 import { jest } from '@jest/globals';
@@ -124,6 +125,39 @@ describe('blurActiveEditable', () => {
     blurActiveEditable(fakeDoc(button));
     expect(button.blur).not.toHaveBeenCalled();
     expect(() => blurActiveEditable(fakeDoc(null))).not.toThrow();
+  });
+});
+
+describe('leaveWindows', () => {
+  // A press on the empty board: focus and text selection leave the windows,
+  // so a window stops owning keys and pastes once the person is on the board.
+  const inWindow = { closest: () => ({}) };
+  const outside = { closest: () => null };
+  const fakeDoc = (activeElement, anchorNode, rangeCount = 1) => {
+    const selection = { rangeCount, anchorNode, removeAllRanges: jest.fn() };
+    return { doc: { activeElement, getSelection: () => selection }, selection };
+  };
+
+  test('blurs whatever is focused inside a window, a button or a player too', () => {
+    const player = { ...inWindow, tagName: 'DIV', blur: jest.fn() };
+    leaveWindows(fakeDoc(player, null, 0).doc);
+    expect(player.blur).toHaveBeenCalledTimes(1);
+  });
+
+  test('clears a text selection that sits inside a window', () => {
+    const text = { nodeType: 3, parentElement: inWindow };
+    const { doc, selection } = fakeDoc(null, text);
+    leaveWindows(doc);
+    expect(selection.removeAllRanges).toHaveBeenCalledTimes(1);
+  });
+
+  test('leaves focus and selection outside the windows alone, and tolerates nothing at all', () => {
+    const button = { ...outside, tagName: 'BUTTON', blur: jest.fn() };
+    const { doc, selection } = fakeDoc(button, { nodeType: 1, ...outside });
+    leaveWindows(doc);
+    expect(button.blur).not.toHaveBeenCalled();
+    expect(selection.removeAllRanges).not.toHaveBeenCalled();
+    expect(() => leaveWindows({ activeElement: null })).not.toThrow();
   });
 });
 

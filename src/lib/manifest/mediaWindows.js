@@ -169,4 +169,14 @@ export const MEDIA_WINDOW_MANIFESTS = [
     lab: {"title":"Studio","props":{}},
     moduleMenu: {"show":true,"status":"ready","order":62,"icon":"Music","label":"Studio","hint":"Make music: tracks, synth, piano roll, mixer and effects"},
   },
+  {
+    kind: 'humBeat',
+    canvasType: 'humBeat',
+    label: 'Hum a beat',
+    componentName: 'HumBeatWindow',
+    componentPath: 'src/components/windows/humBeat/index.jsx',
+    defaultSize: { w: 900, h: 620 },
+    lab: {"title":"Hum a beat","props":{}},
+    moduleMenu: {"show":true,"status":"ready","order":63,"icon":"Music","label":"Hum a beat","hint":"Hum a melody, get the real notes, hear it as a beat"},
+  },
 ];

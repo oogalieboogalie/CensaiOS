@@ -4,15 +4,14 @@ import { useWorkspaceStore } from '../lib/store.js';
 import { Canvas } from '../components/Canvas.jsx';
 import { Chrome } from '../components/Chrome.jsx';
 import { MultiGroupDock, DEFAULT_GROUPS } from '../components/Dock.jsx';
-import { Icon } from '../components/Icons.jsx';
 import { inferLayout, cleanLayout, fitGroupToLayout, getGroupInnerBounds, makeGroupBoundsForWindows } from '../lib/layoutAlgo.js';
 import { MIN_ZOOM, computeFitView, clusterWindows, boundsForItems, computeFitBounds } from '../lib/canvasMath.js';
 import { getCanvasObjectType, legacyKindForCanvasType } from '../lib/canvasObjectTypes.js';
 import { DEFAULT_WINDOW_SIZES, getDefaultWindowSize } from '../lib/windowManifest.js';
 import { withoutUnsupportedWindows, DEFAULT_HTML_PREVIEW } from '../lib/appUtils.js';
 import { applyAllowListToInitial } from '../lib/workspace/allowList.js';
-import { raiseWindow } from '../lib/windowStacking.js';
-import { loadCamera, saveCamera } from '../lib/cameraMemory.js';
+import { raiseWindow } from '../lib/windowStacking.js'; import { MyTodosBadge } from '../components/todos/MyTodosBadge.jsx';
+import { loadCamera, saveCamera } from '../lib/cameraMemory.js'; import { newId } from '../lib/ids/newId.js';
 import {
   getChromeWindowControlState,
   runChromeCloseAction,
@@ -23,7 +22,8 @@ import { Toolbar } from './Toolbar.jsx';
 import { Hud } from './Hud.jsx';
 import { AgentRunToasts } from '../components/AgentRunToasts.jsx';
 import { SelfFixNotice } from '../components/SelfFixNotice.jsx';
-import { AgentMailToasts } from '../components/AgentMailToasts.jsx';
+import { AppUpdateNotice, TrayUpdatePanel } from '../components/AppUpdateNotice.jsx';
+import { AgentMailToasts } from '../components/AgentMailToasts.jsx'; import { AuctionMatchToasts } from '../components/AuctionMatchToasts.jsx'; import { CensaiPinnedChat } from '../components/censai/CensaiPinnedChat.jsx';
 import SystemStatusWidget from '../components/status/SystemStatusWidget.jsx';
 import { useAppActions } from './hooks/useAppActions.js';
 import { useAppBootstrap } from './hooks/useAppBootstrap.js';
@@ -111,7 +111,7 @@ export function AppContent() {
       setPaths(initial.paths || []);
       setLinks(initial.links || []);
       if (initial.penColor) setPenColor(initial.penColor);
-      if (initial.penSize) setPenSize(initial.penSize); const wsId = workspaceLoad.workspaceId || initial.workspaceId || crypto.randomUUID(); setWorkspaceId(wsId);
+      if (initial.penSize) setPenSize(initial.penSize); const wsId = workspaceLoad.workspaceId || initial.workspaceId || newId(); setWorkspaceId(wsId);
       setPenMode(Boolean(initial.penMode));
       setDockOffset(initial.dockOffset || 0); setDock(initial.dock || { visible: false, groupOverrides: {} });
       setGroups(initial.groups || DEFAULT_GROUPS);
@@ -267,9 +267,9 @@ export function AppContent() {
 
       <Hud focusMode={chromeHidden} collaboration={collaboration} />
       <AgentRunToasts collaboration={collaboration} onOpenWindow={(id) => setActiveId(id)} />
-      <AgentMailToasts workspaceId={workspaceId} /><SelfFixNotice />
+      <AgentMailToasts workspaceId={workspaceId} /><AuctionMatchToasts /><SelfFixNotice /><AppUpdateNotice /><TrayUpdatePanel /><CensaiPinnedChat workspaceId={workspaceId} />
       <SystemStatusWidget focusMode={chromeHidden} />
-      <GroupFocusBar /><PresentMode workspaceId={workspaceId} />
+      <GroupFocusBar /><PresentMode workspaceId={workspaceId} /><MyTodosBadge focusMode={chromeHidden} />
       <Toolbar
         activeTool={activeTool} onSelectTool={setActiveTool}
         penColor={penColor} setPenColor={setPenColor}

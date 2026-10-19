@@ -36,3 +36,29 @@ describe('tool discovery catalog', () => {
     expect(results.every(tool => tool.kit === 'Server Maintenance')).toBe(true);
   });
 });
+
+describe('tool search by meaning (diagram 10)', () => {
+  test('"send a message" finds mail and agent-message tools and says why', () => {
+    const { tools } = listToolCatalog();
+    const results = searchToolCatalog(tools, 'send a message', { limit: 10 });
+    const names = results.map(tool => tool.name);
+    expect(names).toContain('message_to');
+    expect(names.some(name => name.startsWith('mailcow_'))).toBe(true);
+    const mail = results.find(tool => tool.name.startsWith('mailcow_'));
+    expect(mail.why).toEqual(expect.arrayContaining(['send → mail']));
+  });
+
+  test('"reboot" finds restart_service through its meaning', () => {
+    const { tools } = listToolCatalog();
+    const [first] = searchToolCatalog(tools, 'reboot the server', { limit: 3 });
+    expect(first.name).toBe('restart_service');
+    expect(first.why).toEqual(['reboot → restart']);
+  });
+
+  test('exact words still beat same-meaning words', () => {
+    const { tools } = listToolCatalog();
+    const [first] = searchToolCatalog(tools, 'write a local file', { limit: 3 });
+    expect(first.name).toBe('local_write_file');
+    expect(first.why).toBeUndefined();
+  });
+});

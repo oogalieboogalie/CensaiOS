@@ -18,6 +18,7 @@
  */
 import fs from 'fs';
 import { getLogFilePath, LOG_CONFIG } from './logRetention.js';
+import { scrubText } from './selfFix/scrubText.js';
 
 const LEVELS = { error: 0, warn: 1, info: 2, debug: 3, trace: 4 };
 
@@ -30,6 +31,8 @@ const SENSITIVE_KEY = /(authorization|api[_-]?key|secret|token|password|passwd|c
 let currentLogDate = null;
 let currentLogStream = null;
 
+// Kept from before server/appLog/consoleCapture.js wraps console, so the
+// logger's own lines go to the file once, not again through the capture.
 const CONSOLE_FOR_LEVEL = {
   error: console.error,
   warn: console.warn,
@@ -52,6 +55,33 @@ export function redact(value, depth = 0) {
   return value;
 }
 
+// One-time codes travel in web addresses (?invite=, ?pair=, ?join=, ?class=, ?code=).
+const SECRET_QUERY_KEY = /^(code|pair|invite|join|class|otp|state|sig|signature|key)$/i;
+// ...and as path parts: share links, lesson links, the Legion's secret view link.
+const SECRET_PATH_PART = [
+  /^(\/api\/guest\/links\/)[^/?#]+/i,
+  /^(\/api\/guest\/classes\/)[^/?#]+/i,
+  /^(\/api\/legion-view\/[^/?#]+\/)[^/?#]+/i,
+];
+
+/** A web address for the log: secret path parts and secret-looking query values become [redacted]. */
+export function redactUrl(url) {
+  let text = String(url ?? '');
+  for (const re of SECRET_PATH_PART) text = text.replace(re, '$1[redacted]');
+  const at = text.indexOf('?');
+  if (at < 0) return text;
+  const hash = text.indexOf('#', at);
+  const query = text.slice(at + 1, hash < 0 ? undefined : hash);
+  const parts = query.split('&').map((part) => {
+    const eq = part.indexOf('=');
+    if (eq < 0) return part;
+    let name = part.slice(0, eq);
+    try { name = decodeURIComponent(name.replace(/\+/g, ' ')); } catch { /* keep as written */ }
+    return SECRET_QUERY_KEY.test(name) || SENSITIVE_KEY.test(name) ? `${part.slice(0, eq)}=[redacted]` : part;
+  });
+  return `${text.slice(0, at)}?${parts.join('&')}`;
+}
+
 function formatMeta(meta) {
   if (meta === undefined) return '';
   if (meta instanceof Error) return ` ${meta.stack || meta.message}`;
@@ -62,13 +92,22 @@ function formatMeta(meta) {
   }
 }
 
+let fileBroken = false;
+
 function getLogStream(now = new Date()) {
-  if (!LOG_CONFIG.fileEnabled) return null;
+  if (!LOG_CONFIG.fileEnabled || fileBroken) return null;
   const dateKey = now.toISOString().slice(0, 10);
   if (currentLogStream && currentLogDate === dateKey) return currentLogStream;
 
   currentLogStream?.end?.();
-  fs.mkdirSync(LOG_CONFIG.dir, { recursive: true });
+  try {
+    fs.mkdirSync(LOG_CONFIG.dir, { recursive: true });
+  } catch (err) {
+    // A log folder we can't make must never take the app down with it.
+    fileBroken = true;
+    console.warn(`WARN  [logger] no log file: ${LOG_CONFIG.dir} could not be made (${err.message})`);
+    return null;
+  }
   currentLogDate = dateKey;
   currentLogStream = fs.createWriteStream(getLogFilePath(now), { flags: 'a' });
   currentLogStream.on('error', (err) => {
@@ -78,10 +117,37 @@ function getLogStream(now = new Date()) {
   return currentLogStream;
 }
 
+// The file is what agents read when asked about a bug, so keys, tokens,
+// emails and account names are cut out of every line before it is written.
+function scrubRecord(record) {
+  const out = { ...record, message: scrubText(record.message, 4000) };
+  if (record.meta !== undefined) {
+    try {
+      out.meta = JSON.parse(scrubText(JSON.stringify(record.meta), 8000));
+    } catch {
+      out.meta = scrubText(JSON.stringify(record.meta), 8000);
+    }
+  }
+  return out;
+}
+
 function writePersistentLog(record) {
   const stream = getLogStream(new Date(record.time));
   if (!stream) return;
-  stream.write(`${JSON.stringify(record)}\n`);
+  stream.write(`${JSON.stringify(scrubRecord(record))}\n`);
+}
+
+/**
+ * Add a line to the log file that did not come from createLogger: plain
+ * console output (server/appLog/consoleCapture.js) and the board's own
+ * errors and warnings (POST /api/logs/browser). Listeners see it too.
+ */
+export function writeLogRecord({ level = 'info', namespace = 'console', message = '', meta, time } = {}) {
+  const record = { time: time || new Date().toISOString(), level, namespace, message: String(message) };
+  if (meta !== undefined) record.meta = redact(meta);
+  notify(level, namespace, record.message, meta);
+  if (process.env.NODE_ENV === 'test') return;
+  writePersistentLog(record);
 }
 
 // Listeners see every record before the level gate (self-fix keeps a short

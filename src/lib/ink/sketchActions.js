@@ -10,6 +10,7 @@ import { getCollaborationClientId } from '../collaboration/clientIdentity.js';
 import { sceneToPng } from './rasterize.js';
 import { strokeBounds } from './stroke.js';
 import { pickTrackStroke } from '../games/racetrack/track.js';
+import { newId } from '../ids/newId.js';
 
 export const MAKE_REAL_REQUEST = 'Make this sketch real: a working module that matches the drawing.';
 const GAP = 48;
@@ -83,7 +84,7 @@ export function strokesToSketchpadElements(strokes, { offsetX = 32, offsetY = 64
   return strokes.map((s) => {
     const pts = s.pts.map((pt) => ({ ...pt, x: offsetX + (pt.x - b.x) * scale, y: offsetY + (pt.y - b.y) * scale }));
     return {
-      id: crypto.randomUUID(), type: 'pencil', x: pts[0].x, y: pts[0].y, pts,
+      id: newId(), type: 'pencil', x: pts[0].x, y: pts[0].y, pts,
       color: s.color || 'var(--accent)', strokeWidth: Math.max(1, ((s.size || 4) * scale) / 1.6), pen: !s.sim,
     };
   });

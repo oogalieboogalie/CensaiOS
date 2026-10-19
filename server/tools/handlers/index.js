@@ -7,6 +7,7 @@ import {
 } from './git/index.js';
 import { handleLocalTool } from './local.js';
 import { handleSubagentTool } from './subagents.js';
+import { handleStartHelper } from './nanoHelper.js';
 import { handleProjectsTool } from './projects.js';
 import { handleJulesTool } from './jules.js';
 import { dbInspect, postgresToolInfo, postgresTableSample } from './database/inspect.js';
@@ -28,6 +29,7 @@ import { handleToolDiscovery } from './discovery.js';
 import { handleReliabilityTool } from './reliability.js';
 import { handleDeepMemoryTool } from './deepMemory.js';
 import { handleCanvasCollaborationTool } from './canvas.js';
+import { handleProjectWindowTool } from './projectWindow.js';
 import { handlePdfTool } from './pdf.js';
 import { handleCadTool } from './cad.js';
 import { handleScoutTool } from './scout.js';
@@ -35,14 +37,20 @@ import { handleModuleTool } from './modules.js';
 import { handleResearchTool } from './research.js';
 import { handleAgentNetworkTool } from './agentNetwork.js';
 import { handleWeewooTool } from './weewoo.js';
+import { handleSpeakUp } from './speakUp.js';
+import { handleReadAppLog } from './appLog.js';
+import { handleWakeUpTool } from './wakeUps.js';
 import { handleVideoTool } from './video.js';
 import { handleRealEstateTool } from './realEstate.js';
-
+import { handleSkillSetTool } from './skillSets.js';
+import { handleBlueprintTool } from './blueprints.js';
+import { PLAN_TOOL_HANDLERS } from './censaiOrchestrator.js';
 
 export const TOOL_REGISTRY = {
   // Tool discovery
   'search_tools': handleToolDiscovery,
   'get_tool': handleToolDiscovery,
+  'get_toolkit': handleToolDiscovery,
 
   // Calendar
   'read_calendar': handleCalendarTool,
@@ -101,6 +109,7 @@ export const TOOL_REGISTRY = {
   'scratchpad_write': handleSubagentTool,
   'scratchpad_read': handleSubagentTool,
   'scratchpad_clear': handleSubagentTool,
+  'start_helper': (agentId, _name, args, context) => handleStartHelper(agentId, args, context),
 
   // Projects
   'open_project': handleProjectsTool,
@@ -171,6 +180,7 @@ export const TOOL_REGISTRY = {
   'canvas_append_window': handleCanvasCollaborationTool,
   'canvas_spawn_window': handleCanvasCollaborationTool,
   'project_preview': handleCanvasCollaborationTool,
+  'project_window': handleProjectWindowTool,
   'canvas_window_index': handleCanvasCollaborationTool,
   'canvas_read_design': handleCanvasCollaborationTool,
   'canvas_update_design': handleCanvasCollaborationTool,
@@ -183,6 +193,11 @@ export const TOOL_REGISTRY = {
   'edit_cad_part': handleCadTool,
   // Scout agents: the core agent's eyes and ears on a project's code
   'scout_map': handleScoutTool,
+  'skill_set_log': handleSkillSetTool,
+  'browser_go': handleSkillSetTool,
+  // Blueprints shelf (Alex's diagram 08)
+  'find_blueprints': handleBlueprintTool,
+  'save_blueprint': handleBlueprintTool,
   'scout_find': handleScoutTool,
 
   // Modules on demand (spec 6)
@@ -196,6 +211,14 @@ export const TOOL_REGISTRY = {
   'agent_help_status': handleAgentNetworkTool,
   // WeeWoo office avatars
   'choose_avatar': handleWeewooTool,
+  // Speak up: one short note to the Inbox, on the agent's own (diagram 17)
+  'speak_up': (agentId, _name, args, context) => handleSpeakUp(agentId, args, context),
+  'read_app_log': (_agentId, _name, args, context) => handleReadAppLog(args, context),
+  // Wake-ups: Censai schedules himself or wakes a family agent
+  'wake_me_up': handleWakeUpTool,
+  'my_wake_ups': handleWakeUpTool,
+  'cancel_wake_up': handleWakeUpTool,
+  ...PLAN_TOOL_HANDLERS, // Censai the orchestrator: hand_off_jobs, jobs_status, stop_jobs
   // Video (Google Veo, BYOK)
   'make_video': handleVideoTool,
   'video_status': handleVideoTool,

@@ -13,7 +13,9 @@ export function reconnectDelay(attempt) {
 
 /**
  * handlers: onOpen(isReconnect), onMessage(event, isReconnect),
- * onDrop(attempt, delayMs), onExit().
+ * onDrop(attempt, delayMs), onExit(), onRefused(message): the server said
+ * why it won't open this terminal (`{ type: 'refused', reason, message }`),
+ * so retrying would only fail again.
  * Returns { send(obj), isOpen(), reconnectNow(), close() }.
  */
 export function openTerminalSocket(url, handlers, { WebSocketImpl = WebSocket, win = typeof window === 'undefined' ? null : window } = {}) {
@@ -22,6 +24,7 @@ export function openTerminalSocket(url, handlers, { WebSocketImpl = WebSocket, w
   let everOpened = false;
   let closed = false;
   let exited = false;
+  let refusal = null;
   let timer = null;
 
   const connect = () => {
@@ -29,6 +32,7 @@ export function openTerminalSocket(url, handlers, { WebSocketImpl = WebSocket, w
     timer = null;
     if (closed) return;
     const isReconnect = everOpened || attempt > 0;
+    refusal = null;
     const s = new WebSocketImpl(url);
     socket = s;
     s.addEventListener('open', () => {
@@ -39,15 +43,17 @@ export function openTerminalSocket(url, handlers, { WebSocketImpl = WebSocket, w
     });
     s.addEventListener('message', (event) => {
       if (s !== socket) return;
-      try {
-        if (JSON.parse(event.data)?.type === 'exit') exited = true;
-      } catch { /* plain text output */ }
+      let message = null;
+      try { message = JSON.parse(event.data); } catch { /* plain text output */ }
+      if (message?.type === 'exit') exited = true;
+      if (message?.type === 'refused') { refusal = message; return; }
       handlers.onMessage?.(event, isReconnect);
     });
     s.addEventListener('close', () => {
       if (s !== socket || closed) return;
       // The program itself ended: stay put until the person presses Enter.
       if (exited) { handlers.onExit?.(); return; }
+      if (refusal) { exited = true; handlers.onRefused?.(refusal); return; }
       const delay = reconnectDelay(attempt);
       handlers.onDrop?.(attempt, delay);
       attempt += 1;
@@ -92,13 +98,22 @@ export function openTerminalSocket(url, handlers, { WebSocketImpl = WebSocket, w
 // failing, ask the server whether this browser is still signed in, so the
 // terminal can say "signed out" instead of retrying in silence.
 export async function stillSignedIn(fetchImpl = typeof fetch === 'undefined' ? null : fetch) {
-  if (!fetchImpl) return true;
+  return (await terminalRefusal(fetchImpl)) !== 'signed-out';
+}
+
+// Why the server would refuse this terminal, as far as the browser can tell:
+// 'signed-out', 'owner-only' (the terminal runs on the computer, so only its
+// owner may open one), or null (nothing known: keep retrying).
+export async function terminalRefusal(fetchImpl = typeof fetch === 'undefined' ? null : fetch) {
+  if (!fetchImpl) return null;
   try {
     const res = await fetchImpl('/api/auth/session', { credentials: 'include' });
-    if (!res.ok) return true;
+    if (!res.ok) return null;
     const body = await res.json();
-    return body?.authenticated !== false;
+    if (body?.authenticated === false) return 'signed-out';
+    if (body?.user?.role && body.user.role !== 'admin') return 'owner-only';
+    return null;
   } catch {
-    return true; // server still down: keep quietly retrying
+    return null; // server still down: keep quietly retrying
   }
 }

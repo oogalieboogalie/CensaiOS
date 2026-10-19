@@ -5,6 +5,7 @@
 
 import { chunkText, citationContext, rankChunks } from './retrieve.js';
 import { safeEmbed } from './embedder.js';
+import { chunkAndTag, fileText, tagText } from './ingest.js';
 
 const MAX_CHUNKS_PER_PAGE = 40;
 const MAX_SAVE = 20;
@@ -58,6 +59,7 @@ export async function saveToKnowledge(scope, { query = '', results = [] }, { tav
     const text = body.trim().length > result.content.length ? body : `${result.title}\n\n${result.content}`;
     const pieces = chunkText(text).slice(0, MAX_CHUNKS_PER_PAGE);
     const vectors = await safeEmbed(embedder, pieces, 'search_document');
+    const tags = tagText(text, { title: result.title });
     const embedded = vectors.some(Boolean);
     const source = await store.saveSource(scope, {
       url: result.url,
@@ -65,12 +67,39 @@ export async function saveToKnowledge(scope, { query = '', results = [] }, { tav
       query,
       publishedAt: result.publishedAt,
       embedModel: embedded ? embedder.id : null,
-      chunks: pieces.map((piece, i) => ({ text: piece, embedding: vectors[i] || null })),
+      chunks: pieces.map((piece, i) => ({ text: piece, embedding: vectors[i] || null, tags: tagText(piece, { extra: tags.slice(0, 3) }) })),
+      tags,
+      kind: 'web',
     });
     saved.push({ ...source, fullText: Boolean(body.trim()) });
     onPage?.(source);
   }
   return { saved, embedder: embedder?.label || null };
+}
+
+const MAX_FILE_CHARS = 400000;
+
+/**
+ * Feed a file into the knowledge base (diagram 13): cut it into pieces
+ * (one per step when it has numbered steps), tag every piece, embed when the
+ * person has an embedding key, and store it. The same file name replaces.
+ */
+export async function saveFile(scope, { name = '', text = '' }, { embedder, store }) {
+  const title = String(name || '').trim().slice(0, 200) || 'Untitled file';
+  const body = fileText(title, text).slice(0, MAX_FILE_CHARS);
+  if (!body.trim()) throw Object.assign(new Error('That file has no text to read.'), { statusCode: 400, code: 'EMPTY_FILE' });
+  const { kind, tags, chunks } = chunkAndTag(body, { title: title.replace(/\.[a-z0-9]+$/i, '') });
+  const kept = chunks.slice(0, MAX_CHUNKS_PER_PAGE * 2);
+  const vectors = await safeEmbed(embedder, kept.map((c) => c.text), 'search_document');
+  const embedded = vectors.some(Boolean);
+  return store.saveSource(scope, {
+    url: `file:${title}`,
+    title,
+    embedModel: embedded ? embedder.id : null,
+    chunks: kept.map((c, i) => ({ ...c, embedding: vectors[i] || null })),
+    tags,
+    kind,
+  });
 }
 
 export async function queryKnowledge(scope, query, { embedder, store }, { k = 6 } = {}) {

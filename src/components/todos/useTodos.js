@@ -3,13 +3,14 @@ import { api } from '../../lib/api.js';
 import { normalizeTodos } from './TodosData.js';
 import { useOperationalTodos } from './useOperationalTodos.js';
 import { useWorkspaceStore } from '../../lib/store.js';
+import { startCodingAgent } from './startCodingAgent.js';
 
 export function useTodos(win, onUpdate, currentProject) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
   const items = React.useMemo(() => normalizeTodos(win.items), [win.items]);
   const operational = useOperationalTodos(win, onUpdate, items);
   const [newText, setNewText] = React.useState('');
-  const [handoffError, setHandoffError] = React.useState('');
+  const [handoffError, setHandoffError] = React.useState(null);
   const [editingId, setEditingId] = React.useState(null);
   const [editText, setEditText] = React.useState('');
   const pendingHandoffs = React.useRef(new Set());
@@ -26,7 +27,14 @@ export function useTodos(win, onUpdate, currentProject) {
     const item = items.find(it => it.id === id);
     if (item) persistItemPatch(id, { done: !item.done });
   };
-  const assign = (id, aid) => persistItemPatch(id, { assignee: aid });
+  const assign = (id, value, name = null) => {
+    const item = items.find(it => it.id === id);
+    // A coding agent's run belongs to that agent; a new assignee starts fresh.
+    const clearRun = item?.cliTaskId && item.assignee !== value
+      ? { cliTaskId: null, implementationStatus: null, implementationTarget: null, handoffWarning: null, handedOffAt: null }
+      : {};
+    return persistItemPatch(id, { assignee: value || null, assigneeName: value ? name : null, ...clearRun });
+  };
   const add = () => {
     const text = newText.trim();
     if (!text) return;
@@ -48,9 +56,15 @@ export function useTodos(win, onUpdate, currentProject) {
     const sourceId = `${win.id || win.kind || 'todos'}:${item.id}`;
     if (item.handingOff || pendingHandoffs.current.has(sourceId)) return;
     pendingHandoffs.current.add(sourceId);
-    setHandoffError('');
+    setHandoffError(null);
     updateViewItem(item.id, { handingOff: true });
     try {
+      const started = await startCodingAgent({ item, folder: currentProject?.path, listTitle: win.title });
+      if (started) {
+        await persistItemPatch(item.id, { handingOff: false, ...started });
+        window.dispatchEvent(new Event('tasks-updated'));
+        return;
+      }
       if (operational.enabled) {
         const result = await operational.dispatchItem(
           items.map(it => it.id === item.id ? { ...it, handingOff: true } : it),
@@ -83,7 +97,7 @@ export function useTodos(win, onUpdate, currentProject) {
       window.dispatchEvent(new Event('tasks-updated'));
     } catch (err) {
       updateViewItem(item.id, { handingOff: false });
-      setHandoffError(err.message || 'Failed to create handoff');
+      setHandoffError(err?.message ? err : 'Failed to create handoff');
     } finally {
       pendingHandoffs.current.delete(sourceId);
     }
@@ -93,6 +107,7 @@ export function useTodos(win, onUpdate, currentProject) {
     items,
     newText, setNewText,
     handoffError: handoffError || operational.error,
+    clearError: () => { setHandoffError(null); operational.clearError(); },
     editingId, editText, setEditText,
     completedCount, totalCount,
     toggle, assign, add, startEdit, saveEdit, cancelEdit, handoff

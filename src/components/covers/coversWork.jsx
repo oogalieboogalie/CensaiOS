@@ -71,6 +71,14 @@ export const WORK_COVERS = {
       <path d="M23.2 6.6 L18 10" {...H} />
     </>
   ),
+  // A price tag under a watching eye.
+  auctionWatcher: (
+    <>
+      <path d="M6 13 L13 6 H20 V13 L13 20 Z" {...F} /><circle cx="17" cy="9" r="1.2" fill={ACCENT} />
+      <path d="M24 12 Q30 6 36 12 Q30 18 24 12 Z" {...S} /><circle cx="30" cy="12" r="1.8" fill={ACCENT} />
+      <path d="M9 13.5 L13.5 9" {...H} />
+    </>
+  ),
   // A glass over a page of sources.
   research: (
     <>
@@ -186,6 +194,15 @@ export const WORK_COVERS = {
       <rect x="10.5" y="13" width="3" height="5.5" rx="0.4" {...A} />
       <rect x="23" y="5" width="7" height="6" rx="0.8" {...S} /><rect x="32" y="5" width="7" height="6" rx="0.8" {...F} />
       <rect x="23" y="13" width="7" height="6" rx="0.8" {...F} /><rect x="32" y="13" width="7" height="6" rx="0.8" {...F} />
+    </>
+  ),
+  // A blueprint card: the name bar, the ID boxed in accent, three lines.
+  blueprints: (
+    <>
+      <rect x="6" y="3.5" width="32" height="17" rx="1.5" {...S} />
+      <path d="M9.5 7 H27" {...H} />
+      <rect x="9" y="9.5" width="13" height="3.5" rx="0.6" {...A} />
+      <path d="M10 16.5 H20 M24 16.5 H34 M24 12 H34" {...F} />
     </>
   ),
 };

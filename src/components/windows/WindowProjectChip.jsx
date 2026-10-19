@@ -1,6 +1,6 @@
 import React from 'react';
 import { Icon } from '../Icons.jsx';
-import { api } from '../../lib/api.js';
+import { FolderPicker } from './FolderPicker.jsx';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { boardProjects, isProjectAware, projectPatch, resolveWindowProject, samePath } from '../../lib/windowProject.js';
 
@@ -13,17 +13,18 @@ async function fetchOpenProjects() {
 
 /**
  * Multi-project board: the project a window works in, shown in its header.
- * Click it to move just this window to another open project or folder. The
- * top-left project menu only sets the default for new windows.
+ * Click it to move just this window to another open project, or pick any
+ * folder censaiOS can reach. The top-left project menu only sets the
+ * default for new windows.
+ *
+ * A terminal's chip reads "Mount to <folder>" and opens the folder picker
+ * straight away: it is the terminal's one mount control (no second bar).
  */
 export function WindowProjectChip({ win, onUpdate }) {
   const boardDefault = useWorkspaceStore((s) => s.currentProject);
   const [open, setOpen] = React.useState(false);
   const [serverProjects, setServerProjects] = React.useState([]);
   const [adding, setAdding] = React.useState(false);
-  const [folderInput, setFolderInput] = React.useState('');
-  const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState('');
   const wrapRef = React.useRef(null);
 
   // A string key keeps the subscription stable: the header re-renders only
@@ -67,33 +68,20 @@ export function WindowProjectChip({ win, onUpdate }) {
     onUpdate(projectPatch(win, next));
     setOpen(false);
     setAdding(false);
-    setError('');
   };
 
-  const openFolder = async (e) => {
-    e?.preventDefault();
-    const path = folderInput.trim();
-    if (!path || busy) return;
-    setBusy(true);
-    setError('');
-    try {
-      const opened = await api.openProject({ path });
-      choose({ name: opened?.name, path: opened?.path || path, projectId: opened?.id });
-      setFolderInput('');
-    } catch (err) {
-      setError(err.message || 'Could not open that folder');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const label = project?.name || 'No project';
+  const mountsDirect = win.kind === 'terminal';
+  const label = project?.name || (mountsDirect ? 'pick a folder' : 'No project');
+  const chipTitle = mountsDirect
+    ? (project?.path ? `This terminal works in ${project.path}. Click to mount it to another folder.` : 'Mount this terminal to a folder')
+    : (project?.path ? `This window works in ${project.path}. Click to pick another project for this window only.` : 'Pick a project for this window');
   return (
     <span ref={wrapRef} className="hb-win-project" data-no-drag>
       <button type="button" className="hb-win-project-chip" data-window-project={project?.path || ''}
-        title={project?.path ? `This window works in ${project.path}. Click to pick another project for this window only.` : 'Pick a project for this window'}
-        aria-haspopup="menu" aria-expanded={open}
-        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}>
+        title={chipTitle}
+        aria-haspopup={mountsDirect ? 'dialog' : 'menu'} aria-expanded={mountsDirect ? adding : open}
+        onClick={(e) => { e.stopPropagation(); if (mountsDirect) setAdding((a) => !a); else setOpen((o) => !o); }}>
+        {mountsDirect && <span className="hb-win-project-verb">Mount to</span>}
         <Icon.Folder size={12} />
         <span className="hb-win-project-name">{label}</span>
       </button>
@@ -119,23 +107,15 @@ export function WindowProjectChip({ win, onUpdate }) {
             );
           })}
           <div className="hb-win-menu-section">
-            {adding ? (
-              <form className="hb-win-project-form" onSubmit={openFolder}>
-                <input autoFocus value={folderInput} onChange={(e) => setFolderInput(e.target.value)}
-                  placeholder="D:\Projects\my-site" aria-label="Folder to open in this window" />
-                <button type="submit" className="hb-win-action" disabled={!folderInput.trim() || busy}>
-                  {busy ? 'Opening…' : 'Open'}
-                </button>
-              </form>
-            ) : (
-              <button type="button" role="menuitem" className="hb-win-menu-item"
-                onClick={(e) => { e.stopPropagation(); setAdding(true); }}>
-                Open another folder…
-              </button>
-            )}
-            {error && <span className="hb-win-project-error">{error}</span>}
+            <button type="button" role="menuitem" className="hb-win-menu-item"
+              onClick={(e) => { e.stopPropagation(); setOpen(false); setAdding(true); }}>
+              Mount to another folder…
+            </button>
           </div>
         </div>
+      )}
+      {adding && (
+        <FolderPicker startPath={project?.path || ''} onClose={() => setAdding(false)} onPick={choose} />
       )}
     </span>
   );

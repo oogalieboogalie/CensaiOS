@@ -2,6 +2,7 @@ import React from 'react';
 import { getAgentById } from '../../lib/agentStore.js';
 import { getSelectionOffsets } from './DocUtils.js';
 import { FILE_CONTENTS } from './DocData.js';
+import { newId } from '../../lib/ids/newId.js';
 
 const fileContentCache = new Map();
 
@@ -10,6 +11,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
   const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [backlinks, setBacklinks] = React.useState([]);
+  const [backlinksCapped, setBacklinksCapped] = React.useState(false);
   const [showGraph, setShowGraph] = React.useState(false);
   const [selRange, setSelRange] = React.useState(null);
   const [pendingKind, setPendingKind] = React.useState(null);
@@ -63,7 +65,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
       if (!win.isGithub) {
         fetch(`/api/files/backlinks?path=${encodeURIComponent(win.filePath)}`)
           .then(res => res.json())
-          .then(data => setBacklinks(data.results || []))
+          .then(data => { setBacklinks(data.results || []); setBacklinksCapped(Boolean(data.capped)); })
           .catch(err => console.warn('Failed to fetch backlinks', err));
       }
     }
@@ -163,7 +165,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
 
   const commitAnnotation = (kind, body, agentId) => {
     if (!selRange) return;
-    const ann = { id: crypto.randomUUID(), kind, start: selRange.start, end: selRange.end, quote: selectionText || text.slice(selRange.start, selRange.end), body: body || '', agentId: agentId || null, author: agentId ? getAgentById(agentId)?.name : 'You', ts: Date.now() };
+    const ann = { id: newId(), kind, start: selRange.start, end: selRange.end, quote: selectionText || text.slice(selRange.start, selRange.end), body: body || '', agentId: agentId || null, author: agentId ? getAgentById(agentId)?.name : 'You', ts: Date.now() };
     onUpdate({ annotations: [...annotations, ann] });
     clearSelection();
     if (kind === 'ask' && agentId && onSpawn) {
@@ -194,6 +196,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
     realContent, setRealContent,
     loading, saving,
     backlinks,
+    backlinksCapped,
     showGraph, setShowGraph,
     selRange, pendingKind, setPendingKind,
     activeAnnId, setActiveAnnId,

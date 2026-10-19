@@ -8,7 +8,9 @@ describe('sandbox execution route boundary', () => {
   test('the sandbox router is mounted behind the local-filesystem guard', () => {
     const entries = ROUTE_MOUNTS.filter(entry => entry.router === sandboxRouter);
     expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatchObject({ method: 'use', path: '/api' });
+    // Only /api/sandbox: a guard on all of /api would refuse every route after
+    // it (even /api/ready) wherever this computer's files are off.
+    expect(entries[0]).toMatchObject({ method: 'use', path: '/api/sandbox' });
     expect(entries[0].middleware).toContain(sandboxLocalFilesystem);
     expect(sandboxLocalFilesystem).toBe(requireLocalFilesystem);
   });
@@ -35,10 +37,10 @@ describe('sandbox execution route boundary', () => {
       }
     }
     expect(guardedPaths).toEqual(new Set([
-      '/sandbox/toolchains',
-      '/sandbox/rebuild-cancel',
-      '/sandbox/toolchains/detect',
-      '/sandbox/toolchains/install',
+      '/toolchains',
+      '/rebuild-cancel',
+      '/toolchains/detect',
+      '/toolchains/install',
     ]));
   });
 });

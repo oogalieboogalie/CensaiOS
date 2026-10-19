@@ -1,0 +1,13 @@
+/* The Images list's Run form (RunImageForm.jsx). */
+.dk-run {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; margin: 2px 0 6px;
+  padding: 10px; border: 1px solid var(--hairline); border-radius: var(--dk-radius); background: var(--surface-2);
+}
+.dk-run-title { flex-basis: 100%; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); }
+.dk-run-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 160px; font-size: 11px; color: var(--ink-faint); }
+.dk-run-field input {
+  height: 28px; padding: 0 8px; border: 1px solid var(--hairline); border-radius: var(--radius-md);
+  background: var(--surface-1); color: var(--ink); font: inherit; font-size: 12px;
+}
+.dk-run-field input:focus { outline: none; border-color: var(--accent-line); }
+.dk-run-buttons { display: flex; gap: 6px; }

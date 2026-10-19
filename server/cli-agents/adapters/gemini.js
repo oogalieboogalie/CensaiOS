@@ -36,8 +36,9 @@ export const gemini = {
   gateNote: 'Edits files in its worktree on its own; shell commands stay off in headless mode.',
   aliases: ALIASES,
 
-  buildRun({ task, resumeSessionId, model }) {
-    const args = ['--output-format', 'stream-json', '--approval-mode', 'auto_edit'];
+  // Read-only (reviews): default approval mode, where headless Gemini skips edits and shell.
+  buildRun({ task, resumeSessionId, model, readOnly = false }) {
+    const args = ['--output-format', 'stream-json', '--approval-mode', readOnly ? 'default' : 'auto_edit'];
     if (model && SAFE_ID.test(model)) args.push('--model', model);
     if (resumeSessionId && SAFE_ID.test(resumeSessionId)) args.push('--resume', resumeSessionId);
     return { args, stdin: [task], keepStdinOpen: false };

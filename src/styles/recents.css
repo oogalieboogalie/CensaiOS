@@ -1,0 +1,28 @@
+/* Recents (top-left menu > Recents): latest chats and windows, with when. */
+.hb-recents-scrim { position: fixed; inset: 0; z-index: 60; }
+.hb-recents {
+  position: fixed; top: 52px; left: 20px; z-index: 70;
+  width: min(380px, calc(100vw - 40px)); max-height: min(70vh, 620px);
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-3); border: 1px solid var(--glass-line); border-radius: var(--radius-float);
+}
+.hb-recents-head { display: flex; align-items: center; justify-content: space-between; }
+.hb-recents-title { font-weight: 600; color: var(--ink); }
+.hb-recents-body { overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-recents-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.hb-recents-row {
+  all: unset; box-sizing: border-box; width: 100%; cursor: pointer;
+  display: flex; flex-direction: column; gap: var(--space-0-5);
+  padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-md);
+}
+.hb-recents-row:hover, .hb-recents-row:focus-visible { background: var(--accent-soft); }
+.hb-recents-line { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.hb-recents-name { color: var(--ink); font-weight: 600; font-size: var(--text-sm); }
+.hb-recents-when { color: var(--ink-faint); font-size: var(--text-xs); flex: none; }
+.hb-recents-text { color: var(--ink-soft); font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-recents-meta { color: var(--ink-faint); font-size: var(--text-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Past conversations in the Memory panel: whole chats, every message with its time. */
+.hb-amem-chat-turns { list-style: none; margin: 0; padding: 0 0 0 var(--space-2); border-left: 2px solid var(--hairline); display: flex; flex-direction: column; gap: var(--space-1-5); }
+.hb-amem-turn { display: flex; flex-direction: column; gap: var(--space-0-5); font-size: var(--text-sm); line-height: 1.5; color: var(--ink); white-space: pre-wrap; }
+.hb-amem-turn-who { color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-amem-turn[data-speaker='agent'] .hb-amem-turn-who { color: var(--accent); }

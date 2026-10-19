@@ -40,7 +40,7 @@ export function AgentDesignerWindow({ win, onUpdate, onCreateAgent, groups = [] 
     saving,
     inputRef,
     parentAgent, selectedToolRows, preview,
-    applyTemplate, toggleGroup, toggleTool, createAgent, filteredCategories,
+    applyTemplate, toggleGroup, toggleTool, createAgent, filteredCategories, toolMeanings,
   } = useAgentDesigner(win, onCreateAgent, onUpdate, agents, groups);
   const applyToolkit = (tools) => setSelectedTools(tools);
   const [importing, setImporting] = React.useState(win.mode === 'import' && !isEditMode);
@@ -133,7 +133,7 @@ export function AgentDesignerWindow({ win, onUpdate, onCreateAgent, groups = [] 
               <div style={sectionTitleStyle}>Tools</div>
               <ToolkitSelect onApply={(tools) => applyToolkit(tools)} />
               <ToolChipBar selectedToolRows={selectedToolRows} toggleTool={toggleTool} toolSearch={toolSearch} setToolSearch={setToolSearch} />
-              <ToolCatalog filteredCategories={filteredCategories} selectedTools={selectedTools} toggleTool={toggleTool} />
+              <ToolCatalog filteredCategories={filteredCategories} meanings={toolMeanings} selectedTools={selectedTools} toggleTool={toggleTool} />
 
               <ScopePanel githubRepos={githubRepos} setGithubRepos={setGithubRepos} localPaths={localPaths} setLocalPaths={setLocalPaths} />
 

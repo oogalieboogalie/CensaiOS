@@ -12,6 +12,7 @@ import { SpeechError, synthesizeElevenLabs, synthesizeSpeech, transcribeAudio } 
 import { getUserApiKeyConfig } from '../../security/userApiKeys.js';
 import { getSecret } from '../../secrets.js';
 import { mayUseServerKeys } from '../../security/serverKeys.js';
+import { findDictationKey, logDictation, withDictation } from './dictation.js';
 
 function sendError(res, error) {
   const { status, body } = publicChatError(error);
@@ -63,10 +64,12 @@ export async function handleCapabilities(req, res) {
   try {
     const target = await resolveChatTarget(targetArgs(req, req.query));
     const voice = await elevenLabsVoice(req, target);
+    const dictation = await findDictationKey(req.session?.userId || null, target.provider);
+    const capabilities = withDictation(target.capabilities, dictation);
     res.json({
       provider: target.provider,
       model: target.model,
-      capabilities: voice?.apiKey ? { ...target.capabilities, voiceOutput: true } : target.capabilities,
+      capabilities: voice?.apiKey ? { ...capabilities, voiceOutput: true } : capabilities,
       ...(voice ? { voice: { provider: 'elevenlabs', voiceId: voice.voiceId, ready: Boolean(voice.apiKey) } } : {}),
       limits: ATTACHMENT_LIMITS,
     });
@@ -85,17 +88,25 @@ export async function handleTranscribe(req, res) {
       throw new SpeechError('That recording is too long. Keep voice messages under about 4 minutes.', 'SPEECH_TOO_LARGE', 413);
     }
     const target = await resolveChatTarget(targetArgs(req, req.body));
-    if (target.capabilities.voiceInput !== 'transcribe') {
+    const dictation = target.capabilities.voiceInput
+      ? null
+      : await findDictationKey(req.session?.userId || null, target.provider);
+    if (target.capabilities.voiceInput !== 'transcribe' && !dictation) {
       throw new SpeechError(`${target.model} has no speech-to-text.`, 'SPEECH_UNSUPPORTED', 400);
     }
-    await assertSpeechKey(req, target);
-    const result = await transcribeAudio({
-      provider: target.provider,
-      apiKey: target.apiKey,
-      baseUrl: target.baseUrl,
-      audio,
-    });
-    res.json({ text: result.text, model: result.model });
+    if (!dictation) await assertSpeechKey(req, target);
+    const keyProvider = dictation?.provider || target.provider;
+    let result;
+    try {
+      result = await transcribeAudio(dictation
+        ? { provider: dictation.provider, apiKey: dictation.apiKey, audio }
+        : { provider: target.provider, apiKey: target.apiKey, baseUrl: target.baseUrl, audio });
+    } catch (error) {
+      logDictation({ chatProvider: target.provider, keyProvider, ok: false, reason: error?.message });
+      throw error;
+    }
+    logDictation({ chatProvider: target.provider, keyProvider, ok: true });
+    res.json({ text: result.text, model: result.model, ...(dictation ? { dictationProvider: dictation.provider } : {}) });
   } catch (error) {
     sendError(res, error);
   }

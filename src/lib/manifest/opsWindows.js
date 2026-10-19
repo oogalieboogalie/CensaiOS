@@ -35,7 +35,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'SchedulerWindow',
     componentPath: 'src/components/SchedulerWindow.jsx',
     defaultSize: { w: 760, h: 560 },
-    launcher: { show: true, startHere: true, startHereOrder: 30, order: 90, icon: 'Calendar', label: 'Schedule a run', hint: 'automate recurring work', sizeOverride: { w: 760, h: 560 } },
+    launcher: { show: true, startHere: true, startHereOrder: 30, order: 90, icon: 'Calendar', label: 'Schedule a run', hint: 'automate recurring work' },
   },
   {
     kind: 'julesTasks',
@@ -52,7 +52,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'OperationsBoardWindow',
     componentPath: 'src/components/OperationsBoardWindow.jsx',
     defaultSize: { w: 900, h: 620 },
-    launcher: { show: true, order: 80, icon: 'Monitor', label: 'Live operations', hint: 'runtime board', sizeOverride: { w: 900, h: 620 } },
+    launcher: { show: true, order: 80, icon: 'Monitor', label: 'Live operations', hint: 'runtime board' },
   },
   {
     kind: 'rook',
@@ -97,7 +97,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'OverseerWindow',
     componentPath: 'src/components/OverseerWindow.jsx',
     defaultSize: { w: 560, h: 460 },
-    launcher: { show: true, order: 120, icon: 'Eye', label: 'Overseer Watcher', hint: 'runs Jules hourly, can merge PRs', sizeOverride: { w: 560, h: 460 } },
+    launcher: { show: true, order: 120, icon: 'Eye', label: 'Overseer Watcher', hint: 'runs Jules hourly, can merge PRs' },
   },
   {
     kind: 'automation',
@@ -107,7 +107,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentPath: 'src/components/AutomationWindow.jsx',
     defaultSize: { w: 600, h: 500 },
     moduleMenu: { show: false, status: 'coming-soon' },
-    launcher: { show: true, order: 125, icon: 'Server', label: 'Automation', hint: 'manage running scripts', sizeOverride: { w: 600, h: 500 } },
+    launcher: { show: true, order: 125, icon: 'Server', label: 'Automation', hint: 'manage running scripts' },
   },
   {
     kind: 'vex',
@@ -187,7 +187,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'TracingWindow',
     componentPath: 'src/components/TracingWindow.jsx',
     defaultSize: { w: 800, h: 600 },
-    launcher: { show: true, order: 85, icon: 'Search', label: 'Agent Tracing', hint: 'observability board', sizeOverride: { w: 800, h: 600 } },
+    launcher: { show: true, order: 85, icon: 'Search', label: 'Agent Tracing', hint: 'observability board' },
   },
   {
     kind: 'provenance_explorer',
@@ -216,5 +216,27 @@ export const OPS_WINDOW_MANIFESTS = [
     defaultSize: { w: 900, h: 560 },
     lab: { title: 'Inbox', props: {} },
     moduleMenu: { show: true, status: 'ready', order: 18, icon: 'Inbox', label: 'Inbox', hint: 'Only what needs you: red checks, conflicts, agents waiting for an OK, errors' },
+  },
+  {
+    kind: 'apiBar',
+    canvasType: 'apiBar',
+    label: 'API Bar',
+    componentName: 'ApiBarWindow',
+    componentPath: 'src/components/windows/apiBar/index.jsx',
+    defaultSize: { w: 940, h: 640 },
+    lab: { title: 'API Bar', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 19, icon: 'Plug', label: 'API Bar', hint: 'One door for every censaiOS API: a doorman passes your note to the right one and brings the answer back, signed' },
+  },
+  // Blueprints (Alex's diagram 08): a shelf of recipes with IDs; "Do we have ..." looks here.
+  {
+    kind: 'blueprints',
+    canvasType: 'blueprints',
+    label: 'Blueprints',
+    componentName: 'BlueprintsWindow',
+    componentPath: 'src/components/windows/blueprints/index.jsx',
+    defaultSize: { w: 940, h: 620 },
+    header: { title: 'Blueprints', icon: 'Files' },
+    lab: { title: 'Blueprints', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 67, icon: 'Files', label: 'Blueprints', hint: 'A shelf of recipes that worked, each with its own ID. Ask "Do we have any budget blueprints?" and agents look here first' },
   },
 ];

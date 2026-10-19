@@ -5,6 +5,7 @@ import { useWorkspaceStore } from '../../../lib/store.js';
 import { computeFitView } from '../../../lib/canvasMath.js';
 import { wakeUpWindowIds } from '../../../lib/wakeUp/boardWakeUp.js';
 import { leadToMarkdown, slugify } from '../../leadhound/exportLead.js';
+import { newId } from '../../../lib/ids/newId.js';
 
 const store = () => useWorkspaceStore.getState();
 const sampleHound = (wins) => wins.find((win) => win.kind === 'leadHound' && win.leadHound?.result?.leads?.length);
@@ -38,7 +39,7 @@ export function showWindow(win) {
 function openSettings(settingsTab) {
   const { wins, onUpdate, spawnAt } = store();
   const existing = wins.find((win) => win.kind === 'appearance');
-  if (existing) onUpdate(existing.id, { settingsTab, settingsRequestId: crypto.randomUUID(), maximized: false });
+  if (existing) onUpdate(existing.id, { settingsTab, settingsRequestId: newId(), maximized: false });
   const id = existing?.id || spawnAt('appearance', { title: 'Settings', settingsTab });
   return showWindow(store().wins.find((win) => win.id === id));
 }

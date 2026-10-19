@@ -2,14 +2,20 @@
 //
 // Which web addresses an outside tool server may have. Anywhere: http or
 // https only, no user:password in the address. On the hosted cloud version
-// the address must also be on the public internet, so one person cannot point
-// the server at its own private network. On the desktop app, servers on this
+// (and a private server that did not turn local files on) the address must
+// also be on the public internet, so one person cannot point the server at
+// its own private network; the connection is pinned to the address checked
+// (server/security/publicAddress.js). On the desktop app, servers on this
 // computer (localhost) are the common case and are allowed.
 
 import { lookup } from 'node:dns/promises';
-import net from 'node:net';
-import { isCloudRuntime } from '../middleware/runtimeMode.js';
+import { createLogger } from '../logger.js';
+import { isPrivateAddress, pinnedFetch, privateAddressesAllowed, vetHost } from '../security/publicAddress.js';
 import { OutsideToolError } from './httpClient.js';
+
+export { isPrivateAddress };
+
+const log = createLogger('outside-tools');
 
 export function parseServerUrl(value) {
   let url;
@@ -25,31 +31,36 @@ export function parseServerUrl(value) {
   return url;
 }
 
-export function isPrivateAddress(address) {
-  const ip = String(address).replace(/^\[|\]$/g, '');
-  if (net.isIPv4(ip)) {
-    const [a, b] = ip.split('.').map(Number);
-    return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31)
-      || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
+/** The checked address and, where private ones are refused, the host's vetted addresses. */
+async function vet(value, { cloud = !privateAddressesAllowed(), resolve = lookup } = {}) {
+  let url;
+  try {
+    url = parseServerUrl(value);
+  } catch (error) {
+    // The address itself is never logged: it may hold a key.
+    log.warn('address refused: not a usable web address', { reason: error.message });
+    throw error;
   }
-  if (net.isIPv6(ip)) {
-    const lower = ip.toLowerCase();
-    if (lower.startsWith('::ffff:')) return isPrivateAddress(lower.slice(7));
-    return lower === '::1' || lower === '::' || /^f[cd]/.test(lower) || /^fe[89ab]/.test(lower);
+  if (!cloud) return { url, addresses: null };
+  const host = url.hostname;
+  const { addresses, missing, blocked } = await vetHost(host, { resolve });
+  if (missing) {
+    log.warn('address refused: not found on the internet', { host });
+    throw new OutsideToolError(`Could not find ${host} on the internet.`, 400);
   }
-  return false;
+  if (blocked) {
+    log.warn('address refused: private network', { host, address: blocked });
+    throw new OutsideToolError('On a hosted or shared censaiOS, tool servers must be on the public internet.', 400);
+  }
+  return { url, addresses };
 }
 
-export async function assertReachableUrl(value, { cloud = isCloudRuntime(), resolve = lookup } = {}) {
-  const url = parseServerUrl(value);
-  if (!cloud) return url;
-  const host = url.hostname;
-  const addresses = net.isIP(host.replace(/^\[|\]$/g, ''))
-    ? [host]
-    : (await resolve(host, { all: true }).catch(() => [])).map((r) => r.address);
-  if (!addresses.length) throw new OutsideToolError(`Could not find ${host} on the internet.`, 400);
-  if (addresses.some(isPrivateAddress)) {
-    throw new OutsideToolError('On the hosted version, tool servers must be on the public internet.', 400);
-  }
-  return url;
+export async function assertReachableUrl(value, options) {
+  return (await vet(value, options)).url;
+}
+
+/** { url, fetchImpl } for talking to a tool server: pinned to the checked address where that matters. */
+export async function reachableFetch(value, options) {
+  const { url, addresses } = await vet(value, options);
+  return { url, fetchImpl: addresses ? pinnedFetch(addresses) : globalThis.fetch };
 }

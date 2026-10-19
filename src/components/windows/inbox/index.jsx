@@ -3,6 +3,8 @@ import React from 'react';
 import { WindowTitle } from '../WindowTitle.jsx';
 import { Icon } from '../../Icons.jsx';
 import { useWorkspaceStore } from '../../../lib/store.js';
+import { openInvitedBoard } from '../../../lib/invites/index.js';
+import { goToTodo, markTodoDone } from '../../../lib/todos/todoActions.js';
 import { windowMeta } from './meta.js';
 import { useInbox } from './useInbox.js';
 import { useInboxFixes, fixActionFor } from './useInboxFixes.js';
@@ -30,7 +32,10 @@ function RepoField({ repo, onSave }) {
 function open(item) {
   const { spawnAt } = useWorkspaceStore.getState();
   if (item.kind === 'pr' && item.url) spawnAt('browser', { url: item.url, title: `#${item.number}` });
+  else if (item.kind === 'note' && item.url) spawnAt('browser', { url: item.url, title: item.title });
   else if (item.kind === 'agent') spawnAt('agentConsole', { taskId: item.taskId, title: item.cliLabel || 'Agent Console' });
+  else if (item.kind === 'invite' && item.boardId) openInvitedBoard({ id: item.inviteId, workspaceId: item.boardId });
+  else if (item.kind === 'todo') goToTodo(item);
 }
 
 /**
@@ -61,6 +66,12 @@ export function InboxWindow({ win = {}, onUpdate, currentProject }) {
     setSelectedId((list[at + 1] || list[at - 1] || {}).id || null);
     inbox.acknowledge(item);
   };
+  // Tick it in its To-do window, then it leaves the list like an acknowledge.
+  const markDone = (item) => {
+    const result = markTodoDone(item);
+    if (result.ok) acknowledge(item);
+    return result;
+  };
 
   const onKeyDown = (e) => {
     if (e.target.closest?.('input, textarea, [contenteditable="true"]')) return;
@@ -73,6 +84,7 @@ export function InboxWindow({ win = {}, onUpdate, currentProject }) {
     else if (k === 'e') acknowledge(selected);
     else if (k === 'f' && fixActionFor(selected)) fixes.fix(selected);
     else if (k === 'o' && selected) open(selected);
+    else if (k === 'd' && selected?.kind === 'todo') markDone(selected);
     else if (k === 'u' || undoKey) handled = inbox.undoAck();
     else handled = false;
     // Keep the board's own single-key tools (and its undo) from firing too.
@@ -111,6 +123,7 @@ export function InboxWindow({ win = {}, onUpdate, currentProject }) {
           onFix={fixes.fix}
           onOpen={open}
           onAcknowledge={acknowledge}
+          onMarkDone={markDone}
           onAnswer={fixes.answer}
         />
         <InboxDock items={inbox.items} dock={inbox.data?.dock} needs={needs} onSelect={(id) => { setShowAcked(false); setSelectedId(id); }} />

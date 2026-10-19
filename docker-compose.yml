@@ -100,7 +100,8 @@ services:
       - .:/workspace/CensaiHub
       # Your projects folder: "New project" makes folders here, and any
       # folder inside it opens on the board. Set CENSAI_PROJECTS_FOLDER_ON_PC
-      # in .env (for example D:\Projects, or D:\ for the whole drive);
+      # in .env (for example D:/Projects, or D:/ for the whole drive, which the
+      # terminal's "Mount to" then shows as "D: drive");
       # without it, projects live in censai-projects next to this file.
       - ${CENSAI_PROJECTS_FOLDER_ON_PC:-./censai-projects}:/workspace/projects
       - runner_secret:/run/censai-runner:ro
@@ -111,6 +112,10 @@ services:
     environment:
       # Makes missing secrets and sets up a new database on first start.
       CENSAI_SELF_SETUP: "1"
+      # The app's log goes in the censaiOS folder on this computer
+      # (.homebase-state\logs next to this file), not only inside Docker, so
+      # it survives rebuilds and Claude can read it next to a screenshot.
+      LOG_DIR: /workspace/CensaiHub/.homebase-state/logs
       DATABASE_URL: postgresql://homebase:homebase@postgres:5432/homebase
       QDRANT_URL: http://qdrant:6333
       # The default AI when an agent has no key of its own: Ollama on this

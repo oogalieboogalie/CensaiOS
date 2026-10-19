@@ -1,11 +1,13 @@
 // Device skins for the retro MP3-player Music window. Each source gets the
 // plastic, screen and wheel colors of a branded player: YouTube red, YouTube
-// Music black-and-red, Spotify black-and-green, SoundCloud orange, and a
-// silver USB stick player for local files and anything else. Colors are
+// Music black-and-red, Spotify black-and-green, SoundCloud orange, a walnut
+// and amber tuner for internet radio, and a silver USB stick player for
+// local files, song links and anything else. Colors are
 // flat on purpose: depth comes from bevel shadows in src/styles/music.css,
 // not gradients.
+import { directAudioKind } from './linkAudio.js';
 
-export const MUSIC_SOURCES = ['youtube', 'ytmusic', 'spotify', 'soundcloud', 'local', 'generic'];
+export const MUSIC_SOURCES = ['youtube', 'ytmusic', 'spotify', 'soundcloud', 'radio', 'local', 'generic'];
 
 export function detectMusicSource(url) {
   const raw = String(url || '').toLowerCase();
@@ -14,10 +16,11 @@ export function detectMusicSource(url) {
   if (raw.includes('youtube.com') || raw.includes('youtu.be') || raw.includes('youtube-nocookie.com')) return 'youtube';
   if (raw.startsWith('spotify:') || raw.includes('spotify.com')) return 'spotify';
   if (raw.includes('soundcloud.com')) return 'soundcloud';
+  if (directAudioKind(url) === 'radio') return 'radio';
   return 'generic';
 }
 
-export const SOURCE_TAGS = { youtube: 'YT', ytmusic: 'YTM', spotify: 'SPOT', soundcloud: 'SC', local: 'USB', generic: 'MP3' };
+export const SOURCE_TAGS = { youtube: 'YT', ytmusic: 'YTM', spotify: 'SPOT', soundcloud: 'SC', radio: 'FM', local: 'USB', generic: 'MP3' };
 
 export const MUSIC_SKINS = {
   youtube: {
@@ -87,6 +90,23 @@ export const MUSIC_SKINS = {
     wheelInk: '#e04b00',
     hub: '#ff5500',
     hubInk: '#ffffff',
+  },
+  radio: {
+    brand: 'CensaiRadio',
+    model: 'NET·TUNER',
+    body: '#4a3222',
+    bodyEdge: '#24170e',
+    bodyInk: '#f4dca8',
+    screenBg: '#140b02',
+    lcdInk: '#ffd27a',
+    lcdDim: 'rgba(255, 210, 122, 0.42)',
+    lcdGlow: 'rgba(255, 170, 40, 0.72)',
+    vis: ['#ff9f1c', '#ffc94d', '#fff1c2'],
+    peak: '#ffffff',
+    wheel: '#d9c7a3',
+    wheelInk: '#4a3222',
+    hub: '#e8a33a',
+    hubInk: '#2a1a0c',
   },
   generic: {
     brand: 'CensaiAudio',

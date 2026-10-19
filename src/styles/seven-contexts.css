@@ -1,0 +1,39 @@
+/* Drawing 07: "7 contexts" fold under an agent's answer (SevenContexts.jsx). */
+.hb-seven { margin-top: 4px; }
+.hb-seven-panel {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.hb-seven-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hb-seven-list > li { display: flex; gap: 8px; align-items: flex-start; }
+.hb-seven-n {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+.hb-seven-list > li[data-status="found"] .hb-seven-n {
+  border-color: var(--success);
+  color: var(--success);
+}
+.hb-seven-body { min-width: 0; flex: 1; }
+.hb-seven-head { display: flex; gap: 8px; justify-content: space-between; font-size: var(--text-sm); }
+.hb-seven-name { color: var(--ink); }
+.hb-seven-status { color: var(--ink-faint); white-space: nowrap; }
+.hb-seven-list > li[data-status="found"] .hb-seven-status { color: var(--success); }
+.hb-seven-found {
+  margin: 2px 0 0;
+  padding-left: 16px;
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.hb-seven-foot { margin-top: 8px; font-size: var(--text-xs); color: var(--ink-faint); }

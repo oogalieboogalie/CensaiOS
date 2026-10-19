@@ -1,3 +1,5 @@
+import { apiError } from '../errorReport.js';
+
 
 export async function getCurrentProject() {
     const res = await fetch('/api/current-project');
@@ -53,6 +55,6 @@ export async function createProjectHandoff({ workspaceId, projectPath, title, te
       body: JSON.stringify({ workspaceId, projectPath, title, text, assignee, sourceTitle, priority, sourceId }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.error || 'Failed to create handoff');
+    if (!res.ok) throw apiError(res, data, 'Failed to create handoff', { method: 'POST', path: '/api/project-handoffs' });
     return data;
   }

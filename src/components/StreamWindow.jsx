@@ -2,10 +2,12 @@ import React from 'react';
 import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { YouTubeSearch } from './YouTubeSearch.jsx';
+import { isTwitchPlayer, twitchPlayerUrl, twitchRefusalReason, withTwitchParent } from '../lib/stream/twitchEmbed.js';
+import { logToApp } from '../lib/appLog/browserLog.js';
 
 const PRESETS = [
-  { name: 'Twitch: KaiCenat', url: 'https://player.twitch.tv/?channel=kaicenat&parent=localhost' },
-  { name: 'Twitch: xQc', url: 'https://player.twitch.tv/?channel=xqc&parent=localhost' },
+  { name: 'Twitch: KaiCenat', url: 'https://player.twitch.tv/?channel=kaicenat' },
+  { name: 'Twitch: xQc', url: 'https://player.twitch.tv/?channel=xqc' },
   { name: 'YouTube: Lofi Girl', url: 'https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1' }
 ];
 
@@ -14,7 +16,7 @@ function parseStreamUrl(url) {
   // Twitch Channel
   if (url.includes('twitch.tv/')) {
     const channel = url.split('twitch.tv/')[1]?.split('?')[0];
-    if (channel) return `https://player.twitch.tv/?channel=${channel}&parent=localhost`;
+    if (channel) return twitchPlayerUrl(channel);
   }
   // YouTube
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
@@ -27,8 +29,19 @@ function parseStreamUrl(url) {
   return url;
 }
 
+// One warning in the app log per stream opened where Twitch may refuse.
+function useTwitchWarning(src) {
+  const twitch = Boolean(src) && isTwitchPlayer(src);
+  const reason = twitch ? twitchRefusalReason() : null;
+  React.useEffect(() => {
+    if (reason) logToApp('warn', `stream viewer: Twitch may refuse to play here. ${reason}`, { where: 'stream' });
+  }, [src, reason]);
+  return reason;
+}
+
 export function StreamWindow({ win, onUpdate }) {
   const [inputUrl, setInputUrl] = React.useState('');
+  const twitchWarning = useTwitchWarning(win.src);
   
   const handleLoad = () => {
     if (inputUrl.trim()) {
@@ -113,9 +126,13 @@ export function StreamWindow({ win, onUpdate }) {
               >
                 <Icon.Close size={12} /> Close Stream
               </button>
+              {twitchWarning && (
+                <span role="note" style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginLeft: 'auto' }}>{twitchWarning}</span>
+              )}
             </div>
             <iframe 
-              src={win.src} 
+              title="Stream"
+              src={withTwitchParent(win.src)} 
               style={{ flex: 1, width: '100%', height: '100%', border: 'none' }} 
               allow="autoplay; fullscreen"
               loading="lazy"

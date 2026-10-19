@@ -4,6 +4,7 @@ import { subAgentScopeError } from '../../memory/subagentTenancy.js';
 import { ModelAccessError, resolveChatModelConfig } from '../../aiGateway/index.js';
 import { filterToolsForAgent } from '../../tools.js';
 import { buildSubAgentSystemPrompt } from './prompts.js';
+import { withCensaiOrchestrator } from '../../agents/censaiOrchestrator.js';
 import pool from '../../db.js';
 import { capabilityProviderFor, getModelCapabilities } from '../../../src/lib/chat/modelCapabilities.js';
 import { buildContentParts, messageAttachments } from '../../aiGateway/multimodal.js';
@@ -164,7 +165,7 @@ export async function prepareChatContext(
             projectContext = contexts.map((context) => ({ ...context, prewarmed: true }));
           },
         });
-        if (memoryPrompt) systemPrompt = memoryPrompt;
+        if (memoryPrompt) systemPrompt = withCensaiOrchestrator(agentId, memoryPrompt);
       } else {
         systemPrompt = await buildSubAgentSystemPrompt(sub, { workspaceId: authorizedWorkspaceId, userId });
       }

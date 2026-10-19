@@ -3,6 +3,7 @@ import { getAgents } from '../../lib/agentStore.js';
 import { sendMessageWithMeta } from '../../lib/chat.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { needsKey } from '../../lib/chat/keyNeeded.js';
+import { handoffsFromTools } from '../../lib/censai/handoffs.js';
 
 const STORAGE_KEY = 'homebase.messenger.v1';
 
@@ -18,11 +19,13 @@ function loadThreads() {
 
 // Shared thread state for messenger-style agent chats (same /api/chat pipe
 // as canvas chat windows, threads persist in localStorage under one key so
-// every entry point sees the same conversations).
-export function useMessengerThreads() {
+// every entry point sees the same conversations). `initialId` opens one
+// agent's thread straight away (the pinned chat opens on Censai); onReply
+// hears which agent just answered.
+export function useMessengerThreads({ initialId = null, onReply = null } = {}) {
   const workspaceId = useWorkspaceStore((s) => s.workspaceId);
   const currentProject = useWorkspaceStore((s) => s.currentProject);
-  const [activeId, setActiveId] = React.useState(null);
+  const [activeId, setActiveId] = React.useState(initialId);
   const [threads, setThreads] = React.useState(loadThreads);
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -30,6 +33,8 @@ export function useMessengerThreads() {
   // No key for the agent's model: { agentId, keyProvider, message } for the card.
   const [keyNeeded, setKeyNeeded] = React.useState(null);
   const scrollRef = React.useRef(null);
+  const onReplyRef = React.useRef(onReply);
+  onReplyRef.current = onReply;
 
   const agents = React.useMemo(() => getAgents(), []);
   const active = agents.find((a) => a.id === activeId) || null;
@@ -51,10 +56,10 @@ export function useMessengerThreads() {
     setSending(true);
     try {
       const reply = await sendMessageWithMeta(agent.id, history, { workspaceId, currentProject });
-      setThreads((t) => ({
-        ...t,
-        [agent.id]: [...(t[agent.id] || history), { from: agent.id, text: reply.text || '(empty reply)', ts: Date.now() }],
-      }));
+      const handoffs = handoffsFromTools(reply.tools);
+      const answer = { from: agent.id, text: reply.text || '(empty reply)', ts: Date.now(), ...(handoffs.length ? { handoffs } : {}) };
+      setThreads((t) => ({ ...t, [agent.id]: [...(t[agent.id] || history), answer] }));
+      onReplyRef.current?.(agent.id, reply);
     } catch (err) {
       if (needsKey(err)) {
         setKeyNeeded({ agentId: agent.id, keyProvider: err.details?.keyProvider || null, message: err.message });
@@ -80,7 +85,12 @@ export function useMessengerThreads() {
     if (active && !sending && msgs.length > 0) deliver(active, msgs);
   }, [active, sending, msgs, deliver]);
 
+  // A line that did not come from a send, such as a plan's checked result.
+  const appendMessage = React.useCallback((agentId, message) => {
+    setThreads((t) => ({ ...t, [agentId]: [...(t[agentId] || []), message] }));
+  }, []);
+
   const keyCard = keyNeeded && keyNeeded.agentId === activeId ? keyNeeded : null;
 
-  return { agents, active, activeId, setActiveId, threads, msgs, draft, setDraft, sending, error, send, resend, keyCard, scrollRef, setError };
+  return { agents, active, activeId, setActiveId, threads, msgs, draft, setDraft, sending, error, send, resend, keyCard, scrollRef, setError, appendMessage };
 }

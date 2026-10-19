@@ -10,7 +10,8 @@ name: Security
 
 on:
   push:
-    branches: [main]
+    # nightly too: a nightly build becomes a stable release only after this passes.
+    branches: [main, nightly]
   pull_request:
   workflow_dispatch:
   schedule:

@@ -34,6 +34,18 @@ const ALLOW = new Set([
   'public/install.sh:piped-shell',
   'tests/installCommand.test.jsx:piped-shell',
   'src/components/landing/InstallCommand.jsx:piped-shell',
+  // The starter-box setup runs Ollama's and Tailscale's own official
+  // installers (their documented "curl -fsSL https://... | sh"), only when the
+  // box owner runs setup and the tool is missing.
+  'starter-box/setup.sh:piped-shell',
+  // Grok's command-line tool is not on npm: it installs with xAI's own
+  // official installer, only when the owner asks for it (the install route
+  // requires the owner), and the test checks that exact command.
+  'server/cli-agents/adapters/grok.js:piped-shell',
+  'tests/cliAgentGrok.test.js:piped-shell',
+  // Made-up public addresses standing in for a hosted agent's server; every
+  // fetch in that test is a stub, so nothing is ever contacted.
+  'tests/hostedAgentsNetGuard.test.js:raw-ip-url',
   // Compiles a CAD recipe only to report typing mistakes; it is never called.
   'server/collaboration/cadAgent.js:dynamic-code',
   // Boots the repo's own launcher.cjs (passed by env) inside the throwaway

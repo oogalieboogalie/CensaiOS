@@ -5,6 +5,15 @@ import { S, F, A, H, INK, SOFT, FAINT, ACCENT } from './kit.js';
 // Build windows. Branded ones (Docker, GitHub, Figma, n8n, Ollama) leave the
 // right third for the service's mark.
 export const BUILD_COVERS = {
+  // Diagram 18: a row of seven host tiles, a cloud above the lit one.
+  hosting: (
+    <>
+      <rect x="4" y="13" width="5" height="6" rx="1" {...S} /><rect x="10" y="13" width="5" height="6" rx="1" {...S} /><rect x="16" y="13" width="5" height="6" rx="1" {...A} />
+      <rect x="22" y="13" width="5" height="6" rx="1" {...S} /><rect x="28" y="13" width="5" height="6" rx="1" {...S} /><rect x="34" y="13" width="5" height="6" rx="1" {...S} />
+      <path d="M14 9 Q14 5.5 17.5 5.5 Q19 3 22 4.5 Q25.5 4.5 25.5 8 Q27 9 25.5 10 H15 Q13.5 10 14 9 Z" {...A} />
+      <path d="M18.5 10 V13" {...F} />
+    </>
+  ),
   // A prompt and a blinking block cursor.
   terminal: (
     <>

@@ -55,6 +55,9 @@
   overflow: hidden;
 }
 .hb-win-title-slot { display: contents; }
+/* A busy header (project chip, tool buttons) may squeeze the name out, but
+   never the window's identity mark: the agent's face always shows. */
+.hb-win-title:has(.hb-win-identity) { min-width: var(--space-5); }
 .hb-win-identity {
   display: inline-flex;
   flex-shrink: 0;
@@ -246,7 +249,7 @@
 }
 
 /* Multi-project board: which project a window works in (WindowProjectChip). */
-.hb-win-project { position: relative; display: inline-flex; flex: 0 0 auto; min-width: 0; cursor: default; }
+.hb-win-project { position: relative; display: inline-flex; flex: 0 1 auto; min-width: var(--space-6); cursor: default; }
 .hb-win-project-chip {
   all: unset;
   box-sizing: border-box;
@@ -277,18 +280,4 @@
 .hb-win-project-empty,
 .hb-win-project-error { padding: var(--space-1) var(--space-2); font-size: var(--text-xs); color: var(--ink-faint); }
 .hb-win-project-error { color: var(--danger); }
-.hb-win-project-form { display: flex; gap: var(--space-1); padding: var(--space-1); }
-.hb-win-project-form input {
-  all: unset;
-  box-sizing: border-box;
-  flex: 1;
-  min-width: 0;
-  height: var(--control-h);
-  padding: 0 var(--space-2);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-size: var(--text-sm);
-}
 [data-header-mode="bare"] > .hb-win-header .hb-win-project { display: none; }

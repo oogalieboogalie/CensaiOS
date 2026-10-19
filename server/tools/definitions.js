@@ -13,11 +13,17 @@ import { realEstateTools } from './definitions/realEstate.js';
 import { researchTools } from './definitions/research.js';
 import { agentNetworkTools } from './definitions/agentNetwork.js';
 import { weewooTools } from './definitions/weewoo.js';
+import { speakUpTools } from './definitions/speakUp.js';
+import { wakeUpTools } from './definitions/wakeUps.js';
 import { moduleTools } from './definitions/modules.js';
 import { videoTools } from './definitions/video.js';
 import { pdfTools } from './definitions/pdf.js';
 import { cadTools } from './definitions/cad.js';
 import { scoutTools } from './definitions/scout.js';
+import { skillSetTools } from './definitions/skillSets.js';
+import { blueprintTools } from './definitions/blueprints.js';
+import { appLogTools } from './definitions/appLog.js';
+import { censaiPlanTools } from './definitions/censaiOrchestrator.js';
 
 export * from './rbac/index.js';
 export * from './catalog.js';
@@ -44,9 +50,15 @@ export const TOOL_DEFINITIONS = [
   ...researchTools,
   ...agentNetworkTools,
   ...weewooTools,
+  ...speakUpTools,
+  ...wakeUpTools,
   ...moduleTools,
   ...videoTools,
   ...pdfTools,
   ...cadTools,
   ...scoutTools,
+  ...skillSetTools,
+  ...blueprintTools,
+  ...appLogTools,
+  ...censaiPlanTools,
 ];

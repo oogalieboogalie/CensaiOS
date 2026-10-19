@@ -3,6 +3,7 @@ import {
   getRuntimeMode,
   isCloudRuntime,
   isFeatureEnabled,
+  localFilesystemAllowed,
   requireFeatureFlag,
   requireLocalFilesystem,
   RUNTIME_MODES,
@@ -73,6 +74,21 @@ describe('runtime mode middleware', () => {
 
     expect(allowed.status).not.toHaveBeenCalled();
     expect(allowedNext).toHaveBeenCalled();
+  });
+
+  test('CENSAI_LOCAL_FILES=off switches this computer\'s files off even on a desktop copy', async () => {
+    process.env.CENSAI_MODE = RUNTIME_MODES.LOCAL_DESKTOP;
+    expect(localFilesystemAllowed()).toBe(true);
+    process.env.CENSAI_LOCAL_FILES = 'off';
+    expect(localFilesystemAllowed()).toBe(false);
+    const res = response();
+    const next = jest.fn();
+    requireLocalFilesystem({}, res, next);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+    const { terminalRuntimeAccess } = await import('../server/terminal/access.js');
+    expect(terminalRuntimeAccess({ mode: RUNTIME_MODES.LOCAL_DESKTOP, env: { CENSAI_LOCAL_FILES: 'off' } }).allowed).toBe(false);
+    expect(terminalRuntimeAccess({ mode: RUNTIME_MODES.LOCAL_DESKTOP, env: {} }).allowed).toBe(true);
   });
 
   test('reads feature flags from direct and list environment settings', () => {

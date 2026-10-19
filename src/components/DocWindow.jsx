@@ -22,6 +22,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
     realContent, setRealContent,
     loading, saving,
     backlinks,
+    backlinksCapped,
     showGraph, setShowGraph,
     selRange, pendingKind, setPendingKind,
     activeAnnId, setActiveAnnId,
@@ -158,6 +159,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
             {backlinks.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
                 <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', padding: '0 6px 4px' }}>Backlinks</div>
+                {backlinksCapped && <div role="status" style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', padding: '0 6px 4px' }}>Showing the first {backlinks.length}.</div>}
                 {backlinks.map((bl, i) => (
                   <div key={i}
                     onClick={() => onSpawn?.('doc', { fileName: bl.name, filePath: bl.path })}

@@ -48,7 +48,7 @@ docker compose up -d
 
 **You don't edit any settings files.** The app makes its own secret passwords on first start and keeps them, sets up its whole database, and wires every part together: the app, the database (PostgreSQL), vector memory (Qdrant) and the Docker helper. Your boards, agents and keys are kept in Docker volumes, so they survive restarts and updates.
 
-**To update**, from the same folder:
+**To update** to the newest stable release, from the same folder:
 
 ```bash
 git pull
@@ -70,6 +70,34 @@ Everything else in [`.env.example`](.env.example) is optional. Before you open y
 **Looking for a Windows installer?** A desktop app exists, but it is not code-signed yet, so Windows
 blocks it with a "Windows protected your PC" warning. A signed installer is on the way. Until then,
 the Docker steps above are the supported way to run censaiOS.
+
+## Stable releases and nightly builds
+
+censaiOS ships on two tracks, the way most software does:
+
+| | Stable release | Nightly build |
+|---|---|---|
+| What it is | A nightly build that passed every public check (tests, build, security scans), with a version number such as 0.4.0 | The newest work, copied here automatically every night |
+| How often | Every Sunday | Every night something changed |
+| Branch | `main` (what `git clone` and `git pull` give you) | `nightly` |
+| Container image | `ghcr.io/oogalieboogalie/censaios:latest` (also `:stable` and `:0.4.0`) | `ghcr.io/oogalieboogalie/censaios:nightly` |
+| Use it if | You rely on censaiOS | You want to try what is coming and don't mind rough edges |
+
+To try the nightly build, from your CensaiOS folder:
+
+```bash
+git fetch origin nightly
+git checkout nightly
+docker compose up -d --build
+```
+
+`git pull` then keeps you on the nightly builds. To go back to stable: `git checkout main`, then
+`docker compose up -d --build`. Your boards, agents and keys stay in their Docker volumes either way.
+
+Every release lists its changes in [CHANGELOG.md](CHANGELOG.md), and the
+[Releases page](https://github.com/oogalieboogalie/CensaiOS/releases) has each one's notes and
+container tags. Both tracks are made automatically from the development repository; see
+[CONTRIBUTING.md](CONTRIBUTING.md) for how changes get here.
 
 ## Before you trust this
 
@@ -137,18 +165,11 @@ Document and code windows have character-by-character collaborative text editing
 teammate sees each keystroke as you type. Other windows share their content when you save.
 [COLLABORATION.md](COLLABORATION.md) explains how the pieces fit together.
 
-## New this week
+## What's new
 
-These are built and pass the automated tests, but they haven't been proven day to day yet.
-Expect rough edges.
-
-- **Open Books:** simple bookkeeping in a window (YorWare Suite > Books). Import a bank file and
-  see where the money went.
-- **YorWare Slides and Sheets:** a slide deck and a spreadsheet that open as windows on the board.
-- **Agent network with receipts:** agents can find other agents and ask them for help, and every
-  request leaves a receipt showing who asked, who answered, and what came back.
-- **Inbox:** one window (Add > Inbox) that collects what your agents and projects need from you.
-- **Blockyard:** a small idle block game (Add > Games), for when you need a break.
+[CHANGELOG.md](CHANGELOG.md) lists every change in each stable release, and at the top, what the
+nightly builds have that no stable release has yet. New work is built and passes the automated
+tests before it lands, but expect rough edges in anything that is only in the nightly builds.
 
 ## What else is inside
 

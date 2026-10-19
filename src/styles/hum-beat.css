@@ -1,0 +1,51 @@
+/* Hum a beat window. Tokens only, so every look applies; buttons and
+   fields reuse the Studio's (studio.css) so the two music windows match. */
+.hb-hum { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); color: var(--ink); font-family: var(--font-sans); font-size: var(--text-sm); outline: none; }
+
+.hb-hum-top { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border-bottom: 1px solid var(--hairline); flex-shrink: 0; flex-wrap: wrap; }
+.hb-hum-rec { all: unset; box-sizing: border-box; width: 52px; height: 52px; flex: none; display: grid; place-items: center; border-radius: var(--radius-full); border: 2px solid var(--hairline-strong); color: var(--danger); cursor: pointer; }
+.hb-hum-rec:hover:not(:disabled) { border-color: var(--danger); }
+.hb-hum-rec:disabled { opacity: 0.45; cursor: default; }
+.hb-hum-rec:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+.hb-hum-recdot { width: 22px; height: 22px; border-radius: var(--radius-full); background: currentColor; transition: border-radius 120ms ease, width 120ms ease, height 120ms ease; }
+.hb-hum-rec[data-on="true"] { background: var(--status-danger-10); border-color: var(--danger); animation: hb-hum-pulse 1.2s ease-in-out infinite; }
+.hb-hum-rec[data-on="true"] .hb-hum-recdot { width: 16px; height: 16px; border-radius: var(--radius-xs); }
+@keyframes hb-hum-pulse { 50% { border-color: var(--status-danger-20); } }
+@media (prefers-reduced-motion: reduce) { .hb-hum-rec[data-on="true"] { animation: none; } }
+
+.hb-hum-say { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hb-hum-say strong { font-size: var(--text-md); font-weight: 600; font-variant-numeric: tabular-nums; }
+.hb-hum-say span { font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-hum-push { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
+.hb-hum-take { height: 30px; max-width: 240px; }
+
+.hb-hum-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-6); text-align: center; color: var(--ink-soft); background: var(--surface-sunken); }
+.hb-hum-empty p { max-width: 46ch; margin: 0; line-height: 1.5; }
+
+/* Piano roll */
+.hb-hum-roll { flex: 1; min-height: 160px; display: flex; flex-direction: column; background: var(--surface-sunken); padding: var(--space-3) var(--space-3) var(--space-2); gap: var(--space-2); }
+.hb-hum-lane { position: relative; flex: 1; min-height: 120px; display: grid; grid-template-rows: repeat(var(--rows), 1fr); border: 1px solid var(--hairline); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); }
+.hb-hum-row { border-bottom: 1px solid var(--hairline-soft); }
+.hb-hum-row[data-black="true"] { background: var(--surface-2); }
+.hb-hum-beatline { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--hairline-soft); pointer-events: none; }
+.hb-hum-beatline[data-bar="true"] { border-left-color: var(--hairline-strong); }
+.hb-hum-barnum { position: absolute; top: 2px; left: 4px; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-hum-note { position: absolute; box-sizing: border-box; min-width: 4px; display: flex; align-items: center; overflow: hidden; padding: 0 var(--space-1); background: var(--accent); border: 1px solid var(--accent-line); border-radius: var(--radius-xs); color: var(--accent-contrast); }
+.hb-hum-note span { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1; white-space: nowrap; }
+.hb-hum-playhead { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ink); pointer-events: none; }
+.hb-hum-drumlane { position: relative; height: 22px; flex: none; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); overflow: hidden; }
+.hb-hum-hit { position: absolute; width: 6px; height: 6px; margin-left: 2px; border-radius: var(--radius-full); background: var(--ink-soft); }
+.hb-hum-hit[data-drum="kick"] { top: 13px; width: 8px; height: 8px; background: var(--canvas-pen-amber); }
+.hb-hum-hit[data-drum="snare"] { top: 7px; background: var(--canvas-pen-pink); }
+.hb-hum-hit[data-drum="hat"] { top: 2px; width: 4px; height: 4px; background: var(--ink-40); }
+
+/* Controls */
+.hb-hum-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); padding: var(--space-2-5) var(--space-3) var(--space-3); border-top: 1px solid var(--hairline); flex-shrink: 0; }
+.hb-hum-play { width: 40px; height: 40px; }
+.hb-hum-tri { width: 0; height: 0; border-style: solid; border-width: 7px 0 7px 12px; border-color: transparent transparent transparent currentColor; margin-left: 3px; }
+.hb-hum-stopsq { width: 12px; height: 12px; background: currentColor; border-radius: 2px; }
+.hb-hum-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.hb-hum-field > span { font-family: var(--font-label); text-transform: var(--label-case); letter-spacing: var(--label-tracking); font-size: var(--text-xs); color: var(--ink-faint); }
+.hb-hum-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.hb-hum-oct { min-width: 3ch; text-align: center; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-hum .hb-studio-chip:disabled { opacity: 0.4; cursor: default; }

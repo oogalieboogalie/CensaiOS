@@ -8,6 +8,7 @@ import { MessageActions } from './MessageActions.jsx';
 import { MessageBody } from './MessageBody.jsx';
 import { ArtifactCard } from './ArtifactCard.jsx';
 import { KnowledgeSources } from './KnowledgeSources.jsx';
+import { SevenContexts } from './SevenContexts.jsx';
 import { ToolCallList, toolsFromActivity } from './ToolCallCard.jsx';
 import { ReceiptChip } from './ReceiptChip.jsx';
 import { formatMs } from './toolActivity.js';
@@ -35,6 +36,9 @@ function outsideVia(call) {
  *   live        { liveStatus, activityLog } while the reply is still coming
  *   onSend      (artifact) => opens it as a window on the canvas
  */
+/** Hover text: when a message was sent (messages from before times were kept have none). */
+const sentAt = (m) => (m.at ? `Sent ${new Date(m.at).toLocaleString()}` : undefined);
+
 export function ChatBubble({
   message: m, index, copied, onCopy, onSpeak, speaking = false, speakLoading = false,
   agent = null, showAuthor = false, authorMeta = null, isLast = false, live = null,
@@ -69,7 +73,7 @@ export function ChatBubble({
 
   if (m.from === 'me') {
     return (
-      <div className="hb-msg" data-from="me">
+      <div className="hb-msg" data-from="me" title={sentAt(m)}>
         <div className="hb-msg-bubble">
           {m.image && <img src={m.image} alt="attached" style={{ width: '100%', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)' }} />}
           <MessageAttachments attachments={m.attachments} />
@@ -105,7 +109,7 @@ export function ChatBubble({
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className="hb-msg" data-from="agent" data-last={isLast ? 'true' : undefined}
+    <div className="hb-msg" data-from="agent" data-last={isLast ? 'true' : undefined} title={sentAt(m)}
       data-agent-hue={agent ? '' : undefined} style={agentHueStyle(agent)}>
       {showAuthor && agent && (
         <div className="hb-msg-author">
@@ -129,6 +133,7 @@ export function ChatBubble({
         </div>
       )}
       {!streaming && <KnowledgeSources sources={m.knowledge} />}
+      {!streaming && <SevenContexts report={m.activity?.sevenContexts} />}
       <ReceiptChip receipt={m.receipt} />
       {files.map(f => (
         <ArtifactCard key={f.path} type="file" title={f.name}

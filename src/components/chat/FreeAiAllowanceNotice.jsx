@@ -4,8 +4,18 @@ import {
   FREE_AI_STATUS_UNAVAILABLE,
   getFreeAiAllowanceStatus,
 } from '../../lib/api/freeAiAllowance.js';
+import { logToApp } from '../../lib/appLog/browserLog.js';
 
 const normalizeWorkspaceId = value => String(value ?? '').trim();
+
+// A failed allowance check says nothing in the chat (the chat may not even
+// use the allowance); it goes to the app log once per board instead.
+const loggedFailures = new Set();
+function logCheckFailed(scope, why) {
+  if (loggedFailures.has(scope)) return;
+  loggedFailures.add(scope);
+  logToApp('warn', `chat: could not check the free AI allowance for board ${scope}: ${why}`, { where: 'chat' });
+}
 
 function allowanceSummary(status) {
   const bands = ['user', 'shared', 'minute']
@@ -42,8 +52,13 @@ function providerLabel(provider) {
   return String(provider || '').toLowerCase() === 'openrouter' ? 'OpenRouter' : String(provider || '');
 }
 
-export function FreeAiAllowanceNotice({ workspaceId, refreshKey }) {
-  const scope = normalizeWorkspaceId(workspaceId);
+/**
+ * The free AI allowance above a chat's input. `skip` is set for chats that
+ * never run on it (a hosted agent, Grok, a local Ollama model): those don't
+ * ask at all.
+ */
+export function FreeAiAllowanceNotice({ workspaceId, refreshKey, skip = false }) {
+  const scope = skip ? '' : normalizeWorkspaceId(workspaceId);
   const [view, setView] = React.useState(null);
 
   React.useEffect(() => {
@@ -53,20 +68,21 @@ export function FreeAiAllowanceNotice({ workspaceId, refreshKey }) {
       .then(status => {
         if (current) setView({ workspaceId: scope, status, unavailable: false });
       })
-      .catch(() => {
+      .catch((err) => {
+        logCheckFailed(scope, err?.message || FREE_AI_STATUS_UNAVAILABLE);
         if (current) setView({ workspaceId: scope, status: null, unavailable: true });
       });
     return () => { current = false; };
   }, [scope, refreshKey]);
 
   if (!scope || view?.workspaceId !== scope) return null;
-  if (view.unavailable) {
-    return <Notice>{FREE_AI_STATUS_UNAVAILABLE}</Notice>;
-  }
-  if (view.status?.enabled === false) return null;
+  if (view.unavailable || view.status?.enabled !== true) return null;
 
   const summary = allowanceSummary(view.status);
-  if (!summary) return <Notice>{FREE_AI_STATUS_UNAVAILABLE}</Notice>;
+  if (!summary) {
+    logCheckFailed(scope, 'the allowance numbers were incomplete');
+    return null;
+  }
 
   const byok = view.status?.byok?.provider === 'openrouter' &&
     view.status?.byok?.configured === true;
