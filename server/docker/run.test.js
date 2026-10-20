@@ -60,13 +60,13 @@ describe('Run a new container from an image', () => {
   test('settings, a shared folder and restart reach Docker and show on the info page; the log keeps values out', async () => {
     const res = await request(app).post('/api/docker/images/run').send({
       image: 'redis:7', name: 'notes-db', ports: '6380:6379',
-      env: 'REDIS_PASSWORD=jordan-secret-123\nAPP_MODE=test\n',
+      env: 'REDIS_PASSWORD=fake-pw\nAPP_MODE=test\n',
       share: { host: 'D:\\data\\notes', target: '/data' }, restart: 'unless-stopped',
     });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ settings: 2, shared: true, restart: 'unless-stopped' });
     expect(calls.at(-1)).toEqual(['run', '-d', '--name', 'notes-db', '-p', '6380:6379',
-      '-e', 'REDIS_PASSWORD=jordan-secret-123', '-e', 'APP_MODE=test',
+      '-e', 'REDIS_PASSWORD=fake-pw', '-e', 'APP_MODE=test',
       '--mount', 'type=bind,source=D:\\data\\notes,target=/data', '--restart', 'unless-stopped', 'redis:7']);
     const made = (await request(app).get('/api/docker/containers')).body.containers.find((c) => c.name === 'notes-db');
     const info = (await request(app).get(`/api/docker/containers/${made.id}`)).body;
@@ -75,7 +75,7 @@ describe('Run a new container from an image', () => {
     expect(info.env.map((e) => e.key)).toEqual(['REDIS_PASSWORD', 'APP_MODE']);
     expect(info.env[0].masked).toBe(true);
     expect(logged).toEqual([['info', expect.stringMatching(/run: started redis:7 as notes-db, ports 6380:6379, 2 settings, shared folder yes, restart unless-stopped/)]]);
-    expect(JSON.stringify(logged)).not.toMatch(/jordan-secret|REDIS_PASSWORD|APP_MODE|D:|\/data/);
+    expect(JSON.stringify(logged)).not.toMatch(/fake-pw|REDIS_PASSWORD|APP_MODE|D:|\/data/);
   });
 
   test('bad settings, folders and restart choices are refused before Docker runs', async () => {

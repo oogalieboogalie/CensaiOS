@@ -9,28 +9,43 @@ import { getUserApiKeyConfig } from '../security/userApiKeys.js';
 import { LOCAL_STATE_DIR } from '../routes/files/pathUtils.js';
 import { claimCliLogin } from './loginOwner.js';
 import { personalSignedIn } from './personalHome.js';
+import { cliMayUseServerKeys } from './serverKeyScope.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('cli-agents');
 
 export { CliTaskManager, buildHandoffPrompt } from './taskManager.js';
 export { CLI_ADAPTERS, getAdapter } from './adapters/index.js';
 
 /**
  * Where a CLI's key comes from, in order: the user's key vault (Settings →
- * keys), the Toolchains config, the server environment. Returning null is
- * fine: the CLI then uses its own login (claude login, codex login…), but only
- * for the person who owns that login (loginOwner.js).
+ * keys), then, only for someone allowed the computer's own keys
+ * (serverKeyScope.js), the Toolchains config and the server environment.
+ * Returning null is fine: the CLI then uses its own login (claude login,
+ * codex login…), but only for the person who owns that login (loginOwner.js).
  * The key goes into the CLI's environment only; it is never stored on the
  * task and the transcript redacts it.
  */
-export async function resolveCliKey({ adapter, userId }) {
+export async function resolveCliKey({ adapter, userId }, {
+  mayUse = cliMayUseServerKeys, vault = getUserApiKeyConfig, toolchain = readToolchainConfig, env = process.env, quiet = false,
+} = {}) {
   if (userId && adapter.vaultProvider) {
     try {
-      const vault = await getUserApiKeyConfig(userId, adapter.vaultProvider);
-      if (vault?.apiKey) return { key: vault.apiKey, source: 'vault' };
+      const own = await vault(userId, adapter.vaultProvider);
+      if (own?.apiKey) return { key: own.apiKey, source: 'vault' };
     } catch { /* vault unavailable (no DB): fall through */ }
   }
-  const config = readToolchainConfig();
-  if (config.apiKeys?.[adapter.keyEnv]) return { key: config.apiKeys[adapter.keyEnv], source: 'toolchains' };
-  if (process.env[adapter.keyEnv]) return { key: process.env[adapter.keyEnv], source: 'env' };
+  // A Claude subscription token is never used as an API key (same rule as
+  // userApiKeys.js subscriptionTokenProblem).
+  const usable = (key) => (key && !/^sk-ant-oat/i.test(String(key).trim()) ? key : null);
+  const fromToolchains = usable(toolchain().apiKeys?.[adapter.keyEnv]);
+  const fromEnv = usable(env[adapter.keyEnv]);
+  if (fromToolchains || fromEnv) {
+    if (await mayUse(userId)) {
+      return fromToolchains ? { key: fromToolchains, source: 'toolchains' } : { key: fromEnv, source: 'env' };
+    }
+    if (!quiet) log.info('server key kept from cli', { cli: adapter.id, keyName: adapter.keyEnv, userId: userId ?? null });
+  }
   // A per-person sign-in folder (Grok) is never shared: nothing to claim.
   if (adapter.personalHome) return null;
   // No key: the CLI falls back to its own sign-in, which belongs to one person.
@@ -49,6 +64,7 @@ export function getCliTaskManager() {
     manager = new CliTaskManager({
       stateFile: path.join(LOCAL_STATE_DIR, 'cli-agents', 'tasks.json'),
       resolveKey: resolveCliKey,
+      mayUseServerKeys: cliMayUseServerKeys,
     });
     // Tidy up on a timer (cleanup.js), and never leave an agent running
     // after the app itself has gone.
@@ -90,7 +106,7 @@ export async function cliRoster({ userId, force = false, tasks = getCliTaskManag
   const all = tasks.list();
   return Promise.all(Object.values(CLI_ADAPTERS).map(async (adapter) => {
     const detected = await cachedVersion(adapter.id, force);
-    const key = await resolveCliKey({ adapter, userId }).catch(() => null);
+    const key = await resolveCliKey({ adapter, userId }, { quiet: true }).catch(() => null);
     const login = adapter.personalHome ? personalSignedIn(adapter, userId) : hasCliLogin(adapter.id, agentHome() || os.homedir());
     const mine = all.filter((t) => t.cli === adapter.id);
     const running = mine.filter((t) => t.running);

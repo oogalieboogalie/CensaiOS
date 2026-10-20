@@ -135,8 +135,9 @@ describe('the stack', () => {
   });
 });
 
+// The crew's own grok-build-cards.todo stays private, so tests/grokBuildCardsFile.test.js checks it.
 describe('example files in docs/examples', () => {
-  test.each(['sample.todo', 'grok-build-cards.todo'])('%s reads with nothing left out', async (name) => {
+  test.each(['sample.todo'])('%s reads with nothing left out', async (name) => {
     const fs = await import('node:fs');
     const parsed = parseTodoFile(fs.readFileSync(`docs/examples/${name}`, 'utf8'));
     expect(parsed.skipped).toBe(0);

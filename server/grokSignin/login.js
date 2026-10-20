@@ -48,7 +48,7 @@ export function startGrokLogin(userId, { env = process.env, spawn = nodeSpawn, w
 
   const lasting = agentHome(env);
   if (lasting) fs.mkdirSync(lasting, { recursive: true });
-  const runEnv = buildAgentEnv({ source: env, managedBin: managedBinDir(env), home: lasting, personal: { adapter: grok, userId } });
+  const runEnv = buildAgentEnv({ source: env, managedBin: managedBinDir(env), home: lasting, personal: { adapter: grok, userId }, serverKeys: false });
   delete runEnv.XAI_API_KEY;
   const cwd = path.join(personalHomeDir(grok, userId, env), 'chat');
   fs.mkdirSync(cwd, { recursive: true });
@@ -107,7 +107,7 @@ export async function grokLogout(userId, { env = process.env, spawn = nodeSpawn 
   const home = personalHomeDir(grok, userId, env);
   const launch = resolveCli(grok.id, env);
   if (launch) {
-    const runEnv = buildAgentEnv({ source: env, home: agentHome(env), personal: { adapter: grok, userId } });
+    const runEnv = buildAgentEnv({ source: env, home: agentHome(env), personal: { adapter: grok, userId }, serverKeys: false });
     await new Promise((resolve) => {
       const child = spawn(launch.command, [...launch.prefixArgs, 'logout'], { env: runEnv, windowsHide: true, stdio: 'ignore' });
       child.on('error', resolve);

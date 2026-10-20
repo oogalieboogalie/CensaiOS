@@ -9,6 +9,7 @@ import { agentHome, cliDataRoot } from '../cli-agents/paths.js';
 import { resolveCliKey, LOGIN_OWNERS_FILE } from '../cli-agents/index.js';
 import { claimCliLogin } from '../cli-agents/loginOwner.js';
 import { personalSignedIn } from '../cli-agents/personalHome.js';
+import { cliMayUseServerKeys } from '../cli-agents/serverKeyScope.js';
 import { USE_CONPTY_DLL } from './shared.js';
 
 /**
@@ -30,10 +31,10 @@ export function terminalCliAdapter(id) {
 }
 
 /** Interactive environment: the agent allowlist, plus a real color terminal. */
-export function interactiveCliEnv({ adapter, key = null, env = process.env, home = agentHome(env), userId = null } = {}) {
+export function interactiveCliEnv({ adapter, key = null, env = process.env, home = agentHome(env), userId = null, serverKeys = true } = {}) {
   if (home) fs.mkdirSync(home, { recursive: true });
   const personal = adapter.personalHome ? { adapter, userId } : null;
-  const out = buildAgentEnv({ source: env, key, keyEnv: adapter.keyEnv, managedBin: managedBinDir(env), home, personal });
+  const out = buildAgentEnv({ source: env, key, keyEnv: adapter.keyEnv, managedBin: managedBinDir(env), home, personal, serverKeys });
   delete out.NO_COLOR;
   delete out.CI;
   out.TERM = 'xterm-256color';
@@ -68,18 +69,21 @@ export async function ensureCliInstalled(adapter, write, env = process.env) {
  * ChatGPT or GitHub account. With no sign-in yet, the CLI shows its own
  * sign-in screen; censaiOS never sees or stores that login.
  *
+ * The computer's own .env keys count only for someone allowed them
+ * (serverKeyScope.js); resolveCliKey decides that.
+ *
  * A person on their own key gets a private home folder, so the CLI cannot
  * fall back to the owner's sign-in file (Claude Code would, if they said
  * no to using the key).
  */
-export async function cliCredentialFor(adapter, userId, env = process.env) {
+export async function cliCredentialFor(adapter, userId, env = process.env, resolveKey = resolveCliKey) {
   // Grok: each person has their own sign-in folder, so it is always their own.
   if (adapter.personalHome) return { key: null, home: agentHome(env) };
   const ownersFile = env.CENSAI_CLI_LOGIN_OWNERS_FILE || LOGIN_OWNERS_FILE;
   const signedIn = hasCliLogin(adapter.id, agentHome(env) || os.homedir());
   const blocked = claimCliLogin({ file: ownersFile, adapter, userId, signedIn });
   if (signedIn && !blocked) return { key: null, home: agentHome(env) };
-  const found = await resolveCliKey({ adapter, userId }).catch(() => null);
+  const found = await resolveKey({ adapter, userId }).catch(() => null);
   if (found?.key) return { key: found.key, home: privateHome(userId, env) };
   if (blocked) throw new Error(blocked);
   return { key: null, home: agentHome(env) };
@@ -90,7 +94,7 @@ export function privateHome(userId, env = process.env) {
   return path.join(cliDataRoot(env), 'user-homes', safe);
 }
 
-export async function startCliBackend({ cli, cwd, size, userId, write = () => {}, env = process.env, spawn = pty.spawn }) {
+export async function startCliBackend({ cli, cwd, size, userId, write = () => {}, env = process.env, spawn = pty.spawn, mayUse = cliMayUseServerKeys }) {
   const adapter = terminalCliAdapter(cli);
   if (!adapter) throw new Error('Unknown coding CLI.');
   await ensureCliInstalled(adapter, write, env);
@@ -102,7 +106,7 @@ export async function startCliBackend({ cli, cwd, size, userId, write = () => {}
     cols: size.cols,
     rows: size.rows,
     cwd,
-    env: interactiveCliEnv({ adapter, key, env, home, userId }),
+    env: interactiveCliEnv({ adapter, key, env, home, userId, serverKeys: await mayUse(userId) }),
     useConptyDll: USE_CONPTY_DLL,
   };
   // Not signed in to their own Grok yet: start with its code sign-in.

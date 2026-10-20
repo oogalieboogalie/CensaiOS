@@ -17,11 +17,17 @@ tags.
 
 ### New
 
+- Keep the PC's .env provider keys away from teammates' CLI agents (Oct 20)
+- Sheet cells merge one at a time on a shared board (Oct 20)
 - "Only the owner" messages name the owner account and yours (Oct 20)
 - AI resources window: every AI key and sign-in, what it spent, what is left (Oct 20)
 - LeadHound: saved leads keep their drafts and don't pile up twice (Oct 20)
 - Docker Run form takes settings, a shared folder and a restart choice (Oct 20)
 - Step cards, plain steps that unlock one by one, and .todo files (Oct 20)
+
+### Fixed
+
+- Fix the public nightly's failing test and secret scan (Oct 20)
 
 ### Behind the scenes
 

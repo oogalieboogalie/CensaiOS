@@ -46,7 +46,7 @@ export const processMethods = {
     task.keySource = keyInfo?.source || 'cli-login';
     const home = agentHome(this.env);
     if (home) fs.mkdirSync(home, { recursive: true });
-    const env = buildAgentEnv({ source: this.env, key: keyInfo?.key || null, keyEnv: adapter.keyEnv, managedBin: managedBinDir(this.env), home, personal: { adapter, userId: user.userId } });
+    const env = buildAgentEnv({ source: this.env, key: keyInfo?.key || null, keyEnv: adapter.keyEnv, managedBin: managedBinDir(this.env), home, personal: { adapter, userId: user.userId }, serverKeys: await this.mayUseServerKeys(user.userId) });
     const redact = createRedactor([keyInfo?.key]);
 
     const run = adapter.buildRun({ task: text, resumeSessionId: resume ? task.sessionId : null, model: task.model, readOnly: Boolean(task.readOnly) });

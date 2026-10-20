@@ -20,19 +20,29 @@ const PASS_THROUGH = [
   'USE_BUILTIN_RIPGREP',
 ];
 
-/** Extra variables an operator explicitly opts into, e.g. ANTHROPIC_BASE_URL. */
-function operatorPassThrough(source) {
+// Every provider key name in envKeys.js ends like this (ANTHROPIC_API_KEY,
+// GH_TOKEN, GITHUB_PAT…), as do most other secrets.
+const SECRET_NAME = /(_KEY|_TOKEN|_SECRET|_PAT|PASSWORD)$/;
+
+/**
+ * Extra variables an operator explicitly opts into, e.g. ANTHROPIC_BASE_URL.
+ * Keys and tokens among them are the owner's, so they go only to a CLI run
+ * for someone allowed the computer's own keys (`serverKeys`).
+ */
+function operatorPassThrough(source, serverKeys) {
   return String(source.CENSAI_CLI_AGENT_ENV_PASS || '')
-    .split(',').map((s) => s.trim()).filter((s) => /^[A-Z][A-Z0-9_]{1,63}$/.test(s));
+    .split(',').map((s) => s.trim()).filter((s) => /^[A-Z][A-Z0-9_]{1,63}$/.test(s))
+    .filter((s) => serverKeys || !SECRET_NAME.test(s));
 }
 
 /**
  * `personal` ({ adapter, userId }) points a CLI with a per-person sign-in
- * folder (Grok's GROK_HOME) at that person's own folder.
+ * folder (Grok's GROK_HOME) at that person's own folder. `serverKeys` is
+ * false for a person who may not use this computer's own keys.
  */
-export function buildAgentEnv({ source = process.env, key = null, keyEnv = null, managedBin = null, home = null, personal = null } = {}) {
+export function buildAgentEnv({ source = process.env, key = null, keyEnv = null, managedBin = null, home = null, personal = null, serverKeys = true } = {}) {
   const env = {};
-  for (const name of [...PASS_THROUGH, ...operatorPassThrough(source)]) {
+  for (const name of [...PASS_THROUGH, ...operatorPassThrough(source, serverKeys)]) {
     if (source[name] != null) env[name] = source[name];
   }
   if (home) {
