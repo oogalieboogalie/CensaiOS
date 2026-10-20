@@ -1,6 +1,6 @@
 import React from 'react';
 
-// The mindsets Alex's Idea Foundry researched for this profession, in their
+// The mindsets the Idea Foundry researched for this profession, in their
 // own words. Any of them can be added to the skill set as one more skill.
 export function SkillSetMindsets({ mindsets, skills, onAddSkill, busy }) {
   const [open, setOpen] = React.useState(false);

@@ -23,8 +23,8 @@ function mockFetch() {
     if (url.startsWith('/api/inbox?') || url === '/api/inbox') {
       return ok({ repo: 'o/r', github: { connected: true }, agents: { available: true }, items, groups: [{ id: 'needs', label: 'Needs you' }, { id: 'working', label: 'In progress' }, { id: 'ready', label: 'Ready' }, { id: 'done', label: 'Done' }], dock: { repos: [{ repo: 'acme/web', tasks: [{ taskId: 't1', cli: 'claudecode', title: 'Add retries to the webhook handler', state: 'running' }] }], tokens: [{ label: 'Claude Code', total: 2100000 }], days: 3 } });
     }
-    if (url === '/api/github/desk/status') return ok({ connected: true, me: 'Alex' });
-    if (url === '/api/inbox/fix-ci') return ok({ job: { id: 'j1', status: 'agent', text: 'An agent is finding out why the checks failed.', by: 'Alex', taskId: null } });
+    if (url === '/api/github/desk/status') return ok({ connected: true, me: 'Alma' });
+    if (url === '/api/inbox/fix-ci') return ok({ job: { id: 'j1', status: 'agent', text: 'An agent is finding out why the checks failed.', by: 'Alma', taskId: null } });
     if (url.startsWith('/api/github/desk/fix/')) return ok({ job: { id: 'j1', status: 'agent', text: 'An agent is finding out why the checks failed.' }, approvals: [] });
     return ok({});
   });

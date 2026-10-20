@@ -13,7 +13,7 @@ import { createInboxRouter } from '../server/routes/inbox.js';
 import { registerSelfFixSource, setSelfFixLoader } from '../server/inbox/selfFixSource.js';
 
 const pr = (n, over = {}) => ({
-  number: n, title: `PR ${n}`, url: `https://github.com/o/r/pull/${n}`, author: 'alex', draft: false, summary: 's',
+  number: n, title: `PR ${n}`, url: `https://github.com/o/r/pull/${n}`, author: 'alma', draft: false, summary: 's',
   size: { files: 2, additions: 10, deletions: 1 }, headRef: 'feat', baseRef: 'master', updatedAt: '2026-10-15T04:00:00Z',
   checks: { state: 'passed', text: 'Checks passed', failing: [] }, conflicts: false, mergeKnown: true, green: true, ...over,
 });
@@ -21,7 +21,7 @@ const pr = (n, over = {}) => ({
 const task = (id, over = {}) => ({
   id, cli: 'claudecode', cliLabel: 'Claude Code', title: `Task ${id}`, status: 'running', running: true,
   repoRoot: '/home/a/.censai/github-fixes/acme__web', createdAt: Date.now() - 120000, updatedAt: Date.now(),
-  usage: { input: 1000, output: 500 }, createdBy: { name: 'Alex' }, ...over,
+  usage: { input: 1000, output: 500 }, createdBy: { name: 'Alma' }, ...over,
 });
 
 describe('inbox: items in plain words', () => {
@@ -37,7 +37,7 @@ describe('inbox: items in plain words', () => {
     expect(agentItem(task('b'))).toMatchObject({ group: 'working', state: 'agent_running' });
     expect(agentItem(task('c', { status: 'failed', running: false }))).toMatchObject({ group: 'needs', state: 'agent_failed' });
     expect(agentItem(task('d', { status: 'done', running: false })).group).toBe('done');
-    expect(taskRepo({ repoRoot: 'D:\\Homebase\\CensaiHub' })).toBe('CensaiHub');
+    expect(taskRepo({ repoRoot: 'D:\\Repos\\CensaiHub' })).toBe('CensaiHub');
   });
 
   test('the dock lists running agents by repo and tokens over three days', () => {
@@ -172,7 +172,7 @@ describe('fix red checks: the agent commit is checked and pushed', () => {
         return t;
       },
     };
-    const job = await startCiFix({ octokit, token: '', owner: 'o', repo: 'r', number: 9, user: { name: 'Alex' } }, { manager, git: runGit, remoteUrl: origin, root: path.join(tmp, 'fixes') });
+    const job = await startCiFix({ octokit, token: '', owner: 'o', repo: 'r', number: 9, user: { name: 'Alma' } }, { manager, git: runGit, remoteUrl: origin, root: path.join(tmp, 'fixes') });
     expect(job).toMatchObject({ status: 'agent', kind: 'ci', failing: ['lint'] });
     for (let i = 0; i < 40 && !['done', 'failed'].includes(getFixJob(job.id).status); i++) await new Promise((r) => setTimeout(r, 200));
     if (getFixJob(job.id).status !== 'done') throw new Error(getFixJob(job.id).text);

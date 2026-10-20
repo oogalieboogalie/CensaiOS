@@ -30,8 +30,8 @@ const MORE_TASKS = [
   {
     id: 'summary', label: 'Sum up a meeting', kind: 'Writing', expectOutput: 130,
     system: 'You write short meeting summaries. Reply with exactly three bullet points.',
-    prompt: 'Sum up these notes as three bullets, each with who does it and by when:\n\nSam said the listing photos are late, the photographer can come Friday. Priya will call the photographer today to book Friday. We agreed the open house moves to Saturday the 24th. Alex will update the listing and the flyer by Thursday. Someone mentioned coffee. Priya also owns ordering signs, by Wednesday.',
-    check: 'Three bullets: Priya books the photographer for Friday (call today); Alex updates the listing and flyer by Thursday (open house now Saturday the 24th); Priya orders signs by Wednesday. No coffee.',
+    prompt: 'Sum up these notes as three bullets, each with who does it and by when:\n\nSam said the listing photos are late, the photographer can come Friday. Priya will call the photographer today to book Friday. We agreed the open house moves to Saturday the 24th. Alma will update the listing and the flyer by Thursday. Someone mentioned coffee. Priya also owns ordering signs, by Wednesday.',
+    check: 'Three bullets: Priya books the photographer for Friday (call today); Alma updates the listing and flyer by Thursday (open house now Saturday the 24th); Priya orders signs by Wednesday. No coffee.',
   },
   {
     id: 'extract', label: 'Pull out the data', kind: 'Data', expectOutput: 80,

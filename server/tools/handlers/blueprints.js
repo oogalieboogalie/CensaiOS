@@ -1,5 +1,5 @@
 // find_blueprints / save_blueprint: an agent reads and adds to the board's
-// Blueprints shelf (Alex's diagram 08).
+// Blueprints shelf (diagram 08).
 import pool from '../../db.js';
 import { requireWorkspaceMember } from '../../workspaces/context.js';
 import { getBlueprint, saveBlueprint, searchBlueprints } from '../../blueprints/store.js';

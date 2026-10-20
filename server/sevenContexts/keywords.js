@@ -1,6 +1,6 @@
 // server/sevenContexts/keywords.js
 //
-// Step one of Alex's drawing 07: pull the keywords out of what the person
+// Step one of drawing 07: pull the keywords out of what the person
 // asked ("Can we create a website to sell flowers?" -> create, website,
 // sell, flowers) and turn them into search patterns for the seven lookups.
 

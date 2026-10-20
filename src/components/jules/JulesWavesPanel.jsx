@@ -19,7 +19,7 @@ function WaveTask({ task }) {
 }
 
 /**
- * Wave-by-wave Jules runs (Alex's diagram 01): each wave's tasks go to
+ * Wave-by-wave Jules runs (diagram 01): each wave's tasks go to
  * Jules, open PRs and get reviewed; a turned-down PR is fixed first. The
  * next wave stays locked until every PR in the current one is merged.
  */

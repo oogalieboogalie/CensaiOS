@@ -1,4 +1,4 @@
--- Speak up (Alex's diagram 17): an agent can post one short note to the
+-- Speak up (diagram 17): an agent can post one short note to the
 -- Inbox on its own when a scheduled check finds something worth telling.
 -- Off for every agent until an owner or admin turns it on for that agent:
 -- no row (or enabled = false) means the agent stays quiet.

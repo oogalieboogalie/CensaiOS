@@ -1,5 +1,6 @@
-// Built-in skill sets: the Software Engineering set from Alex's drawing, then
-// one set per profession from Alex's Idea Foundry research (foundryLibrary.js).
+// Built-in skill sets: the Software Engineering set from the Exo-Skeleton
+// drawing, then one set per profession from the Idea Foundry research
+// (foundryLibrary.js).
 // A board can edit a built-in; its edit is stored as that board's own copy.
 
 import { SOFTWARE_ENGINEERING_SKILL_SET } from './softwareEngineering.js';

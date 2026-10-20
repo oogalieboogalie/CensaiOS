@@ -2,7 +2,7 @@
 //
 // Board history, read from the canvas update log (yUpdateLog.js).
 //
-// listBoardHistory groups log rows into entries a person can read ("Alex
+// listBoardHistory groups log rows into entries a person can read ("Alma
 // added Notes and moved 2 windows, 3:04 pm"): consecutive rows by the same
 // person within HISTORY_GAP_MS are one entry. boardAt returns the board as it
 // stood after an entry, for the preview. restoreBoard rolls the live board

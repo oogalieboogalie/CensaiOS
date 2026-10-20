@@ -51,7 +51,7 @@ export const memoryTools = [
       parameters: {
         type: 'object',
         properties: {
-          subject:   { type: 'string', description: 'The subject (e.g. "Alex")' },
+          subject:   { type: 'string', description: 'The subject (e.g. "Alma")' },
           predicate: { type: 'string', description: 'The relationship (e.g. "prefers")' },
           object:    { type: 'string', description: 'The object (e.g. "practical code")' },
         },

@@ -4,7 +4,7 @@ import { docker, DockerInputError } from '../docker/cli.js';
 
 // The Docker engine mounts folders by ITS idea of a path. When Homebase runs
 // as a plain process that is the folder path itself. When Homebase runs in
-// the Docker stack (Alex's PC), a Windows path like D:\Sites\shop has to be
+// the Docker stack (the owner's PC), a Windows path like D:\Sites\shop has to be
 // handed to Docker Desktop's engine in its own form, and a path Homebase sees
 // inside its container (/workspace/CensaiHub) has to go back to the real
 // folder on the PC. This file does that translation.

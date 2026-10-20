@@ -58,7 +58,7 @@ ssh -L 3002:localhost:3002 yourname@boxname.local
 
 ## Your keys stay yours
 
-The box never sends your AI keys anywhere except to the AI company you picked. They live in one file only you can read: `~/.config/starter-box/keys.env`. Iowa AI never sees them.
+The box never sends your AI keys anywhere except to the AI company you picked. They live in one file only you can read: `~/.config/starter-box/keys.env`. We never see them.
 
 ## What gets installed
 

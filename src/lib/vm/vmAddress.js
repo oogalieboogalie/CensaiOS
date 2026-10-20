@@ -118,7 +118,7 @@ export function describeDrop({ clean, reason, status, wasConnected } = {}) {
   return 'Couldn’t reach a VNC WebSocket at that address. Check that the VM is running and the port is the websocket one (often 6080 or 5700), not plain VNC (5900).';
 }
 
-/** "Alex is using this VM", or "You are using this VM". */
+/** "Alma is using this VM", or "You are using this VM". */
 export function driverLine(vm, { self = false } = {}) {
   if (!vm?.hostClientId) return '';
   return self ? 'You are using this VM' : `${vm.hostName || 'Someone'} is using this VM`;

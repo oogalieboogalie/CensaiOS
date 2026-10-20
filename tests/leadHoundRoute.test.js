@@ -153,11 +153,15 @@ describe('LeadHound routes', () => {
     const res = await request(app()).post('/api/leadhound/save').send({ lead: {
       company: 'Acme Plumbing', url: 'https://acmeplumbing.example', fitScore: 88,
       contacts: { emails: ['owner@acmeplumbing.example'], phones: [] }, pain_points: ['missed calls'],
+      sequence: [{ day: 1, channel: 'email', subject: 'Hi', body: 'Hello Jordan' }],
+      iceBreaker: { title: 'Free call audit', deliverable: 'Three fixes' },
     } });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, id: 42, deduped: false });
     expect(saveLead).toHaveBeenCalledWith(expect.objectContaining({
       name: 'Acme Plumbing', email: 'owner@acmeplumbing.example', icp_score: 0.88, buying_signals: ['missed calls'],
+      outreach_sequence: [{ day: 1, channel: 'email', subject: 'Hi', body: 'Hello Jordan' }],
+      ice_breaker: { title: 'Free call audit', deliverable: 'Three fixes' },
     }), { userId: 7, workspaceId: 'ws-1' });
   });
 });

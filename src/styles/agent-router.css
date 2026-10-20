@@ -1,4 +1,4 @@
-/* Message Router window (Alex's diagram 03). */
+/* Message Router window (diagram 03). */
 .hb-rt { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: auto; background: var(--surface); }
 .hb-rt-line { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin: 10px 12px 0; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--surface-2); }
 .hb-rt-line-label { font-size: var(--text-xs); font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; }

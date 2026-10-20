@@ -52,7 +52,7 @@ beforeEach(() => { engine = createEngine(); exec.mockClear(); reaper.resetReaper
 describe('folder paths', () => {
   test('cleans quotes and trailing slashes, refuses relative or unmountable paths', () => {
     expect(cleanFolderPath('"D:\\Sites\\shop\\"')).toBe('D:\\Sites\\shop');
-    expect(cleanFolderPath('/home/alex/shop/')).toBe('/home/alex/shop');
+    expect(cleanFolderPath('/home/alma/shop/')).toBe('/home/alma/shop');
     expect(() => cleanFolderPath('')).toThrow(/Pick the project folder/);
     expect(() => cleanFolderPath('shop')).toThrow(/full folder path/);
     expect(() => cleanFolderPath('D:\\a,b')).toThrow(/cannot mount/);
@@ -61,17 +61,17 @@ describe('folder paths', () => {
   test('Windows paths go to Docker Desktop\'s engine form when Homebase runs in a container', () => {
     expect(windowsToDesktopEngine('D:\\Sites\\my shop')).toBe('/run/desktop/mnt/host/d/Sites/my shop');
     expect(translateFolder('D:\\Sites\\shop', { platform: 'linux', inContainer: true, mounts: [] })).toBe('/run/desktop/mnt/host/d/Sites/shop');
-    const winMounts = [{ source: 'D:\\Homebase\\CensaiHub', destination: '/workspace/CensaiHub' }];
+    const winMounts = [{ source: 'D:\\Repos\\CensaiHub', destination: '/workspace/CensaiHub' }];
     expect(translateFolder('D:\\Sites\\shop', { platform: 'linux', inContainer: true, mounts: winMounts })).toBe('D:\\Sites\\shop');
     expect(translateFolder('D:\\Sites\\shop', { platform: 'win32' })).toBe('D:\\Sites\\shop');
   });
 
   test('a folder seen inside Homebase\'s container maps back to the real folder', () => {
-    const mounts = [{ source: '/run/desktop/mnt/host/d/Homebase/CensaiHub', destination: '/workspace/CensaiHub' }];
+    const mounts = [{ source: '/run/desktop/mnt/host/d/Repos/CensaiHub', destination: '/workspace/CensaiHub' }];
     expect(translateFolder('/workspace/CensaiHub/apps/site', { platform: 'linux', inContainer: true, mounts }))
-      .toBe('/run/desktop/mnt/host/d/Homebase/CensaiHub/apps/site');
+      .toBe('/run/desktop/mnt/host/d/Repos/CensaiHub/apps/site');
     expect(() => translateFolder('/app/elsewhere', { platform: 'linux', inContainer: true, mounts })).toThrow(/runs inside Docker/);
-    expect(translateFolder('/home/alex/shop', { platform: 'linux', inContainer: false })).toBe('/home/alex/shop');
+    expect(translateFolder('/home/alma/shop', { platform: 'linux', inContainer: false })).toBe('/home/alma/shop');
   });
 });
 
@@ -93,15 +93,15 @@ describe('the dev-server container', () => {
   });
 
   test('start, wait for the site to answer, stop', async () => {
-    const started = await manager.startDevServer({ folder: '/home/alex/shop' });
-    expect(started).toMatchObject({ folder: '/home/alex/shop', port: 3000, image: 'node:22-bookworm-slim' });
+    const started = await manager.startDevServer({ folder: '/home/alma/shop' });
+    expect(started).toMatchObject({ folder: '/home/alma/shop', port: 3000, image: 'node:22-bookworm-slim' });
     await flush(); await flush(); await flush(); await flush();
     engine.answers = false;
     let s = await manager.devServerStatus(started.name);
     expect(s).toMatchObject({ phase: 'installing', url: 'http://localhost:49200' });
     engine.answers = true;
     s = await manager.devServerStatus(started.name);
-    expect(s).toMatchObject({ phase: 'ready', url: 'http://localhost:49200', folder: '/home/alex/shop' });
+    expect(s).toMatchObject({ phase: 'ready', url: 'http://localhost:49200', folder: '/home/alma/shop' });
     await manager.stopDevServer(started.name);
     expect((await manager.devServerStatus(started.name)).phase).toBe('stopped');
   });

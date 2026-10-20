@@ -23,20 +23,20 @@ describe('HTTP deployment boundary', () => {
   });
 
   test('local desktop accepts the home-network origins the owner listed', () => {
-    const extraOrigins = lanOrigins({ CENSAI_LAN_ORIGINS: ' http://r2d2:3002/ , http://192.168.0.17:3002' });
-    expect(extraOrigins).toEqual(['http://r2d2:3002', 'http://192.168.0.17:3002']);
+    const extraOrigins = lanOrigins({ CENSAI_LAN_ORIGINS: ' http://officepc:3002/ , http://192.168.0.17:3002' });
+    expect(extraOrigins).toEqual(['http://officepc:3002', 'http://192.168.0.17:3002']);
     const options = { appOrigin: 'http://localhost:3002', runtimeMode: 'local_desktop', extraOrigins };
-    expect(isAllowedBrowserOrigin('http://r2d2:3002', options)).toBe(true);
+    expect(isAllowedBrowserOrigin('http://officepc:3002', options)).toBe(true);
     expect(isAllowedBrowserOrigin('http://192.168.0.17:3002', options)).toBe(true);
-    expect(isAllowedBrowserOrigin('http://r2d2:4000', options)).toBe(false);
+    expect(isAllowedBrowserOrigin('http://officepc:4000', options)).toBe(false);
     expect(isAllowedBrowserOrigin('http://other-pc:3002', options)).toBe(false);
-    expect(isAllowedBrowserOrigin('http://r2d2:3002', { ...options, extraOrigins: lanOrigins({}) })).toBe(false);
+    expect(isAllowedBrowserOrigin('http://officepc:3002', { ...options, extraOrigins: lanOrigins({}) })).toBe(false);
   });
 
   test('home-network origins never open cloud or private servers', () => {
-    const extraOrigins = ['http://r2d2:3002'];
+    const extraOrigins = ['http://officepc:3002'];
     for (const runtimeMode of ['cloud_saas', 'private_server']) {
-      expect(isAllowedBrowserOrigin('http://r2d2:3002', { appOrigin: 'https://beta.censai.app', runtimeMode, extraOrigins })).toBe(false);
+      expect(isAllowedBrowserOrigin('http://officepc:3002', { appOrigin: 'https://beta.censai.app', runtimeMode, extraOrigins })).toBe(false);
     }
   });
 

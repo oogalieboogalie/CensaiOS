@@ -8,7 +8,7 @@ import { currentFacts } from '../../agentMemory/store.js';
 import { buildRoutePlan } from '../../../src/lib/agentRouter/routePlan.js';
 import { routerWords } from '../../../src/lib/agentRouter/readRequest.js';
 
-// Message router (Alex's diagram 03): one shared line per board, and a
+// Message router (diagram 03): one shared line per board, and a
 // router that reads a request, cuts it into parts and sends each part to
 // the right agent with that agent's memory and the right template.
 // This route only plans; the window posts each routed part to its agent.

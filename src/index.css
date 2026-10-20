@@ -26,9 +26,11 @@
 @import './styles/vm.css';
 @import './styles/leadhound.css';
 @import './styles/auction-watcher.css';
+@import './styles/step-cards.css';
 @import './styles/realEstate.css';
 @import './styles/research.css';
 @import './styles/apiBar.css';
+@import './styles/aiResources.css';
 @import './styles/agent-network.css';
 @import './styles/office.css';
 @import './styles/creative.css';

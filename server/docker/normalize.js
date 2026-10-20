@@ -4,6 +4,9 @@
 import { parseLabels } from './cli.js';
 
 const SECRET_KEY = /(secret|token|passw|pwd|api[_-]?key|private|credential|auth)/i;
+// A password inside a link (postgres://sam:pass@db/app) is a secret whatever
+// the setting is called.
+const LINK_PASSWORD = /\/\/[^\s/@:]*:[^\s/@]+@/;
 
 export function parseHealth(status) {
   const s = String(status || '').toLowerCase();
@@ -75,8 +78,9 @@ export function maskEnv(entry) {
   const idx = entry.indexOf('=');
   if (idx < 0) return { key: entry, value: '', masked: false };
   const key = entry.slice(0, idx);
-  const masked = SECRET_KEY.test(key);
-  return { key, value: masked ? '••••••' : entry.slice(idx + 1), masked };
+  const value = entry.slice(idx + 1);
+  const masked = SECRET_KEY.test(key) || LINK_PASSWORD.test(value);
+  return { key, value: masked ? '••••••' : value, masked };
 }
 
 export function summarizeInspect(raw) {

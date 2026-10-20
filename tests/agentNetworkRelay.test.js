@@ -21,7 +21,7 @@ const { verifyReceipt, receiptCovers } = await import('../server/agentNetwork/re
 const { relayAgentAddress } = await import('../server/agentNetwork/address.js');
 
 const sam = identitySigner(generateIdentity());   // the install that shares Atlas
-const alex = identitySigner(generateIdentity());  // the install that asks
+const alma = identitySigner(generateIdentity());  // the install that asks
 const saved = [];
 const shown = [];
 const deps = {
@@ -46,7 +46,7 @@ beforeAll(async () => {
     userId: 1, workspaceId: 'ws-1', cardId: 'agent:atlas', agentId: 'atlas', agentName: 'Atlas', windowId: null,
   });
   await memStore.setEndpointEnabled(null, { userId: 1, endpointId: endpoint.id, enabled: true });
-  ({ token: key } = await memStore.createToken(null, { endpointId: endpoint.id, label: "Alex's censaiOS" }));
+  ({ token: key } = await memStore.createToken(null, { endpointId: endpoint.id, label: "Alma's censaiOS" }));
   const app = createRelayStub({ state: createRelayState(), options: { holdMs: 3000, keepMs: 60_000, maxQueuedPerInstall: 5 } });
   await new Promise((resolve) => { server = app.listen(0, '127.0.0.1', resolve); });
   relayUrl = `http://127.0.0.1:${server.address().port}`;
@@ -68,7 +68,7 @@ const address = () => relayAgentAddress({ relayUrl, installId: sam.installId, en
 const prompt = 'Write the migration that adds a status column to orders.';
 
 async function ask(message = prompt, { signed = true } = {}) {
-  const request = signed ? buildAskRequest({ signer: alex, id: 'help-1', agent: 'nexus', label: 'Nexus', to: address(), prompt: message }) : undefined;
+  const request = signed ? buildAskRequest({ signer: alma, id: 'help-1', agent: 'nexus', label: 'Nexus', to: address(), prompt: message }) : undefined;
   const res = await fetch(`${address()}/ask`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
@@ -107,7 +107,7 @@ test('a call to an install that is off is queued, then delivered when it comes b
   expect(receiptCovers(receipt, { prompt, answer: done.body.answer })).toBe(true);
   expect(receipt.body).toMatchObject({
     role: 'helper', channel: 'relay',
-    asker: { install: alex.installId, agent: 'nexus', label: 'Nexus', verified: true },
+    asker: { install: alma.installId, agent: 'nexus', label: 'Nexus', verified: true },
     helper: { install: sam.installId, card: 'agent:atlas', label: 'Atlas' },
     cost: { tokensIn: 900, tokensOut: 60 },
   });
@@ -146,7 +146,7 @@ test('a caller without a signed request is named by its key, not trusted as an i
   const queued = await ask('Who am I?', { signed: false });
   await link().pollOnce({ wait: 0 });
   const done = await (await fetch(queued.body.statusUrl, { headers: { Authorization: `Bearer ${key}` } })).json();
-  expect(done.body.receipt.body.asker).toMatchObject({ install: 'outside', verified: false, label: "Outside app (key \"Alex's censaiOS\")" });
+  expect(done.body.receipt.body.asker).toMatchObject({ install: 'outside', verified: false, label: "Outside app (key \"Alma's censaiOS\")" });
 });
 
 test('the relay never vouches for keys: a wrong key is refused by the install', async () => {
@@ -175,11 +175,11 @@ test('only the install itself can collect or answer its calls', async () => {
   });
   expect(wrongAud.status).toBe(401);
   expect(otherRelay.status().connected).toBe(false);
-  // Alex's install cannot answer a call queued for Sam's.
+  // Alma's install cannot answer a call queued for Sam's.
   const { body } = await ask('Is this mine?');
   const res = await fetch(`${relayUrl}/relay/v1/results/${body.callId}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${createRelayPass(alex, { relay: relayUrl })}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${createRelayPass(alma, { relay: relayUrl })}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: 200, body: { answer: 'forged' } }),
   });
   expect(res.status).toBe(404);
@@ -187,7 +187,7 @@ test('only the install itself can collect or answer its calls', async () => {
 });
 
 test('MCP calls through the relay need the install online, and carry the receipt in _meta', async () => {
-  const neverOnline = relayAgentAddress({ relayUrl, installId: alex.installId, endpointId: endpoint.id });
+  const neverOnline = relayAgentAddress({ relayUrl, installId: alma.installId, endpointId: endpoint.id });
   const offline = await fetch(neverOnline, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },

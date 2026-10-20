@@ -11,14 +11,14 @@ import { buildAskRequest, verifyAskRequest } from '../server/agentNetwork/askReq
 import { createRelayPass, verifyRelayPass } from '../server/agentNetwork/relayPass.js';
 import { parseAgentAddress, relayAgentAddress } from '../server/agentNetwork/address.js';
 
-const alex = identitySigner(generateIdentity());
+const alma = identitySigner(generateIdentity());
 const sam = identitySigner(generateIdentity());
 const ENDPOINT = '598a4fb7-a3b1-4f0d-b304-042cf9fdd695';
 
 function receipt(overrides = {}, signer = sam) {
   return signReceipt(buildReceiptBody({
     role: 'helper', channel: 'relay', requestRef: 'req-1', signer,
-    asker: { install: alex.installId, agent: 'nexus', label: 'Nexus', verified: true },
+    asker: { install: alma.installId, agent: 'nexus', label: 'Nexus', verified: true },
     helper: { card: 'agent:atlas', label: 'Atlas' },
     outcome: 'completed', startedAt: '2026-10-12T05:00:00.000Z', finishedAt: '2026-10-12T05:00:04.200Z',
     tokensIn: 1200, tokensOut: 80, prompt: 'Write the migration.', answer: 'ALTER TABLE ...',
@@ -28,15 +28,15 @@ function receipt(overrides = {}, signer = sam) {
 
 describe('install identity', () => {
   test('the install id is a fingerprint of the public key', () => {
-    expect(isInstallId(alex.installId)).toBe(true);
-    expect(installIdFor(alex.publicKey)).toBe(alex.installId);
-    expect(alex.installId).not.toBe(sam.installId);
+    expect(isInstallId(alma.installId)).toBe(true);
+    expect(installIdFor(alma.publicKey)).toBe(alma.installId);
+    expect(alma.installId).not.toBe(sam.installId);
   });
 
   test('signatures check out only for the signed bytes and the signing key', () => {
-    const sig = alex.sign('hello');
-    expect(verifySignature('hello', sig, alex.publicKey)).toBe(true);
-    expect(verifySignature('hello!', sig, alex.publicKey)).toBe(false);
+    const sig = alma.sign('hello');
+    expect(verifySignature('hello', sig, alma.publicKey)).toBe(true);
+    expect(verifySignature('hello!', sig, alma.publicKey)).toBe(false);
     expect(verifySignature('hello', sig, sam.publicKey)).toBe(false);
     expect(verifySignature('hello', 'garbage', 'not-a-key')).toBe(false);
   });
@@ -67,7 +67,7 @@ describe('receipts', () => {
 
   test('a receipt cannot claim another install', () => {
     const r = receipt();
-    const forged = { ...r, body: { ...r.body, signer: { install: alex.installId, publicKey: sam.publicKey } } };
+    const forged = { ...r, body: { ...r.body, signer: { install: alma.installId, publicKey: sam.publicKey } } };
     expect(verifyReceipt(forged).reason).toBe('install id does not match its key');
     expect(verifyReceipt(null).ok).toBe(false);
   });
@@ -103,12 +103,12 @@ describe('receipts', () => {
 
 describe('signed ask requests', () => {
   const ask = (prompt = 'Write the migration.') => buildAskRequest({
-    signer: alex, id: 'help-1', agent: 'nexus', label: 'Nexus', to: 'https://relay/x', prompt,
+    signer: alma, id: 'help-1', agent: 'nexus', label: 'Nexus', to: 'https://relay/x', prompt,
   });
 
   test('the helper can prove who asked and that it is the same question', () => {
     expect(verifyAskRequest(ask(), { prompt: 'Write the migration.' })).toMatchObject({
-      ok: true, install: alex.installId, agent: 'nexus', label: 'Nexus', id: 'help-1',
+      ok: true, install: alma.installId, agent: 'nexus', label: 'Nexus', id: 'help-1',
     });
   });
 
@@ -126,15 +126,15 @@ describe('relay passes', () => {
   const relay = 'https://relay.censai.app';
 
   test('a pass names its install and works only at its relay until it expires', () => {
-    const pass = createRelayPass(alex, { relay });
+    const pass = createRelayPass(alma, { relay });
     expect(pass.startsWith('crp1.')).toBe(true);
-    expect(verifyRelayPass(pass, { relay })).toEqual({ ok: true, installId: alex.installId, reason: null });
+    expect(verifyRelayPass(pass, { relay })).toEqual({ ok: true, installId: alma.installId, reason: null });
     expect(verifyRelayPass(pass, { relay: 'https://other.relay' }).reason).toBe('pass is for another relay');
     expect(verifyRelayPass(pass, { relay, now: Date.now() + 10 * 60e3 }).reason).toBe('pass expired');
   });
 
   test('a pass cannot be borrowed or edited', () => {
-    const [prefix, payload, sig] = createRelayPass(alex, { relay }).split('.');
+    const [prefix, payload, sig] = createRelayPass(alma, { relay }).split('.');
     const claims = JSON.parse(Buffer.from(payload, 'base64url').toString());
     const swapped = Buffer.from(JSON.stringify({ ...claims, iid: sam.installId })).toString('base64url');
     expect(verifyRelayPass(`${prefix}.${swapped}.${sig}`, { relay }).reason).toBe('install id does not match its key');
@@ -149,9 +149,9 @@ describe('agent addresses', () => {
     const direct = parseAgentAddress(`http://localhost:3003/api/mcp/agents/${ENDPOINT}`);
     expect(direct).toMatchObject({ installId: null, endpointId: ENDPOINT, viaRelay: false });
     expect(direct.askUrl).toBe(`http://localhost:3003/api/mcp/agents/${ENDPOINT}/ask`);
-    const relayed = relayAgentAddress({ relayUrl: 'https://relay.censai.app/', installId: alex.installId, endpointId: ENDPOINT });
-    expect(relayed).toBe(`https://relay.censai.app/i/${alex.installId}/api/mcp/agents/${ENDPOINT}`);
-    expect(parseAgentAddress(`${relayed}/ask`)).toMatchObject({ installId: alex.installId, viaRelay: true, mcpUrl: relayed });
+    const relayed = relayAgentAddress({ relayUrl: 'https://relay.censai.app/', installId: alma.installId, endpointId: ENDPOINT });
+    expect(relayed).toBe(`https://relay.censai.app/i/${alma.installId}/api/mcp/agents/${ENDPOINT}`);
+    expect(parseAgentAddress(`${relayed}/ask`)).toMatchObject({ installId: alma.installId, viaRelay: true, mcpUrl: relayed });
   });
 
   test('anything else is refused in plain words', () => {

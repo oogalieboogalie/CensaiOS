@@ -21,7 +21,7 @@ export const blueprintTools = [
       parameters: {
         type: 'object',
         properties: {
-          title: { type: 'string', description: 'Its name, like "Alex Finance Blueprint for Budgeting"' },
+          title: { type: 'string', description: 'Its name, like "Alma Finance Blueprint for Budgeting"' },
           shelf: { type: 'string', enum: ['Finance', 'Real Estate', 'Wildcard', 'Accounting', 'Insurance'], description: 'Which shelf; Wildcard when none fits' },
           type: { type: 'string', description: 'Short type, like "Budget"' },
           purpose: { type: 'string', description: 'What it is for, like "Personal Financing"' },

@@ -1,5 +1,5 @@
 // Diagram 14, "model strengths": the auto-pick reads a task, finds the
-// strength it needs on Alex's list, and picks a model the person has a key
+// strength it needs on the strengths list, and picks a model the person has a key
 // for, with a plain "why". Benchmarks results can tip the pick.
 import { makeRecord } from '../src/lib/modelArena/benchmarks.js';
 import { autoPickModel } from '../src/lib/modelStrengths/autoPick.js';
@@ -9,7 +9,7 @@ const ALL_KEYS = ['anthropic', 'openai', 'xai', 'google'];
 const current = { provider: 'cohere', model: 'command-a-03-2025' };
 const pick = (text, opts = {}) => autoPickModel({ text, keyProviders: ALL_KEYS, current, ...opts });
 
-test('each task goes to the family Alex wrote it under', () => {
+test('each task goes to the family Alma wrote it under', () => {
   expect(pick('Make the login screen layout look nicer, new colors').family).toBe('claude');
   expect(pick('Write unit tests and refactor this function for edge cases').family).toBe('chatgpt');
   expect(pick('What are people saying on twitter about this, trending tweets').family).toBe('grok');

@@ -1,4 +1,4 @@
-// Ported from Open Books (MIT, Alex's bookkeeping tool) into YorWare Books.
+// Ported from Open Books (MIT, an open-source bookkeeping tool) into YorWare Books.
 /**
  * Date bucketing for the timeline: turn a range and a granularity into the
  * day, week, or month columns the chart draws. Pure functions on YYYY-MM-DD

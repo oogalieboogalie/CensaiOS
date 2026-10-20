@@ -8,6 +8,7 @@ jest.unstable_mockModule('../runner/client.js', () => ({ runnerClient: { exec } 
 const engine = await import('./engine.js');
 const actions = await import('./actions.js');
 const cli = await import('./cli.js');
+const { maskEnv } = await import('./normalize.js');
 
 beforeEach(() => {
   fake = createFakeDocker();
@@ -57,7 +58,7 @@ describe('docker engine reads', () => {
     expect(app).toMatchObject({ state: 'running', health: 'healthy', composeProject: 'homebase', composeService: 'app', shortId: 'a1a1a1a1a1a1' });
     expect(app.ports).toEqual(['0.0.0.0:3001->3001/tcp', ':::3001->3001/tcp']);
     expect(list.find((c) => c.name === 'automation-qdrant-1').health).toBe('unhealthy');
-    expect(list.find((c) => c.name === 'homebase-sbx-7f3a2c')).toMatchObject({ sandbox: true, hostPath: '/home/alex/projects/leadhound' });
+    expect(list.find((c) => c.name === 'homebase-sbx-7f3a2c')).toMatchObject({ sandbox: true, hostPath: '/home/alma/projects/leadhound' });
     expect(list.find((c) => c.name === 'nightly-migrate')).toMatchObject({ state: 'exited', health: null });
   });
 
@@ -103,7 +104,7 @@ describe('docker engine reads', () => {
   test('listComposeProjects groups services and keeps config files', async () => {
     const projects = await engine.listComposeProjects();
     const hb = projects.find((p) => p.name === 'homebase');
-    expect(hb).toMatchObject({ running: 3, total: 3, configFiles: ['/home/alex/Homebase/docker-compose.yml'] });
+    expect(hb).toMatchObject({ running: 3, total: 3, configFiles: ['/home/alma/Homebase/docker-compose.yml'] });
     expect(hb.services.map((s) => s.service).sort()).toEqual(['app', 'postgres', 'redis']);
   });
 });
@@ -163,7 +164,7 @@ describe('docker actions', () => {
 
   test('compose actions target the project and its compose files', async () => {
     await actions.composeAction('homebase', 'up');
-    expect(lastArgs()).toEqual(['compose', '-p', 'homebase', '-f', '/home/alex/Homebase/docker-compose.yml', 'up', '-d']);
+    expect(lastArgs()).toEqual(['compose', '-p', 'homebase', '-f', '/home/alma/Homebase/docker-compose.yml', 'up', '-d']);
     await expect(actions.composeAction('nope', 'up')).rejects.toMatchObject({ status: 400 });
     await expect(actions.composeAction('homebase', 'exec')).rejects.toMatchObject({ status: 400 });
   });
@@ -184,6 +185,14 @@ describe('cli helpers', () => {
     expect(cli.prepareArgs(['compose', '-f', 'C:\\My Stacks\\compose.yml'], true)).toEqual(['compose', '-f', '"C:\\My Stacks\\compose.yml"']);
     expect(() => cli.prepareArgs(['exec', 'x', 'a&calc'], true)).toThrow(/Windows/);
     expect(cli.prepareArgs(['a&b'], false)).toEqual(['a&b']);
+    expect(cli.prepareArgs(['-e', 'APP_DIR=C:\\Program Files\\Acme\\'], true)).toEqual(['-e', '"APP_DIR=C:\\Program Files\\Acme\\\\"']);
+  });
+
+  test('maskEnv hides a password inside a link whatever the setting is called', () => {
+    expect(maskEnv('DATABASE_URL=postgres://sam:pa55@db/app')).toEqual({ key: 'DATABASE_URL', value: '••••••', masked: true });
+    expect(maskEnv('REDIS_URL=redis://:pa55@cache:6379')).toMatchObject({ masked: true });
+    expect(maskEnv('DATABASE_URL=postgres://homebase@postgres:5432/homebase')).toMatchObject({ masked: false });
+    expect(maskEnv('HOME_PAGE=https://example.com/a:b@c')).toMatchObject({ masked: false });
   });
 
   test('tokenize honours quotes', () => {

@@ -25,6 +25,8 @@ export function callChatModelRound({
   round,
   userId,
   workspaceId,
+  agentId = null,
+  windowId = null,
   onDelta = null,
 }) {
   const body = {
@@ -46,6 +48,9 @@ export function callChatModelRound({
       workspaceId,
       actor: { kind: 'user', id: userId || 'local-user' },
       source: 'chat-loop',
+      // Which agent and chat window spent it (the AI resources window).
+      ...(agentId ? { agentId } : {}),
+      ...(windowId ? { windowId } : {}),
     },
     usageSink: workspaceUsageSink,
     accessContext,

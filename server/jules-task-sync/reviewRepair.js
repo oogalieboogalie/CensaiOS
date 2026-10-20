@@ -1,4 +1,4 @@
-// What the overnight runner does when the review says no (Alex's diagram 01):
+// What the overnight runner does when the review says no (diagram 01):
 // say why on the PR, ask Jules to fix it on the same branch, and wait for the
 // new push. After MAX_REPAIR_ROUNDS asks the task is parked for a person.
 // The GitHub comment and Jules message calls are passed in (scripts/lib clients).

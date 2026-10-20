@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-// Front and back at the same time (Alex's diagram 04): Atlas (back end) and
+// Front and back at the same time (diagram 04): Atlas (back end) and
 // Genesis (front end) build side by side, then Synthesis joins them before
 // the Validation Engine looks. Models are stood in for by a scripted function.
 

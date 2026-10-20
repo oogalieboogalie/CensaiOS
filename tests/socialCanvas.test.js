@@ -15,7 +15,7 @@ const PROFILE = '5fff44d6-bf7c-44a2-9076-1e7f1f2bca48';
 function signedFeed(signer, extra = {}) {
   const body = {
     kind: FEED_KIND, v: 1, at: '2026-10-12T06:00:00.000Z',
-    profile: { id: PROFILE, name: 'Alex', bio: '' }, boards: [], items: [],
+    profile: { id: PROFILE, name: 'Alma', bio: '' }, boards: [], items: [],
     signer: { install: signer.installId, publicKey: signer.publicKey }, ...extra,
   };
   return { body, signature: signer.sign(canonicalJson(body)) };
@@ -48,21 +48,21 @@ describe('profile addresses', () => {
 });
 
 describe('signed feeds', () => {
-  const alex = identitySigner(generateIdentity());
+  const alma = identitySigner(generateIdentity());
   const sam = identitySigner(generateIdentity());
 
   test('a feed signed by its install checks out', () => {
-    expect(verifyFeed(signedFeed(alex))).toEqual({ ok: true, installId: alex.installId });
+    expect(verifyFeed(signedFeed(alma))).toEqual({ ok: true, installId: alma.installId });
   });
 
   test('a changed feed, a borrowed install id or a different kind does not', () => {
-    const tampered = signedFeed(alex);
-    tampered.body.items = [{ id: 'post:1', text: 'not what Alex said' }];
+    const tampered = signedFeed(alma);
+    tampered.body.items = [{ id: 'post:1', text: 'not what Alma said' }];
     expect(verifyFeed(tampered).ok).toBe(false);
     const borrowed = signedFeed(sam);
-    borrowed.body.signer.install = alex.installId;
+    borrowed.body.signer.install = alma.installId;
     expect(verifyFeed(borrowed).ok).toBe(false);
-    expect(verifyFeed(signedFeed(alex, { kind: 'censai.agent-receipt' })).ok).toBe(false);
+    expect(verifyFeed(signedFeed(alma, { kind: 'censai.agent-receipt' })).ok).toBe(false);
     expect(verifyFeed(null).ok).toBe(false);
   });
 });
@@ -96,7 +96,7 @@ describe('board activity', () => {
     }
     return { entries: async () => ({ baseUpdate: null, compactedSeq: 0, rows }) };
   }
-  const db = { query: async () => ({ rows: [{ id: 7, name: 'Alex' }] }) };
+  const db = { query: async () => ({ rows: [{ id: 7, name: 'Alma' }] }) };
   const now = Date.parse('2026-10-12T06:00:00Z');
   const box = { x: 0, y: 0, w: 300, h: 200 };
 
@@ -109,7 +109,7 @@ describe('board activity', () => {
     ]);
     const items = await boardActivity(db, 'ws-1', { updateLog, now });
     expect(items).toHaveLength(1);
-    expect(items[0]).toMatchObject({ who: { kind: 'person', userId: 7, name: 'Alex' }, text: 'added Landing page copy' });
+    expect(items[0]).toMatchObject({ who: { kind: 'person', userId: 7, name: 'Alma' }, text: 'added Landing page copy' });
     expect(JSON.stringify(items)).not.toMatch(/Terminal|Social|Agent doc/);
   });
 

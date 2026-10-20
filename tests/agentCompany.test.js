@@ -13,16 +13,16 @@ const seatsOf = (...pairs) => Object.fromEntries(pairs);
 
 describe('the economy', () => {
   test('taps earn credits and fill the wallet', () => {
-    let seat = emptySeat('Alex', 0);
+    let seat = emptySeat('Alma', 0);
     seat = tap(seat, companyAt({}, 0), 20);
-    const company = companyAt(seatsOf([seatField('Alex'), seat]), 0);
+    const company = companyAt(seatsOf([seatField('Alma'), seat]), 0);
     expect(company.wallet).toBe(20);
     expect(company.tap).toBe(1);
   });
 
   test('hires cost money, grow 15% each, and keep producing over time', () => {
-    let seat = tap(emptySeat('Alex', 0), companyAt({}, 0), 40);
-    const seats = () => seatsOf([seatField('Alex'), seat]);
+    let seat = tap(emptySeat('Alma', 0), companyAt({}, 0), 40);
+    const seats = () => seatsOf([seatField('Alma'), seat]);
     seat = hire(seat, companyAt(seats(), 100), 'intern', 100);
     expect(seat.spent).toBe(15);
     expect(hireCost('intern', 1)).toBe(Math.ceil(15 * 1.15));
@@ -34,14 +34,14 @@ describe('the economy', () => {
   });
 
   test('you cannot buy what the company cannot afford', () => {
-    const seat = tap(emptySeat('Alex', 0), companyAt({}, 0), 10);
-    const company = companyAt(seatsOf(['seat_alex', seat]), 0);
+    const seat = tap(emptySeat('Alma', 0), companyAt({}, 0), 10);
+    const company = companyAt(seatsOf(['seat_alma', seat]), 0);
     expect(hire(seat, company, 'intern', 0)).toBeNull();
     expect(buyUpgrade(seat, company, 'keyboard')).toBeNull();
   });
 
   test('upgrades double taps or add a share of output, and can be bought once', () => {
-    let seat = tap(emptySeat('Alex', 0), companyAt({}, 0), 200);
+    let seat = tap(emptySeat('Alma', 0), companyAt({}, 0), 200);
     seat = buyUpgrade(seat, companyAt({ s: seat }, 0), 'keyboard');
     let company = companyAt({ s: seat }, 0);
     expect(company.tap).toBe(2);
@@ -83,7 +83,7 @@ describe('the economy', () => {
   });
 
   test('names become field-safe seat keys', () => {
-    expect(seatKey('Alex Green')).toBe('alex-green');
+    expect(seatKey('Alma Reyes')).toBe('alma-reyes');
     expect(seatKey('')).toBe('player');
     expect(seatField('Sam')).toBe('seat_sam');
   });
@@ -116,16 +116,16 @@ describe('two people grow one company', () => {
     writeStateToDoc(a, null, base, 'local');
     sync();
 
-    const alex = tap(emptySeat('Alex', 0), companyAt({}, 0), 30);
+    const alma = tap(emptySeat('Alma', 0), companyAt({}, 0), 30);
     const samTapped = tap(emptySeat('Sam', 0), companyAt({}, 0), 100);
     const sam = hire(samTapped, companyAt({ s: samTapped }, 10), 'agent', 10);
-    writeStateToDoc(a, base, { wins: [{ ...frame, [seatField('Alex')]: alex }] }, 'local');
+    writeStateToDoc(a, base, { wins: [{ ...frame, [seatField('Alma')]: alma }] }, 'local');
     writeStateToDoc(b, base, { wins: [{ ...frame, [seatField('Sam')]: sam }] }, 'local');
     sync();
 
     for (const doc of [a, b]) {
       const seats = readSeats(readDocState(doc).wins[0]);
-      expect(Object.keys(seats).sort()).toEqual(['seat_alex', 'seat_sam']);
+      expect(Object.keys(seats).sort()).toEqual(['seat_alma', 'seat_sam']);
       const company = companyAt(seats, 20);
       expect(company.owned.agent).toBe(1);
       // 30 + 100 tapped, 100 spent, one agent for 10 seconds.

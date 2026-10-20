@@ -82,7 +82,7 @@ describe('LeadHoundWindow', () => {
     expect(screen.getByText('Fix 1: answer after hours.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Save to Lead Queue' }));
-    expect(await screen.findByText('Saved to your Lead Queue.')).toBeInTheDocument();
+    expect(await screen.findByText('Saved to your Lead Queue with its drafts.')).toBeInTheDocument();
   });
 
   test('shows what each step found while the hunt streams in', async () => {

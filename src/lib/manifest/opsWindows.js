@@ -227,7 +227,7 @@ export const OPS_WINDOW_MANIFESTS = [
     lab: { title: 'API Bar', props: {} },
     moduleMenu: { show: true, status: 'ready', order: 19, icon: 'Plug', label: 'API Bar', hint: 'One door for every censaiOS API: a doorman passes your note to the right one and brings the answer back, signed' },
   },
-  // Blueprints (Alex's diagram 08): a shelf of recipes with IDs; "Do we have ..." looks here.
+  // Blueprints (diagram 08): a shelf of recipes with IDs; "Do we have ..." looks here.
   {
     kind: 'blueprints',
     canvasType: 'blueprints',

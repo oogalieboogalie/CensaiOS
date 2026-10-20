@@ -19,7 +19,7 @@ const CODE_FILE = /\.(c|m)?[jt]sx?$/;
 const PLAIN_PATH = /^[\w@./+-]+$/;
 const KEEP_ENV = ['PATH', 'Path', 'PATHEXT', 'HOME', 'USERPROFILE', 'SystemRoot', 'ComSpec', 'APPDATA', 'LOCALAPPDATA', 'TEMP', 'TMP'];
 
-function plainEnv(env = process.env) {
+export function plainEnv(env = process.env) {
   const out = { NODE_ENV: 'test', CI: '1' };
   for (const key of KEEP_ENV) if (env[key]) out[key] = env[key];
   return out;

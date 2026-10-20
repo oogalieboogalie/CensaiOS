@@ -1,17 +1,17 @@
 import fs from 'node:fs';
 import { recallMemories } from '../../memory/core/memory.js';
-import { queryBrain } from '../../memory/family_brain/index.js';
+import { BRAIN_FILE, queryBrain } from '../../memory/family_brain/index.js';
 import { rankMemories } from '../../memory/family_brain/bellman.js';
 import { agentMemoryRows } from '../../agentMemory/deepMemoryRows.js';
 
 // The family brain is a DuckDB file that exists only on the install it was
-// made on. Elsewhere, skip it instead of starting a python process that can
-// only fail, and answer from censaiOS's own memory (server/agentMemory).
-const BRAIN_FILE = process.env.HOMEBRAIN_PATH || 'C:\\homebase-db\\FAMILY_BRAIN_ALEX_NO_TOUCH.duckdb';
+// made on (HOMEBRAIN_PATH; the bridge knows where). Elsewhere, skip it instead
+// of starting a python process that can only fail, and answer from
+// censaiOS's own memory (server/agentMemory).
 const NO_BRAIN = Object.freeze({ ok: false, rows: [] });
 
 export function familyBrainPresent(file = BRAIN_FILE) {
-  try { return fs.existsSync(file); } catch { return false; }
+  try { return Boolean(file) && fs.existsSync(file); } catch { return false; }
 }
 
 const BRAIN_ACTIONS = new Set([

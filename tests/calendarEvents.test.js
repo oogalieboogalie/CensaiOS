@@ -1,6 +1,6 @@
 import { toCalendarEvent } from '../src/components/calendar/calendarEvents.js';
 
-// The day as a computer in US Central time (UTC-5 in October, like Alex's PC) sees it.
+// The day as a computer in US Central time (UTC-5 in October, like the owner's PC) sees it.
 const centralDay = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(d);
 
 describe('calendar events land on the right day', () => {

@@ -60,7 +60,7 @@ const KNOWN_APPS = Object.freeze({
   'steam.exe': 'Steam',
 });
 
-/** The name teammates see: "Alex is docking <this>". */
+/** The name teammates see: "Alma is docking <this>". */
 export function appName({ title = '', process = '' } = {}) {
   const known = KNOWN_APPS[String(process).toLowerCase()];
   if (known) return known;
@@ -69,7 +69,7 @@ export function appName({ title = '', process = '' } = {}) {
   return String(process).replace(/\.exe$/i, '') || 'an app';
 }
 
-/** "Alex is docking Discord", or "You are docking Discord". */
+/** "Alma is docking Discord", or "You are docking Discord". */
 export function presenceLine(dock, { self = false } = {}) {
   if (!dock?.app) return '';
   const who = self ? 'You are' : `${dock.hostName || 'Someone'} is`;

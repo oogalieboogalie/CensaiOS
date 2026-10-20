@@ -2,7 +2,7 @@
 import React from 'react';
 import { FAMILIES, STRENGTHS } from '../../lib/modelStrengths/strengths.js';
 
-/** The Auto-pick switch at the top of the model menu, with Alex's strengths list under it. */
+/** The Auto-pick switch at the top of the model menu, with the strengths list under it. */
 export function StrengthsMenuItem({ on, onToggle }) {
   return (
     <div className="hb-autopick-menu">

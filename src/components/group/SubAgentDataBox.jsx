@@ -4,7 +4,7 @@ import { boxDoor } from '../../lib/agents/dataBoxes.js';
 import { SubAgentDoor } from './SubAgentDoor.jsx';
 import { SubAgentHelperForm } from './SubAgentHelperForm.jsx';
 
-// A sub-agent's data box (Alex's diagram 15), opened from its row in the
+// A sub-agent's data box (diagram 15), opened from its row in the
 // roster: what it and its main agent wrote there, newest first, plus a line
 // to add a note yourself. The box is the sub-agent's scratchpad.
 export function SubAgentDataBox({ sub, box }) {

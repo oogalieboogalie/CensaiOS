@@ -1,4 +1,5 @@
 import pool from '../db.js';
+import { logOwnerRefusal, ownerNamesFor } from './ownerNames.js';
 
 // What a teammate sees when they try something only the computer's owner may
 // do (Docker, dev servers, git pushes, host files, tasks, the terminal).
@@ -16,11 +17,16 @@ export async function assertSystemAdmin(req, { db = pool } = {}) {
   return { userId, role: 'admin' };
 }
 
-function refuse(res, error) {
+async function refuse(req, res, error) {
   const status = error.statusCode || 500;
+  if (status === 401 || status === 403) logOwnerRefusal(req.baseUrl || req.path, status);
+  // On the desktop app, the person at this computer also gets both account
+  // names, so the message can say who to sign in as.
+  const names = status === 403 ? await ownerNamesFor(req.session?.userId, { req }) : null;
   return res.status(status).json({
     error: status === 500 ? 'System administrator verification is temporarily unavailable.' : error.message,
     ...(status === 403 ? { reason: 'owner-only', code: 'computer_owner_only' } : {}),
+    ...(names ? { ownerName: names.owner, yourName: names.you } : {}),
   });
 }
 
@@ -30,7 +36,7 @@ export async function requireSystemAdmin(req, res, next) {
     await assertSystemAdmin(req);
     return next();
   } catch (error) {
-    return refuse(res, error);
+    return refuse(req, res, error);
   }
 }
 

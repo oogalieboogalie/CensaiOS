@@ -11,7 +11,7 @@ const NO_RUNS = [];
 /**
  * Diagram 14, "model strengths": with Auto-pick on, each message is read
  * before it is sent and the agent switches to the model best at that kind of
- * task (Alex's strengths list, tipped by the board's Benchmarks). The last
+ * task (the strengths list, tipped by the board's Benchmarks). The last
  * pick and its "why" live on the window so the note survives a reload.
  */
 export function useAutoPick({ win, onUpdate, agent }) {

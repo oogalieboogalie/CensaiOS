@@ -1,4 +1,4 @@
-// Places to Host (Alex's diagram 18, "Deployment Integrations"): every place
+// Places to Host (diagram 18, "Deployment Integrations"): every place
 // censaiOS can live, with the file and the steps each one needs. Listed
 // under Add > Build.
 export const windowMeta = {

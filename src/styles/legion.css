@@ -117,7 +117,7 @@ pre.hb-legion-yaml { white-space: pre-wrap; overflow-wrap: anywhere; max-height:
 .hb-legion-checks li[data-ok="true"] span { color: var(--success); }
 .hb-legion-checks li[data-ok="false"] { color: var(--danger); }
 .hb-legion-checks code { font-family: var(--font-mono); color: var(--ink-soft); }
-/* Slice three: Alex's self-educate loop. */
+/* Slice three: the self-educate loop. */
 .hb-legion-educate dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-0-5) var(--space-2); margin: var(--space-1) 0 0; }
 .hb-legion-educate dt { color: var(--ink-soft); }
 .hb-legion-educate dd { margin: 0; }

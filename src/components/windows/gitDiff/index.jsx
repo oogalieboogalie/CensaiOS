@@ -39,7 +39,7 @@ function PasteEditor({ before, after, onChange, onDone }) {
 }
 
 /**
- * Git Diff Viewer (Alex's diagram 16): a black window with the GIT DIFF VIEWER
+ * Git Diff Viewer (diagram 16): a black window with the GIT DIFF VIEWER
  * wordmark and two panes split by a red line. It shows a coding agent's
  * changes from the Agent Console, or any two versions pasted in.
  */

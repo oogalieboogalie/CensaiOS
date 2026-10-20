@@ -111,8 +111,14 @@ export function isDocLikeFile(name = '') {
   return DOC_EXTENSIONS.has(getFileExtension(name));
 }
 
+/** A .todo file: premade to-dos with steps (src/lib/stepCards/todoFile.js). */
+export function isTodoFile(name = '') {
+  return getFileExtension(name) === 'todo';
+}
+
 export function fileWindowKind(name = '') {
   if (isImageFile(name)) return 'image';
+  if (isTodoFile(name)) return 'stepCards';
   if (isCodeLikeFile(name) && !isDocLikeFile(name)) return 'code_editor';
   return 'doc';
 }

@@ -1,6 +1,6 @@
 /**
- * Alex's "model strengths" drawing (diagram 14): what each AI family is best
- * at, in Alex's own words. The auto-pick reads a task, finds which of these
+ * The "model strengths" drawing (diagram 14): what each AI family is best
+ * at, in the drawing's own words. The auto-pick reads a task, finds which of these
  * strengths it needs, and picks the family that has it.
  *
  * Each strength has the words that give a task away, and the Arena benchmark
@@ -23,7 +23,7 @@ export const STRENGTHS = Object.freeze({
   agenticSpeed: { label: 'Agentic Speed', kind: 'Code', words: ['agents?', 'automate', 'automation', 'workflow', 'run (it|this) for me', 'multi[- ]step', 'do (it|this) for me', 'in the background', 'pipeline', 'batch'] },
 });
 
-/** Alex's four families, in the drawing's order, and the strengths written under each. */
+/** The four families, in the drawing's order, and the strengths written under each. */
 export const FAMILIES = Object.freeze([
   { id: 'claude', name: 'Claude', strengths: ['vibecoding', 'uiDesign', 'brainstorming', 'philosophising'] },
   { id: 'chatgpt', name: 'ChatGPT', strengths: ['strictCoding', 'deepResearch', 'planning', 'stonewalling'] },

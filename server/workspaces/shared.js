@@ -39,7 +39,7 @@ export function mapProjectPathForRuntime(projectPath) {
     if (rawProjectName && rawProjectName === containerProjectName) {
       return normalizedContainer;
     }
-    // A Windows folder inside the shared checkout (D:\Homebase\CensaiHub\src)
+    // A Windows folder inside the shared checkout (D:\Repos\CensaiHub\src)
     // lives at the same place under the container's copy of that checkout.
     if (/^[a-z]:\//i.test(raw.replace(/\\/g, '/')) && containerProjectName) {
       const at = rawParts.findIndex(part => part.toLowerCase() === containerProjectName);

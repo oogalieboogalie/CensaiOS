@@ -14,17 +14,17 @@ describe('scrub', () => {
       'key sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123 and sk-proj-ABCDEFGHIJKLMNOP1234',
       'gh ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ012345 tavily tvly-abcdef123456',
       'Authorization: Bearer abc.def.ghijklmnop password=hunter22 "apiKey": "AIzaSyA-1234567890abcdefghijk"',
-      'mail alex@censai.app jwt eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N',
+      'mail alma@censai.app jwt eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N',
       'db postgres://homebase:supersecret@127.0.0.1:5433/homebase',
     ].join('\n'));
-    for (const secret of ['sk-ant-api03', 'sk-proj-ABC', 'ghp_ABC', 'tvly-abc', 'abc.def.ghij', 'hunter22', 'AIzaSy', 'alex@censai.app', 'eyJhbGci', 'supersecret']) {
+    for (const secret of ['sk-ant-api03', 'sk-proj-ABC', 'ghp_ABC', 'tvly-abc', 'abc.def.ghij', 'hunter22', 'AIzaSy', 'alma@censai.app', 'eyJhbGci', 'supersecret']) {
       expect(text).not.toContain(secret);
     }
     expect(text).toContain('[email]');
   });
 
   test('paths stay readable but lose the account name; long text is cut', () => {
-    expect(scrubText('at C:\\Users\\Alexa\\code\\x.js and /home/alex/Homebase/server/selfFix/scrub.js'))
+    expect(scrubText('at C:\\Users\\Alexa\\code\\x.js and /home/alma/Homebase/server/selfFix/scrub.js'))
       .toBe('at C:\\Users\\[user]\\code\\x.js and /home/[user]/Homebase/server/selfFix/scrub.js');
     expect(scrubText('x'.repeat(50), 10)).toBe('xxxxxxxxxx… [cut]');
   });

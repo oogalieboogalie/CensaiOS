@@ -3,7 +3,7 @@
 async function call(url, { method = 'GET' } = {}) {
   const res = await fetch(url, { method, headers: method === 'POST' ? { 'Content-Type': 'application/json' } : undefined, body: method === 'POST' ? '{}' : undefined });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(data?.error || `Update request failed (${res.status})`), { status: res.status });
+  if (!res.ok) throw Object.assign(new Error(data?.error || `Update request failed (${res.status})`), { status: res.status, ownerName: data?.ownerName, yourName: data?.yourName });
   return data;
 }
 

@@ -1,6 +1,6 @@
 // server/sevenContexts/lookups.js
 //
-// The seven lookups from Alex's drawing 07. Each one searches one place for
+// The seven lookups from drawing 07. Each one searches one place for
 // the keywords and returns the few rows that match, already clipped. A lookup
 // that finds nothing returns nothing, so it adds nothing to the agent's
 // instructions. Every query is scoped to this board (and this person where the
@@ -124,7 +124,7 @@ function skillLog(db, workspaceId, outcome, patterns, limit) {
     [workspaceId, outcome, patterns]);
 }
 
-// Alex's names from the drawing, in the drawing's order.
+// The names from the drawing, in the drawing's order.
 export const SEVEN_CONTEXTS = Object.freeze([
   { id: 0, name: 'Researches Topics & Logs Nuggets', label: 'Nugget', lookup: nuggets },
   { id: 1, name: 'Stores Conversation Context', label: 'Earlier chat', lookup: conversation },

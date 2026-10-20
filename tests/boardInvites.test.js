@@ -75,11 +75,11 @@ describe('board invites', () => {
 
   test('lists waiting invites with plain names', async () => {
     const db = { query: jest.fn().mockResolvedValue({ rows: [
-      { id: 'i1', workspace_id: 'board-a', created_at: new Date(NOW), board_name: 'Family board', by_name: 'Alex', by_email: 'a@x' },
+      { id: 'i1', workspace_id: 'board-a', created_at: new Date(NOW), board_name: 'Family board', by_name: 'Alma', by_email: 'a@x' },
       { id: 'i2', workspace_id: 'board-b', created_at: new Date(NOW), board_name: null, by_name: null, by_email: 'kim@x' },
     ] }) };
     expect(await store.listMyInvites(db, 8)).toEqual([
-      { id: 'i1', workspaceId: 'board-a', boardName: 'Family board', byName: 'Alex', createdAt: '2026-10-18T21:00:00.000Z' },
+      { id: 'i1', workspaceId: 'board-a', boardName: 'Family board', byName: 'Alma', createdAt: '2026-10-18T21:00:00.000Z' },
       { id: 'i2', workspaceId: 'board-b', boardName: 'a board', byName: 'kim', createdAt: '2026-10-18T21:00:00.000Z' },
     ]);
   });
@@ -93,9 +93,9 @@ describe('board invites', () => {
 
   test('a join link previews until it is used or runs out', async () => {
     const code = 'a'.repeat(32);
-    const row = { status: 'pending', expires_at: new Date(NOW + 1000), board_name: 'Family board', by_name: 'Alex' };
+    const row = { status: 'pending', expires_at: new Date(NOW + 1000), board_name: 'Family board', by_name: 'Alma' };
     const db = { query: jest.fn().mockResolvedValue({ rows: [row] }) };
-    expect(await store.previewJoinCode(db, code, { now: NOW })).toEqual({ boardName: 'Family board', byName: 'Alex' });
+    expect(await store.previewJoinCode(db, code, { now: NOW })).toEqual({ boardName: 'Family board', byName: 'Alma' });
     expect(await store.previewJoinCode(db, code, { now: NOW + 2000 })).toBeNull();
     db.query.mockResolvedValue({ rows: [{ ...row, status: 'used' }] });
     expect(await store.previewJoinCode(db, code, { now: NOW })).toBeNull();
@@ -145,9 +145,9 @@ describe('board invites', () => {
   });
 
   test('a waiting invite becomes an Inbox line with an Open board button', () => {
-    const report = { ...inviteReport({ id: 'i1', workspaceId: 'board-a', boardName: 'Family board', byName: 'Alex', createdAt: '2026-10-18T21:00:00Z' }), source: 'board-invites' };
+    const report = { ...inviteReport({ id: 'i1', workspaceId: 'board-a', boardName: 'Family board', byName: 'Alma', createdAt: '2026-10-18T21:00:00Z' }), source: 'board-invites' };
     const item = errorItem(report);
-    expect(item).toMatchObject({ kind: 'invite', inviteId: 'i1', boardId: 'board-a', title: 'Alex invited you to Family board', state: 'invite_for_you', group: 'needs' });
+    expect(item).toMatchObject({ kind: 'invite', inviteId: 'i1', boardId: 'board-a', title: 'Alma invited you to Family board', state: 'invite_for_you', group: 'needs' });
   });
 
   test('invited sign-in addresses are tidy and never real mailboxes', () => {

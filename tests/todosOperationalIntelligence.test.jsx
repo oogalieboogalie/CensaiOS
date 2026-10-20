@@ -138,7 +138,7 @@ describe('TodosWindow operational intelligence bridge', () => {
     const { rerender } = render(React.createElement(TodosWindow, {
       win: { id: 'todos-1', kind: 'todos', title: 'Plan', items: [] },
       onUpdate,
-      currentProject: { path: 'C:/Homebase/CensaiHub' },
+      currentProject: { path: 'C:/Repos/CensaiHub' },
     }));
 
     await waitFor(() => expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
@@ -155,7 +155,7 @@ describe('TodosWindow operational intelligence bridge', () => {
         items: [{ id: 'task-1', text: 'Implement from board', done: false, assignee: 'architect' }],
       },
       onUpdate,
-      currentProject: { path: 'C:/Homebase/CensaiHub' },
+      currentProject: { path: 'C:/Repos/CensaiHub' },
     }));
 
     fireEvent.click(screen.getByTitle('Create project handoff'));
@@ -192,7 +192,7 @@ describe('TodosWindow operational intelligence bridge', () => {
     const { rerender } = render(React.createElement(TodosWindow, {
       win: { id: 'todos-1', kind: 'todos', title: 'Plan', items: [] },
       onUpdate,
-      currentProject: { path: 'C:/Homebase/CensaiHub' },
+      currentProject: { path: 'C:/Repos/CensaiHub' },
     }));
 
     await waitFor(() => expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
@@ -211,7 +211,7 @@ describe('TodosWindow operational intelligence bridge', () => {
         ],
       },
       onUpdate,
-      currentProject: { path: 'C:/Homebase/CensaiHub' },
+      currentProject: { path: 'C:/Repos/CensaiHub' },
     }));
 
     expect(screen.getByText('queued')).toBeTruthy();

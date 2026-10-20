@@ -2,7 +2,7 @@ import { modelTable, leaders } from '../modelArena/benchmarks.js';
 import { taskById } from '../modelArena/benchmarkTasks.js';
 import { FAMILIES, FAMILY_ROUTES, STRENGTHS, classifyTask, familyOf, familyName } from './strengths.js';
 
-const LIST_POINTS = 2; // per give-away phrase, for a strength on Alex's list
+const LIST_POINTS = 2; // per give-away phrase, for a strength on the strengths list
 const BENCH_FAST_RIGHT = 1.5; // fastest right answer on this kind of task
 const BENCH_PICKED = 0.5; // picked best most often on this kind of task
 
@@ -40,7 +40,7 @@ function benchmarkEvidence(runs, kind, keys) {
 }
 
 /**
- * Pick the model best suited to a task, from Alex's strengths list and what
+ * Pick the model best suited to a task, from the strengths list and what
  * the Arena benchmarks measured. Only models the person has a key for are
  * picked. Returns { provider, model, family, strength, why, changed } or
  * { keep: true, why } when nothing fits better than the current model.

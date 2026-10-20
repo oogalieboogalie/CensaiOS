@@ -122,20 +122,20 @@ describe('Figma window', () => {
   test('connects a personal token through the key vault', async () => {
     let connected = false;
     routes({
-      'GET /api/design/figma/status': () => json(connected ? { connected: true, source: 'byok', user: 'Alex Designer' } : { connected: false, source: null, user: null }),
+      'GET /api/design/figma/status': () => json(connected ? { connected: true, source: 'byok', user: 'Alma Designer' } : { connected: false, source: null, user: null }),
       'POST /api/keys': (_url, init) => { connected = true; expect(JSON.parse(init.body)).toEqual({ provider: 'figma', apiKey: 'figd_secret_token' }); return json({ ok: true }); },
     });
     seedFigma();
     render(<FigmaHarness id="fig-1" />);
     fireEvent.change(await screen.findByLabelText('Figma personal access token'), { target: { value: 'figd_secret_token' } });
     fireEvent.click(screen.getByRole('button', { name: 'Connect Figma' }));
-    expect(await screen.findByText(/Connected as Alex Designer/)).toBeInTheDocument();
+    expect(await screen.findByText(/Connected as Alma Designer/)).toBeInTheDocument();
     expect(screen.getByLabelText('Figma file link')).toBeInTheDocument();
   });
 
   test('lists frames and places the picked ones on the canvas as borderless design blocks', async () => {
     routes({
-      'GET /api/design/figma/status': () => json({ connected: true, source: 'byok', user: 'Alex Designer' }),
+      'GET /api/design/figma/status': () => json({ connected: true, source: 'byok', user: 'Alma Designer' }),
       'GET /api/design/figma/frames': () => json({
         name: 'Landing Page',
         frames: [

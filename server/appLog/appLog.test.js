@@ -33,7 +33,7 @@ describe('readRecentLog', () => {
       'not json',
       { time: at(5), level: 'info', namespace: 'console', message: 'plain console line' },
       { time: at(4), level: 'warn', namespace: 'browser:todos', message: 'POST /api/todos returned 403' },
-      { time: at(3), level: 'error', namespace: 'chat', message: 'key sk-ant-abcdefghijklmnop for alex@example.com' },
+      { time: at(3), level: 'error', namespace: 'chat', message: 'key sk-ant-abcdefghijklmnop for alma@example.com' },
     ],
     'notes.txt': ['ignored'],
   });
@@ -56,7 +56,7 @@ describe('readRecentLog', () => {
 
   test('lines come out scrubbed even if an old file was not', async () => {
     const { lines } = await readRecentLog({ dir, now: NOW, search: 'chat' });
-    expect(lines[0]).not.toMatch(/sk-ant-|alex@example\.com/);
+    expect(lines[0]).not.toMatch(/sk-ant-|alma@example\.com/);
     expect(lines[0]).toContain('[key]');
   });
 

@@ -82,7 +82,7 @@ describe('Figma client', () => {
   test('sends the personal access token as X-Figma-Token', async () => {
     const { fetchImpl, calls } = createFigmaFetch();
     const me = await createFigmaClient('figd_user_token', { fetchImpl }).me();
-    expect(me.handle).toBe('Alex Designer');
+    expect(me.handle).toBe('Alma Designer');
     expect(calls[0].url.href).toBe('https://api.figma.com/v1/me');
     expect(calls[0].headers).toEqual({ 'X-Figma-Token': 'figd_user_token' });
   });

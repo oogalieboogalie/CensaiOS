@@ -123,11 +123,11 @@ describe('laps', () => {
     expect(formatLap(9.1)).toBe('9.100');
     expect(formatLap(63.4567)).toBe('1:03.457');
     expect(formatLap(NaN)).toBe('--');
-    let table = mergeBestLaps([], { name: 'Alex', ms: 21000, at: 1 });
+    let table = mergeBestLaps([], { name: 'Alma', ms: 21000, at: 1 });
     table = mergeBestLaps(table, { name: 'Sam', ms: 19000, at: 2 });
-    table = mergeBestLaps(table, { name: 'Alex', ms: 18000, at: 3 });
+    table = mergeBestLaps(table, { name: 'Alma', ms: 18000, at: 3 });
     table = mergeBestLaps(table, { name: 'Sam', ms: 25000, at: 4 });
-    expect(table.map((r) => [r.name, r.ms])).toEqual([['Alex', 18000], ['Sam', 19000]]);
+    expect(table.map((r) => [r.name, r.ms])).toEqual([['Alma', 18000], ['Sam', 19000]]);
     expect(mergeBestLaps(table, { name: 'X', ms: -4 })).toHaveLength(2);
   });
 });
@@ -218,7 +218,7 @@ describe('cars on the board', () => {
   test('the server relays good car messages to everyone else and refuses bad ones', async () => {
     __resetCarRelayForTests();
     const sent = [];
-    const context = { ws: {}, clientId: 'c1', workspaceId: 'ws-1', actor: { label: 'Alex' } };
+    const context = { ws: {}, clientId: 'c1', workspaceId: 'ws-1', actor: { label: 'Alma' } };
     expect(handleCarMessage({ type: 'cursor.move' }, context, () => {})).toBe(false);
     expect(handleCarMessage({ type: 'game.car', windowId: 'w', x: 'bad' }, context, (_ws, payload) => sent.push(payload))).toBe(true);
     expect(sent).toEqual([{ type: 'error', reason: 'invalid-car' }]);

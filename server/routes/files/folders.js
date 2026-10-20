@@ -9,7 +9,7 @@ import { listOpenProjectRoots, inferProjectName } from '../projects/shared.js';
 // The "Mount to" folder picker. It only offers folders this server can
 // actually reach: on a PC running censaiOS in Docker that is the checkout it
 // was started from and the projects folder, never the rest of the D: drive
-// (a terminal pointed at D:\Homebase could not start). Folders only: no file
+// (a terminal pointed at D:\Repos could not start). Folders only: no file
 // names, no file contents.
 export const foldersRouter = express.Router();
 

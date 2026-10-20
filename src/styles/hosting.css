@@ -1,4 +1,4 @@
-/* Places to Host window (Alex's diagram 18). */
+/* Places to Host window (diagram 18). */
 .hb-host { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: auto; background: var(--surface); }
 .hb-host-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; padding: 12px; border-bottom: 1px solid var(--hairline); }
 .hb-host-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-lg); cursor: pointer; }

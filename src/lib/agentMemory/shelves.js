@@ -1,5 +1,5 @@
 /**
- * Memory shelves (Alex's diagram 20): an agent's facts sorted onto shelves
+ * Memory shelves (diagram 20): an agent's facts sorted onto shelves
  * a person can see. Plain JS, shared by the server (which saves the shelf)
  * and the Memory panel (which draws them).
  */

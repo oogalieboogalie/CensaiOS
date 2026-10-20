@@ -1,7 +1,7 @@
 /**
  * Open anywhere (web OS): the owner's switch that lets other computers on the
  * home network open this copy of censaiOS by its address, for example
- * http://r2d2:3002 or http://192.168.1.23:3002.
+ * http://officepc:3002 or http://192.168.1.23:3002.
  *
  * With the switch on, a browser request is allowed when its Origin is the
  * same address the request was sent to (Host) and that address is a home

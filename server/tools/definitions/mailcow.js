@@ -89,7 +89,7 @@ export const mailcowTools = [
         properties: {
           local_part: {
             type: 'string',
-            description: 'The part before the @ (e.g. "alex" for alex@yourdomain.com)',
+            description: 'The part before the @ (e.g. "alma" for alma@yourdomain.com)',
           },
           domain: {
             type: 'string',
@@ -97,7 +97,7 @@ export const mailcowTools = [
           },
           name: {
             type: 'string',
-            description: 'Display name for the mailbox (e.g. "Alex Johnson")',
+            description: 'Display name for the mailbox (e.g. "Alma Johnson")',
           },
           password: {
             type: 'string',
@@ -135,7 +135,7 @@ export const mailcowTools = [
         properties: {
           address: {
             type: 'string',
-            description: 'Full email address to delete (e.g. "alex@yourdomain.com")',
+            description: 'Full email address to delete (e.g. "alma@yourdomain.com")',
           },
         },
         required: ['address'],
@@ -163,7 +163,7 @@ export const mailcowTools = [
           },
           goto: {
             type: 'string',
-            description: 'Destination address to forward to (e.g. "alex@yourdomain.com")',
+            description: 'Destination address to forward to (e.g. "alma@yourdomain.com")',
           },
           active: {
             type: 'integer',

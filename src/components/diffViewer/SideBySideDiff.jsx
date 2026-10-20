@@ -27,7 +27,7 @@ function Pane({ side, rows, label }) {
 }
 
 /**
- * The side-by-side view from Alex's drawing: before on the left, after on the
+ * The side-by-side view from diagram 16: before on the left, after on the
  * right, a red line between. Both panes scroll together so rows stay level.
  */
 export function SideBySideDiff({ rows, beforeLabel = 'Before', afterLabel = 'After', compact = false }) {

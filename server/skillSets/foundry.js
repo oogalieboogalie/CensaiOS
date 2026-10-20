@@ -1,4 +1,4 @@
-// Idea Foundry: Alex's morning research loop, built in. While it is on, every
+// Idea Foundry: a morning research loop, built in. While it is on, every
 // few hours it researches the next profession and files a new skill set in
 // the board's library, ready to be fine-tuned by hand. The prompt lives in
 // research.js; the person only picks how often, which model and (optionally)
@@ -13,7 +13,7 @@ import { skillSetError } from './normalize.js';
 
 const log = createLogger('idea-foundry');
 
-// "Surprise me": the professions Alex's own Idea Foundry researched, plus a
+// "Surprise me": the professions the first Idea Foundry run researched, plus a
 // few more, tried in order and skipping any already in the library.
 export const SURPRISE_PROFESSIONS = Object.freeze([
   'Real Estate Agent', 'Product Manager', 'Sales Development Representative', 'UX Designer', 'Data Scientist',

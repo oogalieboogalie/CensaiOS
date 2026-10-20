@@ -39,7 +39,7 @@ is what keeps someone in the next room from signing in as you.
 Your other computers come in on port `3004`, through **Open anywhere**: on the main computer open
 **Settings > Open anywhere**, turn on **Let my other computers open censaiOS**, press **Add a
 computer**, and open the link or type the code on the other computer (for example
-`http://r2d2:3004`). Until the switch is on, port 3004 shows only a "not open yet" page, and even
+`http://officepc:3004`). Until the switch is on, port 3004 shows only a "not open yet" page, and even
 with it on, another computer can sign in only with a one-time code, never by typing an email.
 
 **Installed with an older `docker-compose.yml`?** If you cloned the repo, `git pull` and

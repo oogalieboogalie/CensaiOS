@@ -4,8 +4,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-// The "Mount to" picker: on Alex's PC censaiOS runs in Docker and only sees
-// the checkout (D:\Homebase\CensaiHub) and the projects folder. The picker
+// The "Mount to" picker: on the owner's PC censaiOS runs in Docker and only sees
+// the checkout (D:\Repos\CensaiHub) and the projects folder. The picker
 // must offer only those, in the PC's own words, and refuse anything else.
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-folders-'));
 const stateDir = path.join(tempRoot, 'state');
@@ -34,8 +34,8 @@ beforeAll(async () => {
   process.env.CENSAI_PROJECTS_FOLDER_ON_PC = 'D:\\Projects';
   // The board remembers the checkout the way the PC names it, plus a folder
   // Docker can't see (the cause of the broken terminal).
-  fs.writeFileSync(path.join(stateDir, 'current-project.json'), JSON.stringify({ type: 'local', name: 'CensaiHub', path: 'D:\\Homebase\\CensaiHub' }));
-  fs.writeFileSync(path.join(stateDir, 'open-projects.json'), JSON.stringify(['D:\\Homebase\\CensaiHub', 'D:\\Homebase']));
+  fs.writeFileSync(path.join(stateDir, 'current-project.json'), JSON.stringify({ type: 'local', name: 'CensaiHub', path: 'D:\\Repos\\CensaiHub' }));
+  fs.writeFileSync(path.join(stateDir, 'open-projects.json'), JSON.stringify(['D:\\Repos\\CensaiHub', 'D:\\Repos']));
   const { filesRouter } = await import('../server/routes/files/index.js');
   app = express();
   app.use('/api', filesRouter);
@@ -55,9 +55,9 @@ linuxOnly('offers only the places censaiOS can reach', async () => {
   const res = await folders();
   expect(res.status).toBe(200);
   const shown = res.body.places.map((p) => p.mountPath);
-  expect(shown).toContain('D:\\Homebase\\CensaiHub');
+  expect(shown).toContain('D:\\Repos\\CensaiHub');
   expect(shown).toContain('D:\\Projects');
-  expect(shown).not.toContain('D:\\Homebase');
+  expect(shown).not.toContain('D:\\Repos');
 });
 
 linuxOnly('lists subfolders only, in the PC\'s own words', async () => {
@@ -74,12 +74,12 @@ linuxOnly('lists subfolders only, in the PC\'s own words', async () => {
 
   const app2 = await folders(appRoot);
   expect(app2.body.folders.map((f) => f.name)).toEqual(['src']);
-  expect(app2.body.folders[0].mountPath).toBe('D:\\Homebase\\CensaiHub\\src');
+  expect(app2.body.folders[0].mountPath).toBe('D:\\Repos\\CensaiHub\\src');
 });
 
 linuxOnly('refuses folders outside the places', async () => {
   expect((await folders(tempRoot)).status).toBe(403);
-  expect((await folders('D:\\Homebase')).status).toBe(403);
+  expect((await folders('D:\\Repos')).status).toBe(403);
   expect((await folders('/etc')).status).toBe(403);
 });
 

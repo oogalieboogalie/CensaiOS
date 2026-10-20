@@ -7,7 +7,7 @@ import {
 } from '../../blueprints/store.js';
 import { DEFAULT_BLUEPRINT_PHRASES } from '../../../src/lib/blueprints/blueprintPhrases.js';
 
-// Blueprints (Alex's diagram 08): the board's shelf of named recipes with
+// Blueprints (diagram 08): the board's shelf of named recipes with
 // IDs, searched with the board's "Do we have ..." phrases.
 export const blueprintsRouter = express.Router();
 

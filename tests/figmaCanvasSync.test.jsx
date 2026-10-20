@@ -103,7 +103,7 @@ describe('Placing frames', () => {
   test('pages filter the frames, Place as Image lands renders, and Sync all refreshes placed frames', async () => {
     let version = 1;
     routes({
-      'GET /api/design/figma/status': () => json({ connected: true, source: 'byok', user: 'Alex Designer' }),
+      'GET /api/design/figma/status': () => json({ connected: true, source: 'byok', user: 'Alma Designer' }),
       'GET /api/design/figma/frames': () => json({
         fileKey: 'AbC123xyz',
         name: 'Landing Page',

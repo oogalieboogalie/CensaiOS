@@ -181,4 +181,12 @@ export const AGENT_COVERS = {
       <path d="M30 6 L33 4.5 M31 10 H35 M29.5 13.5 L32.5 15.5" {...A} />
     </>
   ),
+  // AI resources: a key, and the meter counting down what is left on it.
+  aiResources: (
+    <>
+      <circle cx="9" cy="8" r="3.5" {...S} /><path d="M12.5 8 H22 M19 8 V10.5 M21.5 8 V10" {...S} />
+      <rect x="5" y="15" width="34" height="4" rx="2" {...H} /><rect x="5" y="15" width="22" height="4" rx="2" fill={ACCENT} />
+      <path d="M27 6 H39 M31 10 H39" {...F} />
+    </>
+  ),
 };

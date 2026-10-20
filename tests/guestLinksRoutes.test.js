@@ -10,7 +10,7 @@ const sha = (value) => crypto.createHash('sha256').update(String(value)).digest(
 
 const pool = {
   query: jest.fn(async (sql, params = []) => {
-    if (/FROM users/.test(sql)) return { rows: [{ id: params[0], name: 'Alex', email: 'alex@example.com' }] };
+    if (/FROM users/.test(sql)) return { rows: [{ id: params[0], name: 'Alma', email: 'alma@example.com' }] };
     if (/SELECT id, name FROM agents/.test(sql)) return { rows: [{ id: 'censai', name: 'Censai' }, { id: 'architect', name: 'The Architect' }] };
     if (/FROM agents WHERE id/.test(sql)) return { rows: [{ id: params[0], name: 'Censai', role: 'researcher' }] };
     throw new Error(`unexpected query: ${sql}`);

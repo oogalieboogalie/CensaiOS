@@ -42,7 +42,7 @@ describe('design routes: Figma import', () => {
     getUserApiKeyConfig.mockResolvedValue({ apiKey: 'figd_user_token' });
     const res = await request(app()).get('/api/design/figma/status');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ connected: true, source: 'byok', user: 'Alex Designer' });
+    expect(res.body).toEqual({ connected: true, source: 'byok', user: 'Alma Designer' });
     expect(JSON.stringify(res.body)).not.toContain('figd_user_token');
     expect(getUserApiKeyConfig).toHaveBeenCalledWith(7, 'figma');
   });

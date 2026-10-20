@@ -1,4 +1,4 @@
-// Message router, step two (Alex's diagram 03): send each part of a request
+// Message router, step two (diagram 03): send each part of a request
 // to the right agent, with the right memory and template, over one shared
 // line (v1/bus/chat/agent...). Pure: the server builds the plan with it and
 // the Message Router window turns each routed part into a chat message.

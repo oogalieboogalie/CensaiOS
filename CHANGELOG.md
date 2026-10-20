@@ -13,6 +13,20 @@ and each Sunday that list becomes the next numbered stable release.
 The Releases page of this repository has each release's notes and container
 tags.
 
+## Unreleased: in the nightly builds, not in a stable release yet
+
+### New
+
+- "Only the owner" messages name the owner account and yours (Oct 20)
+- AI resources window: every AI key and sign-in, what it spent, what is left (Oct 20)
+- LeadHound: saved leads keep their drafts and don't pile up twice (Oct 20)
+- Docker Run form takes settings, a shared folder and a restart choice (Oct 20)
+- Step cards, plain steps that unlock one by one, and .todo files (Oct 20)
+
+### Behind the scenes
+
+- Keep personal details out of the public copy (Oct 20)
+
 ## 0.4.0 (2026-10-19)
 
 ### New

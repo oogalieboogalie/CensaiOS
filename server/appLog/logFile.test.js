@@ -12,7 +12,7 @@ test('logger lines and plain console lines land in one scrubbed file', () => {
     const { createLogger } = await import(${at('logger.js')});
     const { installConsoleCapture } = await import(${at('appLog/consoleCapture.js')});
     installConsoleCapture();
-    createLogger('chat').warn('provider said no', { apiKey: 'abc', note: 'token=supersecretvalue1 for alex@example.com' });
+    createLogger('chat').warn('provider said no', { apiKey: 'abc', note: 'token=supersecretvalue1 for alma@example.com' });
     console.log('plain line with sk-ant-abcdefghijklmnop');
     await new Promise((r) => setTimeout(r, 200));
   `;
@@ -27,5 +27,5 @@ test('logger lines and plain console lines land in one scrubbed file', () => {
   expect(records[0]).toMatchObject({ level: 'warn', namespace: 'chat', message: 'provider said no' });
   expect(records[1]).toMatchObject({ level: 'info', namespace: 'console' });
   const text = JSON.stringify(records);
-  expect(text).not.toMatch(/supersecretvalue1|alex@example\.com|sk-ant-|"abc"/);
+  expect(text).not.toMatch(/supersecretvalue1|alma@example\.com|sk-ant-|"abc"/);
 });

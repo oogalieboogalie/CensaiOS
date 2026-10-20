@@ -1,4 +1,4 @@
-// The review decides the merge (Alex's diagram 01): a Jules PR merges only
+// The review decides the merge (diagram 01): a Jules PR merges only
 // when its review says OK. Reads the PR's reviews from GitHub: the AI
 // reviewers (scripts/ai-review.mjs, marked <!-- ai-review:<provider> -->)
 // say no when their latest review found a high-severity bug; a person says

@@ -37,13 +37,13 @@ test('terminals are listed only for their own board, without their output', () =
 test('a failing query never hides the rest', async () => {
   const db = { query: jest.fn(async (sql) => {
     if (sql.includes('board_workflow_triggers')) throw new Error('relation does not exist');
-    if (sql.includes('FROM users')) return { rows: [{ id: 7, name: 'Alex' }] };
-    return { rows: [{ id: 'r1', window_id: 'w', trigger: 'manual', status: 'failed', error: 'boom', started_at: new Date(), finished_at: null, started_by_name: 'Alex' }] };
+    if (sql.includes('FROM users')) return { rows: [{ id: 7, name: 'Alma' }] };
+    return { rows: [{ id: 'r1', window_id: 'w', trigger: 'manual', status: 'failed', error: 'boom', started_at: new Date(), finished_at: null, started_by_name: 'Alma' }] };
   }) };
   const live = new Map([['a', { id: 'a', alive: true, owner: { userId: '7', workspaceId: 'ws-1' }, createdAt: 1, lastActivity: 2 }]]);
   const out = await collectLiveOps(db, 'ws-1', { live });
-  expect(out.workflowRuns[0]).toMatchObject({ id: 'r1', status: 'failed', error: 'boom', startedBy: 'Alex' });
+  expect(out.workflowRuns[0]).toMatchObject({ id: 'r1', status: 'failed', error: 'boom', startedBy: 'Alma' });
   expect(out.workflowTriggers).toEqual([]);
   expect(out.errors.workflowTriggers).toMatch(/does not exist/);
-  expect(out.terminals[0].owner).toBe('Alex');
+  expect(out.terminals[0].owner).toBe('Alma');
 });

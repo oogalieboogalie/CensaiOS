@@ -17,20 +17,20 @@ describe('file browser search normalization', () => {
 
 describe('file tree folder moves', () => {
   test('goes up one folder with the path\'s own slashes', () => {
-    expect(parentFolder('D:\\Homebase\\CensaiHub\\src')).toBe('D:\\Homebase\\CensaiHub');
-    expect(parentFolder('D:\\Homebase\\CensaiHub\\')).toBe('D:\\Homebase');
-    expect(parentFolder('D:\\Homebase')).toBe('D:\\');
-    expect(parentFolder('D:/Homebase/CensaiHub')).toBe('D:\\Homebase');
+    expect(parentFolder('D:\\Repos\\CensaiHub\\src')).toBe('D:\\Repos\\CensaiHub');
+    expect(parentFolder('D:\\Repos\\CensaiHub\\')).toBe('D:\\Repos');
+    expect(parentFolder('D:\\Repos')).toBe('D:\\');
+    expect(parentFolder('D:/Repos/CensaiHub')).toBe('D:\\Repos');
     expect(parentFolder('/workspace/CensaiHub/src')).toBe('/workspace/CensaiHub');
     expect(parentFolder('/workspace')).toBe('/');
     expect(parentFolder('')).toBe('');
   });
 
   test('knows a folder inside the window\'s project, whatever the slashes or case', () => {
-    expect(isInsideFolder('D:\\Homebase\\CensaiHub\\src', 'D:\\Homebase\\CensaiHub')).toBe(true);
-    expect(isInsideFolder('d:/homebase/censaihub', 'D:\\Homebase\\CensaiHub\\')).toBe(true);
-    expect(isInsideFolder('D:\\Homebase\\CensaiHub2', 'D:\\Homebase\\CensaiHub')).toBe(false);
-    expect(isInsideFolder('D:\\Homebase', 'D:\\Homebase\\CensaiHub')).toBe(false);
+    expect(isInsideFolder('D:\\Repos\\CensaiHub\\src', 'D:\\Repos\\CensaiHub')).toBe(true);
+    expect(isInsideFolder('d:/repos/censaihub', 'D:\\Repos\\CensaiHub\\')).toBe(true);
+    expect(isInsideFolder('D:\\Repos\\CensaiHub2', 'D:\\Repos\\CensaiHub')).toBe(false);
+    expect(isInsideFolder('D:\\Repos', 'D:\\Repos\\CensaiHub')).toBe(false);
     expect(isInsideFolder('D:\\x', '')).toBe(false);
   });
 });

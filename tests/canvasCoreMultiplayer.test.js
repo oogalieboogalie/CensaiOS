@@ -90,59 +90,59 @@ afterEach(async () => {
 test('two people edit one board like a multiplayer game: nothing is lost, everyone converges', async () => {
   const db = yjsMemoryDb();
   const handle = await startServer(db);
-  const alex = join(handle, 'alex');
+  const alma = join(handle, 'alma');
   const sam = join(handle, 'sam');
-  await Promise.all([alex.synced, sam.synced]);
+  await Promise.all([alma.synced, sam.synced]);
 
-  edit(alex, (s) => ({ ...s, wins: [win('w1', 0, 0), win('w2', 400, 0)] }));
+  edit(alma, (s) => ({ ...s, wins: [win('w1', 0, 0), win('w2', 400, 0)] }));
   await until(() => sam.state().wins.length === 2);
 
   // Different windows and different fields of one window: every edit survives.
-  edit(alex, (s) => ({ ...s, wins: s.wins.map((w) => (w.id === 'w1' ? { ...w, x: 50 } : w)) }));
+  edit(alma, (s) => ({ ...s, wins: s.wins.map((w) => (w.id === 'w1' ? { ...w, x: 50 } : w)) }));
   edit(sam, (s) => ({ ...s, wins: s.wins.map((w) => (w.id === 'w1' ? { ...w, h: 500 } : w.id === 'w2' ? { ...w, y: 90 } : w)) }));
-  await until(() => byId(alex.state(), 'w1').h === 500 && byId(sam.state(), 'w1').x === 50);
-  expect(byId(alex.state(), 'w2').y).toBe(90);
+  await until(() => byId(alma.state(), 'w1').h === 500 && byId(sam.state(), 'w1').x === 50);
+  expect(byId(alma.state(), 'w2').y).toBe(90);
 
   // Same field at the same moment: one value wins, and both screens agree on it.
-  edit(alex, (s) => ({ ...s, wins: s.wins.map((w) => (w.id === 'w2' ? { ...w, x: 111 } : w)) }));
+  edit(alma, (s) => ({ ...s, wins: s.wins.map((w) => (w.id === 'w2' ? { ...w, x: 111 } : w)) }));
   edit(sam, (s) => ({ ...s, wins: s.wins.map((w) => (w.id === 'w2' ? { ...w, x: 222 } : w)) }));
-  await until(() => byId(alex.state(), 'w2').x === byId(sam.state(), 'w2').x);
-  expect([111, 222]).toContain(byId(alex.state(), 'w2').x);
+  await until(() => byId(alma.state(), 'w2').x === byId(sam.state(), 'w2').x);
+  expect([111, 222]).toContain(byId(alma.state(), 'w2').x);
 
   // A close on one screen closes it everywhere; a new window shows up everywhere.
   edit(sam, (s) => ({ ...s, wins: [...s.wins.filter((w) => w.id !== 'w1'), win('w3', 800, 0)] }));
-  await until(() => !byId(alex.state(), 'w1') && byId(alex.state(), 'w3'));
+  await until(() => !byId(alma.state(), 'w1') && byId(alma.state(), 'w3'));
 
   await new Promise((resolve) => setTimeout(resolve, 150));
   await handle.updateLog.flush();
   expect(db.rows().length).toBeGreaterThan(0);
   const actors = new Set(db.rows().map((row) => row.actor));
-  expect(actors).toEqual(new Set(['user:alex', 'user:sam']));
+  expect(actors).toEqual(new Set(['user:alma', 'user:sam']));
 });
 
 test('presence rides awareness: name, colour, cursor, selection and the window being dragged', async () => {
   const handle = await startServer(yjsMemoryDb());
-  const alex = join(handle, 'alex');
+  const alma = join(handle, 'alma');
   const sam = join(handle, 'sam');
-  await Promise.all([alex.synced, sam.synced]);
+  await Promise.all([alma.synced, sam.synced]);
 
-  const identity = presenceIdentity({ id: 'alex', name: 'Alex' });
-  alex.provider.awareness.setLocalStateField('user', identity);
-  alex.provider.awareness.setLocalStateField('cursor', { x: 120, y: 80 });
-  alex.provider.awareness.setLocalStateField('selection', ['w1']);
-  alex.provider.awareness.setLocalStateField('drag', { windowId: 'w1', x: 30, y: 40 });
+  const identity = presenceIdentity({ id: 'alma', name: 'Alma' });
+  alma.provider.awareness.setLocalStateField('user', identity);
+  alma.provider.awareness.setLocalStateField('cursor', { x: 120, y: 80 });
+  alma.provider.awareness.setLocalStateField('selection', ['w1']);
+  alma.provider.awareness.setLocalStateField('drag', { windowId: 'w1', x: 30, y: 40 });
 
   const seen = () => readAwarenessPresence(sam.provider.awareness.getStates(), sam.provider.awareness.clientID);
   await until(() => Object.keys(seen().cursors).length === 1 && seen().previews.w1);
   const presence = seen();
   const [cursor] = Object.values(presence.cursors);
-  expect(cursor).toMatchObject({ x: 120, y: 80, actor: { label: 'Alex', color: identity.color } });
-  expect(presence.selections.w1).toMatchObject({ label: 'Alex', color: identity.color });
-  expect(presence.previews.w1).toMatchObject({ x: 30, y: 40, actor: { label: 'Alex is moving this', outline: true } });
-  expect(presence.participants.map((p) => p.actor.label)).toContain('Alex');
+  expect(cursor).toMatchObject({ x: 120, y: 80, actor: { label: 'Alma', color: identity.color } });
+  expect(presence.selections.w1).toMatchObject({ label: 'Alma', color: identity.color });
+  expect(presence.previews.w1).toMatchObject({ x: 30, y: 40, actor: { label: 'Alma is moving this', outline: true } });
+  expect(presence.participants.map((p) => p.actor.label)).toContain('Alma');
 
-  alex.provider.destroy();
-  await until(() => !seen().participants.some((p) => p.actor.label === 'Alex'));
+  alma.provider.destroy();
+  await until(() => !seen().participants.some((p) => p.actor.label === 'Alma'));
 });
 
 test('a fresh server rebuilds the board from the update log alone, and a snapshot-only board migrates on first open', async () => {
@@ -150,14 +150,14 @@ test('a fresh server rebuilds the board from the update log alone, and a snapsho
   db.setClientState({ value: { wins: [win('old-1', 10, 20)], canvasGroups: [], paths: [], links: [], dock: {} }, revision: 7 });
 
   const first = await startServer(db);
-  const alex = join(first, 'alex');
-  await alex.synced;
-  expect(byId(alex.state(), 'old-1')).toMatchObject({ x: 10, y: 20 });
+  const alma = join(first, 'alma');
+  await alma.synced;
+  expect(byId(alma.state(), 'old-1')).toMatchObject({ x: 10, y: 20 });
   expect(db.rows()[0].actor).toBe('migration');
 
-  edit(alex, (s) => ({ ...s, wins: [...s.wins, win('new-1', 500, 500)] }));
+  edit(alma, (s) => ({ ...s, wins: [...s.wins, win('new-1', 500, 500)] }));
   await new Promise((resolve) => setTimeout(resolve, 150));
-  alex.provider.destroy();
+  alma.provider.destroy();
   first.people = [];
   await stopServer(first);
   // The backup copy was refreshed from the shared doc by the store hook.
@@ -178,11 +178,11 @@ test('board history: everyone sees a roll-back at once, and the roll-back is a n
   registerLiveHocuspocus(handle.hocuspocus);
   try {
     expect(liveUpdateLog()).toBe(handle.updateLog);
-    const alex = join(handle, 'alex');
+    const alma = join(handle, 'alma');
     const sam = join(handle, 'sam');
-    await Promise.all([alex.synced, sam.synced]);
+    await Promise.all([alma.synced, sam.synced]);
 
-    edit(alex, (s) => ({ ...s, wins: [win('notes', 0, 0)] }));
+    edit(alma, (s) => ({ ...s, wins: [win('notes', 0, 0)] }));
     await until(() => sam.state().wins.length === 1);
     await new Promise((resolve) => setTimeout(resolve, 60));
     await handle.updateLog.flush();
@@ -190,16 +190,16 @@ test('board history: everyone sees a roll-back at once, and the roll-back is a n
 
     edit(sam, (s) => ({ ...s, wins: [...s.wins, win('chat', 400, 0)] }));
     edit(sam, (s) => ({ ...s, wins: s.wins.map((w) => (w.id === 'notes' ? { ...w, x: 900 } : w)) }));
-    await until(() => alex.state().wins.length === 2 && byId(alex.state(), 'notes').x === 900);
+    await until(() => alma.state().wins.length === 2 && byId(alma.state(), 'notes').x === 900);
 
     // Every change has an entry naming who made it (newest first).
     const history = await listBoardHistory(db, WS, { updateLog: handle.updateLog, gapMs: 0 });
     expect(history.entries.at(-1)).toMatchObject({ who: { kind: 'user' }, change: { added: ['notes'] } });
     expect(history.entries.some((e) => e.change.added.includes('chat'))).toBe(true);
 
-    await restoreBoard(WS, before, { actor: 'user:alex' });
+    await restoreBoard(WS, before, { actor: 'user:alma' });
     await until(() => sam.state().wins.length === 1 && byId(sam.state(), 'notes').x === 0);
-    expect(alex.state().wins.map((w) => w.id)).toEqual(['notes']);
+    expect(alma.state().wins.map((w) => w.id)).toEqual(['notes']);
 
     await handle.updateLog.flush();
     const after = await listBoardHistory(db, WS, { updateLog: handle.updateLog, gapMs: 0 });
@@ -207,7 +207,7 @@ test('board history: everyone sees a roll-back at once, and the roll-back is a n
     // The step before the roll-back is still there to go back to.
     const undo = after.entries[1];
     await restoreBoard(WS, undo.seq, { actor: 'user:sam' });
-    await until(() => alex.state().wins.length === 2 && byId(alex.state(), 'notes').x === 900);
+    await until(() => alma.state().wins.length === 2 && byId(alma.state(), 'notes').x === 900);
   } finally {
     registerLiveHocuspocus(null);
   }

@@ -1,4 +1,4 @@
-// Jules tasks the overnight runner gave up on (Alex's diagram 01: "page
+// Jules tasks the overnight runner gave up on (diagram 01: "page
 // someone"). When scripts/jules-overnight.mjs parks a task, for example after
 // three fix rounds where the review still says no, it lands in the queue's
 // blocked list; this source puts each one in the Inbox under "Needs you".

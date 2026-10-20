@@ -1,4 +1,4 @@
-// Exo-Skeleton skill sets: the built-ins (Alex's drawing and Idea Foundry
+// Exo-Skeleton skill sets: the built-ins (the drawing and Idea Foundry
 // research), the research step, the prompt section an equipped agent reads,
 // the Idea Foundry's profession picking, and the equipped Browser lookup.
 import { jest } from '@jest/globals';

@@ -3,7 +3,7 @@ import React from 'react';
 import { BLUEPRINT_SHELVES } from '../../../lib/blueprints/blueprintIds.js';
 
 const DRAWING_EXAMPLE = {
-  title: 'Alex Finance Blueprint for Budgeting',
+  title: 'Alma Finance Blueprint for Budgeting',
   shelf: 1,
   type: 'Budget',
   purpose: 'Personal Financing',
@@ -24,7 +24,7 @@ export function BlueprintEditor({ draft, onSave, onCancel, busy }) {
         {isNew && <button type="button" className="hb-bp-link" onClick={() => setForm({ ...DRAWING_EXAMPLE })}>Fill in the example from your drawing</button>}
       </div>
       <label className="hb-bp-field">Name
-        <input className="hb-bp-input" value={form.title} onChange={set('title')} placeholder="Alex Finance Blueprint for Budgeting" required />
+        <input className="hb-bp-input" value={form.title} onChange={set('title')} placeholder="Alma Finance Blueprint for Budgeting" required />
       </label>
       <div className="hb-bp-row">
         <label className="hb-bp-field">Shelf

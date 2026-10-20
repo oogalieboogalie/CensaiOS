@@ -1,4 +1,4 @@
-// Pure: blueprint IDs from Alex's diagram 08. An ID reads
+// Pure: blueprint IDs from diagram 08. An ID reads
 //   <shelf><number><code>^<year>     e.g. 14h7*skyFs^2026
 // shelf 1 = Finance, the 4th blueprint on that shelf, code h7*skyFs, 2026.
 // The code always starts with a lowercase letter so the number before it

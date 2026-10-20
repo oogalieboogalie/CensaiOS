@@ -10,7 +10,7 @@ import { buildBlueprintsPrompt } from '../server/blueprints/prompt.js';
 import { lookupBlueprintsForMessage, saveBlueprint } from '../server/blueprints/store.js';
 
 describe('blueprint IDs (diagram 08)', () => {
-  it('reads Alex\'s example: Finance shelf, 4th one, code, year', () => {
+  it('reads Alma\'s example: Finance shelf, 4th one, code, year', () => {
     expect(parseBlueprintId('14h7*skyFs^2026')).toEqual({ shelf: 1, shelfName: 'Finance', number: 4, code: 'h7*skyFs', year: 2026 });
     expect(describeBlueprintId('14h7*skyFs^2026')).toBe('Finance shelf, the 4th one, code h7*skyFs, made in 2026');
   });
@@ -51,13 +51,13 @@ describe('"Do we have" phrases', () => {
 });
 
 const SHELF = [
-  { id: '14h7*skyFs^2026', title: 'Alex Finance Blueprint for Budgeting', shelf: 1, shelfName: 'Finance', type: 'Budget', purpose: 'Personal Financing', body: 'Savings first' },
+  { id: '14h7*skyFs^2026', title: 'Alma Finance Blueprint for Budgeting', shelf: 1, shelfName: 'Finance', type: 'Budget', purpose: 'Personal Financing', body: 'Savings first' },
   { id: '21kQ2mPr*x^2026', title: 'Open house checklist', shelf: 2, shelfName: 'Real Estate', type: 'Checklist', purpose: 'Showings', body: '' },
 ];
 
 describe('searching the shelf', () => {
   it('ranks by the words, exact ID wins', () => {
-    expect(rankBlueprints(SHELF, ['budget']).map((b) => b.title)).toEqual(['Alex Finance Blueprint for Budgeting']);
+    expect(rankBlueprints(SHELF, ['budget']).map((b) => b.title)).toEqual(['Alma Finance Blueprint for Budgeting']);
     expect(rankBlueprints(SHELF, ['21kq2mpr*x^2026'])[0].title).toBe('Open house checklist');
     expect(rankBlueprints(SHELF, ['real'])[0].shelf).toBe(2);
     expect(rankBlueprints(SHELF, [])).toHaveLength(2);
@@ -107,7 +107,7 @@ describe('the shelf store', () => {
   it('looks on the shelf only for "Do we have" questions', async () => {
     const db = fakeDb(SHELF.map((b) => ({ ...b, workspace_id: 'w', category: b.shelf })));
     const found = await lookupBlueprintsForMessage(db, 'w', 'Do we have any budget blueprints?');
-    expect(found.matches.map((b) => b.title)).toEqual(['Alex Finance Blueprint for Budgeting']);
+    expect(found.matches.map((b) => b.title)).toEqual(['Alma Finance Blueprint for Budgeting']);
     expect(await lookupBlueprintsForMessage(db, 'w', 'Write a budget')).toBeNull();
     expect(await lookupBlueprintsForMessage(db, 'w', 'Do you know?')).toBeNull();
     expect(await lookupBlueprintsForMessage(db, null, 'Do we have any?')).toBeNull();

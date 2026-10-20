@@ -1,6 +1,6 @@
 // server/sevenContexts/index.js
 //
-// Alex's drawing 07, "Parse keywords, seven contexts": before an agent
+// Drawing 07, "Parse keywords, seven contexts": before an agent
 // answers, it pulls the keywords out of the question and looks each one up in
 // seven places (nuggets, earlier chats, lessons, tools, projects, agents,
 // things that worked). This is retrieval, not boilerplate:

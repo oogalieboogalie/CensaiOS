@@ -17,7 +17,7 @@ function win(id, x = 0, y = 0, extra = {}) {
 function namedDb(db) {
   return {
     query: async (sql, params) => {
-      if (sql.includes('FROM users')) return { rows: [{ id: 1, name: 'Alex' }, { id: 2, name: null, email: 'sam@example.com' }] };
+      if (sql.includes('FROM users')) return { rows: [{ id: 1, name: 'Alma' }, { id: 2, name: null, email: 'sam@example.com' }] };
       if (sql.includes('FROM share_link_joins')) return { rows: [{ guest_id: 'g1', display_name: 'Maria' }] };
       return db.query(sql, params);
     },
@@ -52,10 +52,10 @@ test('history groups each person\'s burst of changes and says what changed in pl
   const history = await listBoardHistory(namedDb(db), 'ws-1', { updateLog });
   expect(history.latestSeq).toBe(5);
   expect(history.entries.map((e) => [e.who.name, e.steps, describeHistoryEntry(e)])).toEqual([
-    ['Alex', 1, 'closed Chat'],
+    ['Alma', 1, 'closed Chat'],
     ['Maria', 1, 'drew 2 strokes'],
     ['sam', 1, 'moved 1 window'],
-    ['Alex', 2, 'added Notes and Chat'],
+    ['Alma', 2, 'added Notes and Chat'],
   ]);
   expect(history.entries[0].who.kind).toBe('user');
   expect(history.entries[1].who.kind).toBe('guest');

@@ -50,7 +50,7 @@ export async function requestToolApprovalIfRequired(db, { agentId, toolName, arg
       'TOOL_APPROVAL_USER_REQUIRED');
   }
   const member = await requireWorkspaceMember(db, { workspaceId, userId });
-  // Trust mode, which Alex asked for (on unless an owner turns it off in
+  // Trust mode (on unless an owner turns it off in
   // Settings): when the person asking could approve it themselves (owner or
   // admin), the agent acts now instead of waiting for that same person's click.
   if (TRUSTED_ROLES.includes(member?.role)

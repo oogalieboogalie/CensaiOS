@@ -47,7 +47,9 @@ export function prepareArgs(args, platformIsWindows = IS_WINDOWS) {
     if (WIN_UNSAFE.test(s)) {
       throw new DockerInputError('That value has characters Windows can\'t pass to Docker safely.');
     }
-    return `"${s}"`;
+    // A backslash right before the closing quote would escape it, so trailing
+    // ones are doubled ("C:\My Data\" would swallow the next argument).
+    return `"${s.replace(/(\\+)$/, '$1$1')}"`;
   });
 }
 

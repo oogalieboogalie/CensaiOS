@@ -23,7 +23,7 @@ export function AliasesTab({ mailcow }) {
               <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>FORWARD TO (GOTO)</span>
               <input
                 type="text"
-                placeholder="alex@censai.app (comma separated for multiple)"
+                placeholder="alma@yourdomain.com (comma separated for multiple)"
                 value={aliasForm.goto}
                 onChange={(e) => setAliasForm({ ...aliasForm, goto: e.target.value })}
                 style={{ padding: '6px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', fontSize: 'var(--text-md)', background: 'var(--surface)', color: 'var(--ink)', outline: 'none' }}

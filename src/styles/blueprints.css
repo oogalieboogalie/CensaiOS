@@ -1,4 +1,4 @@
-/* Blueprints window (Alex's diagram 08): ask box, shelves, list, blueprint card. */
+/* Blueprints window (diagram 08): ask box, shelves, list, blueprint card. */
 .hb-bp { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; background: var(--surface); }
 .hb-bp-ask { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--hairline); }
 .hb-bp-ask-row { display: flex; gap: 8px; align-items: center; color: var(--ink-soft); }

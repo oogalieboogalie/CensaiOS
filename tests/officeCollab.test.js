@@ -31,12 +31,12 @@ function pair(win) {
 describe('Censai Office merges edits from two people', () => {
   test('two people typing in different cells at once keep both', () => {
     const { a, b, sync, edit, read } = pair({ kind: 'officeSheets', officeBook: makeBook() });
-    edit(a, cellPatch('s1', 'A1', { v: 'from Alex' }));
+    edit(a, cellPatch('s1', 'A1', { v: 'from Alma' }));
     edit(b, cellPatch('s1', 'B2', { v: '=1+1' }));
     sync();
     for (const doc of [a, b]) {
       const cells = readCells(read(doc)).s1;
-      expect(cells.A1.v).toBe('from Alex');
+      expect(cells.A1.v).toBe('from Alma');
       expect(cells.B2.v).toBe('=1+1');
     }
   });
@@ -45,19 +45,19 @@ describe('Censai Office merges edits from two people', () => {
     const start = { kind: 'officeDocs', ...OFFICE_STARTERS.officeDocs };
     const { a, b, sync, edit, read } = pair(start);
     const order = readDoc(start).order;
-    edit(a, insertBlocksPatch(order, 'b1', [{ ...makeBlock('p', { text: 'Alex wrote this' }), at: 10 }]).patch);
+    edit(a, insertBlocksPatch(order, 'b1', [{ ...makeBlock('p', { text: 'Alma wrote this' }), at: 10 }]).patch);
     edit(b, insertBlocksPatch(order, 'b1', [{ ...makeBlock('h2', { text: 'Sam wrote this' }), at: 20 }]).patch);
     sync();
     const texts = (doc) => { const d = readDoc(read(doc)); return d.order.map((id) => d.blocks[id].text); };
     expect(texts(a)).toEqual(texts(b));
-    expect(texts(a)).toEqual(expect.arrayContaining(['', 'Alex wrote this', 'Sam wrote this']));
+    expect(texts(a)).toEqual(expect.arrayContaining(['', 'Alma wrote this', 'Sam wrote this']));
   });
 
   test('two people adding slides at once keep both', () => {
     const start = { kind: 'officeSlides', ...OFFICE_STARTERS.officeSlides };
     const { a, b, sync, edit, read } = pair(start);
     const deck = readDeck(start);
-    edit(a, insertSlidePatch(deck, 'sl1', makeSlide('section', { title: 'From Alex' })).patch);
+    edit(a, insertSlidePatch(deck, 'sl1', makeSlide('section', { title: 'From Alma' })).patch);
     edit(b, insertSlidePatch(deck, 'sl1', makeSlide('section', { title: 'From Sam' })).patch);
     sync();
     expect(readDeck(read(a)).order).toHaveLength(3);

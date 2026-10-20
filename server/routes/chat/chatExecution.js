@@ -79,7 +79,7 @@ export async function runChatLoop({
       reqProvider,
       round,
       userId,
-      workspaceId,
+      workspaceId, agentId, windowId,
       onDelta: forwardDeltas(round, sendEvent, acceptModel),
     });
     acceptModel();

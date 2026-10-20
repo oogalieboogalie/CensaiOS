@@ -6,8 +6,8 @@
 --
 --    agent_entities    the people, companies, places and things an agent
 --                      knows about (one row per name, per person, per agent)
---    agent_relations   a connection between two of them ("Alex works at
---                      Iowa AI LLC"), with the same two clocks as facts:
+--    agent_relations   a connection between two of them ("Alma works at
+--                      Indigo Labs LLC"), with the same two clocks as facts:
 --                        valid_from / valid_to       when it was true
 --                        recorded_at / superseded_at when the agent believed it
 --                      Ending or replacing a connection never deletes the

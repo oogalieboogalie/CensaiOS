@@ -1,4 +1,4 @@
-// Ported from Open Books (MIT, Alex's bookkeeping tool) into YorWare Books.
+// Ported from Open Books (MIT, an open-source bookkeeping tool) into YorWare Books.
 /**
  * Import bank and credit card CSV exports. Column layouts differ by bank, so
  * the importer looks at the header row and works out which columns hold the

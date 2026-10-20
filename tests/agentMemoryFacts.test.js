@@ -13,10 +13,10 @@ const current = {
 
 describe('normalizeFactInput', () => {
   test('cleans the words and keys facts without case', () => {
-    const input = normalizeFactInput({ subject: ' Alex ', attribute: 'Favorite\nColor', value: ' green ' }, NOW);
-    expect(input).toMatchObject({ subject: 'Alex', attribute: 'Favorite Color', value: 'green', key: 'alex|favorite color', kind: 'change' });
+    const input = normalizeFactInput({ subject: ' Alma ', attribute: 'Favorite\nColor', value: ' green ' }, NOW);
+    expect(input).toMatchObject({ subject: 'Alma', attribute: 'Favorite Color', value: 'green', key: 'alma|favorite color', kind: 'change' });
     expect(input.validFrom).toEqual(NOW);
-    expect(factKey('ALEX', 'favorite color')).toBe(input.key);
+    expect(factKey('ALMA', 'favorite color')).toBe(input.key);
   });
 
   test('needs what the fact is about and the fact itself, and a readable date', () => {

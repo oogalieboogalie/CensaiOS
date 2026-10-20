@@ -83,22 +83,22 @@ maybe('two server processes, one board', () => {
     const db = yjsMemoryDb();
     const a = await startServer(db, 'process-a');
     const b = await startServer(db, 'process-b');
-    const alex = join(a, 'alex');
+    const alma = join(a, 'alma');
     const sam = join(b, 'sam');
-    await Promise.all([alex.synced, sam.synced]);
+    await Promise.all([alma.synced, sam.synced]);
 
-    const prev = readDocState(alex.doc);
-    writeStateToDoc(alex.doc, prev, { ...prev, wins: [{ id: 'w1', kind: 'note', x: 1, y: 2, w: 300, h: 200 }] });
+    const prev = readDocState(alma.doc);
+    writeStateToDoc(alma.doc, prev, { ...prev, wins: [{ id: 'w1', kind: 'note', x: 1, y: 2, w: 300, h: 200 }] });
     await until(() => readDocState(sam.doc).wins.length === 1);
 
-    alex.provider.awareness.setLocalStateField('user', { id: 'alex', name: 'Alex', color: 'red' });
-    alex.provider.awareness.setLocalStateField('cursor', { x: 3, y: 4 });
+    alma.provider.awareness.setLocalStateField('user', { id: 'alma', name: 'Alma', color: 'red' });
+    alma.provider.awareness.setLocalStateField('cursor', { x: 3, y: 4 });
     const seen = () => readAwarenessPresence(sam.provider.awareness.getStates(), sam.provider.awareness.clientID);
-    await until(() => Object.values(seen().cursors).some((c) => c.actor.label === 'Alex'));
+    await until(() => Object.values(seen().cursors).some((c) => c.actor.label === 'Alma'));
 
     await new Promise((resolve) => setTimeout(resolve, 150));
     await Promise.all(servers.map(({ log }) => log.flush()));
     // Logged once, by the process that received it, not again by the relay.
-    expect(db.rows().map((row) => row.actor)).toEqual(['user:alex']);
+    expect(db.rows().map((row) => row.actor)).toEqual(['user:alma']);
   });
 });

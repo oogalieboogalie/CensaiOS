@@ -23,7 +23,7 @@ const { buildReceiptBody, signReceipt, verifyReceipt } = await import('../server
 const { verifyAskRequest } = await import('../server/agentNetwork/askRequest.js');
 const { encryptKey } = await import('../server/security/vault.js');
 
-const alex = identitySigner(generateIdentity());
+const alma = identitySigner(generateIdentity());
 const sam = identitySigner(generateIdentity());
 const KEY = 'cak_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const ENDPOINT = '598a4fb7-a3b1-4f0d-b304-042cf9fdd695';
@@ -49,7 +49,7 @@ const run = (metadata = {}) => ({
 function helperReceipt(answer, signer = sam, question = prompt) {
   return signReceipt(buildReceiptBody({
     role: 'helper', channel: 'relay', requestRef: 'x', signer, helper: { card: 'agent:atlas', label: 'Atlas' },
-    asker: { install: alex.installId, agent: 'nexus', label: 'Nexus', verified: true },
+    asker: { install: alma.installId, agent: 'nexus', label: 'Nexus', verified: true },
     outcome: 'completed', startedAt: new Date(), finishedAt: new Date(), tokensIn: 1700, tokensOut: 46, prompt: question, answer,
   }, signer), signer);
 }
@@ -58,7 +58,7 @@ function json(status, body) {
   return { status, ok: status < 300, json: async () => body };
 }
 
-const options = (fetchImpl) => ({ card, db, fetchImpl, getSigner: async () => alex, recheckMs: 2000 });
+const options = (fetchImpl) => ({ card, db, fetchImpl, getSigner: async () => alma, recheckMs: 2000 });
 
 beforeEach(() => { jest.clearAllMocks(); });
 
@@ -75,7 +75,7 @@ test('a direct answer completes the run and keeps both signed receipts', async (
     expect(url.toString()).toBe(`${address}/ask`);
     expect(init.headers.Authorization).toBe(`Bearer ${KEY}`);
     const body = JSON.parse(init.body);
-    expect(verifyAskRequest(body.request, { prompt: body.message })).toMatchObject({ ok: true, install: alex.installId, agent: 'nexus' });
+    expect(verifyAskRequest(body.request, { prompt: body.message })).toMatchObject({ ok: true, install: alma.installId, agent: 'nexus' });
     return json(200, { agent: 'Atlas', answer, receipt: helperReceipt(answer) });
   });
   const outcome = await executeCensaiAgentCardRun(run(), card.metadata.executor && resolveAgentCardExecutor(card), options(fetchImpl));
@@ -86,7 +86,7 @@ test('a direct answer completes the run and keeps both signed receipts', async (
   expect(verifyReceipt(saved.receipt).ok).toBe(true);
   expect(saved.receipt.body).toMatchObject({
     role: 'asker', channel: 'relay', request: 'help-1', outcome: 'completed',
-    asker: { install: alex.installId, agent: 'nexus' }, helper: { install: sam.installId, card: card.id, label: "Sam's Atlas" },
+    asker: { install: alma.installId, agent: 'nexus' }, helper: { install: sam.installId, card: card.id, label: "Sam's Atlas" },
     cost: { tokensIn: 1700, tokensOut: 46 },
   });
   expect(saved.counterReceipt.body.signer.install).toBe(sam.installId);

@@ -12,9 +12,9 @@ describe('where a terminal shell starts', () => {
 
   test('a Windows folder the container cannot reach falls back instead of killing the shell', () => {
     if (process.platform === 'win32') return;
-    // Alex's PC: the terminal was mounted to D:\Homebase, but only
-    // D:\Homebase\CensaiHub is shared with the app's container.
-    expect(resolveTerminalCwd('D:\\Homebase')).toEqual({ cwd: process.cwd(), unreachable: 'D:\\Homebase' });
+    // The owner's PC: the terminal was mounted to D:\Repos, but only
+    // D:\Repos\CensaiHub is shared with the app's container.
+    expect(resolveTerminalCwd('D:\\Repos')).toEqual({ cwd: process.cwd(), unreachable: 'D:\\Repos' });
   });
 
   test('a folder that does not exist falls back too', () => {

@@ -90,19 +90,19 @@ describe('one-click sign-in on this computer', () => {
       .mockResolvedValueOnce({ rows: [] }) // no admin yet
       .mockResolvedValueOnce({ rows: [] }) // SELECT by email
       .mockResolvedValueOnce({ rows: [{ count: 0 }] }) // COUNT users
-      .mockResolvedValueOnce({ rows: [{ id: 1, email: LOCAL_OWNER_EMAIL, name: 'Alex', role: 'admin' }] });
+      .mockResolvedValueOnce({ rows: [{ id: 1, email: LOCAL_OWNER_EMAIL, name: 'Alma', role: 'admin' }] });
 
-    const res = await request(buildApp()).post('/api/auth/local').send({ name: 'Alex' });
+    const res = await request(buildApp()).post('/api/auth/local').send({ name: 'Alma' });
 
     expect(res.status).toBe(200);
     expect(res.body.user).toMatchObject({ id: 1, role: 'admin' });
     const insert = query.mock.calls.find(([sql]) => sql.startsWith('INSERT INTO users'));
-    expect(insert[1]).toEqual([LOCAL_OWNER_EMAIL, 'Alex', 'admin']);
+    expect(insert[1]).toEqual([LOCAL_OWNER_EMAIL, 'Alma', 'admin']);
     expect(lastSession.userId).toBe(1);
   });
 
   test('later uses sign back in to the existing owner without making a new account', async () => {
-    query.mockResolvedValueOnce({ rows: [{ id: 7, email: 'alex@example.com', name: 'Alex', role: 'admin' }] });
+    query.mockResolvedValueOnce({ rows: [{ id: 7, email: 'alma@example.com', name: 'Alma', role: 'admin' }] });
 
     const res = await request(buildApp()).post('/api/auth/local').send({});
 

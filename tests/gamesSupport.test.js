@@ -54,11 +54,11 @@ describe('keyboard claim', () => {
 describe('game relay on the collaboration socket', () => {
   const errors = [];
   const sendJson = (_ws, payload) => errors.push(payload);
-  const context = { ws: {}, workspaceId: 'ws1', clientId: 'host', actor: { label: 'Alex' }, spectator: false };
+  const context = { ws: {}, workspaceId: 'ws1', clientId: 'host', actor: { label: 'Alma' }, spectator: false };
   beforeEach(() => { published.length = 0; errors.length = 0; __resetGameRelayForTests(); });
 
   test('frames go to everyone else, including guests who can see that window', () => {
-    const frame = { type: 'game.frame', windowId: 'w1', ...encodeFrame(createGame({ seed: 1, players: [{ id: 'host', name: 'Alex' }] })) };
+    const frame = { type: 'game.frame', windowId: 'w1', ...encodeFrame(createGame({ seed: 1, players: [{ id: 'host', name: 'Alma' }] })) };
     expect(handleGameMessage(frame, context, sendJson, 1000)).toBe(true);
     expect(published).toHaveLength(1);
     const { event, options } = published[0];

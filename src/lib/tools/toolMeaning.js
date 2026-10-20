@@ -1,7 +1,7 @@
 /**
  * src/lib/tools/toolMeaning.js
  *
- * Search by meaning (Alex's diagram 10): words that mean the same job, so
+ * Search by meaning (diagram 10): words that mean the same job, so
  * "send a message" also finds mail, Slack and agent messages, and "reboot"
  * finds restart. Offline and keyless on purpose (BYOK): a word list, not a
  * model. Add a word to the group it belongs to; a word may sit in several.

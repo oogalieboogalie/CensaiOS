@@ -1,4 +1,4 @@
-// Legion: the YAML spec, from Alex's Orchestrator Engine diagram. The spec
+// Legion: the YAML spec, from the Orchestrator Engine diagram. The spec
 // is the contract: the jobs the Work Queue hands out (each with its own
 // UID) and the checks the Validation Engine runs against the result.
 //

@@ -44,7 +44,7 @@ describe('project context clipping', () => {
 describe('earlier chats in the system prompt', () => {
   const convos = [
     { role: 'user', content: 'what is my name?' },
-    { role: 'assistant', content: 'You are Alex.' },
+    { role: 'assistant', content: 'You are Alma.' },
   ];
 
   test('left out when the chat window already sends its own history', () => {
@@ -56,7 +56,7 @@ describe('earlier chats in the system prompt', () => {
     expect(block).toContain('## Earlier chats (background only)');
     expect(block).toContain('do not recap');
     expect(block).toContain('Human: what is my name?');
-    expect(block).toContain('Atlas: You are Alex.');
+    expect(block).toContain('Atlas: You are Alma.');
     expect(block).not.toContain('## Recent conversation');
   });
 

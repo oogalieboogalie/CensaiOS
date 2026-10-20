@@ -5,7 +5,7 @@
 // owner or admin turns it on, and capped per day.
 import { FAMILY_AGENT_BY_ID } from '../../src/data/family-agents.js';
 
-// Only the main agent schedules (Alex 2026-10-17: "just the main one").
+// Only the main agent schedules (decided 2026-10-17: "just the main one").
 export const WAKE_UP_AGENTS = Object.freeze(['censai']);
 export const RUNS_PER_DAY = 6;
 export const WAITING_MAX = 8;

@@ -1,4 +1,4 @@
-// Pure: Alex's "dynamic rag phrases" from diagram 08. When someone asks
+// Pure: the "dynamic rag phrases" from diagram 08. When someone asks
 // "Do we have any budget blueprints?", the phrase is caught, the rest
 // ("budget") becomes the search, and the matching blueprints are handed to
 // the agent before it answers. A board can add its own phrases.
@@ -36,7 +36,7 @@ const FILLER = new Set([
 const clean = (text) => String(text || '').toLowerCase().replace(/[‘’]/g, "'").replace(/\s+/g, ' ').trim();
 const bare = (phrase) => clean(phrase).replace(/\*+$/, '').trim();
 
-/** One phrase per line, no duplicates, the * kept as Alex wrote it. */
+/** One phrase per line, no duplicates, the * kept as written. */
 export function normalizePhrases(list) {
   const seen = new Set();
   const out = [];

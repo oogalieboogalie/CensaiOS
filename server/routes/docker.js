@@ -45,6 +45,7 @@ dockerRouter.get('/images', handle(async () => ({ images: await listImages() }))
 dockerRouter.post('/images/pull', handle((req) => pullImage(req.body?.ref)));
 dockerRouter.post('/images/run', handle((req) => runContainer({
   image: req.body?.image, name: req.body?.name, ports: req.body?.ports,
+  env: req.body?.env, share: req.body?.share, restart: req.body?.restart,
 })));
 // Image refs carry slashes (ghcr.io/org/app:tag), so the ref rides the query.
 dockerRouter.delete('/images', handle((req) => removeImage(req.query.ref, { force: truthy(req.query.force) })));

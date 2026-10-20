@@ -1,4 +1,4 @@
-// Rows for the side-by-side Git Diff Viewer (Alex's diagram 16): the left
+// Rows for the side-by-side Git Diff Viewer (diagram 16): the left
 // column is the file before, the right column is the file after. Removed
 // lines stay in place on the right in red so the right reads top to bottom
 // as "what changed"; added lines are green there and blank on the left.

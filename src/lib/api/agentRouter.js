@@ -1,4 +1,4 @@
-// Message router (server/routes/agents/agentRouter.js, Alex's diagram 03):
+// Message router (server/routes/agents/agentRouter.js, diagram 03):
 // read a request, cut it into parts and pick an agent, memory and template for each.
 import { readConfigurationResponse } from './agentConfiguration.js';
 

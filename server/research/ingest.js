@@ -1,4 +1,4 @@
-// CHUNK AND TAG (Alex's diagram 13): anything fed into the board's knowledge
+// CHUNK AND TAG (diagram 13): anything fed into the board's knowledge
 // base is cut into pieces and every piece gets tags, so an agent can find the
 // right piece later. "5 steps to cleaning dogs" becomes five step chunks, all
 // tagged dog, washing, cleaning, how-to. Pure functions, no key needed.

@@ -32,7 +32,7 @@ export const MEMORY_TOOL_DEFINITIONS = Object.freeze([
       parameters: {
         type: 'object',
         properties: {
-          subject: { type: 'string', description: 'Who or what the fact is about, e.g. "Alex" or "the project". Default: the user.' },
+          subject: { type: 'string', description: 'Who or what the fact is about, e.g. "Alma" or "the project". Default: the user.' },
           attribute: { type: 'string', description: 'What about them, e.g. "favorite color".' },
           value: { type: 'string', description: 'The fact itself, e.g. "green".' },
           valid_from: { type: 'string', description: 'When it became true (a date like 2026-10-12). Default: now.' },
@@ -94,7 +94,7 @@ export function createMemoryTools({ db, userId, agentId, timeZone }) {
       const [facts, episodes, links] = await Promise.all([
         store.currentFacts(db, { userId, agentId, limit: 200 }),
         store.searchEpisodes(db, { userId, agentId, query, limit: 5 }),
-        // Current and past connections (an ended one still answers "who was Alex's employer").
+        // Current and past connections (an ended one still answers "who was Alma's employer").
         graphStore.relationHistory(db, { userId, agentId }).then((rows) => rows.filter((r) => !r.superseded_at)).catch(() => []),
       ]);
       const found = matchFacts(facts, query).slice(0, 10);

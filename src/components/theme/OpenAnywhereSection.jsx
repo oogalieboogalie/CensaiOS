@@ -84,7 +84,7 @@ function AddressList({ addresses, status, onSaveName }) {
       ))}
       {status.canManage && (
         <form style={row} onSubmit={(e) => { e.preventDefault(); onSaveName(name); }}>
-          <input aria-label="This computer's name" style={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="This computer's name, like r2d2" />
+          <input aria-label="This computer's name" style={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="This computer's name, like officepc" />
           <button type="submit" style={button}>Save name</button>
         </form>
       )}

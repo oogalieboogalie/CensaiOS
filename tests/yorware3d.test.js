@@ -64,12 +64,12 @@ describe('YorWare 3D Viewer board model', () => {
   test('notes pin to a model, can be edited, and go when the model goes', () => {
     let win = sceneWith(item('a'), item('b'));
     const [a, b] = readScene(win).order;
-    const n1 = addNotePatch({ model: a, p: [1, 2, 3], text: 'Too thin here', by: 'Alex' }, 10);
+    const n1 = addNotePatch({ model: a, p: [1, 2, 3], text: 'Too thin here', by: 'Alma' }, 10);
     const n2 = addNotePatch({ model: b, p: [0, 0, 0], text: '' }, 20);
     win = apply(apply(win, n1.patch), n2.patch);
     let scene = readScene(win);
     expect(scene.noteOrder).toEqual([n1.id, n2.id]);
-    expect(scene.notes[n1.id]).toMatchObject({ model: a, p: [1, 2, 3], text: 'Too thin here', by: 'Alex' });
+    expect(scene.notes[n1.id]).toMatchObject({ model: a, p: [1, 2, 3], text: 'Too thin here', by: 'Alma' });
     win = apply(win, editNotePatch(scene, n2.id, 'x'.repeat(400)));
     expect(readScene(win).notes[n2.id].text).toHaveLength(280);
     scene = readScene(win);

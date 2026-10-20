@@ -1,4 +1,4 @@
-// Wave-by-wave Jules runs (Alex's diagram 01). Tasks are grouped into waves
+// Wave-by-wave Jules runs (diagram 01). Tasks are grouped into waves
 // (W1-T1 ... W1-T4, then wave 2). Every task in a wave goes to Jules, opens a
 // PR and goes through review; a PR the review turns down gets a fix first.
 // Wave 2 starts only when every PR in wave 1 is merged.

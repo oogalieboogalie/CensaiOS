@@ -23,6 +23,10 @@ export const TODO_IMPLEMENTATION_FIELDS = [
   'mergedAt',
   'pullRequired',
   'pulledAt',
+  // Imported from a .todo file (src/components/todos/todoImport.js): the card's steps and who it is for.
+  'card',
+  'assigneeName',
+  'stepsWindowId',
 ];
 
 export function itemData(item = {}) {

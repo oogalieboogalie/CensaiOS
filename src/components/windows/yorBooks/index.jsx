@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
-// YorWare Books: Open Books, Alex's open-source bookkeeping app, as a window
+// YorWare Books: Open Books, an open-source bookkeeping app, as a window
 // of the YorWare Suite (docs/specs/13-yorware-suite.md). Income and expenses
 // sorted into IRS Schedule C categories, a timeline with events and tracked
 // numbers, receipts, rules that learn, and an AI assistant through your own

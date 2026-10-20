@@ -1,4 +1,4 @@
-// Ported from Open Books (MIT, Alex's bookkeeping tool) into YorWare Books.
+// Ported from Open Books (MIT, an open-source bookkeeping tool) into YorWare Books.
 // The categorization chain: your rules, then built-in merchant knowledge,
 // then a fallback. Amounts are integer cents, positive is money in.
 import { getCategory } from './categories.js';

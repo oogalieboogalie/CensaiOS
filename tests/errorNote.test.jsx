@@ -35,13 +35,13 @@ describe('errorReport', () => {
       where: 'To-do List window',
       actions: [
         { at: Date.UTC(2026, 9, 17, 16, 47, 20), type: 'click', label: 'Hand off', windowKind: 'todos' },
-        { at: Date.UTC(2026, 9, 17, 16, 47, 27), type: 'request', label: 'POST /api/project-handoffs 403 sk-ant-abcdefghijklmnop alex@example.com' },
+        { at: Date.UTC(2026, 9, 17, 16, 47, 27), type: 'request', label: 'POST /api/project-handoffs 403 sk-ant-abcdefghijklmnop alma@example.com' },
       ],
     });
     expect(snippet).toContain('Request: POST /api/project-handoffs -> 403 (owner-only)');
     expect(snippet).toContain('Where: To-do List window');
     expect(snippet).toContain('16:47:20 click Hand off [todos]');
-    expect(snippet).not.toMatch(/sk-ant-|alex@example\.com/);
+    expect(snippet).not.toMatch(/sk-ant-|alma@example\.com/);
     expect(snippet).toContain('[key]');
     expect(snippet).toContain('[email]');
   });
@@ -104,7 +104,7 @@ describe('TodosWindow hand-off refused for a non-owner account', () => {
 
 describe('the app log in the snippet', () => {
   test('recent warnings and errors from the log go under the error', () => {
-    const snippet = buildErrorSnippet('Save failed', { actions: [], logLines: ['2026-10-17 22:59:01 ERROR [todos] insert failed for alex@example.com'] });
+    const snippet = buildErrorSnippet('Save failed', { actions: [], logLines: ['2026-10-17 22:59:01 ERROR [todos] insert failed for alma@example.com'] });
     expect(snippet).toContain('censaiOS log (warnings and errors, last 10 minutes):');
     expect(snippet).toContain('ERROR [todos] insert failed for [email]');
   });

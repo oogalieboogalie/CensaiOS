@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 
-// Sub-agent data boxes (Alex's diagram 15): each sub-agent has its own
+// Sub-agent data boxes (diagram 15): each sub-agent has its own
 // numbered box (001, 002...) that it and its main agent can read and write;
 // a sub-agent can never reach a sibling's box.
 

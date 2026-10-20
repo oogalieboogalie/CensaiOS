@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-// Legion slice three, from Alex's self-educate diagram (var = 'self_educate'):
+// Legion slice three, from the self-educate diagram (var = 'self_educate'):
 // is what I know enough? NO -> long-term memory + Research; YES but "if I
 // knew more" -> Research -> a better solution; then store what matters.
 

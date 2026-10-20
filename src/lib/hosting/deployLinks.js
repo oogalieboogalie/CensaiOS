@@ -1,4 +1,4 @@
-// Deploy buttons for the Places to Host window (Alex's diagram 18, "hosting
+// Deploy buttons for the Places to Host window (diagram 18, "hosting
 // files go live"). Pure: the window and tests read it. Every link only opens
 // that service's own page in the browser. Nothing deploys from censaiOS and
 // no key is stored here; you sign in on their page and press their button.

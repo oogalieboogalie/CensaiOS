@@ -87,6 +87,8 @@ leadHoundRouter.post('/leadhound/save', requireDb, async (req, res) => {
       icp_score: (Number(lead.fitScore) || 0) / 100,
       source_url: lead.url,
       notes: [lead.why_fit, lead.angle && `Angle: ${lead.angle}`, 'Found by LeadHound'].filter(Boolean).join('\n'),
+      outreach_sequence: lead.sequence,
+      ice_breaker: lead.iceBreaker,
     }, scope);
     res.json({ ok: true, ...saved });
   } catch (err) {

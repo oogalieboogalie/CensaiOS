@@ -84,7 +84,7 @@ describe('YorWare Diagrams board model', () => {
     writeStateToDoc(a, null, base, 'local');
     sync();
     const edit = (d, patch) => writeStateToDoc(d, base, { wins: [{ ...base.wins[0], ...patch }] }, 'local');
-    // Alex moves the box and draws an arrow; Sam writes a label at the same moment.
+    // Alma moves the box and draws an arrow; Sam writes a label at the same moment.
     edit(a, elementsPatch([shape('box', { x: 200, version: 2, versionNonce: 1 }), shape('arrow', { type: 'arrow' })], new Map()).patch);
     edit(b, elementsPatch([shape('label', { type: 'text', text: 'Launch' })], new Map()).patch);
     sync();

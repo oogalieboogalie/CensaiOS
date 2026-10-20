@@ -19,7 +19,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 describe('manifest v3', () => {
   test('a v3 manifest keeps exactly what it declares', () => {
     const m = normalizeManifest({
-      manifest: 3, id: 'Weather Board', name: 'Weather', version: '2.1', author: 'Alex', icon: 'Activity',
+      manifest: 3, id: 'Weather Board', name: 'Weather', version: '2.1', author: 'Alma', icon: 'Activity',
       size: { w: 500, h: 400 }, permissions: ['network', 'agent', 'files'], network: ['https://api.open-meteo.com/v1/forecast', 'bad host'],
       tools: [
         { name: 'Show City', description: 'Show the weather for a city.', input: { city: 'string', days: { type: 'integer' } } },
@@ -28,7 +28,7 @@ describe('manifest v3', () => {
       state: { city: 'the city shown' },
     });
     expect(m).toMatchObject({
-      manifest: 3, id: 'weather-board', name: 'Weather', version: '2.1.0', author: 'Alex', runs: 'sealed',
+      manifest: 3, id: 'weather-board', name: 'Weather', version: '2.1.0', author: 'Alma', runs: 'sealed',
       permissions: ['agent', 'network'], network: ['api.open-meteo.com'], window: { size: { w: 500, h: 400 } }, state: { city: 'the city shown' },
     });
     expect(m.tools).toEqual([{ name: 'show_city', description: 'Show the weather for a city.', input: { type: 'object', properties: { city: { type: 'string' }, days: { type: 'integer' } } } }]);

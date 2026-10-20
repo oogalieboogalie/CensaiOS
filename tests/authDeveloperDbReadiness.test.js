@@ -73,7 +73,7 @@ describe('/api/auth/developer dbReady guard', () => {
     isReady = false;
     const res = await request(buildApp())
       .post('/api/auth/developer')
-      .send({ email: 'alex@example.com' });
+      .send({ email: 'alma@example.com' });
     expect(res.status).toBe(503);
     expect(res.headers['retry-after']).toBe('2');
     expect(res.body).toEqual({ error: expect.stringMatching(/database initializing/i) });
@@ -88,11 +88,11 @@ describe('/api/auth/developer dbReady guard', () => {
     query
       .mockResolvedValueOnce({ rows: [] }) // SELECT user
       .mockResolvedValueOnce({ rows: [{ count: 0 }] }) // COUNT users
-      .mockResolvedValueOnce({ rows: [{ id: 1, email: 'alex@example.com', name: 'alex', role: 'admin' }] }); // INSERT user
+      .mockResolvedValueOnce({ rows: [{ id: 1, email: 'alma@example.com', name: 'alma', role: 'admin' }] }); // INSERT user
 
     const res = await request(buildApp())
       .post('/api/auth/developer')
-      .send({ email: 'alex@example.com', name: 'Alex' });
+      .send({ email: 'alma@example.com', name: 'Alma' });
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(query).toHaveBeenCalled();
@@ -104,7 +104,7 @@ describe('/api/auth/developer dbReady guard', () => {
 
     const res = await request(buildApp())
       .post('/api/auth/developer')
-      .send({ email: 'alex@example.com' });
+      .send({ email: 'alma@example.com' });
 
     expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/disabled/i);

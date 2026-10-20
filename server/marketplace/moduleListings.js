@@ -1,8 +1,8 @@
 // Spec 5b listings of kind "Copy to your board", for spec 6 modules. A
 // seller publishes a module they built; it is checked, fingerprinted and
 // signed before it is listed, and buyers copy it onto their own board.
-// Phase 0: only the platform owner (an admin of this censaiOS install, which
-// is Alex) may sell. Paid listings wait for Stripe, so every listing is free.
+// Phase 0: only the platform owner (an admin of this censaiOS install) may
+// sell. Paid listings wait for Stripe, so every listing is free.
 // Tables are created on first use, like My modules.
 
 import { MAX_MODULE_SOURCE_BYTES, normalizeManifest, sourceBytes } from '../../src/lib/modules/moduleFormat.js';
@@ -70,7 +70,7 @@ async function sellerFor(db, userId) {
   const { rows: acct } = await db.query('SELECT tier, status, note FROM seller_accounts WHERE user_id=$1', [userId]);
   if (acct[0]) return { ...acct[0], canSell: acct[0].status === 'active' };
   if (!owner) return null;
-  // Phase 0: the owner of this install is the one seller, picked by Alex.
+  // Phase 0: the owner of this install is the one seller.
   const { rows: created } = await db.query(
     `INSERT INTO seller_accounts (user_id, tier, status, note) VALUES ($1, 'trusted', 'active', 'Platform owner (phase 0)')
      ON CONFLICT (user_id) DO UPDATE SET user_id=EXCLUDED.user_id RETURNING tier, status, note`,

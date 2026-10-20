@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 
-// Alex (user 7) owns board-a. Sam (user 8) owns board-b. Vic (user 9) is view-only on board-a.
+// Alma (user 7) owns board-a. Sam (user 8) owns board-b. Vic (user 9) is view-only on board-a.
 // The agent "atlas" has work on both boards.
 const MEMBERS = { 7: { 'board-a': 'owner' }, 8: { 'board-b': 'owner' }, 9: { 'board-a': 'viewer' } };
 const HOME = { 7: 'board-a', 8: 'board-b', 9: 'board-a' };
@@ -71,10 +71,10 @@ describe('Agent wakeups stay on their own board', () => {
   });
 
   test('each member sees only their own board\'s agent activity', async () => {
-    const alex = await request(app(7)).get('/api/agent-wakeups/atlas?workspaceId=board-a');
-    expect(alex.status).toBe(200);
-    expect(alex.body.wakeups.map(w => w.id)).toEqual([10]);
-    expect(alex.body.unread).toBe(1);
+    const alma = await request(app(7)).get('/api/agent-wakeups/atlas?workspaceId=board-a');
+    expect(alma.status).toBe(200);
+    expect(alma.body.wakeups.map(w => w.id)).toEqual([10]);
+    expect(alma.body.unread).toBe(1);
 
     const sam = await request(app(8)).get('/api/agent-wakeups/atlas?workspaceId=board-b');
     expect(sam.status).toBe(200);

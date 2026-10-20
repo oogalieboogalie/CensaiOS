@@ -6,8 +6,8 @@ const prompt = FAMILY_AGENT_SYSTEMS.censai;
 const sqlLiteral = `E'${prompt.replace(/'/g, "''").replace(/\n/g, '\\n')}'`;
 
 describe("Censai's persona", () => {
-  test('is Alex\'s partner, not a newsletter writer', () => {
-    expect(prompt).toMatch(/Alex's first AI partner/);
+  test('is the first AI partner, not a newsletter writer', () => {
+    expect(prompt).toMatch(/^You are Censai, .*first AI partner/);
     expect(prompt).not.toMatch(/newsletter/i);
     expect(FAMILY_AGENT_BY_ID.censai.role).toBe('Partner · mentor');
     expect(agentPersona({ id: 'censai', name: 'Censai' }).starters.join(' ')).not.toMatch(/newsletter/i);

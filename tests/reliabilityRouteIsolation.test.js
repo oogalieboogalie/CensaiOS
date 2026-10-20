@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 
-// Two boards, each with one member. Alex (user 7) owns board-a, Sam (user 8) owns board-b.
+// Two boards, each with one member. Alma (user 7) owns board-a, Sam (user 8) owns board-b.
 const MEMBERS = { 7: 'board-a', 8: 'board-b' };
 let scans;
 let feedback;

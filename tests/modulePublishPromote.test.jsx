@@ -40,7 +40,7 @@ const listing = {
   id: 'list-1', name: 'Tip calculator', summary: 'Split a bill and tip across a crew.', request: 'a tip calculator for my crew',
   manifest: win.manifest, priceModel: 'free', priceCents: 0, status: 'listed', fingerprint: 'ab'.repeat(32),
   checks: { score: 9, total: 9, ranAt: '2026-10-08T06:00:00Z', suite: 'module-basics', passed: true },
-  seller: { id: 1, name: 'Alex', tier: 'trusted' }, installs: 0, verified: true, changed: false,
+  seller: { id: 1, name: 'Alma', tier: 'trusted' }, installs: 0, verified: true, changed: false,
 };
 
 function respond(body, status = 200) {

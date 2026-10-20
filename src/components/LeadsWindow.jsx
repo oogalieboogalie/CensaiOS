@@ -4,6 +4,7 @@ import { WindowTitle } from './Windows.jsx';
 import { useWorkspaceStore } from '../lib/store.js';
 import { useVisibilityAwareInterval } from '../lib/usePolling.js';
 import { ScoutPanel } from './leads/ScoutPanel.jsx';
+import { SavedOutreach } from './leads/SavedOutreach.jsx';
 
 const STATUS_DOT = { new: 'var(--ps-green)', contacted: 'var(--accent)', qualified: 'var(--ps-teal)', dead: 'var(--ink-faint)' };
 
@@ -213,6 +214,7 @@ export function LeadsWindow({ win = {}, onUpdate }) {
                   {drafts[lead.id]?.loading ? '✎…' : drafts[lead.id]?.body ? '↻ Redraft' : '✎ Draft'}
                 </button>
               </div>
+              <SavedOutreach lead={lead} />
               {drafts[lead.id]?.error && (
                 <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ps-red)', marginTop: 6 }}>{drafts[lead.id].error}</div>
               )}

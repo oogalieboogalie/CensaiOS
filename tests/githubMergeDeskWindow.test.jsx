@@ -8,7 +8,7 @@ import { GithubConsoleWindow } from '../src/components/GithubConsoleWindow.jsx';
 import { rowAction } from '../src/components/github/PrRow.jsx';
 
 const pr = (n, over = {}) => ({
-  number: n, title: `PR ${n}`, url: `https://github.com/o/r/pull/${n}`, author: 'alex', draft: false,
+  number: n, title: `PR ${n}`, url: `https://github.com/o/r/pull/${n}`, author: 'alma', draft: false,
   summary: `Summary ${n}`, checks: { state: 'passed', text: 'Checks passed', failing: [] },
   conflicts: false, mergeKnown: true, green: true, ...over,
 });
@@ -18,14 +18,14 @@ function mockFetch({ connected = true, prs, mergeFails = false } = {}) {
   global.fetch = jest.fn(async (url, opts = {}) => {
     calls.push({ url, body: opts.body ? JSON.parse(opts.body) : null });
     const ok = (data) => ({ ok: true, status: 200, json: async () => data });
-    if (url === '/api/github/desk/status') return ok({ connected, source: connected ? 'byok' : null, me: 'Alex' });
+    if (url === '/api/github/desk/status') return ok({ connected, source: connected ? 'byok' : null, me: 'Alma' });
     if (url.startsWith('/api/github/desk?')) return ok({ repo: 'o/r', prs, recent: [], fetchedAt: new Date().toISOString() });
     if (url === '/api/github/desk/merge') {
       return mergeFails
         ? { ok: false, status: 409, json: async () => ({ error: 'This PR has conflicts. Tap Fix conflicts first.' }) }
-        : ok({ merged: true, sha: 's', by: 'Alex', mergedAt: new Date().toISOString() });
+        : ok({ merged: true, sha: 's', by: 'Alma', mergedAt: new Date().toISOString() });
     }
-    if (url === '/api/github/desk/fix') return ok({ job: { id: 'j1', status: 'agent', text: 'An agent is merging master in.', by: 'Alex' } });
+    if (url === '/api/github/desk/fix') return ok({ job: { id: 'j1', status: 'agent', text: 'An agent is merging master in.', by: 'Alma' } });
     if (url === '/api/keys') return ok({ ok: true });
     if (url === '/api/projects' || url.startsWith('/api/projects')) return ok([]);
     return ok({});
