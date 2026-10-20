@@ -38,10 +38,10 @@ export function parsePullState(value, fallback = 'open') {
   return state;
 }
 
-export function getGitHubClient() {
-  const token = getSecret('GITHUB_TOKEN');
+/** The GitHub window passes the request's token; app updates use the server's own. */
+export function getGitHubClient(token = getSecret('GITHUB_TOKEN')) {
   if (!token) {
-    const err = new Error('GITHUB_TOKEN not found in .env');
+    const err = new Error('Connect GitHub first: paste a token in the GitHub window.');
     err.status = 401;
     throw err;
   }

@@ -17,6 +17,13 @@ tags.
 
 ### New
 
+- GitHub window, HTTP Test and Pull merged changes are owner-only where they use the PC or the owner's GitHub key (Oct 20)
+- Docker: a container's Open link goes to the computer the board is on (Oct 20)
+- Music Player: swirl light show that pulses with the music (Oct 20)
+- Music Player: pick the skin yourself, plus a Desktop 2001 skin (Oct 20)
+- Calendar: each person keeps their own view on a shared board (Oct 20)
+- Mailcow lists and changes are owner only (Oct 20)
+- Terminal: the refusal's app log line carries no account names (Oct 20)
 - Keep the PC's .env provider keys away from teammates' CLI agents (Oct 20)
 - Sheet cells merge one at a time on a shared board (Oct 20)
 - "Only the owner" messages name the owner account and yours (Oct 20)

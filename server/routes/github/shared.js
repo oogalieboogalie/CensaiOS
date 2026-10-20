@@ -1,13 +1,10 @@
-import { getSecret } from '../../secrets.js';
-
 export const githubBranchCache = new Map();
 export const githubFileCache = new Map();
 export const GITHUB_FILE_CACHE_TTL = 60_000;
 
-export async function fetchGithub(endpoint, res) {
-  const token = getSecret('GITHUB_TOKEN');
+export async function fetchGithub(endpoint, res, token) {
   if (!token) {
-    res.status(401).json({ error: 'GITHUB_TOKEN not found in .env' });
+    res.status(401).json({ error: 'Connect GitHub first: paste a token in the GitHub window.' });
     return null;
   }
 

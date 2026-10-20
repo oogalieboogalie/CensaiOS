@@ -16,7 +16,9 @@ export const HOST_CHANGING_TOOL_NAMES = Object.freeze([
   'github_write_file', 'github_create_issue', 'github_comment_issue', 'submit_pr', 'merge_pr',
   // Commands, Docker and the shared terminal
   'run_tests', 'run_linter', 'sandbox_exec', 'terminal_run', 'restart_service',
-  // The owner's mail server
+  // The owner's mail server, read with the owner's own Mailcow key: its lists
+  // are owner only too, like the Mailcow window (server/routes/mailcow.js)
+  'mailcow_domains', 'mailcow_mailboxes', 'mailcow_aliases', 'mailcow_queue',
   'mailcow_add_mailbox', 'mailcow_delete_mailbox', 'mailcow_add_alias', 'mailcow_delete_alias',
 ]);
 

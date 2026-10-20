@@ -9,7 +9,7 @@ import {
   getTerminalSocketUrl,
   installTerminalInteractionBridge,
 } from './terminalInteractions.js';
-import { openTerminalSocket, stillSignedIn } from './terminalSocket.js';
+import { openTerminalSocket, refusalLogLine, stillSignedIn } from './terminalSocket.js';
 import { terminalFont, whenGlowFontReady } from './terminalGlow.js';
 import { logToApp } from '../../lib/appLog/browserLog.js';
 
@@ -81,7 +81,8 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
         sendSize();
       },
       onRefused(refusal) {
-        logToApp('warn', `terminal refused: ${refusal.reason || 'unknown'}`, { detail: refusal.message || '' });
+        const line = refusalLogLine(refusal);
+        logToApp('warn', line.message, { detail: line.detail });
         const sentences = String(refusal.message || 'censaiOS would not open this terminal.').split(/(?<=\.)\s+/);
         for (const line of sentences) term.writeln(`\x1b[33m${line}\x1b[0m`);
         term.writeln('\x1b[2mPress Enter to try again.\x1b[0m');

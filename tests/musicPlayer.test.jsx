@@ -46,7 +46,8 @@ describe('music skins', () => {
 
   test('cycles visualizer modes and formats time', () => {
     expect(nextVisualizerMode('bars')).toBe('scope');
-    expect(nextVisualizerMode('ambience')).toBe('bars');
+    expect(nextVisualizerMode('ambience')).toBe('swirl');
+    expect(nextVisualizerMode('swirl')).toBe('bars');
     expect(formatTime(65)).toBe('01:05');
     expect(formatTime(3725)).toBe('1:02:05');
     expect(formatTime(NaN)).toBe('00:00');

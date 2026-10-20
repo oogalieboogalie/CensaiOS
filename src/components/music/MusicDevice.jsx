@@ -44,6 +44,11 @@ export const DeviceShell = React.forwardRef(function DeviceShell(
         <span className="hb-music-brand">{skin.brand}</span>
         <span className="hb-music-model">{skin.model}</span>
         <span className="hb-music-spacer" />
+        {skin.eq && (
+          <span className="hb-music-eq" data-on={playing ? 'true' : undefined} aria-hidden="true">
+            {[0, 1, 2, 3, 4, 5, 6].map((i) => <span key={i} style={{ animationDelay: `${(i * 137) % 600}ms` }} />)}
+          </span>
+        )}
         <span className="hb-music-led" data-on={playing ? 'true' : undefined} title={playing ? 'Playing' : 'Idle'} />
         <BatteryGlyph />
       </div>

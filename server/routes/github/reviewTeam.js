@@ -1,6 +1,7 @@
 import express from 'express';
 import { parsePositiveInteger, parseRepository, sendGitHubError } from './client.js';
-import { createOctokit, resolveGithubToken } from '../../github/mergeDesk.js';
+import { createOctokit } from '../../github/mergeDesk.js';
+import { resolveGithubWriteToken } from '../../github/writeToken.js';
 import { getReview, postReview, publicReview, refreshReview, reviewApprovals, startReview } from '../../github/reviewTeam.js';
 import { requireLocalFilesystem } from '../../middleware/runtimeMode.js';
 import { requireSystemAdmin } from '../../security/systemAdmin.js';
@@ -48,7 +49,7 @@ reviewTeamRouter.get('/desk/reviewers', wrap(async (req, res) => {
 reviewTeamRouter.post('/desk/review', wrap(async (req, res) => {
   const target = parseRepository(req.body?.repo);
   const number = parsePositiveInteger(req.body?.number);
-  const { token } = await resolveGithubToken(req.session?.userId);
+  const { token } = await resolveGithubWriteToken(req, { feature: 'github desk review' });
   const agents = await canRunAgents(req);
   const manager = agents ? await managerLoader().catch(() => null) : null;
   const review = await startReview(
@@ -76,6 +77,6 @@ reviewTeamRouter.post('/desk/review/:id/approve', requireLocalFilesystem, requir
 
 reviewTeamRouter.post('/desk/review/:id/post', wrap(async (req, res) => {
   const job = getReview(req.params.id);
-  const { token } = await resolveGithubToken(req.session?.userId);
+  const { token } = await resolveGithubWriteToken(req, { feature: 'github desk review post' });
   res.json({ review: await postReview(job, { octokit: createOctokit(token) }) });
 }));

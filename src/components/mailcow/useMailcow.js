@@ -1,6 +1,9 @@
 import React from 'react';
 import { useMailcowMutations } from './useMailcowMutations.js';
 import { useVisibilityAwareInterval } from '../../lib/usePolling.js';
+import { mailcowErrorText, readMailcowResult } from './mailcowResult.js';
+
+const load = (path) => fetch(path).then((res) => readMailcowResult(res, { path }));
 
 export function useMailcow() {
   const [activeTab, setActiveTab] = React.useState('domains');
@@ -32,50 +35,45 @@ export function useMailcow() {
     }
   };
 
+  // A teammate who isn't this computer's owner only learns whether Mailcow is
+  // set up; the lists are the owner's (server/routes/mailcow.js).
+  const canList = health.configured && !health.ownerOnly;
+
   const fetchData = React.useCallback(async () => {
-    if (!health.configured) return;
+    if (!canList) return;
     setLoading(true);
     setError(null);
     try {
       if (activeTab === 'domains') {
-        const res = await fetch('/api/mailcow/domains');
-        if (!res.ok) throw new Error(`Failed to load domains: ${res.statusText}`);
-        const data = await res.json();
+        const data = await load('/api/mailcow/domains');
         setDomains(Array.isArray(data) ? data : []);
       } else if (activeTab === 'mailboxes') {
-        const [resMbox, resDom] = await Promise.all([fetch('/api/mailcow/mailboxes'), fetch('/api/mailcow/domains')]);
-        if (!resMbox.ok || !resDom.ok) throw new Error('Failed to load mailboxes or domains');
-        const mboxesData = await resMbox.json();
-        const domainsData = await resDom.json();
+        const [mboxesData, domainsData] = await Promise.all([load('/api/mailcow/mailboxes'), load('/api/mailcow/domains')]);
         setMailboxes(Array.isArray(mboxesData) ? mboxesData : []);
         setDomains(Array.isArray(domainsData) ? domainsData : []);
-        if (domainsData.length > 0 && !mailboxForm.domain) {
+        if (Array.isArray(domainsData) && domainsData.length > 0 && !mailboxForm.domain) {
           setMailboxForm(prev => ({ ...prev, domain: domainsData[0].domain }));
         }
       } else if (activeTab === 'aliases') {
-        const res = await fetch('/api/mailcow/aliases');
-        if (!res.ok) throw new Error(`Failed to load aliases: ${res.statusText}`);
-        const data = await res.json();
+        const data = await load('/api/mailcow/aliases');
         setAliases(Array.isArray(data) ? data : []);
       } else if (activeTab === 'queue') {
-        const res = await fetch('/api/mailcow/queue');
-        if (!res.ok) throw new Error(`Failed to load mail queue: ${res.statusText}`);
-        const data = await res.json();
+        const data = await load('/api/mailcow/queue');
         setQueue(Array.isArray(data) ? data : []);
       }
     } catch (err) {
-      setError(err.message);
+      setError(mailcowErrorText(err));
     } finally {
       setLoading(false);
     }
-  }, [activeTab, health.configured, mailboxForm.domain]);
+  }, [activeTab, canList, mailboxForm.domain]);
 
   React.useEffect(() => { fetchHealth(); }, []);
-  React.useEffect(() => { if (health.configured) fetchData(); }, [health.configured, activeTab, fetchData]);
+  React.useEffect(() => { if (canList) fetchData(); }, [canList, activeTab, fetchData]);
   useVisibilityAwareInterval(() => {
     fetchHealth();
     fetchData();
-  }, health.configured ? 30000 : null);
+  }, canList ? 30000 : null);
 
   const mutations = useMailcowMutations({
     domainForm, setDomainForm, mailboxForm, setMailboxForm,

@@ -36,6 +36,8 @@ export function MailcowWindow({ win, onUpdate }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {healthLoading ? (
               <span style={{ color: 'var(--ink-faint)' }}>Checking Mailcow API status...</span>
+            ) : health.ownerOnly ? (
+              <span style={{ fontWeight: 500, color: 'var(--ink-soft)' }}>Mailcow Set Up (owner only)</span>
             ) : health.configured ? (
               <>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: health.ok ? 'var(--ps-green)' : 'var(--ps-red)', display: 'inline-block' }} />
@@ -62,6 +64,13 @@ export function MailcowWindow({ win, onUpdate }) {
         {/* Tab content switcher */}
         {!healthLoading && !health.configured ? (
           <SetupGuide />
+        ) : !healthLoading && health.ownerOnly ? (
+          <div data-testid="mailcow-owner-only" style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
+            <div style={{ fontWeight: 600, fontSize: 'var(--text-lg)' }}>Owner only</div>
+            <div style={{ color: 'var(--ink-soft)', fontSize: 'var(--text-md)', maxWidth: 460 }}>
+              Mailcow is set up on this computer. Only this computer's owner account can see and change its domains, mailboxes, aliases and mail queue.
+            </div>
+          </div>
         ) : !healthLoading && health.configured && !health.ok ? (
           <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 'var(--text-2xl)' }}>⚠️</span>

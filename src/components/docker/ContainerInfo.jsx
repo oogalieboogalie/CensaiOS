@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DIcon } from './dockerIcons.jsx';
 import { SeriesChart, SkeletonRows, Badge } from './DockerUi.jsx';
 import { dockerApi, formatBytes, formatPercent, formatRate } from './dockerApi.js';
+import { logOpen, openLinkFor } from './openLink.js';
 
 function Section({ title, count, children }) {
   return (
@@ -63,8 +64,8 @@ export function OverviewView({ container }) {
           <div className="dk-kv">{info.ports.map((p) => (
             <div key={p.target} className="dk-kv-row"><span className="dk-mono">{p.target}</span>
               <span className="dk-mono dk-muted dk-truncate">{p.published.length ? p.published.join(', ') : 'not published'}</span>
-              {p.published[0] && p.target.endsWith('/tcp') ? (
-                <a className="dk-link" href={`http://localhost:${p.published[0].split(':').pop()}`} target="_blank" rel="noreferrer">Open</a>
+              {p.published[0] && p.target.endsWith('/tcp') && openLinkFor(p.published[0]) ? (
+                <a className="dk-link" href={openLinkFor(p.published[0])} target="_blank" rel="noreferrer" onClick={() => logOpen(p.published[0])}>Open</a>
               ) : <span />}
             </div>
           ))}</div>

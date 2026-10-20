@@ -8,53 +8,36 @@ import { CalendarWeekHeader } from './calendar/CalendarWeekHeader.jsx';
 import { CalendarDateModal } from './calendar/CalendarDateModal.jsx';
 import { CalendarToolbar } from './calendar/CalendarToolbar.jsx';
 import { toCalendarEvent } from './calendar/calendarEvents.js';
+import { loadCalendarView, logCalendarViewSetAside, saveCalendarView } from './calendar/calendarView.js';
 
 // A beautifully minimal calendar UI for the infinite canvas
 export function CalendarWindow({ win, onUpdate, onSpawn }) {
   const [events, setEvents] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
-  const persistedCalendar = win.data?.calendar || {};
+  const ownView = React.useMemo(() => loadCalendarView(win.id), [win.id]);
 
-  const [currentDate, setCurrentDate] = React.useState(() => (
-    persistedCalendar.currentDate ? new Date(persistedCalendar.currentDate) : new Date()
-  ));
-  const [viewMode, setViewMode] = React.useState(persistedCalendar.viewMode || 'month'); // 'list' | 'month'
-  const [selectedDateStr, setSelectedDateStr] = React.useState(persistedCalendar.selectedDateStr || null);
+  const [currentDate, setCurrentDate] = React.useState(() => ownView.currentDate || new Date());
+  const [viewMode, setViewMode] = React.useState(ownView.viewMode || 'month'); // 'list' | 'month'
+  const [selectedDateStr, setSelectedDateStr] = React.useState(ownView.selectedDateStr || null);
 
   // Composer State
-  const [isComposing, setIsComposing] = React.useState(Boolean(persistedCalendar.isComposing));
+  const [isComposing, setIsComposing] = React.useState(Boolean(ownView.isComposing));
 
-  const persistCalendarState = React.useCallback((patch) => {
-    const currentCalendar = win.data?.calendar || {};
-    const nextCalendar = { ...currentCalendar, ...patch };
-    const changed = Object.keys(patch).some((key) => currentCalendar[key] !== nextCalendar[key]);
-    if (!changed) return;
-    onUpdate({
-      data: {
-        ...(win.data || {}),
-        calendar: nextCalendar,
-      },
-    });
-  }, [win.data, onUpdate]);
-
+  // Each person's view stays in their own browser, never in the board's
+  // shared window (calendarView.js).
   React.useEffect(() => {
-    const nextDateIso = currentDate.toISOString();
-    if (
-      (persistedCalendar.viewMode || 'month') === viewMode &&
-      persistedCalendar.currentDate === nextDateIso &&
-      (persistedCalendar.selectedDateStr || null) === selectedDateStr &&
-      Boolean(persistedCalendar.isComposing) === isComposing
-    ) {
-      return;
-    }
-    persistCalendarState({
-      viewMode,
-      currentDate: nextDateIso,
-      selectedDateStr,
-      isComposing,
-    });
-  }, [currentDate, isComposing, persistCalendarState, persistedCalendar.currentDate, persistedCalendar.isComposing, persistedCalendar.selectedDateStr, persistedCalendar.viewMode, selectedDateStr, viewMode]);
+    saveCalendarView(win.id, { viewMode, currentDate: currentDate.toISOString(), selectedDateStr, isComposing });
+  }, [win.id, viewMode, currentDate, selectedDateStr, isComposing]);
+
+  // A view an older copy saved into the shared window is set aside once.
+  const hasSharedView = Boolean(win.data?.calendar);
+  React.useEffect(() => {
+    if (!hasSharedView) return;
+    const { calendar: _setAside, ...rest } = win.data || {};
+    logCalendarViewSetAside();
+    onUpdate?.({ data: rest });
+  }, [hasSharedView]);
 
   const fetchEvents = React.useCallback(() => {
     setLoading(true);
