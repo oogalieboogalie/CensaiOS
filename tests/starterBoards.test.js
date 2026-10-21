@@ -79,8 +79,10 @@ test('the client fills editors the server only names with their blank starter do
 test('the Agent Team room has all four agents answering in turn', () => {
   const board = buildAgentTeamBoard({ agents: idsFor(AGENT_TEAM_AGENTS), makeId: () => 'a1' });
   expect(findTemplateWindow(board.windows, 'teamChat').members).toEqual(['lead-1', 'researcher-1', 'builder-1', 'critic-1']);
-  // The team room is the hand-off; nobody can start outside agents with write tools.
-  for (const agent of AGENT_TEAM_AGENTS) expect(agent.tools).not.toEqual(expect.arrayContaining(['request_agent_help']));
+  // Teammates on this board can find and ask each other. They still cannot mail, merge or deploy.
+  for (const agent of AGENT_TEAM_AGENTS) {
+    expect(agent.tools).toEqual(expect.arrayContaining(['discover_agents', 'request_agent_help']));
+  }
 });
 
 test('starter boards come first; the Real Estate Team is still there', () => {

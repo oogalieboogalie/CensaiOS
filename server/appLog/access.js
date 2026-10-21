@@ -7,12 +7,12 @@
  */
 import pool from '../db.js';
 import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
+import { userRole } from '../security/systemAdmin.js';
 
 export async function canReadAppLog(userId, { db = pool, mode = getRuntimeMode() } = {}) {
   const id = Number(userId);
   if (!Number.isInteger(id) || id <= 0) return false;
-  const { rows } = await db.query('SELECT role FROM users WHERE id = $1', [id]);
-  const role = rows[0]?.role;
+  const role = await userRole(id, { db });
   if (role === 'admin') return true;
   return mode === RUNTIME_MODES.LOCAL_DESKTOP && role === 'user';
 }

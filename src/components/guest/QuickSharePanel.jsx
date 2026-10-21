@@ -1,6 +1,7 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
 import { useBoardEvent } from '../../lib/collaboration/boardEvents.js';
+import { NEEDS_OWN_CENSAI, onTryItBoard } from '../../lib/demo/needsOwnCensai.js';
 import { isThisComputerOnly, readShareBase, shareLinkFor, writeShareBase } from '../../lib/workspace/shareBase.js';
 import { copyText, readTokens, rememberToken } from './GuestLinkParts.jsx';
 
@@ -15,6 +16,12 @@ const CHOICES = [
   { role: 'edit', label: 'Can edit', hint: 'Moves, adds and types on the board with you.' },
 ];
 const ROLE_NAMES = { view: 'Can look', comment: 'Can comment', edit: 'Can edit' };
+
+function shareError(error, owner) {
+  if (onTryItBoard()) return '';
+  if (owner && error.status === 403) return 'Only the board owner can share it.';
+  return error.message;
+}
 
 function linkLine(link) {
   const joined = link.joinCount || 0;
@@ -59,7 +66,7 @@ export function QuickSharePanel({ workspaceId, onMoreOptions, onClose }) {
       const result = await api.listShareLinks(workspaceId);
       setLinks((result.links || []).filter((link) => link.active && link.mode !== 'live' && !link.classId));
     } catch (error) {
-      setMessage(error.status === 403 ? 'Only the board owner can share it.' : error.message);
+      setMessage(shareError(error, true));
     }
   }, [workspaceId]);
   React.useEffect(() => { load(); }, [load]);
@@ -76,7 +83,7 @@ export function QuickSharePanel({ workspaceId, onMoreOptions, onClose }) {
       setMade({ id: result.link.id, url, copied });
       await load();
     } catch (error) {
-      setMessage(error.message);
+      setMessage(shareError(error, false));
     } finally {
       setBusy(false);
     }
@@ -89,7 +96,7 @@ export function QuickSharePanel({ workspaceId, onMoreOptions, onClose }) {
       if (made?.id === link.id) setMade(null);
       await load();
     } catch (error) {
-      setMessage(error.message);
+      setMessage(shareError(error, false));
     }
   }
 
@@ -100,6 +107,7 @@ export function QuickSharePanel({ workspaceId, onMoreOptions, onClose }) {
         <button type="button" className="hb-qs-x" aria-label="Close" onClick={onClose}>×</button>
       </header>
       <p className="hb-qs-note">Anyone with the link joins under a name they pick. No account needed. They never see your keys, vault, memory or other boards.</p>
+      {onTryItBoard() && <p className="hb-qs-note" data-testid="needs-own-censai">{NEEDS_OWN_CENSAI}</p>}
       <div className="hb-qs-choices" role="radiogroup" aria-label="What people with the link can do">
         {CHOICES.map((choice) => (
           <button

@@ -17,7 +17,7 @@ const CLI_SKILLS = [
 ];
 
 function chatEntry(win, agent) {
-  const name = agent?.name || win.agentId;
+  const name = agent?.name || win.title || win.agentId;
   const caps = getModelCapabilities(agent?.model_provider, agent?.model_name);
   const abilities = ['text', ...describeCapabilities(caps), ...(caps.tools ? ['tools'] : [])];
   return {
@@ -121,7 +121,7 @@ export function listBoardAgents(wins, { agentFor = () => null } = {}) {
     if (!entry) continue;
     const activeRequests = active.get(win.id) || 0;
     const status = activeRequests || win.status === 'building' || win.leadHound?.hunting ? 'working' : 'ready';
-    out.push({ ...entry, windowId: win.id, kind: win.kind, status, activeRequests });
+    out.push({ ...entry, windowId: win.id, kind: win.kind, agentId: win.agentId || null, status, activeRequests });
   }
   return out;
 }

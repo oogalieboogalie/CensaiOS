@@ -198,7 +198,7 @@ export function AppContent() {
     <>
       <div id="canvas-root" style={{ position: 'fixed', inset: 0 }}>
         <Canvas
-          wins={focusView.wins} activeId={activeId} selectedIds={selectedIds}
+          wins={focusView.wins} mountedWins={focusView.mountedWins} activeId={activeId} selectedIds={selectedIds}
           workspaceRevision={workspaceRevision}
           pan={pan} zoom={zoom} onPanZoom={onPanZoom} onFitView={fitView}
           onJumpNearestCluster={jumpToNearestCluster}

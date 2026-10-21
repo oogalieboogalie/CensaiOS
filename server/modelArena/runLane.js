@@ -7,7 +7,7 @@ import { isLocalBaseUrl, missingKeyError, tagRejectedKey } from '../aiGateway/mi
 import { getUserApiKeyConfig, inferUserApiKeyProvider } from '../security/userApiKeys.js';
 import { requiresPersonalApiKey } from '../security/byokPolicy.js';
 import { scopeServerKey } from '../security/serverKeys.js';
-import { publicChatError } from '../routes/chat/httpErrors.js';
+import { publicChatError } from '../chatModel/errors.js';
 
 export const ARENA_MAX_LANES = 4;
 export const ARENA_TIMEOUT_MS = 120_000;

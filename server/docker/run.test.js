@@ -39,7 +39,7 @@ describe('Run a new container from an image', () => {
     expect(res.status).toBe(500);
     expect(res.body.error).toMatch(/already in use/);
     expect(logged[0][0]).toBe('warn');
-    expect(logged[0][1]).toMatch(/could not start redis:7 as ollama.*already in use/);
+    expect(logged[0][1]).toMatch(/could not start redis:7 as ollama.*: name taken$/);
   });
 
   test('nothing typed can become a docker flag', async () => {

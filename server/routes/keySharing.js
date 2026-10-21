@@ -4,6 +4,9 @@ import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
 import { isServerKeyOwnerRole } from '../security/serverKeys.js';
 import { isKeySharedWith, readKeySharing, setKeySharing } from '../security/keySharing.js';
 import { resourceRateLimiter } from '../middleware/standardRateLimits.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('keys');
 
 /**
  * Settings, AI keys, "Share my AI keys with". The owner (an admin) sees every
@@ -50,23 +53,27 @@ keySharingRouter.get('/', async (req, res) => {
   try {
     res.json({ available: true, canManage: true, accounts: await accounts(userId) });
   } catch (err) {
-    console.error('Key sharing list error:', err.message);
+    log.error('key sharing list failed', { userId, code: err?.code || null });
     res.status(500).json({ error: 'Could not load the accounts on this computer.' });
   }
 });
 
 keySharingRouter.put('/:userId', async (req, res) => {
   if (!available()) return res.status(400).json({ error: 'Key sharing is only for censaiOS on your own computer.' });
-  if (!canManage(req)) return res.status(403).json({ error: 'Only the owner of this censaiOS can share its AI keys.' });
+  if (!canManage(req)) {
+    log.warn('key sharing refused: not the owner', { userId: req.session?.userId ?? null });
+    return res.status(403).json({ error: 'Only the owner of this censaiOS can share its AI keys.' });
+  }
   if (typeof req.body?.shared !== 'boolean') return res.status(400).json({ error: 'Say whether to share (on or off).' });
   const targetId = String(req.params.userId || '').trim();
   try {
     const { rows } = await pool.query('SELECT id FROM users WHERE id = $1', [targetId]);
     if (!rows[0]) return res.status(404).json({ error: 'That account is not on this computer.' });
     setKeySharing(targetId, req.body.shared);
+    log.info('key sharing changed', { userId: req.session.userId, account: targetId, shared: req.body.shared });
     res.json({ available: true, canManage: true, accounts: await accounts(req.session.userId) });
   } catch (err) {
-    console.error('Key sharing save error:', err.message);
+    log.error('key sharing save failed', { userId: req.session?.userId ?? null, account: targetId, code: err?.code || null });
     res.status(500).json({ error: 'Could not save the setting.' });
   }
 });

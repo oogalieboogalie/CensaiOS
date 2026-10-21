@@ -190,15 +190,17 @@ describe('routes', () => {
 });
 
 describe('asking the provider', () => {
+  // A stand-in name lookup: the provider's hosts answer a public address.
+  const resolve = async () => [{ address: '104.18.2.115', family: 4 }];
   test('OpenRouter credits come back as the provider\'s number', async () => {
     const fetchImpl = jest.fn(async () => ({ ok: true, json: async () => ({ data: { total_credits: 50, total_usage: 12.5 } }) }));
-    await expect(readProviderBalance('openrouter', 'sk-or-v1-FAKE', { fetchImpl })).resolves.toMatchObject({ total: 50, used: 12.5, left: 37.5 });
+    await expect(readProviderBalance('openrouter', 'sk-or-v1-FAKE', { fetchImpl, resolve })).resolves.toMatchObject({ total: 50, used: 12.5, left: 37.5 });
     expect(fetchImpl.mock.calls[0][0]).toBe('https://openrouter.ai/api/v1/credits');
   });
 
   test('a refused key and a provider with no balance answer say so in plain words', async () => {
     const fetchImpl = jest.fn(async () => ({ ok: false, status: 401 }));
-    await expect(readProviderBalance('moonshot', 'sk-FAKE', { fetchImpl })).rejects.toThrow('did not accept this key');
+    await expect(readProviderBalance('moonshot', 'sk-FAKE', { fetchImpl, resolve })).rejects.toThrow('did not accept this key');
     await expect(readProviderBalance('anthropic', 'sk-FAKE')).rejects.toThrow('does not tell apps');
   });
 });

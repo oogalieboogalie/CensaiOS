@@ -5,13 +5,22 @@ import { logOwnerRefusal, ownerNamesFor } from './ownerNames.js';
 // do (Docker, dev servers, git pushes, host files, tasks, the terminal).
 export const OWNER_ONLY_MESSAGE = "Only this computer's owner can do this.";
 
+/**
+ * The one place that asks the database for an account's role. Returns the
+ * role (it may be null), or undefined when there is no such account. A
+ * database error is thrown; each caller decides what that means for it.
+ */
+export async function userRole(userId, { db = pool } = {}) {
+  const { rows } = await db.query('SELECT role FROM users WHERE id = $1', [userId]);
+  return rows[0] ? rows[0].role : undefined;
+}
+
 export async function assertSystemAdmin(req, { db = pool } = {}) {
   const userId = Number(req?.session?.userId);
   if (!Number.isInteger(userId) || userId <= 0) {
     throw Object.assign(new Error('Authentication is required.'), { statusCode: 401 });
   }
-  const { rows } = await db.query('SELECT role FROM users WHERE id = $1', [userId]);
-  if (rows[0]?.role !== 'admin') {
+  if (await userRole(userId, { db }) !== 'admin') {
     throw Object.assign(new Error(OWNER_ONLY_MESSAGE), { statusCode: 403 });
   }
   return { userId, role: 'admin' };

@@ -6,16 +6,18 @@ import { WindowChromeContext } from './windowChromeContext.js';
 import { BrandIcon } from '../brand/BrandIcon.jsx';
 import { cleanHeaderText, splitHeaderActions } from '../../lib/windowHeader.js';
 
-/** A data-declared header action: `{ id, label, icon, onSelect, pressed, title }`. */
-function HeaderAction({ label, icon, onSelect, pressed, title, inMenu }) {
+/** A data-declared header action: `{ id, label, icon, onSelect, pressed, title, disabled }`. */
+function HeaderAction({ label, icon, onSelect, pressed, title, inMenu, disabled }) {
   return (
     <button type="button" className={inMenu ? 'hb-win-menu-item' : 'hb-win-action'}
       role={inMenu ? 'menuitem' : undefined}
       aria-pressed={inMenu || pressed === undefined ? undefined : Boolean(pressed)}
       title={title || (typeof label === 'string' ? label : undefined)}
+      disabled={disabled || undefined}
+      style={disabled ? { opacity: 0.45, cursor: 'default' } : undefined}
       // Keep focus where it is (an editor's blur must not race the action).
       onMouseDown={(e) => e.preventDefault()}
-      onClick={(e) => { e.stopPropagation(); onSelect?.(e); }}>
+      onClick={(e) => { e.stopPropagation(); if (!disabled) onSelect?.(e); }}>
       {icon}{label && <span>{label}</span>}
     </button>
   );

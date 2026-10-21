@@ -48,6 +48,7 @@ RUN npm ci --omit=dev --ignore-scripts --loglevel=error --no-audit --no-fund \
  && npm rebuild node-pty
 COPY server.js ./
 COPY server/ ./server/
+COPY shared/ ./shared/
 COPY docker/ ./docker/
 COPY src/ ./src/
 # The first-start database step reads which SQL files Postgres already ran.

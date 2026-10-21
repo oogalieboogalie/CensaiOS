@@ -5,14 +5,14 @@ import express from 'express';
 import pool from '../db.js';
 import { dbReady } from '../dbState.js';
 import { parseArenaRequest, runLane } from '../modelArena/runLane.js';
+import { userRole } from '../security/systemAdmin.js';
 
 export const modelArenaRouter = express.Router();
 
 async function roleOf(userId) {
   if (!dbReady()) return 'user';
   try {
-    const { rows } = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
-    return rows[0]?.role || 'user';
+    return (await userRole(userId, { db: pool })) || 'user';
   } catch {
     return 'user';
   }

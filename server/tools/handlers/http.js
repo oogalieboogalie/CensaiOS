@@ -3,6 +3,7 @@ import { createLogger } from '../../logger.js';
 import { getRuntimeMode, RUNTIME_MODES } from '../../middleware/runtimeMode.js';
 import { pinnedFetch, privateAddressesAllowed, vetHost } from '../../security/publicAddress.js';
 import { assertSystemAdmin } from '../../security/systemAdmin.js';
+import { addressKind } from '../../security/addressKind.js';
 
 const log = createLogger('tools');
 
@@ -28,7 +29,7 @@ async function reachFor(rawUrl, context, { resolve = lookup, isOwner = ownerDriv
   const { addresses, missing, blocked } = await vetHost(url.hostname, { resolve });
   if (missing) return { refusal: `http_test error: could not find ${url.hostname} on the internet.` };
   if (blocked) {
-    log.warn('http_test refused: private network', { host: url.hostname, address: blocked });
+    log.warn('http_test refused: private network', { kind: addressKind(blocked), userId: Number(context.userId) > 0 ? Number(context.userId) : null });
     return {
       refusal: `http_test did not call ${url.hostname}: that address is inside this computer or a private network. `
         + "Only this computer's owner can test those; other agents can test public web addresses.",

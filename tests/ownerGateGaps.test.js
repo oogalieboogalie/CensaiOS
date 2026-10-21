@@ -6,7 +6,7 @@ import request from 'supertest';
 const logs = [];
 jest.unstable_mockModule('../server/logger.js', () => {
   const make = (name) => ({
-    info: (m) => logs.push(`[${name}] ${m}`), warn: (m) => logs.push(`[${name}] ${m}`),
+    info: (m) => logs.push(`[${name}] ${m}`), warn: (m, meta) => logs.push(`[${name}] ${m}${meta ? ` ${JSON.stringify(meta)}` : ''}`),
     error: () => {}, debug: () => {}, startTimer: () => () => {}, child: () => make(name),
   });
   return { createLogger: make, default: make('app'), onLogRecord: () => () => {} };
@@ -146,6 +146,7 @@ describe('HTTP Test agent tool and private addresses', () => {
     expect(out).toContain('inside this computer or a private network');
     expect(out).not.toContain('Status:');
     expect(logs.join('\n')).toContain('[tools] http_test refused: private network');
+    expect(logs.join('\n')).toMatch(/private network \{"kind":"(loopback|private|link-local)","userId":2\}$/m);
   });
 
   test('the owner agent still tests a server on this computer', async () => {

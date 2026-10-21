@@ -6,6 +6,7 @@
 // open to everyone on the board.
 import { getRuntimeMode, RUNTIME_MODES } from '../../middleware/runtimeMode.js';
 import { assertSystemAdmin, OWNER_ONLY_MESSAGE } from '../../security/systemAdmin.js';
+import { logOwnerRefusal, ownerNamesFor, ownerNamesSentence } from '../../security/ownerNames.js';
 
 export const HOST_CHANGING_TOOL_NAMES = Object.freeze([
   // Files and project folders on this computer
@@ -48,11 +49,12 @@ export function changesHost(name, args = {}) {
 }
 
 export class ComputerOwnerOnlyError extends Error {
-  constructor(message = OWNER_ONLY_MESSAGE) {
-    super(message);
+  constructor(message = OWNER_ONLY_MESSAGE, { names = null } = {}) {
+    super(names ? `${message} ${ownerNamesSentence(names)}` : message);
     this.name = 'ComputerOwnerOnlyError';
     this.code = 'COMPUTER_OWNER_ONLY';
     this.statusCode = 403;
+    this.names = names;
   }
 }
 
@@ -60,18 +62,25 @@ export class ComputerOwnerOnlyError extends Error {
  * Throws ComputerOwnerOnlyError unless the person behind this call is the
  * computer's owner. Work the desktop app runs for itself (no person behind
  * it) is the owner's own, as with the owner's keys (security/serverKeys.js).
+ * A chat typed at this computer (context.atThisComputer) also hears which
+ * account is the owner and which one they are, on the desktop app only.
  */
 export async function assertHostToolAllowed(db, { name, args, context = {}, mode = getRuntimeMode() } = {}) {
   if (!changesHost(name, args)) return { enforced: false };
   const userId = Number(context.userId);
   if (!Number.isInteger(userId) || userId <= 0) {
     if (context.userId == null && mode === RUNTIME_MODES.LOCAL_DESKTOP) return { enforced: false };
+    logOwnerRefusal(`agent tool ${name}`, 401);
     throw new ComputerOwnerOnlyError();
   }
   try {
     await assertSystemAdmin({ session: { userId } }, { db });
   } catch (error) {
-    if (error?.statusCode === 401 || error?.statusCode === 403) throw new ComputerOwnerOnlyError();
+    if (error?.statusCode === 401 || error?.statusCode === 403) {
+      logOwnerRefusal(`agent tool ${name}`, error.statusCode);
+      const names = context.atThisComputer === true ? await ownerNamesFor(userId, { db, mode }) : null;
+      throw new ComputerOwnerOnlyError(OWNER_ONLY_MESSAGE, { names });
+    }
     throw new ComputerOwnerOnlyError("Couldn't check who owns this computer right now. Try again in a moment.");
   }
   return { enforced: true, userId };

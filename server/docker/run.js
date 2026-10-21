@@ -1,4 +1,5 @@
 import { docker, assertRef, DockerInputError } from './cli.js';
+import { dockerFailureReason } from './failureReason.js';
 import { createLogger } from '../logger.js';
 import { optionArgs, parseEnv, parseRestart, parseShare } from './runOptions.js';
 
@@ -61,7 +62,7 @@ export async function runContainer({ image, name, ports, env, share, restart } =
     log.info(`run: started ${describe(what)} (${id.slice(0, 12)})`);
     return { ok: true, id, image, name: cleanName || null, ports: what.ports, settings: what.settings, shared: what.shared, restart: what.restart };
   } catch (err) {
-    log.warn(`run: could not start ${describe(what)}: ${err.message}`);
+    log.warn(`run: could not start ${describe(what)}: ${dockerFailureReason(err)}`);
     throw err;
   }
 }

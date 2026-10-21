@@ -117,7 +117,7 @@ describe('Figma import pipeline', () => {
       ['3:1', 'Home / iPhone', 'Mobile', 390, 844],
     ]);
     expect(result.frames[0].thumbnailUrl).toBe('https://render.figma.example/1:2.png');
-    expect(calls[0].url.searchParams.get('depth')).toBe('2');
+    expect(calls[0].url.searchParams.get('depth')).toBe('3');
   });
 
   test('imports a frame as HTML plus a 2x pixel render', async () => {

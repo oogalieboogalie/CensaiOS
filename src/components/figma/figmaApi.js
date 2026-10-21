@@ -17,12 +17,14 @@ export const figmaApi = {
   }).then(json),
   disconnect: (fetchImpl = globalThis.fetch) => fetchImpl('/api/keys/figma', { method: 'DELETE', credentials: 'include' }).then(json),
   frames: (url, fetchImpl = globalThis.fetch) => fetchImpl(`/api/design/figma/frames?url=${encodeURIComponent(url)}`, { credentials: 'include' }).then(json),
-  importFrame: (url, nodeId, fetchImpl = globalThis.fetch) => fetchImpl('/api/design/figma/import', {
+  importFrame: (url, nodeId, fetchImpl = globalThis.fetch, { refresh = false } = {}) => fetchImpl('/api/design/figma/import', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url, nodeId }),
+    body: JSON.stringify(refresh ? { url, nodeId, refresh: true } : { url, nodeId }),
   }).then(json),
+  /** Refresh a frame already on the board (the server logs it as a refresh). */
+  refreshFrame: (url, nodeId, fetchImpl = globalThis.fetch) => figmaApi.importFrame(url, nodeId, fetchImpl, { refresh: true }),
 };
 
 const GAP = 64;

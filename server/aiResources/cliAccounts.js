@@ -13,9 +13,19 @@ import os from 'os';
 import path from 'path';
 import { cliRoster, getCliTaskManager } from '../cli-agents/index.js';
 import { agentHome } from '../cli-agents/paths.js';
+import { createLogger } from '../logger.js';
 
+const log = createLogger('ai-resources');
+
+// A settings file that is missing is normal (no name); one that is there but
+// cannot be read or parsed throws, so the caller logs which CLI it was.
 function readJson(file) {
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+  let raw;
+  try { raw = fs.readFileSync(file, 'utf8'); } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+  return JSON.parse(raw);
 }
 
 const ACCOUNT_READERS = {
@@ -30,6 +40,16 @@ const ACCOUNT_READERS = {
   },
 };
 
+// Codex (~/.codex/auth.json) and Grok Build (~/.grok/auth.json) keep the
+// account only inside the file that holds the sign-in tokens, and their
+// settings files (config.toml) never name it. censaiOS never opens a token
+// file, so for these two the owner sees why there is no name instead.
+const ACCOUNT_IN_TOKEN_FILE = new Set(['codex', 'grok']);
+
+export function accountKeptWithToken(cliId) {
+  return ACCOUNT_IN_TOKEN_FILE.has(cliId);
+}
+
 /** The account a CLI's own sign-in belongs to, or null when it does not say. */
 export function cliAccountName(cliId, home = agentHome() || os.homedir()) {
   const reader = ACCOUNT_READERS[cliId];
@@ -38,6 +58,7 @@ export function cliAccountName(cliId, home = agentHome() || os.homedir()) {
     const name = reader(home);
     return typeof name === 'string' && name.length <= 200 ? name : null;
   } catch {
+    log.warn('could not read a CLI account name', { cli: cliId });
     return null;
   }
 }
@@ -68,6 +89,7 @@ export async function cliResources({ userId, owner, roster = cliRoster, tasks = 
     signedInVia: cli.signedInVia,
     account: owner && cli.signedInVia === 'cli-login' ? cliAccountName(cli.id) : null,
     accountHidden: !owner && cli.signedInVia === 'cli-login',
+    accountWithToken: owner && cli.signedInVia === 'cli-login' && accountKeptWithToken(cli.id),
     running: cli.running,
     spend: spend[cli.id] || { runs: 0, costUsd: 0, tokensIn: 0, tokensOut: 0, lastKeySource: null, lastAt: 0 },
   }));

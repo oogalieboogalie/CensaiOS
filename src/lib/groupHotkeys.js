@@ -1,11 +1,13 @@
 import { MIN_ZOOM, MAX_ZOOM } from './canvasMath.js';
+import { logToApp } from './appLog/browserLog.js';
 
 // AoE-style control groups for canvas groups.
 //
 // Slot keys are '1'..'9'. Ctrl/Alt+<n> assigns the active window's group (or
 // groups the current selection) to slot <n>; F<n> opens that group in a
-// full-screen focus view (everything else hidden); Escape or the same F-key
-// leaves it and restores the previous view.
+// full-screen focus view (everything else stays mounted but hidden, the way
+// a covered tab does); Escape or the same F-key leaves it and restores the
+// previous view.
 // Bindings persist per workspace in localStorage. Pure functions live here
 // so they stay unit-testable; the key listener is useGroupHotkeys.js.
 
@@ -122,20 +124,57 @@ export function focusedGroupIds(canvasGroups = [], groupId) {
 }
 
 /**
- * What the canvas shows while a group is focused: only that group, its
- * nested groups and their windows. Returns the inputs unchanged otherwise.
+ * What the canvas shows while a group is focused: that group, its nested
+ * groups and their windows (`wins`, which wires, cursors and the minimap
+ * use). Every window stays in `mountedWins` so a terminal or a chat outside
+ * the group keeps running; their ids are in `hiddenOutside` for the window
+ * layer to hide the way a covered tab stays mounted. A maximized window
+ * stays on screen. Returns the inputs unchanged otherwise.
  */
 export function filterForGroupFocus(wins = [], canvasGroups = [], groupFocus) {
   const group = groupFocus && canvasGroups.find((g) => g.id === groupFocus.groupId);
-  if (!group) return { wins, canvasGroups };
+  if (!group) return { wins, mountedWins: wins, canvasGroups, hiddenOutside: [] };
   const ids = focusedGroupIds(canvasGroups, group.id);
   const groups = canvasGroups.filter((g) => ids.has(g.id));
   const memberIds = new Set();
   for (const g of groups) for (const w of groupMembers(wins, g)) memberIds.add(w.id);
-  return {
-    wins: wins.filter((w) => memberIds.has(w.id) || w.maximized),
-    canvasGroups: groups,
-  };
+  const hiddenOutside = [];
+  for (const w of wins) {
+    if (!memberIds.has(w.id) && !w.maximized) hiddenOutside.push(w.id);
+  }
+  hiddenOutside.sort();
+  const outside = new Set(hiddenOutside);
+  return { wins: wins.filter((w) => !outside.has(w.id)), mountedWins: wins, canvasGroups: groups, hiddenOutside };
+}
+
+/** How many windows stay mounted outside a focused group. */
+export function outsideFocusCount(wins = [], canvasGroups = [], groupId) {
+  if (!groupId) return 0;
+  return filterForGroupFocus(wins, canvasGroups, { groupId }).hiddenOutside.length;
+}
+
+function focusKey(slot) {
+  if (slot === null || slot === undefined || slot === '') return 'full screen';
+  const text = String(slot);
+  return text.startsWith('F') ? text : `F${text}`;
+}
+
+function focusKind(kind) {
+  if (typeof kind !== 'string') return '';
+  const clean = kind.trim();
+  if (!clean) return '';
+  return /^[a-z0-9._-]{1,40}$/i.test(clean) ? clean : 'window';
+}
+
+/** One board-log line when full-screen group focus starts or ends. */
+export function logGroupFocusChange({ action, slot, outsideCount, kind } = {}) {
+  const key = focusKey(slot);
+  const safeKind = focusKind(kind);
+  const why = safeKind ? ` by opening a ${safeKind} window` : '';
+  const verb = action === 'started' ? 'started' : 'ended';
+  const n = Number(outsideCount) || 0;
+  const noun = n === 1 ? 'window' : 'windows';
+  logToApp('info', `group full screen ${key} ${verb}${why}, ${n} ${noun} kept running outside`, { where: 'group-focus' });
 }
 
 /** Resolve a slot to its live group object, or null (missing/cleared). */

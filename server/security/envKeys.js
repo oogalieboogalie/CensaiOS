@@ -27,6 +27,7 @@ export const ENV_KEY_NAMES = Object.freeze({
   zai: ['ZAI_API_KEY', 'GLM_API_KEY', 'ZHIPU_API_KEY'],
   elevenlabs: ['ELEVENLABS_API_KEY', 'ELEVEN_LABS_API_KEY'],
   tavily: ['TAVILY_API_KEY'],
+  youtube: ['YOUTUBE_API_KEY', 'GOOGLE_CLOUD_API_KEY'],
   figma: ['FIGMA_API_TOKEN', 'FIGMA_TOKEN', 'FIGMA_ACCESS_TOKEN'],
   github: ['GITHUB_TOKEN', 'GH_TOKEN', 'GITHUB_PAT'],
   langsmith: ['LANGSMITH_API_KEY', 'LANGGRAPH_API_KEY', 'LANGCHAIN_API_KEY'],
@@ -59,9 +60,14 @@ export function envKeyProviders(env = process.env) {
   return Object.keys(ENV_KEY_NAMES).filter((provider) => envKeyFor(provider, env));
 }
 
+/** CENSAI_ENV_KEYS=off: no key from the setup file (.env or Toolchains) at all. */
+export function envKeysSwitchedOff(env = process.env) {
+  return ['off', 'false', '0', 'no'].includes(String(env.CENSAI_ENV_KEYS || '').trim().toLowerCase());
+}
+
 /** Whether this install shares its .env keys with its owner at all. */
 export function envKeysEnabled({ env = process.env, mode = getRuntimeMode() } = {}) {
-  if (['off', 'false', '0', 'no'].includes(String(env.CENSAI_ENV_KEYS || '').trim().toLowerCase())) return false;
+  if (envKeysSwitchedOff(env)) return false;
   return mode === RUNTIME_MODES.LOCAL_DESKTOP;
 }
 

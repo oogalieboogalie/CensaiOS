@@ -13,7 +13,7 @@
 // Every stage is a step line on the job, and every item change is saved as it happens.
 
 import { createLogger } from '../logger.js';
-import { publicChatError } from '../routes/chat/httpErrors.js';
+import { publicChatError } from '../chatModel/errors.js';
 import { checkAnswer } from './check.js';
 import { closeChecklist, reopenChecklist, tickCount } from './checklist.js';
 import { jobPrompt, sendBackPrompt } from './prompts.js';

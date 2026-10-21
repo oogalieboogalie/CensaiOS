@@ -7,6 +7,7 @@ import { createSessionTrace, finalizeTrace } from '../../operational-intelligenc
 import { applyChatRetryHeader, publicChatError } from './httpErrors.js';
 import { resolveFreeTierRuntime } from '../../aiGateway/freeTierRuntime.js';
 import { isCloudRuntime } from '../../middleware/runtimeMode.js';
+import { isFromAnotherComputer } from '../../webOs/door.js';
 import { safeTimeZone } from '../../../src/lib/agentMemory/timeWords.js';
 
 export async function handleChat(req, res) {
@@ -86,6 +87,8 @@ export async function handleChat(req, res) {
       currentProject,
       userId: req.session?.userId,
       userRole: req.session?.userRole,
+      // Typed at this computer, not through the web door: an owner-only refusal may name the owner.
+      atThisComputer: !isFromAnotherComputer(req),
       workspaceId,
       windowId,
       conversationId: typeof conversationId === 'string' ? conversationId : null,

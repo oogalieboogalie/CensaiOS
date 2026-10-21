@@ -15,7 +15,7 @@ export function useFigmaResync({ win, liveSource, onUpdate, onSourceChange }) {
     if (!canSync || state.busy) return;
     setState({ busy: true, error: '' });
     try {
-      const result = await figmaApi.importFrame(figma.url, figma.nodeId);
+      const result = await figmaApi.refreshFrame(figma.url, figma.nodeId);
       onUpdate?.(resyncPatch(win, result, liveSource));
       if (result.html !== liveSource) onSourceChange?.(result.html);
       setState({ busy: false, error: '' });

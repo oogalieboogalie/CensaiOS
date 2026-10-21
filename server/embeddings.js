@@ -3,6 +3,11 @@ import {
   EMBEDDING_MODEL_KIND,
   resolveEmbeddingModelConfig,
 } from './aiGateway/index.js';
+import { createLogger } from './logger.js';
+
+// Lines name the provider, the HTTP status and the model only; never the
+// text being embedded or the provider's reply body.
+const log = createLogger('embeddings');
 
 const MODEL = () => embeddingConfig().model;
 
@@ -22,7 +27,7 @@ function embeddingConfig() {
 async function embedWithCohere(text, inputType) {
   const config = embeddingConfig();
   if (!config.apiKey) {
-    console.warn('Cohere embeddings unavailable: set COHERE_NON_COMMERCIAL_KEY or COHERE_PAID_API_KEY in .env.');
+    log.warn('cohere embeddings unavailable: no Cohere key is set');
     available = false;
     return null;
   }
@@ -48,7 +53,7 @@ async function embedWithCohere(text, inputType) {
     return data.embeddings?.float?.[0] || data.embeddings?.[0] || null;
   } catch (err) {
     if (!err.status) throw err;
-    console.warn(`Cohere embeddings failed (${err.status}): ${err.body || err.message}. Will retry later.`);
+    log.warn('cohere embeddings failed, will retry later', { status: err.status });
     if ([401, 403, 498].includes(err.status)) available = false;
     return null;
   }
@@ -67,10 +72,10 @@ async function embedWithOpenAICompatible(text) {
   } catch (err) {
     if (!err.status) throw err;
     if (err.status === 404) {
-      console.warn(`Embeddings unavailable (404). Semantic search disabled - run "ollama pull ${MODEL()}" to enable.`);
+      log.warn('embeddings model not found, semantic search disabled', { status: 404, model: MODEL() });
       available = false;
     } else {
-      console.warn(`Embeddings failed (${err.status}): ${err.body || err.message}. Will retry later.`);
+      log.warn('embeddings failed, will retry later', { status: err.status });
     }
     return null;
   }
@@ -90,7 +95,7 @@ export async function embed(text, opts = {}) {
     return vector;
   } catch (err) {
     if (available === null) {
-      console.warn(`Embeddings endpoint unreachable: ${err.message}. Semantic search disabled.`);
+      log.warn('embeddings endpoint unreachable, semantic search disabled', { code: err?.code || 'unknown' });
       available = false;
     }
     return null;

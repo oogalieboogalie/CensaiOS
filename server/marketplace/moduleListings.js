@@ -10,6 +10,7 @@ import { runModuleChecks, prohibitedUse } from './moduleChecks.js';
 import { namesTooClose } from './listingNames.js';
 import { moduleCard } from '../../src/lib/marketplace/moduleCard.js';
 import { certificateBody, fingerprint, signCertificate, signingKeys, verifyCertificate } from './signing.js';
+import { userRole } from '../security/systemAdmin.js';
 
 export const SELLER_TIERS = Object.freeze({
   probation: { label: 'Probation', maxListings: 3 },
@@ -65,8 +66,7 @@ function requireUser(userId) {
 }
 
 async function sellerFor(db, userId) {
-  const { rows } = await db.query('SELECT role FROM users WHERE id=$1', [userId]);
-  const owner = rows[0]?.role === 'admin';
+  const owner = await userRole(userId, { db }) === 'admin';
   const { rows: acct } = await db.query('SELECT tier, status, note FROM seller_accounts WHERE user_id=$1', [userId]);
   if (acct[0]) return { ...acct[0], canSell: acct[0].status === 'active' };
   if (!owner) return null;
@@ -83,8 +83,7 @@ export async function sellerStatus(db, userId) {
   const uid = requireUser(userId);
   await ensureSchema(db);
   const seller = await sellerFor(db, uid);
-  const { rows } = await db.query('SELECT role FROM users WHERE id=$1', [uid]);
-  const owner = rows[0]?.role === 'admin';
+  const owner = await userRole(uid, { db }) === 'admin';
   if (!seller?.canSell) {
     return { canSell: false, owner, reason: 'Selling opens to vetted sellers later. For now only the owner of this censaiOS can publish.' };
   }

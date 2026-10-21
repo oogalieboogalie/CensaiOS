@@ -4,7 +4,7 @@
 
 import React from 'react';
 import CodeMirror, { EditorView, ExternalChange } from '@uiw/react-codemirror';
-import { diffText } from '../../../server/collab/textDiff.js';
+import { diffText } from '../../../shared/collab/textDiff.js';
 import { extensionsForLanguage } from './editorExtensions.js';
 import { buildEditorTheme } from './codeMirrorTheme.js';
 

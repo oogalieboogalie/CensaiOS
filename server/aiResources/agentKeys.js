@@ -11,7 +11,7 @@ import { inferUserApiKeyProvider } from '../security/userApiKeys.js';
 import { mayUseServerKeys } from '../security/serverKeys.js';
 import { isLocalBaseUrl } from '../aiGateway/missingKey.js';
 import { resolveChatModelConfig } from '../aiGateway/index.js';
-import { borrowKeyedModel } from '../routes/chat/keyFallback.js';
+import { borrowKeyedModel } from '../chatModel/keys.js';
 
 const LOCAL = new Set(['ollama', 'local', 'lmstudio']);
 

@@ -22,6 +22,7 @@ let mode = 'local_desktop';
 
 jest.unstable_mockModule('../server/collab/liveDoc.js', () => ({
   openCanvasDocReader: async () => ({ doc: {}, close: async () => {} }),
+  transactCanvasDoc: async () => false,
 }));
 jest.unstable_mockModule('../server/agent-registry/helpCards.js', () => ({
   readDocWindows: () => board, placeHelpCard, settleHelpCard, patchHelpCard, readHelpCard,
@@ -44,6 +45,7 @@ jest.unstable_mockModule('../server/middleware/runtimeMode.js', () => ({ localFi
 const {
   listBoardHelpers, requestBoardHelp, boardHelpStatus, isBoardRequestId, __setBoardHelpSleepForTests,
 } = await import('../server/agent-registry/boardHelp.js');
+const { __setBoardTeammateRunnerForTests } = await import('../server/agent-registry/boardAgentAsk.js');
 
 const scope = { workspaceId: 'ws-a', userId: 7 };
 
@@ -52,14 +54,19 @@ beforeEach(() => {
   tasks.clear();
   mode = 'local_desktop';
   __setBoardHelpSleepForTests(async () => {});
+  __setBoardTeammateRunnerForTests(async ({ agentId, task }) => `answer for ${agentId}: ${task}`);
 });
 
-test('the coding CLIs and modules on the board are listed with window card ids', async () => {
+afterEach(() => {
+  __setBoardTeammateRunnerForTests(null);
+});
+
+test('the chat agents, coding CLIs and modules on the board are listed with window card ids', async () => {
   const helpers = await listBoardHelpers('ws-a', '', 5);
   expect(helpers.map((h) => [h.card_id, h.kind])).toEqual(expect.arrayContaining([
-    ['window:w-cli', 'coding_cli'], ['window:w-mod', 'module'], ['window:w-lh', 'lead_finder'],
+    ['window:w-atlas', 'board_agent'], ['window:w-cli', 'coding_cli'], ['window:w-mod', 'module'], ['window:w-lh', 'lead_finder'],
   ]));
-  expect(helpers).toHaveLength(3);
+  expect(helpers).toHaveLength(4);
 });
 
 test('an agent asks a coding CLI: a console task starts and the card waits on its approval', async () => {
@@ -113,10 +120,15 @@ test('an agent asks a module and gets its answer in the same call', async () => 
   expect(settleHelpCard).toHaveBeenCalledWith('ws-a', { id: cardId }, expect.objectContaining({ status: 'completed' }));
 });
 
-test('unknown windows and empty tasks are refused', async () => {
+test('unknown windows and empty tasks are refused, and a chat agent on the board answers', async () => {
   await expect(requestBoardHelp(scope, { cardId: 'window:nope', task: 'x' })).rejects.toThrow(/not on the board/);
-  await expect(requestBoardHelp(scope, { cardId: 'window:w-atlas', task: 'x' })).rejects.toThrow(/not on the board/);
   await expect(requestBoardHelp(scope, { cardId: 'window:w-mod', task: '  ' })).rejects.toThrow(/Describe the task/);
+  const out = await requestBoardHelp(scope, {
+    cardId: 'window:w-atlas', task: 'Summarise the board', fromWindowId: 'w-cli', fromLabel: 'Claude Code', waitSeconds: 5,
+  });
+  expect(out).toMatchObject({ agent: 'atlas', status: 'completed', result: 'answer for atlas: Summarise the board' });
+  expect(out.request_id).toMatch(/^board:/);
+  expect(isBoardRequestId(out.request_id)).toBe(true);
 });
 
 test('an agent asks LeadHound: the hunt fills the LeadHound window and the leads come back', async () => {

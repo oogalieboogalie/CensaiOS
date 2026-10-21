@@ -50,6 +50,20 @@ export const FAMILY_BUILD_TOOL_POLICIES = Object.freeze([
   policy('run_linter', 'write', 'autonomous_internal'),
 ]);
 
+// Starter boards (server/templates/starters): write on the board, and find
+// and ask the other agents on that same board.
+export const STARTER_BOARD_TOOL_POLICIES = Object.freeze([
+  policy('canvas_list_writable_windows', 'read'),
+  policy('canvas_append_window', 'write', 'autonomous_internal'),
+  policy('post_team_chat', 'write', 'autonomous_internal'),
+  policy('remember', 'write', 'autonomous_internal'),
+  policy('recall', 'read'),
+  policy('discover_agents', 'read'),
+  policy('request_agent_help', 'write', 'autonomous_internal'),
+]);
+
+export const STARTER_BOARD_TOOL_NAMES = Object.freeze(STARTER_BOARD_TOOL_POLICIES.map((entry) => entry.name));
+
 // Agent network: every family member can find other AgentCards by skill and
 // ask one for help. Requests only auto-run against built-in family cards or
 // cards a workspace owner/admin pinned; anything else is refused for agents.
@@ -135,7 +149,7 @@ export const FAMILY_DEFAULT_TOOL_NAMES = Object.freeze(Object.fromEntries(
 ));
 
 const POLICY_BY_NAME = Object.freeze(Object.fromEntries(
-  [...FAMILY_INTRINSIC_TOOL_POLICIES, ...FAMILY_NETWORK_TOOL_POLICIES, ...FAMILY_MODULE_TOOL_POLICIES,
+  [...FAMILY_INTRINSIC_TOOL_POLICIES, ...STARTER_BOARD_TOOL_POLICIES, ...FAMILY_NETWORK_TOOL_POLICIES, ...FAMILY_MODULE_TOOL_POLICIES,
    ...FAMILY_ORCHESTRATION_TOOL_POLICIES,
    ...FAMILY_LIFECYCLE_TOOL_POLICIES, ...FAMILY_PROJECT_READ_TOOL_POLICIES,
    ...FAMILY_BUILD_TOOL_POLICIES, ...FAMILY_WAKE_UP_TOOL_POLICIES, ...FAMILY_PLAN_TOOL_POLICIES]

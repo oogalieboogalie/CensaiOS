@@ -15,6 +15,14 @@ import { resolveChatModelConfig } from '../aiGateway/providers.js';
 import { isLocalBaseUrl, missingKeyError, missingKeyMessage } from '../aiGateway/missingKey.js';
 import { ENV_KEY_NAMES } from './envKeys.js';
 import { isKeySharedWith } from './keySharing.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('server-keys');
+
+/** One line when a server key is kept from someone: the service and the numeric user id, never the key. */
+export function logServerKeyHeldBack(service, userId) {
+  log.info('server key held back', { service: service || 'unknown', userId: Number(userId) > 0 ? Number(userId) : null });
+}
 
 const OWNER_ROLES = new Set(['admin', 'operator']);
 
@@ -64,7 +72,7 @@ export function isServerKeyValue(apiKey, env = process.env) {
   for (const names of Object.values(ENV_KEY_NAMES)) {
     if (names.some((name) => String(env[name] || '').trim() === key)) return true;
   }
-  if (String(env.AI_API_KEY || '').trim() === key) return true;
+  if (['AI_API_KEY', 'EMBEDDING_API_KEY'].some((name) => String(env[name] || '').trim() === key)) return true;
   try {
     if (resolveChatModelConfig().apiKey === key) return true;
     return CHAT_PROVIDERS.some((provider) => resolveChatModelConfig({ modelProvider: provider }).apiKey === key);
@@ -91,6 +99,7 @@ export async function scopeServerKey(config, { userId = null, userRole = null } 
   if (isLocalBaseUrl(config.baseUrl) || !isServerKeyValue(config.apiKey)) return config;
   if (!userId && !userRole) return config;
   if (await mayUse({ userId, userRole }, { mode, db })) return config;
+  logServerKeyHeldBack(config.provider, userId);
   // Loaded here, not at the top: most callers never get this far.
   const userKeys = await import('./userApiKeys.js');
   const keyProvider = userKeys.inferUserApiKeyProvider(config.provider, config.baseUrl);

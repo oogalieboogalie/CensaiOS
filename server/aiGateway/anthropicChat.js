@@ -103,7 +103,7 @@ export function toOpenAiChatCompletion(message) {
 function toGatewayError(err) {
   if (err instanceof Anthropic.APIError && Number.isFinite(err.status)) {
     const retryAfter = typeof err.headers?.get === 'function' ? err.headers.get('retry-after') : err.headers?.['retry-after'] || null;
-    return chatCompletionHttpError(err.status, err.message, retryAfter);
+    return chatCompletionHttpError(err.status, err.message, retryAfter, ANTHROPIC_PROVIDER);
   }
   return err;
 }

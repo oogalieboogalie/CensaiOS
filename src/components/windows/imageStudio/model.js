@@ -1,3 +1,4 @@
+import { newId } from '../../../lib/ids/newId.js';
 import { DEFAULT_IMAGE_STUDIO_STATE } from './constants.js';
 
 export function normalizeImageStudioState(value = {}) {
@@ -12,7 +13,7 @@ export function normalizeImageStudioState(value = {}) {
 
 export function makeStudioObject(type, point, options = {}) {
   const base = {
-    id: options.id || `obj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: options.id || newId(),
     type,
     // eslint-disable-next-line no-restricted-syntax -- default user paint color (data)
     color: options.color || '#ffffff',

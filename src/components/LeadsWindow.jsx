@@ -5,12 +5,14 @@ import { useWorkspaceStore } from '../lib/store.js';
 import { useVisibilityAwareInterval } from '../lib/usePolling.js';
 import { ScoutPanel } from './leads/ScoutPanel.jsx';
 import { SavedOutreach } from './leads/SavedOutreach.jsx';
+import { noteLeadList, queueCountsFromPayload, shiftQueueCount } from './leads/queueCounts.js';
 
 const STATUS_DOT = { new: 'var(--ps-green)', contacted: 'var(--accent)', qualified: 'var(--ps-teal)', dead: 'var(--ink-faint)' };
 
 export function LeadsWindow({ win = {}, onUpdate }) {
   const workspaceId = useWorkspaceStore((s) => s.workspaceId);
   const [leads, setLeads] = React.useState([]);
+  const [counts, setCounts] = React.useState(() => queueCountsFromPayload(null, []));
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter] = React.useState('all');
   const [error, setError] = React.useState('');
@@ -25,6 +27,7 @@ export function LeadsWindow({ win = {}, onUpdate }) {
   const load = React.useCallback(async () => {
     if (!workspaceId) {
       setLeads([]);
+      setCounts(queueCountsFromPayload(null, []));
       setLoading(false);
       return;
     }
@@ -34,7 +37,10 @@ export function LeadsWindow({ win = {}, onUpdate }) {
       const res = await fetch(`/api/sales-leads?${params.toString()}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Failed to load leads');
-      setLeads(Array.isArray(data.leads) ? data.leads : []);
+      const nextLeads = Array.isArray(data.leads) ? data.leads : [];
+      setLeads(nextLeads);
+      setCounts(queueCountsFromPayload(data.counts, nextLeads));
+      noteLeadList(filter, nextLeads.length);
       setError('');
     } catch (err) {
       setError(err.message || 'Failed to load leads');
@@ -95,18 +101,11 @@ export function LeadsWindow({ win = {}, onUpdate }) {
       });
       if (!res.ok) throw new Error('Status update failed');
       setLeads((current) => current.map((l) => l.id === lead.id ? { ...l, status: next } : l));
+      setCounts((current) => shiftQueueCount(current, lead.status, next));
     } catch (err) {
       setError(err.message || 'Status update failed');
     }
   }, [workspaceId]);
-
-  const counts = React.useMemo(() => {
-    const map = { all: leads.length, new: 0, contacted: 0, qualified: 0, dead: 0 };
-    for (const lead of leads) {
-      if (map[lead.status] !== undefined) map[lead.status] += 1;
-    }
-    return map;
-  }, [leads]);
 
   return (
     <>
@@ -114,7 +113,7 @@ export function LeadsWindow({ win = {}, onUpdate }) {
         accent="var(--ps-green)"
         icon={<Icon.Group size={14} />}
         label="Lead Queue"
-        subtitle={`${counts.new} new · ${leads.length} total`}
+        subtitle={`${counts.new} new · ${counts.all} total`}
       >
         <button
           onClick={refresh}
@@ -143,7 +142,7 @@ export function LeadsWindow({ win = {}, onUpdate }) {
               color: filter === s ? 'var(--accent-ink)' : 'var(--ink-soft)', fontWeight: filter === s ? 700 : 400,
             }}
           >
-            {s} ({s === 'all' ? leads.length : counts[s] || 0})
+            {s} ({counts[s] || 0})
           </button>
         ))}
       </div>

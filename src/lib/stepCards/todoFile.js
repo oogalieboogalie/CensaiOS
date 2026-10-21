@@ -15,13 +15,14 @@
 //   [ ] file server/design/figmaImport.js says "SECTION"
 //   [ ] run npm test -- tests/figmaSections.test.js
 //   [ ] ask The panel lists both frames under the Section heading
+//   [ ] page /api/health says "ok"
 //
 // "For:" holds a To-do assignee (src/lib/todos/assignees.js): an agent id,
 // user:<id> or cli:<cli id>. A check line never arrives ticked: its dot turns
 // green only when censaiOS checks it (server/stepCards/verify.js).
 
 export const TODO_FILE_HEADER = 'censaiOS to-do file';
-export const CHECK_KINDS = Object.freeze(['file', 'run', 'ask']);
+export const CHECK_KINDS = Object.freeze(['file', 'run', 'page', 'ask']);
 export const MAX_CARDS = 60;
 export const MAX_STEPS = 20;
 export const MAX_CHECKS = 4;
@@ -40,6 +41,32 @@ export function isAllowedCommand(command) {
   return RUN.test(text) && !text.includes('..');
 }
 
+// A "page" check asks the project's own app running on this computer: "/path" (on
+// the project's dev server port), ":5173/path" or "localhost:5173/path" (http://
+// optional). Another host still parses, so the check can say plainly it was refused.
+const PAGE_PATH = /^\/[\w\-./~%?=&+:@,;!*'()]*$/;
+
+/** { host, port, path } from a page check's address, or null when it is not one. */
+export function parsePageAddress(raw) {
+  let text = String(raw || '').trim().replace(/^https?:\/\//i, '');
+  let host = '';
+  let port = '';
+  if (!text.startsWith('/')) {
+    const m = /^(\[[0-9a-f:.]+\]|[\w.-]*)(?::(\d{1,5}))?(\/\S*)?$/i.exec(text);
+    if (!m || (!m[1] && !m[2])) return null;
+    host = m[1].toLowerCase();
+    port = m[2] || '';
+    text = m[3] || '/';
+  }
+  if (!PAGE_PATH.test(text) || text.length > 200) return null;
+  if (port && (Number(port) < 1 || Number(port) > 65535)) return null;
+  return { host, port, path: text };
+}
+
+export function pageAddress(check) {
+  return `${check?.host || ''}${check?.port ? `:${check.port}` : ''}${check?.path || '/'}`;
+}
+
 /** One check from its line text ("file a.js says \"x\"", "run npm test", "ask ..."), or null. */
 export function parseCheck(line) {
   const text = String(line || '').trim();
@@ -51,6 +78,12 @@ export function parseCheck(line) {
   }
   const run = /^run\s+(.+)$/i.exec(text);
   if (run) return isAllowedCommand(run[1].trim()) ? { kind: 'run', command: run[1].trim().replace(/\s+/g, ' ') } : null;
+  const page = /^page\s+(\S+)(?:\s+says\s+"(.+)")?$/i.exec(text);
+  if (page) {
+    const where = parsePageAddress(page[1]);
+    if (!where) return null;
+    return { kind: 'page', ...where, ...(page[2] ? { says: clip(page[2], 200) } : {}) };
+  }
   const ask = /^ask\s+(.+)$/i.exec(text);
   if (ask) return { kind: 'ask', statement: clip(ask[1], 300) };
   return null;
@@ -60,12 +93,14 @@ export function parseCheck(line) {
 export function checkWords(check) {
   if (check?.kind === 'file') return check.says ? `${check.path} says "${check.says}"` : `${check.path} is there`;
   if (check?.kind === 'run') return `${check.command} passes`;
+  if (check?.kind === 'page') return check.says ? `the page ${pageAddress(check)} says "${check.says}"` : `the page ${pageAddress(check)} answers`;
   return check?.statement || '';
 }
 
 export function checkLine(check) {
   if (check?.kind === 'file') return `file ${check.path}${check.says ? ` says "${check.says}"` : ''}`;
   if (check?.kind === 'run') return `run ${check.command}`;
+  if (check?.kind === 'page') return `page ${pageAddress(check)}${check.says ? ` says "${check.says}"` : ''}`;
   return `ask ${check?.statement || ''}`;
 }
 

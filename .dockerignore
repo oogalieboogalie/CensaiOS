@@ -21,6 +21,7 @@
 !src
 !public
 !server
+!shared
 !docker
 !scripts
 !packages

@@ -89,7 +89,7 @@ export function StreamWindow({ win, onUpdate }) {
               <div style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />
             </div>
 
-            <YouTubeSearch label="YouTube" onPick={(item) => onUpdate({ src: item.embedUrl })} />
+            <YouTubeSearch from="stream" label="YouTube" onPick={(item) => onUpdate({ src: item.embedUrl })} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />

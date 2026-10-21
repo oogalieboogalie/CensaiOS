@@ -44,7 +44,9 @@ export function planText(plan, { answers = false } = {}) {
 function scopeOf(context) {
   const workspaceId = context.workspaceId;
   const userId = Number(context.userId);
-  return workspaceId && Number.isInteger(userId) && userId > 0 ? { workspaceId, userId } : null;
+  if (!workspaceId || !Number.isInteger(userId) || userId <= 0) return null;
+  // Typed at this computer: an owner-only refusal may name the owner account.
+  return context.atThisComputer === true ? { workspaceId, userId, atThisComputer: true } : { workspaceId, userId };
 }
 
 // Code changes and test runs are the computer owner's (server/tools/rbac/hostOwnerOnly.js),

@@ -10,6 +10,7 @@ import { LOCAL_STATE_DIR } from '../routes/files/pathUtils.js';
 import { claimCliLogin } from './loginOwner.js';
 import { personalSignedIn } from './personalHome.js';
 import { cliMayUseServerKeys } from './serverKeyScope.js';
+import { envKeysSwitchedOff } from '../security/envKeys.js';
 import { createLogger } from '../logger.js';
 
 const log = createLogger('cli-agents');
@@ -20,7 +21,8 @@ export { CLI_ADAPTERS, getAdapter } from './adapters/index.js';
 /**
  * Where a CLI's key comes from, in order: the user's key vault (Settings →
  * keys), then, only for someone allowed the computer's own keys
- * (serverKeyScope.js), the Toolchains config and the server environment.
+ * (serverKeyScope.js) and unless CENSAI_ENV_KEYS=off, the Toolchains config
+ * and the server environment.
  * Returning null is fine: the CLI then uses its own login (claude login,
  * codex login…), but only for the person who owns that login (loginOwner.js).
  * The key goes into the CLI's environment only; it is never stored on the
@@ -40,7 +42,10 @@ export async function resolveCliKey({ adapter, userId }, {
   const usable = (key) => (key && !/^sk-ant-oat/i.test(String(key).trim()) ? key : null);
   const fromToolchains = usable(toolchain().apiKeys?.[adapter.keyEnv]);
   const fromEnv = usable(env[adapter.keyEnv]);
-  if (fromToolchains || fromEnv) {
+  if ((fromToolchains || fromEnv) && envKeysSwitchedOff(env)) {
+    // CENSAI_ENV_KEYS=off covers the CLIs too: their own key or sign-in only.
+    if (!quiet) log.info('setup-file key kept from cli (switched off)', { cli: adapter.id, keyName: adapter.keyEnv });
+  } else if (fromToolchains || fromEnv) {
     if (await mayUse(userId)) {
       return fromToolchains ? { key: fromToolchains, source: 'toolchains' } : { key: fromEnv, source: 'env' };
     }

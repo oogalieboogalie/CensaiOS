@@ -127,7 +127,7 @@ export function AddPanel({ music, tab, onPickFiles }) {
   const { inputUrl, setInputUrl, handleLoad, loadTrack } = music;
   return (
     <div className="hb-music-panel">
-      <YouTubeSearch label="Search YouTube" onPick={(item) => loadTrack(item.embedUrl, item.title, 'youtube')} />
+      <YouTubeSearch from="music" label="Search YouTube" onPick={(item) => loadTrack(item.embedUrl, item.title, 'youtube')} />
       <div className="hb-music-label">Or paste a link</div>
       <div className="hb-music-paste">
         <input

@@ -12,6 +12,8 @@ import { useCodeEditorActions } from './codeEditor/useCodeEditorActions.js';
 import { VSCodeLikeEditor } from './codeEditor/VSCodeLikeEditor.jsx';
 import { LegacyCodePane } from './codeEditor/LegacyCodePane.jsx';
 import { CodeEditorContextMenu } from './codeEditor/CodeEditorContextMenu.jsx';
+import { useCodeFileLoad } from './codeEditor/useCodeFileLoad.js';
+import { FileLoadError } from './files/FileLoadError.jsx';
 
 const DEFAULT_CODE = `// Write code here.
 function greet(name) {
@@ -20,15 +22,12 @@ function greet(name) {
 
 console.log(greet('Censai'));`;
 
-const codeContentCache = new Map();
-
 // jsdom (tests) can't run CodeMirror — render the legacy textarea pane there
 // so the existing file/code-server contract tests keep passing unchanged.
 const isLegacyTestEnv = () => typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || '');
 
 export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
   const [code, setCode] = React.useState(win.code || DEFAULT_CODE);
-  const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [saveNote, setSaveNote] = React.useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -61,40 +60,10 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
     agentId: (win.attachedAgents || [])[0] || 'censai',
   });
 
-  React.useEffect(() => {
-    if (!win.filePath) return;
-    const url = win.isGithub
-      ? `/api/github/file?repo=${encodeURIComponent(win.githubRepo)}&path=${encodeURIComponent(win.filePath)}`
-      : `/api/files/content?path=${encodeURIComponent(win.filePath)}`;
-    // Local files are read fresh every time: an agent or a terminal may
-    // have changed them since this browser last looked.
-    if (win.isGithub && codeContentCache.has(url)) {
-      const cached = codeContentCache.get(url);
-      setCode(cached);
-      onUpdate?.({ code: cached });
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    fetch(url).then((res) => res.json()).then((data) => {
-      if (cancelled) return;
-      if (data.error) throw new Error(data.error);
-      const next = data.content || '';
-      codeContentCache.set(url, next);
-      setCode(next);
-      onUpdate?.({ code: next });
-      setLoading(false);
-    }).catch((err) => {
-      if (cancelled) return;
-      setCode(`Failed to load file: ${err.message}`);
-      setLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, [win.filePath, win.isGithub, win.githubRepo]);
+  const { loading, loadError, canSave } = useCodeFileLoad(win, setCode, onUpdate);
 
   const saveFile = async () => {
-    if (!win.filePath || win.isGithub) return;
+    if (!canSave) return;
     setSaving(true);
     try {
       const res = await fetch('/api/files/content', {
@@ -152,8 +121,8 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
         {win.isGithub && <span style={{ fontSize: 'var(--text-xs)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', color: 'var(--ink)' }}>{win.githubRepo}</span>}
         {isIframeMode && <span data-code-server-url-badge style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', color: 'var(--ink)' }} title={codeServerUrl}>{codeServerUrl}</span>}
         {win.filePath && !win.isGithub && !isIframeMode && (
-          <button onClick={(e) => { e.stopPropagation(); saveFile(); }} disabled={saving} title="Save local file"
-            style={{ all: 'unset', cursor: saving ? 'wait' : 'pointer', color: 'var(--accent-ink)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '4px 7px', textTransform: 'none', letterSpacing: 0, fontSize: 'var(--text-xs)', fontWeight: 700, opacity: saving ? 0.5 : 1 }}>
+          <button onClick={(e) => { e.stopPropagation(); if (canSave && !saving) saveFile(); }} disabled={saving || !canSave} title={canSave ? 'Save local file' : 'Save stays off until the file loads'}
+            style={{ all: 'unset', cursor: saving ? 'wait' : (canSave ? 'pointer' : 'default'), color: 'var(--accent-ink)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '4px 7px', textTransform: 'none', letterSpacing: 0, fontSize: 'var(--text-xs)', fontWeight: 700, opacity: (saving || !canSave) ? 0.45 : 1 }}>
             {saving ? 'Saving...' : 'Save'}
           </button>
         )}
@@ -179,13 +148,14 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
       {showSettings && <SettingsPanel title="Editor Theme" theme={theme} onThemeChange={handleThemeChange} onClose={() => setShowSettings(false)} />}
       {win.typingActor && !win.typingActor.shared && !isIframeMode && <div style={{ padding: '5px 12px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{win.typingActor.label} — read-only while they type, so your saves never collide.</div>}
       {saveNote && !isIframeMode && <div data-testid="code-save-note" style={{ padding: '4px 12px', background: saveNote.kind === 'error' ? 'color-mix(in oklab, var(--danger) 12%, transparent)' : 'var(--accent-soft)', color: saveNote.kind === 'error' ? 'var(--danger)' : 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{saveNote.text}</div>}
+      {!isIframeMode && <FileLoadError message={loadError} />}
       {formatStatus && !isIframeMode && <div style={{ padding: '4px 12px', background: formatStatus.kind === 'error' ? 'color-mix(in oklab, var(--danger) 12%, transparent)' : 'var(--accent-soft)', color: formatStatus.kind === 'error' ? 'var(--danger)' : 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{formatStatus.text}</div>}
 
       {isIframeMode ? (
         <CodeServerIframeView url={codeServerUrl} theme={theme} winOpacity={win.opacity} />
       ) : (
       <div onContextMenu={openMenu} onKeyDown={(e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveFile(); }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (canSave) saveFile(); }
       }} style={{ flex: 1, minHeight: 0, display: 'flex', background: win.opacity !== undefined ? 'transparent' : theme.background }}>
         {useLegacyPane ? (
           <LegacyCodePane code={code} theme={theme} winOpacity={win.opacity} readOnly={Boolean(win.typingActor && !win.typingActor.shared)} onChange={updateCode} focusProps={focusProps} />

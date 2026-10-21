@@ -93,6 +93,7 @@ export const PROVIDER_BRAND = Object.freeze({
   deepseek: 'deepseek', groq: 'groq', xai: 'xai', together: 'together', moonshot: 'moonshotai',
   zai: 'zai', opencode: 'opencode', huggingface: 'huggingface', perplexity: 'perplexity', lmstudio: 'lmstudio',
   elevenlabs: 'elevenlabs', langsmith: 'langchain', langchain: 'langchain', googlecloud: 'googlecloud',
+  youtube: 'youtube',
 });
 
 // Coding CLIs in the Agent Console. Codex is OpenAI's; Simple Icons has no

@@ -15,6 +15,7 @@ import {
 } from '../security/httpBoundary.js';
 import { PostgresSessionStore } from '../security/postgresSessionStore.js';
 import { createCsrfOriginGuard } from '../middleware/csrfOriginGuard.js';
+import { createSessionRoleRefresh } from '../security/sessionRole.js';
 import { doorAllowsOrigin } from '../webOs/door.js';
 import { isPlaygroundRead } from './playgroundAssets.js';
 import { requestLogger } from './requestLog.js';
@@ -70,6 +71,8 @@ export function setupMiddleware(app) {
     proxy: true,
     cookie: getSessionCookieOptions(APP_ORIGIN),
   }));
+  // A role changed in the database counts on the next request, no sign-out.
+  app.use(createSessionRoleRefresh({ db: pool }));
   // Cross-site write check runs after the session cookie is read and before
   // any route handler.
   app.use(createCsrfOriginGuard({ appOrigin: APP_ORIGIN }));

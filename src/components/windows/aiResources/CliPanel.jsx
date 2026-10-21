@@ -10,6 +10,7 @@ import { money, tokens, when } from '../../../lib/aiResources/format.js';
 function accountText(cli) {
   if (cli.account) return cli.account;
   if (cli.accountHidden) return 'account shown to the computer\'s owner only';
+  if (cli.accountWithToken) return 'signed in, account not shown (it is kept only with the sign-in, which censaiOS never opens)';
   return cli.signedInVia === 'cli-login' ? 'account name not shown by this CLI' : null;
 }
 

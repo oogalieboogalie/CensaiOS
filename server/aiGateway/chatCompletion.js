@@ -136,7 +136,7 @@ export async function requestChatCompletion({
       });
 
       if (!response.ok) {
-        const err = chatCompletionHttpError(response.status, await response.text(), response.headers?.get?.('retry-after') || null);
+        const err = chatCompletionHttpError(response.status, await response.text(), response.headers?.get?.('retry-after') || null, config?.provider || null);
         if (attempt < maxRetriesForStatus(response.status, retryOptions) && err.retryable) {
           await waitForRetry({ attempt, retryOptions, response, payload, context, error: err, baseDelayMs: baseDelayForStatus(response.status, retryOptions) });
           continue;

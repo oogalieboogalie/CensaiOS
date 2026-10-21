@@ -1,5 +1,5 @@
 import React from 'react';
-import { diffText, rebaseCaret } from '../../../server/collab/textDiff.js';
+import { diffText, rebaseCaret } from '../../../shared/collab/textDiff.js';
 
 // Keeps a focused <textarea>'s caret in place when someone else's edit
 // replaces its controlled `value`. Plain local typing needs nothing: the DOM

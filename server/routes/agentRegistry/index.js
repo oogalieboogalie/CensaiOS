@@ -26,6 +26,7 @@ import {
 } from './cards.js';
 import { callCard, readCallResult } from './invoke.js';
 import { installCard, listInstalls, removeInstall } from './installs.js';
+import { logCardChange } from './changeLog.js';
 import { importA2ACard, importCensaiAgent, importN8NChat } from './imports.js';
 import { listAgentReceipts } from './receipts.js';
 import {
@@ -72,11 +73,11 @@ agentRegistryRouter.get('/cards/:id', readCard);
 agentRegistryRouter.use(requireActor);
 
 agentRegistryRouter.get('/installs', listInstalls);
-agentRegistryRouter.put('/installs/:id', installCard);
-agentRegistryRouter.delete('/installs/:id', removeInstall);
-agentRegistryRouter.post('/imports/a2a', importA2ACard);
-agentRegistryRouter.post('/imports/n8n-chat', importN8NChat);
-agentRegistryRouter.post('/imports/censai', importCensaiAgent);
+agentRegistryRouter.put('/installs/:id', logCardChange('install'), installCard);
+agentRegistryRouter.delete('/installs/:id', logCardChange('remove'), removeInstall);
+agentRegistryRouter.post('/imports/a2a', logCardChange('import'), importA2ACard);
+agentRegistryRouter.post('/imports/n8n-chat', logCardChange('import'), importN8NChat);
+agentRegistryRouter.post('/imports/censai', logCardChange('import'), importCensaiAgent);
 
 // Agent network: discovery + agent-to-agent help requests.
 agentRegistryRouter.get('/discover', discover);
@@ -87,9 +88,9 @@ agentRegistryRouter.post('/help-requests/:id/decision', decideRequest);
 agentRegistryRouter.post('/help-requests/:id/cancel', cancelRequest);
 agentRegistryRouter.get('/receipts', listAgentReceipts);
 
-agentRegistryRouter.post('/cards', createCard);
-agentRegistryRouter.patch('/cards/:id', updateCard);
-agentRegistryRouter.delete('/cards/:id', deleteCard);
+agentRegistryRouter.post('/cards', logCardChange('publish'), createCard);
+agentRegistryRouter.patch('/cards/:id', logCardChange('edit'), updateCard);
+agentRegistryRouter.delete('/cards/:id', logCardChange('delete'), deleteCard);
 
 // Invocation endpoints. Both require auth.
 agentRegistryRouter.post('/cards/:id/call', callCard);

@@ -19,11 +19,22 @@ function readUrl(url) {
   }
 }
 
+/** Path with %XX turned back into characters. A stray % stays as written. */
+function decodedPath(url, u) {
+  const path = u.pathname || '/';
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    logMusic('warn', `could not decode a link from ${linkHost(url)}`);
+    return path;
+  }
+}
+
 /** 'song' for a direct audio file link, 'radio' for a radio stream, else null. */
 export function directAudioKind(url) {
   const u = readUrl(url);
   if (!u || EMBED_HOST.test(u.hostname)) return null;
-  const path = decodeURIComponent(u.pathname || '/');
+  const path = decodedPath(url, u);
   if (SONG_FILE.test(path)) return 'song';
   if (RADIO_PATH.test(path) || RADIO_HOST.test(u.hostname)) return 'radio';
   return null;

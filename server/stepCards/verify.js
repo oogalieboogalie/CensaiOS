@@ -2,7 +2,9 @@
 // when the thing is true now. A "file" check looks in the project folder (or
 // in the coding agent's own worktree when the step went to one), a "run"
 // check runs the project's own npm test or script (owner only, a plain
-// environment with none of this app's keys), and an "ask" check has Censai
+// environment with none of this app's keys), a "page" check asks the
+// project's own running app for one page (owner only, see pageCheck.js), and
+// an "ask" check has Censai
 // read the helper's report against the sentence, PASS or FAIL in capitals.
 // Results: [{ id, ok: true | false | null, line }]. ok null means it could
 // not be checked, with the reason; it never turns a dot green.
@@ -13,6 +15,7 @@ import { isAllowedCommand } from '../../src/lib/stepCards/todoFile.js';
 import { parseItemReview } from '../censaiOrchestrator/prompts.js';
 import { plainEnv, testCounts } from '../censaiOrchestrator/projectTests.js';
 import { runCommand } from '../tools/handlers/runnerUtils.js';
+import { checkPage } from './pageCheck.js';
 import { scrubText } from '../selfFix/scrubText.js';
 
 export const RUN_TIMEOUT_MS = Math.max(30_000, Number(process.env.STEP_CARDS_RUN_TIMEOUT_MS) || 10 * 60 * 1000);
@@ -113,7 +116,7 @@ export function askMessages({ step, asks, report, seen = [] }) {
 /**
  * Check every check on one step. ctx: { cwd, report, isOwner() -> bool, complete(messages) -> text,
  * trustFrom (the project a worktree came from), skipRuns (an automatic check never runs commands) }.
- * Files and runs go first, so Censai's read-over sees what they found.
+ * Files, runs and pages go first, so Censai's read-over sees what they found.
  */
 export async function verifyStep({ step, checks, ctx, deps = {} }) {
   const results = new Map();
@@ -124,13 +127,19 @@ export async function verifyStep({ step, checks, ctx, deps = {} }) {
     seen.push(r.line);
   }
   const runs = checks.filter((c) => c.kind === 'run');
-  const owner = runs.length ? await ctx.isOwner() : false;
+  const pages = checks.filter((c) => c.kind === 'page');
+  const owner = runs.length || pages.length ? await ctx.isOwner() : false;
   for (const check of runs) {
     let r;
     if (!ctx.cwd) r = { ok: null, line: ctx.noFolder };
     else if (!owner) r = { ok: null, line: 'Only this computer\'s owner can run checks that run commands.' };
     else if (ctx.skipRuns) r = { ok: null, line: 'Commands only run when you press Check this step.' };
     else r = await checkRun(ctx.cwd, check, { ...deps, trustFrom: ctx.trustFrom || null });
+    results.set(check.id, r);
+    seen.push(r.line);
+  }
+  for (const check of pages) {
+    const r = owner ? await checkPage(ctx.cwd, check, deps) : { ok: null, line: 'Only this computer\'s owner can check pages of the project\'s app.' };
     results.set(check.id, r);
     seen.push(r.line);
   }

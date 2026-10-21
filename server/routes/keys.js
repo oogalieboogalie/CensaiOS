@@ -7,6 +7,12 @@ import {
   USER_API_KEY_PROVIDERS,
 } from '../security/userApiKeys.js';
 import { ownerEnvKeyProviders } from '../security/envKeys.js';
+import { createLogger } from '../logger.js';
+
+// One line per save, removal or failure: account number, provider and a short
+// error code. Never the key, the model text or the database's own message.
+const log = createLogger('keys');
+const code = (err) => (err?.code && /^[A-Za-z0-9_]{1,20}$/.test(String(err.code)) ? String(err.code) : null);
 
 export const keysRouter = express.Router();
 
@@ -42,8 +48,8 @@ keysRouter.get('/keys', async (req, res) => {
 
     res.json(keys);
   } catch (err) {
-    console.error('Failed to list keys:', err);
-    res.status(500).json({ error: err.message });
+    log.error('key list failed', { userId, code: code(err) });
+    res.status(500).json({ error: 'Could not read your saved AI keys.' });
   }
 });
 
@@ -86,10 +92,11 @@ keysRouter.post('/keys', async (req, res) => {
       [userId, provider, encrypted, null, modelName || null]
     );
 
+    log.info('key saved', { userId, provider, withModel: Boolean(modelName) });
     res.status(201).json({ ok: true, provider });
   } catch (err) {
-    console.error('Failed to save API key:', err);
-    res.status(500).json({ error: err.message });
+    log.error('key save failed', { userId, provider, code: code(err) });
+    res.status(500).json({ error: 'Could not save the key.' });
   }
 });
 
@@ -106,13 +113,14 @@ keysRouter.delete('/keys/:provider', async (req, res) => {
   }
 
   try {
-    await pool.query(
+    const result = await pool.query(
       'DELETE FROM user_api_keys WHERE user_id = $1 AND provider = $2',
       [userId, provider]
     );
+    log.info('key removed', { userId, provider, found: (result?.rowCount ?? 0) > 0 });
     res.json({ ok: true });
   } catch (err) {
-    console.error('Failed to delete API key:', err);
-    res.status(500).json({ error: err.message });
+    log.error('key remove failed', { userId, provider, code: code(err) });
+    res.status(500).json({ error: 'Could not remove the key.' });
   }
 });

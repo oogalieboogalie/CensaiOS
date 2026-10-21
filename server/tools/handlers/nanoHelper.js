@@ -3,7 +3,7 @@
 // key, with no tools; its answer is saved in the sub-agent's data box and
 // returned, and the helper is gone.
 import { getSubAgentById, getSubAgents, scratchpadWrite } from '../../memory.js';
-import { getSubAgentModelConfig } from '../../routes/chat/prompts.js';
+import { getSubAgentModelConfig } from '../../chatModel/prompts.js';
 import { callModel, createModelAccessContext, workspaceUsageSink } from '../../aiGateway/index.js';
 import { HELPER_JOBS, HELPER_MAX_INPUT, HELPER_TEMPERATURE, helperJob, helperKey, helperPrompt } from '../../../src/lib/agents/nanoHelpers.js';
 import { boxNumbers } from '../../../src/lib/agents/dataBoxes.js';

@@ -29,7 +29,7 @@ export async function runChatLoop({
   sendEvent,
   onModelAccepted,
   timings,
-  userId,
+  userId, atThisComputer = false,
   traceId, signal = null, runTool = executeTool,
 }) {
   let toolActions = [];
@@ -38,7 +38,7 @@ export async function runChatLoop({
   let synthesisReason = null;
   let round = 0;
   const toolSession = createChatToolSession(toolsForCaller, reqProvider);
-  const toolContext = { userId, ...(windowId ? { windowId } : {}), ...(authorizationWorkspaceId ? { workspaceId: authorizationWorkspaceId } : {}) };
+  const toolContext = { userId, ...(atThisComputer === true ? { atThisComputer: true } : {}), ...(windowId ? { windowId } : {}), ...(authorizationWorkspaceId ? { workspaceId: authorizationWorkspaceId } : {}) };
   const accessContext = chatModelAccessContext(userId, authorizationWorkspaceId);
   let modelAccepted = false;
   const acceptModel = () => { if (!modelAccepted) { modelAccepted = true; onModelAccepted?.(); } };

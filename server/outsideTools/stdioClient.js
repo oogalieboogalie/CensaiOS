@@ -8,7 +8,9 @@
 //
 // The program gets the same short environment the Agent Console gives coding
 // CLIs (no database address, no session secret), plus the one key the user
-// saved for it, in the variable they named.
+// saved for it, in the variable they named. The server's shared settings
+// (CENSAI_CLI_AGENT_ENV_PASS) go only to tools of someone allowed the
+// computer's own keys (`serverKeys`, the same owner check as coding CLIs).
 
 import { spawn } from 'node:child_process';
 import { buildAgentEnv } from '../cli-agents/env.js';
@@ -17,8 +19,14 @@ import { CLIENT_INFO, CLIENT_PROTOCOL_VERSION, OutsideToolError, unwrapReply } f
 const DEFAULT_TIMEOUT_MS = 30 * 1000;
 const MAX_LINE_CHARS = 2 * 1024 * 1024;
 
-export function stdioEnv({ secret = '', secretEnv = '', source = process.env } = {}) {
-  const env = buildAgentEnv({ source });
+/** How many shared settings CENSAI_CLI_AGENT_ENV_PASS would pass (names only, never values). */
+export function sharedSettingCount(source = process.env) {
+  return String(source.CENSAI_CLI_AGENT_ENV_PASS || '').split(',').map((s) => s.trim())
+    .filter((s) => /^[A-Z][A-Z0-9_]{1,63}$/.test(s) && source[s] != null).length;
+}
+
+export function stdioEnv({ secret = '', secretEnv = '', source = process.env, serverKeys = false } = {}) {
+  const env = buildAgentEnv({ source: serverKeys ? source : { ...source, CENSAI_CLI_AGENT_ENV_PASS: '' }, serverKeys });
   delete env.CI;
   delete env.CENSAI_AGENT_CONSOLE;
   if (secret && /^[A-Z][A-Z0-9_]{0,63}$/.test(secretEnv)) env[secretEnv] = secret;
@@ -26,7 +34,7 @@ export function stdioEnv({ secret = '', secretEnv = '', source = process.env } =
 }
 
 export function createStdioClient({
-  command, args = [], secret = '', secretEnv = '', spawnImpl = spawn, timeoutMs = DEFAULT_TIMEOUT_MS,
+  command, args = [], secret = '', secretEnv = '', serverKeys = false, spawnImpl = spawn, timeoutMs = DEFAULT_TIMEOUT_MS,
 }) {
   let child = null;
   let buffer = '';
@@ -61,7 +69,7 @@ export function createStdioClient({
 
   function start() {
     child = spawnImpl(command, args, {
-      env: stdioEnv({ secret, secretEnv }),
+      env: stdioEnv({ secret, secretEnv, serverKeys }),
       stdio: ['pipe', 'pipe', 'pipe'],
       shell: process.platform === 'win32',
       windowsHide: true,

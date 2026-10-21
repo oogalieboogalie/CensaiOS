@@ -18,6 +18,7 @@ const PROVIDER_LABELS = Object.freeze({
   cohere: 'Cohere',
   opencode: 'OpenCode Zen',
   tavily: 'Tavily',
+  youtube: 'YouTube',
   elevenlabs: 'ElevenLabs',
   figma: 'Figma',
   github: 'GitHub',

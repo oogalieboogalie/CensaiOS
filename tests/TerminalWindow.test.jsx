@@ -1,6 +1,8 @@
 /**
  * @jest-environment jsdom
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import React from 'react';
 import { jest } from '@jest/globals';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -115,6 +117,12 @@ test('renders TerminalWindow and triggers an agent run task', async () => {
   );
 });
 
+test('a long folder name ellipsizes and the chip title is the full name', () => {
+  const css = fs.readFileSync(path.join(process.cwd(), 'src/styles/window-chrome.css'), 'utf8');
+  expect(css).toMatch(/\.hb-win-project-name \{[^}]*overflow: hidden; text-overflow: ellipsis; white-space: nowrap;/);
+  expect(css).toMatch(/\.hb-win-project-chip \{[^}]*overflow: hidden;/);
+});
+
 test('"Mount to" opens a folder picker and mounts the terminal to the picked folder', async () => {
   const onUpdate = jest.fn();
   const win = { id: 'term-2', kind: 'terminal', title: 'Terminal', cwd: '/workspace/projects' };
@@ -139,6 +147,8 @@ test('"Mount to" opens a folder picker and mounts the terminal to the picked fol
   // and a click opens the picker straight away (no menu, no dropdown).
   await act(async () => { render(<WindowProjectChip win={win} onUpdate={onUpdate} />); });
   expect(screen.getByText('Mount to')).toBeTruthy();
+  expect(screen.getByText('projects').getAttribute('title')).toBe('projects');
+  expect(screen.getByTitle(/Mount to projects\./)).toBeTruthy();
   expect(screen.queryByRole('combobox')).toBeNull();
   await act(async () => { fireEvent.click(screen.getByTitle(/Click to mount it to another folder/)); });
   expect(screen.queryByRole('menu')).toBeNull();

@@ -3,6 +3,8 @@ import { WindowFrame } from '../windows/WindowFrame.jsx';
 import { WindowSuspenseFallback } from '../windows/WindowSuspenseFallback.jsx';
 import { stackLevels } from '../../lib/windowStacking.js';
 import { tileIndex } from '../../lib/layout/dock.js';
+import { filterForGroupFocus } from '../../lib/groupHotkeys.js';
+import { useWorkspaceStore } from '../../lib/store.js';
 
 const CanvasObjectRenderer = React.lazy(() => import('./CanvasRenderer.jsx').then((mod) => ({
   default: mod.CanvasObjectRenderer,
@@ -94,12 +96,21 @@ const MAXIMIZED_LAYER = 200000;
 
 export function CanvasWindows(props) {
   const { wins, canvasGroups = [], offset = { top: 24, left: 24 } } = props;
+  const groupFocus = useWorkspaceStore((state) => state.groupFocus);
   // Which windows are tiles in a group (and which corners stay rounded), and
   // which are tabs hidden behind another tab in their slot.
   const tiles = React.useMemo(() => tileIndex(wins, canvasGroups), [wins, canvasGroups]);
+  // Windows outside the focused group stay in this list (so they keep
+  // running) and are hidden the same way a covered tab is.
+  const hiddenOutside = React.useMemo(() => {
+    if (!groupFocus?.groupId) return new Set();
+    return new Set(filterForGroupFocus(wins, canvasGroups, groupFocus).hiddenOutside);
+  }, [wins, canvasGroups, groupFocus]);
   // Snapshot of positions/sizes for edge-snapping: keeps the memoized frames
   // from re-rendering on unrelated window-state changes (PR #119).
-  const snapWins = React.useMemo(() => wins.map(w => ({ id: w.id, x: w.x, y: w.y, w: w.w, h: w.h, hidden: tiles.hidden.has(w.id) })), [wins, tiles]);
+  const snapWins = React.useMemo(() => wins.map(w => ({
+    id: w.id, x: w.x, y: w.y, w: w.w, h: w.h, hidden: tiles.hidden.has(w.id) || hiddenOutside.has(w.id),
+  })), [wins, tiles, hiddenOutside]);
   // Shared stacking order (window zIndex field, synced for everyone).
   const levels = React.useMemo(() => stackLevels(wins), [wins]);
 
@@ -110,8 +121,10 @@ export function CanvasWindows(props) {
         let style = { pointerEvents: 'auto' };
         const tile = tiles.index.get(w.id);
         let winProps = { ...props, win: w, allWins: snapWins, stackLevel: levels.get(w.id) || 0, tileGroupId: tile?.groupId || null, tileCorners: tile?.corners || '' };
-        // Hidden tabs stay mounted (their state survives) but don't draw.
-        if (tiles.hidden.has(w.id)) style = { ...style, display: 'none' };
+        // Hidden tabs, and windows outside a full-screen group, stay mounted
+        // (their state survives) but don't draw.
+        const outOfSight = tiles.hidden.has(w.id) || hiddenOutside.has(w.id);
+        if (outOfSight) style = { ...style, display: 'none' };
 
         if (w.maximized) {
           style = { ...style, position: 'fixed', inset: 0, zIndex: MAXIMIZED_LAYER, pointerEvents: 'none' };
@@ -120,11 +133,11 @@ export function CanvasWindows(props) {
           const top = offset.top + pinnedCount;
           style = { ...style, position: 'absolute', top, left: offset.left, zIndex: PINNED_LAYER };
           winProps = { ...winProps, zoom: 1, pan: { x: 0, y: 0 }, groups: props.groups, onDragEnd: undefined, onWireStart: undefined, onWireDrag: undefined, onWireEnd: undefined, onCreateAgent: undefined };
-          pinnedCount += (w.h * 0.75 + 16);
+          if (!hiddenOutside.has(w.id)) pinnedCount += (w.h * 0.75 + 16);
         }
 
         return (
-          <div key={w.id} style={style}>
+          <div key={w.id} data-win-shell={w.id} style={style}>
             <div style={{ pointerEvents: 'auto' }}>
               <RenderedWindow {...winProps} />
             </div>

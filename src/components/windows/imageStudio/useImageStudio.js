@@ -6,6 +6,7 @@ import {
   makeStudioObject,
   normalizeImageStudioState,
 } from './model.js';
+import { logToApp } from '../../../lib/appLog/browserLog.js';
 import { useWorkspaceStore } from '../../../lib/store.js';
 
 export function useImageStudio(win, onUpdate) {
@@ -60,9 +61,12 @@ export function useImageStudio(win, onUpdate) {
   const deleteSelected = React.useCallback(() => persist(deleteSelectedObject(state)), [persist, state]);
   const clearCanvas = React.useCallback(() => persist({ ...state, objects: [], selectedObjectId: null }), [persist, state]);
 
-  const insertSelectedImage = React.useCallback(() => {
-    const image = gallery.find(item => item.id === selectedImageId);
+  const insertSelectedImage = React.useCallback((imageId) => {
+    const id = typeof imageId === 'string' && imageId ? imageId : selectedImageId;
+    const image = gallery.find(item => item.id === id);
     if (!image) return;
+    setSelectedImageId(image.id);
+    logToApp('info', `image studio: inserted ${image.id}`, { where: 'image-studio' });
     persist(addOrReplaceObject(state, makeStudioObject('image', { x: 80, y: 80 }, {
       imageId: image.id,
       src: image.src,

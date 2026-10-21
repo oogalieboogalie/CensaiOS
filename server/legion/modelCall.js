@@ -4,7 +4,7 @@
 import { requestChatCompletion } from '../aiGateway/index.js';
 import { tagRejectedKey } from '../aiGateway/missingKey.js';
 import { laneConfig, ARENA_PROVIDERS } from '../modelArena/runLane.js';
-import { publicChatError } from '../routes/chat/httpErrors.js';
+import { publicChatError } from '../chatModel/errors.js';
 
 export const LEGION_CALL_TIMEOUT_MS = 180_000;
 export const LEGION_MAX_TOKENS = 16_000;

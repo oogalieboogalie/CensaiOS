@@ -1,8 +1,10 @@
 // Answers the app's /api calls inside the browser for the try-it board.
 // Nothing leaves the page and nothing is kept: the board lives in memory and
 // a reload starts over. Unknown calls get an empty answer so every window
-// still opens; anything that would need a real server says so plainly.
+// still opens, and the log records which feature was turned down. Anything
+// that would need a real server says so plainly.
 import { demoChatStream } from './demoChat.js';
+import { declineFeature } from './declineUnknown.js';
 
 export const DEMO_USER = { id: 'demo-visitor', email: 'visitor@try.censai.app', name: '', role: 'owner' };
 export const DEMO_WORKSPACE = 'demo-board';
@@ -55,6 +57,9 @@ export async function demoResponse(path, init = {}) {
   if (p === '/api/chat/capabilities') {
     return json({ provider: 'demo', model: 'sample replies', capabilities: { text: true }, limits: {} });
   }
+  // Nothing to share keys with here, so that section stays hidden.
+  if (p === '/api/key-sharing' || p.startsWith('/api/key-sharing/')) return json({ available: false });
+  declineFeature(p);
   if (method === 'GET') return json({});
   return json({ ok: true, demo: true });
 }

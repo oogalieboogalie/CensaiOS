@@ -9,6 +9,7 @@
 import path from 'node:path';
 import pool from '../db.js';
 import { assertHostToolAllowed } from '../tools/rbac/hostOwnerOnly.js';
+import { ownerNamesSentence } from '../security/ownerNames.js';
 import { readPackageJson, resolveRunnerContext, runCommand } from '../tools/handlers/runnerUtils.js';
 import { scrubText } from '../selfFix/scrubText.js';
 import { agentName } from './shape.js';
@@ -57,7 +58,7 @@ export async function whyTestsCannotRun(db, context = {}) {
     return null;
   } catch (error) {
     return error?.code === 'COMPUTER_OWNER_ONLY'
-      ? 'I could not run the tests: only this computer\'s owner can run them.'
+      ? ['I could not run the tests: only this computer\'s owner can run them.', ownerNamesSentence(error.names)].filter(Boolean).join(' ')
       : `I could not run the tests: ${error?.message || 'the check failed'}`;
   }
 }

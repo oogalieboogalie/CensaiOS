@@ -44,6 +44,12 @@ function GalleryCard({ item, selected, onSelect, onInsert, onDelete }) {
     a.click();
   };
 
+  const insertThisCard = (event) => {
+    event.stopPropagation();
+    onSelect();
+    onInsert(item.id);
+  };
+
   return (
     <article
       onClick={onSelect}
@@ -61,7 +67,7 @@ function GalleryCard({ item, selected, onSelect, onInsert, onDelete }) {
           {item.prompt || 'Untitled image'}
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <SmallButton onClick={(event) => { event.stopPropagation(); onInsert(); }}>Insert</SmallButton>
+          <SmallButton onClick={insertThisCard}>Insert</SmallButton>
           <SmallButton onClick={download}>Download</SmallButton>
           <SmallButton danger onClick={(event) => { event.stopPropagation(); onDelete(); }}>Delete</SmallButton>
         </div>

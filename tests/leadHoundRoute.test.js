@@ -167,10 +167,12 @@ describe('LeadHound routes', () => {
 });
 
 describe('Tavily client', () => {
-  test('falls back to the server key when the user has none', async () => {
+  test('falls back to the server key for the owner when they have none', async () => {
     process.env.TAVILY_API_KEY = 'tvly-server';
-    const key = await resolveTavilyKey(7, { loadUserKey: async () => null });
+    const key = await resolveTavilyKey(7, { loadUserKey: async () => null, mayUse: async () => true });
     expect(key).toEqual({ apiKey: 'tvly-server', source: 'server' });
+    const teammate = await resolveTavilyKey(8, { loadUserKey: async () => null, mayUse: async () => false });
+    expect(teammate).toEqual({ apiKey: '', source: null });
     delete process.env.TAVILY_API_KEY;
   });
 

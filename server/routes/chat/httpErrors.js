@@ -4,6 +4,7 @@ import {
   missingKeyMessage,
   rejectedKeyMessage,
 } from '../../aiGateway/missingKey.js';
+import { isPlainRefusal, plainRefusalSentence, scrubKeys } from '../../aiGateway/providerRefusal.js';
 
 const KEY_CODES = new Set([MODEL_KEY_MISSING, MODEL_KEY_REJECTED, 'MODEL_ACCESS_PERSONAL_KEY_REQUIRED']);
 
@@ -34,10 +35,20 @@ function errorMessage(error, status, code) {
   if (status === 429 || /ratelimit|rate limit exceeded|too many requests/i.test(message)) {
     return 'The model is rate-limited right now (free tier). I already backed off and retried — wait a minute and send again.';
   }
+  const refusal = refusalText(error, status);
+  if (refusal) return refusal;
   if (message && status < 500) {
-    return message.slice(0, 300);
+    return scrubKeys(message).slice(0, 300);
   }
   return 'The AI request could not be completed. Try again shortly.';
+}
+
+function refusalText(error, status) {
+  if (error?.refusalSentence) return scrubKeys(error.refusalSentence).slice(0, 300);
+  if (error?.name === 'ChatCompletionHttpError' && isPlainRefusal(status, error?.body, error?.provider)) {
+    return plainRefusalSentence(error.provider, error.body);
+  }
+  return null;
 }
 
 function retryAfterValue(error) {
@@ -87,6 +98,7 @@ export function sendPublicModelError(res, error, fallbackCode) {
     error: normalized.body.message,
     code,
     retryAfter: normalized.retryAfter,
+    ...(KEY_CODES.has(code) ? { keyProvider: normalized.body.keyProvider ?? null } : {}),
   });
 }
 

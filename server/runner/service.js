@@ -7,6 +7,15 @@ import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import { isRunnerRequestAuthorized, requireRunnerSecret } from './auth.js';
 import { dockerOnlyViolation, execTarget, inspectViolation } from './dockerOnly.js';
+import { createLogger } from '../logger.js';
+
+// Lines carry the program's bare name and outcome only: never arguments,
+// file paths, addresses or file contents.
+const log = createLogger('runner');
+const programName = (command) => {
+  const base = path.basename(String(command || ''));
+  return /^[\w.-]{1,32}$/.test(base) ? base : 'other';
+};
 
 const execFileAsync = promisify(execFile);
 
@@ -34,7 +43,7 @@ export function createRunnerApp({
 
   app.use((req, res, next) => {
     if (!isRunnerRequestAuthorized(secret, req.headers['x-runner-secret'])) {
-      console.warn(`Unauthorized access attempt from ${req.ip}`);
+      log.warn('runner request refused: wrong or missing runner secret');
       return res.status(401).json({ error: 'Unauthorized' });
     }
     next();
@@ -49,13 +58,12 @@ export function createRunnerApp({
   if (dockerOnly) {
     const why = await refusal(command, args);
     if (why) {
-      console.warn(`[Runner] Refused: ${String(command)} ${(args || []).join(' ').slice(0, 100)} (${why})`);
+      log.warn('runner command refused by the Docker gatekeeper', { program: programName(command) });
       return res.json({ stdout: '', stderr: `Refused by the Docker gatekeeper: ${why}.`, code: 126 });
     }
   }
 
-  const cmdPreview = `${command} ${(args || []).join(' ')}`.slice(0, 100);
-  console.log(`[Runner] Executing: ${cmdPreview}`);
+  log.info('runner command started', { program: programName(command) });
 
   try {
     const { stdout, stderr } = await execFileAsync(command, args, {
@@ -65,7 +73,7 @@ export function createRunnerApp({
     });
     res.json({ stdout, stderr, code: 0 });
   } catch (err) {
-    console.error(`[Runner] Command failed: ${cmdPreview}`, err.message);
+    log.warn('runner command failed', { program: programName(command), code: err.code ?? err.status ?? 1 });
     res.json({
       stdout: err.stdout || '',
       stderr: err.stderr || err.message || '',
@@ -76,7 +84,7 @@ export function createRunnerApp({
 
   app.post('/fs/read', async (req, res) => {
   const { path: filePath, encoding = 'utf8' } = req.body;
-  console.log(`[Runner] FS Read: ${filePath}`);
+  log.info('runner file read');
   try {
     const content = await fs.promises.readFile(filePath, encoding);
     res.json({ content });
@@ -87,7 +95,7 @@ export function createRunnerApp({
 
   app.post('/fs/write', async (req, res) => {
   const { path: filePath, content, encoding = 'utf8' } = req.body;
-  console.log(`[Runner] FS Write: ${filePath}`);
+  log.info('runner file write');
   try {
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
     await fs.promises.writeFile(filePath, content, encoding);
@@ -99,7 +107,7 @@ export function createRunnerApp({
 
   app.post('/fs/list', async (req, res) => {
   const { path: dirPath } = req.body;
-  console.log(`[Runner] FS List: ${dirPath}`);
+  log.info('runner folder list');
   try {
     const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
     res.json({
@@ -152,7 +160,7 @@ export function startRunnerService({
 } = {}) {
   const app = createRunnerApp({ runnerSecret });
   return app.listen(port, '0.0.0.0', () => {
-    console.log(`Censai Hub Runner Service started on port ${port}`);
+    log.info('runner service started', { port: Number(port) });
   });
 }
 
@@ -161,7 +169,7 @@ const isMain = process.argv[1]
 if (isMain) {
   try { startRunnerService(); }
   catch (error) {
-    console.error(`Runner service refused to start: ${error.code || error.message}`);
+    log.error('runner service refused to start', { code: error.code || 'unknown' });
     process.exitCode = 1;
   }
 }

@@ -29,8 +29,9 @@ Rules:
   file <path inside the project> says "<text>"    (that file must contain that exact text)
   run npm test -- <test file path>                (the project's own tests must pass)
   run npm run <script name>                       (one of the project's own npm scripts must pass, like npm run gate)
+  page /<path> [says "<text>"]                    (the project's own app, running on this computer, must answer that page)
   ask <one plain sentence that must be true>      (Censai reads the helper's report against it)
-- Use file and run checks whenever the card names files, tests or commands. Use ask only for what no file or command can show, like how a screen looks.
+- Use file and run checks whenever the card names files, tests or commands, and page checks when it names a page or address of the project's own app. Use ask only for what no file or command can show, like how a screen looks.
 - Never invent a file path the card does not name or clearly imply. Never write any other command.
 - Plain, friendly words. No jargon in titles or sentences.`;
 

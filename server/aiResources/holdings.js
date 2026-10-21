@@ -9,9 +9,9 @@ import { USER_API_KEY_PROVIDERS } from '../security/userApiKeys.js';
 import { envKeyFor, ownerEnvKeyProviders } from '../security/envKeys.js';
 import { keyIdentity } from './keyIdentity.js';
 
-// Keys that pay for AI. GitHub, Figma, eBay and Google Cloud keys live in the
-// same vault but are not AI spending, so the window leaves them out.
-const NOT_AI = new Set(['github', 'figma', 'ebay', 'googlecloud']);
+// Keys that pay for AI. GitHub, Figma, eBay, YouTube and Google Cloud keys live
+// in the same vault but are not AI spending, so the window leaves them out.
+const NOT_AI = new Set(['github', 'figma', 'ebay', 'googlecloud', 'youtube']);
 const AI_PROVIDERS = USER_API_KEY_PROVIDERS.filter((p) => !NOT_AI.has(p));
 
 export async function heldKeys(userId, { db = pool, env = process.env } = {}) {

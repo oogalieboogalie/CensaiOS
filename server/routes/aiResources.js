@@ -65,11 +65,11 @@ aiResourcesRouter.post('/ask-provider', async (req, res) => {
     if (!config?.apiKey || keyIdentity(key.provider, config.apiKey)?.id !== key.keyId) {
       return res.status(409).json({ error: 'That key changed. Reload the window and try again.' });
     }
+    // readProviderBalance writes the one log line for this ask.
     const reading = await readProviderBalance(key.provider, config.apiKey);
-    log.info('asked the provider for a balance', { provider: key.provider, ok: true });
     res.json({ reading: setProviderReading(key, reading) });
   } catch (err) {
-    log.warn('provider balance check failed', { error: err.message });
+    if (!err.plain) log.warn('provider balance check failed', { error: err.message });
     res.status(502).json({ error: err.plain ? err.message : 'Could not ask the provider. Try again.' });
   }
 });

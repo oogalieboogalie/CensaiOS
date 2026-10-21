@@ -53,6 +53,21 @@ describe('Image Studio drawing model', () => {
     expect(deleted.selectedObjectId).toBeNull();
   });
 
+  test('keeps a saved canvas id and mints the next object with newId', () => {
+    const legacyId = 'obj-1710000000000-ab12cd';
+    const saved = normalizeImageStudioState({
+      objects: [{ id: legacyId, type: 'rect', x: 1, y: 2, w: 3, h: 4 }],
+      selectedObjectId: legacyId,
+    });
+
+    expect(saved.objects[0].id).toBe(legacyId);
+    expect(saved.selectedObjectId).toBe(legacyId);
+    expect(makeStudioObject('image', { x: 4, y: 5 }, { id: legacyId, imageId: 'old', src: 'old.png' }).id).toBe(legacyId);
+
+    const fresh = makeStudioObject('rect', { x: 0, y: 0 });
+    expect(fresh.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  });
+
   test('moves path objects without mutating the original points', () => {
     const path = { id: 'path-1', type: 'path', points: [{ x: 1, y: 2 }, { x: 3, y: 4 }] };
     const moved = moveObject(path, 10, 20);

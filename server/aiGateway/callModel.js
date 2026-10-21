@@ -56,10 +56,10 @@ export async function callModel({
   });
   const effectiveAttribution = access.governed ? access.attribution : usageAttribution;
   if (kind === EMBEDDING_MODEL_KIND) {
-    const resolvedConfig = config || resolveEmbeddingModelConfig({
+    const resolvedConfig = await forCaller(config || resolveEmbeddingModelConfig({
       modelProvider,
       modelName: modelName || body?.model || null,
-    });
+    }), accessContext);
     const prepared = applyModelAccess(access, { config: resolvedConfig, body, retry });
 
     return requestEmbedding({

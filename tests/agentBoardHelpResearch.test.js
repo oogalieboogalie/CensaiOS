@@ -14,6 +14,7 @@ const researchDeps = jest.fn(async () => ({ tavily: null }));
 
 jest.unstable_mockModule('../server/collab/liveDoc.js', () => ({
   openCanvasDocReader: async () => ({ doc: {}, close: async () => {} }),
+  transactCanvasDoc: async () => false,
 }));
 jest.unstable_mockModule('../server/agent-registry/helpCards.js', () => ({
   readDocWindows: () => board, placeHelpCard, settleHelpCard, patchHelpCard, readHelpCard,

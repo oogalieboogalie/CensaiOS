@@ -10,6 +10,8 @@ censaiOS to-do file
 #   [ ] file <path> says "<text>"   the file has that exact text in it
 #   [ ] run npm test -- <test file> the project's own tests pass
 #   [ ] run npm run <script>        one of the project's npm scripts passes
+#   [ ] page /<path>                the project's app, running on this computer, answers that page
+#   [ ] page /<path> says "<text>" and the page has that text in it (":5173/<path>" picks the port)
 #   [ ] ask <sentence>              Censai reads the helper's report against it
 # A dot turns green only when censaiOS has checked it.
 Title: Sample cards

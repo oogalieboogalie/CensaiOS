@@ -6,13 +6,16 @@
 import pool from '../db.js';
 import { readKeySharing, isKeySharedWith } from '../security/keySharing.js';
 import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
-import { isServerKeyOwnerRole } from '../security/serverKeys.js';
+import { assertSystemAdmin } from '../security/systemAdmin.js';
+import { createLogger } from '../logger.js';
 import { heldKeys } from './holdings.js';
 import { ledgerKeys, ledgerSince } from './ledger.js';
 import { maskedKey, providerLabel } from './keyIdentity.js';
 import { providerAnswersBalance } from './providerBalance.js';
 import { agentRoutes } from './agentKeys.js';
 import { cliResources } from './cliAccounts.js';
+
+const log = createLogger('ai-resources');
 
 const FEATURE_NAMES = {
   'chat-loop': 'Chat', 'group-chat': 'Group chat', leadhound: 'LeadHound', 'auction-watcher': 'Auction Watcher',
@@ -75,16 +78,30 @@ async function userNames(db) {
   return new Map(rows.map((r) => [String(r.id), r.name || r.email || 'Someone']));
 }
 
-// Same rule as Settings, AI keys (routes/keySharing.js): admins and operators manage sharing.
-async function sharingView(userId, userRole, names) {
+// The same owner check as every other owner-only screen: the role saved in
+// the database, never the session's copy of it. A refusal (or a database
+// hiccup) shows the not-owner view; the window itself still opens.
+async function isOwner(userId, db) {
+  try {
+    await assertSystemAdmin({ session: { userId } }, { db });
+    return true;
+  } catch (err) {
+    if (err.statusCode === 403 || err.statusCode === 401) log.info('owner view refused', { account: Number(userId) || null });
+    else log.warn('owner check failed, showing the not-owner view', { error: err.message });
+    return false;
+  }
+}
+
+// Only the owner sees who their keys are shared with.
+async function sharingView(userId, owner, names) {
   if (getRuntimeMode() !== RUNTIME_MODES.LOCAL_DESKTOP) return { available: false };
-  if (!isServerKeyOwnerRole(userRole)) return { available: true, canManage: false, sharedWithMe: isKeySharedWith(userId) };
+  if (!owner) return { available: true, canManage: false, sharedWithMe: isKeySharedWith(userId) };
   const shared = readKeySharing().userIds;
   return { available: true, canManage: true, sharedWith: shared.map((id) => names.get(String(id)) || 'An account').sort() };
 }
 
 export async function buildAiResources({ userId, userRole, db = pool, deps = {} }) {
-  const owner = String(userRole || '').toLowerCase() === 'admin';
+  const owner = await (deps.isOwner || isOwner)(userId, db);
   const held = await (deps.heldKeys || heldKeys)(userId, { db });
   const names = await userNames(db).catch(() => new Map());
   const agents = await (deps.agentRoutes || agentRoutes)({ userId, userRole, held, ...(deps.agentDefaults ? { defaults: deps.agentDefaults } : {}) });
@@ -113,6 +130,6 @@ export async function buildAiResources({ userId, userRole, db = pool, deps = {} 
     keys,
     agents,
     clis: await (deps.cliResources || cliResources)({ userId, owner }).catch(() => []),
-    sharing: await sharingView(userId, userRole, names),
+    sharing: await sharingView(userId, owner, names),
   };
 }

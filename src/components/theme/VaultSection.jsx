@@ -5,6 +5,9 @@ import { api } from '../../lib/api.js';
 import { BYOK_PROVIDERS } from '../../lib/byokProviders.js';
 import { BrandIcon } from '../brand/BrandIcon.jsx';
 import { PROVIDER_BRAND, brandFor } from '../../lib/brands/index.js';
+import { logToApp } from '../../lib/appLog/browserLog.js';
+import { NEEDS_OWN_CENSAI, onTryItBoard } from '../../lib/demo/needsOwnCensai.js';
+import { KEY_LIST_UNREADABLE, readKeyList } from './readKeyList.js';
 
 export function VaultSection() {
   const [keys, setKeys] = React.useState([]);
@@ -17,10 +20,10 @@ export function VaultSection() {
   const fetchKeys = async () => {
     try {
       setLoading(true);
-      const data = await api.getUserKeys();
-      setKeys(data || []);
-    } catch (err) {
-      console.error('Vault fetch error:', err);
+      setKeys(readKeyList(await api.getUserKeys()));
+    } catch {
+      logToApp('warn', KEY_LIST_UNREADABLE, { where: 'vault' });
+      setKeys([]);
     } finally {
       setLoading(false);
     }
@@ -77,6 +80,11 @@ export function VaultSection() {
           Bring Your Own Key (BYOK). Keys are AES-256-GCM encrypted at rest and stored in your private account.
           {keys.some(k => k.source === 'env') && ' Keys marked "From your .env file" come straight from the .env on this computer and are only used for you; nothing is copied.'}
         </p>
+        {onTryItBoard() && (
+          <p data-testid="needs-own-censai" style={{ fontSize: 'var(--text-sm)', color: 'var(--ink)', marginTop: 8, lineHeight: 1.5 }}>
+            {NEEDS_OWN_CENSAI}
+          </p>
+        )}
       </div>
 
       {BYOK_PROVIDERS.map(p => {

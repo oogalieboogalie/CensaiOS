@@ -1,7 +1,7 @@
 // Presence over Yjs awareness: who is on the board, where their cursor is,
 // which windows they have selected, which window they are dragging, and
-// where they are typing. Pure helpers, no React and no sockets, so the
-// mapping is testable on its own.
+// where they are typing. No React and no sockets, so the mapping is testable
+// on its own. Duplicate tabs of one person collapse to a single face.
 //
 // Each browser tab publishes one local awareness state:
 //   { user: { id, name, color }, cursor: { x, y } | null,
@@ -12,6 +12,7 @@
 // Redis is on), and a closed tab drops out on its own.
 import { mergeCollaborationPreviews } from './previews.js';
 import { agentOutlines, readAgentPresence } from './agentPresence.js';
+import { mergeDuplicateTabs } from './presenceTabs.js';
 
 const ID_PATTERN = /^[a-zA-Z0-9._:-]{1,96}$/;
 const MAX_COORDINATE = 1_000_000;
@@ -56,6 +57,7 @@ function actorFor(state, clientId) {
 /**
  * Awareness states (Map clientID -> state) -> the presence buckets the canvas
  * renders. `selfClientId` is left out of everything but the participant list.
+ * The list has one face per person, even when that person has two tabs open.
  */
 export function readAwarenessPresence(states, selfClientId) {
   const participants = [];
@@ -83,7 +85,10 @@ export function readAwarenessPresence(states, selfClientId) {
       if (selected && !selections[selected]) selections[selected] = actor;
     }
   }
-  return { participants, cursors, typing, previews, selections, agents: readAgentPresence(states) };
+  return {
+    participants: mergeDuplicateTabs(participants),
+    cursors, typing, previews, selections, agents: readAgentPresence(states),
+  };
 }
 
 /**

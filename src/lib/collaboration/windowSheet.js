@@ -5,7 +5,7 @@
 // removing or moving rows goes row by row (syncById), and everything else on
 // the sheet (columns, name) is written whole as before. Pure: no sockets.
 import * as Y from 'yjs';
-import { valueFromY, valueToY } from '../../../server/collab/seedFromSnapshot.js';
+import { valueFromY, valueToY } from '../../../shared/collab/seedFromSnapshot.js';
 import { syncById } from './windowLists.js';
 
 let reportMerge = null;
@@ -32,8 +32,11 @@ function rowMapById(rowsArr) {
 }
 
 // Cells someone else changed in the shared copy that this write leaves alone.
-function othersCells(rowsArr, prevRows, written) {
+// A cell that matches this write's own copy is this person's (new rows from
+// a paste, rows written whole), so only cells unlike both copies count.
+function othersCells(rowsArr, prevRows, nextRows, written) {
   const prevById = new Map(prevRows.map((row) => [String(row.id), row]));
+  const nextById = new Map(nextRows.map((row) => [String(row.id), row]));
   let kept = 0;
   rowsArr.forEach((row) => {
     if (!(row instanceof Y.Map)) return;
@@ -42,7 +45,8 @@ function othersCells(rowsArr, prevRows, written) {
     if (!(cells instanceof Y.Map)) return;
     for (const [colId, cell] of cells.entries()) {
       if (written.has(`${id}:${colId}`)) continue;
-      if (!same(valueFromY(cell), prevById.get(id)?.cells?.[colId])) kept += 1;
+      const value = valueFromY(cell);
+      if (!same(value, prevById.get(id)?.cells?.[colId]) && !same(value, nextById.get(id)?.cells?.[colId])) kept += 1;
     }
   });
   return kept;
@@ -91,7 +95,7 @@ export function writeWindowSheet(target, prevValue, nextValue) {
     shared.set('rows', valueToY(nextValue.rows));
     return true;
   }
-  const kept = othersCells(rowsArr, prevValue.rows, written);
+  const kept = othersCells(rowsArr, prevValue.rows, nextValue.rows, written);
   if (kept && reportMerge) reportMerge({ kept });
   return true;
 }

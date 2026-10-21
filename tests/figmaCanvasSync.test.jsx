@@ -54,7 +54,7 @@ afterEach(() => { cleanup(); act(() => useWorkspaceStore.setState({ wins: initia
 describe('Sync from Figma on a placed block', () => {
   test('pulls the frame again, and Undo brings back the edits it replaced', async () => {
     routes({ 'POST /api/design/figma/import': (_url, init) => {
-      expect(JSON.parse(init.body)).toEqual({ url: FILE_URL, nodeId: '1:2' });
+      expect(JSON.parse(init.body)).toEqual({ url: FILE_URL, nodeId: '1:2', refresh: true });
       return json(importResult('1:2', '<main>New hero from Figma</main>'));
     } });
     act(() => useWorkspaceStore.setState({ wins: [block({ source: '<main>Hero edited by a model</main>' })] }));

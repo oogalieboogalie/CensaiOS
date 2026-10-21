@@ -10,7 +10,9 @@ import { AnnotationCard } from './doc/AnnotationCard.jsx';
 import { SelectionBar, AnnotationComposer } from './doc/AnnotationUI.jsx';
 import { NoteGraph } from './doc/NoteGraph.jsx';
 import { useDoc } from './doc/useDoc.js';
+import { FileLoadError } from './files/FileLoadError.jsx';
 import { RelatedContext } from './doc/RelatedContext.jsx';
+import { BacklinksBox } from './doc/BacklinksBox.jsx';
 import { reportTyping, reportTextPreview } from '../lib/collaboration/liveText.js';
 import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
 import { mergeWithLatest } from '../lib/collaboration/sharedTextEdit.js';
@@ -20,9 +22,10 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
   const bodyRef = React.useRef(null);
   const {
     realContent, setRealContent,
-    loading, saving,
+    loading, loadError, canSave, saving,
     backlinks,
     backlinksCapped,
+    backlinksChecked,
     showGraph, setShowGraph,
     selRange, pendingKind, setPendingKind,
     activeAnnId, setActiveAnnId,
@@ -67,7 +70,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
             setIsEditing(nextEdit);
             onUpdate({ isEditing: nextEdit });
           } },
-          win.filePath && { id: 'save', label: saving ? 'Saving…' : 'Save', title: 'Save file', onSelect: () => { if (!saving) saveFile(); } },
+          win.filePath && { id: 'save', label: saving ? 'Saving…' : 'Save', title: canSave ? 'Save file' : 'Save stays off until the file loads', disabled: saving || !canSave, onSelect: () => { if (canSave && !saving) saveFile(); } },
         ]}
         menu={[
           !win.isGithub && { id: 'source', label: sourceView ? 'Show rendered markdown' : 'Show raw source', onSelect: () => onUpdate({ sourceView: !sourceView }) },
@@ -86,6 +89,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
           } },
         ]}
       />
+      <FileLoadError message={loadError} />
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: win.maximized ? '1fr' : '1fr 200px', overflow: 'hidden' }}>
         {showGraph ? (
           <NoteGraph
@@ -156,23 +160,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
         )}
         {!win.maximized && (
           <div style={{ borderLeft: '1px dashed var(--hairline)', background: 'var(--surface-2)', overflowY: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {backlinks.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
-                <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', padding: '0 6px 4px' }}>Backlinks</div>
-                {backlinksCapped && <div role="status" style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', padding: '0 6px 4px' }}>Showing the first {backlinks.length}.</div>}
-                {backlinks.map((bl, i) => (
-                  <div key={i}
-                    onClick={() => onSpawn?.('doc', { fileName: bl.name, filePath: bl.path })}
-                    style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '6px 8px', fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-ink)'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--hairline)'}
-                  >
-                    <Icon.Files size={10} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                    {bl.name}
-                  </div>
-                ))}
-              </div>
-            )}
+            <BacklinksBox win={win} backlinks={backlinks} capped={backlinksCapped} checked={backlinksChecked} onSpawn={onSpawn} />
             <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', padding: '0 6px 4px' }}>Annotations</div>
             {annotations.length === 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', padding: 6 }}>highlight text<br/>to add a note</div>}
             {annotations.map(a => <AnnotationCard key={a.id} ann={a} isActive={activeAnnId === a.id} onClick={() => setActiveAnnId(a.id)} onRemove={() => onUpdate({ annotations: annotations.filter(x => x.id !== a.id) })} />)}

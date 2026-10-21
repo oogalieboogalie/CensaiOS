@@ -1,7 +1,7 @@
 import * as Y from 'yjs';
 import { readDocState, writeStateToDoc } from '../src/lib/collaboration/yCanvasSync.js';
 import { setSheetMergeReporter } from '../src/lib/collaboration/windowSheet.js';
-import { makeSheet, setCell, addRows } from '../src/components/sheets/sheetModel.js';
+import { makeSheet, setCell, addRows, pasteGrid } from '../src/components/sheets/sheetModel.js';
 
 // Sam types in A1 and Pat in B2 of the same Sheet at the same moment: both
 // keep what they typed, because the board sync writes one cell at a time.
@@ -64,6 +64,43 @@ describe('Sheet cells merge one cell at a time', () => {
     writeStateToDoc(a, base, board(setCell(start, start.rows[0].id, start.columns[0].id, { v: 'Sam' })), LOCAL);
     expect(kept).toEqual([{ kept: 1 }]);
     expect(cell(sheetOf(a, base), 1, 1)).toBe('Pat: $40');
+  });
+
+  test('Sam and Pat type in the same cell at the same moment: both screens end on one value', () => {
+    const { a, b, sync } = offlinePair();
+    const start = makeSheet();
+    const base = board(start);
+    writeStateToDoc(a, null, base, LOCAL);
+    sync();
+    const [rowId, colId] = [start.rows[0].id, start.columns[0].id];
+    writeStateToDoc(a, base, board(setCell(start, rowId, colId, { v: 'Sam: 12 signs' })), LOCAL);
+    writeStateToDoc(b, base, board(setCell(start, rowId, colId, { v: 'Pat: 14 signs' })), LOCAL);
+    expect(() => sync()).not.toThrow();
+    const onA = cell(sheetOf(a, base), 0, 0);
+    expect(['Sam: 12 signs', 'Pat: 14 signs']).toContain(onA);
+    expect(cell(sheetOf(b, base), 0, 0)).toBe(onA);
+    expect(sheetOf(a, base)).toEqual(sheetOf(b, base));
+  });
+
+  test('a 3-row paste next to a teammate\'s one typed cell logs "kept 1"', () => {
+    const { a, b, sync } = offlinePair();
+    const start = makeSheet({ rows: 2 });
+    const base = board(start);
+    writeStateToDoc(a, null, base, LOCAL);
+    sync();
+    // Pat types in B1; Sam's screen hasn't redrawn it yet.
+    writeStateToDoc(b, base, board(setCell(start, start.rows[0].id, start.columns[1].id, { v: 'Pat: $40' })), LOCAL);
+    sync();
+    const kept = [];
+    setSheetMergeReporter((info) => kept.push(info));
+    // Sam pastes three rows into column A from row 2, which adds two rows.
+    const pasted = pasteGrid(start, start.rows[1].id, start.columns[0].id, 'Testco\nBright Paws\nMo Example');
+    expect(pasted.rows).toHaveLength(4);
+    writeStateToDoc(a, base, board(pasted), LOCAL);
+    expect(kept).toEqual([{ kept: 1 }]);
+    const sheet = sheetOf(a, base);
+    expect(cell(sheet, 0, 1)).toBe('Pat: $40');
+    expect([1, 2, 3].map((r) => cell(sheet, r, 0))).toEqual(['Testco', 'Bright Paws', 'Mo Example']);
   });
 
   test('adding a row while someone types still keeps both', () => {
