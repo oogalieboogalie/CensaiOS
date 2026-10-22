@@ -7,6 +7,9 @@ import { resourceRateLimiter } from '../middleware/standardRateLimits.js';
 import { createLogger } from '../logger.js';
 
 const log = createLogger('keys');
+// Log lines carry a digits-only account id or the word "invalid", and a short code.
+const loggedAccount = (id) => (/^\d{1,12}$/.test(id) ? id : 'invalid');
+const code = (err) => (err?.code && /^[A-Za-z0-9_]{1,20}$/.test(String(err.code)) ? String(err.code) : null);
 
 /**
  * Settings, AI keys, "Share my AI keys with". The owner (an admin) sees every
@@ -53,7 +56,7 @@ keySharingRouter.get('/', async (req, res) => {
   try {
     res.json({ available: true, canManage: true, accounts: await accounts(userId) });
   } catch (err) {
-    log.error('key sharing list failed', { userId, code: err?.code || null });
+    log.error('key sharing list failed', { userId, code: code(err) });
     res.status(500).json({ error: 'Could not load the accounts on this computer.' });
   }
 });
@@ -73,7 +76,7 @@ keySharingRouter.put('/:userId', async (req, res) => {
     log.info('key sharing changed', { userId: req.session.userId, account: targetId, shared: req.body.shared });
     res.json({ available: true, canManage: true, accounts: await accounts(req.session.userId) });
   } catch (err) {
-    log.error('key sharing save failed', { userId: req.session?.userId ?? null, account: targetId, code: err?.code || null });
+    log.error('key sharing save failed', { userId: req.session?.userId ?? null, account: loggedAccount(targetId), code: code(err) });
     res.status(500).json({ error: 'Could not save the setting.' });
   }
 });

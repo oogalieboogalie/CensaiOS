@@ -4,6 +4,7 @@ import { WindowTitle } from './Windows.jsx';
 import { YouTubeSearch } from './YouTubeSearch.jsx';
 import { isTwitchPlayer, twitchPlayerUrl, twitchRefusalReason, withTwitchParent } from '../lib/stream/twitchEmbed.js';
 import { logToApp } from '../lib/appLog/browserLog.js';
+import { webOnlyFrameSrc } from '../lib/frameSrc.js';
 
 const PRESETS = [
   { name: 'Twitch: KaiCenat', url: 'https://player.twitch.tv/?channel=kaicenat' },
@@ -132,7 +133,7 @@ export function StreamWindow({ win, onUpdate }) {
             </div>
             <iframe 
               title="Stream"
-              src={withTwitchParent(win.src)} 
+              src={webOnlyFrameSrc(withTwitchParent(win.src)) || undefined}
               style={{ flex: 1, width: '100%', height: '100%', border: 'none' }} 
               allow="autoplay; fullscreen"
               loading="lazy"

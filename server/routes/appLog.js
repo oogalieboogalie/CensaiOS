@@ -11,6 +11,7 @@ import express from 'express';
 import { writeLogRecord } from '../logger.js';
 import { readRecentLog } from '../appLog/readLog.js';
 import { canReadAppLog } from '../appLog/access.js';
+import { scrubBrowserLine } from '../appLog/scrubBrowserLine.js';
 import { OWNER_ONLY_MESSAGE } from '../security/systemAdmin.js';
 
 export const appLogRouter = express.Router();
@@ -45,8 +46,8 @@ appLogRouter.post('/browser', (req, res) => {
     writeLogRecord({
       level,
       namespace: where ? `browser:${where}` : 'browser',
-      message: clip(entry?.message, 2000),
-      meta: { user: Number(req.session.userId), ...(entry?.detail ? { detail: clip(entry.detail, 4000) } : {}) },
+      message: scrubBrowserLine(clip(entry?.message, 2000)),
+      meta: { user: Number(req.session.userId), ...(entry?.detail ? { detail: scrubBrowserLine(clip(entry.detail, 4000)) } : {}) },
       time,
     });
   }

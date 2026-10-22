@@ -11,6 +11,10 @@ import { sendPublicModelError } from './httpErrors.js';
 import { ideaExpandModel } from './ideaExpandModel.js';
 import { requireAgentContextRuntime } from '../../agents/familyRuntimeAccess.js';
 import { logGroupChatRound, memberMessages, resolveGroupChatMembers, roundWhy } from './groupChatMembers.js';
+import { createLogger } from '../../logger.js';
+import { safeErrorCode } from '../../security/errorCode.js';
+
+const groupLog = createLogger('group-chat');
 
 export { handleImageGen } from './imageHandler.js';
 
@@ -153,7 +157,7 @@ export async function handleGroupChat(req, res) {
         }
         quiet += 1;
         quietWhy = quietWhy || 'model error';
-        console.error(`Group Chat model error for ${agentId}:`, err.message);
+        groupLog.warn('member reply failed: model error', { code: safeErrorCode(err) });
       }
     }
 

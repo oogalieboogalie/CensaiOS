@@ -5,7 +5,7 @@ import { jest } from '@jest/globals';
 // crypto.getRandomValues and logs it once.
 
 const logToApp = jest.fn();
-jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({ logToApp }));
+jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({ logFailure: () => {}, logToApp }));
 const { newId, fallbackUuid, installRandomUuid } = await import('../src/lib/ids/newId.js');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;

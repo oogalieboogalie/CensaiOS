@@ -7,7 +7,7 @@ import { render, screen } from '@testing-library/react';
 import { jest } from '@jest/globals';
 
 const logToApp = jest.fn();
-jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({
+jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({ logFailure: () => {},
   logToApp,
   installBrowserLog: () => {},
   flushAppLog: () => {},

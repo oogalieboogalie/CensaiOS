@@ -23,6 +23,7 @@ import { RUNNING } from '../cli-agents/taskStore.js';
 import { allowedRoots, assertAllowedFolder } from '../cli-agents/folders.js';
 import { askModule } from '../modules/ask.js';
 import { listBoardAgents, searchBoardAgents } from '../../src/lib/agentNetwork/boardAgents.js';
+import { familyAgentFor } from '../agents/identity.js';
 import { briefFromTask, huntSummary } from '../../src/lib/agentNetwork/leadHoundHelp.js';
 import { clipResult } from './helpCardShape.js';
 import { researchReply } from './researchReply.js';
@@ -59,7 +60,8 @@ async function boardWindows(workspaceId) {
 /** Chat agents, coding CLIs and modules on this board only, ranked for the query. */
 export async function listBoardHelpers(workspaceId, query = '', limit = 5, { excludeAgentId = '' } = {}) {
   const skip = String(excludeAgentId || '').trim().toLowerCase();
-  const helpers = listBoardAgents(await boardWindows(workspaceId))
+  // The family agents' roles ("Databases") are what a search matches on.
+  const helpers = listBoardAgents(await boardWindows(workspaceId), { agentFor: familyAgentFor })
     .filter((agent) => !skip || String(agent.agentId || '').toLowerCase() !== skip);
   return searchBoardAgents(helpers, query).slice(0, limit).map((agent) => ({
     card_id: `${WINDOW_CARD_PREFIX}${agent.windowId}`,
@@ -157,11 +159,11 @@ export async function requestBoardHelp(scope, {
   const wins = await boardWindows(scope.workspaceId);
   const target = listBoardAgents(wins).find((agent) => agent.windowId === windowId);
   if (!target) {
-    logBoardAsk(fromLabel, windowId, { status: 'failed', why: 'not on this board' });
+    logBoardAsk({ from: requesterAgentId, to: windowId }, { status: 'failed', why: 'not on this board' });
     throw new Error('That window is not on the board any more, or it cannot take requests. Run discover_agents again.');
   }
   if (windowId === fromWindowId) {
-    if (target.executor === 'network') logBoardAsk(fromLabel, target.name, { status: 'failed', why: 'cannot ask itself' });
+    if (target.executor === 'network') logBoardAsk({ from: requesterAgentId, to: windowId }, { status: 'failed', why: 'cannot ask itself' });
     throw new Error('An agent cannot ask itself for help.');
   }
   const win = wins.find((entry) => entry.id === windowId);

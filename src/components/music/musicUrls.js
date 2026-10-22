@@ -1,6 +1,7 @@
 // Link parsing and embed messaging for the Music window's streamed sources
 // (YouTube, YouTube Music, Spotify, SoundCloud).
 import { parseSpotifyEmbedUrl } from '../spotify/spotifyEmbed.js';
+import { musicHostKind } from './musicHosts.js';
 
 function withYouTubeApi(url) {
   try {
@@ -15,18 +16,19 @@ function withYouTubeApi(url) {
 
 export function parseMusicUrl(url) {
   if (!url) return '';
+  const kind = musicHostKind(url);
   // Spotify
-  if (url.startsWith('spotify:') || url.includes('spotify.com')) {
+  if (kind === 'spotify') {
     if (url.includes('/embed/')) return url;
     return parseSpotifyEmbedUrl(url) || url.replace('spotify.com/', 'spotify.com/embed/');
   }
   // SoundCloud
-  if (url.includes('soundcloud.com')) {
+  if (kind === 'soundcloud') {
     if (url.includes('w.soundcloud.com')) return url;
     return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&auto_play=true`;
   }
   // YouTube (including music.youtube.com watch links)
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+  if (kind === 'youtube' || kind === 'ytmusic') {
     if (url.includes('/embed/')) return withYouTubeApi(url);
     let videoId = '';
     if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1]?.split('?')[0];
@@ -37,7 +39,8 @@ export function parseMusicUrl(url) {
 }
 
 export function isYouTubeEmbed(url) {
-  return /youtube\.com\/embed\//.test(url || '');
+  const kind = musicHostKind(url);
+  return (kind === 'youtube' || kind === 'ytmusic') && /\/embed\//.test(url || '');
 }
 
 export function titleFromUrl(url) {
@@ -98,8 +101,9 @@ export function readPlayerMessage(raw) {
 
 export function embedKind(src) {
   if (isYouTubeEmbed(src)) return 'youtube';
-  if (/w\.soundcloud\.com/.test(src || '')) return 'soundcloud';
-  if (/spotify\.com\/embed\//.test(src || '')) return 'spotify';
+  const kind = musicHostKind(src);
+  if (kind === 'soundcloud') return 'soundcloud';
+  if (kind === 'spotify' && /\/embed\//.test(src || '')) return 'spotify';
   return 'other';
 }
 

@@ -8,6 +8,8 @@ import { MUSIC_DEVICE_SIZE, useStreamPlayer } from './useStreamPlayer.js';
 import { useLocalAudio } from './useLocalAudio.js';
 import { useUsbTracks } from './useUsbTracks.js';
 import { directAudioKind, linkHost, logMusic } from './linkAudio.js';
+import { useTriedLink } from './useTriedLink.js';
+import { musicHostKind } from './musicHosts.js';
 
 export * from './musicUrls.js';
 export { MUSIC_DEVICE_SIZE } from './useStreamPlayer.js';
@@ -31,9 +33,18 @@ export function useMusic({ win, onUpdate }) {
   const usbIndex = usb.tracks.findIndex(t => t.id === usbId);
   const usbTrack = usbIndex >= 0 ? usb.tracks[usbIndex] : null;
   const mode = usbTrack ? 'local' : (win.src ? 'stream' : null);
-  // Song and radio links play in our own player, not a web frame.
-  const direct = Boolean(directAudioKind(win.src));
+  // Known song and radio links play here. An unknown link is tried here too,
+  // and only a link that will not play falls back to the web frame.
+  const tried = useTriedLink(win.src);
+  const direct = tried.direct;
+  const fromTry = tried.kind === 'radio' ? 'radio' : (tried.kind === 'song' ? 'generic' : '');
   const linkTrack = React.useMemo(() => (direct ? { id: win.src, url: win.src } : null), [direct, win.src]);
+  // A link that is neither playable audio nor a music service's own page is a
+  // web page: it is never framed here, where every teammate's board would open it.
+  const webPage = mode === 'stream' && !direct && !musicHostKind(win.src);
+  React.useEffect(() => {
+    if (webPage) logMusic('info', `refused a web page link from ${linkHost(win.src)}`);
+  }, [webPage, win.src]);
 
   const queue = React.useMemo(() => normalizeQueue(win.musicQueue), [win.musicQueue]);
   const queueIndex = queue.findIndex(item => item.url === win.src);
@@ -84,7 +95,11 @@ export function useMusic({ win, onUpdate }) {
 
   const stream = useStreamPlayer({ win, onUpdate, volume, muted: muted || mode === 'local' || direct, onEnded });
   const local = useLocalAudio({ track: usbTrack, volume, muted, onEnded });
-  const link = useLocalAudio({ track: linkTrack, volume, muted, onEnded, remote: true });
+  const link = useLocalAudio({ track: linkTrack, volume, muted, onEnded, remote: true, onHeard: tried.noteHeard });
+
+  React.useEffect(() => {
+    if (link.problem) tried.fail();
+  }, [link.problem, tried.fail]);
 
   // The whole board shares play and pause of a link; a USB pick pauses it.
   const { play: linkPlay, pause: linkPause } = link;
@@ -145,7 +160,7 @@ export function useMusic({ win, onUpdate }) {
     mode,
     view: mode ? view : 'library',
     setView,
-    source: isLocal ? 'local' : (win.musicSource || detectMusicSource(win.src)),
+    source: isLocal ? 'local' : (fromTry || win.musicSource || detectMusicSource(win.src)),
     title: isLocal ? usbTrack.title : (win.trackTitle || titleFromUrl(win.src)),
     usbTrack,
     paused: player ? !player.playing : stream.paused,
@@ -156,6 +171,8 @@ export function useMusic({ win, onUpdate }) {
     togglePlayback: isLocal ? local.toggle : (direct ? toggleLink : stream.togglePlayback),
     direct,
     linkProblem: direct && !isLocal ? link.problem : '',
+    webPage,
+    fileProblem: isLocal ? local.problem : '',
     seekTo,
     seekBy: (delta) => seekTo(progress.position + delta),
     next: () => step(1),

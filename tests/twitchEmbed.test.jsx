@@ -6,7 +6,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { twitchParents, twitchPlayerUrl, twitchRefusalReason, withTwitchParent } from '../src/lib/stream/twitchEmbed.js';
 
 const logged = [];
-jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({
+jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({ logFailure: () => {},
   logToApp: (level, message, opts) => logged.push({ level, message, where: opts?.where }),
 }));
 const { StreamWindow } = await import('../src/components/StreamWindow.jsx');

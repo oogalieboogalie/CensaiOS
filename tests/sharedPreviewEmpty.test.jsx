@@ -7,6 +7,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 const logged = [];
 jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({
   logToApp: (level, message, opts) => logged.push({ level, message, where: opts?.where }),
+  logFailure: () => {},
 }));
 const { HtmlPreviewWindow } = await import('../src/components/HtmlPreviewWindow.jsx');
 const { useWorkspaceStore } = await import('../src/lib/store.js');

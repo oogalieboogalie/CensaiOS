@@ -6,6 +6,7 @@ import { windowMeta } from './meta.js';
 import { useShorts } from './useShorts.js';
 import { ShortsSources } from './ShortsSources.jsx';
 import { watchUrlFor } from '../../../lib/shorts/shortsFeed.js';
+import { webOnlyFrameSrc } from '../../../lib/frameSrc.js';
 
 export { windowMeta };
 
@@ -44,7 +45,7 @@ export function ShortsWindow({ win = {}, onUpdate }) {
               key={s.url}
               ref={s.iframeRef}
               className="hb-shorts-player"
-              src={s.url}
+              src={webOnlyFrameSrc(s.url) || undefined}
               title={item?.title || `${s.source.name} shorts`}
               allow="autoplay; encrypted-media; picture-in-picture; web-share"
               referrerPolicy="strict-origin-when-cross-origin"

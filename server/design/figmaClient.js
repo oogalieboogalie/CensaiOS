@@ -6,6 +6,12 @@ import { getSecret } from '../secrets.js';
 
 export const FIGMA_API_BASE = 'https://api.figma.com/v1';
 
+// FIGMA_API_BASE points the client at a stand-in Figma for end-to-end tests;
+// real installs leave it unset.
+export function figmaApiBase() {
+  return (process.env.FIGMA_API_BASE || FIGMA_API_BASE).replace(/\/+$/, '');
+}
+
 const FIGMA_HOST = /(^|\.)figma\.com$/i;
 const FILE_PATH = /^\/(file|design|proto|board)\/([A-Za-z0-9]+)/;
 
@@ -60,7 +66,7 @@ export function createFigmaClient(token, { fetchImpl = globalThis.fetch } = {}) 
     const query = new URLSearchParams(
       Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''),
     ).toString();
-    const res = await fetchImpl(`${FIGMA_API_BASE}${pathname}${query ? `?${query}` : ''}`, {
+    const res = await fetchImpl(`${figmaApiBase()}${pathname}${query ? `?${query}` : ''}`, {
       headers: { 'X-Figma-Token': token },
     });
     if (!res.ok) {

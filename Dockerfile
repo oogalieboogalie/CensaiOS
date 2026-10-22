@@ -38,6 +38,9 @@ RUN (curl -fsSL https://x.ai/cli/install.sh | bash) \
 # Tells the Agent Console to keep installs, worktrees and CLI logins in the
 # state volume, which survives the rebuild at every launch.
 ENV CENSAI_IN_CONTAINER=1 USE_BUILTIN_RIPGREP=0
+# A real install, even one started with a plain docker run instead of
+# docker-compose.yml, runs as production; test-only shortcuts stay off.
+ENV NODE_ENV=production
 # Project folders are mounted from the host under /workspace, so their owner
 # never matches the container's user; let git work in them (and only them).
 RUN git config --system --add safe.directory /workspace/CensaiHub \

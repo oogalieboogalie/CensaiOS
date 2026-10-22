@@ -24,51 +24,13 @@ import crypto from 'node:crypto';
 import {
   ROOT, dropScratchDatabase, findChromium, makeScratchDatabase, startProcess, step, waitForUrl, whatIsMissing,
 } from './runner.mjs';
+import { PAT, SAM, openBoard, shareBoard, signIn } from './board.mjs';
 
 const API_PORT = 3001; // vite.config.js sends /api and the sockets here
 const WEB_PORT = 5173;
 const WEB = `http://localhost:${WEB_PORT}`;
 const NOTE = 'made-up note';
 const SEE_WITHIN_MS = 5000;
-const PAT = { email: 'pat@example.com', name: 'Pat Example' };
-const SAM = { email: 'sam@example.com', name: 'Sam Example' };
-
-async function signIn(context, person) {
-  const res = await context.request.post(`${WEB}/api/auth/developer`, {
-    data: person,
-    headers: { Origin: WEB },
-  });
-  if (!res.ok()) throw new Error(`sign-in for ${person.name} answered ${res.status()}`);
-}
-
-async function shareBoard(context, withPerson) {
-  const res = await context.request.post(`${WEB}/api/workspaces/personal`, { headers: { Origin: WEB } });
-  if (!res.ok()) throw new Error(`personal board answered ${res.status()}`);
-  const { workspace } = await res.json();
-  const invite = await context.request.post(`${WEB}/api/workspaces/${workspace.id}/members`, {
-    data: { email: withPerson.email },
-    headers: { Origin: WEB },
-  });
-  if (!invite.ok()) throw new Error(`sharing the board answered ${invite.status()}`);
-  return workspace.id;
-}
-
-async function openBoard(page, workspaceId) {
-  await page.goto(`${WEB}/?workspace=${workspaceId}`);
-  // Vite serves the app's own files, so the page can hand over its live store.
-  await page.waitForFunction(() => document.readyState === 'complete');
-  await page.evaluate(async () => {
-    const { useWorkspaceStore } = await import('/src/lib/store.js');
-    window.__e2eStore = useWorkspaceStore;
-  });
-  await page.waitForFunction((id) => window.__e2eStore.getState().workspaceId === id, workspaceId, {
-    timeout: 60_000,
-    polling: 500,
-  });
-  // Let the shared board connect before anyone writes on it.
-  await page.waitForTimeout(1500);
-}
-
 async function patWritesNote(page) {
   // A Document window opened in its typing mode stands in for a sticky note.
   await page.evaluate(() => (
@@ -129,13 +91,13 @@ async function main() {
     const patContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     const samContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     await step('sign in Pat and Sam', async () => {
-      await signIn(patContext, PAT);
-      await signIn(samContext, SAM);
+      await signIn(patContext, PAT, WEB);
+      await signIn(samContext, SAM, WEB);
     });
-    const workspaceId = await step('Pat shares the board with Sam', () => shareBoard(patContext, SAM));
+    const workspaceId = await step('Pat shares the board with Sam', () => shareBoard(patContext, SAM, WEB));
     const pat = await patContext.newPage();
     const sam = await samContext.newPage();
-    await step('both open the board', () => Promise.all([openBoard(pat, workspaceId), openBoard(sam, workspaceId)]));
+    await step('both open the board', () => Promise.all([openBoard(pat, workspaceId, WEB), openBoard(sam, workspaceId, WEB)]));
     await step('Pat writes the note', () => patWritesNote(pat));
     await step('Sam sees it within 5 seconds', () => samSees(sam, process.env.E2E_SAM_EXPECTS || NOTE));
     if (process.env.E2E_SHOTS_DIR) {

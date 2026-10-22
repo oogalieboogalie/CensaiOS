@@ -50,6 +50,7 @@ import { overseerRouter } from '../routes/overseer.js';
 import { vexRouter } from '../routes/vex/index.js';
 import { containersRouter } from '../routes/containers.js';
 import { dockerRouter } from '../routes/docker.js';
+import { dockerOwnerOnly } from '../docker/ownerOnly.js';
 import { devServersRouter } from '../routes/devServers.js';
 import { projectGitRouter } from '../routes/projectGit.js';
 import { systemStatusRouter } from '../routes/systemStatus.js';
@@ -167,7 +168,7 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api', router: overseerRouter },
   { method: 'use', path: '/api/vex', middleware: [ownerForChanges], router: vexRouter },
   { method: 'use', path: '/api', router: containersRouter },
-  { method: 'use', path: '/api/docker', middleware: [requireLocalFilesystem, ownerForChanges], router: dockerRouter },
+  { method: 'use', path: '/api/docker', middleware: [requireLocalFilesystem, dockerOwnerOnly], router: dockerRouter },
   { method: 'use', path: '/api/dev-servers', middleware: [requireLocalFilesystem, ownerForChanges], router: devServersRouter },
   { method: 'use', path: '/api/project-git', middleware: [requireLocalFilesystem, ownerForChanges], router: projectGitRouter },
   { method: 'use', path: '/api/system', router: systemStatusRouter },

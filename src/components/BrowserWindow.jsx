@@ -6,6 +6,7 @@ import { BrowserStartPage } from './BrowserStartPage.jsx';
 import { BrowserSignInPanel } from './BrowserSignInPanel.jsx';
 import { BrowserEquipButton, BrowserEquipMenu } from './BrowserEquipMenu.jsx';
 import { parseUrl as parseAddress } from '../lib/browserUrl.js';
+import { webOnlyFrameSrc } from '../lib/frameSrc.js';
 
 export function GlobeIcon({ size = 14 }) {
   return (
@@ -180,7 +181,7 @@ export function BrowserWindow({ win, onUpdate }) {
             </div>
           ) : activeUrl ? (
             <iframe 
-              src={activeUrl}
+              src={webOnlyFrameSrc(activeUrl) || undefined}
               title="Browser"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
               allowFullScreen

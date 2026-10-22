@@ -5,6 +5,7 @@ import { normalizeSettingsTab, SETTINGS_TABS } from './settingsTabs.js';
 import { pickSpotlightMood } from '../../lib/theme/curatedPresets.js';
 import { CUSTOM_MOOD_ID, DEFAULT_CUSTOM_COLORS, generateCustomMood, lookPatch } from '../../lib/theme/looks.js';
 import { parseThemeFile, serializeThemeFile } from '../../lib/theme/themeFile.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
   const { theme, setTheme } = useTheme();
@@ -21,7 +22,7 @@ export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
     let cancelled = false;
     api.getThemeCustomPresets()
       .then(presets => { if (!cancelled) setCustomPresets(presets || []); })
-      .catch(err => console.error('Failed to load theme custom presets', err));
+      .catch(err => logFailure('theme presets not loaded', err, 'settings', 'error'));
     return () => { cancelled = true; };
   }, []);
 
@@ -86,7 +87,7 @@ export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
       setPresetName('');
       setSavingPreset(false);
     } catch (err) {
-      console.error('Failed to save theme custom preset', err);
+      logFailure('theme preset not saved', err, 'settings', 'error');
     }
   };
 
@@ -99,7 +100,7 @@ export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
       await api.saveThemeCustomPresets(next);
       setCustomPresets(next);
     } catch (err) {
-      console.error('Failed to delete theme custom preset', err);
+      logFailure('theme preset not deleted', err, 'settings', 'error');
     }
   };
 

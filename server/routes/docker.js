@@ -11,7 +11,8 @@ import { runContainer } from '../docker/run.js';
 
 // /api/docker — the Docker window's API. Mounted behind requireLocalFilesystem
 // in routeMap.js: it drives the host's Docker engine, so cloud_saas never
-// gets it and private servers must opt in.
+// gets it and private servers must opt in. Every route, reads included, is
+// for this computer's owner only (dockerOwnerOnly in ../docker/ownerOnly.js).
 export const dockerRouter = express.Router();
 
 const truthy = (v) => v === true || v === 'true' || v === '1';

@@ -76,8 +76,10 @@ async function ledgerLog() {
 export async function bootstrapFreshDatabase(client, { root = appRoot, log = console.log, ledgerLogger = null } = {}) {
   const { recordApplied, recordExisting } = await import(pathToFileURL(path.join(root, 'server/boot/setupLedger.js')).href);
   const dbLog = ledgerLogger || await ledgerLog();
+  const { noteGroupIdColumns } = await import(pathToFileURL(path.join(root, 'server/boot/groupIdColumns.js')).href);
   if (!(await isFreshDatabase(client))) {
     await recordExisting(client, { root, log: dbLog });
+    await noteGroupIdColumns(client, dbLog);
     return { skipped: true };
   }
   log('[censaiOS] First start: setting up the rest of the database...');
@@ -96,6 +98,7 @@ export async function bootstrapFreshDatabase(client, { root = appRoot, log = con
   if (left.length) log(`[censaiOS] Left to the server at boot: ${left.join(', ')}`);
   const ran = [...composeInitSqlFiles(composeText), ...remaining].filter((f) => !left.includes(f));
   await recordApplied(client, { root, applied: ran, log: dbLog });
+  await noteGroupIdColumns(client, dbLog);
   await client.query(`CREATE TABLE IF NOT EXISTS ${MARKER_TABLE} (finished_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
   await client.query(`INSERT INTO ${MARKER_TABLE} DEFAULT VALUES`);
   log('[censaiOS] Database ready.');

@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { jest } from '@jest/globals';
-import { flushAppLog, formatArgs, installBrowserLog, logToApp, pendingAppLog } from '../src/lib/appLog/browserLog.js';
+import { flushAppLog, formatArgs, installBrowserLog, logFailure, logToApp, pendingAppLog } from '../src/lib/appLog/browserLog.js';
 
 describe('browserLog', () => {
   test('console styling is dropped from the line', () => {
@@ -50,5 +50,23 @@ describe('browserLog', () => {
     logToApp('warn', '   ');
     expect(pendingAppLog()).toHaveLength(0);
     flushAppLog();
+  });
+
+  test('a handled failure sends its kind, never its text', () => {
+    logFailure('Made-up note not saved', Object.assign(new Error('Pat private note.md quota'), { name: 'QuotaExceededError' }), 'storage');
+    logFailure('Made-up list not loaded', { name: 'not a kind <script>' }, 'memory', 'error');
+    expect(pendingAppLog()).toEqual([
+      expect.objectContaining({ level: 'warn', message: 'Made-up note not saved', detail: 'QuotaExceededError', where: 'storage' }),
+      expect.objectContaining({ level: 'error', message: 'Made-up list not loaded', detail: '', where: 'memory' }),
+    ]);
+    expect(JSON.stringify(pendingAppLog())).not.toMatch(/Pat|private|quota/);
+    pendingAppLog().length && flushAppLog();
+  });
+
+  test('the busiest board files no longer print raw console lines', async () => {
+    const { readFileSync } = await import('node:fs');
+    for (const file of ['src/lib/api/storage.js', 'src/lib/api/memory.js', 'src/components/theme/useThemePanel.js', 'src/components/doc/useDoc.js', 'src/app/hooks/useAppBootstrap.js']) {
+      expect([file, readFileSync(file, 'utf8').match(/console\.(log|warn|error)\(/g)]).toEqual([file, null]);
+    }
   });
 });

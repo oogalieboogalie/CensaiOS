@@ -1,0 +1,136 @@
+// Music Player: Pat plays a song from a file, pauses it, changes the skin;
+// Sam sees the player on the shared board. Then the wrong things: a text file
+// named .mp3, an empty link, a link that only mentions YouTube, a script link,
+// and (red team) a teammate planting a script link on the shared player.
+
+import { readWindow, spawnWindow, updateWindow, windowFrame } from '../../e2e/board.mjs';
+import { fakeMp3, toneWav } from '../testFiles.mjs';
+import { note } from '../report.mjs';
+
+const lcdSays = (frame) => frame.locator('.hb-music-status').innerText().catch(() => '');
+
+const playingNow = (page) => page.evaluate(() => [...(window.__teamMedia || [])].some((a) => !a.paused && a.currentTime > 0));
+async function openLinks(frame) {
+  // MENU leads back to the list; the paste box lives on the Stations tab.
+  const menu = frame.getByRole('button', { name: 'Library' }).first();
+  if (await menu.count()) await menu.click().catch(() => {});
+  await frame.getByRole('tab', { name: /^Stations/ }).click();
+}
+
+async function iframeSrcs(page, frame) {
+  return frame.locator('iframe').evaluateAll((list) => list.map((f) => f.getAttribute('src') || '')).catch(() => []);
+}
+
+async function pasteLink(page, id, link) {
+  const frame = windowFrame(page, id);
+  const box = frame.getByPlaceholder('YouTube, Spotify, SoundCloud, song or radio link');
+  if (!(await box.count())) await openLinks(frame);
+  await box.fill(link);
+  await frame.getByRole('button', { name: 'Load', exact: true }).click();
+  await page.waitForTimeout(1200);
+}
+
+export default {
+  id: 'music',
+  label: 'Music Player',
+  async run(t) {
+    const { pat, sam, check } = t;
+    let id;
+    await check('walk', 'Pat opens the Music Player', async ({ shot }) => {
+      id = await spawnWindow(pat.page, 'music', {}, { x: 80, y: 80 });
+      await windowFrame(pat.page, id).waitFor({ state: 'visible', timeout: 15_000 });
+      await shot(pat.page, 'pat-opens-music-player');
+      return 'the player opened on the board';
+    });
+    const frame = windowFrame(pat.page, id);
+
+    await check('walk', 'Pat plays a song from a file on this computer', async ({ shot }) => {
+      await frame.locator('input[data-music-file-input]').setInputFiles({ name: 'made-up-tone.wav', mimeType: 'audio/wav', buffer: toneWav() });
+      await pat.page.waitForFunction(() => [...(window.__teamMedia || [])].some((a) => !a.paused && a.currentTime > 0), null, { timeout: 15_000 });
+      await shot(pat.page, 'pat-plays-a-song');
+      return `the audio is really playing; the screen says "${(await lcdSays(frame)).replace(/\s+/g, ' ').trim()}"`;
+    });
+
+    await check('walk', 'Pat pauses with the space bar', async () => {
+      await frame.locator('.hb-music-status').click().catch(() => {});
+      await pat.page.keyboard.press(' ');
+      await pat.page.waitForFunction(() => [...(window.__teamMedia || [])].every((a) => a.paused), null, { timeout: 5_000 });
+      return `paused; the screen says "${(await lcdSays(frame)).replace(/\s+/g, ' ').trim()}"`;
+    });
+
+    await check('walk', 'Pat changes the player skin', async ({ shot }) => {
+      await frame.getByLabel('Player skin').selectOption('spotify');
+      await pat.page.waitForTimeout(500);
+      await shot(pat.page, 'pat-picks-spotify-green-skin');
+      return 'the skin picker took "Spotify green"';
+    });
+
+    await check('walk', 'Sam sees the player on the shared board', async ({ shot }) => {
+      await windowFrame(sam.page, id).waitFor({ state: 'visible', timeout: 10_000 });
+      await shot(sam.page, 'sam-sees-the-player');
+      const songShows = (await lcdSays(windowFrame(sam.page, id))).includes('PLAYING');
+      // A file stays on Pat's computer by design, so Sam's copy has no song.
+      return songShows ? 'Sam sees the player, and it says it is playing' : 'Sam sees the player; Pat\'s file stays on Pat\'s computer, as the player promises';
+    });
+
+    await check('hunt', 'Pat loads a text file wearing an .mp3 name', async ({ shot }) => {
+      await frame.locator('input[data-music-file-input]').setInputFiles({ name: 'not-really-a-song.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() });
+      await pat.page.waitForTimeout(2500);
+      await shot(pat.page, 'pat-loads-a-fake-mp3');
+      const said = (await frame.innerText()).replace(/\s+/g, ' ');
+      if (pat.errors.length) throw new Error(`the page crashed: ${pat.errors[0]}`);
+      if (/can.?t play|could not|not a song|unsupported|error/i.test(said)) return 'the player says it cannot play it';
+      if (/PLAYING/.test(said) && !(await playingNow(pat.page))) throw new Error('the screen says PLAYING but no sound is playing, and there is no "cannot play this file" message');
+      throw note('no crash, but the player gives no sign the file is not a song');
+    });
+
+    await check('hunt', 'an empty link cannot be loaded', async () => {
+      await openLinks(frame);
+      const box = frame.getByPlaceholder('YouTube, Spotify, SoundCloud, song or radio link');
+      await box.fill('    ');
+      if (!(await frame.getByRole('button', { name: 'Load', exact: true }).isDisabled())) throw new Error('Load is clickable with only spaces typed');
+      return 'Load stays greyed out for spaces';
+    });
+
+    await check('hunt', 'a link to an ordinary web page is not opened inside the player', async ({ shot }) => {
+      const link = 'https://example.com/page?from=youtube.com';
+      await pasteLink(pat.page, id, link);
+      await shot(pat.page, 'pat-pastes-a-pretend-youtube-link');
+      const saved = await readWindow(pat.page, id);
+      const srcs = await iframeSrcs(pat.page, frame);
+      const opened = srcs.find((s) => s.startsWith('https://example.com'));
+      if (opened) throw new Error(`the player opened the outside page inside the board (iframe ${opened.slice(0, 60)}), and it does so on every teammate\'s board too`);
+      return `saved as ${String(saved?.src || '').slice(0, 60)}; no outside page was opened`;
+    });
+
+    await check('hunt', 'a javascript: link pasted in the box does nothing', async () => {
+      t.typed.push('javascript:parent.__teamPatRan=1');
+      await pasteLink(pat.page, id, 'javascript:parent.__teamPatRan=1');
+      const ran = await pat.page.evaluate(() => window.__teamPatRan === 1);
+      if (ran) throw new Error('the pasted script ran inside censaiOS');
+      return 'the script did not run';
+    });
+
+    await check('redteam', 'a teammate cannot plant a script on the shared player', async ({ shot }) => {
+      // Pat's browser writes the window's saved link directly, the way a
+      // hostile teammate with a changed browser could; Sam's browser must not run it.
+      await updateWindow(pat.page, id, { src: 'javascript:parent.__teamSamRan=1', musicDevice: true, musicPaused: false });
+      await sam.page.waitForTimeout(3000);
+      await shot(sam.page, 'sam-after-planted-link');
+      const ran = await sam.page.evaluate(() => window.__teamSamRan === 1);
+      const srcs = await iframeSrcs(sam.page, windowFrame(sam.page, id));
+      if (ran) throw new Error('Pat\'s planted link ran as Sam inside Sam\'s censaiOS');
+      if (srcs.some((s) => /^\s*javascript:/i.test(s))) throw new Error('Sam\'s player put the script link in a frame (blocked by the browser this time)');
+      return 'Sam\'s browser did not run it';
+    });
+
+    await check('redteam', 'outside pages in the player are fenced off (sandboxed)', async () => {
+      await updateWindow(pat.page, id, { src: 'https://example.com/not-music', musicDevice: true });
+      await sam.page.waitForTimeout(2500);
+      const sandboxes = await windowFrame(sam.page, id).locator('iframe').evaluateAll((list) => list.map((f) => f.getAttribute('sandbox')));
+      if (!sandboxes.length) throw note('no frame shown for a plain outside link');
+      if (sandboxes.every((s) => s !== null)) return 'every frame has a sandbox';
+      throw note('the player frames outside pages without a sandbox; YouTube, Spotify and SoundCloud need scripts, so the fix is a host list, not a blanket sandbox');
+    });
+  },
+};

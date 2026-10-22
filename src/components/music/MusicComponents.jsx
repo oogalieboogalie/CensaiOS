@@ -1,4 +1,5 @@
 import React from 'react';
+import { webOnlyFrameSrc } from '../../lib/frameSrc.js';
 
 /**
  * The stream's real embed. It stays mounted in one place inside the device
@@ -20,7 +21,7 @@ export const MusicEmbed = React.memo(React.forwardRef(function MusicEmbed({ src,
     >
       <iframe
         ref={ref}
-        src={src}
+        src={webOnlyFrameSrc(src) || undefined}
         title={title}
         tabIndex={visible ? 0 : -1}
         onLoad={onLoad}
@@ -38,6 +39,9 @@ export const MusicEmbed = React.memo(React.forwardRef(function MusicEmbed({ src,
           border: 'none',
         }}
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        // Only YouTube, Spotify and SoundCloud players are framed here (musicHosts.js);
+        // they need scripts and their own site's storage, and nothing more.
+        sandbox="allow-scripts allow-same-origin allow-presentation"
       />
     </div>
   );

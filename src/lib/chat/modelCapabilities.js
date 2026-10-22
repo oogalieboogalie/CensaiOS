@@ -130,13 +130,15 @@ const PROVIDER_RULES = {
   ollama: ollamaModelCaps,
   moonshot: moonshotModelCaps,
   cohere: cohereModelCaps,
+  // Z.ai's GLM vision models carry a "v" after the version (glm-4v, glm-4.5v).
+  zai: (model) => (/^glm-[\d.]+v/.test(lower(model)) ? { ...TEXT_ONLY, image: true } : TEXT_ONLY),
   // Every Claude model since Claude 3 reads images and PDFs natively.
   // Grok 4 and the vision models read images.
   xai: (model) => (/(grok-4|grok-5|vision)/.test(lower(model)) ? { ...TEXT_ONLY, image: true } : TEXT_ONLY),
   anthropic: (model) => (/^(claude|$)/.test(lower(model)) ? { ...TEXT_ONLY, image: true, pdf: true } : TEXT_ONLY),
 };
 // Ollama tool support depends on the local model, so it is left off.
-const TOOL_PROVIDERS = new Set(['openai', 'openrouter', 'google', 'google-native', 'cohere', 'moonshot', 'opencode', 'anthropic', 'xai']);
+const TOOL_PROVIDERS = new Set(['openai', 'openrouter', 'google', 'google-native', 'cohere', 'moonshot', 'opencode', 'anthropic', 'xai', 'zai']);
 
 /**
  * Agents with no explicit provider run on the server default (AI_BASE_URL).
@@ -153,6 +155,7 @@ export function capabilityProviderFor(provider, baseUrl) {
   if (url.includes('cohere.ai')) return 'cohere';
   if (url.includes('anthropic.com')) return 'anthropic';
   if (url.includes('api.x.ai')) return 'xai';
+  if (url.includes('api.z.ai')) return 'zai';
   if (url.includes('moonshot.cn') || url.includes('moonshot.ai')) return 'moonshot';
   if (url.includes(':11434') || url.includes('ollama')) return 'ollama';
   return null;

@@ -87,6 +87,17 @@ describe('Figma client', () => {
     expect(calls[0].headers).toEqual({ 'X-Figma-Token': 'figd_user_token' });
   });
 
+  test('FIGMA_API_BASE points the client at a stand-in Figma', async () => {
+    const { fetchImpl, calls } = createFigmaFetch();
+    process.env.FIGMA_API_BASE = 'http://127.0.0.1:9/v1/';
+    try {
+      await createFigmaClient('figd_user_token', { fetchImpl }).me();
+    } finally {
+      delete process.env.FIGMA_API_BASE;
+    }
+    expect(calls[0].url.href).toBe('http://127.0.0.1:9/v1/me');
+  });
+
   test('maps Figma errors to clear codes', async () => {
     const { fetchImpl } = createFigmaFetch();
     await expect(createFigmaClient('wrong', { fetchImpl }).me()).rejects.toMatchObject({ code: 'FIGMA_TOKEN_INVALID', statusCode: 424 });

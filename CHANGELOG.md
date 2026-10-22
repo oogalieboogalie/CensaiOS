@@ -17,6 +17,30 @@ tags.
 
 ### New
 
+- Nightly release: mark the teleprompter storage name as not a secret (Oct 22)
+- Send the board's busiest console failures to the app log (item 120) (Oct 22)
+- Chat's own failure notes reach the app log (Oct 22)
+- Test team: name pictures by theme and link each theme's copy (Oct 22)
+- Test team: each chat shows only what its model can do (Oct 22)
+- Z.ai GLM chats get the picture button on vision models and show tools (Oct 22)
+- Test team: agents asking agents check, and board search knows agent roles (Oct 22)
+- Test team: Figma and pasted designs check (Oct 22)
+- Test team: LeadHound check, and a brief must be words (Oct 22)
+- Test team: window groups check for two people (Oct 22)
+- Music Player frames only real music links (Oct 22)
+- Group goals and milestones work with whole-number ids too (Oct 22)
+- Browser lines reach the app log with quoted values and links taken out (Oct 22)
+- Board-help log line names agents by id only (Oct 22)
+- Scheduler error answers carry no raw database text (Oct 22)
+- Key sharing log lines carry no typed account (Oct 22)
+- Add the test team, and stop shared windows from running planted script links (Oct 22)
+- Group window: a milestone only shows as done once it is saved (Oct 22)
+- Make Docker reads owner-only, and close two side doors into container logs (Oct 22)
+- Import guard: parts may only reach into each other less, never more (item 97) (Oct 22)
+- Group goals and milestones belong to the person who made them (item 102) (Oct 22)
+- Newcomer guide matches the code, with a map of server folders (item 100) (Oct 22)
+- Grok Build G5: Music Player radio links are detected by more than words in the address (Oct 22)
+- The everyone-is-user-1 shortcut runs only inside jest (item 99) (Oct 22)
 - Grok Build 53: two people in one chat window both keep their messages (Oct 21)
 - Server notes from five files reach the app log (item 98) (Oct 21)
 - Grok Build 47: Figma import lists frames inside Sections (Oct 21)
@@ -73,6 +97,8 @@ tags.
 
 ### Fixed
 
+- A file that cannot play says so instead of PLAYING (Oct 22)
+- Raw error text stays out of four leftover answers and log lines (item 104) (Oct 22)
 - Chat model front door: parts outside the routes stop borrowing Chat's files (Oct 21)
 - Grok Build 51: F1 to F9 full screen stops cutting off what runs outside the group (Oct 21)
 - Grok Build G2: A second browser tab no longer counts as another person (Oct 21)

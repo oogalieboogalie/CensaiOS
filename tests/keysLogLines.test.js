@@ -75,4 +75,16 @@ describe('AI key actions in the app log', () => {
     expect(lines).toContainEqual({ namespace: 'keys', level: 'warn', msg: 'key sharing refused: not the owner', meta: { userId: 5 } });
     expect(text()).not.toMatch(/Mo|mo@example/);
   });
+
+  test('a failed share logs no typed account and no long error text', async () => {
+    mockPool.query.mockRejectedValue(Object.assign(new Error('bad input "pat@example.com"'), { code: 'invalid text for pat@example.com' }));
+    await request(app({ userId: 1, userRole: 'admin' })).put('/api/key-sharing/pat@example.com').send({ shared: true }).expect(500);
+    expect(lines).toContainEqual({ namespace: 'keys', level: 'error', msg: 'key sharing save failed', meta: { userId: 1, account: 'invalid', code: null } });
+    expect(text()).not.toMatch(/pat@example/);
+
+    lines.length = 0;
+    mockPool.query.mockRejectedValue(Object.assign(new Error('timeout'), { code: '57014' }));
+    await request(app({ userId: 1, userRole: 'admin' })).put('/api/key-sharing/5').send({ shared: true }).expect(500);
+    expect(lines).toContainEqual({ namespace: 'keys', level: 'error', msg: 'key sharing save failed', meta: { userId: 1, account: '5', code: '57014' } });
+  });
 });

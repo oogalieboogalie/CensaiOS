@@ -11,6 +11,12 @@ export function useGroupData(groupName, win) {
   const [newMilestone, setNewMilestone] = React.useState('');
   const [newGoal, setNewGoal] = React.useState('');
   const [subAgents, setSubAgents] = React.useState([]);
+  // Why the last add or tick did not save, in the server's words.
+  const [error, setError] = React.useState(null);
+  const refused = async (res, fallback) => {
+    const body = await res.json().catch(() => ({}));
+    setError(body?.error || fallback);
+  };
 
   React.useEffect(() => {
     fetch(`/api/milestones/${encodeURIComponent(groupName)}`).then(r => r.ok ? r.json() : []).then(d => setMilestones(Array.isArray(d) ? d : [])).catch(() => {});
@@ -30,19 +36,21 @@ export function useGroupData(groupName, win) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ groupName, title: newMilestone.trim() }),
       });
-      if (res.ok) {
-        const m = await res.json();
-        setMilestones(prev => [m, ...prev]);
-        setNewMilestone('');
-      }
-    } catch {}
+      if (!res.ok) return refused(res, 'Could not add that milestone.');
+      const m = await res.json();
+      setMilestones(prev => [m, ...prev]);
+      setNewMilestone('');
+      setError(null);
+    } catch { setError('Could not add that milestone.'); }
   };
 
   const toggleMilestone = async (id) => {
     try {
-      await fetch(`/api/milestones/${id}/complete`, { method: 'PATCH' });
+      const res = await fetch(`/api/milestones/${id}/complete`, { method: 'PATCH' });
+      if (!res.ok) return refused(res, 'Could not save that milestone.');
       setMilestones(prev => prev.map(m => m.id === id ? { ...m, completed: true, completed_at: new Date().toISOString() } : m));
-    } catch {}
+      setError(null);
+    } catch { setError('Could not save that milestone.'); }
   };
 
   const addGoal = async () => {
@@ -53,16 +61,16 @@ export function useGroupData(groupName, win) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ groupName, title: newGoal.trim() }),
       });
-      if (res.ok) {
-        const g = await res.json();
-        setGoals(prev => [g, ...prev]);
-        setNewGoal('');
-      }
-    } catch {}
+      if (!res.ok) return refused(res, 'Could not add that goal.');
+      const g = await res.json();
+      setGoals(prev => [g, ...prev]);
+      setNewGoal('');
+      setError(null);
+    } catch { setError('Could not add that goal.'); }
   };
 
   return {
-    milestones, goals, subAgents, setSubAgents,
+    milestones, goals, subAgents, setSubAgents, error,
     newMilestone, setNewMilestone, newGoal, setNewGoal,
     addMilestone, toggleMilestone, addGoal,
   };

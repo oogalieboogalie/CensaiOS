@@ -17,6 +17,9 @@ export const HOST_CHANGING_TOOL_NAMES = Object.freeze([
   'github_write_file', 'github_create_issue', 'github_comment_issue', 'submit_pr', 'merge_pr',
   // Commands, Docker and the shared terminal
   'run_tests', 'run_linter', 'sandbox_exec', 'terminal_run', 'restart_service',
+  // Docker reads too: container lists and logs can carry addresses and
+  // tokens, so they are owner only, like the Docker window (/api/docker)
+  'container_status', 'container_logs',
   // The owner's mail server, read with the owner's own Mailcow key: its lists
   // are owner only too, like the Mailcow window (server/routes/mailcow.js)
   'mailcow_domains', 'mailcow_mailboxes', 'mailcow_aliases', 'mailcow_queue',

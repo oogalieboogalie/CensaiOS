@@ -8,6 +8,7 @@ import { resolveWorkspaceProject } from '../../lib/projectPrewarm.js';
 import { requestedWorkspaceId } from '../../lib/workspace/shareLink.js';
 import { loadSessionWithRetry } from './loadSessionWithRetry.js';
 import { noteBoardLoad } from '../../lib/wakeUp/boardWakeUp.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 /**
  * Owns the boot lifecycle: session check, agent initialization, workspace load,
@@ -45,7 +46,7 @@ export function useAppBootstrap() {
         setSessionLoad({ status: 'ready' });
       } catch (err) {
         if (cancelled) return;
-        console.error('Failed to get session status', err);
+        logFailure('session status not loaded', err, 'startup', 'error');
         setSessionLoad({ status: 'unavailable', error: err });
       } finally {
         if (!cancelled) setSessionChecking(false);
@@ -62,7 +63,7 @@ export function useAppBootstrap() {
       }
 
       initializeAgents().catch((err) => {
-        console.error('Failed to initialize agents from database', err);
+        logFailure('agents not loaded from the database', err, 'startup', 'error');
       });
 
       try {
@@ -104,7 +105,7 @@ export function useAppBootstrap() {
         setCurrentProject(resolveWorkspaceProject(res, project));
       } catch (err) {
         if (cancelled) return;
-        console.error('Failed to load workspace from API', err);
+        logFailure('board not loaded from the server', err, 'startup', 'error');
         setWorkspaceLoad({ status: 'unavailable', error: err });
       } finally {
         if (!cancelled) setDataLoading(false);

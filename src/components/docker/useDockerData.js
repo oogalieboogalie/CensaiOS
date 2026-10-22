@@ -96,7 +96,9 @@ export function useDockerData(tab) {
   const wantStats = available && hasRunning && STATS_TABS.has(tab);
   useEffect(() => { if (wantStats) loadStats(); }, [wantStats, loadStats]);
 
-  useVisibilityAwareInterval(loadStatus, available ? 15_000 : 5_000);
+  // A teammate's refusal won't change on its own: stop asking every 5 seconds.
+  const ownerOnly = statusError?.reason === 'owner-only';
+  useVisibilityAwareInterval(loadStatus, ownerOnly ? null : available ? 15_000 : 5_000, { inactive: ownerOnly });
   useVisibilityAwareInterval(loadContainers, available ? 3_000 : null);
   useVisibilityAwareInterval(loadStats, wantStats ? 3_000 : null);
   useVisibilityAwareInterval(() => loadResource(tab), available && RESOURCE_LOADERS[tab] ? 12_000 : null);

@@ -7,6 +7,10 @@ import { requiresPersonalApiKey } from '../../security/byokPolicy.js';
 import { scopeServerKey } from '../../security/serverKeys.js';
 import { getUserApiKeyConfig, inferUserApiKeyProvider } from '../../security/userApiKeys.js';
 import { borrowKeyedModel } from './keyFallback.js';
+import { createLogger } from '../../logger.js';
+import { safeErrorCode } from '../../security/errorCode.js';
+
+const log = createLogger('chat');
 
 // Same shape as aiGateway ModelAccessError. Defined here so chat's key lookup
 // does not pull the model-access barrel into every mock of that module.
@@ -77,7 +81,7 @@ export async function applySavedChatKey({
           5,
         );
       }
-      console.warn('[Tenancy] Personal key lookup failed:', keyErr.message);
+      log.warn('personal key lookup failed, going on without it', { code: safeErrorCode(keyErr) });
     }
 
     if (userKeyConfig) {

@@ -2,6 +2,7 @@ import {
   updateAgentTask, getSubAgentById, sendAgentMessage, buildCompletionReceipt
 } from '../memory.js';
 import { toolCallOk } from '../chatModel/toolOutcome.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { withLongcatToolCallFallback } from '../chatModel/longcat.js';
 import {
   buildSubAgentSystemPrompt,
@@ -40,7 +41,7 @@ async function notifyParentTaskSubmission(task, status, details) {
       importanceScore: status === 'failed' ? 0.9 : 0.75,
     });
   } catch (err) {
-    log.warn('failed to notify parent', { taskId: task.id, error: err.message });
+    log.warn('failed to notify parent', { taskId: task.id, code: safeErrorCode(err) });
   }
 }
 
@@ -174,7 +175,7 @@ export async function runTask(task) {
     return { status: 'succeeded', result: finalText };
 
   } catch (err) {
-    log.error('task failed', { taskId: task.id, ms: done(), error: err.message });
+    log.error('task failed', { taskId: task.id, ms: done(), code: safeErrorCode(err) });
     await updateAgentTask(task.id, {
       status: 'failed',
       error: err.message,

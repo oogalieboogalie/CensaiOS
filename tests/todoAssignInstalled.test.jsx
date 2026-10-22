@@ -9,7 +9,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { jest } from '@jest/globals';
 
 const logLines = [];
-jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({
+jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({ logFailure: () => {},
   logToApp: (level, message, options) => logLines.push({ level, message, options }),
 }));
 

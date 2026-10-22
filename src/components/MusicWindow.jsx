@@ -5,6 +5,7 @@ import { claimKeyboard, releaseKeyboard } from '../lib/keyboardClaim.js';
 import { useMusic, MusicEmbed, EjectIcon, PauseIcon, PlayIcon, SpeakerIcon } from './music/index.js';
 import { formatTime, seedFromString, skinFor, SOURCE_TAGS, VISUALIZER_LABELS } from './music/musicSkins.js';
 import { estimateKbps } from './music/musicLibrary.js';
+import { WEB_PAGE_NOTE } from './music/musicHosts.js';
 import { MusicVisualizer } from './music/MusicVisualizer.jsx';
 import { chosenSkin, loadSkinChoice, saveSkinChoice, SKIN_CHOICES } from './music/skinChoice.js';
 import { LibraryScreen, AddPanel } from './music/MusicLibrary.jsx';
@@ -107,7 +108,7 @@ export function MusicWindow({ win, onUpdate }) {
   );
 }
 
-const showsEmbed = (music) => music.mode === 'stream' && !music.direct && music.stream.embedVisible;
+const showsEmbed = (music) => music.mode === 'stream' && !music.direct && !music.webPage && music.stream.embedVisible;
 
 function StatusRow({ music }) {
   const { progress, source, usbTrack } = music;
@@ -132,18 +133,20 @@ function Stage({ music, compact, offscreen, skin, windowId }) {
   const hint = stageHint(music, showEmbed);
   return (
     <div className="hb-music-stage" data-offscreen={offscreen ? 'true' : undefined} style={{ minHeight: compact ? 36 : 70 }}>
-      {music.mode === 'stream' && !music.direct && (
+      {music.mode === 'stream' && !music.direct && !music.webPage && (
         <MusicEmbed ref={stream.frameRef} src={music.streamSrc} title={music.title} visible={showEmbed} onLoad={stream.handleFrameLoad} />
       )}
       {!offscreen && !showEmbed && (
         <MusicVisualizer mode={music.visMode} skin={skin || skinFor(source)} playing={playing} seed={seed} signal={music.signal} onClick={music.cycleVisualizer} windowId={windowId} />
       )}
-      {!offscreen && hint && <LcdLine size="xxs" className="hb-music-hint">{hint}</LcdLine>}
+      {!offscreen && music.webPage && <p className="hb-music-webpage-note" role="note">{WEB_PAGE_NOTE}</p>}
+      {!offscreen && !music.webPage && hint && <LcdLine size="xxs" className="hb-music-hint">{hint}</LcdLine>}
     </div>
   );
 }
 
 function stageHint(music, showEmbed) {
+  if (music.fileProblem) return music.fileProblem;
   if (music.linkProblem) return "CAN'T PLAY THIS LINK";
   if (music.direct && music.mode === 'stream' && !music.paused && !music.signal) return 'VISUALIZER IS GUESSING FOR THIS SITE';
   if (music.stream.kind === 'spotify' && music.mode === 'stream' && music.paused && !showEmbed) return 'Press SCREEN for Spotify controls';

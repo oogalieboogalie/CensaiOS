@@ -51,6 +51,9 @@
 .hb-music-stage { position: relative; flex: 1; border-radius: var(--radius-sm); overflow: hidden; }
 .hb-music-stage[data-offscreen] { position: absolute; flex: none; width: 1px; height: 1px; min-height: 0 !important; opacity: 0; pointer-events: none; }
 .hb-music-hint { position: absolute; left: 0; right: 0; bottom: var(--space-1); text-align: center; z-index: 1; pointer-events: none; }
+.hb-music-webpage-note { position: absolute; inset: var(--space-2); z-index: 3; margin: 0; display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: var(--space-2); border-radius: var(--radius-sm); background: var(--mp-screen); border: 1px solid var(--mp-lcd-dim);
+  color: var(--mp-lcd); font-family: var(--font-sans); font-size: var(--text-sm); line-height: 1.35; }
 .hb-music-readout { position: relative; z-index: 4; display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
 .hb-music-times { display: flex; justify-content: space-between; }
 

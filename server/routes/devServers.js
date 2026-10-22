@@ -4,6 +4,8 @@ import {
 } from '../devServers/manager.js';
 import { heartbeat, markStopped } from '../devServers/reaper.js';
 import { containerLogs } from '../docker/engine.js';
+import { DockerInputError } from '../docker/cli.js';
+import { dockerOwnerOnly } from '../docker/ownerOnly.js';
 
 // /api/dev-servers — the Run dev window. Mounted behind
 // requireLocalFilesystem: it mounts folders from this computer into Docker.
@@ -32,9 +34,12 @@ devServersRouter.post('/heartbeat', handle((req) => {
   return { ok: true };
 }));
 devServersRouter.get('/:name', handle((req) => devServerStatus(req.params.name)));
-devServersRouter.get('/:name/logs', handle(async (req) => ({
-  lines: await containerLogs(req.params.name, { tail: req.query.tail || 400 }),
-})));
+// Logs can carry addresses and tokens: owner only, and only Run dev's own
+// containers, so this is no side door into every container's logs.
+devServersRouter.get('/:name/logs', dockerOwnerOnly, handle(async (req) => {
+  if (!String(req.params.name).startsWith('censai-dev-')) throw new DockerInputError('Only Run dev logs can be read here.');
+  return { lines: await containerLogs(req.params.name, { tail: req.query.tail || 400 }) };
+}));
 devServersRouter.delete('/:name', handle(async (req) => {
   markStopped(req.params.name);
   return stopDevServer(req.params.name);

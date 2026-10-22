@@ -38,11 +38,21 @@ function windowTitle(wins, windowId) {
   return String(win.title || '').trim();
 }
 
-/** One line: who asked whom, and answered or why not. No task text. */
-export function logBoardAsk(fromLabel, toName, outcome) {
+const SAFE_ID = /^[A-Za-z0-9_.:-]{1,64}$/;
+const loggedId = (id) => (SAFE_ID.test(String(id ?? '')) ? String(id) : 'unknown');
+
+/**
+ * One line: which agent asked which, and answered or why not. Ids only:
+ * window titles and agent names are typed text and stay out of the log.
+ */
+export function logBoardAsk({ from, to } = {}, outcome) {
   const answered = outcome?.status === 'completed';
-  const why = answered ? 'answered' : `not answered (${outcome?.why || 'could not answer'})`;
-  log.info(`${fromLabel} asked ${toName}: ${why}`);
+  log.info('board ask', {
+    from: loggedId(from),
+    to: loggedId(to),
+    outcome: answered ? 'answered' : 'not answered',
+    ...(answered ? {} : { why: outcome?.why || 'could not answer' }),
+  });
 }
 
 function appendMsgs(doc, windowId, extra) {
@@ -71,7 +81,7 @@ async function showExchange(scope, { cardId, text, askerId, asker, helperId, hel
       }
     });
   } catch (error) {
-    log.warn('board ask not shown on the chats', { error: error.message });
+    log.warn('board ask not shown on the chats', { code: SAFE_ID.test(String(error?.code ?? '')) ? String(error.code) : null });
   }
 }
 
@@ -108,7 +118,7 @@ export async function requestBoardTeammate(scope, {
   const askerId = requesterAgentId || win.agentId;
   const work = (async () => {
     const outcome = await answerTeammate(scope, { target, agentId: win.agentId, text, fromLabel: asker });
-    logBoardAsk(asker, target.name, outcome);
+    logBoardAsk({ from: askerId, to: win.agentId }, outcome);
     await showExchange(scope, {
       cardId, text, askerId, asker, helperId: win.agentId, helperWindowId: target.windowId,
       fromWindowId, outcome,

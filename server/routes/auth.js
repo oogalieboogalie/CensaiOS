@@ -133,7 +133,7 @@ authRouter.post('/developer', authSecurityRateLimiter, rateLimiter, async (req, 
     res.json({ ok: true, user });
   } catch (err) {
     logAuthProblem('developer sign-in failed', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Sign-in failed. Please try again.', code: 'developer_signin_failed' });
   }
 });
 
@@ -164,7 +164,7 @@ authRouter.post('/local', localSignInGate, authSecurityRateLimiter, rateLimiter,
     res.json({ ok: true, user: access.user });
   } catch (err) {
     logAuthProblem('sign-in on this computer failed', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Sign-in on this computer failed. Please try again.', code: 'local_signin_failed' });
   }
 });
 

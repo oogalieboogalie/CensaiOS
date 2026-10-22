@@ -7,16 +7,15 @@
 // flat on purpose: depth comes from bevel shadows in src/styles/music.css,
 // not gradients.
 import { directAudioKind } from './linkAudio.js';
+import { musicHostKind } from './musicHosts.js';
 
 export const MUSIC_SOURCES = ['youtube', 'ytmusic', 'spotify', 'soundcloud', 'radio', 'local', 'generic'];
 
 export function detectMusicSource(url) {
   const raw = String(url || '').toLowerCase();
   if (!raw) return 'generic';
-  if (raw.includes('music.youtube.com')) return 'ytmusic';
-  if (raw.includes('youtube.com') || raw.includes('youtu.be') || raw.includes('youtube-nocookie.com')) return 'youtube';
-  if (raw.startsWith('spotify:') || raw.includes('spotify.com')) return 'spotify';
-  if (raw.includes('soundcloud.com')) return 'soundcloud';
+  const service = musicHostKind(url);
+  if (service) return service;
   if (directAudioKind(url) === 'radio') return 'radio';
   return 'generic';
 }

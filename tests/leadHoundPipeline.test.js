@@ -116,6 +116,8 @@ describe('LeadHound pipeline', () => {
 describe('LeadHound helpers', () => {
   test('normalizeBrief requires business and market and clamps maxLeads', () => {
     expect(() => normalizeBrief({ business: 'x' })).toThrow(/what you sell/);
+    expect(() => normalizeBrief({ business: { a: 1 }, market: ['x'] })).toThrow(/what you sell/);
+    expect(normalizeBrief({ business: 'a', market: 'b', region: 5 }).region).toBe('');
     expect(normalizeBrief({ business: 'a', market: 'b', maxLeads: 99 }).maxLeads).toBe(5);
     expect(normalizeBrief({ business: 'a', market: 'b' }).maxLeads).toBe(3);
   });

@@ -4,6 +4,7 @@ import { getSelectionOffsets } from './DocUtils.js';
 import { FILE_CONTENTS } from './DocData.js';
 import { newId } from '../../lib/ids/newId.js';
 import { useDocFileLoad } from './useDocFileLoad.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
   const [realContent, setRealContent] = React.useState('');
@@ -44,7 +45,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
     fetch(`/api/files/backlinks?path=${encodeURIComponent(win.filePath)}`)
       .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
       .then(data => { setBacklinks(data.results || []); setBacklinksCapped(Boolean(data.capped)); setBacklinksChecked(true); })
-      .catch(err => console.warn('Failed to fetch backlinks', err));
+      .catch(err => logFailure('backlinks not loaded', err, 'doc'));
   }, [win.filePath, win.isGithub]);
 
   const clearSelection = () => {
@@ -107,7 +108,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
         alert(`File "${fileName}" not found in project.`);
       }
     } catch (err) {
-      console.error('Failed to handle wiki link:', err);
+      logFailure('wiki link not opened', err, 'doc', 'error');
     }
   };
 
@@ -163,7 +164,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
         body: JSON.stringify({ path: win.filePath, content: realContent })
       });
     } catch (e) {
-      console.error('Failed to save file:', e);
+      logFailure('file not saved', e, 'doc', 'error');
     }
     setSaving(false);
   };

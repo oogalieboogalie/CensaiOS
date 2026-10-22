@@ -84,7 +84,7 @@ test('discover_agents returns this board\'s other agents and nothing from anothe
 test('an ask to the Researcher gets an answer back and both chats show it', async () => {
   const lines = [];
   const stop = onLogRecord((record) => {
-    if (record.namespace === 'board-help') lines.push(record.message);
+    if (record.namespace === 'board-help') lines.push({ message: record.message, meta: record.meta });
   });
   const found = JSON.parse(await handleAgentNetworkTool('lead-1', 'discover_agents', { query: '' }, { ...scope, workspaceId: 'ws-team' }));
   const researcher = found.board_helpers.find((helper) => helper.name === 'Researcher');
@@ -96,7 +96,8 @@ test('an ask to the Researcher gets an answer back and both chats show it', asyn
   stop();
 
   expect(out).toMatchObject({ agent: 'Researcher', status: 'completed', result: 'Stand-in answer for Find three competitors' });
-  expect(lines).toEqual(['Lead asked Researcher: answered']);
+  expect(lines).toEqual([{ message: 'board ask', meta: { from: 'lead-1', to: 'researcher-1', outcome: 'answered' } }]);
+  expect(JSON.stringify(lines)).not.toMatch(/Lead|Researcher|competitors/);
 
   const wins = readDocWindows(docs.get('ws-team'));
   const researcherChat = wins.find((win) => win.id === team.windowIds.researcher);

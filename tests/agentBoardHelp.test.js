@@ -69,6 +69,12 @@ test('the chat agents, coding CLIs and modules on the board are listed with wind
   expect(helpers).toHaveLength(4);
 });
 
+test('a search by what an agent knows finds the family agent with that role', async () => {
+  const helpers = await listBoardHelpers('ws-a', 'backend', 5);
+  expect(helpers[0]).toMatchObject({ card_id: 'window:w-atlas', name: 'Atlas' });
+  expect(helpers[0].description).toMatch(/backend/i);
+});
+
 test('an agent asks a coding CLI: a console task starts and the card waits on its approval', async () => {
   manager.start.mockImplementationOnce(async () => {
     tasks.set('t1', { id: 't1', status: 'needs_approval' });

@@ -37,3 +37,8 @@ export function withIdentityClassification(agent) {
 export function betaVisibleAgents(agents = []) {
   return agents.map(withIdentityClassification).filter((agent) => agent.identity.betaVisible);
 }
+
+/** A family agent's card (name, role) by id, or null; board search ranks on its role. */
+export function familyAgentFor(id) {
+  return FAMILY_AGENT_BY_ID[normalized(id)] || null;
+}

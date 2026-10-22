@@ -10,6 +10,7 @@ import '@testing-library/jest-dom';
 import { jest } from '@jest/globals';
 import { DocWindow } from '../src/components/DocWindow.jsx';
 import { canHaveBacklinks } from '../src/components/doc/BacklinksBox.jsx';
+import { pendingAppLog } from '../src/lib/appLog/browserLog.js';
 
 const HINT = /Type \[\[ and a note's name to link it\. Notes that link to this one show here\./;
 
@@ -39,13 +40,11 @@ test('once another note links to it, the backlink replaces the hint', async () =
 });
 
 test('no hint when censaiOS could not look, or where links do not work', async () => {
-  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
   openNote('Garden plan', [], { ok: false });
   await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/files/backlinks')));
   await new Promise((resolve) => setTimeout(resolve, 20));
   expect(screen.queryByTestId('backlinks-hint')).not.toBeInTheDocument();
-  expect(warn).toHaveBeenCalledWith('Failed to fetch backlinks', expect.any(Error));
-  warn.mockRestore();
+  expect(pendingAppLog()).toEqual(expect.arrayContaining([expect.objectContaining({ level: 'warn', message: 'backlinks not loaded', where: 'doc' })]));
   expect(canHaveBacklinks({ filePath: '/notes/Garden plan.md' })).toBe(true);
   expect(canHaveBacklinks({ filePath: 'Garden plan.md', isGithub: true })).toBe(false);
   expect(canHaveBacklinks({ filePath: '/notes/photo.png' })).toBe(false);
