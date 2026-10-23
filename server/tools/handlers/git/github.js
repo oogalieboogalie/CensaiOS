@@ -1,5 +1,6 @@
 import { fetchGithub } from '../../helpers.js';
 import { recordProvenance } from '../../../operational-intelligence/provenance.js';
+import { noteToolFailure } from '../../toolsLog.js';
 
 export async function githubReadFile(args) {
   const res = await fetchGithub(`/repos/${args.repo}/contents/${args.path}`);
@@ -39,7 +40,7 @@ export async function githubWriteFile(args) {
       code_snippet: args.content,
       file_path: args.path,
       metadata: { repo: args.repo, commit: res?.commit?.sha }
-    }).catch(err => console.error('[Provenance] Failed to record:', err.message));
+    }).catch(err => noteToolFailure('provenance not recorded', { agentId: args.__provenance.agent_id }, err));
   }
 
   return `Successfully wrote file. Commit: ${res?.commit?.html_url || 'Unknown'}`;

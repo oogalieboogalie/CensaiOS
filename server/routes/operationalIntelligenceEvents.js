@@ -6,6 +6,9 @@ import {
 } from '../operational-intelligence/eventAccess.js';
 import { resolveWorkspaceContext } from '../workspaces/context.js';
 import { publicOperationalError } from '../operational-intelligence/tracePrivacy.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('ops');
 
 export const operationalIntelligenceEventsRouter = express.Router();
 
@@ -34,7 +37,7 @@ operationalIntelligenceEventsRouter.post('/telemetry/provenance', async (req, re
     res.status(201).json(event);
   } catch (error) {
     if (!error.statusCode || error.statusCode >= 500) {
-      console.error('[Telemetry] Provenance request failed', {
+      log.error('provenance request failed', {
         status: Number(error.statusCode || 500),
       });
     }

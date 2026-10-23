@@ -1,5 +1,6 @@
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { loadConfig } from '../lib/reliability/engine.js';
 import { scanProjectFolder } from '../lib/reliability/projectScan.js';
 import { resolveRequestedProject } from './projects/shared.js';
@@ -47,7 +48,7 @@ export function projectScanHandler(scopeFor, onError) {
       log.info(`scan: finished on ${name}, ${results.length} files, ${findings} need review${capped ? ' (stopped at the file limit)' : ''}, ${Date.now() - started} ms`);
       res.status(201).json({ project: name, scanned: results.length, findings, capped, scans });
     } catch (err) {
-      log.warn(`scan: failed on ${name}: ${err.message}`);
+      log.warn('scan: a project failed', { code: safeErrorCode(err) });
       res.status(500).json({ error: err.message });
     }
   };

@@ -1,17 +1,13 @@
 import React from 'react';
 import { useGroupTileReconcile } from './hooks/useGroupTileReconcile.js';
+import { useApplyInitialWorkspace } from './hooks/useApplyInitialWorkspace.js';
+import { useWindowSelection } from './hooks/useWindowSelection.js';
 import { useWorkspaceStore } from '../lib/store.js';
 import { Canvas } from '../components/Canvas.jsx';
 import { Chrome } from '../components/Chrome.jsx';
-import { MultiGroupDock, DEFAULT_GROUPS } from '../components/Dock.jsx';
-import { inferLayout, cleanLayout, fitGroupToLayout, getGroupInnerBounds, makeGroupBoundsForWindows } from '../lib/layoutAlgo.js';
-import { MIN_ZOOM, computeFitView, clusterWindows, boundsForItems, computeFitBounds } from '../lib/canvasMath.js';
-import { getCanvasObjectType, legacyKindForCanvasType } from '../lib/canvasObjectTypes.js';
-import { DEFAULT_WINDOW_SIZES, getDefaultWindowSize } from '../lib/windowManifest.js';
-import { withoutUnsupportedWindows, DEFAULT_HTML_PREVIEW } from '../lib/appUtils.js';
-import { applyAllowListToInitial } from '../lib/workspace/allowList.js';
-import { raiseWindow } from '../lib/windowStacking.js'; import { MyTodosBadge } from '../components/todos/MyTodosBadge.jsx';
-import { loadCamera, saveCamera } from '../lib/cameraMemory.js'; import { newId } from '../lib/ids/newId.js';
+import { MultiGroupDock } from '../components/Dock.jsx';
+import { getDefaultWindowSize } from '../lib/windowManifest.js';
+import { MyTodosBadge } from '../components/todos/MyTodosBadge.jsx';
 import {
   getChromeWindowControlState,
   runChromeCloseAction,
@@ -63,15 +59,15 @@ export function AppContent() {
     penSize, setPenSize,
     penMode, setPenMode,
     activeId, setActiveId,
-    selectedIds, setSelectedIds,
+    selectedIds,
     dockOffset, setDockOffset, setDock,
     groups, setGroups,
     focusMode, setFocusMode,
     extraAgents, setExtraAgents,
     currentProject, setCurrentProject,
-    workspaceId, setWorkspaceId,
-    pan, setPan,
-    zoom, setZoom,
+    workspaceId,
+    pan,
+    zoom,
     presets, setPresets,
     sidebarFavorites, setSidebarFavorites,
     windowAllowList, setWindowAllowList,
@@ -100,64 +96,14 @@ export function AppContent() {
     setPaths, setLinks, setPenColor, setPenSize, setPenMode, setDockOffset, setDock,
     setGroups, setFocusMode, setExtraAgents, setSidebarFavorites,
   });
-  React.useEffect(() => {
-    if (initial && !dataLoading && !isInitialized) {
-      // Brief B1 — apply migrated window allow-list (single helper).
-      const { wins: gatedWins, windowAllowList: appliedAllowList } = applyAllowListToInitial(initial, windowAllowList);
-      setWindowAllowList(appliedAllowList);
-      const safeWins = withoutUnsupportedWindows(gatedWins);
-      setWins(safeWins);
-      setCanvasGroups(initial.canvasGroups || []);
-      setPaths(initial.paths || []);
-      setLinks(initial.links || []);
-      if (initial.penColor) setPenColor(initial.penColor);
-      if (initial.penSize) setPenSize(initial.penSize); const wsId = workspaceLoad.workspaceId || initial.workspaceId || newId(); setWorkspaceId(wsId);
-      setPenMode(Boolean(initial.penMode));
-      setDockOffset(initial.dockOffset || 0); setDock(initial.dock || { visible: false, groupOverrides: {} });
-      setGroups(initial.groups || DEFAULT_GROUPS);
-      setFocusMode(initial.focusMode || false);
-      setExtraAgents(initial.extraAgents || []); setSidebarFavorites(initial.sidebarFavorites || []);
-
-      const fit = loadCamera(wsId) || computeFitView(safeWins, initial.canvasGroups || []);
-      setPan({ x: fit.x, y: fit.y });
-      setZoom(fit.zoom);
-      // Brief B2 — auto-launch the marketplace when the user has zero enabled windows (the marketplace itself is always allowed, so this only fires for fully-empty workspaces).
-      if (appliedAllowList && !Object.values(appliedAllowList).some(Boolean)) setTimeout(() => spawnAt('marketplace'), 0);
-      const id = requestAnimationFrame(() => setIsInitialized(true));
-      return () => cancelAnimationFrame(id);
-    }
-  }, [initial, dataLoading, isInitialized, spawnAt]);
-
-  const onPanZoom = React.useCallback(({ panX, panY, zoom: z }) => {
-    setPan({ x: panX, y: panY });
-    setZoom(z);
-  }, []);
-  React.useEffect(() => { if (isInitialized) saveCamera(workspaceId, { x: pan.x, y: pan.y, zoom }); }, [isInitialized, workspaceId, pan, zoom]);
+  const onPanZoom = useApplyInitialWorkspace({ initial, dataLoading, isInitialized, setIsInitialized, workspaceLoad, workspaceId, pan, zoom, spawnAt });
   useGroupTileReconcile(isInitialized);
 
   const windowControlState = React.useMemo(
     () => getChromeWindowControlState({ wins, activeId, focusMode }),
     [wins, activeId, focusMode]
   );
-  const handleWindowSelect = React.useCallback((id, event) => {
-    if (!id) {
-      setActiveId(null);
-      setSelectedIds([]);
-      return;
-    }
-    const toggle = Boolean(event?.metaKey || event?.ctrlKey || event?.shiftKey);
-    setActiveId(id); setWins((list) => raiseWindow(list, id));
-    setSelectedIds((current) => {
-      if (!toggle) return [id];
-      return current.includes(id)
-        ? current.filter((selectedId) => selectedId !== id)
-        : [...current, id];
-    });
-  }, [setActiveId, setSelectedIds, setWins]);
-  const handleSelection = React.useCallback((ids) => {
-    setSelectedIds(ids);
-    setActiveId(ids.at(-1) || null);
-  }, [setActiveId, setSelectedIds]);
+  const { onSelect: handleWindowSelect, onSelection: handleSelection } = useWindowSelection();
 
   const { persistence, collaboration } = useAppCollaboration({
     enabled: isInitialized && (workspaceLoad.status === 'ready' || workspaceLoad.status === 'draft_required'), workspaceId, wins,

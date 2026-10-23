@@ -45,3 +45,4 @@ desktop-app/
 /censai-projects/
 ai-review-*.json
 dist-demo
+.wrangler/

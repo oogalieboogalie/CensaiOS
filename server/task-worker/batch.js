@@ -1,6 +1,7 @@
 import pool from '../db.js';
 import { sendAgentMessage } from '../memory.js';
 import { log } from './shared.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 export async function checkBatchCompletion(batchId, batchLabel, parentId, scope) {
   try {
@@ -29,6 +30,6 @@ export async function checkBatchCompletion(batchId, batchLabel, parentId, scope)
     }
     log.info('batch complete', { label, total: all, failed, parentId });
   } catch (err) {
-    log.error('batch check error', { batchId, error: err.message });
+    log.error('batch check error', { batchId, code: safeErrorCode(err) });
   }
 }

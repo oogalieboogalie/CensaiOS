@@ -14,6 +14,7 @@
 // lookup (they never see the owner's records).
 
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { wordPatterns, parseKeywords } from './keywords.js';
 import { SEVEN_CONTEXTS } from './lookups.js';
 
@@ -49,7 +50,7 @@ export async function gatherSevenContexts({
       const items = Array.isArray(out) ? out : out.items || [];
       return { context, status: items.length ? 'found' : 'none', items, checked: out.checked ?? null };
     } catch (error) {
-      log.warn('lookup unavailable', { context: context.id, error: error.message });
+      log.warn('lookup unavailable', { context: context.id, code: safeErrorCode(error) });
       return { context, status: 'unavailable', items: [], checked: null };
     }
   }));

@@ -2,6 +2,7 @@
 import pool from '../db.js';
 import { dbReady } from '../dbState.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { tickIdeaFoundry } from './foundry.js';
 
 const log = createLogger('idea-foundry');
@@ -12,7 +13,7 @@ let busy = false;
 async function tick() {
   if (busy || !dbReady()) return;
   busy = true;
-  try { await tickIdeaFoundry(pool); } catch (error) { log.warn('tick failed', { error: error.message }); } finally { busy = false; }
+  try { await tickIdeaFoundry(pool); } catch (error) { log.warn('tick failed', { code: safeErrorCode(error) }); } finally { busy = false; }
 }
 
 export function startIdeaFoundryWorker() {

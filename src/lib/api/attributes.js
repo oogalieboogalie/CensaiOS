@@ -2,6 +2,7 @@ import {
   configurationWorkspaceQuery,
   readConfigurationResponse,
 } from './agentConfiguration.js';
+import { logFailure } from '../appLog/browserLog.js';
 
 /**
  * Fetches all available attribute definitions.
@@ -13,7 +14,7 @@ export async function getAttributes() {
     if (!res.ok) throw new Error('Failed to fetch attribute definitions');
     return await res.json();
   } catch (err) {
-    console.error('Failed to get attributes:', err);
+    logFailure('attributes: could not load attributes', err, 'attributes', 'error');
     return { attributes: [] };
   }
 }

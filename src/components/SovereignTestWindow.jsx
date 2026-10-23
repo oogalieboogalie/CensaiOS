@@ -2,6 +2,7 @@ import React from 'react';
 import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { api } from '../lib/api.js';
+import { logFailure } from '../lib/appLog/browserLog.js';
 
 
 
@@ -29,7 +30,7 @@ export function SovereignTestWindow({ win, onUpdate }) {
         fetchRecords();
       }
     } catch (err) {
-      console.error('Error submitting form:', err);
+      logFailure('sovereign-test: could not save the form', err, 'sovereignTest', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -44,7 +45,7 @@ export function SovereignTestWindow({ win, onUpdate }) {
       const data = await res.json();
       setRecords(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error fetching records:', err);
+      logFailure('sovereign-test: could not load records', err, 'sovereignTest', 'error');
     } finally {
       setLoading(false);
     }

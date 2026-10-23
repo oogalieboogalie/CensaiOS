@@ -10,6 +10,7 @@
 import crypto from 'node:crypto';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { getInstallSigner } from './installIdentity.js';
 import { verifyAskRequest } from './askRequest.js';
 import { buildReceiptBody, signReceipt, tokensFromTimings } from './receipts.js';
@@ -53,11 +54,11 @@ export async function recordEndpointReceipt({
       answer: outcome === 'completed' ? answer : null,
     }), signer);
     await save(db, { workspaceId: endpoint.workspace_id, receipt }).catch((error) => {
-      log.warn('helper receipt not saved', { endpointId: endpoint.id, error: error.message });
+      log.warn('helper receipt not saved', { endpointId: endpoint.id, code: safeErrorCode(error) });
     });
     return receipt;
   } catch (error) {
-    log.warn('helper receipt not made', { endpointId: endpoint.id, error: error.message });
+    log.warn('helper receipt not made', { endpointId: endpoint.id, code: safeErrorCode(error) });
     return null;
   }
 }

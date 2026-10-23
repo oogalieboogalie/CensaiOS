@@ -15,6 +15,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { requireSystemAdmin } from '../security/systemAdmin.js';
 import { callModel } from '../aiGateway/callModel.js';
 import { validateGeneratedWindow, windowComponentName } from '../window-import/validation.js';
@@ -211,7 +212,7 @@ windowImportRouter.post('/import', async (req, res) => {
         : `Files written but sync had issues: ${syncResult.output}`,
     });
   } catch (err) {
-    log.error('window import failed', { error: err.message });
+    log.error('window import failed', { code: safeErrorCode(err) });
     res.status(500).json({ error: err.message });
   }
 });

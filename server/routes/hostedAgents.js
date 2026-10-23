@@ -9,6 +9,7 @@
 import express from 'express';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { requireSystemAdmin } from '../security/systemAdmin.js';
 import { netFetch } from '../security/publicAddress.js';
 import { getUserApiKeyConfig } from '../security/userApiKeys.js';
@@ -82,8 +83,8 @@ export function createHostedAgentsRouter(deps = {}) {
 
   const fail = (res, err, what) => {
     const status = err instanceof HostedAgentError ? err.statusCode : 500;
-    if (status >= 500) log.error(`${what} failed`, { error: err?.message });
-    else log.warn(`${what} refused`, { code: err?.code || null, error: err?.message });
+    if (status >= 500) log.error(`${what} failed`, { code: safeErrorCode(err) });
+    else log.warn(`${what} refused`, { code: safeErrorCode(err) });
     return res.status(status).json({ error: status === 500 ? 'Something went wrong on this computer. See the app log (hosted-agents).' : err.message, code: err?.code || null });
   };
 

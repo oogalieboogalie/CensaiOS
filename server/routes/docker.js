@@ -8,6 +8,7 @@ import {
   removeVolume, removeNetwork, prune, composeAction,
 } from '../docker/actions.js';
 import { runContainer } from '../docker/run.js';
+import { imageHistory } from '../docker/imageHistory.js';
 
 // /api/docker — the Docker window's API. Mounted behind requireLocalFilesystem
 // in routeMap.js: it drives the host's Docker engine, so cloud_saas never
@@ -43,6 +44,8 @@ dockerRouter.delete('/containers/:id', handle((req) => removeContainer(req.param
 })));
 
 dockerRouter.get('/images', handle(async () => ({ images: await listImages() })));
+// An image's layers, when it was made and who uses it (ref in the query, like remove).
+dockerRouter.get('/images/history', handle((req) => imageHistory(req.query.ref)));
 dockerRouter.post('/images/pull', handle((req) => pullImage(req.body?.ref)));
 dockerRouter.post('/images/run', handle((req) => runContainer({
   image: req.body?.image, name: req.body?.name, ports: req.body?.ports,

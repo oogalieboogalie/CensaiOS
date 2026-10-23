@@ -4,6 +4,7 @@
 // the board owner's model keys, charged to the share link's token budget.
 
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { MAX_BODY, broadcastComment } from './comments.js';
 import { chargeAgentBudget, insertComment, linkHasAgentBudget, listComments } from './store.js';
 
@@ -64,7 +65,7 @@ export async function answerAgentMentions(db, {
         tokens = Number(data?.usage?.total_tokens) || Math.ceil((system.length + body.length) / 4);
       }
     } catch (error) {
-      log.warn('agent comment reply failed', { workspaceId, agentId: mention.id, error: error.message });
+      log.warn('agent comment reply failed', { workspaceId, agentId: mention.id, code: safeErrorCode(error) });
       body = 'I couldn\'t reach my model just now. The board owner may need to add a model key.';
     }
     if (link && tokens) await chargeAgentBudget(db, link.id, tokens);

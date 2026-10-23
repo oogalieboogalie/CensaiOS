@@ -1,6 +1,7 @@
 import React from 'react';
 import { paneId, tauriInvoke } from '../lib/nativeBrowserPane.js';
 import { cookiesForPage, parseCookieFile, siteOf } from '../lib/cookieImport.js';
+import { logFailure } from '../lib/appLog/browserLog.js';
 
 // Sign-in help for a Browser window in the desktop build: what passkeys do
 // here, importing sign-ins from a file the user exported themselves, and
@@ -21,7 +22,7 @@ const button = {
 export function openInSystemBrowser(url) {
   const invoke = tauriInvoke();
   if (invoke && url) {
-    return invoke('open_in_system_browser', { url }).catch((err) => console.error('[browser] open in system browser failed', err));
+    return invoke('open_in_system_browser', { url }).catch((err) => logFailure('browser: could not open the system browser', err, 'browser', 'error'));
   }
   if (url) window.open(url, '_blank', 'noopener');
   return Promise.resolve();

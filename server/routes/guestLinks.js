@@ -27,6 +27,7 @@ import {
   verifyPasscode,
 } from '../shareLinks/tokens.js';
 import { log, publishLinkState, sendError } from './shareLinkHttp.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 export const guestRouter = express.Router();
 
@@ -209,7 +210,7 @@ guestRouter.post('/comments', async (req, res) => {
     answerAgentMentions(pool, {
       workspaceId, root: result.root, mentions, link: access.link,
       ownerUserId: access.link.created_by_user_id, callModel, createAccessContext: createModelAccessContext,
-    }).catch((error) => log.warn('agent mention failed', { error: error.message }));
+    }).catch((error) => log.warn('agent mention failed', { code: safeErrorCode(error) }));
     return undefined;
   } catch (error) {
     return sendError(res, error);

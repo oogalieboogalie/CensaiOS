@@ -8,6 +8,7 @@
 
 import { runnerClient } from '../runner/client.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { SANDBOX_IMAGE } from './images.js';
 
 const log = createLogger('sandbox-rebuild');
@@ -126,7 +127,7 @@ export async function triggerRebuild() {
       rebuildState.status = 'done';
       rebuildState.finishedAt = Date.now();
     } catch (err) {
-      log.error('sandbox rebuild failed', { error: err.message });
+      log.error('sandbox rebuild failed', { code: safeErrorCode(err) });
       pushLog(`✗ Build failed: ${err.message}`);
       rebuildState.status = 'error';
       rebuildState.error = err.message;

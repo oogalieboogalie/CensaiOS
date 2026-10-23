@@ -14,6 +14,7 @@
 import express from 'express';
 import { runnerClient } from '../runner/client.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { TOOLCHAIN_REGISTRY, TOOLCHAIN_IDS } from '../sandbox/toolchains.js';
 import { readToolchainConfig, writeToolchainConfig } from '../sandbox/toolchainConfig.js';
 import {
@@ -87,7 +88,7 @@ sandboxRouter.post('/toolchains', requireSystemAdmin, async (req, res) => {
 
     res.json({ ok: true, enabled: validEnabled, rebuildTriggered: true });
   } catch (err) {
-    log.error('failed to save toolchain config', { error: err.message });
+    log.error('failed to save toolchain config', { code: safeErrorCode(err) });
     res.status(500).json({ error: err.message });
   }
 });
@@ -156,7 +157,7 @@ sandboxRouter.post('/toolchains/detect', requireSystemAdmin, async (_req, res) =
 
     res.json({ sandboxRunning: true, sandboxName: running.name, results });
   } catch (err) {
-    log.error('detect failed', { error: err.message });
+    log.error('detect failed', { code: safeErrorCode(err) });
     res.status(500).json({ error: err.message });
   }
 });
@@ -199,7 +200,7 @@ sandboxRouter.post('/toolchains/install', requireSystemAdmin, async (req, res) =
         : `Install failed with exit code ${code}.`,
     });
   } catch (err) {
-    log.error('quick-install failed', { tool: id, error: err.message });
+    log.error('quick-install failed', { tool: id, code: safeErrorCode(err) });
     res.status(500).json({ error: err.message });
   }
 });

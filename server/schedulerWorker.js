@@ -7,6 +7,7 @@ import {
 import { getAgents } from './memory/core/agents.js';
 import { calculateNextRun } from './memory/schedules_utils.js';
 import { createLogger } from './logger.js';
+import { safeErrorCode } from './security/errorCode.js';
 import {
   resolveScheduledAssignee,
 } from './scheduler/assignees.js';
@@ -103,7 +104,7 @@ export async function tickScheduler() {
     if (activeScheduleId) {
       await failSchedule({ id: activeScheduleId }, err).catch(() => {});
     }
-    log.error('tick error', { scheduleId: activeScheduleId, error: err.message });
+    log.error('tick error', { scheduleId: activeScheduleId, code: safeErrorCode(err) });
   } finally {
     activeScheduleId = null;
     tickBusy = false;

@@ -5,6 +5,7 @@
 // which professions. Runs as the teammate who switched it on.
 
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { requireWorkspaceMember } from '../workspaces/context.js';
 import { researchSkillSet } from './research.js';
 import { skillSetResearchDeps } from './deps.js';
@@ -105,7 +106,7 @@ export async function tickIdeaFoundry(db, deps = {}) {
       const saved = await runFoundryOnce(db, row, deps);
       await db.query('UPDATE workspace_idea_foundry SET last_result=$2, last_error=NULL WHERE workspace_id=$1', [row.workspace_id, saved.name]);
     } catch (error) {
-      log.warn('idea foundry run failed', { workspaceId: row.workspace_id, error: error.message });
+      log.warn('idea foundry run failed', { workspaceId: row.workspace_id, code: safeErrorCode(error) });
       await db.query('UPDATE workspace_idea_foundry SET last_error=$2 WHERE workspace_id=$1', [row.workspace_id, String(error.message).slice(0, 300)]);
     }
   }

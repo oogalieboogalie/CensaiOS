@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../../lib/api.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 export function useGithubConsole(win, onUpdate, currentProject) {
   const [projects, setProjects] = useState([]);
@@ -29,7 +30,7 @@ export function useGithubConsole(win, onUpdate, currentProject) {
       .then((list) => {
         if (!cancelled) setProjects(Array.isArray(list) ? list : []);
       })
-      .catch((err) => console.error('Failed to load projects:', err));
+      .catch((err) => logFailure('github: could not load projects', err, 'github', 'error'));
     return () => { cancelled = true; };
   }, []);
 
@@ -106,7 +107,7 @@ export function useGithubConsole(win, onUpdate, currentProject) {
       setIssues(prev => prev.map(i => i.number === number ? { ...i, labels: updatedLabels } : i));
       setLabelInputs(prev => ({ ...prev, [number]: '' }));
     } catch (err) {
-      console.error('Failed to add label:', err);
+      logFailure('github: could not add a label', err, 'github', 'error');
       alert(err.message || 'Failed to add label');
     } finally {
       setAddingLabel(prev => ({ ...prev, [number]: false }));

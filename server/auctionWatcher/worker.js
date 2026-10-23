@@ -5,6 +5,7 @@
 import { dbReady } from '../dbState.js';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { checkWatch } from './check.js';
 import { claimDueWatches } from './store.js';
 
@@ -21,7 +22,7 @@ export async function pollAuctionWatches({ db = pool, ready = dbReady, check = c
     for (const watch of due) await check(db, watch);
     return due.length;
   } catch (err) {
-    if (!/auction_watches/.test(err.message)) log.error('poll failed', { error: err.message });
+    if (!/auction_watches/.test(err.message)) log.error('poll failed', { code: safeErrorCode(err) });
     return 0;
   } finally {
     busy = false;

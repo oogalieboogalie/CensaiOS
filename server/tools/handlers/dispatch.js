@@ -1,5 +1,6 @@
 import pool from '../../db.js';
 import { getSubAgents, getSubAgentById, createAgentTask, sendAgentMessage } from '../../memory.js';
+import { noteToolFailure } from '../toolsLog.js';
 
 export async function handleDispatchTool(agentId, name, args, context = {}) {
   switch (name) {
@@ -149,7 +150,7 @@ export async function handleDispatchTool(agentId, name, args, context = {}) {
             );
           }
         } catch (batchErr) {
-          console.warn('[task_done] Batch check error:', batchErr.message);
+          noteToolFailure('squad completion check failed', { agentId }, batchErr);
         }
       }
 

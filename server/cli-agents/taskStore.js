@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 /**
  * Task state for the Agent Console: the in-memory task map, the transcript
@@ -68,7 +69,7 @@ export class TaskStore extends EventEmitter {
       fs.writeFileSync(tmp, JSON.stringify({ version: 1, tasks }), 'utf8');
       fs.renameSync(tmp, this.stateFile);
     } catch (err) {
-      log.warn('could not save cli agent tasks', { error: err.message });
+      log.warn('could not save cli agent tasks', { code: safeErrorCode(err) });
     }
   }
 

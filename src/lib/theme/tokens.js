@@ -16,7 +16,8 @@
  *   the `mood()` factory in Theme.jsx: { mode, accent, vars }) plus the
  *   current effective customVars (if any), and returns a plain object of
  *   CSS variable overrides. The returned object only carries the tokens
- *   this module owns: --window-title-bg and --window-shadow. Everything
+ *   this module owns: --window-title-bg, --window-shadow and
+ *   --window-shadow-active. Everything
  *   else (--surface, --ink, --bg, --window-strip-*, --hairline, etc.) is
  *   unchanged - the per-mood hand-picked values for those stay declarative.
  *
@@ -72,10 +73,17 @@ const ACCENT_BLEND = {
   dark: 0.38,
 };
 
-/** Shadows: a soft white inset + an outer drop tuned for the mode. */
+/** Window elevation (docs/ui-yardstick.md), at rest and focused: a lit top
+ * edge, a hairline ring, a tight contact shadow and a wide soft one. Dark
+ * adds a near-black outer ring, because a shadow alone does not show on a
+ * near-black board; the focused window sits highest. */
 const SHADOW_BY_MODE = {
-  light: '0 1px 0 oklch(1 0 0 / 0.78) inset, 0 16px 38px -28px oklch(0 0 0 / 0.32), 0 4px 14px -10px oklch(0 0 0 / 0.22)',
-  dark: '0 1px 0 oklch(1 0 0 / 0.05) inset, 0 18px 44px -28px oklch(0 0 0 / 0.65)',
+  light: '0 1px 0 oklch(1 0 0 / 0.8) inset, 0 0 0 0.5px oklch(0 0 0 / 0.05), 0 2px 4px -2px oklch(0 0 0 / 0.08), 0 14px 32px -14px oklch(0 0 0 / 0.2)',
+  dark: '0 1px 0 oklch(1 0 0 / 0.07) inset, 0 0 0 1px oklch(0 0 0 / 0.5), 0 4px 10px -4px oklch(0 0 0 / 0.5), 0 20px 44px -18px oklch(0 0 0 / 0.75)',
+};
+const ACTIVE_SHADOW_BY_MODE = {
+  light: '0 1px 0 oklch(1 0 0 / 0.8) inset, 0 0 0 0.5px oklch(0 0 0 / 0.06), 0 4px 8px -4px oklch(0 0 0 / 0.1), 0 28px 60px -20px oklch(0 0 0 / 0.3)',
+  dark: '0 1px 0 oklch(1 0 0 / 0.09) inset, 0 0 0 1px oklch(0 0 0 / 0.55), 0 8px 18px -8px oklch(0 0 0 / 0.6), 0 34px 72px -24px oklch(0 0 0 / 0.85)',
 };
 
 /** Read a CSS var, preferring customVars (live user edits) over the mood base. */
@@ -137,14 +145,16 @@ export function computeTokenMap(preset, options = {}) {
 
   // Shadow: mode-tuned, with a soft white inset.
   const shadow = SHADOW_BY_MODE[mode];
+  const active = ACTIVE_SHADOW_BY_MODE[mode];
   if (tint === 0) {
     // Unified title bar: same color as the window body.
-    return { '--window-title-bg': 'var(--window-bg, var(--surface))', '--window-shadow': shadow };
+    return { '--window-title-bg': 'var(--window-bg, var(--surface))', '--window-shadow': shadow, '--window-shadow-active': active };
   }
 
   return {
     '--window-title-bg': headerBg,
     '--window-shadow': shadow,
+    '--window-shadow-active': active,
   };
 }
 

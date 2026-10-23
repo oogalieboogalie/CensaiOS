@@ -23,7 +23,8 @@ describe('OllamaNodeWindow', () => {
   test('empty-state guard renders when no models are reachable', async () => {
     mockFetch(() => ok({ baseUrl: 'http://localhost:11434/v1', models: [] }));
     render(<OllamaNodeWindow win={{}} />);
-    expect(await screen.findByText(/Ollama not reachable/)).toBeInTheDocument();
+    expect(await screen.findByText(/Ollama isn.t running yet/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Check again' })).toBeInTheDocument();
   });
 
   test('model picker populates from the models endpoint', async () => {

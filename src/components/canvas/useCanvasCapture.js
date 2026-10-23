@@ -1,4 +1,5 @@
 import domtoimage from 'dom-to-image-more';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 export function useCanvasCapture({ ref, region, setRegion, pan, zoom }) {
   return async (callback) => {
@@ -25,7 +26,7 @@ export function useCanvasCapture({ ref, region, setRegion, pan, zoom }) {
       ctx.drawImage(img, screenX, screenY, screenW, screenH, 0, 0, screenW, screenH);
       callback(canvas.toDataURL('image/png'), snapRect);
     } catch (e) {
-      console.error('Capture failed', e);
+      logFailure('canvas: capture failed', e, 'canvas', 'error');
     }
   };
 }

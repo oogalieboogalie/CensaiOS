@@ -9,6 +9,7 @@
 
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { forgetPublicFeed } from './publicFeed.js';
 
 const log = createLogger('social');
@@ -64,7 +65,7 @@ export async function noteAgentWork({ workspaceId, agentId, agentName, toolActio
     forgetPublicFeed(shown.user_id);
     return true;
   } catch (error) {
-    log.warn('agent feed note skipped', { workspaceId, error: error.message });
+    log.warn('agent feed note skipped', { workspaceId, code: safeErrorCode(error) });
     return false;
   }
 }

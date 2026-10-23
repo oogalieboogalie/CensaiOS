@@ -12,6 +12,7 @@
 
 import express from 'express';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { agentEndpointPublicRouter } from '../routes/agentEndpointsPublic.js';
 import { socialPublicRouter } from '../routes/socialPublic.js';
 
@@ -50,7 +51,7 @@ export function startOutsideListener(config = outsideListenerConfig()) {
     log.info('agent endpoints listening for tunnels', { url: `http://${config.host}:${config.port}/api/mcp` });
   });
   server.on('error', (error) => {
-    log.warn('agent endpoint port not opened', { port: config.port, error: error.message });
+    log.warn('agent endpoint port not opened', { port: config.port, code: safeErrorCode(error) });
   });
   return null;
 }

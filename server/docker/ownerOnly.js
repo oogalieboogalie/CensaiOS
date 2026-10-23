@@ -8,7 +8,7 @@ import { assertSystemAdmin, requireSystemAdmin } from '../security/systemAdmin.j
 // or anything the person typed.
 
 const log = createLogger('docker');
-const KNOWN = new Set(['status', 'containers', 'stats', 'images', 'volumes', 'networks', 'compose', 'prune', 'logs', 'exec']);
+const KNOWN = new Set(['status', 'containers', 'stats', 'images', 'volumes', 'networks', 'compose', 'prune', 'logs', 'exec', 'history']);
 
 /** A route name safe to log: known words only, ':id' for anything else. */
 export function dockerRouteLabel(path = '') {

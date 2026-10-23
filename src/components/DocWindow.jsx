@@ -39,7 +39,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
     saveFile
   } = useDoc(win, onUpdate, onSpawn, onAssign, bodyRef);
   const textareaRef = React.useRef(null);
-  useSharedCaret(textareaRef, realContent);
+  useSharedCaret(textareaRef, realContent, React.useMemo(() => ({ id: win.id, field: 'text' }), [win.id]));
 
   const annotations = win.annotations || [];
   const segments = splitByAnnotations(text, annotations);
@@ -131,7 +131,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
                   value={realContent}
                   readOnly={Boolean(win.typingActor && !win.typingActor.shared)}
                   onChange={(e) => {
-                    const next = mergeWithLatest(win.id, 'text', realContent, e.target.value);
+                    const next = mergeWithLatest(win.id, 'text', realContent, e.target.value, e.target.selectionEnd);
                     setRealContent(next);
                     onUpdate({ text: next });
                     reportTyping(win.id);

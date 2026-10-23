@@ -1,0 +1,76 @@
+/* MLOps Dashboard. Depth from docs/ui-yardstick.md: the model list is a
+   sidebar band, the chosen model sits raised like a macOS sidebar pick,
+   numbers are stat tiles and alerts are panels. Tokens only. */
+
+.ml-root { flex: 1; display: flex; min-height: 0; overflow: hidden; background: var(--window-bg, var(--surface)); }
+
+.ml-side {
+  width: var(--space-60); flex-shrink: 0; display: flex; flex-direction: column; min-height: 0;
+  background: var(--layer-bar); border-right: 1px solid var(--hairline);
+}
+.ml-side-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-3) var(--space-2) var(--space-4); }
+.ml-label { color: var(--ink-faint); font-size: var(--text-xs); font-weight: 600; }
+.ml-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-0-5); padding: var(--space-1) var(--space-2) var(--space-3); }
+.ml-side-empty { margin: var(--space-4) var(--space-2); color: var(--ink-faint); font-size: var(--text-sm); line-height: 1.5; text-align: center; }
+
+.ml-model {
+  all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-0-5);
+  padding: var(--space-2) var(--space-3); border: 1px solid transparent; border-radius: var(--radius-md); cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+}
+.ml-model:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); }
+.ml-model:focus-visible { outline: 1px solid var(--accent-line); outline-offset: -1px; }
+.ml-model[aria-current="true"] { background: var(--layer-panel); border-color: var(--hairline); box-shadow: var(--panel-shadow); }
+.ml-model-name { display: flex; align-items: center; gap: var(--space-2); color: var(--ink); font-size: var(--text-md); font-weight: 500; }
+.ml-model-sub { padding-left: var(--space-4); color: var(--ink-soft); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.ml-dot { width: var(--space-1-5); height: var(--space-1-5); flex-shrink: 0; border-radius: var(--radius-full); background: var(--success); }
+.ml-dot[data-tone="danger"] { background: var(--danger); }
+
+.ml-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; padding: var(--space-5); }
+.ml-head { margin-bottom: var(--space-5); }
+.ml-title { margin: 0; color: var(--ink); font-size: var(--text-xl); font-weight: 600; }
+.ml-version { color: var(--ink-soft); font-size: var(--text-base); font-weight: 400; }
+.ml-purpose { margin-top: var(--space-1-5); color: var(--ink); font-size: var(--text-base); }
+.ml-id { margin-top: var(--space-1); color: var(--ink-soft); font-size: var(--text-sm); }
+
+.ml-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--space-44), 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
+.ml-stats .hb-stat { padding: var(--space-3) var(--space-4); }
+.ml-stats .hb-stat-value { font-size: var(--text-xl); }
+.ml-stats .hb-stat-value.ml-stat-small { font-size: var(--text-base); font-weight: 500; }
+.hb-stat-value[data-tone="ok"] { color: var(--success-text); }
+.hb-stat-value[data-tone="danger"] { color: var(--danger-text); }
+
+.ml-section { margin: 0 0 var(--space-3); color: var(--ink); font-size: var(--text-base); font-weight: 600; }
+.ml-alerts { display: flex; flex-direction: column; gap: var(--space-2); }
+.ml-alert {
+  padding: var(--space-3); background: var(--layer-panel); border: 1px solid var(--hairline); border-radius: var(--radius-lg);
+  box-shadow: var(--panel-shadow), inset var(--space-0-5) 0 0 var(--danger);
+}
+.ml-alert-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ml-alert-title { color: var(--danger-text); font-size: var(--text-md); font-weight: 600; }
+.ml-alert-when { color: var(--ink-soft); font-size: var(--text-xs); }
+.ml-breakdown-empty { margin-top: var(--space-2-5); }
+.ml-quiet { padding: var(--space-5); color: var(--ink-soft); font-size: var(--text-sm); text-align: center; }
+
+.ml-table { width: 100%; margin-top: var(--space-2-5); border-collapse: collapse; font-size: var(--text-xs); }
+.ml-table th { padding: var(--space-1) var(--space-1-5); color: var(--ink-faint); font-weight: 500; text-align: left; }
+.ml-table td { padding: var(--space-1) var(--space-1-5); border-top: 1px solid var(--hairline); color: var(--ink); }
+.ml-table tr[data-over="true"] td { color: var(--danger-text); }
+.ml-mono { font-family: var(--font-mono); }
+
+.ml-btn {
+  all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+  height: var(--space-7); padding: 0 var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md);
+  background: var(--layer-panel); box-shadow: var(--panel-shadow); color: var(--ink); font-size: var(--text-xs); font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
+}
+.ml-btn:hover:not(:disabled) { background: var(--layer-panel-hover); border-color: var(--hairline-strong); }
+.ml-btn:active:not(:disabled) { transform: scale(var(--press-scale)); }
+.ml-btn:focus-visible { outline: 1px solid var(--accent-line); outline-offset: 1px; }
+.ml-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+.ml-btn--primary { height: var(--space-8); padding: 0 var(--space-4); border-color: transparent; background: var(--accent); color: var(--accent-contrast); font-size: var(--text-sm); font-weight: 600; }
+.ml-btn--primary:hover:not(:disabled) { background: color-mix(in oklab, var(--accent) 88%, var(--ink)); border-color: transparent; }
+.ml-btn--danger { border-color: transparent; background: var(--danger); box-shadow: none; color: var(--on-fill); }
+.ml-btn--danger:hover:not(:disabled) { background: color-mix(in oklab, var(--danger) 85%, var(--color-black)); border-color: transparent; }
+.ml-btn--tall { height: var(--space-8); padding: 0 var(--space-4); font-size: var(--text-sm); }

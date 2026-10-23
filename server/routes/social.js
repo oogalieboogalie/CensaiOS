@@ -8,6 +8,7 @@
 import express from 'express';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { boardPreview } from '../social/activity.js';
 import { buildFeed } from '../social/feed.js';
 import { followHere, followRemote, listFollows, unfollow } from '../social/follows.js';
@@ -30,7 +31,7 @@ export function createSocialRouter({ db = pool, remoteOptions = {} } = {}) {
       res.json(await work(req, userId));
     } catch (error) {
       const status = error.statusCode || (error instanceof SocialError ? 400 : 500);
-      if (status >= 500) log.error('social request failed', { error: error.message });
+      if (status >= 500) log.error('social request failed', { code: safeErrorCode(error) });
       res.status(status).json({ error: status >= 500 ? 'Something went wrong.' : error.message, code: error.code });
     }
   };

@@ -6,10 +6,21 @@ import { fetchModuleListings, installModuleListing } from '../../lib/marketplace
 import { moduleWindowFromSaved } from '../../lib/modules/moduleWindowState.js';
 import { clampModuleSize } from '../../lib/modules/moduleFormat.js';
 import { matches } from '../../lib/modules/addPaletteItems.js';
+import { describePermissions } from '../../lib/modules/manifestV3.js';
 
 function day(at) {
   const t = Date.parse(at || '');
   return t ? new Date(t).toISOString().slice(0, 10) : '';
+}
+
+/**
+ * What a listed module may do, in plain words. Before, every permission but
+ * "agent" read "the internet", so a module that only saves its data said
+ * "Asks for the internet and the internet".
+ */
+export function mayDo(manifest) {
+  const lines = describePermissions(manifest).map(s => s.charAt(0).toLowerCase() + s.slice(1));
+  return lines.length ? `May ${lines.join(', ').replace(/, ([^,]*)$/, ' and $1')}` : '';
 }
 
 /** The badge comes from the server's signature check, never from listing text. */
@@ -84,7 +95,7 @@ export function ModuleListings({ search = '' }) {
                 <span>{l.seller?.name || 'Censai'}</span>
                 <span>Checks {l.checks.score} of {l.checks.total}, run {day(l.checks.ranAt)}</span>
                 <span>{l.installs === 1 ? '1 copy' : `${l.installs} copies`}</span>
-                {l.manifest?.permissions?.length > 0 && <span>Asks for {l.manifest.permissions.map(p => (p === 'agent' ? 'your agents' : 'the internet')).join(' and ')}</span>}
+                {mayDo(l.manifest) && <span>{mayDo(l.manifest)}</span>}
               </div>
             </div>
             <div className="hb-market-actions">

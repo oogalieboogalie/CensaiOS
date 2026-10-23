@@ -1,5 +1,9 @@
 import express from 'express';
 import pool from './db.js';
+import { createLogger } from './logger.js';
+import { safeErrorCode } from './security/errorCode.js';
+
+const log = createLogger('sovereign-test');
 
 export const sovereignTestRouter = express.Router();
 
@@ -14,7 +18,7 @@ sovereignTestRouter.get('/', async (req, res) => {
       const result = await pool.query('SELECT * FROM agents LIMIT 100');
       res.json(result.rows);
     } catch (fallbackErr) {
-      console.error('Error fetching from agents:', fallbackErr.message);
+      log.error('could not read agents', { code: safeErrorCode(fallbackErr) });
       res.status(500).json({ error: fallbackErr.message });
     }
   }
@@ -43,7 +47,7 @@ sovereignTestRouter.post('/', async (req, res) => {
       );
       res.json(result.rows[0]);
     } catch (fallbackErr) {
-      console.error('Error inserting into agents:', fallbackErr.message);
+      log.error('could not add an agent', { code: safeErrorCode(fallbackErr) });
       res.status(500).json({ error: fallbackErr.message });
     }
   }

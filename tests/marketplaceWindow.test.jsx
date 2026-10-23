@@ -17,6 +17,7 @@
  *   6. Selection round-trips through the store.
  */
 import React from 'react';
+import { jest } from '@jest/globals';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MarketplaceWindow } from '../src/components/MarketplaceWindow.jsx';
 import { useWorkspaceStore } from '../src/lib/store.js';
@@ -116,5 +117,16 @@ describe('Brief B2 - MarketplaceWindow panel', () => {
     ];
     expect(filterCatalogBySearch(rows, 'chat')).toHaveLength(1);
     expect(filterCatalogBySearch(rows, '')).toHaveLength(2);
+  });
+});
+describe('Agents tab with no listed agents', () => {
+  test('points to the Agent Registry instead of "No items match."', () => {
+    const spawnAt = jest.fn();
+    act(() => { useWorkspaceStore.setState({ spawnAt }); });
+    render(<MarketplaceWindow win={{ tab: 'agent' }} />);
+    expect(screen.queryByText('No items match.')).toBeNull();
+    const empty = screen.getByTestId('marketplace-agents-empty');
+    fireEvent.click(within(empty).getByRole('button', { name: 'Open Agent Registry' }));
+    expect(spawnAt).toHaveBeenCalledWith('registry');
   });
 });

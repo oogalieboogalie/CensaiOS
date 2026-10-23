@@ -1,4 +1,5 @@
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
 import { startLogCleanup } from '../logRetention.js';
 import { startTaskWorker } from '../taskWorker.js';
@@ -53,7 +54,7 @@ export async function startServer(app, options = {}) {
   await checkDb();
   // Self-fix: save error reports, and apply fixes the owner's switch let through.
   if (shouldStartWorkers && getRuntimeMode() !== RUNTIME_MODES.CLOUD_SAAS) {
-    await startSelfFix().catch((err) => log.warn('self-fix did not start', { error: err.message }));
+    await startSelfFix().catch((err) => log.warn('self-fix did not start', { code: safeErrorCode(err) }));
   }
   await initializeDynamicTools();
   await initializeMcpTools();
@@ -116,7 +117,7 @@ export async function startServer(app, options = {}) {
     });
 
     server.on('error', (err) => {
-      log.error('Failed to start server', { error: err.message });
+      log.error('Failed to start server', { code: safeErrorCode(err) });
       reject(err);
     });
   });

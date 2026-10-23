@@ -6,6 +6,7 @@ import { windowsInGroup } from './layout/groupResize.js';
 import { computeFitView } from './canvasMath.js';
 import { applyPreset, fitGroupToLayout, getGroupInnerBounds, cleanLayout } from './layoutAlgo.js';
 import { newId } from './ids/newId.js';
+import { logFailure } from './appLog/browserLog.js';
 
 export const createPresetActions = (set, get) => ({
   saveAsPreset: async (rawName) => {
@@ -30,7 +31,7 @@ export const createPresetActions = (set, get) => ({
       await api.savePresets(next);
       set({ presets: next });
     } catch (err) {
-      console.error('Failed to save preset', err);
+      logFailure('store: could not save a preset', err, 'store', 'error');
       if (typeof window !== 'undefined') window.alert('Preset was not saved.');
     }
   },
@@ -73,7 +74,7 @@ export const createPresetActions = (set, get) => ({
       await api.savePresets(next, { allowEmpty: true });
       set({ presets: next });
     } catch (err) {
-      console.error('Failed to delete preset', err);
+      logFailure('store: could not delete a preset', err, 'store', 'error');
     }
   },
 

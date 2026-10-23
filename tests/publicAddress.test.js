@@ -109,7 +109,7 @@ test('every outside-tools refusal is logged with the host and the refused addres
   expect(logged.map((r) => [r.level, r.message, r.meta])).toEqual([
     ['warn', 'address refused: private network', { host: 'sneaky.example', address: '10.0.0.5' }],
     ['warn', 'address refused: not found on the internet', { host: 'nowhere.invalid' }],
-    ['warn', 'address refused: not a usable web address', { reason: 'Put the key in the Key box, not inside the address.' }],
+    ['warn', 'address refused: not a usable web address', { reason: 'not-a-web-address' }],
   ]);
   expect(JSON.stringify(logged)).not.toContain('secret-key');
 });

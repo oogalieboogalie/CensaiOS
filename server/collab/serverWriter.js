@@ -7,6 +7,7 @@
 
 import * as Y from 'yjs';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { transactCanvasDoc } from './liveDoc.js';
 import { valueFromY, valueToY } from './seedFromSnapshot.js';
 import { CANVAS_ROOT, isValidWindowGeometry } from './ySchema.js';
@@ -52,7 +53,7 @@ export async function mirrorWindowToCanvas(workspaceId, win) {
   try {
     return await transactCanvasDoc(workspaceId, (doc) => upsertWindowInDoc(doc, win));
   } catch (error) {
-    log.warn('canvas CRDT mirror failed', { workspaceId, windowId: win?.id, error: error.message });
+    log.warn('canvas CRDT mirror failed', { workspaceId, windowId: win?.id, code: safeErrorCode(error) });
     return false;
   }
 }

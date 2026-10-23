@@ -3,6 +3,10 @@ import express from 'express';
 import pool from './db.js';
 import { dbReady } from './dbState.js';
 import { getOAuthCredential } from './credentials/oauthStore.js';
+import { createLogger } from './logger.js';
+import { safeErrorCode } from './security/errorCode.js';
+
+const log = createLogger('calendar');
 
 export const calendarRouter = express.Router();
 
@@ -25,7 +29,7 @@ export async function getOAuthClient(userId) {
     oauth2Client.setCredentials(tokens);
     return oauth2Client;
   } catch (err) {
-    console.error('Failed to load OAuth credentials from database for user:', userId, err);
+    log.error('could not load Google sign-in', { code: safeErrorCode(err) });
     return null;
   }
 }

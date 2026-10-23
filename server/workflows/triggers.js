@@ -15,6 +15,7 @@
 import pool from '../db.js';
 import { dbReady } from '../dbState.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { readBoardWindows } from './board.js';
 import { startWorkflowRun } from './runner.js';
 import { dropTrigger, listArmedTriggers, markScheduleRan, saveSeenWindows } from './store.js';
@@ -57,7 +58,7 @@ async function start(row, trigger, startText, deps) {
   } catch (error) {
     if (error.statusCode === 409) return 'busy';
     if (error.statusCode === 404) await dropTrigger(deps.db, row.workspace_id, row.window_id);
-    else log.warn('workflow did not start', { windowId: row.window_id, error: error.message });
+    else log.warn('workflow did not start', { windowId: row.window_id, code: safeErrorCode(error) });
     return 'skipped';
   }
 }
@@ -90,14 +91,14 @@ export async function tickWorkflowTriggers(deps = { db: pool, read: readBoardWin
   try {
     rows = await listArmedTriggers(deps.db);
   } catch (error) {
-    log.warn('workflow triggers unreadable', { error: error.message });
+    log.warn('workflow triggers unreadable', { code: safeErrorCode(error) });
     return 0;
   }
   for (const row of rows) {
     try {
       if (await checkTrigger(row, deps)) started += 1;
     } catch (error) {
-      log.warn('workflow trigger check failed', { windowId: row.window_id, error: error.message });
+      log.warn('workflow trigger check failed', { windowId: row.window_id, code: safeErrorCode(error) });
     }
   }
   return started;

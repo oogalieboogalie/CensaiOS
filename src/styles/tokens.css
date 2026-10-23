@@ -141,7 +141,7 @@
   --hairline-strong: oklch(0.82 0.004 260);
   --ink: oklch(0.22 0.006 260);
   --ink-soft: oklch(0.44 0.006 260);
-  --ink-faint: oklch(0.6 0.006 260);
+  --ink-faint: oklch(0.54 0.006 260);
   --accent-h: 78;
   --accent-c: 0.14;
   --accent-l: 0.771;
@@ -207,6 +207,12 @@
   --danger: var(--status-danger);
   --warning: var(--status-amber);
   --info: var(--status-info);
+  /* Status colours as small text: bright fills are too light to read on
+     white (green is 2.3 : 1), so light looks darken them toward the ink;
+     dark looks use them as they are. */
+  --success-text: color-mix(in oklab, var(--success) 62%, var(--ink));
+  --danger-text: color-mix(in oklab, var(--danger) 78%, var(--ink));
+  --warning-text: color-mix(in oklab, var(--warning) 55%, var(--ink));
   --ps-amber: var(--status-amber);
   --ps-yellow: var(--status-yellow);
   --ps-orange: var(--status-orange);
@@ -264,6 +270,21 @@
   --shadow-window: var(--shadow-pop);
   --shadow-float: var(--shadow-pop);
 
+  /* ── Depth inside a window (docs/ui-yardstick.md). Lowest first: well
+     (lists, code, inputs) < body (the window) < bar (a toolbar band) <
+     panel (a raised card) < float (glass, below). Light raises with white and
+     a soft shadow; dark raises with a lighter surface and a lit top edge, the
+     way macOS dark windows do. Classes in src/styles/depth.css. ──────────── */
+  --layer-well: color-mix(in oklab, var(--surface) 96.5%, var(--ink));
+  --layer-bar: color-mix(in oklab, var(--surface) 98%, var(--ink));
+  --layer-panel: var(--surface);
+  --layer-panel-hover: var(--surface);
+  --rim-light: oklch(1 0 0 / 0.8);
+  --well-shadow: inset 0 1px 2px oklch(0 0 0 / 0.05);
+  --panel-shadow: inset 0 1px 0 var(--rim-light), 0 1px 2px oklch(0 0 0 / 0.05), 0 2px 6px -2px oklch(0 0 0 / 0.06);
+  --panel-shadow-hover: inset 0 1px 0 var(--rim-light), 0 2px 4px oklch(0 0 0 / 0.06), 0 10px 24px -10px oklch(0 0 0 / 0.16);
+  --press-scale: 0.98;
+
   /* Glossy chrome (src/lib/theme/gloss.js). Restrained looks set none. */
   --gloss-sheen: none;
   --gloss-bevel: 0 0 0 0 transparent;
@@ -313,6 +334,17 @@
   --elevation-1: 0 1px 2px oklch(0 0 0 / 0.4);
   --elevation-2: 0 0 0 1px oklch(1 0 0 / 0.03), 0 12px 32px -12px oklch(0 0 0 / 0.6);
   --elevation-3: 0 0 0 1px oklch(1 0 0 / 0.04), 0 32px 64px -24px oklch(0 0 0 / 0.7);
+  --layer-well: color-mix(in oklab, var(--surface) 72%, var(--color-black));
+  --layer-bar: color-mix(in oklab, var(--surface) 97%, var(--color-white));
+  --layer-panel: color-mix(in oklab, var(--surface) 95%, var(--color-white));
+  --layer-panel-hover: color-mix(in oklab, var(--surface) 92%, var(--color-white));
+  --rim-light: oklch(1 0 0 / 0.06);
+  --success-text: var(--success);
+  --danger-text: var(--danger);
+  --warning-text: var(--warning);
+  --well-shadow: inset 0 1px 3px oklch(0 0 0 / 0.45);
+  --panel-shadow: inset 0 1px 0 var(--rim-light), 0 0 0 1px oklch(0 0 0 / 0.35), 0 2px 6px -2px oklch(0 0 0 / 0.5);
+  --panel-shadow-hover: inset 0 1px 0 oklch(1 0 0 / 0.09), 0 0 0 1px oklch(0 0 0 / 0.4), 0 10px 24px -10px oklch(0 0 0 / 0.7);
   /* Black smoked glass, the hero look: the board's canvas pushed toward
      black, and the backdrop dimmed as well as blurred so colour behind it
      reads as smoke, not grey haze. */

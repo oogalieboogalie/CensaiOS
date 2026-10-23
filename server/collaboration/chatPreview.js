@@ -10,6 +10,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import * as Y from 'yjs';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { transactCanvasDoc } from '../collab/liveDoc.js';
 import { upsertWindowInDoc } from '../collab/serverWriter.js';
 import { valueFromY, valueToY } from '../collab/seedFromSnapshot.js';
@@ -62,7 +63,7 @@ export async function showInChatPreview(workspaceId, input, deps = {}) {
   try {
     await transact(workspaceId, (doc) => { shown = showInChatPreviewDoc(doc, input); });
   } catch (error) {
-    log.warn('preview not shown', { workspaceId, chatWindowId: input?.chatWindowId, error: error.message });
+    log.warn('preview not shown', { workspaceId, chatWindowId: input?.chatWindowId, code: safeErrorCode(error) });
     return null;
   }
   if (shown) {

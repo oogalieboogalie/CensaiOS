@@ -6,6 +6,7 @@ import { claimTask } from './claim.js';
 import { runTask } from './execution.js';
 import { runTaskWithLifecycle } from './runLifecycle.js';
 import { requeueInProgressAgentTasks } from '../memory.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 let requeuedStuckTasks = false;
 
@@ -16,7 +17,7 @@ async function checkAndRequeueStuckTasks() {
     requeuedStuckTasks = true;
     log.info('requeued any stuck in_progress agent tasks back to queued status');
   } catch (err) {
-    log.error('failed to requeue stuck tasks', { error: err.message });
+    log.error('failed to requeue stuck tasks', { code: safeErrorCode(err) });
   }
 }
 
@@ -41,7 +42,7 @@ async function poll() {
     runTaskWithLifecycle({ task, executeTask: runTask }).finally(() => { state.activeCount--; });
   } catch (err) {
     state.lastPollError = err.message;
-    log.error('poll error', { error: err.message });
+    log.error('poll error', { code: safeErrorCode(err) });
   }
 }
 

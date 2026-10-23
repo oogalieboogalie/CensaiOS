@@ -10,7 +10,7 @@ import { createPalmFilter } from '../lib/ink/palmFilter.js';
 import { coalescedSamples, inkPoint } from '../lib/ink/stroke.js';
 import { newId } from '../lib/ids/newId.js';
 import { logToApp } from '../lib/appLog/browserLog.js';
-import { mergeSketchElements } from '../lib/collaboration/windowSketch.js';
+import { keepStartedShapes, mergeSketchElements } from '../lib/collaboration/windowSketch.js';
 
 // The board's copy is the shared one (spec 9); this browser's saved copy is
 // only a fallback for windows from before the scene was stored on the board.
@@ -51,7 +51,7 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
       saveTimerRef.current = null;
       const atSend = mergeSketchElements(sharedRef.current, lastSaved.current, merged);
       lastSaved.current = atSend;
-      setElements(atSend);
+      setElements((now) => keepStartedShapes(now, merged, atSend, win.id));
       onUpdate?.({ state: { ...(win.state || {}), excalidraw: { elements: atSend } } });
     }, 200);
   }, [onUpdate, win.id, win.state]);
@@ -112,6 +112,7 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
     else if (activeMode === 'circle') newEl = { id: shapeId, type: 'circle', x, y, w: 0, h: 0, color, strokeWidth };
     else if (activeMode === 'arrow') newEl = { id: shapeId, type: 'arrow', x, y, pts: [{ x, y }, { x, y }], color, strokeWidth };
     else if (activeMode === 'text') {
+      e.preventDefault(); // otherwise the click's own focus change blurs the new text box and drops it
       newEl = { id: shapeId, type: 'text', x, y, text: '', color };
       setElements(prev => [...prev, newEl]);
       setEditingTextId(shapeId); setTempTextValue(''); setSelectedId(shapeId);

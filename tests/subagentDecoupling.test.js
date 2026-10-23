@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { onLogRecord } from '../server/logger.js';
 
 const mockGetSubAgentById = jest.fn();
 const mockGetAgent = jest.fn();
@@ -130,13 +131,20 @@ describe('Sub-Agent Project Decoupling and Custom Tool Scopes', () => {
 
     test('fails closed when scoped registry lookup fails', async () => {
       const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const records = [];
+      const stop = onLogRecord((r) => records.push(r));
       mockGetSubAgentById.mockRejectedValue(new Error('registry offline'));
       const tools = await filterToolsForAgent('sub-1', { workspaceId: 'workspace-1', userId: 7 });
       const names = tools.map(tool => tool.function.name);
       expect(names).toEqual(expect.arrayContaining(['search_tools', 'get_tool']));
       expect(names).not.toContain('local_read_file');
       expect(names).not.toContain('run_tests');
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('Failed closed'), 'registry offline');
+      // One 'tools' log line with a fixed message; the error's own text stays out.
+      const line = records.find((r) => r.message === 'permissions check failed closed');
+      expect(line).toBeDefined();
+      expect(JSON.stringify(records)).not.toContain('registry offline');
+      expect(warn).not.toHaveBeenCalled();
+      stop();
       warn.mockRestore();
     });
   });

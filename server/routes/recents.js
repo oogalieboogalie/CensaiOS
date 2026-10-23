@@ -9,6 +9,7 @@ import express from 'express';
 import pool from '../db.js';
 import { dbReady } from '../dbState.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import * as turnStore from '../agentMemory/turns.js';
 
 const log = createLogger('recents');
@@ -51,7 +52,7 @@ export function createRecentsRouter({ db = pool, isReady = dbReady } = {}) {
       log.info('recents listed', { scope, count: rows.length });
       res.json({ scope, chats: rows.map(chatView) });
     } catch (error) {
-      log.warn('recents failed', { error: error.message });
+      log.warn('recents failed', { code: safeErrorCode(error) });
       res.status(500).json({ error: 'Recents are not available right now.' });
     }
   });
@@ -70,7 +71,7 @@ export function createRecentsRouter({ db = pool, isReady = dbReady } = {}) {
         turns: turns.map((t) => ({ id: String(t.id), speaker: t.speaker, text: t.text, at: t.at })),
       });
     } catch (error) {
-      log.warn('recents chat failed', { error: error.message });
+      log.warn('recents chat failed', { code: safeErrorCode(error) });
       return res.status(500).json({ error: 'That chat is not available right now.' });
     }
   });

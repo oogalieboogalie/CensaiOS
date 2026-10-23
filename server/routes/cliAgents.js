@@ -32,6 +32,7 @@ import { installCli } from '../cli-agents/install.js';
 import { allowedRoots, assertAllowedFolder } from '../cli-agents/folders.js';
 import { requireSystemAdmin } from '../security/systemAdmin.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { grokSigninRouter } from './grokSignin.js';
 
 const log = createLogger('cli-agents-route');
@@ -53,7 +54,7 @@ async function actor(req) {
 
 function send(res, error) {
   const status = Number(error?.statusCode) || 500;
-  if (status >= 500) log.error('cli agents request failed', { error: error?.message });
+  if (status >= 500) log.error('cli agents request failed', { code: safeErrorCode(error) });
   res.status(status).json({ error: status >= 500 ? 'The Agent Console hit a server error.' : error.message });
 }
 
@@ -75,7 +76,7 @@ cliAgentsRouter.get('/roster', wrap(async (req, res) => {
 cliAgentsRouter.post('/install/:cli', requireSystemAdmin, wrap(async (req, res) => {
   const adapter = getAdapter(req.params.cli);
   if (!adapter) return res.status(404).json({ error: 'Unknown CLI.' });
-  installCli(adapter.id).then(() => forgetVersions()).catch((err) => log.warn('install failed', { cli: adapter.id, error: err.message }));
+  installCli(adapter.id).then(() => forgetVersions()).catch((err) => log.warn('install failed', { cli: adapter.id, code: safeErrorCode(err) }));
   res.status(202).json({ ok: true });
 }));
 

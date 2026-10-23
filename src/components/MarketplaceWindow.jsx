@@ -91,7 +91,15 @@ export function MarketplaceWindow({ win } = {}) {
         />
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '4px 4px 8px' }}>
-        {activeTab === 'module' ? <ModuleListings search={search} /> : visible.length === 0 ? (
+        {activeTab === 'module' ? <ModuleListings search={search} /> : activeTab === 'agent' && rows.length === 0 ? (
+          // No agents are listed here yet; they live in the Agent Registry window.
+          <div data-testid="marketplace-agents-empty" style={{ padding: 16, color: 'var(--ink-faint)', textAlign: 'center' }}>
+            Agents are listed in the Agent Registry for now.{' '}
+            <button type="button" onClick={() => useWorkspaceStore.getState().spawnAt('registry')} style={{ all: 'unset', cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline' }}>
+              Open Agent Registry
+            </button>
+          </div>
+        ) : visible.length === 0 ? (
           <div style={{ padding: 16, color: 'var(--ink-faint)', textAlign: 'center' }}>
             No items match.
           </div>

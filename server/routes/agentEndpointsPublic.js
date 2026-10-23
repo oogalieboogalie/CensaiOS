@@ -16,6 +16,7 @@ import {
 } from '../agentEndpoints/callAgent.js';
 import { handleMcpMessage } from '../agentEndpoints/mcpProtocol.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 const log = createLogger('agent-endpoints');
 const ENDPOINT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -23,7 +24,7 @@ export const RECEIPT_META_KEY = 'censai.app/receipt';
 
 function errorReply(error, { mcp = false } = {}) {
   const status = error instanceof OutsideCallError ? error.statusCode : 500;
-  if (status >= 500 && !(error instanceof OutsideCallError)) log.error('outside call failed', { error: error.message });
+  if (status >= 500 && !(error instanceof OutsideCallError)) log.error('outside call failed', { code: safeErrorCode(error) });
   const headers = {};
   if (error.retryAfter) headers['Retry-After'] = String(error.retryAfter);
   if (status === 401) headers['WWW-Authenticate'] = 'Bearer realm="censaiOS agent", error="invalid_token"';

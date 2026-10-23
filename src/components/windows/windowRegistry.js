@@ -1,5 +1,6 @@
 import React from 'react';
 import { buildWindowTypes, WINDOW_MANIFESTS, CANVAS_TYPE_TO_LEGACY_KIND, WINDOW_REGISTRY } from '../../lib/windowManifest.js';
+import { logToApp } from '../../lib/appLog/browserLog.js';
 
 // Dynamic auto-discovery of window components using Vite lazy glob imports.
 // Two shapes are supported:
@@ -46,7 +47,7 @@ for (const manifest of WINDOW_MANIFESTS) {
   } else {
     // If not in Vite environment (e.g. running in Jest), we ignore silently unless glob is active
     if (typeof import.meta.glob === 'function') {
-      console.warn(`Dynamic window loader: could not find component "${manifest.componentName}" at path "${relativePath}"`);
+      logToApp('warn', 'window loader: a window has no component file', { where: 'windows', detail: manifest.kind });
     }
   }
 }
@@ -64,7 +65,7 @@ if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
   Object.keys(WINDOW_TYPES).forEach(k => {
     const kind = CANVAS_TYPE_TO_LEGACY_KIND[k] || k;
     if (!WINDOW_REGISTRY[kind]) {
-      console.error(`[windowRegistry] Missing registry entry for window type "${k}" (kind "${kind}")`);
+      logToApp('error', 'window registry: a window type has no registry entry', { where: 'windows', detail: kind });
     }
   });
 }

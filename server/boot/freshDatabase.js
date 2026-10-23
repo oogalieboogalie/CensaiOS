@@ -133,6 +133,7 @@ async function main() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((err) => {
     // Never block the app from starting: the server's own boot makes most tables.
-    console.error('[censaiOS] First-start database setup did not finish:', err?.message || err);
+    const code = err?.code && /^[A-Z0-9_]{1,40}$/.test(String(err.code)) ? String(err.code) : null;
+    ledgerLog().then((log) => log.error('first-start setup did not finish', { code })).catch(() => {});
   });
 }

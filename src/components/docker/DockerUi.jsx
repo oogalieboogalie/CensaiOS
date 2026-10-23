@@ -192,7 +192,7 @@ const UNAVAILABLE_COPY = {
 };
 
 export function UnavailableState({ reason, message, onRetry, retrying }) {
-  const copy = UNAVAILABLE_COPY[reason] || { title: 'Can\'t reach Docker', hint: message };
+  const copy = UNAVAILABLE_COPY[reason] || { title: 'Can\'t reach Docker', hint: 'censaiOS could not talk to Docker on this computer. Make sure Docker Desktop (or the Docker service) is running, then check again.' };
   return (
     <EmptyState icon={<DIcon.Whale size={34} />} title={copy.title}
       action={onRetry && !copy.quiet && <IconButton icon={<DIcon.Refresh />} label="Check again" onClick={onRetry} busy={retrying}>Check again</IconButton>}>

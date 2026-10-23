@@ -7,6 +7,8 @@ import { notifyRemoteHistory } from '../../lib/workspace/historyMerge.js';
 import { SYNCED_KEYS, isDocEmpty, readDocState, writeStateToDoc } from '../../lib/collaboration/yCanvasSync.js';
 import { setListMergeReporter } from '../../lib/collaboration/windowLists.js';
 import { setSheetMergeReporter } from '../../lib/collaboration/windowSheet.js';
+import { collectTextEvents, recordRemoteText } from '../../lib/collaboration/remoteTextEdits.js';
+import { CANVAS_ROOT } from '../../../shared/collab/ySchema.js';
 import { logToApp } from '../../lib/appLog/browserLog.js';
 
 const LOCAL_ORIGIN = 'censai-local-store';
@@ -63,6 +65,8 @@ export function useYjsCanvas({ enabled, workspaceId, store = useWorkspaceStore, 
       const next = readDocState(doc, current);
       const changed = {};
       for (const key of SYNCED_KEYS) if (next[key] !== current[key]) changed[key] = next[key];
+      // Where other people's typing landed, for the editors' carets (remoteTextEdits.js).
+      recordRemoteText(current.wins, next.wins);
       if (!Object.keys(changed).length) return;
       applyingRemote = true;
       try { store.setState(changed); } finally { applyingRemote = false; }
@@ -77,6 +81,8 @@ export function useYjsCanvas({ enabled, workspaceId, store = useWorkspaceStore, 
       if (origin !== LOCAL_ORIGIN && synced) applyRemote();
     };
     doc.on('update', onDocUpdate);
+    const onTextEvents = (events, tr) => collectTextEvents(events, tr.origin === LOCAL_ORIGIN);
+    doc.getMap(CANVAS_ROOT).observeDeep(onTextEvents);
 
     const unsubscribe = store.subscribe((state, prev) => {
       if (!synced || applyingRemote) return;
@@ -110,6 +116,7 @@ export function useYjsCanvas({ enabled, workspaceId, store = useWorkspaceStore, 
     return () => {
       unsubscribe();
       doc.off('update', onDocUpdate);
+      doc.getMap(CANVAS_ROOT).unobserveDeep(onTextEvents);
       provider.destroy();
       doc.destroy();
       setStatus('off');

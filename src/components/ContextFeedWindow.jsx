@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Icon } from './Icons';
 import { useWorkspaceStore } from '../lib/store.js';
+import { logFailure } from '../lib/appLog/browserLog.js';
 
 export function ContextFeedWindow({ workspaceId }) {
   const activeWorkspaceId = useWorkspaceStore(state => state.workspaceId);
@@ -29,7 +30,7 @@ export function ContextFeedWindow({ workspaceId }) {
       if (!res.ok) throw new Error(data?.error || 'Context feed unavailable');
       if (scopeIsCurrent(requestedScope)) setItems(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Failed to fetch feed', err);
+      logFailure('context-feed: could not load the feed', err, 'contextFeed', 'error');
       if (scopeIsCurrent(requestedScope)) setItems([]);
     } finally {
       if (scopeIsCurrent(requestedScope)) setLoading(false);
@@ -53,7 +54,7 @@ export function ContextFeedWindow({ workspaceId }) {
       if (!res.ok) throw new Error(data?.error || 'Context search unavailable');
       if (scopeIsCurrent(requestedScope)) setItems(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Search failed', err);
+      logFailure('context-feed: search failed', err, 'contextFeed', 'error');
       if (scopeIsCurrent(requestedScope)) setItems([]);
     } finally {
       if (scopeIsCurrent(requestedScope)) setLoading(false);

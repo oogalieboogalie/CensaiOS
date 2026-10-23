@@ -98,4 +98,12 @@ describe('Music window with a song link', () => {
     expect(lines).toContain('music: could not play a link from example.com');
     expect(lines.join(' ')).not.toContain('demo.mp3');
   });
+
+  test('a song a teammate loads opens the player on this board too', async () => {
+    const empty = { id: 'm3', w: 300, h: 460, musicDevice: true, src: '' };
+    const { container, rerender } = render(<MusicWindow win={empty} onUpdate={jest.fn()} />);
+    expect(container.querySelector('[data-music-device="library"]')).toBeTruthy();
+    await act(async () => { rerender(<MusicWindow win={{ ...empty, src: url, trackTitle: 'Demo song', musicSource: 'generic' }} onUpdate={jest.fn()} />); });
+    expect(container.querySelector('[data-music-device="library"]')).toBeNull();
+  });
 });

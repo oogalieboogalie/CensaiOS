@@ -11,8 +11,12 @@ import leadHound from './leadHound.mjs';
 import figma from './figma.mjs';
 import agentRegistry from './agentRegistry.mjs';
 import chatCapabilities from './chatCapabilities.mjs';
+import liveBoard from './liveBoard.mjs';
+import sketchpad from './sketchpad.mjs';
+import sheets from './sheets.mjs';
+import marketplace from './marketplace.mjs';
 
-export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities];
+export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

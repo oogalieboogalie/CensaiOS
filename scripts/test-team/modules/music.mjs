@@ -1,11 +1,18 @@
-// Music Player: Pat plays a song from a file, pauses it, changes the skin;
-// Sam sees the player on the shared board. Then the wrong things: a text file
-// named .mp3, an empty link, a link that only mentions YouTube, a script link,
-// and (red team) a teammate planting a script link on the shared player.
+// Music Player: Pat plays a song from a file, pauses it, clicks through the
+// visualizer looks, changes the skin; Sam sees the player on the shared board.
+// On Auto the skin follows the source: a made-up YouTube link turns it red, a
+// made-up Spotify link green, and Sam sees the same song. Then the wrong
+// things: a text file named .mp3, an empty link, a link that only mentions
+// YouTube, a look-alike YouTube host, a script link, and (red team) a teammate
+// planting a script link on the shared player.
 
 import { readWindow, spawnWindow, updateWindow, windowFrame } from '../../e2e/board.mjs';
 import { fakeMp3, toneWav } from '../testFiles.mjs';
 import { note } from '../report.mjs';
+
+const YOUTUBE_LINK = 'https://www.youtube.com/watch?v=madeUp00001';
+const SPOTIFY_LINK = 'https://open.spotify.com/track/madeUp0000000000000002';
+const LOOKS = [['scope', 'SCOPE'], ['vu', 'VU METERS'], ['ambience', 'AMBIENCE'], ['swirl', 'SWIRL']];
 
 const lcdSays = (frame) => frame.locator('.hb-music-status').innerText().catch(() => '');
 
@@ -15,6 +22,13 @@ async function openLinks(frame) {
   const menu = frame.getByRole('button', { name: 'Library' }).first();
   if (await menu.count()) await menu.click().catch(() => {});
   await frame.getByRole('tab', { name: /^Stations/ }).click();
+}
+
+/** Which skin the player wears: its brand name and the source it says it plays. */
+async function wears(frame) {
+  const brand = (await frame.locator('.hb-music-brand').first().innerText().catch(() => '')).trim();
+  const source = await frame.locator('[data-music-device]').first().getAttribute('data-music-device').catch(() => null);
+  return { brand, source };
 }
 
 async function iframeSrcs(page, frame) {
@@ -58,6 +72,19 @@ export default {
       return `paused; the screen says "${(await lcdSays(frame)).replace(/\s+/g, ' ').trim()}"`;
     });
 
+    await check('walk', 'Pat clicks through the visualizer looks', async ({ shot }) => {
+      const seen = [];
+      for (const [mode, label] of LOOKS) {
+        await frame.locator('[data-music-visualizer]').first().click();
+        await frame.locator(`[data-music-visualizer="${mode}"]`).waitFor({ timeout: 5_000 });
+        const said = (await lcdSays(frame)).replace(/\s+/g, ' ');
+        if (!said.includes(label)) throw new Error(`the ${mode} look is drawn but the screen says "${said.trim()}"`);
+        seen.push(label.toLowerCase());
+      }
+      await shot(pat.page, 'pat-picks-the-swirl-look');
+      return `the screen named each look in turn: ${seen.join(', ')}`;
+    });
+
     await check('walk', 'Pat changes the player skin', async ({ shot }) => {
       await frame.getByLabel('Player skin').selectOption('spotify');
       await pat.page.waitForTimeout(500);
@@ -73,13 +100,45 @@ export default {
       return songShows ? 'Sam sees the player, and it says it is playing' : 'Sam sees the player; Pat\'s file stays on Pat\'s computer, as the player promises';
     });
 
+    await check('walk', 'on Auto, a YouTube link turns the player YouTube red', async ({ shot }) => {
+      await frame.getByLabel('Player skin').selectOption('auto');
+      await pasteLink(pat.page, id, YOUTUBE_LINK);
+      const { brand, source } = await wears(frame);
+      if (source !== 'youtube' || brand !== 'YouTube') throw new Error(`the player wears "${brand}" (${source}) for a YouTube link`);
+      await shot(pat.page, 'pat-youtube-red');
+      return 'the player turned YouTube red';
+    });
+
+    await check('walk', 'Sam sees the same song on the shared board', async ({ shot }) => {
+      const samFrame = windowFrame(sam.page, id);
+      await samFrame.locator('[data-music-device="youtube"]').waitFor({ timeout: 15_000 }).catch(() => {});
+      const { brand, source } = await wears(samFrame);
+      const saved = await readWindow(sam.page, id);
+      if (source !== 'youtube' || !String(saved?.src || '').includes('madeUp00001')) throw new Error(`Sam's player wears "${brand}" (${source}) instead of the YouTube song Pat loaded`);
+      await shot(sam.page, 'sam-sees-the-youtube-song');
+      return 'Sam\'s player shows the same YouTube song, in YouTube red';
+    });
+
+    await check('walk', 'on Auto, a Spotify link turns a second player Spotify green', async ({ shot }) => {
+      const second = await spawnWindow(pat.page, 'music', {}, { x: 560, y: 80 });
+      await windowFrame(pat.page, second).waitFor({ state: 'visible', timeout: 15_000 });
+      await pasteLink(pat.page, second, SPOTIFY_LINK);
+      const { brand, source } = await wears(windowFrame(pat.page, second));
+      if (source !== 'spotify' || brand !== 'Spotify') throw new Error(`the player wears "${brand}" (${source}) for a Spotify link`);
+      const first = await wears(frame);
+      if (first.source !== 'youtube') throw new Error(`the first player changed to "${first.brand}"`);
+      await shot(pat.page, 'red-and-green-players-side-by-side');
+      return 'the second player turned Spotify green, next to the YouTube red one';
+    });
+
     await check('hunt', 'Pat loads a text file wearing an .mp3 name', async ({ shot }) => {
       await frame.locator('input[data-music-file-input]').setInputFiles({ name: 'not-really-a-song.mp3', mimeType: 'audio/mpeg', buffer: fakeMp3() });
       await pat.page.waitForTimeout(2500);
       await shot(pat.page, 'pat-loads-a-fake-mp3');
       const said = (await frame.innerText()).replace(/\s+/g, ' ');
       if (pat.errors.length) throw new Error(`the page crashed: ${pat.errors[0]}`);
-      if (/can.?t play|could not|not a song|unsupported|error/i.test(said)) return 'the player says it cannot play it';
+      if (/this file could not be played\./i.test(said)) return 'the player says "This file could not be played."';
+      if (/can.?t play|could not|not a song|unsupported|error/i.test(said)) throw note(`the player refuses it, but not with the agreed words: "${said.slice(0, 80)}"`);
       if (/PLAYING/.test(said) && !(await playingNow(pat.page))) throw new Error('the screen says PLAYING but no sound is playing, and there is no "cannot play this file" message');
       throw note('no crash, but the player gives no sign the file is not a song');
     });
@@ -101,6 +160,16 @@ export default {
       const opened = srcs.find((s) => s.startsWith('https://example.com'));
       if (opened) throw new Error(`the player opened the outside page inside the board (iframe ${opened.slice(0, 60)}), and it does so on every teammate\'s board too`);
       return `saved as ${String(saved?.src || '').slice(0, 60)}; no outside page was opened`;
+    });
+
+    await check('hunt', 'a look-alike YouTube host is treated as a web page, not music', async ({ shot }) => {
+      await pasteLink(pat.page, id, 'https://youtube.com.evil.example/watch?v=madeUp00003');
+      await shot(pat.page, 'pat-pastes-a-look-alike-youtube-link');
+      const said = (await frame.innerText()).replace(/\s+/g, ' ');
+      const srcs = await iframeSrcs(pat.page, frame);
+      if (srcs.some((s) => s.includes('evil.example'))) throw new Error('the look-alike page was opened inside the player');
+      if (!/this is a web page, not music\./i.test(said)) throw new Error('the look-alike link gets no "This is a web page, not music" note');
+      return 'the player says "This is a web page, not music." and opens nothing';
     });
 
     await check('hunt', 'a javascript: link pasted in the box does nothing', async () => {

@@ -20,6 +20,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 const log = createLogger('toolchain-config');
 
@@ -58,7 +59,7 @@ export function writeToolchainConfig(config) {
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
     log.info('toolchain config saved', { enabled: config.enabled });
   } catch (err) {
-    log.error('failed to save toolchain config', { error: err.message });
+    log.error('failed to save toolchain config', { code: safeErrorCode(err) });
     throw err;
   }
 }

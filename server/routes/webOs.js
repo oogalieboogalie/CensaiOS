@@ -13,6 +13,10 @@ import {
 import { createPairCode, redeemPairCode } from '../webOs/pairing.js';
 import { doorPublicPort } from '../webOs/doorListener.js';
 import { isJestRun } from '../security/testShortcut.js';
+import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
+
+const log = createLogger('web-os');
 
 /**
  * Open anywhere (web OS). The public router is mounted before the sign-in
@@ -37,7 +41,7 @@ webOsPublicRouter.post('/pair/redeem', authSecurityRateLimiter, async (req, res)
     await establishAuthenticatedSession(req, rows[0]);
     res.json({ ok: true, user: { id: rows[0].id, name: rows[0].name } });
   } catch (err) {
-    console.error('Open anywhere sign-in error:', err);
+    log.error('open anywhere sign-in failed', { code: safeErrorCode(err) });
     res.status(500).json({ error: 'Could not sign this computer in.' });
   }
 });
@@ -90,7 +94,7 @@ webOsRouter.put('/', (req, res) => {
     writeDoorSettings(patch);
     res.json(statusFor(req));
   } catch (err) {
-    console.error('Open anywhere settings error:', err);
+    log.error('open anywhere settings not saved', { code: safeErrorCode(err) });
     res.status(500).json({ error: 'Could not save the setting.' });
   }
 });

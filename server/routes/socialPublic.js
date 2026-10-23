@@ -14,6 +14,7 @@ import { getInstallSigner } from '../agentNetwork/installIdentity.js';
 import { tokenFromRequest } from '../agentEndpoints/tokens.js';
 import { createLimiter } from '../agentEndpoints/rateLimit.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { personForKey } from '../social/keys.js';
 import { profileById } from '../social/profiles.js';
 import { publicFeed } from '../social/publicFeed.js';
@@ -48,7 +49,7 @@ export function createSocialPublicRouter({ db = pool, signer = () => getInstallS
       };
       return res.json({ body, signature: sign.sign(canonicalJson(body)) });
     } catch (error) {
-      log.error('profile read failed', { error: error.message });
+      log.error('profile read failed', { code: safeErrorCode(error) });
       return res.status(500).json({ error: 'Something went wrong.' });
     }
   });

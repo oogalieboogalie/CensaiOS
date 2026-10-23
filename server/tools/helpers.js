@@ -9,6 +9,7 @@ import {
   assertAgentProjectAccess,
 } from '../workspaces/projectMemberships.js';
 import { resolveAuthorizedWorkspaceProject } from '../workspaces/projectAccess.js';
+import { noteToolFailure } from './toolsLog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CURRENT_PROJECT_FILE = path.resolve(path.join(__dirname, '..', '..', '.homebase-state', 'current-project.json'));
@@ -117,7 +118,7 @@ export async function resolveProjectForCall(agentId, projectName, context = {}) 
           }
         }
       } catch (dbErr) {
-        console.warn(`[resolveProjectForCall] Failed to fetch task project scope for task ${context.agentTaskId}:`, dbErr.message);
+        noteToolFailure('could not load a task\'s project scope', { taskId: context.agentTaskId }, dbErr);
       }
     }
 

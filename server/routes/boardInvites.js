@@ -17,6 +17,7 @@ import express from 'express';
 import pool from '../db.js';
 import { dbReady } from '../dbState.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { authSecurityRateLimiter } from '../middleware/standardRateLimits.js';
 import { getAuthAccessPolicy } from '../security/authPolicy.js';
 import { establishAuthenticatedSession } from '../security/authSession.js';
@@ -31,7 +32,7 @@ export const joinLinksAllowed = () => getAuthAccessPolicy().local;
 
 function sendError(res, error, what) {
   const status = error.statusCode || 500;
-  if (status >= 500) log.warn(`${what} failed`, { error: error.message });
+  if (status >= 500) log.warn(`${what} failed`, { code: safeErrorCode(error) });
   res.status(status).json({
     error: status >= 500 ? 'Something went wrong. Try again.' : error.message,
     ...(error.code ? { code: error.code } : {}),
@@ -66,7 +67,7 @@ boardInvitesRouter.post('/workspaces/:workspaceId/invites', async (req, res) => 
     // The raw code exists only in this answer; the server keeps a hash.
     res.status(201).json({ kind: 'link', code: result.code, expiresAt: result.expiresAt, workspace: result.workspace });
   } catch (error) {
-    log.info('invite: refused', { workspaceId, by: req.session.userId, reason: error.code || error.message });
+    log.info('invite: refused', { workspaceId, by: req.session.userId, reason: safeErrorCode(error) || 'refused' });
     sendError(res, error, 'invite');
   }
 });

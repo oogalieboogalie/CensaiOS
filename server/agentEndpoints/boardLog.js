@@ -6,6 +6,7 @@
 // Never throws: the call still succeeds when no board is open.
 
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { transactCanvasDoc } from '../collab/liveDoc.js';
 import { upsertWindowInDoc } from '../collab/serverWriter.js';
 import { readDocWindows } from '../agent-registry/helpCards.js';
@@ -58,7 +59,7 @@ export async function logOutsideCallOnBoard(endpoint, call) {
       windowId = appendOutsideExchangeInDoc(doc, endpoint, exchange);
     });
   } catch (error) {
-    log.warn('outside call not shown on the board', { endpointId: endpoint.id, error: error.message });
+    log.warn('outside call not shown on the board', { endpointId: endpoint.id, code: safeErrorCode(error) });
   }
   return windowId;
 }

@@ -16,7 +16,7 @@ import { ModuleEditPanel } from './modules/ModuleEditPanel.jsx';
 import { ModulePublishSheet } from './modules/ModulePublishSheet.jsx';
 import { ModulePromoteSheet } from './modules/ModulePromoteSheet.jsx';
 import { fetchSellerStatus } from '../lib/marketplace/moduleListingsApi.js';
-import { browserModuleFingerprint } from '../lib/marketplace/moduleCard.js';
+import { browserListingChanged } from '../lib/marketplace/moduleCard.js';
 
 /**
  * Spec 6: a module someone asked for in plain language. It runs in a
@@ -60,7 +60,7 @@ export function ModuleWindow({ win, onUpdate, workspaceId }) {
   React.useEffect(() => {
     if (!win.listingId || !win.listingFingerprint || !ready) { setListingChanged(false); return undefined; }
     let cancelled = false;
-    browserModuleFingerprint(win).then(fp => { if (!cancelled) setListingChanged(Boolean(fp) && fp !== win.listingFingerprint); });
+    browserListingChanged(win).then(changed => { if (!cancelled) setListingChanged(Boolean(changed)); });
     return () => { cancelled = true; };
   }, [win.listingId, win.listingFingerprint, win.source, win.manifest, ready]);
 

@@ -21,6 +21,7 @@
  */
 import http from 'http';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { cameThroughDoor, doorUsable, markThroughDoor, readDoorSettings } from './door.js';
 import { CLOSED_PAGE } from './closedPage.js';
 
@@ -80,7 +81,7 @@ export function startDoorListener(mainServer, app, config = doorListenerConfig()
     log.info('Open anywhere door listening for other computers', { port: config.port, publicPort: config.publicPort });
   });
   server.on('error', (error) => {
-    log.warn('Open anywhere door not opened', { port: config.port, error: error.message });
+    log.warn('Open anywhere door not opened', { port: config.port, code: safeErrorCode(error) });
   });
   return server;
 }

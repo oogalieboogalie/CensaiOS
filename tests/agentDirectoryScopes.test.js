@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { onLogRecord } from '../server/logger.js';
 import path from 'path';
 
 const mockGetSubAgentById = jest.fn();
@@ -103,13 +104,20 @@ describe('Agent Directory Scopes', () => {
 
   test('local tools fail closed when directory scope lookup fails', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const records = [];
+    const stop = onLogRecord((r) => records.push(r));
     mockGetSubAgentById.mockRejectedValue(new Error('registry offline'));
     const result = await handleLocalTool(
       'sub-agent', 'local_read_file', { file_path: 'package.json' }, scope,
     );
     expect(result).toContain('Unable to verify agent directory scopes');
     expect(mockRunnerClient.fsRead).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Failed to load agent scopes'), 'registry offline');
+    // One 'tools' log line with a fixed message; the error's own text stays out.
+    const line = records.find((r) => r.message === 'could not load agent scopes');
+    expect(line).toBeDefined();
+    expect(JSON.stringify(records)).not.toContain('registry offline');
+    expect(warn).not.toHaveBeenCalled();
+    stop();
     warn.mockRestore();
   });
 

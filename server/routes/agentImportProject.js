@@ -6,6 +6,7 @@
 
 import express from 'express';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { requireSystemAdmin } from '../security/systemAdmin.js';
 import { readCurrentProject } from './files/pathUtils.js';
 import { resolveProjectPathForRuntime } from '../workspaces/shared.js';
@@ -32,7 +33,7 @@ export function createAgentImportProjectRouter(deps = {}) {
       log.info(`agent-import: project pull: ${found.folder}: found ${found.agents.length}, skipped ${found.skipped.length}`);
       return res.json({ ...found, project: project.name || project.path });
     } catch (err) {
-      log.error(`agent-import: project pull failed in ${root}: ${err.message}`);
+      log.error('agent-import: project pull failed', { code: safeErrorCode(err) });
       return res.status(500).json({ error: `Could not read the helpers folder: ${err.message}` });
     }
   });

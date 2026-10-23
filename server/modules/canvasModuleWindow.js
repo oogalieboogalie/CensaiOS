@@ -10,6 +10,7 @@ import { transactCanvasDoc } from '../collab/liveDoc.js';
 import { valueToY } from '../collab/seedFromSnapshot.js';
 import { CANVAS_ROOT } from '../collab/ySchema.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 const log = createLogger('modules');
 
@@ -30,7 +31,7 @@ export async function patchLiveModuleWindow(workspaceId, windowId, patch) {
   try {
     return await transactCanvasDoc(workspaceId, (doc) => patchWindowInDoc(doc, windowId, patch));
   } catch (error) {
-    log.warn('module window live patch failed', { workspaceId, windowId, error: error.message });
+    log.warn('module window live patch failed', { workspaceId, windowId, code: safeErrorCode(error) });
     return false;
   }
 }

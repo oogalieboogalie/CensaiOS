@@ -15,6 +15,7 @@
 
 import express from 'express';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { detectVersion } from '../cli-agents/install.js';
 import { grokReadiness, runGrokChat, GrokChatError } from '../grokSignin/chatRun.js';
 import { startGrokLogin, grokLoginState, grokLogout } from '../grokSignin/login.js';
@@ -47,7 +48,7 @@ grokSigninRouter.post('/login', async (req, res) => {
   try {
     res.json({ login: await startGrokLogin(userId) });
   } catch (error) {
-    log.warn('grok sign-in could not start', { userId, code: error.code || null, error: error.message });
+    log.warn('grok sign-in could not start', { userId, code: safeErrorCode(error) });
     res.status(error.status || 500).json({ error: error.message, code: error.code || 'GROK_LOGIN_FAILED' });
   }
 });
@@ -55,7 +56,7 @@ grokSigninRouter.post('/login', async (req, res) => {
 grokSigninRouter.post('/logout', async (req, res) => {
   const userId = userOf(req, res);
   if (userId == null) return;
-  await grokLogout(userId).catch((error) => log.warn('grok sign-out failed', { userId, error: error.message }));
+  await grokLogout(userId).catch((error) => log.warn('grok sign-out failed', { userId, code: safeErrorCode(error) }));
   res.json({ ok: true });
 });
 
@@ -77,7 +78,7 @@ grokSigninRouter.post('/chat', async (req, res) => {
     await run;
     res.end();
   } catch (error) {
-    if (!(error instanceof GrokChatError)) log.error('grok chat could not start', { userId, error: error.message });
+    if (!(error instanceof GrokChatError)) log.error('grok chat could not start', { userId, code: safeErrorCode(error) });
     res.status(error.status || 500).json({ error: error.message, code: error.code || 'GROK_CHAT_FAILED' });
   }
 });

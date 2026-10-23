@@ -10,6 +10,7 @@ import { ensurePolicySchema } from '../policy/schema.js';
 import { ensureUserApiKeySchema } from './userApiKeySchema.js';
 import { ensureAgentWakeupSchema } from '../agent-wakeups/schema.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { migrateLegacyOAuthCredentials } from '../credentials/oauthStore.js';
 import { ensureWorkspaceSchema } from '../workspaces/schema.js';
 import { ensureRunCausalitySchema } from '../runs/schema.js';
@@ -115,7 +116,7 @@ function scheduleRetry() {
       // First retry and every ~minute after: enough signal without log spam.
       if (retryAttempts === 1 || retryAttempts % 6 === 0) {
         log.warn('PostgreSQL still unavailable — retrying in the background', {
-          error: err.message,
+          code: safeErrorCode(err),
           attempts: retryAttempts,
         });
       }
@@ -130,7 +131,7 @@ function watchPool() {
   if (poolWatcherAttached) return;
   poolWatcherAttached = true;
   pool.on('error', (err) => {
-    recheckDb(err.message).catch(() => {});
+    recheckDb(safeErrorCode(err) || 'pool error').catch(() => {});
   });
 }
 
@@ -140,7 +141,7 @@ export async function checkDb() {
     setDbReady(true);
     log.info('PostgreSQL connected');
   } catch (err) {
-    log.warn('PostgreSQL not available — memory system disabled, chat still works; retrying in the background', { error: err.message });
+    log.warn('PostgreSQL not available — memory system disabled, chat still works; retrying in the background', { code: safeErrorCode(err) });
     scheduleRetry();
   }
   watchPool();
@@ -156,7 +157,7 @@ export async function recheckDb(reason = 'runtime error') {
   } catch (err) {
     if (dbReady()) {
       setDbReady(false);
-      log.warn('PostgreSQL connection lost — memory system disabled until it returns', { reason, error: err.message });
+      log.warn('PostgreSQL connection lost — memory system disabled until it returns', { reason, code: safeErrorCode(err) });
     }
     scheduleRetry();
   }

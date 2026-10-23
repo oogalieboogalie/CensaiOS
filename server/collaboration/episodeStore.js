@@ -1,4 +1,5 @@
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { createWorkspaceEvent } from '../operational-intelligence/factories.js';
 import { deriveCollaborationEpisodes } from './episodePolicy.js';
 
@@ -52,7 +53,7 @@ export async function persistCollaborationEpisodesSafely(db, input) {
     log.warn('episode recording skipped', {
       workspaceId: input.workspaceId,
       revision: input.revision,
-      error: error.message,
+      code: safeErrorCode(error),
     });
     return [];
   }
@@ -81,7 +82,7 @@ export async function listRecentCollaborationEpisodesSafely(db, input) {
   try {
     return await listRecentCollaborationEpisodes(db, input);
   } catch (error) {
-    log.warn('episode recall skipped', { workspaceId: input?.workspaceId, error: error.message });
+    log.warn('episode recall skipped', { workspaceId: input?.workspaceId, code: safeErrorCode(error) });
     return [];
   }
 }

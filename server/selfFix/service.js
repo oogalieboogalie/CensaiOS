@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { RUNNING } from '../cli-agents/taskStore.js';
 import { buildBundle, bundleText } from './bundle.js';
 import { buildWorkOrder, readVerdict, looksExternal } from './workOrder.js';
@@ -57,7 +58,7 @@ export class SelfFix {
       } else if (isNew && looksExternal(bundle)) {
         this.store.update(report.id, { note: 'Caused by something outside the code (network, a key, the disk), so no fix was tried.' });
       } else if (isNew) {
-        this.maybeFix(report).catch((err) => log.warn('could not start a fix', { error: err.message }));
+        this.maybeFix(report).catch((err) => log.warn('could not start a fix', { code: safeErrorCode(err) }));
       }
       return report;
     } finally {
@@ -95,7 +96,7 @@ export class SelfFix {
       try {
         this.tasks.decide(taskId, request.id, { allow: decision.allow, message: decision.message, user: { name: 'Self-fix' } });
       } catch (err) {
-        log.warn('could not answer a permission request', { error: err.message });
+        log.warn('could not answer a permission request', { code: safeErrorCode(err) });
       }
     });
     this.tasks.on('task', (taskId) => {
@@ -103,7 +104,7 @@ export class SelfFix {
       const task = this.tasks.tasks.get(taskId);
       if (task && !RUNNING.has(task.status)) {
         this.active.finishing = true;
-        this.finish(this.active.reportId, task).catch((err) => log.warn('could not finish a fix', { error: err.message })).finally(() => this.next());
+        this.finish(this.active.reportId, task).catch((err) => log.warn('could not finish a fix', { code: safeErrorCode(err) })).finally(() => this.next());
       }
     });
   }

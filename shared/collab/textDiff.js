@@ -21,6 +21,32 @@ export function diffText(a, b) {
   return { index: start, remove: before.length - start - end, insert: after.slice(start, after.length - end) };
 }
 
+/**
+ * Like diffText, but when the change is one plain insert or delete that fits
+ * at `index` (where the caret says it happened), use that spot. In repeated
+ * letters ("aa" -> "aaa") several spots give the same text; the caret knows
+ * which one the person meant.
+ */
+export function diffTextAt(a, b, index) {
+  const before = String(a ?? '');
+  const after = String(b ?? '');
+  const grow = after.length - before.length;
+  if (Number.isInteger(index) && index >= 0 && grow !== 0) {
+    const n = Math.abs(grow);
+    const [long, short] = grow > 0 ? [after, before] : [before, after];
+    if (index + n <= long.length && long.slice(0, index) === short.slice(0, index)
+      && long.slice(index + n) === short.slice(index)) {
+      return grow > 0 ? { index, remove: 0, insert: after.slice(index, index + n) } : { index, remove: n, insert: '' };
+    }
+  }
+  return diffText(before, after);
+}
+
+/** The text after applying `op` to `text`. */
+export function applyOp(text, op) {
+  return text.slice(0, op.index) + op.insert + text.slice(op.index + op.remove);
+}
+
 /** Apply a diff to a Y.Text (caller wraps it in a transaction). */
 export function applyTextDiff(ytext, op) {
   if (op.remove) ytext.delete(op.index, op.remove);
@@ -34,17 +60,36 @@ export function rebaseCaret(pos, op) {
   return op.index + op.insert.length;
 }
 
+/** rebaseCaret through several edits, in the order they happened. */
+export function rebaseThrough(pos, ops) {
+  return ops.reduce((at, op) => rebaseCaret(at, op), pos);
+}
+
 /**
  * Replay a local edit (base -> next) onto `latest`, the shared text as it is
  * right now. An editor can be one render behind the shared text when someone
  * else's change lands mid-keystroke; diffing its whole value would then undo
  * that change. Replaying only the span the person typed keeps both.
  */
-export function mergeLocalEdit(base, next, latest) {
-  if (typeof latest !== 'string' || latest === base) return next;
-  const mine = diffText(base, next);
-  const theirs = diffText(base, latest);
-  const start = rebaseCaret(mine.index, theirs);
-  const end = Math.max(start, mine.remove ? rebaseCaret(mine.index + mine.remove, theirs) : start);
-  return latest.slice(0, start) + mine.insert + latest.slice(end);
+export function mergeLocalEdit(base, next, latest, opts) {
+  return mergeLocalEditOp(base, next, latest, opts).text;
+}
+
+/**
+ * mergeLocalEdit plus the edit it made, as an op on `latest`. `caret` is
+ * where the person's caret ended up (it pins the typed span in repeated
+ * letters); `theirs` are the other people's edits from base to latest as the
+ * shared doc reported them (without them, a diff guesses where they went).
+ */
+export function mergeLocalEditOp(base, next, latest, { caret = null, theirs = null } = {}) {
+  const from = String(base ?? '');
+  const to = String(next ?? '');
+  const at = Number.isInteger(caret) ? (to.length >= from.length ? caret - (to.length - from.length) : caret) : null;
+  const mine = diffTextAt(from, to, at);
+  if (typeof latest !== 'string' || latest === from) return { text: to, op: mine };
+  const ops = theirs || [diffText(from, latest)];
+  const start = rebaseThrough(mine.index, ops);
+  const end = Math.max(start, mine.remove ? rebaseThrough(mine.index + mine.remove, ops) : start);
+  const op = { index: start, remove: end - start, insert: mine.insert };
+  return { text: applyOp(latest, op), op };
 }

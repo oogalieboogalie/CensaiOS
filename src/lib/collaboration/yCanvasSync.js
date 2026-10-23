@@ -16,7 +16,8 @@
 // shape at a time (windowSketch.js). Fields in
 // LOCAL_WINDOW_FIELDS (like whether *I* have the editor open) never sync.
 import * as Y from 'yjs';
-import { WINDOW_TEXT_FIELDS, applyTextDiff, diffText } from '../../../shared/collab/textDiff.js';
+import { WINDOW_TEXT_FIELDS, applyOp, applyTextDiff, diffText } from '../../../shared/collab/textDiff.js';
+import { takeLocalEdit } from './remoteTextEdits.js';
 import { valueFromY, valueToY } from '../../../shared/collab/seedFromSnapshot.js';
 import { CANVAS_ROOT, SCHEMA_VERSION, isValidId, isValidWindowGeometry } from '../../../shared/collab/ySchema.js';
 import { WINDOW_LIST_FIELDS, syncById, writeWindowList } from './windowLists.js';
@@ -57,7 +58,7 @@ function writeEntry(map, key, prevEntry, nextEntry, isWindow = false) {
     map.set(key, target);
     prevEntry = null;
   }
-  writeFields(target, prevEntry, nextEntry, isWindow);
+  writeFields(target, prevEntry, nextEntry, isWindow, key);
 }
 
 // A window's position and size each move as one value: when either half
@@ -65,14 +66,14 @@ function writeEntry(map, key, prevEntry, nextEntry, isWindow = false) {
 // one person's whole drop wins (never x from one and y from the other).
 const PAIRED_WINDOW_FIELDS = { x: 'y', y: 'x', w: 'h', h: 'w' };
 
-function writeFields(target, prevEntry, nextEntry, isWindow = false) {
+function writeFields(target, prevEntry, nextEntry, isWindow = false, id = null) {
   const changed = (field) => !prevEntry || !same(prevEntry[field], nextEntry[field]);
   for (const [field, value] of Object.entries(nextEntry)) {
     if (value === undefined || typeof value === 'function') continue;
     if (isWindow && LOCAL_WINDOW_FIELDS.has(field)) continue;
     const pair = isWindow ? PAIRED_WINDOW_FIELDS[field] : null;
     if (!changed(field) && !(pair && pair in nextEntry && changed(pair))) continue;
-    if (isWindow && WINDOW_TEXT_FIELDS.has(field) && typeof value === 'string') writeText(target, field, value);
+    if (isWindow && WINDOW_TEXT_FIELDS.has(field) && typeof value === 'string') writeText(target, field, value, id);
     else if (isWindow && WINDOW_LIST_FIELDS.has(field) && writeWindowList(target, field, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'sheet' && writeWindowSheet(target, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'state' && writeWindowSketch(target, prevEntry?.[field], value)) continue;
@@ -83,11 +84,14 @@ function writeFields(target, prevEntry, nextEntry, isWindow = false) {
   }
 }
 
-// Diff against the shared text itself so only the typed span changes.
-function writeText(target, field, value) {
+// Diff against the shared text itself so only the typed span changes; when
+// this tab just typed it, use the spot the caret was at (repeated letters).
+function writeText(target, field, value, id) {
   const current = target.get(field);
   if (current instanceof Y.Text) {
-    applyTextDiff(current, diffText(current.toString(), value));
+    const text = current.toString();
+    const typed = id === null ? null : takeLocalEdit(id, field, value);
+    applyTextDiff(current, typed && applyOp(text, typed) === value ? typed : diffText(text, value));
     return;
   }
   target.set(field, new Y.Text(value));

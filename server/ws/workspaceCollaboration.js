@@ -1,6 +1,7 @@
 import { WebSocket, WebSocketServer } from 'ws';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { requireWorkspaceMember } from '../workspaces/context.js';
 import { defaultAuthenticate, loadSessionFromRequest } from './agentRegistry.js';
 import { collaborationHumanActor } from '../collaboration/humanActor.js';
@@ -226,7 +227,7 @@ export function attachWorkspaceCollaborationWs(server, options = {}) {
           if (ws.readyState === WebSocket.OPEN) cleanups.push(unsubscribe);
           else unsubscribe();
         })
-        .catch((error) => log.warn('guest board projection failed', { workspaceId, error: error.message }));
+        .catch((error) => log.warn('guest board projection failed', { workspaceId, code: safeErrorCode(error) }));
     }
 
     ws.on('message', (raw) => {

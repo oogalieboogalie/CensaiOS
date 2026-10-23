@@ -1,5 +1,6 @@
 import { api } from './api.js';
 import { FAMILY_AGENTS as BUILT_IN_AGENTS } from '../data/family-agents.js';
+import { logFailure } from './appLog/browserLog.js';
 
 let agents = [...BUILT_IN_AGENTS];
 let byId = Object.fromEntries(agents.map(a => [a.id, a]));
@@ -36,7 +37,7 @@ export async function initializeAgents() {
       notify();
     }
   } catch (err) {
-    console.error('Failed to initialize agents in store:', err);
+    logFailure('agents: could not set up the agent list', err, 'agents', 'error');
   }
 }
 

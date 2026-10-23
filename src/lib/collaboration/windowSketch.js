@@ -59,6 +59,19 @@ export function mergeSketchElements(shared, prev, next) {
   return out;
 }
 
+/**
+ * What the pad shows once a queued save goes out: the saved shapes, plus any
+ * shape started on this pad while the save waited (a text box being typed, a
+ * stroke mid-draw). Before, the save put back the older list and those shapes
+ * vanished. Logs the window id only, never shape text.
+ */
+export function keepStartedShapes(now, queued, sent, windowId) {
+  const known = new Set([...(queued || []), ...(sent || [])].map(shapeId));
+  const started = (Array.isArray(now) ? now : []).filter((el) => shapeId(el) && !known.has(shapeId(el)));
+  if (started.length) logToApp('info', `sketchpad: kept ${started.length} shape(s) started while saving`, { where: 'sketchpad', detail: `window ${windowId}` });
+  return [...(sent || []), ...started];
+}
+
 function elementsOf(state) {
   const list = state?.excalidraw?.elements;
   return Array.isArray(list) ? list : null;

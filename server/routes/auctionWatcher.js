@@ -1,5 +1,6 @@
 import express from 'express';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { checkWatch } from '../auctionWatcher/check.js';
 import { lastSold, matchInsights } from '../auctionWatcher/insights.js';
 import {
@@ -62,7 +63,7 @@ export function createAuctionWatcherRouter({
     try {
       await fn(req, res, await pool(), req.session.userId);
     } catch (err) {
-      if (!err.statusCode) log.error('request failed', { path: req.path, error: err.message });
+      if (!err.statusCode) log.error('request failed', { path: req.path, code: safeErrorCode(err) });
       res.status(err.statusCode || 500).json({ error: err.statusCode ? err.message : 'The Auction Watcher hit a problem. It is in the app log.', code: err.code });
     }
   };
@@ -118,7 +119,7 @@ export function createAuctionWatcherRouter({
     const match = await getMatch(q, userId, id(req.params.id));
     if (!match) return res.status(404).json({ error: 'That listing is gone.' });
     const insights = await matchInsights(match, { complete: await completer(req), loadKey }).catch((err) => {
-      log.warn('insights failed', { matchId: match.id, userId, error: err.message });
+      log.warn('insights failed', { matchId: match.id, userId, code: safeErrorCode(err) });
       throw Object.assign(new Error(`The AI could not write pros and cons (${err.message}). Check your chat model key in Settings.`), { statusCode: 502 });
     });
     await saveMatchExtra(q, userId, match.id, 'insights', insights);

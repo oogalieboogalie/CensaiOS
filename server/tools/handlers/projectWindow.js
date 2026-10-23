@@ -11,6 +11,7 @@ import { resolveProjectForCall } from '../helpers.js';
 import { followFileInPreview, openRunDevBeside, pointAtWindow } from '../../collaboration/chatPreview.js';
 import { previewKindForPath } from '../../collaboration/chatPreviewShape.js';
 import { createLogger } from '../../logger.js';
+import { safeErrorCode } from '../../security/errorCode.js';
 
 const log = createLogger('chat-preview');
 
@@ -38,7 +39,7 @@ export async function previewAfterWrite(agentId, project, paths, context = {}, {
     if (shown.status === 'dev') return ' Run dev is open for this project, so the app reloads there on its own.';
     return ` ${shown.status === 'opened' ? 'Opened' : 'Refreshed'} the live preview beside this chat (${shown.window.fileName}, window id ${shown.window.id}).`;
   } catch (error) {
-    log.warn('preview after write failed', { workspaceId: context.workspaceId, path: target, error: error.message });
+    log.warn('preview after write failed', { workspaceId: context.workspaceId, code: safeErrorCode(error) });
     return '';
   }
 }

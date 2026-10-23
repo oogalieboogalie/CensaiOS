@@ -2,6 +2,7 @@
 // time, then incremental updates from OSV's modified_id.csv change list.
 import { Unzip, UnzipInflate, strFromU8 } from 'fflate';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { osvEcosystem } from './match.js';
 import { ensureOsvSchema, getSyncState, recordSync, upsertVulnerabilities } from './store.js';
 
@@ -47,7 +48,7 @@ export async function importArchive(db, ecosystem, { fetchImpl = fetch, baseUrl 
         const record = JSON.parse(strFromU8(chunks.length === 1 ? chunks[0] : concatBytes(chunks)));
         pending.push(record);
         if (record.modified && (!newest || Date.parse(record.modified) > Date.parse(newest))) newest = record.modified;
-      } catch (e) { log.warn('skipping unparseable OSV record', { file: file.name, error: e.message }); }
+      } catch (e) { log.warn('skipping unparseable OSV record', { file: file.name, code: safeErrorCode(e) }); }
     };
     file.start();
   });
@@ -134,7 +135,7 @@ export async function syncEcosystem(db, ecosystem, { fetchImpl = fetch, baseUrl 
     log.info('OSV mirror synced', { ecosystem: eco, ...result, ms: Date.now() - started });
     return { ecosystem: eco, ...result };
   } catch (err) {
-    log.warn('OSV mirror sync failed', { ecosystem: eco, error: err.message });
+    log.warn('OSV mirror sync failed', { ecosystem: eco, code: safeErrorCode(err) });
     await recordSync(db, eco, { error: err.message }).catch(() => {});
     throw err;
   }

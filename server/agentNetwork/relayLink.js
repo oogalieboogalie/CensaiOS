@@ -9,6 +9,7 @@
 
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { getInstallSigner } from './installIdentity.js';
 import { createRelayPass } from './relayPass.js';
 import { relayAgentAddress } from './address.js';
@@ -65,7 +66,7 @@ export function createRelayLink({ relayUrl, answer, getSigner = () => getInstall
     state.lastError = null;
     // Each call runs on its own so one slow agent does not hold up the rest.
     await Promise.allSettled(calls.map((call) => handle(call, auth).catch((error) => {
-      log.warn('relayed call not answered', { callId: call.id, error: error.message });
+      log.warn('relayed call not answered', { callId: call.id, code: safeErrorCode(error) });
     })));
     return calls.length;
   }
@@ -77,7 +78,7 @@ export function createRelayLink({ relayUrl, answer, getSigner = () => getInstall
         await pollOnce();
         backoff = 1000;
       } catch (error) {
-        if (state.connected || !state.lastError) log.warn('relay unreachable, retrying', { relay: relayUrl, error: error.message });
+        if (state.connected || !state.lastError) log.warn('relay unreachable, retrying', { code: safeErrorCode(error) });
         state.connected = false;
         state.lastError = error.message;
         await pause(backoff);

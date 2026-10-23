@@ -3,6 +3,7 @@
 // hands. The socket hook publishes; comment and guest UI subscribe. Keeping
 // it out of React state means a busy board doesn't re-render the app shell.
 import React from 'react';
+import { logFailure } from '../appLog/browserLog.js';
 
 const listeners = new Map();
 
@@ -12,7 +13,7 @@ export function emitBoardEvent(message) {
     const set = listeners.get(key);
     if (!set) continue;
     for (const listener of [...set]) {
-      try { listener(message); } catch (error) { console.error('board event listener failed', error); }
+      try { listener(message); } catch (error) { logFailure('board-events: a listener failed', error, 'board-events', 'error'); }
     }
   }
 }

@@ -1,4 +1,7 @@
 import { getConfiguredRuntimeMode } from './config/productIdentity.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('secrets');
 
 let initialized = false;
 
@@ -23,7 +26,7 @@ export async function initSecrets() {
     requireProductionSecret(name);
   }
   if (!initialized) {
-    console.log('Secret configuration validated');
+    log.info('secret configuration validated');
     initialized = true;
   }
 }

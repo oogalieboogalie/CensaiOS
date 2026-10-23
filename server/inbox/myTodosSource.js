@@ -4,6 +4,7 @@
 
 import { registerInboxSource } from './sources.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 const log = createLogger('my-todos');
 
@@ -17,7 +18,7 @@ export async function myTodos(ctx) {
   try {
     return await lister(ctx);
   } catch (err) {
-    log.warn('could not list to-dos assigned to this person', { userId: ctx?.userId, error: err.message });
+    log.warn('could not list to-dos assigned to this person', { userId: ctx?.userId, code: safeErrorCode(err) });
     throw err;
   }
 }

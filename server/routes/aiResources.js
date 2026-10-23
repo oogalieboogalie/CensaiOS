@@ -1,6 +1,7 @@
 import express from 'express';
 import { resourceRateLimiter } from '../middleware/standardRateLimits.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { buildAiResources } from '../aiResources/summary.js';
 import { heldKey } from '../aiResources/holdings.js';
 import { setBudget, setProviderReading } from '../aiResources/ledger.js';
@@ -32,7 +33,7 @@ aiResourcesRouter.get('/', async (req, res) => {
   try {
     res.json(await buildAiResources({ userId: req.session.userId, userRole: req.session.userRole }));
   } catch (err) {
-    log.error('could not build the AI resources view', { error: err.message });
+    log.error('could not build the AI resources view', { code: safeErrorCode(err) });
     res.status(500).json({ error: 'Could not load your AI resources.' });
   }
 });
@@ -51,7 +52,7 @@ aiResourcesRouter.put('/budget', async (req, res) => {
     log.info('starting amount saved', { provider: key.provider, cleared: budgetUsd === null });
     res.json({ ok: true });
   } catch (err) {
-    log.error('could not save a starting amount', { error: err.message });
+    log.error('could not save a starting amount', { code: safeErrorCode(err) });
     res.status(500).json({ error: 'Could not save that amount.' });
   }
 });
@@ -69,7 +70,7 @@ aiResourcesRouter.post('/ask-provider', async (req, res) => {
     const reading = await readProviderBalance(key.provider, config.apiKey);
     res.json({ reading: setProviderReading(key, reading) });
   } catch (err) {
-    if (!err.plain) log.warn('provider balance check failed', { error: err.message });
+    if (!err.plain) log.warn('provider balance check failed', { code: safeErrorCode(err) });
     res.status(502).json({ error: err.plain ? err.message : 'Could not ask the provider. Try again.' });
   }
 });

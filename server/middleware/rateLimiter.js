@@ -23,6 +23,10 @@
 //   resetRateLimiter() then disposeRateLimiter().
 
 import { getRuntimeMode, RUNTIME_MODES } from './runtimeMode.js';
+import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
+
+const log = createLogger('security');
 
 const WINDOW_MS = 60 * 1000;
 const MAX_REQUESTS = 5;
@@ -101,7 +105,7 @@ function rateLimiter(req, res, next) {
   } catch (err) {
     // Never let the limiter crash the auth flow — fail open with a logged warning.
     // The auth handlers themselves will still surface any underlying errors.
-    console.warn('[rateLimiter] unexpected error, allowing request:', err?.message);
+    log.warn('sign-in rate limiter failed, request allowed', { code: safeErrorCode(err) });
     return next();
   }
 }

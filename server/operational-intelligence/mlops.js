@@ -1,5 +1,9 @@
 import { createArtifact, createWorkspaceEvent, resolveArtifact } from './factories.js';
 import { buildMLOpsWebhookBody, calculateDriftState } from './drift-utils.js';
+import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
+
+const log = createLogger('ops');
 
 /**
  * MLOps Logic for Real-Time Data Drift Detection & Retraining Triggers.
@@ -111,7 +115,7 @@ async function triggerDriftAlert(ctx, { workspaceId, deploymentId, driftResults,
         body: JSON.stringify({ deploymentId, alertId: alert.id, maxDrift }),
       });
     } catch (err) {
-      console.error('Failed to trigger external retraining hook:', err.message);
+      log.error('retraining hook failed', { code: safeErrorCode(err) });
     }
   }
 }
@@ -127,7 +131,7 @@ async function notifyMLOpsWebhooks(ctx, alert) {
         body: JSON.stringify(buildMLOpsWebhookBody(hook, alert)),
       });
     } catch (err) {
-      console.error(`Failed to trigger external webhook (${hook.type || 'generic'}):`, err.message);
+      log.error('webhook failed', { type: hook.type || 'generic', code: safeErrorCode(err) });
     }
   }
 }

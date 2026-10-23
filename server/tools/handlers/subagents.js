@@ -19,6 +19,7 @@ import { resolveModelDefaults } from './subagentModelDefaults.js';
 import { handleDataBoxTool } from './dataBox.js';
 import pool from '../../db.js';
 import { resolveAuthorizedWorkspaceProject } from '../../workspaces/projectAccess.js';
+import { noteToolFailure } from '../toolsLog.js';
 
 export async function handleSubagentTool(agentId, name, args, context = {}) {
   switch (name) {
@@ -70,7 +71,7 @@ export async function handleSubagentTool(agentId, name, args, context = {}) {
         parentScopes = parentSub ? parentSub.tool_scopes?.scopes : parentAgent?.tool_scopes?.scopes;
         parentProjectId = parentSub ? parentSub.project_id : parentAgent?.project_id;
       } catch (err) {
-        console.warn(`[Subagents] Failed to fetch parent scopes/project for agent ${agentId}:`, err.message);
+        noteToolFailure('could not load parent scopes for a sub-agent', { agentId }, err);
       }
 
       const tool_scopes = {

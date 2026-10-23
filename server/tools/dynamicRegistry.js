@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { TOOL_DEFINITIONS } from './definitions.js';
 import { TOOL_REGISTRY } from './handlers/index.js';
 import { registerHandAddedTool } from './rbac/hostOwnerOnly.js';
@@ -21,7 +22,7 @@ export async function initializeDynamicTools() {
       fs.mkdirSync(dynamicDir, { recursive: true });
       log.info('Created server/tools/dynamic/ directory');
     } catch (err) {
-      log.error('Failed to create server/tools/dynamic directory', { error: err.message });
+      log.error('Failed to create server/tools/dynamic directory', { code: safeErrorCode(err) });
     }
     return;
   }
@@ -30,7 +31,7 @@ export async function initializeDynamicTools() {
   try {
     files = fs.readdirSync(dynamicDir).filter(file => file.endsWith('.js'));
   } catch (err) {
-    log.error('Failed to read server/tools/dynamic directory', { error: err.message });
+    log.error('Failed to read server/tools/dynamic directory', { code: safeErrorCode(err) });
     return;
   }
 
@@ -75,7 +76,7 @@ export async function initializeDynamicTools() {
 
       log.info(`Successfully loaded dynamic tool: ${toolName} from ${file}`);
     } catch (err) {
-      log.error(`Error loading dynamic tool ${file}`, { error: err.message });
+      log.error('Error loading a dynamic tool', { code: safeErrorCode(err) });
     }
   }
 }

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { execFile, spawnSync } from 'child_process';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { RUNNING } from './taskStore.js';
 import { killTree } from './runProcess.js';
 
@@ -155,7 +156,7 @@ export const cleanupMethods = {
       }
       await this.removeOrphans(now);
     } catch (err) {
-      log.warn('cli agent cleanup pass failed', { error: err.message });
+      log.warn('cli agent cleanup pass failed', { code: safeErrorCode(err) });
     }
   },
 

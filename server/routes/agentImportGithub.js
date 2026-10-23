@@ -7,6 +7,7 @@
 
 import express from 'express';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { getUserApiKeyConfig } from '../security/userApiKeys.js';
 import { getSecret } from '../secrets.js';
 import { mayUseServerKeys } from '../security/serverKeys.js';
@@ -39,7 +40,7 @@ export function createAgentImportGithubRouter(deps = {}) {
       return res.json(found);
     } catch (err) {
       const status = err instanceof AccountImportError ? err.status : 500;
-      log.warn(`agent-import: github pull: ${repo}: could not read it: ${err.message}`);
+      log.warn('agent-import: github pull could not read a repo', { code: safeErrorCode(err) });
       return res.status(status).json({ error: status === 500 ? `Could not read that repo: ${err.message}` : err.message });
     }
   });

@@ -8,6 +8,7 @@
 import { randomUUID } from 'crypto';
 import * as Y from 'yjs';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { openCanvasDocReader, transactCanvasDoc } from '../collab/liveDoc.js';
 import { upsertWindowInDoc } from '../collab/serverWriter.js';
 import { valueFromY, valueToY } from '../collab/seedFromSnapshot.js';
@@ -79,7 +80,7 @@ export async function placeHelpCard(workspaceId, input) {
   try {
     await transactCanvasDoc(workspaceId, (doc) => { card = placeHelpCardInDoc(doc, input); });
   } catch (error) {
-    log.warn('help card not placed', { workspaceId, requestId: input?.request?.id, error: error.message });
+    log.warn('help card not placed', { workspaceId, requestId: input?.request?.id, code: safeErrorCode(error) });
   }
   return card;
 }
@@ -96,7 +97,7 @@ export async function patchHelpCard(workspaceId, cardId, patch) {
     });
     return found;
   } catch (error) {
-    log.warn('help card not updated', { workspaceId, cardId, error: error.message });
+    log.warn('help card not updated', { workspaceId, cardId, code: safeErrorCode(error) });
     return false;
   }
 }
@@ -146,7 +147,7 @@ export async function boardAgents(workspaceId) {
     reader = await openCanvasDocReader(workspaceId);
     return reader ? boardAgentsFromWindows(readDocWindows(reader.doc)) : {};
   } catch (error) {
-    log.warn('board agents unavailable', { workspaceId, error: error.message });
+    log.warn('board agents unavailable', { workspaceId, code: safeErrorCode(error) });
     return {};
   } finally {
     try { await reader?.close(); } catch { /* already closed */ }

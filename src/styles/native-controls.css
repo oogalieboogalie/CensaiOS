@@ -10,7 +10,9 @@
  *    other menus; the others still get the look's colours on each row.
  */
 
-:root { color-scheme: light; }
+/* Checkboxes, radios, range sliders and progress bars take the look's
+   accent instead of the browser's blue. */
+:root { color-scheme: light; accent-color: var(--accent); }
 :root[data-theme="dark"] { color-scheme: dark; }
 
 select option,

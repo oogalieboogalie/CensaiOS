@@ -17,6 +17,29 @@ tags.
 
 ### New
 
+- Test team: Sheets for two people (Oct 23)
+- Test team: Sketchpad for two, and keep a label typed right after drawing (Oct 23)
+- Music Player: a teammate's song opens the player on every board (item 141) (Oct 23)
+- UI team nightly: Message Router gets depth and a guiding empty state (Oct 23)
+- The last server log lines keep a code, and a guard keeps it that way (item 140) (Oct 23)
+- Agent and worker log lines keep an error code, not the error text (item 139) (Oct 23)
+- Server route log lines keep an error code, not the error text (item 138) (Oct 23)
+- Board-sharing and start-up log lines keep an error code, not the error text (item 137) (Oct 23)
+- UI team: mark every module window against a yardstick, shared depth system, Docker/MLOps/Ollama reworked (Oct 23)
+- The last browser console lines reach the app log (Oct 23)
+- Landing page: demo people always on the board, plus live visitor cursors (Oct 23)
+- Raw console lines can only go down (Oct 23)
+- The next browser console lines reach the app log (Oct 23)
+- The last raw server console lines reach the app log (Oct 23)
+- Sign-in, session and security failures reach the app log (Oct 23)
+- Tools: agent tool failures go to the app log, without the error text (Oct 23)
+- App shell: move board start-up and selection out of AppContent.jsx (Oct 22)
+- Chat: move the tool-call round out of chatExecution.js (Oct 22)
+- Test team: Docker check covers images, volumes, networks and Compose (Oct 22)
+- Docker window: see what an image is made of (Oct 22)
+- Test team: two people edit the board at the same moment (item 124) (Oct 22)
+- Keep a group's name clear of the top toolbars (item 123) (Oct 22)
+- Remove dead copies nothing uses (item 121) (Oct 22)
 - Nightly release: mark the teleprompter storage name as not a secret (Oct 22)
 - Send the board's busiest console failures to the app log (item 120) (Oct 22)
 - Chat's own failure notes reach the app log (Oct 22)
@@ -97,6 +120,10 @@ tags.
 
 ### Fixed
 
+- Test team: the Market for two, and two listing slips fixed (Oct 23)
+- Marketplace: Agents tab points to the Agent Registry instead of an empty list (Oct 23)
+- Two people typing the same words in a note no longer scramble (Oct 23)
+- MCP: stop logging launch arguments, server output and tool arguments (Oct 22)
 - A file that cannot play says so instead of PLAYING (Oct 22)
 - Raw error text stays out of four leftover answers and log lines (item 104) (Oct 22)
 - Chat model front door: parts outside the routes stop borrowing Chat's files (Oct 21)
