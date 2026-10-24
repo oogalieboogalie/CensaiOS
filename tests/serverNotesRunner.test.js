@@ -19,7 +19,7 @@ test('a refused request leaves one runner line, without the address', async () =
 
 test('a failed command leaves runner lines with the program name only, never its arguments', async () => {
   const spies = watchConsole();
-  const res = await request(createRunnerApp({ runnerSecret: SECRET }))
+  const res = await request(createRunnerApp({ runnerSecret: SECRET, dockerOnly: false }))
     .post('/exec')
     .set('x-runner-secret', SECRET)
     .send({ command: 'madeup-tool-zz', args: ['--note', 'Pat secret'] });

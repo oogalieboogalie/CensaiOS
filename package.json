@@ -1,6 +1,6 @@
 {
   "name": "censai",
-  "version": "0.5.0-nightly.20261023",
+  "version": "0.5.0-nightly.20261024",
   "private": true,
   "type": "module",
   "scripts": {
@@ -65,7 +65,7 @@
     "cors": "^2.8.6",
     "docx": "^9.9.0",
     "dom-to-image-more": "^3.7.2",
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "dotenv": "^17.4.2",
     "eslint-plugin-ai-debt": "file:./tools/eslint-plugin-ai-debt",
     "exceljs": "^4.4.0",

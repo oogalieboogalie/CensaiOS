@@ -15,8 +15,9 @@ import liveBoard from './liveBoard.mjs';
 import sketchpad from './sketchpad.mjs';
 import sheets from './sheets.mjs';
 import marketplace from './marketplace.mjs';
+import scheduler from './scheduler.mjs';
 
-export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace];
+export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

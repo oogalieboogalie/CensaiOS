@@ -46,6 +46,10 @@ function scheduleInput(input = {}) {
   }
   if (!taskText) throw new ScheduleContractError('task_text is required.');
   if (taskText.length > 8000) throw new ScheduleContractError('task_text cannot exceed 8000 characters.');
+  // The table only knows these two; anything else ("every 0 minutes") used to reach it and come back as a 500.
+  if (input.repeat_freq != null && !['weekly', 'monthly'].includes(input.repeat_freq)) {
+    throw new ScheduleContractError('A schedule repeats weekly (on the days you pick) or monthly.', 422);
+  }
   return { agentId, taskText, nextRunAt: parseScheduledTime(input.scheduled_date, input.scheduled_time) };
 }
 

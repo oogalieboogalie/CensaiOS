@@ -17,6 +17,9 @@ tags.
 
 ### New
 
+- Blueprints: the UI team recipe as a ready-made blueprint (Oct 23)
+- Dompurify 3.4.17: clears the critical advisory that fails the public Security check (Oct 23)
+- Docker runner gate: close the outside security review's gaps (Oct 23)
 - Test team: Sheets for two people (Oct 23)
 - Test team: Sketchpad for two, and keep a label typed right after drawing (Oct 23)
 - Music Player: a teammate's song opens the player on every board (item 141) (Oct 23)
@@ -120,6 +123,7 @@ tags.
 
 ### Fixed
 
+- Test team: Scheduler and To-dos for two, and three fixes it found (Oct 23)
 - Test team: the Market for two, and two listing slips fixed (Oct 23)
 - Marketplace: Agents tab points to the Agent Registry instead of an empty list (Oct 23)
 - Two people typing the same words in a note no longer scramble (Oct 23)

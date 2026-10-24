@@ -49,3 +49,15 @@ export function calculateNextRun(currentRunAt, freq, days) {
   }
   return next;
 }
+
+/**
+ * The next repeat that is still ahead of `now`. A repeating schedule whose
+ * last run was long ago (its date set in the past, or the computer off for a
+ * week) used to step forward only one repeat per run, so it fired again on
+ * every check until it caught up. Capped so a broken row cannot loop forever.
+ */
+export function nextRunAfter(currentRunAt, freq, days, now = new Date()) {
+  let next = calculateNextRun(currentRunAt, freq, days);
+  for (let i = 0; i < 1000 && next <= now; i += 1) next = calculateNextRun(next, freq, days);
+  return next;
+}

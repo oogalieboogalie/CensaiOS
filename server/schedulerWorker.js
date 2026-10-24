@@ -5,7 +5,7 @@ import {
   updateSchedule,
 } from './memory/schedules.js';
 import { getAgents } from './memory/core/agents.js';
-import { calculateNextRun } from './memory/schedules_utils.js';
+import { nextRunAfter } from './memory/schedules_utils.js';
 import { createLogger } from './logger.js';
 import { safeErrorCode } from './security/errorCode.js';
 import {
@@ -35,7 +35,7 @@ async function failSchedule(schedule, err) {
 
 async function completeOrRepeatSchedule(schedule) {
   if (schedule.repeat_enabled) {
-    const nextRun = calculateNextRun(schedule.next_run_at || new Date(), schedule.repeat_freq, schedule.repeat_days);
+    const nextRun = nextRunAfter(schedule.next_run_at || new Date(), schedule.repeat_freq, schedule.repeat_days);
     await updateSchedule(schedule.id, {
       status: 'active',
       next_run_at: nextRun,

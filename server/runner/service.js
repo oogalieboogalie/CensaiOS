@@ -6,7 +6,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import { isRunnerRequestAuthorized, requireRunnerSecret } from './auth.js';
-import { dockerOnlyViolation, execTarget, inspectViolation } from './dockerOnly.js';
+import { withRunnerDefaults } from './dockerOnly.js';
+import { cachedStack, gateRefusal } from './dockerStack.js';
 import { createLogger } from '../logger.js';
 
 // Lines carry the program's bare name and outcome only: never arguments,
@@ -19,23 +20,31 @@ const programName = (command) => {
 
 const execFileAsync = promisify(execFile);
 
-// Docker-only mode refuses anything but safe docker calls (dockerOnly.js).
-async function refusal(command, args) {
-  const why = dockerOnlyViolation(command, args);
-  if (why) return why;
-  const target = execTarget(args);
-  if (!target) return null;
-  try {
-    const { stdout } = await execFileAsync('docker', ['inspect', '--type', 'container', target], { maxBuffer: 10 * 1024 * 1024 });
-    return inspectViolation(stdout);
-  } catch {
-    return null; // let docker report the missing container itself
-  }
+// Docker-only mode refuses anything but safe docker calls (dockerOnly.js,
+// dockerStack.js). The gate's own lookups run docker directly.
+const runDocker = async (args) => (await execFileAsync('docker', args, { maxBuffer: 10 * 1024 * 1024, timeout: 15_000 })).stdout;
+
+// The caller's options never reach the child process in docker-only mode
+// (an env could point docker at another engine); elsewhere only these do.
+// The run time and output size are capped here, whatever the caller asked.
+const MAX_BUFFER = 50 * 1024 * 1024;
+const MAX_TIMEOUT_MS = 30 * 60_000;
+const DEFAULT_TIMEOUT_MS = 15 * 60_000;
+export function childOptions(options, dockerOnly) {
+  const asked = Number(options?.timeout);
+  const timeout = Number.isFinite(asked) && asked > 0 ? Math.min(Math.max(asked, 1000), MAX_TIMEOUT_MS) : DEFAULT_TIMEOUT_MS;
+  const askedBuffer = Number(options?.maxBuffer);
+  const maxBuffer = Number.isFinite(askedBuffer) && askedBuffer > 0 ? Math.min(askedBuffer, MAX_BUFFER) : MAX_BUFFER;
+  if (dockerOnly) return { timeout, maxBuffer, shell: false, windowsHide: true };
+  const { cwd, windowsHide, encoding } = options || {};
+  return { cwd, windowsHide, encoding, timeout, maxBuffer, shell: process.platform === 'win32' || Boolean(options?.shell) };
 }
 
 export function createRunnerApp({
   runnerSecret = process.env.RUNNER_SECRET,
-  dockerOnly = process.env.RUNNER_DOCKER_ONLY === 'true',
+  dockerOnly = process.env.RUNNER_DOCKER_ONLY !== 'false',
+  run = runDocker,
+  stack = cachedStack(run),
 } = {}) {
   const secret = requireRunnerSecret(runnerSecret);
   const app = express();
@@ -54,23 +63,21 @@ export function createRunnerApp({
   }
 
   app.post('/exec', async (req, res) => {
-  const { command, args, options } = req.body;
+  const { command, options } = req.body;
+  let { args } = req.body;
   if (dockerOnly) {
-    const why = await refusal(command, args);
+    const why = await gateRefusal(command, args, await stack(), run);
     if (why) {
-      log.warn('runner command refused by the Docker gatekeeper', { program: programName(command) });
-      return res.json({ stdout: '', stderr: `Refused by the Docker gatekeeper: ${why}.`, code: 126 });
+      log.warn('runner command refused by the Docker gatekeeper', { program: programName(command), reason: why.code });
+      return res.json({ stdout: '', stderr: `Refused by the Docker gatekeeper: ${why.why}.`, code: 126 });
     }
+    args = withRunnerDefaults(args);
   }
 
   log.info('runner command started', { program: programName(command) });
 
   try {
-    const { stdout, stderr } = await execFileAsync(command, args, {
-      maxBuffer: 50 * 1024 * 1024,
-      ...options,
-      shell: dockerOnly ? false : (process.platform === 'win32' || options?.shell),
-    });
+    const { stdout, stderr } = await execFileAsync(command, args, childOptions(options, dockerOnly));
     res.json({ stdout, stderr, code: 0 });
   } catch (err) {
     log.warn('runner command failed', { program: programName(command), code: err.code ?? err.status ?? 1 });

@@ -8,6 +8,7 @@ import { CODING_AGENTS, codingAgentAssignee, personAssignee } from '../../lib/to
 import { PersonBadge } from './PersonBadge.jsx';
 import { codingAgentChoice, logUnreadyAssign } from './codingAgentChoice.js';
 import { useMe } from './useMe.js';
+import { useBoardPeople } from './useBoardPeople.js';
 
 function getMenuPosition(anchorEl) {
   const rect = anchorEl.getBoundingClientRect();
@@ -27,13 +28,15 @@ const headingStyle = { fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs
 const selectRoster = (state) => ({ clis: state.clis, loaded: state.loaded, unavailable: state.unavailable });
 
 /**
- * Assign menu for one to-do: you, nobody, the board's agents, and the coding
+ * Assign menu for one to-do: you, the other people on this board, nobody,
+ * the board's agents, and the coding
  * agents installed on this computer (the Agent Console's roster; the rest are
  * greyed with why). `onAssign(value, name)` gets the assignee
  * value (see src/lib/todos/assignees.js) and a display name.
  */
 export function TodoAssignMenu({ anchorRef, agents, onAssign, onClose }) {
   const me = useMe();
+  const people = useBoardPeople(me);
   const [position, setPosition] = React.useState(null);
   const roster = useCliRoster(selectRoster);
 
@@ -83,6 +86,13 @@ export function TodoAssignMenu({ anchorRef, agents, onAssign, onClose }) {
             <OptionText title="Me" note="Reminds you in the bottom bar" />
           </AssignOption>
         )}
+        {people.length > 0 && <div style={headingStyle}>People on this board</div>}
+        {people.map(person => (
+          <AssignOption key={person.id} onClick={() => onAssign(personAssignee(person.id), person.name)} data-assign={`person-${person.id}`}>
+            <PersonBadge name={person.name} size={20} />
+            <OptionText title={person.name} note="Reminds them in their bottom bar" />
+          </AssignOption>
+        ))}
         <AssignOption onClick={() => onAssign(null, null)}><span style={{ color: 'var(--ink-soft)', fontSize: 'var(--text-sm)' }}>Unassigned</span></AssignOption>
         {agents.length > 0 && <div style={headingStyle}>Board agents</div>}
         {agents.map(agent => (

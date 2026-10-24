@@ -207,6 +207,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - runner_secret:/run/censai-runner
+      # Read-only: the runner lets containers mount folders from here and
+      # nowhere else, and follows links in it to refuse any that lead out.
+      - ${CENSAI_PROJECTS_FOLDER_ON_PC:-./censai-projects}:/workspace/projects:ro
 
 volumes:
   pgdata18root:
