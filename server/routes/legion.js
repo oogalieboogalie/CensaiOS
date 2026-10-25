@@ -13,6 +13,7 @@ import pool from '../db.js';
 import { dbReady } from '../dbState.js';
 import { answerRun, listRuns, viewFilePath, parseStart, readRun, runFilePath, runningFor, startRun, stopRun } from '../legion/runs.js';
 import { findBrowser } from '../legion/browser.js';
+import { userRole } from '../security/systemAdmin.js';
 
 export const legionRouter = express.Router();
 // Mounted before the sign-in guard (server/boot/routers.js) at /api/legion-view.
@@ -33,8 +34,7 @@ legionViewRouter.get('/:id/:token/*rest', async (req, res) => {
 async function roleOf(userId) {
   if (!dbReady()) return 'user';
   try {
-    const { rows } = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
-    return rows[0]?.role || 'user';
+    return (await userRole(userId, { db: pool })) || 'user';
   } catch {
     return 'user';
   }

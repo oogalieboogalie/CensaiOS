@@ -28,8 +28,8 @@
 import pool from '../db.js';
 import { dbReady } from '../dbState.js';
 import { logConversation } from '../memory.js';
-import { prepareChatContext } from '../routes/chat/chatContext.js';
-import { runChatLoop } from '../routes/chat/chatExecution.js';
+import { prepareChatContext } from '../chatModel/context.js';
+import { runChatLoop } from '../chatModel/runLoop.js';
 import { loadOutsideTools, EMPTY_OUTSIDE_TOOLS } from '../outsideTools/forAgent.js';
 import { loadRunMemory, NO_MEMORY } from '../agentMemory/forRun.js';
 import { withMemoryBlock } from '../agentMemory/recall.js';
@@ -106,7 +106,7 @@ async function remember({ agentId, question, answer, workspaceId, userId }) {
  * Throws what prepareChatContext and the loop throw (callers map errors).
  */
 export async function runAgentTurn({
-  origin = 'chat', agentId, messages, currentProject = null, userId = null, userRole = null,
+  origin = 'chat', agentId, messages, currentProject = null, userId = null, userRole = null, atThisComputer = false,
   workspaceId = null, windowId = null, loopWorkspaceId = null, sendEvent = () => {}, onModelAccepted,
   conversationId = null, timeZone = undefined,
   signal = null, timeoutMs = 0, toolFilter = null, onPrepared = null, rememberQuestion = null,
@@ -179,6 +179,7 @@ export async function runAgentTurn({
       onModelAccepted,
       timings,
       userId,
+      atThisComputer,
       traceId: hooks.traceId ?? null,
       signal: limit.signal,
       runTool: toolRunner(outside, memory.tools),

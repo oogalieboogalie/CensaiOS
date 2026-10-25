@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 
-// Nano-agent helpers (Alex's diagram 15, bottom row): a sub-agent starts a
-// one-job helper with Alex's ai_call prompt and Temp .02; the answer goes
+// Nano-agent helpers (diagram 15, bottom row): a sub-agent starts a
+// one-job helper with the diagram's ai_call prompt and Temp .02; the answer goes
 // into the sub-agent's data box and the helper ends. Only sub-agents can.
 
 const saved = [];
@@ -26,7 +26,7 @@ const { SHARED_SUB_AGENT_TOOLS } = await import('../server/tools/rbac/constants.
 const ctx = { workspaceId: 'w1', userId: 1 };
 
 describe('nano helpers', () => {
-  test('six jobs, Alex\'s ai_call prompt, and a timed box key', () => {
+  test('six jobs, Alma\'s ai_call prompt, and a timed box key', () => {
     expect(helperJob(' Review ')).toBe('review');
     expect(helperJob('deploy')).toBeNull();
     expect(helperPrompt({ name: 'Scout helper (review)', job: 'review', parent: 'Scout', task: 'check the plan.' }))

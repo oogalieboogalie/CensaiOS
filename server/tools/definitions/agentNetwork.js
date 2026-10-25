@@ -3,7 +3,7 @@ export const agentNetworkTools = [
     type: 'function',
     function: {
       name: 'discover_agents',
-      description: 'Find other agents in the registry that can help with a need, ranked by the skills they advertise. Returns each agent\'s card_id, matched skills, whether it is callable, and whether you may request it (built-in family agents and agents pinned in this workspace), and on_board: the windows where that agent is open on the shared canvas right now. board_helpers lists the coding CLIs (Agent Console) and modules open on the board, with card ids like "window:<id>"; ask them the same way. Asking for help puts a request card on the canvas that the whole team can watch.',
+      description: 'Find other agents that can help with a need, ranked by the skills they advertise. Returns each agent\'s card_id, matched skills, whether it is callable, and whether you may request it (built-in family agents and agents pinned in this workspace), and on_board: the windows where that agent is open on the shared canvas right now. board_helpers lists the chat agents, coding CLIs (Agent Console) and modules open on this same board, with card ids like "window:<id>"; ask them the same way. Agents on another board are not listed. Asking for help puts a request card on the canvas that the whole team can watch.',
       parameters: {
         type: 'object',
         properties: {
@@ -19,11 +19,11 @@ export const agentNetworkTools = [
     type: 'function',
     function: {
       name: 'request_agent_help',
-      description: 'Ask another agent, coding CLI or module (found with discover_agents) to do a task for you. The request runs on that helper and you get its answer back; a coding CLI may pause for a person to allow a step in its Agent Console. Set wait_seconds to wait for the answer in this call; otherwise check later with agent_help_status.',
+      description: 'Ask another agent, a teammate on this board, a coding CLI or a module (found with discover_agents) to do a task for you. The request runs on that helper and you get its answer back; a coding CLI may pause for a person to allow a step in its Agent Console. Set wait_seconds to wait for the answer in this call; otherwise check later with agent_help_status.',
       parameters: {
         type: 'object',
         properties: {
-          card_id: { type: 'string', description: 'Exact card_id from discover_agents (e.g. "agent:nexus", or "window:<id>" for a coding CLI or module on the board)' },
+          card_id: { type: 'string', description: 'Exact card_id from discover_agents (e.g. "agent:nexus", or "window:<id>" for a chat agent, coding CLI or module on this board)' },
           task: { type: 'string', description: 'The self-contained task for the helper, with all context it needs (max 8000 chars)' },
           skill_id: { type: 'string', description: 'Optional id of the advertised skill you are asking for' },
           wait_seconds: { type: 'number', description: 'Optional: wait up to this many seconds (max 45) for the answer' },

@@ -1,6 +1,7 @@
 // Everything that changes this computer itself (Docker, dev servers and folder
 // mounts, git, Windows tasks, repo and project files, Legion's host browser,
-// the terminal) is for the computer's owner only. Teammates can still look.
+// the terminal) is for the computer's owner only. Teammates can still look,
+// except at Docker (tests/dockerReadsOwnerOnly.test.js).
 //
 // Each case runs the REAL guards in front of a route (the mount's middleware
 // from ROUTE_MOUNTS, or the route's own middleware in its router), then a
@@ -111,8 +112,6 @@ describe.each([...MOUNTED, ...IN_ROUTER])('%s', (_label, method, url, guards) =>
 
 describe('looking stays open to teammates', () => {
   test.each([
-    ['/api/docker/status', '/api/docker'],
-    ['/api/docker/containers', '/api/docker'],
     ['/api/dev-servers', '/api/dev-servers'],
     ['/api/project-git/status', '/api/project-git'],
     ['/api/automation/status', '/api/automation'],
@@ -132,7 +131,7 @@ describe('looking stays open to teammates', () => {
 
 describe('board content stays with the board', () => {
   test('no broad /api mount (boards, windows, docs, sheets, chat) carries the owner check', () => {
-    const owner = mountGuards('/api/docker').find((h) => h.name === 'requireSystemAdminForChanges');
+    const owner = mountGuards('/api/dev-servers').find((h) => h.name === 'requireSystemAdminForChanges');
     expect(owner).toBeDefined();
     for (const entry of ROUTE_MOUNTS.filter((e) => e.path === '/api' || e.path === '/api/sheets' || e.path === '/api/inbox')) {
       expect(entry.middleware || []).not.toContain(owner);

@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { WebSocketServer } from 'ws';
-import { startBackend, startAgentBackend } from './backends.js';
+import { startBackend, startAgentBackend, folderKind, safeReason } from './backends.js';
 import { startCliBackend, terminalCliAdapter } from './cliBackend.js';
 import { publishWorkspaceEvent } from '../collaboration/workspaceHub.js';
 import { filterAgentChunk, flushAgentCarry, agentTailText } from './agentOutput.js';
@@ -193,7 +193,7 @@ export function attachTerminalServer(server, options = {}) {
           cwd, hasProject, size, owner, clientSessionId, startBackendImpl, agentRun, cli,
           write: (data) => safeJsonSend(ws, { type: 'output', data }) });
       } catch (error) {
-        log.error('failed to start any backend', { sessionId, cwd, error: error.message });
+        log.error('failed to start any backend', { sessionId, folder: folderKind(cwd, hasProject), error: safeReason(error) });
         safeJsonSend(ws, { type: 'output', data: `\r\nFailed to start a terminal: ${error.message}\r\n` });
         safeJsonSend(ws, { type: 'exit', code: 1 }); ws.close(); // ended, not dropped: no retry loop, Enter tries again
         return;

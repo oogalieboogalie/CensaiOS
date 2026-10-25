@@ -1,4 +1,4 @@
-import { fetchChatCompletion } from '../routes/chat/shared.js';
+import { fetchChatCompletion } from '../chatModel/completion.js';
 
 /**
  * Score and prioritize artifacts based on importance and relevance.

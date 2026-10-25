@@ -1,5 +1,6 @@
 import React from 'react';
 import { linkHost, logMusic } from './linkAudio.js';
+import { kindFromDuration } from './tryLinkKind.js';
 
 // Plays a local audio file through the Web Audio API so the visualizer reads
 // the real signal. The graph is
@@ -51,16 +52,22 @@ function newAudio() {
   return audio;
 }
 
-export function useLocalAudio({ track, volume, muted, onEnded, remote = false }) {
+export function useLocalAudio({ track, volume, muted, onEnded, remote = false, onHeard }) {
+  const url = track?.url || '';
   const audioRef = React.useRef(null);
   const graphRef = React.useRef(null);
   const plainRef = React.useRef(false);
   const wantRef = React.useRef(false);
   const endedRef = React.useRef(onEnded);
+  const onHeardRef = React.useRef(onHeard);
+  const urlRef = React.useRef(url);
   endedRef.current = onEnded;
+  onHeardRef.current = onHeard;
+  urlRef.current = url;
   const [state, setState] = React.useState({ playing: false, position: 0, duration: 0 });
   const [signal, setSignal] = React.useState(null);
   const [problem, setProblem] = React.useState('');
+  const [problemUrl, setProblemUrl] = React.useState('');
   const [element, setElement] = React.useState(0);
 
   if (!audioRef.current) audioRef.current = newAudio();
@@ -91,11 +98,17 @@ export function useLocalAudio({ track, volume, muted, onEnded, remote = false })
   React.useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return undefined;
-    const sync = () => setState({
-      playing: !audio.paused && !audio.ended,
-      position: audio.currentTime || 0,
-      duration: Number.isFinite(audio.duration) ? audio.duration : 0,
-    });
+    const sync = () => {
+      setState({
+        // A file the browser cannot decode never really plays: no PLAYING.
+        playing: !audio.paused && !audio.ended && !audio.error,
+        position: audio.currentTime || 0,
+        duration: Number.isFinite(audio.duration) ? audio.duration : 0,
+      });
+      if (!remote) return;
+      const kind = kindFromDuration(audio.duration, audio.readyState);
+      if (kind) onHeardRef.current?.(kind);
+    };
     const ended = () => { sync(); endedRef.current?.(); };
     const ready = () => {
       sync();
@@ -105,9 +118,11 @@ export function useLocalAudio({ track, volume, muted, onEnded, remote = false })
       if (!audio.getAttribute('src')) return;
       if (remote && audio.crossOrigin === 'anonymous') { playPlainRef.current(); return; }
       wantRef.current = false;
+      audio.pause();
       sync();
-      setProblem('This link could not be played.');
-      logMusic('warn', `could not play a link from ${linkHost(audio.src)}`);
+      setProblem(remote ? 'This link could not be played.' : 'This file could not be played.');
+      setProblemUrl(urlRef.current);
+      logMusic('warn', remote ? `could not play a link from ${linkHost(audio.src)}` : 'could not play a file from this computer');
     };
     const events = ['play', 'pause', 'timeupdate', 'durationchange', 'seeked'];
     events.forEach(ev => audio.addEventListener(ev, sync));
@@ -128,11 +143,11 @@ export function useLocalAudio({ track, volume, muted, onEnded, remote = false })
     graphRef.current?.ctx.close?.().catch?.(() => {});
   }, []);
 
-  const url = track?.url || '';
   React.useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     setProblem('');
+    setProblemUrl('');
     if (!url) {
       wantRef.current = false;
       if (!audio.getAttribute('src')) return;
@@ -199,5 +214,5 @@ export function useLocalAudio({ track, volume, muted, onEnded, remote = false })
     audio.currentTime = Math.max(0, Math.min(max, seconds));
   }, []);
 
-  return { ...state, signal, problem, play, pause, toggle, seekTo };
+  return { ...state, signal, problem: problemUrl === url ? problem : '', play, pause, toggle, seekTo };
 }

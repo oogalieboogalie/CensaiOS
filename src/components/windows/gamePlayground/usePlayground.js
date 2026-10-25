@@ -4,6 +4,7 @@ import { planFromFiles, planFromSample, sampleById, sanitizeRecord } from '../..
 import { claimKeyboard, releaseKeyboard } from '../../../lib/keyboardClaim.js';
 import { getSelf } from '../../../lib/modules/presenceRoster.js';
 import { decode, readTheme, understand } from './gameFiles.js';
+import { webOnlyFrameSrc } from '../../../lib/frameSrc.js';
 
 export { readDropped, readPicked, understand } from './gameFiles.js';
 
@@ -197,7 +198,7 @@ export function usePlayground({ win, onUpdate }) {
 
   const frameProps = running && record
     ? (direct
-      ? { src: record.source.url, sandbox: frameSandbox(record.source.url, window.location.origin) }
+      ? { src: webOnlyFrameSrc(record.source.url) || undefined, sandbox: frameSandbox(record.source.url, window.location.origin) }
       : { src: RUNNER_URL, sandbox: RUNNER_SANDBOX })
     : null;
 

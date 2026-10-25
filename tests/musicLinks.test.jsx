@@ -45,6 +45,15 @@ describe('which links play in our own player', () => {
     expect(linkHost('https://www.example.com/a.mp3?token=secret')).toBe('example.com');
   });
 
+  test('a stray percent in a song link gets a result, not an error', () => {
+    const url = 'https://example.com/100%.mp3';
+    expect(directAudioKind(url)).toBe('song');
+    const lines = pendingAppLog().filter(e => e.where === 'music');
+    expect(lines.map(e => e.message)).toContain('music: could not decode a link from example.com');
+    expect(lines.some(e => e.level === 'warn')).toBe(true);
+    expect(lines.map(e => `${e.message} ${e.detail}`).join(' ')).not.toContain('100%');
+  });
+
   test('radio has its own skin and tag; song links keep the MP3 player', () => {
     expect(detectMusicSource('https://ice2.somafm.com/groovesalad-128-mp3')).toBe('radio');
     expect(detectMusicSource('https://example.com/a.mp3')).toBe('generic');

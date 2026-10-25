@@ -14,6 +14,7 @@ import { recordPolicyEvidence } from '../../policy/evidence.js';
 import { recordTraceRound, recordToolTrace, recordTraceFailure } from '../../operational-intelligence/traces.js';
 import { isPrivateTraceTool } from '../../operational-intelligence/tracePrivacy.js';
 import { createChatToolSession } from './toolSession.js';
+import { noteFailure } from './chatLog.js';
 import { callChatModelRound, chatModelAccessContext, forwardDeltas, modelTokens, throwIfChatAborted } from './modelRound.js';
 
 export async function runChatLoop({
@@ -29,7 +30,7 @@ export async function runChatLoop({
   sendEvent,
   onModelAccepted,
   timings,
-  userId,
+  userId, atThisComputer = false,
   traceId, signal = null, runTool = executeTool,
 }) {
   let toolActions = [];
@@ -38,7 +39,7 @@ export async function runChatLoop({
   let synthesisReason = null;
   let round = 0;
   const toolSession = createChatToolSession(toolsForCaller, reqProvider);
-  const toolContext = { userId, ...(windowId ? { windowId } : {}), ...(authorizationWorkspaceId ? { workspaceId: authorizationWorkspaceId } : {}) };
+  const toolContext = { userId, ...(atThisComputer === true ? { atThisComputer: true } : {}), ...(windowId ? { windowId } : {}), ...(authorizationWorkspaceId ? { workspaceId: authorizationWorkspaceId } : {}) };
   const accessContext = chatModelAccessContext(userId, authorizationWorkspaceId);
   let modelAccepted = false;
   const acceptModel = () => { if (!modelAccepted) { modelAccepted = true; onModelAccepted?.(); } };
@@ -58,13 +59,12 @@ export async function runChatLoop({
     const activeTools = toolSession.list();
     if (traceId) {
       recordTraceRound({ db: pool }, {
-        workspaceId,
-        traceId,
+        workspaceId, traceId,
         round,
         messages: chatMessages,
         toolsAvailable: activeTools,
         modelConfig: { model: reqModel, baseUrl: reqBaseUrl }
-      }).catch(err => console.error('Failed to record trace round:', err.message));
+      }).catch(noteFailure('trace round not recorded', { agentId }));
     }
 
     const modelStartedAt = Date.now();
@@ -79,7 +79,7 @@ export async function runChatLoop({
       reqProvider,
       round,
       userId,
-      workspaceId,
+      workspaceId, agentId, windowId,
       onDelta: forwardDeltas(round, sendEvent, acceptModel),
     });
     acceptModel();
@@ -172,7 +172,7 @@ export async function runChatLoop({
               traceId,
               error: toolErr,
               contextSnapshot: { toolName, round, messagesCount: chatMessages.length }
-            }).catch(e => console.error('Failed to record tool failure trace:', e.message));
+            }).catch(noteFailure('tool failure trace not recorded', { agentId }));
           }
         }
         const toolMs = Date.now() - toolStartedAt;
@@ -192,7 +192,7 @@ export async function runChatLoop({
             round,
             summary,
             privateTool: isPrivate,
-          }).catch(err => console.error('Failed to record tool trace:', err.message));
+          }).catch(noteFailure('tool trace not recorded', { agentId }));
         }
 
         const safeResult = isPrivate ? '[private]' : result;

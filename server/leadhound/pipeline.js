@@ -13,12 +13,14 @@ import { outreachMessages, parseJsonBlock, planQueriesMessages, scoreLeadsMessag
 const NOISE_HOSTS = /(^|\.)(linkedin|facebook|instagram|twitter|x|youtube|tiktok|reddit|wikipedia|indeed|glassdoor|ziprecruiter|yelp|crunchbase|g2|capterra|clutch|upwork|fiverr|medium|quora|pinterest|amazon)\.[a-z.]+$/i;
 const MAX_CANDIDATES = 12;
 const clip = (v, n) => String(v ?? '').trim().slice(0, n);
+// Brief fields are typed words only: an object or a list is not a brief.
+const words = (v, n) => (typeof v === 'string' ? clip(v, n) : '');
 
 export function normalizeBrief(input = {}) {
   const brief = {
-    business: clip(input.business, 600),
-    market: clip(input.market, 400),
-    region: clip(input.region, 120),
+    business: words(input.business, 600),
+    market: words(input.market, 400),
+    region: words(input.region, 120),
   };
   if (!brief.business || !brief.market) {
     throw Object.assign(new Error('Tell LeadHound what you sell and who you sell to.'), { statusCode: 400 });

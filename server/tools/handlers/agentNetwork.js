@@ -80,7 +80,9 @@ export async function handleAgentNetworkTool(agentId, name, args = {}, context =
         excludeCardIds: [selfCardId(agentId)],
       });
       const onBoard = await boardAgents(scope.workspaceId);
-      const boardHelpers = await listBoardHelpers(scope.workspaceId, String(args.query || '').slice(0, 500), 5);
+      const boardHelpers = await listBoardHelpers(scope.workspaceId, String(args.query || '').slice(0, 500), 5, {
+        excludeAgentId: String(agentId || '').trim().toLowerCase(),
+      });
       return JSON.stringify({
         query: result.query,
         count: result.items.length,
@@ -93,8 +95,8 @@ export async function handleAgentNetworkTool(agentId, name, args = {}, context =
           you_can_request: item.callable && item.acceptsRequests && item.agentCanRequest,
           on_board: onBoard[item.cardId]?.length ? onBoard[item.cardId] : undefined,
         })),
-        // Coding CLIs (Agent Console) and modules open on this board. Ask them
-        // with request_agent_help and their card_id, like any other agent.
+        // Chat agents, coding CLIs and modules open on this board. Ask them
+        // with request_agent_help and their card_id. Other boards are not listed.
         board_helpers: boardHelpers.length ? boardHelpers : undefined,
       });
     }

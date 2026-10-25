@@ -3,6 +3,7 @@ import { getRuntimeMode, localFilesSwitchedOff, RUNTIME_MODES } from '../middlew
 import { requireWorkspaceMember } from '../workspaces/context.js';
 import { assertSystemAdmin } from '../security/systemAdmin.js';
 import { isFromAnotherComputer } from '../webOs/door.js';
+import { logOwnerRefusal, ownerNamesFor, ownerNamesSentence } from '../security/ownerNames.js';
 
 export const TERMINAL_WS_PATH = '/api/terminal';
 
@@ -35,6 +36,7 @@ export async function authorizeTerminalConnection(requestUrl, actor, {
   if (!runtime.allowed) throw accessError(runtime.reason, 403, 'TERMINAL_RUNTIME_DISABLED');
   const userId = Number(actor?.userId);
   if (!Number.isInteger(userId) || userId <= 0) {
+    logOwnerRefusal('terminal', 401);
     throw accessError('Authentication is required.', 401, 'TERMINAL_AUTH_REQUIRED');
   }
   // A terminal runs commands on this computer (or in a sandbox holding its
@@ -42,7 +44,12 @@ export async function authorizeTerminalConnection(requestUrl, actor, {
   try {
     await assertSystemAdmin({ session: { userId } }, { db });
   } catch (error) {
-    throw accessError(error.message, error.statusCode || 500, 'TERMINAL_OWNER_ONLY');
+    const refused = accessError(error.message, error.statusCode || 500, 'TERMINAL_OWNER_ONLY');
+    if (refused.statusCode === 403) {
+      logOwnerRefusal('terminal', 403);
+      refused.ownerNames = await ownerNamesFor(userId, { db, mode });
+    }
+    throw refused;
   }
   const workspaceId = String(requestUrl?.searchParams?.get('workspaceId') || '').trim();
   if (!workspaceId) {
@@ -69,13 +76,14 @@ export function terminalSessionKey({ userId, workspaceId, sessionId }) {
  * window only as a dropped line, which read as "Connection lost.
  * Reconnecting…" before the real reason showed.
  */
-function refuseOwnerOnly(socket, { wss, request, head }) {
+function refuseOwnerOnly(socket, { wss, request, head }, names = null) {
   const remote = isFromAnotherComputer(request);
+  const named = remote ? '' : ownerNamesSentence(names);
   wss.handleUpgrade(request, socket, head, (ws) => {
     ws.send(JSON.stringify({
       type: 'refused',
       reason: 'owner-only',
-      message: remote ? OWNER_ONLY_REMOTE : OWNER_ONLY_HERE,
+      message: remote ? OWNER_ONLY_REMOTE : [OWNER_ONLY_HERE, named].filter(Boolean).join(' '),
     }));
     ws.close(4403, 'owner only');
   });
@@ -83,7 +91,7 @@ function refuseOwnerOnly(socket, { wss, request, head }) {
 
 export function rejectTerminalUpgrade(socket, error, upgrade = null) {
   if (upgrade?.wss && error?.code === 'TERMINAL_OWNER_ONLY' && error.statusCode === 403) {
-    refuseOwnerOnly(socket, upgrade);
+    refuseOwnerOnly(socket, upgrade, error.ownerNames);
     return;
   }
   const status = Number(error?.statusCode) || 500;

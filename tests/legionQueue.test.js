@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-// Legion slice two, from Alex's Orchestrator Engine diagram: a YAML spec,
+// Legion slice two, from the Orchestrator Engine diagram: a YAML spec,
 // a Work Queue with a UID on every job, agents pulling from it side by side,
 // and a Validation Engine that checks the result against the YAML.
 

@@ -6,8 +6,11 @@
 // edits the server (its updated_at changes).
 
 import { createHttpClient, OutsideToolError } from './httpClient.js';
-import { createStdioClient } from './stdioClient.js';
+import { createStdioClient, sharedSettingCount } from './stdioClient.js';
 import { reachableFetch } from './netGuard.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('outside-tools');
 
 const IDLE_MS = 5 * 60 * 1000;
 const MAX_RESULT_CHARS = 20000;
@@ -18,10 +21,10 @@ function fingerprint(server) {
   return `${server.updated_at ? new Date(server.updated_at).getTime() : 0}`;
 }
 
-export function makeClient(server, secret, fetchImpl) {
+export function makeClient(server, secret, fetchImpl, { serverKeys = false } = {}) {
   if (server.transport === 'stdio') {
     return createStdioClient({
-      command: server.command, args: server.args || [], secret, secretEnv: server.secret_env || '',
+      command: server.command, args: server.args || [], secret, secretEnv: server.secret_env || '', serverKeys,
     });
   }
   return createHttpClient({ url: server.url, secret, ...(fetchImpl ? { fetchImpl } : {}) });
@@ -35,6 +38,20 @@ function sweep() {
   if (live.size === 0 && sweeper) { clearInterval(sweeper); sweeper = null; }
 }
 
+/**
+ * Whether a program started for this server gets the server's shared
+ * settings: only when the person who added it may use this computer's own
+ * keys (the owner, an operator, or someone the owner shares keys with).
+ */
+export async function stdioServerKeys(server, { mayUse = null, source = process.env } = {}) {
+  // Loaded on first use: the route module stays free of the role lookup.
+  const check = mayUse || (await import('../cli-agents/serverKeyScope.js')).cliMayUseServerKeys;
+  const allowed = server.user_id != null && await check(server.user_id);
+  const held = allowed ? 0 : sharedSettingCount(source);
+  if (held) log.info('shared settings held back from outside tool', { tool: server.id, held });
+  return allowed;
+}
+
 async function connection(server, secret) {
   const existing = live.get(server.id);
   if (existing && existing.fingerprint === fingerprint(server)) {
@@ -44,7 +61,8 @@ async function connection(server, secret) {
   }
   if (existing) { existing.client.close(); live.delete(server.id); }
   const pinned = server.transport === 'stdio' ? null : (await reachableFetch(server.url)).fetchImpl;
-  const client = makeClient(server, secret, pinned);
+  const serverKeys = server.transport === 'stdio' ? await stdioServerKeys(server) : false;
+  const client = makeClient(server, secret, pinned, { serverKeys });
   const entry = { client, ready: client.connect(), lastUsed: Date.now(), fingerprint: fingerprint(server) };
   live.set(server.id, entry);
   if (!sweeper) { sweeper = setInterval(sweep, 60 * 1000); sweeper.unref?.(); }

@@ -19,7 +19,7 @@ function isLoopbackOrigin(origin) {
 
 /**
  * Extra origins the owner listed for a home network, e.g.
- * CENSAI_LAN_ORIGINS=http://r2d2:3002 so a laptop can open the PC's copy.
+ * CENSAI_LAN_ORIGINS=http://officepc:3002 so a laptop can open the PC's copy.
  */
 export function lanOrigins(env = process.env) {
   return String(env.CENSAI_LAN_ORIGINS || '')

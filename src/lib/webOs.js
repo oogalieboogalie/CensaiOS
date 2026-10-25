@@ -35,7 +35,7 @@ export async function redeemPairCode(code) {
   }
 }
 
-/** The one-time code in a link like http://r2d2:3004/?pair=abc. */
+/** The one-time code in a link like http://officepc:3004/?pair=abc. */
 export function pairCodeFromUrl(location = globalThis.location) {
   try {
     return new URLSearchParams(location?.search || '').get(PAIR_PARAM) || '';

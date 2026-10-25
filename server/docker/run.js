@@ -1,9 +1,13 @@
 import { docker, assertRef, DockerInputError } from './cli.js';
+import { dockerFailureReason } from './failureReason.js';
 import { createLogger } from '../logger.js';
+import { optionArgs, parseEnv, parseRestart, parseShare } from './runOptions.js';
 
 // Start a new container from an image (the Images list's Run button).
-// Only the image, an optional name and published ports are accepted, each
-// checked here, so nothing typed in the window reaches the CLI as a flag.
+// Only the image, an optional name, published ports and the settings in
+// runOptions.js are accepted, each checked, so nothing typed in the window
+// reaches the CLI as a flag. The log names how many settings there were,
+// never their values.
 
 const log = createLogger('docker');
 const NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,62}$/;
@@ -31,8 +35,12 @@ export function parsePorts(input) {
   });
 }
 
-export async function runContainer({ image, name, ports } = {}) {
-  const what = { image: String(image ?? '').slice(0, 120), name: name || '(docker picks)', ports: [] };
+function describe(what) {
+  return `${what.image} as ${what.name}, ports ${what.ports.join(', ') || 'none'}, ${what.settings} setting${what.settings === 1 ? '' : 's'}, shared folder ${what.shared ? 'yes' : 'no'}, restart ${what.restart}`;
+}
+
+export async function runContainer({ image, name, ports, env, share, restart } = {}) {
+  const what = { image: String(image ?? '').slice(0, 120), name: name || '(docker picks)', ports: [], settings: 0, shared: false, restart: 'no' };
   try {
     assertRef(image, 'image');
     const cleanName = String(name ?? '').trim();
@@ -40,15 +48,21 @@ export async function runContainer({ image, name, ports } = {}) {
       throw new DockerInputError('Names use letters, numbers, dots, dashes and underscores, and start with a letter or number.');
     }
     what.ports = parsePorts(ports);
+    const settings = parseEnv(env);
+    what.settings = settings.length;
+    const folder = parseShare(share);
+    what.shared = Boolean(folder);
+    what.restart = parseRestart(restart);
     const args = ['run', '-d'];
     if (cleanName) args.push('--name', cleanName);
     for (const p of what.ports) args.push('-p', p);
+    args.push(...optionArgs({ env: settings, share: folder, restart: what.restart }));
     const { stdout } = await docker([...args, image], { timeout: 5 * 60_000 });
     const id = stdout.trim().split('\n').pop() || '';
-    log.info(`run: started ${what.image} as ${what.name}, ports ${what.ports.join(', ') || 'none'} (${id.slice(0, 12)})`);
-    return { ok: true, id, image, name: cleanName || null, ports: what.ports };
+    log.info(`run: started ${describe(what)} (${id.slice(0, 12)})`);
+    return { ok: true, id, image, name: cleanName || null, ports: what.ports, settings: what.settings, shared: what.shared, restart: what.restart };
   } catch (err) {
-    log.warn(`run: could not start ${what.image} as ${what.name}, ports ${what.ports.join(', ') || 'none'}: ${err.message}`);
+    log.warn(`run: could not start ${describe(what)}: ${dockerFailureReason(err)}`);
     throw err;
   }
 }

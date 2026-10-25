@@ -7,7 +7,7 @@ const DISCOVERY_PROMPT = [
   'Tools you load become available on the next turn.',
 ].join(' ');
 
-// Search-first (Alex's diagram 09): the agent starts with only the discovery
+// Search-first (diagram 09): the agent starts with only the discovery
 // tools and loads what it needs. Cohere always works this way; every other
 // provider does once an agent has more than this many tools, where sending
 // the whole list costs the most. CENSAI_TOOL_SEARCH_FIRST=off turns it off,

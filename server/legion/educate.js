@@ -1,4 +1,4 @@
-// Legion: Alex's self-educate loop (diagram 12, var = 'self_educate').
+// Legion: the self-educate loop (diagram 12, var = 'self_educate').
 // Before a job, its agent asks itself:
 //   What is the problem? What do I know about it? Is it enough?
 //   YES, now               -> execute the solution

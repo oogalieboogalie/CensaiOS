@@ -56,7 +56,7 @@ function StatusBadge({ status, prUrl, prNumber, contractMissing, handoffWarning 
   return badge;
 }
 
-export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAssign, onHandoff, onStartEdit, onSaveEdit, onCancelEdit, onEditChange }) {
+export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAssign, onHandoff, onOpenSteps, onStartEdit, onSaveEdit, onCancelEdit, onEditChange }) {
   const agents = Array.isArray(getAgents()) ? getAgents() : [];
   const who = parseAssignee(item.assignee);
   const agent = who?.type === 'agent' ? getAgentById(who.id) : null;
@@ -127,6 +127,12 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
           </div>
         )}
       </div>
+      {onOpenSteps && (
+        <button onClick={(e) => { e.stopPropagation(); onOpenSteps(); }} title={`Open its ${item.card.steps.length} steps, one at a time`} data-testid="todo-steps"
+          style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid var(--hairline)', whiteSpace: 'nowrap' }}>
+          {item.card.steps.length} steps
+        </button>
+      )}
       <button ref={assignButtonRef} onClick={(e) => { e.stopPropagation(); setShowAssign(s => !s); }} title={whoName ? `Assigned to ${whoName}` : 'Assign this to-do'} data-testid="todo-assign" style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
         {agent ? <AgentAvatar agent={agent} size={20} />
           : who?.type === 'cli' ? <CliMark cli={who.id} size="sm" />

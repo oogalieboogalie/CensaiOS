@@ -1,3 +1,5 @@
+import { mailcowErrorText, readMailcowResult } from './mailcowResult.js';
+
 export function useMailcowMutations({
   domainForm, setDomainForm,
   mailboxForm, setMailboxForm,
@@ -20,20 +22,13 @@ export function useMailcowMutations({
           active: '1',
         }),
       });
-      const result = await res.json();
-      const hasError = Array.isArray(result)
-        ? result.some(r => r.type === 'error')
-        : result?.type === 'error' || result?.error;
-      if (hasError) {
-        const msg = Array.isArray(result) ? result.map(r => r.msg).join('; ') : (result.error || JSON.stringify(result));
-        throw new Error(msg);
-      }
+      await readMailcowResult(res, { method: 'POST', path: '/api/mailcow/domains' });
       setDomainForm({ domain: '', maxMailboxes: 10, maxQuota: 10240 });
       setShowAddForm(false);
       fetchHealth();
       fetchData();
     } catch (err) {
-      alert(`Failed to add domain: ${err.message}`);
+      alert(`Failed to add domain: ${mailcowErrorText(err)}`);
     } finally {
       setMutating(false);
     }
@@ -48,13 +43,11 @@ export function useMailcowMutations({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: [domainName] }),
       });
-      const result = await res.json();
-      const hasError = Array.isArray(result) ? result.some(r => r.type === 'error') : result?.type === 'error';
-      if (hasError) throw new Error(Array.isArray(result) ? result.map(r => r.msg).join('; ') : JSON.stringify(result));
+      await readMailcowResult(res, { method: 'DELETE', path: '/api/mailcow/domains' });
       fetchHealth();
       fetchData();
     } catch (err) {
-      alert(`Failed to delete domain: ${err.message}`);
+      alert(`Failed to delete domain: ${mailcowErrorText(err)}`);
     } finally {
       setMutating(false);
     }
@@ -71,15 +64,13 @@ export function useMailcowMutations({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ local_part: local_part.trim(), domain, name: name.trim(), password, quota: String(quota), active: '1' }),
       });
-      const result = await res.json();
-      const hasError = Array.isArray(result) ? result.some(r => r.type === 'error') : result?.type === 'error';
-      if (hasError) throw new Error(Array.isArray(result) ? result.map(r => r.msg).join('; ') : JSON.stringify(result));
+      await readMailcowResult(res, { method: 'POST', path: '/api/mailcow/mailboxes' });
       setMailboxForm(prev => ({ ...prev, local_part: '', name: '', password: '' }));
       setShowAddForm(false);
       fetchHealth();
       fetchData();
     } catch (err) {
-      alert(`Failed to create mailbox: ${err.message}`);
+      alert(`Failed to create mailbox: ${mailcowErrorText(err)}`);
     } finally {
       setMutating(false);
     }
@@ -94,13 +85,11 @@ export function useMailcowMutations({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: [address] }),
       });
-      const result = await res.json();
-      const hasError = Array.isArray(result) ? result.some(r => r.type === 'error') : result?.type === 'error';
-      if (hasError) throw new Error(Array.isArray(result) ? result.map(r => r.msg).join('; ') : JSON.stringify(result));
+      await readMailcowResult(res, { method: 'DELETE', path: '/api/mailcow/mailboxes' });
       fetchHealth();
       fetchData();
     } catch (err) {
-      alert(`Failed to delete mailbox: ${err.message}`);
+      alert(`Failed to delete mailbox: ${mailcowErrorText(err)}`);
     } finally {
       setMutating(false);
     }
@@ -117,14 +106,12 @@ export function useMailcowMutations({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address: address.trim(), goto: goto.trim(), active: '1' }),
       });
-      const result = await res.json();
-      const hasError = Array.isArray(result) ? result.some(r => r.type === 'error') : result?.type === 'error';
-      if (hasError) throw new Error(Array.isArray(result) ? result.map(r => r.msg).join('; ') : JSON.stringify(result));
+      await readMailcowResult(res, { method: 'POST', path: '/api/mailcow/aliases' });
       setAliasForm({ address: '', goto: '' });
       setShowAddForm(false);
       fetchData();
     } catch (err) {
-      alert(`Failed to create alias: ${err.message}`);
+      alert(`Failed to create alias: ${mailcowErrorText(err)}`);
     } finally {
       setMutating(false);
     }
@@ -139,12 +126,10 @@ export function useMailcowMutations({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: [String(aliasId)] }),
       });
-      const result = await res.json();
-      const hasError = Array.isArray(result) ? result.some(r => r.type === 'error') : result?.type === 'error';
-      if (hasError) throw new Error(Array.isArray(result) ? result.map(r => r.msg).join('; ') : JSON.stringify(result));
+      await readMailcowResult(res, { method: 'DELETE', path: '/api/mailcow/aliases' });
       fetchData();
     } catch (err) {
-      alert(`Failed to delete alias: ${err.message}`);
+      alert(`Failed to delete alias: ${mailcowErrorText(err)}`);
     } finally {
       setMutating(false);
     }
@@ -154,11 +139,11 @@ export function useMailcowMutations({
     setMutating(true);
     try {
       const res = await fetch('/api/mailcow/queue/flush', { method: 'POST' });
-      if (!res.ok) throw new Error('Queue flush failed');
+      await readMailcowResult(res, { method: 'POST', path: '/api/mailcow/queue/flush' });
       alert('Mail queue flushed successfully.');
       fetchData();
     } catch (err) {
-      alert(`Failed to flush queue: ${err.message}`);
+      alert(`Failed to flush queue: ${mailcowErrorText(err)}`);
     } finally {
       setMutating(false);
     }

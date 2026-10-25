@@ -14,8 +14,8 @@ import { windowMeta } from './meta.js';
 export { windowMeta };
 
 /**
- * Blueprints, from Alex's diagram 08: a board's shelf of recipes that worked
- * ("Alex Finance Blueprint for Budgeting"), each with an ID like
+ * Blueprints, from diagram 08: a board's shelf of recipes that worked
+ * ("Alma Finance Blueprint for Budgeting"), each with an ID like
  * 14h7*skyFs^2026 (shelf, number on the shelf, code, year). Asking
  * "Do we have ..." here, or to any agent in chat, looks on this shelf first.
  */

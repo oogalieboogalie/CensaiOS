@@ -11,6 +11,7 @@ import {
   applyDock, undockWindow, pruneAfterRemoval, setSeam, showTab, reconcileTiles,
 } from './layout/dock.js';
 import { newId } from './ids/newId.js';
+import { enterGroupFocusState, leaveGroupFocusState } from './groupFocusSession.js';
 
 const log = createLogger('canvas-groups');
 
@@ -84,22 +85,13 @@ export const createGroupActions = (set, get) => ({
   groupFocus: null,
 
   enterGroupFocus: (groupId, view) => {
-    set((state) => ({
-      groupFocus: {
-        groupId,
-        slot: view.slot ?? null,
-        prevPan: state.groupFocus?.prevPan ?? state.pan,
-        prevZoom: state.groupFocus?.prevZoom ?? state.zoom,
-      },
-      pan: view.pan,
-      zoom: view.zoom,
-    }));
+    set((state) => enterGroupFocusState(state, groupId, view));
   },
 
-  exitGroupFocus: () => {
-    const focus = get().groupFocus;
-    if (!focus) return false;
-    set({ groupFocus: null, pan: focus.prevPan, zoom: focus.prevZoom });
+  exitGroupFocus: (kind) => {
+    const next = leaveGroupFocusState(get(), kind);
+    if (!next) return false;
+    set(next);
     return true;
   },
 

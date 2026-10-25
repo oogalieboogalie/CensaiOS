@@ -1,4 +1,4 @@
-// Legion: the Work Queue from Alex's Orchestrator Engine diagram. Every job
+// Legion: the Work Queue from the Orchestrator Engine diagram. Every job
 // has a UID; agents pull jobs whose dependencies are done, up to
 // `concurrency` at a time. A job whose agent cannot answer (no key, the
 // model is down, Stop) ends the queue once the jobs already running finish;

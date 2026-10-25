@@ -38,6 +38,7 @@ export function GroupWindow({ win, onUpdate, onSpawn, isActive }) {
             isActive={isActive}
           />
         )}
+        {data.error && <div role="alert" style={{ fontSize: 'var(--text-sm)', color: 'var(--ps-red)' }}>{data.error}</div>}
         <GroupMilestones
           milestones={data.milestones}
           newMilestone={data.newMilestone}

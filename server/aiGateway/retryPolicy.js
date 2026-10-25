@@ -1,3 +1,5 @@
+import { noteProviderRefusal } from './providerRefusal.js';
+
 export const DEFAULT_CHAT_RETRY_COUNT = clampInteger(process.env.AI_GATEWAY_MAX_RETRIES, 1, 0, 3);
 export const DEFAULT_CHAT_RETRY_BASE_MS = clampInteger(process.env.AI_GATEWAY_RETRY_BASE_MS, 250, 0, 5000);
 // Rate limits (429) get their own patient lane: free tiers throttle hard and
@@ -55,13 +57,16 @@ export function baseDelayForStatus(status, retryOptions) {
     : (retryOptions?.baseDelayMs ?? DEFAULT_CHAT_RETRY_BASE_MS);
 }
 
-export function chatCompletionHttpError(status, body, retryAfter = null) {
+export function chatCompletionHttpError(status, body, retryAfter = null, provider = null) {
   const error = new Error(`${status}: ${body}`);
   error.name = 'ChatCompletionHttpError';
   error.status = status;
   error.body = body;
   error.retryAfter = retryAfter;
+  error.provider = provider || null;
   error.retryable = isRetryableStatus(status) && !isQuotaExhausted(status, body);
+  const sentence = noteProviderRefusal(provider, status, body);
+  if (sentence) error.refusalSentence = sentence;
   return error;
 }
 // Some providers (Z.ai: code 1113) answer an empty balance with a 429.

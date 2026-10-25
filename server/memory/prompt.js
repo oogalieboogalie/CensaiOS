@@ -12,6 +12,8 @@ import { buildSkillSetsPrompt } from '../skillSets/normalize.js';
 import { lookupBlueprintsForMessage } from '../blueprints/store.js';
 import { buildBlueprintsPrompt } from '../blueprints/prompt.js';
 import pool from '../db.js';
+import { createLogger } from '../logger.js';
+const log = createLogger('memory');
 import { buildAuthorizedProjectContext } from '../workspaces/prewarm.js';
 import {
   buildFamilyBlueprintPrompt,
@@ -56,7 +58,7 @@ export async function buildSystemPrompt(agentId, currentMessage, runtimeContext 
       }
     });
   } catch (err) {
-    console.error('Failed to load equipped registry items for prompt compiler:', err.message);
+    log.error('equipped registry items failed to load', { code: err?.code || 'unknown' });
   }
 
   const blueprintAgent = getFamilyBlueprintAgent(agentId);
@@ -69,12 +71,12 @@ export async function buildSystemPrompt(agentId, currentMessage, runtimeContext 
   try {
     prompt += buildSkillSetsPrompt(await loadEquippedSkillSets(pool, runtimeContext?.workspaceId || null, agentId));
   } catch (err) {
-    console.error('Failed to load equipped skill sets:', err.message);
+    log.error('equipped skill sets failed to load', { code: err?.code || 'unknown' });
   }
   try {
     prompt += buildBlueprintsPrompt(await lookupBlueprintsForMessage(pool, runtimeContext?.workspaceId || null, currentMessage));
   } catch (err) {
-    console.error('Failed to look up blueprints:', err.message);
+    log.error('blueprint lookup failed', { code: err?.code || 'unknown' });
   }
   prompt += TOOL_AUTONOMY_CONTRACT;
   prompt += `\n\n${await buildSubAgentRosterPrompt(agentId, runtimeContext)}`;
@@ -87,7 +89,7 @@ export async function buildSystemPrompt(agentId, currentMessage, runtimeContext 
     prompt += projectContext.prompt;
     runtimeContext?.onProjectContext?.(projectContext.contexts);
   } catch (err) {
-    console.error('Failed to load authorized project context:', err.message);
+    log.error('project context failed to load', { code: err?.code || 'unknown' });
   }
 
   // Tools are sent via the API's function calling — no need to describe them in the prompt.
@@ -140,7 +142,7 @@ export async function buildSystemPrompt(agentId, currentMessage, runtimeContext 
         }
       }
     } catch (err) {
-      console.warn('Prompt semantic recall skipped:', err.message);
+      log.warn('prompt semantic recall skipped', { code: err?.code || 'unknown' });
     }
   }
 

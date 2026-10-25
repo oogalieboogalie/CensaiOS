@@ -17,7 +17,7 @@ export const FAMILY_RELATIONSHIPS = Object.freeze({
 
 const CORE_TRAITS = Object.freeze({
   architect: ['system architecture', 'team coordination', 'requirements translation', 'milestone planning'],
-  censai: ['mentoring Alex', 'holding the master plan', 'timeline reasoning', 'routing work to the team'],
+  censai: ['mentoring the owner', 'holding the master plan', 'timeline reasoning', 'routing work to the team'],
   atlas: ['backend architecture', 'performance analysis', 'structural reasoning', 'technical precision'],
   genesis: ['creative synthesis', 'user psychology', 'interaction design', 'user research'],
   nexus: ['data modeling', 'database operations', 'systems integration', 'data reliability'],

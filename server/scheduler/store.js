@@ -1,12 +1,15 @@
 import pool from '../db.js';
+import { createLogger } from '../logger.js';
 import { FAMILY_AGENT_BY_ID } from '../../src/data/family-agents.js';
 import { parseScheduledTime } from '../memory/schedules_utils.js';
+
+const log = createLogger('scheduler');
 
 const INTERNAL_PATCH_FIELDS = new Set([
   'agent_id', 'project_id', 'project_name', 'project_path', 'project_repo',
   'project_ref', 'task_text', 'document_target', 'scheduled_time', 'scheduled_date',
   'repeat_enabled', 'repeat_days', 'repeat_freq', 'status', 'next_run_at',
-  'github_url', 'github_number', 'last_error', 'last_run_id', 'tag',
+  'github_url', 'github_number', 'last_error', 'last_result', 'last_run_at', 'last_run_id', 'tag',
 ]);
 
 /** A short label like "Maintenance" shown on the run's card; empty means none. */
@@ -98,14 +101,39 @@ export async function updateOwnedSchedule(id, patch, options = {}) {
   return rows[0] || null;
 }
 
+function scheduleDeleteWhy(error, worked) {
+  if (worked) return 'deleted';
+  if (!error) return 'not found';
+  if (error.code === '23503' || error.code === '23514') return 'still linked to a run';
+  return 'could not delete';
+}
+
 export async function deleteOwnedSchedule(id, options = {}) {
   const db = options.db || pool;
   const owner = scope(options);
-  const result = await db.query(
-    `DELETE FROM schedules WHERE id=$4 AND ${MINE}`,
-    [owner.userId, owner.workspaceId, owner.manager, id]
-  );
-  return result.rowCount > 0;
+  const scheduleId = String(id || '');
+  try {
+    const result = await db.query(
+      `DELETE FROM schedules WHERE id=$4 AND ${MINE} RETURNING agent_id`,
+      [owner.userId, owner.workspaceId, owner.manager, id]
+    );
+    const worked = result.rowCount > 0;
+    log.info('schedule delete', {
+      scheduleId,
+      agent: result.rows[0]?.agent_id || null,
+      worked,
+      why: scheduleDeleteWhy(null, worked),
+    });
+    return worked;
+  } catch (error) {
+    log.info('schedule delete', {
+      scheduleId,
+      agent: null,
+      worked: false,
+      why: scheduleDeleteWhy(error, false),
+    });
+    throw error;
+  }
 }
 
 export async function updateSchedule(id, patch, { db = pool } = {}) {

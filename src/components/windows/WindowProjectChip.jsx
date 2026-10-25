@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { FolderPicker } from './FolderPicker.jsx';
+import { logToApp } from '../../lib/appLog/browserLog.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { boardProjects, isProjectAware, projectPatch, resolveWindowProject, samePath } from '../../lib/windowProject.js';
 
@@ -52,6 +53,16 @@ export function WindowProjectChip({ win, onUpdate }) {
     };
   }, [open]);
 
+  const mountsDirect = win.kind === 'terminal';
+  const label = project?.name || (mountsDirect ? 'pick a folder' : 'No project');
+  const nameRef = React.useRef(null);
+  // The folder name is not logged: only that the chip had to shorten it.
+  React.useEffect(() => {
+    const el = nameRef.current;
+    if (!mountsDirect || !el || el.scrollWidth <= el.clientWidth + 1) return;
+    logToApp('info', 'terminal mount chip shortened the folder name to fit the header', { where: 'terminal' });
+  }, [label, mountsDirect]);
+
   if (!isProjectAware(win)) return null;
 
   // Everything open on the board: what the server knows plus every folder a
@@ -70,10 +81,8 @@ export function WindowProjectChip({ win, onUpdate }) {
     setAdding(false);
   };
 
-  const mountsDirect = win.kind === 'terminal';
-  const label = project?.name || (mountsDirect ? 'pick a folder' : 'No project');
   const chipTitle = mountsDirect
-    ? (project?.path ? `This terminal works in ${project.path}. Click to mount it to another folder.` : 'Mount this terminal to a folder')
+    ? (project?.path ? `Mount to ${label}. This terminal works in ${project.path}. Click to mount it to another folder.` : 'Mount this terminal to a folder')
     : (project?.path ? `This window works in ${project.path}. Click to pick another project for this window only.` : 'Pick a project for this window');
   return (
     <span ref={wrapRef} className="hb-win-project" data-no-drag>
@@ -83,7 +92,7 @@ export function WindowProjectChip({ win, onUpdate }) {
         onClick={(e) => { e.stopPropagation(); if (mountsDirect) setAdding((a) => !a); else setOpen((o) => !o); }}>
         {mountsDirect && <span className="hb-win-project-verb">Mount to</span>}
         <Icon.Folder size={12} />
-        <span className="hb-win-project-name">{label}</span>
+        <span ref={nameRef} className="hb-win-project-name" title={label}>{label}</span>
       </button>
       {open && (
         <div className="hb-win-menu hb-win-project-menu" role="menu" aria-label="Project for this window"

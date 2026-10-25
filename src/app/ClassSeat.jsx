@@ -8,6 +8,7 @@ import { useBoardEvent } from '../lib/collaboration/boardEvents.js';
 import { Icon } from '../components/Icons.jsx';
 import { GuestBoard } from './GuestApp.jsx';
 import { chipButton } from './GuestJoin.jsx';
+import { webOnlyFrameSrc } from '../lib/frameSrc.js';
 
 const REFRESH_MS = 4000;
 
@@ -42,7 +43,7 @@ function StreamPanel({ url }) {
         Live stream
         <button type="button" className="hb-btn" onClick={() => setOpen((value) => !value)}>{open ? 'Hide' : 'Show'}</button>
       </div>
-      {open && <iframe src={url} title="Class live stream" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />}
+      {open && <iframe src={webOnlyFrameSrc(url) || undefined} title="Class live stream" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />}
     </div>
   );
 }

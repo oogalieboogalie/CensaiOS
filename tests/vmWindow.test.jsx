@@ -101,8 +101,8 @@ describe('VM addresses', () => {
   });
 
   test('the shared record never carries a password', () => {
-    const record = vmRecord({ host: 'localhost', port: 6080, password: 'secret', hostClientId: 'c1', hostName: 'Alex', extra: 1 });
-    expect(record).toEqual({ host: 'localhost', port: 6080, path: '', secure: false, hostClientId: 'c1', hostName: 'Alex', cast: true });
+    const record = vmRecord({ host: 'localhost', port: 6080, password: 'secret', hostClientId: 'c1', hostName: 'Alma', extra: 1 });
+    expect(record).toEqual({ host: 'localhost', port: 6080, path: '', secure: false, hostClientId: 'c1', hostName: 'Alma', cast: true });
     expect(JSON.stringify(record)).not.toContain('secret');
   });
 

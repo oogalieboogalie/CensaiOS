@@ -1,4 +1,4 @@
-// Speak up (Alex's diagram 17): an agent posts one short note to the Inbox
+// Speak up (diagram 17): an agent posts one short note to the Inbox
 // on its own, only once someone turned it on for that agent, and at most
 // once an hour.
 import { jest } from '@jest/globals';

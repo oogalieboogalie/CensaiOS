@@ -1,4 +1,4 @@
-// Ported from Open Books (MIT, Alex's bookkeeping tool) into YorWare Books.
+// Ported from Open Books (MIT, an open-source bookkeeping tool) into YorWare Books.
 /**
  * Built-in merchant and keyword knowledge. Each entry maps words that appear in
  * a normalized bank description to a category, with a confidence that reflects

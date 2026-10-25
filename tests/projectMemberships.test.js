@@ -103,7 +103,7 @@ describe('workspace agent project memberships', () => {
           rows: [{
             id: 'authorized-censaihub',
             name: 'CensaiHub',
-            path: 'C:\\Homebase\\CensaiHub',
+            path: 'C:\\Repos\\CensaiHub',
             workspace_permission: 'work',
           }],
         })

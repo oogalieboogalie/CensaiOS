@@ -4,6 +4,7 @@ import { BrandIcon } from '../../brand/BrandIcon.jsx';
 import { useNativeBrowserPane } from '../../../lib/nativeBrowserPane.js';
 import { hiddenMessage } from '../../../lib/paneCover.js';
 import { DDG_ONION, TOR_DOWNLOAD } from '../../../lib/search/engines.js';
+import { webOnlyFrameSrc } from '../../../lib/frameSrc.js';
 
 /** Before the first search: the engine's mark and where results will show. */
 export function EmptyResults({ engine, native }) {
@@ -33,7 +34,8 @@ export function NativeResults({ winId, url }) {
 }
 
 /** Web build, engines that allow framing. The browser link is always there. */
-export function FramedResults({ engine, url }) {
+export function FramedResults({ engine, url: rawUrl }) {
+  const url = webOnlyFrameSrc(rawUrl);
   return (
     <div className="se-framed">
       <iframe key={url} src={url} title={`${engine.label} results`} className="se-frame"

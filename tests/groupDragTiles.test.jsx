@@ -9,7 +9,7 @@ import { act, renderHook } from '@testing-library/react';
 // a Shift-click on a tile with no real drag leaves it in its group.
 
 const logToApp = jest.fn();
-jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({ logToApp, installBrowserLog: () => {}, flushAppLog: () => {}, pendingAppLog: () => [], formatArgs: (a) => a.join(' ') }));
+jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({ logFailure: () => {}, logToApp, installBrowserLog: () => {}, flushAppLog: () => {}, pendingAppLog: () => [], formatArgs: (a) => a.join(' ') }));
 const { groupDragMembers } = await import('../src/lib/layout/groupDragMembers.js');
 const { tiledMembers } = await import('../src/lib/layout/dockZones.js');
 await import('../src/lib/store.js'); // loads first, as in the app (store.js <-> storeCanvasActions.js)

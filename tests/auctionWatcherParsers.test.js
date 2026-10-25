@@ -79,8 +79,8 @@ describe('eBay parser', () => {
   });
 
   test('the saved key is "AppID:CertID" or the two on separate lines', () => {
-    expect(parseEbayKey('Alex-App-PRD-123:PRD-secret-456')).toEqual({ clientId: 'Alex-App-PRD-123', clientSecret: 'PRD-secret-456' });
-    expect(parseEbayKey('Alex-App\nPRD-secret')).toEqual({ clientId: 'Alex-App', clientSecret: 'PRD-secret' });
+    expect(parseEbayKey('Alma-App-PRD-123:PRD-secret-456')).toEqual({ clientId: 'Alma-App-PRD-123', clientSecret: 'PRD-secret-456' });
+    expect(parseEbayKey('Alma-App\nPRD-secret')).toEqual({ clientId: 'Alma-App', clientSecret: 'PRD-secret' });
     expect(parseEbayKey('only-one-part')).toBeNull();
     expect(parseEbayKey(':secret')).toBeNull();
     expect(parseEbayKey(undefined)).toBeNull();

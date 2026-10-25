@@ -1,7 +1,10 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
+import { onLogRecord } from '../server/logger.js';
 
 const query = jest.fn();
+const leadLogs = [];
+let stopLog = () => {};
 
 jest.unstable_mockModule('../server/db.js', () => ({
   default: { query },
@@ -26,26 +29,43 @@ function app() {
 }
 
 describe('sales-leads routes', () => {
-  beforeEach(() => query.mockReset());
+  beforeEach(() => {
+    query.mockReset();
+    leadLogs.length = 0;
+    stopLog = onLogRecord((record) => {
+      if (record.namespace === 'leads') leadLogs.push(record);
+    });
+  });
+
+  afterEach(() => stopLog());
 
   test('lists the workspace queue', async () => {
-    query.mockResolvedValueOnce({ rows: [{ id: 'l-1', name: 'Jane', icp_score: 0.9 }] });
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 'l-1', name: 'Jane', email: 'jane@example.com', icp_score: 0.9 }] })
+      .mockResolvedValueOnce({ rows: [{ status: 'new', n: 1 }] });
 
     const res = await request(app()).get('/api/sales-leads?workspaceId=workspace-1');
 
     expect(res.status).toBe(200);
     expect(res.body.leads).toHaveLength(1);
+    expect(res.body.counts).toEqual({ all: 1, new: 1, contacted: 0, qualified: 0, dead: 0 });
     expect(query.mock.calls[0][0]).toContain('FROM sales_leads');
     expect(query.mock.calls[0][1]).toEqual(['workspace-1']);
+    expect(query.mock.calls[1][0]).toContain('GROUP BY status');
+    expect(query.mock.calls[1][1]).toEqual(['workspace-1']);
+    expect(leadLogs.map((line) => line.message)).toEqual(['list: filter=all count=1']);
+    expect(JSON.stringify(leadLogs)).not.toMatch(/Jane|jane@example.com/);
   });
 
   test('forwards status and score filters', async () => {
-    query.mockResolvedValueOnce({ rows: [] });
+    query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
 
     const res = await request(app()).get('/api/sales-leads?workspaceId=workspace-1&status=new&min_score=0.7');
 
     expect(res.status).toBe(200);
     expect(query.mock.calls[0][1]).toEqual(['workspace-1', 'new', 0.7]);
+    expect(query.mock.calls[1][0]).not.toContain('status =');
+    expect(leadLogs.map((line) => line.message)).toEqual(['list: filter=new count=0']);
   });
 
   test('advances a lead and 404s on misses', async () => {

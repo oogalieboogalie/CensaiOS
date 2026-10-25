@@ -52,7 +52,7 @@ function AddLinkForm({ busy, onSave }) {
     <form className="hb-otl-add" onSubmit={submit} data-testid="amem-add-link">
       <input className="hb-aep-input" placeholder="Who or what (default: you)" value={form.from} onChange={set('from')} data-testid="amem-link-from" />
       <input className="hb-aep-input" placeholder="How they connect, e.g. works at" value={form.relation} onChange={set('relation')} data-testid="amem-link-relation" />
-      <input className="hb-aep-input" placeholder="To what, e.g. Iowa AI LLC" value={form.to} onChange={set('to')} data-testid="amem-link-to" />
+      <input className="hb-aep-input" placeholder="To what, e.g. Indigo Labs LLC" value={form.to} onChange={set('to')} data-testid="amem-link-to" />
       <label className="hb-aep-hint hb-amem-since">True since (leave empty for today)
         <input className="hb-aep-input hb-amem-date" type="date" value={form.since} onChange={set('since')} data-testid="amem-link-since" />
       </label>

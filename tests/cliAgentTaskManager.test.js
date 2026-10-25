@@ -66,7 +66,7 @@ async function settle(m, id, { onPermission, timeoutMs = 15000 } = {}) {
     for (const p of task.permissions) {
       if (p.status === 'pending' && !seen.has(p.id) && onPermission) {
         seen.add(p.id);
-        m.decide(id, p.id, { allow: onPermission(p), user: { name: 'alex' } });
+        m.decide(id, p.id, { allow: onPermission(p), user: { name: 'alma' } });
       }
     }
     if (!LIVE.has(task.status)) return task;
@@ -90,7 +90,7 @@ beforeEach(() => {
 describe('CliTaskManager', () => {
   test('Claude Code task: typed transcript, allow card, worktree diff, summary', async () => {
     const m = manager();
-    const started = await m.start({ cli: 'claudecode', folder: repo, prompt: 'Add notes', user: { name: 'alex' } });
+    const started = await m.start({ cli: 'claudecode', folder: repo, prompt: 'Add notes', user: { name: 'alma' } });
     const task = await settle(m, started.id, { onPermission: () => true });
 
     expect(task.status).toBe('done');
@@ -103,7 +103,7 @@ describe('CliTaskManager', () => {
     const kinds = task.items.map((i) => i.kind);
     expect(kinds).toEqual(expect.arrayContaining(['prompt', 'thinking', 'message', 'read', 'edit', 'command']));
     const edit = task.items.find((i) => i.kind === 'edit');
-    expect(edit).toMatchObject({ path: 'AGENT_NOTES.md', status: 'ok', permission: { status: 'allowed', decidedBy: 'alex' } });
+    expect(edit).toMatchObject({ path: 'AGENT_NOTES.md', status: 'ok', permission: { status: 'allowed', decidedBy: 'alma' } });
     expect(edit.diff.after).toContain('Added by the stand-in agent.');
 
     const changes = await m.changes(task.id);
@@ -154,7 +154,7 @@ describe('CliTaskManager', () => {
     const first = await m.start({ cli: 'claudecode', folder: repo, prompt: 'Add notes' });
     await settle(m, first.id, { onPermission: () => true });
 
-    const handed = await m.handoff(first.id, { cli: 'codex', user: { name: 'alex' } });
+    const handed = await m.handoff(first.id, { cli: 'codex', user: { name: 'alma' } });
     const review = await settle(m, handed.id);
 
     expect(review.cli).toBe('codex');

@@ -149,43 +149,43 @@ test('Redis is opt-in through REDIS_URL', () => {
 });
 
 test('awareness states map to cursors, selections, drags and typing for everyone but me', () => {
-  const alex = presenceIdentity({ id: 7, email: 'alex@censai.app' });
-  expect(alex).toEqual({ id: '7', name: 'alex', color: presenceColor('7') });
+  const alma = presenceIdentity({ id: 7, email: 'alma@censai.app' });
+  expect(alma).toEqual({ id: '7', name: 'alma', color: presenceColor('7') });
   const states = new Map([
     [1, { user: { id: 'me', name: 'Me' }, cursor: { x: 1, y: 1 } }],
-    [2, { user: alex, cursor: { x: 10, y: 20 }, selection: ['w1', 'bad id!'], drag: { windowId: 'w2', x: 5, y: 6 }, typing: 'w3' }],
+    [2, { user: alma, cursor: { x: 10, y: 20 }, selection: ['w1', 'bad id!'], drag: { windowId: 'w2', x: 5, y: 6 }, typing: 'w3' }],
     [3, { cursor: { x: 0, y: 0 } }],
     [4, { user: { id: 's', name: 'Sam' }, cursor: { x: Infinity, y: 0 } }],
   ]);
   const presence = readAwarenessPresence(states, 1);
-  expect(presence.participants.map((p) => [p.actor.label, p.self])).toEqual([['Me', true], ['alex', false], ['Sam', false]]);
+  expect(presence.participants.map((p) => [p.actor.label, p.self])).toEqual([['Me', true], ['alma', false], ['Sam', false]]);
   expect(Object.keys(presence.cursors)).toEqual(['2']);
   expect(Object.keys(presence.selections)).toEqual(['w1']);
-  expect(presence.typing.w3.actor.label).toBe('alex');
+  expect(presence.typing.w3.actor.label).toBe('alma');
 
   const wins = [win('w1', 0, 0), win('w2', 0, 0), win('w3', 0, 0)];
   const shown = applyAwarenessPresence(wins, presence);
-  expect(shown[0].selectionActor).toMatchObject({ label: 'alex', outline: true, color: alex.color });
-  expect(shown[1]).toMatchObject({ x: 5, y: 6, collaborationActor: { label: 'alex is moving this', outline: true } });
-  expect(shown[2].typingActor).toMatchObject({ label: 'alex typing…', shared: true });
+  expect(shown[0].selectionActor).toMatchObject({ label: 'alma', outline: true, color: alma.color });
+  expect(shown[1]).toMatchObject({ x: 5, y: 6, collaborationActor: { label: 'alma is moving this', outline: true } });
+  expect(shown[2].typingActor).toMatchObject({ label: 'alma typing…', shared: true });
 });
 
 test('two people dropping the same window at once: one whole drop wins, never x from one and y from the other', () => {
   for (let round = 0; round < 20; round += 1) {
     const base = snapshotToDoc({ wins: [win('w', 0, 0)] });
-    const alex = new Y.Doc();
+    const alma = new Y.Doc();
     const sam = new Y.Doc();
-    Y.applyUpdate(alex, Y.encodeStateAsUpdate(base));
+    Y.applyUpdate(alma, Y.encodeStateAsUpdate(base));
     Y.applyUpdate(sam, Y.encodeStateAsUpdate(base));
     const drop = (doc, x, y) => {
       const prev = readDocState(doc);
       writeStateToDoc(doc, prev, { ...prev, wins: prev.wins.map((w) => ({ ...w, x, y })) });
     };
-    drop(alex, 100, 0); // Alex only moved sideways
+    drop(alma, 100, 0); // Alma only moved sideways
     drop(sam, 0, 200); // Sam only moved down
-    Y.applyUpdate(alex, Y.encodeStateAsUpdate(sam));
-    Y.applyUpdate(sam, Y.encodeStateAsUpdate(alex));
-    const a = readDocState(alex).wins[0];
+    Y.applyUpdate(alma, Y.encodeStateAsUpdate(sam));
+    Y.applyUpdate(sam, Y.encodeStateAsUpdate(alma));
+    const a = readDocState(alma).wins[0];
     expect(readDocState(sam).wins[0]).toMatchObject({ x: a.x, y: a.y });
     expect([[100, 0], [0, 200]]).toContainEqual([a.x, a.y]);
   }

@@ -1,4 +1,4 @@
-// Ported from Open Books (MIT, Alex's bookkeeping tool) into YorWare Books.
+// Ported from Open Books (MIT, an open-source bookkeeping tool) into YorWare Books.
 /**
  * Bank descriptions are noisy: "POS DEBIT 10/14 SQ *BLUE BOTTLE COF 12345 OAKLAND CA".
  * normalizeDescription strips the card-network boilerplate so keyword and rule

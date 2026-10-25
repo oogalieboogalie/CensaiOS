@@ -125,7 +125,7 @@ describe('YorWare PDF export', () => {
     win = apply(win, movePagePatch(readPdf(win), p3, 1));
     win = apply(win, rotatePagePatch(readPdf(win), p2));
     for (const fields of [
-      { page: p1, type: 'text', text: 'Signed by Alex', size: 14, x: 72, y: 600, w: 140, h: 22 },
+      { page: p1, type: 'text', text: 'Signed by Alma', size: 14, x: 72, y: 600, w: 140, h: 22 },
       { page: p1, type: 'sign', strokes: [[0, 0.5, 0.5, 0, 1, 0.5]], x: 72, y: 640, w: 120, h: 40 },
       { page: p1, type: 'highlight', x: 20, y: 20, w: 100, h: 16 },
       { page: p2, type: 'redact', x: 10, y: 10, w: 50, h: 20 },
@@ -141,7 +141,7 @@ describe('YorWare PDF export', () => {
     const task = pdfjs.getDocument({ data: new Uint8Array(saved), isEvalSupported: false, useWorkerFetch: false, disableFontFace: true, verbosity: 0 });
     const read = await task.promise;
     const text = async (n) => (await (await read.getPage(n)).getTextContent()).items.map((i) => i.str).join(' ');
-    expect(await text(1)).toContain('Signed by Alex');
+    expect(await text(1)).toContain('Signed by Alma');
     expect(await text(1)).toContain('Source page 1');
     expect(await text(2)).toContain('Source page 1');
     expect(await text(3)).toContain('Source page 2');

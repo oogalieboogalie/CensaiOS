@@ -1,6 +1,6 @@
 // Censai the orchestrator: the words that go to the family and to Censai's own
 // model. Only the job, its checklist and what was really seen go in; nothing
-// canned about the person or the board (Alex's rule: no stuffed prompts).
+// canned about the person or the board (the rule: no stuffed prompts).
 
 import { agentName, clip } from './shape.js';
 

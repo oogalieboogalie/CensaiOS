@@ -53,10 +53,19 @@ export function rejectedKeyMessage(provider) {
   return `${name} did not accept the saved key. Paste a working key to send your message.`;
 }
 
-/** A provider's 401 means the key is wrong: say so, and name whose key. */
+/** Google answers a wrong key with 400 and reason API_KEY_INVALID, not 401. */
+export function isGoogleInvalidApiKey(status, body, provider) {
+  if (keyProviderFor(provider) !== 'google' || Number(status) !== 400) return false;
+  const text = typeof body === 'string' ? body : JSON.stringify(body ?? '');
+  return text.includes('API_KEY_INVALID');
+}
+
+/** A provider's 401, or Google's 400 API_KEY_INVALID, means the key is wrong. */
 export function tagRejectedKey(error, provider) {
   const keyProvider = keyProviderFor(provider);
-  if (error?.name !== 'ChatCompletionHttpError' || error.status !== 401 || !keyProvider) return error;
+  if (error?.name !== 'ChatCompletionHttpError' || !keyProvider) return error;
+  const badKey = error.status === 401 || isGoogleInvalidApiKey(error.status, error.body, provider);
+  if (!badKey) return error;
   return Object.assign(error, { code: MODEL_KEY_REJECTED, statusCode: 400, keyProvider });
 }
 

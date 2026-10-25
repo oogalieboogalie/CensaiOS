@@ -1,6 +1,6 @@
 import React from 'react';
 
-// A data box's own door (Alex's diagram 15): the GET and POST addresses other
+// A data box's own door (diagram 15): the GET and POST addresses other
 // tools on the board can use to read the box and post to it. Same sign-in and
 // workspace as the app, so nobody outside the workspace gets in.
 export function SubAgentDoor({ door }) {

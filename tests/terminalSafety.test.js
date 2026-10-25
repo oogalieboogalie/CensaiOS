@@ -39,7 +39,7 @@ describe('terminal tripwire — ALLOWS ordinary commands', () => {
     'git status',
     'git push origin feature/shared-terminal',
     'git push --force origin feature/my-branch',
-    'ls -la /home/alex/project',
+    'ls -la /home/alma/project',
     'docker ps -a',
     'git commit -m "reboot the cache layer on shutdown"',
     'echo "shutdown is scary"',

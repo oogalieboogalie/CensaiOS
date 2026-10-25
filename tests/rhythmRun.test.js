@@ -142,24 +142,24 @@ describe('charting your own track', () => {
 describe('scores on the board', () => {
   test('best scores keep the higher one, and the live score clears at the end', () => {
     const key = bestKey('night-drive', 'normal');
-    let p = recordBest(null, 'Alex', key, { score: 5000, accuracy: 80, grade: 'B', maxCombo: 20, at: 1 });
+    let p = recordBest(null, 'Alma', key, { score: 5000, accuracy: 80, grade: 'B', maxCombo: 20, at: 1 });
     p = { ...p, live: { song: 'Night Drive', score: 10, combo: 1, at: 1 } };
-    const lower = recordBest(p, 'Alex', key, { score: 4000, accuracy: 70, grade: 'B', maxCombo: 9, at: 2 });
+    const lower = recordBest(p, 'Alma', key, { score: 4000, accuracy: 70, grade: 'B', maxCombo: 9, at: 2 });
     expect(lower.best[key].score).toBe(5000);
     expect(lower.live).toBeNull();
-    expect(recordBest(p, 'Alex', key, { score: 9000, accuracy: 95, grade: 'S', maxCombo: 60, at: 3 }).best[key].grade).toBe('S');
+    expect(recordBest(p, 'Alma', key, { score: 9000, accuracy: 95, grade: 'S', maxCombo: 60, at: 3 }).best[key].grade).toBe('S');
   });
 
   test('leaderboards, live players and matches are read defensively', () => {
     const key = bestKey('first-light', 'easy');
     const players = readPlayers({
-      player_alex: { name: 'Alex', best: { [key]: { score: 300, grade: 'A' } }, live: { song: 'x', score: 120, at: 10_000 } },
+      player_alma: { name: 'Alma', best: { [key]: { score: 300, grade: 'A' } }, live: { song: 'x', score: 120, at: 10_000 } },
       player_sam: { name: 'Sam', best: { [key]: { score: 900, grade: 'Z' }, 'x:insane': { score: 1 } } },
       player_bad: 7,
     });
-    expect(leaderboard(players, key).map((r) => [r.name, r.grade])).toEqual([['Sam', 'D'], ['Alex', 'A']]);
+    expect(leaderboard(players, key).map((r) => [r.name, r.grade])).toEqual([['Sam', 'D'], ['Alma', 'A']]);
     expect(Object.keys(players.player_sam.best)).toEqual([key]);
-    expect(livePlayers(players, 12_000).map((r) => r.name)).toEqual(['Alex']);
+    expect(livePlayers(players, 12_000).map((r) => r.name)).toEqual(['Alma']);
     expect(livePlayers(players, 20_000)).toEqual([]);
     expect(cleanMatch({ song: 'overclock', difficulty: 'hard', startAt: 5, by: 'Sam' })).toEqual({ song: 'overclock', difficulty: 'hard', startAt: 5, by: 'Sam' });
     expect(cleanMatch({ song: 'overclock', difficulty: 'expert', startAt: 5 })).toBeNull();
@@ -178,10 +178,10 @@ describe('scores on the board', () => {
     writeStateToDoc(a, null, base, 'local');
     sync();
     const key = bestKey('overclock', 'hard');
-    writeStateToDoc(a, base, { wins: [{ ...frame, [playerField('Alex')]: recordBest(null, 'Alex', key, { score: 12000, grade: 'A' }) }] }, 'local');
+    writeStateToDoc(a, base, { wins: [{ ...frame, [playerField('Alma')]: recordBest(null, 'Alma', key, { score: 12000, grade: 'A' }) }] }, 'local');
     writeStateToDoc(b, base, { wins: [{ ...frame, [playerField('Sam')]: recordBest(null, 'Sam', key, { score: 15000, grade: 'S' }) }] }, 'local');
     sync();
-    for (const doc of [a, b]) expect(leaderboard(readPlayers(readDocState(doc).wins[0]), key).map((r) => r.name)).toEqual(['Sam', 'Alex']);
+    for (const doc of [a, b]) expect(leaderboard(readPlayers(readDocState(doc).wins[0]), key).map((r) => r.name)).toEqual(['Sam', 'Alma']);
   });
 
   test('Rhythm Run is in the Add palette under Games', () => {

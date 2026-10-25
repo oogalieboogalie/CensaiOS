@@ -12,6 +12,7 @@ import { createCanvasActions } from './storeCanvasActions.js';
 import { createGroupActions } from './storeGroupActions.js';
 import { pruneAfterRemoval } from './layout/dock.js';
 import { newId } from './ids/newId.js';
+import { releaseGroupFocusForNewWindow } from './groupFocusSession.js';
 
 const log = createLogger('canvas-actions');
 
@@ -112,6 +113,9 @@ export const useWorkspaceStore = create((set, get) => ({
     const id = newId();
     const type = getCanvasObjectType({ type: kind });
     const legacyKind = legacyKindForCanvasType(type);
+    // End full screen before measuring a free spot, so the new window lands
+    // on the board the person is about to see.
+    releaseGroupFocusForNewWindow(get, legacyKind || type);
     const sz = size || getDefaultWindowSize(legacyKind || type);
     const { wins: present, canvasGroups, pan, zoom } = get();
     const p = pos || findFreeSpot(sz, { wins: present, groups: canvasGroups, pan, zoom });

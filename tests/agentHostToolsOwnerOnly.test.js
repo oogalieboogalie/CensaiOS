@@ -29,8 +29,10 @@ jest.unstable_mockModule('../server/approvals/decisions.js', () => ({
 const { HOST_CHANGING_TOOL_NAMES, changesHost } = await import('../server/tools/rbac/hostOwnerOnly.js');
 const { OWNER_ONLY_MESSAGE } = await import('../server/security/systemAdmin.js');
 
-const READ_ONLY = ['local_git_status', 'local_read_file', 'local_list_dir', 'container_status',
-  'container_logs', 'project_read', 'project_list', 'vex_status', 'pr_status'];
+// Docker's container_status and container_logs are owner only even though they
+// only look (logs carry addresses and tokens), so they are in the list above.
+const READ_ONLY = ['local_git_status', 'local_read_file', 'local_list_dir',
+  'project_read', 'project_list', 'vex_status', 'pr_status'];
 const ALL = [...HOST_CHANGING_TOOL_NAMES, ...READ_ONLY, 'vex_run', 'postgres_query', 'postgres_exec_file'];
 
 jest.unstable_mockModule('../server/tools/handlers/index.js', () => ({

@@ -77,6 +77,16 @@ export const CORE_WINDOW_MANIFESTS = [
     },
   },
   {
+    kind: 'stepCards',
+    canvasType: 'stepCards',
+    label: 'Step cards',
+    componentName: 'StepCardsWindow',
+    componentPath: 'src/components/windows/stepCards/index.jsx',
+    defaultSize: { w: 900, h: 600 },
+    moduleMenu: { show: true, status: 'ready', order: 31, icon: 'List', label: 'Step cards', hint: 'A work card split into plain steps that unlock one by one as their checks turn green' },
+    lab: { title: 'Step cards' },
+  },
+  {
     kind: 'agent',
     canvasType: 'agent',
     label: 'Agent',
@@ -156,7 +166,7 @@ export const CORE_WINDOW_MANIFESTS = [
     defaultSize: { w: 960, h: 580 },
     launcher: { show: true, order: 60, icon: 'Gear', label: 'Settings', hint: 'appearance, sharing & AI keys' },
   },
-  // Git Diff Viewer (Alex's diagram 16): before | after, split by a red line.
+  // Git Diff Viewer (diagram 16): before | after, split by a red line.
   {
     kind: 'gitDiff',
     canvasType: 'gitDiff',
@@ -167,7 +177,7 @@ export const CORE_WINDOW_MANIFESTS = [
     lab: { title: 'Git Diff Viewer', props: {} },
     moduleMenu: { show: true, status: 'ready', order: 20, icon: 'Branch', label: 'Git Diff Viewer', hint: 'Before on the left, after on the right: green is added, red is removed' },
   },
-  // Message Router (Alex's diagram 03): one shared line for the board's agents; the router hands each part of a request to the right one.
+  // Message Router (diagram 03): one shared line for the board's agents; the router hands each part of a request to the right one.
   {
     kind: 'agentRouter',
     canvasType: 'agentRouter',

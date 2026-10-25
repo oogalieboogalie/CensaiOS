@@ -1,40 +1,11 @@
 import React from 'react';
 import { useWorkspaceStore } from '../../lib/store.js';
+import { logToApp } from '../../lib/appLog/browserLog.js';
 import { designBlockFromImport, figmaApi, layoutImportedFrames, resyncPatch } from './figmaApi.js';
 import { inputStyle, linkButton, primaryButton } from './figmaStyles.js';
 import { FigmaPlaceOptions, FigmaPageTabs } from './FigmaPlaceOptions.jsx';
-
-function nodeIdFromLink(url) {
-  try {
-    const node = new URL(url).searchParams.get('node-id');
-    return node ? node.replace(/-/g, ':') : null;
-  } catch {
-    return null;
-  }
-}
-
-function FrameCard({ frame, selected, onToggle }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={onToggle}
-      style={{
-        all: 'unset', cursor: 'pointer', display: 'grid', gap: 6, padding: 6, borderRadius: 'var(--radius-lg)',
-        border: `1px solid ${selected ? 'var(--accent)' : 'var(--hairline)'}`,
-        background: selected ? 'var(--accent-soft)' : 'var(--surface-2)',
-      }}
-    >
-      <div style={{ aspectRatio: '4 / 3', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--surface-3, var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {frame.thumbnailUrl
-          ? <img src={frame.thumbnailUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-          : <span style={{ font: '11px var(--font-mono)', color: 'var(--ink-faint)' }}>{frame.width}×{frame.height}</span>}
-      </div>
-      <div style={{ font: '500 12px var(--font-sans)', color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{frame.name}</div>
-      <div style={{ font: '11px var(--font-sans)', color: 'var(--ink-faint)' }}>{frame.page} · {frame.width}×{frame.height}</div>
-    </button>
-  );
-}
+import { FigmaFrameList } from './FigmaFrameList.jsx';
+import { selectionForLink } from './figmaLink.js';
 
 export function FigmaImportPanel({ win, onUpdate, connection }) {
   const spawnAt = useWorkspaceStore(state => state.spawnAt);
@@ -54,13 +25,24 @@ export function FigmaImportPanel({ win, onUpdate, connection }) {
     setError('');
     try {
       const data = await figmaApi.frames(link);
-      setFile(data);
-      setPage('');
-      const linkedNode = nodeIdFromLink(link);
-      setSelected(linkedNode && data.frames.some(f => f.id === linkedNode) ? [linkedNode] : []);
+      const frames = Array.isArray(data.frames) ? data.frames : [];
+      setFile({ ...data, frames });
+      const picked = selectionForLink(frames, link);
+      const ids = data.linkFrameId ? [data.linkFrameId] : picked.ids;
+      const reason = data.linkError || picked.error;
+      const frame = frames.find((item) => item.id === ids[0]);
+      setPage(frame?.page || picked.page || '');
+      setSelected(ids);
+      if (reason) {
+        setError(reason);
+        logToApp('warn', 'figma-import: a share link did not match a frame', { where: 'figma' });
+      } else if (ids.length) {
+        logToApp('info', 'figma-import: selected a frame from a share link', { where: 'figma' });
+      }
       onUpdate?.({ figmaFileUrl: link, figmaTitle: data.name });
     } catch (err) {
       setError(err.message);
+      logToApp('warn', 'figma-import: the file could not be read', { where: 'figma' });
     } finally {
       setBusy('');
     }
@@ -77,6 +59,7 @@ export function FigmaImportPanel({ win, onUpdate, connection }) {
     const frames = file.frames.filter(f => selected.includes(f.id));
     const slots = layoutImportedFrames(win, frames);
     setError('');
+    logToApp('info', `figma-import: placing ${frames.length} frame(s) on the board`, { where: 'figma' });
     for (let i = 0; i < frames.length; i += 1) {
       setBusy(`Bringing in ${frames[i].name} (${i + 1} of ${frames.length})…`);
       try {
@@ -84,6 +67,7 @@ export function FigmaImportPanel({ win, onUpdate, connection }) {
         spawnAt('designBlock', designBlockFromImport(result, url, { placeAs }), slots[i].pos, slots[i].size);
       } catch (err) {
         setError(`${frames[i].name}: ${err.message}`);
+        logToApp('warn', 'figma-import: a frame could not be placed', { where: 'figma' });
         break;
       }
     }
@@ -102,7 +86,7 @@ export function FigmaImportPanel({ win, onUpdate, connection }) {
       const block = placed[i];
       setBusy(`Syncing ${block.title || 'frame'} (${i + 1} of ${placed.length})…`);
       try {
-        const result = await figmaApi.importFrame(block.figma.url || url, block.figma.nodeId);
+        const result = await figmaApi.refreshFrame(block.figma.url || url, block.figma.nodeId);
         updateWindow(block.id, resyncPatch(block, result));
       } catch (err) {
         setError(`${block.title || 'Frame'}: ${err.message}`);
@@ -141,11 +125,7 @@ export function FigmaImportPanel({ win, onUpdate, connection }) {
             </div>
           </div>
           {pages.length > 1 && <FigmaPageTabs pages={pages} value={page} onChange={setPage} />}
-          <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, alignContent: 'start' }}>
-            {visible.map(frame => (
-              <FrameCard key={frame.id} frame={frame} selected={selected.includes(frame.id)} onToggle={() => toggle(frame.id)} />
-            ))}
-          </div>
+          <FigmaFrameList frames={visible} selected={selected} onToggle={toggle} />
           <FigmaPlaceOptions value={placeAs} onChange={(next) => onUpdate?.({ figmaPlaceAs: next })} />
           <button type="button" disabled={!selected.length || Boolean(busy)} onClick={place} style={primaryButton(selected.length > 0 && !busy)}>
             {selected.length ? `Place ${selected.length} on canvas` : 'Pick frames to place on the canvas'}

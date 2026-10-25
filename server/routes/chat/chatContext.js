@@ -1,23 +1,19 @@
 import { dbReady } from '../../dbState.js';
 import { getAgent, getSubAgentById, buildSystemPrompt } from '../../memory.js';
 import { subAgentScopeError } from '../../memory/subagentTenancy.js';
-import { ModelAccessError, resolveChatModelConfig } from '../../aiGateway/index.js';
+import { resolveChatModelConfig } from '../../aiGateway/index.js';
 import { filterToolsForAgent } from '../../tools.js';
 import { buildSubAgentSystemPrompt } from './prompts.js';
 import { withCensaiOrchestrator } from '../../agents/censaiOrchestrator.js';
 import pool from '../../db.js';
 import { capabilityProviderFor, getModelCapabilities } from '../../../src/lib/chat/modelCapabilities.js';
 import { buildContentParts, messageAttachments } from '../../aiGateway/multimodal.js';
-import { getUserApiKeyConfig, inferUserApiKeyProvider } from '../../security/userApiKeys.js';
-import { requiresPersonalApiKey } from '../../security/byokPolicy.js';
 import {
   analyzeChangeImpact,
   formatChangeImpactForPrompt,
 } from '../../semantic/changeImpact.js';
 import { resolveWorkspaceContext } from '../../workspaces/context.js';
-import { resolveFreeTierRuntime } from '../../aiGateway/freeTierRuntime.js';
-import { borrowKeyedModel } from './keyFallback.js';
-import { scopeServerKey } from '../../security/serverKeys.js';
+import { applySavedChatKey } from './savedChatKey.js';
 import {
   enforceCoreChatBoundary,
   requireAgentContextRuntime,
@@ -61,6 +57,12 @@ export async function prepareChatContext(
     effectiveRole = userRes.rows[0]?.role || 'user';
   }
 
+  const useSavedKey = async () => {
+    ({ provider, model: reqModel, baseUrl: reqBaseUrl, apiKey: reqApiKey } = await applySavedChatKey({
+      provider, model: reqModel, baseUrl: reqBaseUrl, apiKey: reqApiKey, userId, userRole: effectiveRole,
+    }));
+  };
+
   if (agentId) {
     try {
       if (workspaceId) {
@@ -102,60 +104,7 @@ export async function prepareChatContext(
         reqApiKey = modelConfig.apiKey;
       }
 
-      // Personal vault keys win in every mode when present (local included);
-      // server keys are the fallback. Lookup failures never block chat —
-      // the cloud enforcement below still fails closed where it must.
-      // (No console logging here: test harness fails on console output.)
-      if (userId && provider) {
-        try {
-          const personalProvider = inferUserApiKeyProvider(provider, reqBaseUrl);
-          const personal = personalProvider
-            ? await getUserApiKeyConfig(userId, personalProvider)
-            : null;
-          if (personal) {
-            reqApiKey = personal.apiKey;
-            if (personal.modelName) reqModel = personal.modelName;
-          }
-        } catch {
-          /* best-effort only */
-        }
-      }
-
-      // Cloud SaaS users must supply credentials for paid providers.
-      // Private servers use the server-managed route; a local install only for
-      // its owner and whom they share keys with (scopeServerKey below).
-      const centralFreeAccessEnabled = resolveFreeTierRuntime().enabled;
-      if (userId && requiresPersonalApiKey(effectiveRole) && !centralFreeAccessEnabled) {
-        const isLocalProvider = reqBaseUrl.includes('localhost') || reqBaseUrl.includes('127.0.0.1') || reqBaseUrl.includes('host.docker.internal');
-        const isFreeModel = provider === 'openrouter' && reqModel.endsWith(':free');
-        const credentialProvider = inferUserApiKeyProvider(provider, reqBaseUrl);
-
-        let userKeyConfig = null;
-        try {
-          userKeyConfig = await getUserApiKeyConfig(userId, credentialProvider);
-        } catch (keyErr) {
-          if (!isLocalProvider && !isFreeModel) {
-            throw new ModelAccessError(
-              'MODEL_ACCESS_UNAVAILABLE',
-              'Unable to verify a personal API key',
-              503,
-              5,
-            );
-          }
-          console.warn('[Tenancy] Personal key lookup failed:', keyErr.message);
-        }
-
-        if (userKeyConfig) {
-          reqApiKey = userKeyConfig.apiKey;
-          if (userKeyConfig.modelName) reqModel = userKeyConfig.modelName;
-        } else if (!isLocalProvider && !isFreeModel) {
-          throw Object.assign(new ModelAccessError(
-            'MODEL_ACCESS_PERSONAL_KEY_REQUIRED',
-            `"${reqModel}" requires a personal API key. Add one in Settings or use free AI access.`,
-            403,
-          ), { keyProvider: credentialProvider });
-        }
-      }
+      await useSavedKey();
 
       if (agent) {
         const memoryPrompt = await buildSystemPrompt(agentId, lastUserMsg, {
@@ -175,6 +124,7 @@ export async function prepareChatContext(
           code: 'FREE_TIER_CONFIG_UNAVAILABLE', statusCode: 503,
         });
       }
+      if (err?.code === 'MODEL_KEY_MISSING' || err?.code === 'MODEL_KEY_REJECTED') throw err;
       if (String(err?.code || '').startsWith('FAMILY_AGENT_')) throw err;
       if (err?.name === 'ModelAccessError') throw err;
       if (err.code === 'SUB_AGENT_SCOPE_REQUIRED' || err.statusCode === 404) throw err;
@@ -186,12 +136,7 @@ export async function prepareChatContext(
     }
   }
 
-  // No Ollama answering here: use a model the person has a key for.
-  const borrowed = await borrowKeyedModel({ userId, baseUrl: reqBaseUrl });
-  if (borrowed) ({ provider, model: reqModel, baseUrl: reqBaseUrl, apiKey: reqApiKey } = borrowed);
-
-  // Local install: the .env keys are the owner's; a teammate uses their own unless shared.
-  if (userId) reqApiKey = (await scopeServerKey({ provider, baseUrl: reqBaseUrl, apiKey: reqApiKey }, { userId, userRole: effectiveRole })).apiKey;
+  if (!agentId) await useSavedKey();
 
   const impactPrompt = formatChangeImpactForPrompt(changeImpact);
   if (impactPrompt) systemPrompt += `\n\n${impactPrompt}`;

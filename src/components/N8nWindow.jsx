@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { WindowTitle } from './windows/WindowTitle.jsx';
 import { Icon } from './Icons.jsx';
+import { webOnlyFrameSrc } from '../lib/frameSrc.js';
 
 export function N8nWindow({ win, onUpdate }) {
   const configuredUrl = win.url || win.state?.url || '';
@@ -48,7 +49,7 @@ export function N8nWindow({ win, onUpdate }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--surface)' }}>
         {configuredUrl ? (
           <iframe
-            src={configuredUrl}
+            src={webOnlyFrameSrc(configuredUrl) || undefined}
             title="n8n"
             style={{ flex: 1, width: '100%', height: '100%', border: 'none' }}
           />

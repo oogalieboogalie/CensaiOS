@@ -4,7 +4,7 @@ import path from 'node:path';
 import { classifyHandoff, discoverHandoffTasks, reconcileDiscoveredTasks } from '../server/julesQueueDiscovery.js';
 
 const stat = { mtime: new Date('2026-06-19T00:00:00.000Z') };
-const repoRoot = 'C:\\Homebase\\CensaiHub';
+const repoRoot = 'C:\\Repos\\CensaiHub';
 
 function classify(name, text) {
   return classifyHandoff({

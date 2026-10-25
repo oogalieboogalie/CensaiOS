@@ -29,7 +29,7 @@ function clean(value, max) {
   return String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
-/** One key per thing the fact is about: "alex|favorite color". */
+/** One key per thing the fact is about: "alma|favorite color". */
 export function factKey(subject, attribute) {
   return `${clean(subject, MAX_PART).toLowerCase()}|${clean(attribute, MAX_PART).toLowerCase()}`;
 }

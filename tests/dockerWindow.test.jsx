@@ -58,6 +58,25 @@ test('explains when the Docker engine is not running', async () => {
   expect(screen.getByRole('button', { name: 'Check again' })).toBeTruthy();
 });
 
+test('a teammate sees a plain owner-only note, not a raw error, and the window stops asking', async () => {
+  global.fetch = jest.fn(async () => ({
+    ok: false, status: 403,
+    json: async () => ({ error: "Only this computer's owner can do this.", reason: 'owner-only', code: 'computer_owner_only' }),
+  }));
+  jest.useFakeTimers();
+  try {
+    await renderWindow();
+    expect(screen.getByText('Only the owner can see Docker here')).toBeTruthy();
+    expect(screen.queryByText("Only this computer's owner can do this.")).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Check again' })).toBeNull();
+    const asked = global.fetch.mock.calls.length;
+    await act(async () => { jest.advanceTimersByTime(30_000); });
+    expect(global.fetch.mock.calls.length).toBe(asked);
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
 test('shows the engine, groups containers by compose project and filters', async () => {
   mockApi();
   await renderWindow();

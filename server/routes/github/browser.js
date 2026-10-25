@@ -1,4 +1,3 @@
-import { getSecret } from '../../secrets.js';
 import { getGithubDefaultBranch } from './shared.js';
 
 export async function browseDir(req, res) {
@@ -7,8 +6,8 @@ export async function browseDir(req, res) {
     return res.status(400).json({ error: 'Invalid or missing repo parameter' });
   }
 
-  const token = getSecret('GITHUB_TOKEN');
-  if (!token) return res.status(401).json({ error: 'GITHUB_TOKEN not found in .env' });
+  const token = req.githubToken;
+  if (!token) return res.status(401).json({ error: 'Connect GitHub first: paste a token in the GitHub window.' });
 
   let branch = req.query.branch;
   if (!branch) {
@@ -61,8 +60,8 @@ export async function getTree(req, res) {
     return res.status(400).json({ error: 'Invalid or missing repo parameter' });
   }
   
-  const token = getSecret('GITHUB_TOKEN');
-  if (!token) return res.status(401).json({ error: 'GITHUB_TOKEN not found in .env' });
+  const token = req.githubToken;
+  if (!token) return res.status(401).json({ error: 'Connect GitHub first: paste a token in the GitHub window.' });
 
   let branch = req.query.branch;
   if (!branch) {

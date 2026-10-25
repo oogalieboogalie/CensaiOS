@@ -43,8 +43,8 @@ test('only a board the server never stored, opened as your own, counts as new', 
   expect(freshBoardFor('user-7-default')).toBeNull();
   noteBoardLoad({ ...NEW_BOARD, status: 'restore_required' });
   expect(freshBoardFor('user-7-default')).toBeNull();
-  noteBoardLoad(NEW_BOARD, { user: { name: 'Alex Green' } });
-  expect(freshBoardFor('user-7-default')).toEqual({ workspaceId: 'user-7-default', name: 'Alex' });
+  noteBoardLoad(NEW_BOARD, { user: { name: 'Alma Reyes' } });
+  expect(freshBoardFor('user-7-default')).toEqual({ workspaceId: 'user-7-default', name: 'Alma' });
   expect(freshBoardFor('another-board')).toBeNull();
 });
 

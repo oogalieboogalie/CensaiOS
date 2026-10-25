@@ -1,4 +1,5 @@
 import { readStoredJson, writeStoredJson, readLocalStoredJson, readServerStoredJson, JOURNALS_KEY, PRESETS_KEY, THEME_CUSTOM_PRESETS_KEY, STORAGE_MISS } from './storage.js';
+import { logFailure } from '../appLog/browserLog.js';
 
 /**
    * Fetches journals for all agents.
@@ -17,7 +18,7 @@ export async function saveJournals(journals) {
     try {
       await writeStoredJson(JOURNALS_KEY, journals);
     } catch (e) {
-      console.error('Failed to save journals', e);
+      logFailure('journals not saved', e, 'memory', 'error');
     }
   }
 
@@ -57,7 +58,7 @@ export async function savePresets(presets, options = {}) {
         requireServer: true,
       });
     } catch (e) {
-      console.error('Failed to save presets', e);
+      logFailure('presets not saved', e, 'memory', 'error');
       throw e;
     }
   }
@@ -75,7 +76,7 @@ export async function getThemeCustomPresets() {
       try {
         await writeStoredJson(THEME_CUSTOM_PRESETS_KEY, presets, { requireServer: true });
       } catch (e) {
-        console.error('Failed to migrate theme custom presets into shared state', e);
+        logFailure('theme presets not moved to shared state', e, 'memory', 'error');
       }
     }
 

@@ -91,7 +91,7 @@ const ideasOf = (doc, base) => readDocState(doc, base).wins[0].ideas;
 describe('Idea Pad bullets merge one bullet at a time', () => {
   afterEach(() => setListMergeReporter(null));
 
-  test('Alex and Sam adding a bullet at the same moment both keep both', () => {
+  test('Alma and Sam adding a bullet at the same moment both keep both', () => {
     const { a, b, sync } = offlinePair();
     const base = pad(['New sign for the shop']);
     writeStateToDoc(a, null, base, LOCAL);

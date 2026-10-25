@@ -32,9 +32,10 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
     handoffError, clearError,
     editingId, editText, setEditText,
     completedCount, totalCount,
-    toggle, assign, add, startEdit, saveEdit, cancelEdit, handoff
+    toggle, assign, add, startEdit, saveEdit, cancelEdit, handoff, importTodo, openStepsFor
   } = useTodos(win, onUpdate, currentProject);
 
+  const importRef = React.useRef(null);
   const [animatingIds, setAnimatingIds] = React.useState({});
   const [completedExpanded, setCompletedExpanded] = React.useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
@@ -106,7 +107,10 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
           }
         }
       `}</style>
-      <WindowTitle accent="var(--ps-green)" icon={<Icon.Folder size={14}/>} label={win.title || 'Project To-Dos'} subtitle={win.subtitle} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} />
+      <WindowTitle accent="var(--ps-green)" icon={<Icon.Folder size={14}/>} label={win.title || 'Project To-Dos'} subtitle={win.subtitle} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
+        actions={[{ id: 'import-todo', label: 'Import .todo', title: 'Add the cards from a .todo file as to-dos', onSelect: () => importRef.current?.click() }]} />
+      <input ref={importRef} type="file" accept=".todo,text/plain" hidden data-testid="todo-import"
+        onChange={async (e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) await importTodo(await file.text()); }} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 12, background: 'var(--surface)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 12px', background: completedCount > 0 ? 'var(--ps-green)' : 'var(--surface-2)', borderRadius: 'var(--radius-lg)', color: completedCount > 0 ? 'white' : 'var(--ink-faint)', fontSize: 'var(--text-sm)', fontWeight: 500, transition: 'background 0.3s ease' }}>
           <Icon.Check size={14} stroke={2.5} />
@@ -145,6 +149,7 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
                     onToggle={() => handleToggle(it.id)}
                     onAssign={(aid, name) => assign(it.id, aid, name)}
                     onHandoff={() => handoff(it)}
+                    onOpenSteps={it.card ? () => openStepsFor(it) : undefined}
                     onStartEdit={startEdit}
                     onSaveEdit={saveEdit}
                     onCancelEdit={cancelEdit}

@@ -6,8 +6,8 @@ const run = (state, steps) => { for (let i = 0; i < steps; i += 1) step(state); 
 
 describe('asteroids rules', () => {
   test('a seeded match is deterministic', () => {
-    const a = run(createGame({ seed: 42, players: [{ id: 'p1', name: 'Alex' }] }), 300);
-    const b = run(createGame({ seed: 42, players: [{ id: 'p1', name: 'Alex' }] }), 300);
+    const a = run(createGame({ seed: 42, players: [{ id: 'p1', name: 'Alma' }] }), 300);
+    const b = run(createGame({ seed: 42, players: [{ id: 'p1', name: 'Alma' }] }), 300);
     expect(encodeFrame(a)).toEqual(encodeFrame(b));
     expect(a.wave).toBe(1);
     expect(a.rocks.length).toBe(4);
@@ -111,7 +111,7 @@ function board() {
   const record = { match: null, highScores: [] };
   const seats = {};
   const relay = (from) => (message) => {
-    const stamped = { ...message, clientId: from, actor: { label: from === 'a' ? 'Alex' : 'Sam' } };
+    const stamped = { ...message, clientId: from, actor: { label: from === 'a' ? 'Alma' : 'Sam' } };
     for (const [id, seat] of Object.entries(seats)) {
       if (id === from) continue;
       if (message.type === 'game.input' && message.to === id) seat.receiveInput(stamped);
@@ -123,7 +123,7 @@ function board() {
     Object.assign(record, patch);
     for (const seat of Object.values(seats)) seat.sync({ match: record.match, highScores: record.highScores });
   };
-  for (const [id, name] of [['a', 'Alex'], ['b', 'Sam']]) {
+  for (const [id, name] of [['a', 'Alma'], ['b', 'Sam']]) {
     seats[id] = createAsteroidsSession({ windowId: 'w1', selfId: id, send: relay(id), update, now });
     seats[id].sync({ selfName: name, present: ['a', 'b'], canPlay: true, match: null, highScores: [] });
   }
@@ -135,12 +135,12 @@ describe('a shared match between two people', () => {
   test('first to press play hosts; the second joins the same match and both see two ships', () => {
     const { seats, record, advance } = board();
     expect(seats.a.play()).toBe('host');
-    expect(record.match).toMatchObject({ host: 'a', hostName: 'Alex' });
+    expect(record.match).toMatchObject({ host: 'a', hostName: 'Alma' });
     advance(100);
-    expect(seats.b.view()).toMatchObject({ live: true, hostName: 'Alex', role: 'idle' });
+    expect(seats.b.view()).toMatchObject({ live: true, hostName: 'Alma', role: 'idle' });
     expect(seats.b.play()).toBe('player');
     advance(200);
-    expect(seats.a.view().ships.map((s) => s.name).sort()).toEqual(['Alex', 'Sam']);
+    expect(seats.a.view().ships.map((s) => s.name).sort()).toEqual(['Alma', 'Sam']);
     expect(seats.b.view().ships).toHaveLength(2);
     seats.b.setKeys(INPUT.THRUST);
     advance(500);

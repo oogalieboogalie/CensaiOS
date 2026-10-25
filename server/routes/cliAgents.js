@@ -37,7 +37,7 @@ import { grokSigninRouter } from './grokSignin.js';
 const log = createLogger('cli-agents-route');
 export const cliAgentsRouter = express.Router();
 
-/** Who is acting, by display name, for transcript lines like "Allowed by Alex". */
+/** Who is acting, by display name, for transcript lines like "Allowed by Alma". */
 async function actor(req) {
   const userId = req.session?.userId ?? null;
   const email = String(req.session?.userEmail || '');

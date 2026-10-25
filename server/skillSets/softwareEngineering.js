@@ -1,4 +1,4 @@
-// The first built-in skill set, word for word from Alex's Exo-Skeleton
+// The first built-in skill set, word for word from the Exo-Skeleton
 // drawing: what makes a distinguished engineer great, not just good.
 
 export const SOFTWARE_ENGINEERING_SKILL_SET = Object.freeze({
@@ -8,7 +8,7 @@ export const SOFTWARE_ENGINEERING_SKILL_SET = Object.freeze({
   summary: 'What a distinguished engineer does that a good one does not.',
   origin: 'builtin',
   benchmark: 'The Distinguished Benchmark: A senior engineer builds a complex system cleanly. A distinguished engineer takes a complex problem, makes the solution look dead simple, and builds it in a way that makes every engineer who touches it later smarter.',
-  sources: ['Alex\'s Agent Exo-Skeleton drawing'],
+  sources: ['The Agent Exo-Skeleton drawing'],
   skills: Object.freeze([
     { title: 'First-Principles Thinking', detail: 'Distinguished engineers don\'t get distracted by framework hype or superficial trends. They strip a problem down to its absolute foundational truths—whether that\'s CPU cycles, memory constraints, network latency, or basic human incentives—and build the solution up from there. They understand the underlying magic of the tools they use.' },
     { title: 'High-Leverage Automation & Tooling', detail: 'The best engineers don\'t just solve a problem once; they build systems, compilers, libraries, or workflows that prevent the problem from ever happening again. They focus on creating "force multipliers"—tools that make an entire team or system ten times more efficient.' },

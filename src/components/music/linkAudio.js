@@ -19,14 +19,41 @@ function readUrl(url) {
   }
 }
 
-/** 'song' for a direct audio file link, 'radio' for a radio stream, else null. */
-export function directAudioKind(url) {
+/** Path with %XX turned back into characters. A stray % stays as written. */
+function decodedPath(url, u) {
+  const path = u.pathname || '/';
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    logMusic('warn', `could not decode a link from ${linkHost(url)}`);
+    return path;
+  }
+}
+
+/**
+ * 'song' or 'radio' when the address itself says so, 'embed' for a page we
+ * already know how to frame, 'unknown' for any other http(s) link (the player
+ * tries those), or null when it is not an http(s) link.
+ */
+export function guessLinkKind(url) {
   const u = readUrl(url);
-  if (!u || EMBED_HOST.test(u.hostname)) return null;
-  const path = decodeURIComponent(u.pathname || '/');
+  if (!u) return null;
+  if (EMBED_HOST.test(u.hostname)) return 'embed';
+  const path = decodedPath(url, u);
   if (SONG_FILE.test(path)) return 'song';
   if (RADIO_PATH.test(path) || RADIO_HOST.test(u.hostname)) return 'radio';
-  return null;
+  return 'unknown';
+}
+
+/** 'song' for a direct audio file link, 'radio' for a radio stream, else null. */
+export function directAudioKind(url) {
+  const kind = guessLinkKind(url);
+  return kind === 'song' || kind === 'radio' ? kind : null;
+}
+
+/** One app-log line when trying a link (not its address words) finds the kind. */
+export function logTriedKind(url, kind) {
+  logMusic('info', `found a ${kind} link by trying ${linkHost(url)}`);
 }
 
 /** Just the site's name, so a log line never carries a link's own words. */

@@ -2,20 +2,20 @@
 // plastic, screen and wheel colors of a branded player: YouTube red, YouTube
 // Music black-and-red, Spotify black-and-green, SoundCloud orange, a walnut
 // and amber tuner for internet radio, and a silver USB stick player for
-// local files, song links and anything else. Colors are
+// local files, song links and anything else, plus a hand-picked desktop
+// player skin (skinChoice.js). Colors are
 // flat on purpose: depth comes from bevel shadows in src/styles/music.css,
 // not gradients.
 import { directAudioKind } from './linkAudio.js';
+import { musicHostKind } from './musicHosts.js';
 
 export const MUSIC_SOURCES = ['youtube', 'ytmusic', 'spotify', 'soundcloud', 'radio', 'local', 'generic'];
 
 export function detectMusicSource(url) {
   const raw = String(url || '').toLowerCase();
   if (!raw) return 'generic';
-  if (raw.includes('music.youtube.com')) return 'ytmusic';
-  if (raw.includes('youtube.com') || raw.includes('youtu.be') || raw.includes('youtube-nocookie.com')) return 'youtube';
-  if (raw.startsWith('spotify:') || raw.includes('spotify.com')) return 'spotify';
-  if (raw.includes('soundcloud.com')) return 'soundcloud';
+  const service = musicHostKind(url);
+  if (service) return service;
   if (directAudioKind(url) === 'radio') return 'radio';
   return 'generic';
 }
@@ -127,6 +127,27 @@ export const MUSIC_SKINS = {
   },
 };
 
+// Picked by hand only (never by source): an early-2000s desktop player in
+// dark brushed metal with green glowing digits and a small equalizer strip.
+MUSIC_SKINS.desktop = {
+  brand: 'CensaiAmp',
+  model: 'DESKTOP·2001',
+  body: '#2b3034',
+  bodyEdge: '#101315',
+  bodyInk: '#b8c2c9',
+  screenBg: '#020b04',
+  lcdInk: '#3dff6e',
+  lcdDim: 'rgba(61, 255, 110, 0.4)',
+  lcdGlow: 'rgba(61, 255, 110, 0.75)',
+  vis: ['#1fcf4f', '#3dff6e', '#d4ff4a'],
+  peak: '#ffffff',
+  wheel: '#3b4146',
+  wheelInk: '#3dff6e',
+  hub: '#4a5157',
+  hubInk: '#3dff6e',
+  eq: true,
+};
+
 MUSIC_SKINS.local = MUSIC_SKINS.generic;
 
 /** The skin as CSS custom properties, read by src/styles/music.css. */
@@ -153,13 +174,14 @@ export function skinFor(source) {
   return MUSIC_SKINS[source] || MUSIC_SKINS.generic;
 }
 
-export const VISUALIZER_MODES = ['bars', 'scope', 'vu', 'ambience'];
+export const VISUALIZER_MODES = ['bars', 'scope', 'vu', 'ambience', 'swirl'];
 
 export const VISUALIZER_LABELS = {
   bars: 'BARS & WAVES',
   scope: 'SCOPE',
   vu: 'VU METERS',
   ambience: 'AMBIENCE',
+  swirl: 'SWIRL',
 };
 
 export function nextVisualizerMode(mode) {

@@ -16,8 +16,11 @@ function sendError(res, err) {
   return res.status(500).json({ error: message });
 }
 
+// Reads are owner-only too: the list and logs show every container on this
+// computer, and logs can carry addresses and tokens.
+
 // GET /api/containers
-containersRouter.get('/containers', async (req, res) => {
+containersRouter.get('/containers', requireLocalFilesystem, requireSystemAdmin, async (req, res) => {
   try {
     const containers = await listContainers();
     res.json({ containers });
@@ -27,7 +30,7 @@ containersRouter.get('/containers', async (req, res) => {
 });
 
 // GET /api/containers/:id/logs
-containersRouter.get('/containers/:id/logs', async (req, res) => {
+containersRouter.get('/containers/:id/logs', requireLocalFilesystem, requireSystemAdmin, async (req, res) => {
   try {
     const service = req.params.id;
     const lines = parseInt(req.query.lines, 10) || 100;

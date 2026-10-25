@@ -14,7 +14,7 @@ export async function createIssue(req, res) {
 
   try {
     const { owner, repo } = parseRepository(repository);
-    const octokit = getGitHubClient();
+    const octokit = getGitHubClient(req.githubToken);
     const { data } = await octokit.rest.issues.create({
       owner,
       repo,
@@ -32,7 +32,7 @@ export async function listIssues(req, res) {
   try {
     const { owner, repo } = parseRepository(req.query.repo);
     const state = parseIssueState(req.query.state);
-    const octokit = getGitHubClient();
+    const octokit = getGitHubClient(req.githubToken);
     const { data } = await octokit.rest.issues.listForRepo({ owner, repo, state, per_page: 100 });
     return res.json(data.filter((item) => !item.pull_request));
   } catch (err) {
@@ -49,7 +49,7 @@ export async function addLabels(req, res) {
   try {
     const { owner, repo } = parseRepository(repository);
     const issueNumber = parsePositiveInteger(number, 'number');
-    const octokit = getGitHubClient();
+    const octokit = getGitHubClient(req.githubToken);
     const { data } = await octokit.rest.issues.setLabels({
       owner,
       repo,

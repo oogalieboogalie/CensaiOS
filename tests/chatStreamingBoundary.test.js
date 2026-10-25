@@ -26,6 +26,7 @@ jest.unstable_mockModule('../server/operational-intelligence/traces.js', () => (
   createSessionTrace: jest.fn(),
   finalizeTrace: jest.fn(),
 }));
+jest.unstable_mockModule('../server/webOs/door.js', () => ({ isFromAnotherComputer: () => false }));
 jest.unstable_mockModule('../server/middleware/runtimeMode.js', () => ({
   isCloudRuntime,
   isFeatureEnabled,

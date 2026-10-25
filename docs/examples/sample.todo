@@ -1,0 +1,35 @@
+censaiOS to-do file
+# Lines starting with # are notes and are skipped.
+# Open this file from the Files window (it opens as Step cards), or use
+# "Import .todo" in a To-do List: each card becomes one to-do.
+#
+# Each card:  == title, then "For:" (who does it) and "Goal:".
+#   For: cli:grok  /  cli:claudecode  /  an agent id like atlas  /  user:<id>
+# Each step:  -- Step N: title, a sentence or two, then 1 to 4 checks:
+#   [ ] file <path>                 the file is in the project
+#   [ ] file <path> says "<text>"   the file has that exact text in it
+#   [ ] run npm test -- <test file> the project's own tests pass
+#   [ ] run npm run <script>        one of the project's npm scripts passes
+#   [ ] page /<path>                the project's app, running on this computer, answers that page
+#   [ ] page /<path> says "<text>" and the page has that text in it (":5173/<path>" picks the port)
+#   [ ] ask <sentence>              Censai reads the helper's report against it
+# A dot turns green only when censaiOS has checked it.
+Title: Sample cards
+
+== Show today's date in a small badge
+For: cli:grok
+Goal: The board shows today's date in a small badge in the top bar.
+
+-- Step 1: Make the badge
+Add a small badge that shows today's date, written the way the person's computer writes dates.
+[ ] file src/components/DateBadge.jsx
+[ ] file src/components/DateBadge.jsx says "toLocaleDateString"
+
+-- Step 2: Add a test for it
+Write a test that shows the badge prints today's date.
+[ ] file tests/dateBadge.test.jsx
+[ ] run npm test -- tests/dateBadge.test.jsx
+
+-- Step 3: Check everything
+[ ] run npm run gate
+[ ] ask A screenshot shows the badge in the top bar in dark and light

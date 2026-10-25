@@ -154,4 +154,13 @@ export const BUILD_COVERS = {
       <circle cx="25.7" cy="20" r="0.8" fill={ACCENT} />
     </>
   ),
+  // Step cards: the open top tab with two dots lit, locked tabs tucked under it.
+  stepCards: (
+    <>
+      <rect x="11" y="16" width="22" height="5" rx="1.4" {...H} /><rect x="9" y="13" width="26" height="5" rx="1.4" {...F} />
+      <rect x="7" y="3" width="30" height="11" rx="1.8" {...S} />
+      <path d="M10 7 H22 M10 10.5 H18" {...F} />
+      <circle cx="28.5" cy="7" r="1.1" fill={ACCENT} /><circle cx="31.8" cy="7" r="1.1" fill={ACCENT} />
+    </>
+  ),
 };

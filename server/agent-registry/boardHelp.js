@@ -1,4 +1,4 @@
-// AGENT NETWORK — agents asking the coding CLIs and modules on the board.
+// AGENT NETWORK — agents asking teammates, coding CLIs and modules on the board.
 // A chat agent finds them with discover_agents (card ids "window:<id>") and
 // asks with request_agent_help, exactly like asking another chat agent: the
 // same help card lands on the canvas between the two windows, and the answer
@@ -23,16 +23,18 @@ import { RUNNING } from '../cli-agents/taskStore.js';
 import { allowedRoots, assertAllowedFolder } from '../cli-agents/folders.js';
 import { askModule } from '../modules/ask.js';
 import { listBoardAgents, searchBoardAgents } from '../../src/lib/agentNetwork/boardAgents.js';
+import { familyAgentFor } from '../agents/identity.js';
 import { briefFromTask, huntSummary } from '../../src/lib/agentNetwork/leadHoundHelp.js';
 import { clipResult } from './helpCardShape.js';
 import { researchReply } from './researchReply.js';
 import { patchHelpCard, placeHelpCard, readDocWindows, readHelpCard, settleHelpCard } from './helpCards.js';
+import { logBoardAsk, requestBoardTeammate } from './boardAgentAsk.js';
 
 const log = createLogger('agent-board-help');
 export const WINDOW_CARD_PREFIX = 'window:';
 const MAX_TASK = 8000;
 const POLL_MS = 1500;
-const HELPER_KIND = { cli: 'coding_cli', leadhound: 'lead_finder', research: 'web_research', module: 'module' };
+const HELPER_KIND = { cli: 'coding_cli', leadhound: 'lead_finder', research: 'web_research', module: 'module', network: 'board_agent' };
 const CLI_STATUS = { done: 'completed', failed: 'failed', stopped: 'failed', needs_approval: 'needs approval' };
 
 let sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
@@ -55,9 +57,12 @@ async function boardWindows(workspaceId) {
   }
 }
 
-/** Coding CLIs and ready modules on this board, ranked for the query. */
-export async function listBoardHelpers(workspaceId, query = '', limit = 5) {
-  const helpers = listBoardAgents(await boardWindows(workspaceId)).filter((agent) => agent.executor !== 'network');
+/** Chat agents, coding CLIs and modules on this board only, ranked for the query. */
+export async function listBoardHelpers(workspaceId, query = '', limit = 5, { excludeAgentId = '' } = {}) {
+  const skip = String(excludeAgentId || '').trim().toLowerCase();
+  // The family agents' roles ("Databases") are what a search matches on.
+  const helpers = listBoardAgents(await boardWindows(workspaceId), { agentFor: familyAgentFor })
+    .filter((agent) => !skip || String(agent.agentId || '').toLowerCase() !== skip);
   return searchBoardAgents(helpers, query).slice(0, limit).map((agent) => ({
     card_id: `${WINDOW_CARD_PREFIX}${agent.windowId}`,
     name: agent.name,
@@ -66,6 +71,7 @@ export async function listBoardHelpers(workspaceId, query = '', limit = 5) {
     abilities: agent.abilities,
     busy: agent.status === 'working' || undefined,
     you_can_request: true,
+    ...(agent.agentId ? { agent_id: agent.agentId } : {}),
   }));
 }
 
@@ -151,9 +157,15 @@ export async function requestBoardHelp(scope, {
   if (!text) throw new Error('Describe the task you need help with.');
   const windowId = String(cardId).slice(WINDOW_CARD_PREFIX.length);
   const wins = await boardWindows(scope.workspaceId);
-  const target = listBoardAgents(wins).find((agent) => agent.windowId === windowId && agent.executor !== 'network');
-  if (!target) throw new Error('That window is not on the board any more, or it cannot take requests. Run discover_agents again.');
-  if (windowId === fromWindowId) throw new Error('An agent cannot ask itself for help.');
+  const target = listBoardAgents(wins).find((agent) => agent.windowId === windowId);
+  if (!target) {
+    logBoardAsk({ from: requesterAgentId, to: windowId }, { status: 'failed', why: 'not on this board' });
+    throw new Error('That window is not on the board any more, or it cannot take requests. Run discover_agents again.');
+  }
+  if (windowId === fromWindowId) {
+    if (target.executor === 'network') logBoardAsk({ from: requesterAgentId, to: windowId }, { status: 'failed', why: 'cannot ask itself' });
+    throw new Error('An agent cannot ask itself for help.');
+  }
   const win = wins.find((entry) => entry.id === windowId);
   const waits = Number(waitSeconds) > 0;
   const deadline = Date.now() + Math.min(maxWaitSeconds, Math.max(0, Number(waitSeconds) || 0)) * 1000;
@@ -161,6 +173,11 @@ export async function requestBoardHelp(scope, {
   const place = (id, request) => placeHelpCard(scope.workspaceId, {
     id, request, executor: target.executor, fromWindowId, toWindowId: windowId, requesterAgentId, awaitingTool: waits,
   });
+  if (target.executor === 'network') {
+    return requestBoardTeammate(scope, {
+      wins, win, target, text, fromWindowId, requesterAgentId, fromLabel, waits, deadline, place, withTimeout,
+    });
+  }
 
   if (target.executor === 'cli') {
     const taskId = await startCli(scope, win, prompt, fromLabel);
@@ -212,5 +229,5 @@ export async function boardHelpStatus(scope, requestId) {
 }
 
 export function isBoardRequestId(requestId) {
-  return /^(cli|module|research):\S+$/.test(String(requestId || ''));
+  return /^(cli|module|research|board):\S+$/.test(String(requestId || ''));
 }

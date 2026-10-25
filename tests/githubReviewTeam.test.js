@@ -81,7 +81,7 @@ describe('review team: end to end with stand-in CLIs', () => {
       },
     };
     const review = await startReview(
-      { octokit, token: '', owner: 'o', repo: 'r', number: 7, reviewers: ['claudecode', 'grok', 'nope'], user: { name: 'Alex' } },
+      { octokit, token: '', owner: 'o', repo: 'r', number: 7, reviewers: ['claudecode', 'grok', 'nope'], user: { name: 'Alma' } },
       { manager, git: runGit, remoteUrl: path.join(tmp, 'origin.git'), root: path.join(tmp, 'clones'), pollMs: 20 },
     );
     expect(review.reviewers.map((r) => r.label)).toEqual(['Claude Code', 'Grok']);

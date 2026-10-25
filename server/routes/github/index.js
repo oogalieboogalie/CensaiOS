@@ -8,21 +8,28 @@ import { listPulls, getPullDetails, mergePull } from './pulls.js';
 import { mergeDeskRouter } from './mergeDesk.js';
 import { reviewTeamRouter } from './reviewTeam.js';
 import { resourceRateLimiter } from '../../middleware/standardRateLimits.js';
+import { githubToken } from '../../github/writeToken.js';
 
 export const githubRouter = express.Router();
 githubRouter.use(resourceRateLimiter);
 
-githubRouter.get('/repos', listRepos);
-githubRouter.get('/tree', getTree);
-githubRouter.post('/write', writeFile);
-githubRouter.get('/file', readFile);
-githubRouter.post('/issues', createIssue);
-githubRouter.get('/issues', listIssues);
-githubRouter.post('/issues/labels', addLabels);
-githubRouter.get('/pulls', listPulls);
-githubRouter.get('/pulls/details', getPullDetails);
-githubRouter.put('/pulls/merge', mergePull);
-githubRouter.get('/browse', browseDir);
-githubRouter.get('/search', searchTree);
+// The person's own GitHub key first. Looking may fall back to the owner's
+// GITHUB_TOKEN for anyone signed in; changing something with it is the
+// owner's alone (server/github/writeToken.js).
+const read = githubToken();
+const write = (feature) => githubToken({ write: feature });
+
+githubRouter.get('/repos', read, listRepos);
+githubRouter.get('/tree', read, getTree);
+githubRouter.post('/write', write('github write file'), writeFile);
+githubRouter.get('/file', read, readFile);
+githubRouter.post('/issues', write('github new issue'), createIssue);
+githubRouter.get('/issues', read, listIssues);
+githubRouter.post('/issues/labels', write('github issue labels'), addLabels);
+githubRouter.get('/pulls', read, listPulls);
+githubRouter.get('/pulls/details', read, getPullDetails);
+githubRouter.put('/pulls/merge', write('github merge'), mergePull);
+githubRouter.get('/browse', read, browseDir);
+githubRouter.get('/search', read, searchTree);
 githubRouter.use(mergeDeskRouter);
 githubRouter.use(reviewTeamRouter);

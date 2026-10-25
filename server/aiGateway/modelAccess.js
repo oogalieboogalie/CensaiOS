@@ -4,6 +4,7 @@ import { consumeFreeTierAllowance, releaseFreeTierAllowance, reserveFreeTierAllo
 import { applyUserModelAccess, resolveUserModelAccess } from './modelByokAccess.js';
 import { resolveFreeTierRuntime } from './freeTierRuntime.js';
 import { RUNTIME_MODES } from '../middleware/runtimeMode.js';
+import { userRole } from '../security/systemAdmin.js';
 const INTERNAL_CONTEXT = Symbol('censai.model-access.server-context');
 const CHAT_KIND = 'chat.completion';
 export class ModelAccessError extends Error {
@@ -38,15 +39,15 @@ function unavailable(code = 'MODEL_ACCESS_UNAVAILABLE') {
 }
 async function verifyPrincipal(context, db) {
   try {
-    const { rows } = await db.query('SELECT role FROM users WHERE id = $1', [context.userId]);
-    if (!rows[0]) {
+    const role = await userRole(context.userId, { db });
+    if (role === undefined) {
       throw new ModelAccessError('MODEL_ACCESS_DENIED', 'User access denied', 403);
     }
     await requireWorkspaceMember(db, {
       userId: context.userId,
       workspaceId: context.workspaceId,
     });
-    return String(rows[0].role || 'user').toLowerCase();
+    return String(role || 'user').toLowerCase();
   } catch (error) {
     if (error instanceof ModelAccessError) throw error;
     if ([403, 404].includes(error?.statusCode)) {

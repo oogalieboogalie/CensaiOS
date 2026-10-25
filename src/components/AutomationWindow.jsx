@@ -8,6 +8,7 @@ export function AutomationWindow({ win, onUpdate }) {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
   const fetchStatus = async () => {
     try {
@@ -32,6 +33,7 @@ export function AutomationWindow({ win, onUpdate }) {
   useVisibilityAwareInterval(fetchStatus, 3000);
 
   const handleAction = async (task, action) => {
+    setActionError(null);
     try {
       const res = await fetch(`/api/automation/${task}/${action}`, { method: 'POST' });
       if (!res.ok) {
@@ -40,7 +42,7 @@ export function AutomationWindow({ win, onUpdate }) {
       }
       fetchStatus();
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      setActionError(err.message);
     }
   };
 
@@ -82,6 +84,11 @@ export function AutomationWindow({ win, onUpdate }) {
         subtitle="Scheduled Tasks"
       />
       <div style={{ flex: 1, minHeight: 0, padding: 14, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--surface)' }}>
+        {actionError && (
+          <div role="alert" style={{ padding: '8px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--ps-red)', color: 'var(--ps-red)', fontSize: 'var(--text-sm)' }}>
+            {actionError}
+          </div>
+        )}
         {tasks.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: 'var(--ink-faint)' }}>
             No automation tasks configured.

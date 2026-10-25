@@ -40,7 +40,14 @@ export function tavilyError(status) {
   });
 }
 
-export async function resolveTavilyKey(userId, { loadUserKey } = {}) {
+// The server's own Tavily key is the owner's (security/serverKeys.js): only
+// the owner, or someone the owner shares keys with, falls back to it.
+async function ownerMayUse({ userId }) {
+  const { mayUseServerKeys } = await import('../security/serverKeys.js');
+  return mayUseServerKeys({ userId });
+}
+
+export async function resolveTavilyKey(userId, { loadUserKey, mayUse = ownerMayUse } = {}) {
   const load = loadUserKey || (async (id) => {
     const { getUserApiKeyConfig } = await import('../security/userApiKeys.js');
     return getUserApiKeyConfig(id, 'tavily');
@@ -52,6 +59,11 @@ export async function resolveTavilyKey(userId, { loadUserKey } = {}) {
     // A vault read failure falls through to the server key.
   }
   const serverKey = getSecret('TAVILY_API_KEY');
+  if (serverKey && userId && !(await mayUse({ userId }).catch(() => false))) {
+    const { logServerKeyHeldBack } = await import('../security/serverKeys.js');
+    logServerKeyHeldBack('tavily', userId);
+    return { apiKey: '', source: null };
+  }
   if (serverKey) return { apiKey: serverKey, source: 'server' };
   return { apiKey: '', source: null };
 }

@@ -21,7 +21,7 @@ export function MailboxesTab({ mailcow }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <input
                     type="text"
-                    placeholder="alex"
+                    placeholder="alma"
                     value={mailboxForm.local_part}
                     onChange={(e) => setMailboxForm({ ...mailboxForm, local_part: e.target.value })}
                     style={{ flex: 1, padding: '6px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', fontSize: 'var(--text-md)', background: 'var(--surface)', color: 'var(--ink)', outline: 'none' }}
@@ -44,7 +44,7 @@ export function MailboxesTab({ mailcow }) {
                 <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>DISPLAY NAME</span>
                 <input
                   type="text"
-                  placeholder="Alex Johnson"
+                  placeholder="Alma Johnson"
                   value={mailboxForm.name}
                   onChange={(e) => setMailboxForm({ ...mailboxForm, name: e.target.value })}
                   style={{ padding: '6px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', fontSize: 'var(--text-md)', background: 'var(--surface)', color: 'var(--ink)', outline: 'none' }}

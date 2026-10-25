@@ -7,7 +7,7 @@ const POLL_MS = 30000;
 const shown = new Set();
 
 /**
- * "Alex invited you to Family board" toasts, top center, for invites made
+ * "Alma invited you to Family board" toasts, top center, for invites made
  * with "Invite to this board". Each shows once per page load; it stays in
  * the Inbox until the board is opened. An invite to the board already open
  * here counts as opened.

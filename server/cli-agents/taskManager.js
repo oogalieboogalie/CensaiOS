@@ -42,6 +42,7 @@ export class CliTaskManager extends TaskStore {
     spawn = nodeSpawn,
     env = process.env,
     resolveKey = async () => null,
+    mayUseServerKeys = async () => false,
     resolveLaunch = (id) => resolveCli(id, env),
     install = (id) => installCli(id, env),
     wt = worktrees,
@@ -51,6 +52,7 @@ export class CliTaskManager extends TaskStore {
     this.spawn = spawn;
     this.env = env;
     this.resolveKey = resolveKey;
+    this.mayUseServerKeys = mayUseServerKeys;
     this.resolveLaunch = resolveLaunch;
     this.install = install;
     this.wt = wt;

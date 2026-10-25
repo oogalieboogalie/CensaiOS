@@ -1,4 +1,4 @@
-/* Wave-by-wave Jules runs (Alex's diagram 01), inside the Jules Tasks window. */
+/* Wave-by-wave Jules runs (diagram 01), inside the Jules Tasks window. */
 .hb-jw { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--surface); }
 .hb-jw-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
 .hb-jw-heading { font-family: var(--font-label); font-size: var(--text-xs); font-weight: 800; color: var(--ink-faint); text-transform: var(--label-case); letter-spacing: var(--label-tracking); }

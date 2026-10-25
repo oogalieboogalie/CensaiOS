@@ -11,7 +11,7 @@
  *   ghost — content runs to the top edge; the header fades in on hover
  *   bare  — no header at all; a small control pill appears on hover
  *   edge  — no header bar; the controls hang as small tabs off the right edge
- *           (Alex's wireframe, diagram 05)
+ *           (wireframe, diagram 05)
  */
 
 export const HEADER_MODES = Object.freeze(['strip', 'ghost', 'bare', 'edge']);

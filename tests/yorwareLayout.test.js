@@ -146,7 +146,7 @@ describe('YorWare Layout board model', () => {
     writeStateToDoc(a, null, base, 'local');
     sync();
     const edit = (d, patch) => writeStateToDoc(d, base, { wins: [{ ...base.wins[0], ...patch }] }, 'local');
-    // Alex retypes the headline; Sam adds a page and makes the top band taller.
+    // Alma retypes the headline; Sam adds a page and makes the top band taller.
     edit(a, storyPatch(doc, doc.frames[head].story, { text: 'Now Open' }));
     const added = addPagePatch(doc, p1);
     edit(b, { ...added.patch, [`lfr.${rect}`]: { ...doc.frames[rect], h: 220 } });

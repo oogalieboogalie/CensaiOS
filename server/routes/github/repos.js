@@ -1,7 +1,7 @@
 import { fetchGithub } from './shared.js';
 
 export async function listRepos(req, res) {
-  const data = await fetchGithub('/user/repos?sort=updated&per_page=100', res);
+  const data = await fetchGithub('/user/repos?sort=updated&per_page=100', res, req.githubToken);
   if (data) {
     const filtered = data.map(r => ({
       name: r.full_name,

@@ -1,5 +1,6 @@
 import pool from '../../db.js';
 import { getRuntimeMode, RUNTIME_MODES } from '../../middleware/runtimeMode.js';
+import { userRole } from '../../security/systemAdmin.js';
 
 const CLOUD_OPERATOR_ROLES = new Set(['admin', 'operator']);
 
@@ -22,8 +23,7 @@ export async function requireGlobalAgentMutationAccess(req, {
 
   let role;
   try {
-    const { rows } = await db.query('SELECT role FROM users WHERE id = $1', [userId]);
-    role = String(rows[0]?.role || '').trim().toLowerCase();
+    role = String((await userRole(userId, { db })) || '').trim().toLowerCase();
   } catch {
     throw accessError(
       'Global agent authorization is temporarily unavailable.',

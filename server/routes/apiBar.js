@@ -27,6 +27,7 @@ import { pageAnswer } from '../apiBar/paging.js';
 import { stampAnswer } from '../apiBar/signing.js';
 import { defaultAgentCalls } from '../apiBar/agentCalls.js';
 import * as keyStore from '../apiBar/keys.js';
+import { isJestRun } from '../security/testShortcut.js';
 
 const log = createLogger('api-bar');
 const BAR_FIELDS = ['branch', 'action', 'paginate', 'page', 'page_size'];
@@ -56,7 +57,7 @@ export function createApiBarRouter(overrides = {}) {
     handlers: BAR_HANDLERS,
     dispatch: dispatchInternal,
     agentCalls: null,
-    testSession: process.env.NODE_ENV === 'test',
+    testSession: isJestRun(),
     ...overrides,
   };
   if (!deps.agentCalls) deps.agentCalls = defaultAgentCalls();

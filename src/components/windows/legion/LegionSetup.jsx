@@ -30,7 +30,7 @@ checks:
 
 const SAMPLES = [
   'A one-page tip calculator: type the bill, pick 15, 18 or 20 percent, see the tip and the total.',
-  'A landing page for Iowa AI LLC with a hero, three services and a contact form.',
+  'A landing page for Indigo Labs LLC with a hero, three services and a contact form.',
   'A to-do list with a small backend and a database table for the tasks.',
 ];
 

@@ -1,4 +1,4 @@
-// Legion: the planning step, from both of Alex's diagrams.
+// Legion: the planning step, from both diagrams.
 //
 //   1. The Architect drafts a plan and may ask up to three clarifying
 //      questions.

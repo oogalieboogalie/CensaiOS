@@ -1,12 +1,13 @@
 import {
   updateAgentTask, getSubAgentById, sendAgentMessage, buildCompletionReceipt
 } from '../memory.js';
-import { toolCallOk } from '../routes/chat/toolOutcome.js';
-import { withLongcatToolCallFallback } from '../routes/chat/longcatToolCalls.js';
+import { toolCallOk } from '../chatModel/toolOutcome.js';
+import { safeErrorCode } from '../security/errorCode.js';
+import { withLongcatToolCallFallback } from '../chatModel/longcat.js';
 import {
   buildSubAgentSystemPrompt,
   getSubAgentModelConfig
-} from '../routes/chat/index.js';
+} from '../chatModel/agentPrompts.js';
 import { callModel, createModelAccessContext, workspaceUsageSink } from '../aiGateway/index.js';
 import { executeTool, filterToolsForAgent } from '../tools.js';
 import { 
@@ -40,7 +41,7 @@ async function notifyParentTaskSubmission(task, status, details) {
       importanceScore: status === 'failed' ? 0.9 : 0.75,
     });
   } catch (err) {
-    log.warn('failed to notify parent', { taskId: task.id, error: err.message });
+    log.warn('failed to notify parent', { taskId: task.id, code: safeErrorCode(err) });
   }
 }
 
@@ -57,7 +58,7 @@ export async function runTask(task) {
   }
 
   const done = log.startTimer();
-  log.info('task start', { taskId: task.id, assignee: sub.name || sub.id, title: task.title, priority: task.priority || 'normal' });
+  log.info('task start', { taskId: task.id, agentId: sub.id, priority: task.priority || 'normal' });
   const toolCalls = [];
   // Same additive `ok` flag the chat loop streams: the harness, not the model,
   // records per-tool outcomes in the completion receipt.
@@ -174,7 +175,7 @@ export async function runTask(task) {
     return { status: 'succeeded', result: finalText };
 
   } catch (err) {
-    log.error('task failed', { taskId: task.id, ms: done(), error: err.message });
+    log.error('task failed', { taskId: task.id, ms: done(), code: safeErrorCode(err) });
     await updateAgentTask(task.id, {
       status: 'failed',
       error: err.message,

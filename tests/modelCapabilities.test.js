@@ -46,6 +46,16 @@ describe('model capability map', () => {
     }
   });
 
+  test('Z.ai GLM chats get the picture button only on the vision models, and tools', () => {
+    for (const model of ['glm-4.5v', 'glm-4v-plus', 'GLM-4.1V-Thinking-Flash']) {
+      expect(getModelCapabilities('zai', model)).toMatchObject({ image: true, pdf: false, tools: true });
+    }
+    for (const model of ['glm-4.6', 'glm-4.5-air', 'glm-z1-air']) {
+      expect(getModelCapabilities('zai', model)).toMatchObject({ image: false, voiceInput: null, tools: true });
+    }
+    expect(capabilityProviderFor(null, 'https://api.z.ai/api/paas/v4')).toBe('zai');
+  });
+
   test('infers the provider family from the server default base URL', () => {
     expect(capabilityProviderFor(null, 'http://localhost:11434/v1')).toBe('ollama');
     expect(capabilityProviderFor('', 'https://openrouter.ai/api/v1')).toBe('openrouter');

@@ -274,7 +274,7 @@ step_firewall() {
 }
 
 step_keys() {
-  say "Your AI keys (stay on this box, never sent to Iowa AI)"
+  say "Your AI keys (stay on this box, never sent to us)"
   local dir="$BOX_HOME/.config/starter-box" file
   file="$dir/keys.env"
   install -d -m 700 -o "$BOX_USER" -g "$(id -gn "$BOX_USER")" "$dir"

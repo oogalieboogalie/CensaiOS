@@ -1,4 +1,4 @@
-// Ported from Open Books (MIT, Alex's bookkeeping tool) into YorWare Books.
+// Ported from Open Books (MIT, an open-source bookkeeping tool) into YorWare Books.
 /**
  * Tax categories, keyed to IRS Schedule C (Form 1040), "Profit or Loss From Business".
  *

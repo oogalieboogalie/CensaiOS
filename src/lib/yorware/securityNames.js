@@ -1,7 +1,7 @@
 /**
  * src/lib/yorware/securityNames.js
  *
- * YorWare security names (Alex's diagram 11). Each Yor-* name labels a real
+ * YorWare security names (diagram 11). Each Yor-* name labels a real
  * security piece of censaiOS, so the names mean something you can open:
  *   Yor-Thangorodrim     the gate: Open anywhere (this PC only unless you pair)
  *   Yor-NarsilCore-API   the engine: API Bar, one door for every API

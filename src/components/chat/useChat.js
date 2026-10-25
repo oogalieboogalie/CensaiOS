@@ -13,6 +13,7 @@ import { useSpeaker } from './useVoice.js';
 import { useChatAttachments } from './useChatAttachments.js';
 import { useChatActions } from './useChatActions.js';
 import { useAutoPick } from './useAutoPick.js';
+import { answerMessage, errorMessage, landChatReply, stoppedMessage } from './landChatReply.js';
 import { runEnded, runStarted, runTool, toolNameFrom } from '../../lib/weewoo/agentRun.js';
 
 function useAgent(agentId) {
@@ -27,7 +28,12 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
   const defaultMsgs = React.useMemo(() => [], [agent.id]);
   const msgs = win.msgs === undefined ? defaultMsgs : win.msgs;
 
-  const setMsgs = (next) => onUpdate({ msgs: typeof next === 'function' ? next(msgs) : next });
+  const msgsRef = React.useRef(msgs); msgsRef.current = msgs; // callbacks made earlier (restart notes, a late reply) see the latest
+  const setMsgs = (next) => {
+    const value = typeof next === 'function' ? next(msgsRef.current) : next;
+    msgsRef.current = value;
+    onUpdate({ msgs: value });
+  };
 
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -112,7 +118,7 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
       if (isAuto) return;
       setSending(true);
       setTimeout(() => {
-        setMsgs([...storedMsgs, { from: agent.id, text: scriptedReply(text), at: new Date().toISOString() }]);
+        landChatReply(setMsgs, storedMsgs, { from: agent.id, text: scriptedReply(text), at: new Date().toISOString() }, win.id);
         setSending(false);
       }, replyDelayMs());
       return;
@@ -167,23 +173,15 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
         },
         onChangeImpact: impact => setLiveStatus({ status: 'thinking', detail: { changeImpact: impact } }),
       });
-      const nextMsgs = [...storedMsgs, { from: agent.id, text: reply.text, at: new Date().toISOString(), activity: buildActivity(reply), ...(sources.length ? { knowledge: sources } : {}) }];
-      setMsgs(nextMsgs);
+      const nextMsgs = landChatReply(setMsgs, storedMsgs, answerMessage(agent.id, reply, sources), win.id);
       onUpdate({ agentRun: runEnded(run, { state: 'done', text: reply.text }) });
       if (win.autoSpeak && capabilities.voiceOutput && reply.text) {
         speaker.speak(nextMsgs.length - 1, reply.text);
       }
     } catch (error) {
-      onUpdate({ agentRun: runEnded(run, { state: error?.code === 'CHAT_ABORTED' ? 'stopped' : 'error', text: error?.code === 'CHAT_ABORTED' ? streamed : error?.message }) });
-      if (error?.code === 'CHAT_ABORTED') {
-        setMsgs([...storedMsgs, { from: agent.id, text: streamed || '(stopped before replying)', at: new Date().toISOString(), stopped: true, activity: buildActivity({ tools: log.map(toolFromEvent) }) }]);
-      } else {
-        setMsgs([...storedMsgs, {
-          from: agent.id, at: new Date().toISOString(),
-          text: error?.message || 'Something went wrong. Try again.',
-          error: { code: error?.code, status: error?.status, retryAfter: error?.retryAfter, keyProvider: error?.details?.keyProvider || null },
-        }]);
-      }
+      const stopped = error?.code === 'CHAT_ABORTED';
+      onUpdate({ agentRun: runEnded(run, { state: stopped ? 'stopped' : 'error', text: stopped ? streamed : error?.message }) });
+      landChatReply(setMsgs, storedMsgs, stopped ? stoppedMessage(agent.id, streamed, log) : errorMessage(agent.id, error), win.id);
     }
     if (abortRef.current === controller) abortRef.current = null;
     setStreamText('');
@@ -216,33 +214,5 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
     setKnowledge: (value) => onUpdate({ knowledge: Boolean(value) }),
     autoPick,
     ...actions,
-  };
-}
-
-function toolFromEvent(detail) {
-  return { tool: detail.tool, ms: detail.ms, ok: detail.ok, summary: detail.summary };
-}
-
-function buildActivity(reply) {
-  const timings = reply?.timings;
-  const tools = reply?.tools || [];
-  if (!timings && tools.length === 0 && !reply?.sevenContexts) return null;
-  return {
-    totalMs: timings?.total_ms,
-    modelMs: timings?.model_ms,
-    setupMs: timings?.setup_ms,
-    toolMs: timings?.tool_ms,
-    rounds: timings?.model_calls?.length || 0,
-    changeImpact: reply?.changeImpact || null,
-    projectContext: reply?.projectContext || [],
-    sevenContexts: reply?.sevenContexts || null,
-    tools: tools.map(t => ({
-      name: t.tool,
-      ms: t.ms,
-      resultChars: t.result_chars,
-      round: t.round,
-      summary: t.summary,
-      ok: t.ok,
-    })),
   };
 }

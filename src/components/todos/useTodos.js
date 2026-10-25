@@ -4,6 +4,7 @@ import { normalizeTodos } from './TodosData.js';
 import { useOperationalTodos } from './useOperationalTodos.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { startCodingAgent } from './startCodingAgent.js';
+import { openSteps, todoItemsFrom } from './todoImport.js';
 
 export function useTodos(win, onUpdate, currentProject) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
@@ -45,6 +46,26 @@ export function useTodos(win, onUpdate, currentProject) {
     setNewText('');
   };
   
+  // A .todo file: each card becomes a to-do, assigned as its "For:" line says.
+  const importTodo = async (text) => {
+    try {
+      const { items: added, skipped } = todoItemsFrom(text);
+      let next = items;
+      for (const item of added) {
+        next = [...next, item];
+        if (operational.enabled) await operational.addItem(next, item);
+      }
+      if (!operational.enabled) setLocalItems(next);
+      if (skipped) setHandoffError(`${skipped} check(s) in that file were left out because censaiOS cannot check them.`);
+    } catch (err) {
+      setHandoffError(err.message);
+    }
+  };
+  const openStepsFor = (item) => {
+    const id = openSteps(item, win);
+    if (id && id !== item.stepsWindowId) persistItemPatch(item.id, { stepsWindowId: id });
+  };
+
   const startEdit = (id, text) => { setEditingId(id); setEditText(text); };
   const saveEdit = () => { if (editingId && editText.trim()) { persistItemPatch(editingId, { text: editText.trim() }); } setEditingId(null); setEditText(''); };
   const cancelEdit = () => { setEditingId(null); setEditText(''); };
@@ -110,6 +131,6 @@ export function useTodos(win, onUpdate, currentProject) {
     clearError: () => { setHandoffError(null); operational.clearError(); },
     editingId, editText, setEditText,
     completedCount, totalCount,
-    toggle, assign, add, startEdit, saveEdit, cancelEdit, handoff
+    toggle, assign, add, startEdit, saveEdit, cancelEdit, handoff, importTodo, openStepsFor
   };
 }

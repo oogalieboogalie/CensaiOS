@@ -1,4 +1,4 @@
-/* Git Diff Viewer (Alex's diagram 16): wordmark, two panes, a red line between. */
+/* Git Diff Viewer (diagram 16): wordmark, two panes, a red line between. */
 .gdv { display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; padding: 12px 14px 14px; background: var(--surface-sunken); color: var(--ink); }
 .gdv-mark { align-self: center; padding: 6px 22px; border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); font-family: var(--font-display); font-weight: 900; font-size: var(--text-xl); letter-spacing: 0.04em; line-height: 1.1; }
 .gdv-mark-git { color: var(--success); }

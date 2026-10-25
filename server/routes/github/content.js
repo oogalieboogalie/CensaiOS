@@ -1,4 +1,3 @@
-import { getSecret } from '../../secrets.js';
 import { getGithubDefaultBranch, githubFileCache, GITHUB_FILE_CACHE_TTL } from './shared.js';
 
 export async function readFile(req, res) {
@@ -6,7 +5,7 @@ export async function readFile(req, res) {
   if (!repo || repo === 'null' || repo === 'undefined' || !filePath || filePath === 'null' || filePath === 'undefined') {
     return res.status(400).json({ error: 'Invalid or missing repo or path parameter' });
   }
-  const token = getSecret('GITHUB_TOKEN');
+  const token = req.githubToken;
 
   let branch = req.query.branch;
   if (!branch) {
@@ -52,8 +51,8 @@ export async function writeFile(req, res) {
     return res.status(400).json({ error: 'Missing repo, path, or content in body' });
   }
 
-  const token = getSecret('GITHUB_TOKEN');
-  if (!token) return res.status(401).json({ error: 'GITHUB_TOKEN not found in .env' });
+  const token = req.githubToken;
+  if (!token) return res.status(401).json({ error: 'Connect GitHub first: paste a token in the GitHub window.' });
 
   try {
     let sha = null;

@@ -82,9 +82,20 @@ describe('Figma client', () => {
   test('sends the personal access token as X-Figma-Token', async () => {
     const { fetchImpl, calls } = createFigmaFetch();
     const me = await createFigmaClient('figd_user_token', { fetchImpl }).me();
-    expect(me.handle).toBe('Alex Designer');
+    expect(me.handle).toBe('Alma Designer');
     expect(calls[0].url.href).toBe('https://api.figma.com/v1/me');
     expect(calls[0].headers).toEqual({ 'X-Figma-Token': 'figd_user_token' });
+  });
+
+  test('FIGMA_API_BASE points the client at a stand-in Figma', async () => {
+    const { fetchImpl, calls } = createFigmaFetch();
+    process.env.FIGMA_API_BASE = 'http://127.0.0.1:9/v1/';
+    try {
+      await createFigmaClient('figd_user_token', { fetchImpl }).me();
+    } finally {
+      delete process.env.FIGMA_API_BASE;
+    }
+    expect(calls[0].url.href).toBe('http://127.0.0.1:9/v1/me');
   });
 
   test('maps Figma errors to clear codes', async () => {
@@ -117,7 +128,7 @@ describe('Figma import pipeline', () => {
       ['3:1', 'Home / iPhone', 'Mobile', 390, 844],
     ]);
     expect(result.frames[0].thumbnailUrl).toBe('https://render.figma.example/1:2.png');
-    expect(calls[0].url.searchParams.get('depth')).toBe('2');
+    expect(calls[0].url.searchParams.get('depth')).toBe('3');
   });
 
   test('imports a frame as HTML plus a 2x pixel render', async () => {

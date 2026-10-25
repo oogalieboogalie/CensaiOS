@@ -56,7 +56,7 @@ export function prItem(pr, repo) {
 /** Where an agent task works, as a short repo name ("owner/repo" for kept GitHub clones). */
 export function taskRepo(task) {
   const root = String(task.repoRoot || task.folder || '');
-  // Split on both slashes: the server may run on Windows (D:\Homebase\CensaiHub).
+  // Split on both slashes: the server may run on Windows (D:\Repos\CensaiHub).
   const name = root.split(/[\\/]+/).filter(Boolean).pop() || 'this computer';
   return name.includes('__') ? name.replace('__', '/') : name;
 }

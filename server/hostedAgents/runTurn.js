@@ -14,6 +14,7 @@ import { getAgent } from '../memory/core/agents.js';
 import { HostedAgentError } from './http.js';
 import { findThread, saveThread } from './store.js';
 import { getVendor } from './vendors/index.js';
+import { userRole as roleFor } from '../security/systemAdmin.js';
 
 const log = createLogger('hosted-agents');
 
@@ -49,7 +50,7 @@ export async function keyFor(vendor, userId, { vault = getUserApiKeyConfig } = {
 /** Same rule as every other agent: cloud boards only show family agents to privileged roles. */
 export async function hostedAccess({ db, agentId, userId, userRole }) {
   let role = userRole;
-  if (userId && !role) role = (await db.query('SELECT role FROM users WHERE id = $1', [userId])).rows[0]?.role || 'user';
+  if (userId && !role) role = (await roleFor(userId, { db })) || 'user';
   const { enforceCoreChatBoundary } = await import('../agents/familyRuntimeAccess.js');
   enforceCoreChatBoundary({ agentId, agent: await getAgent(agentId, userId), userRole: role });
 }

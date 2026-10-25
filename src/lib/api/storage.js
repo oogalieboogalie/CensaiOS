@@ -1,4 +1,5 @@
 import { createLogger } from '../logger.js';
+import { logFailure } from '../appLog/browserLog.js';
 
 const apiLog = createLogger('api');
 
@@ -28,7 +29,7 @@ function readLocalStoredJson(key) {
       const raw = storage.getItem(key);
       if (raw !== null) return JSON.parse(raw);
     } catch (e) {
-      console.warn(`Failed to read ${key} from local storage`, e);
+      logFailure(`local storage read failed (${key})`, e, 'storage');
     }
   }
   return STORAGE_MISS;
@@ -46,7 +47,7 @@ async function readApiStoredJson(key) {
     const data = await res.json();
     return data?.value ?? STORAGE_MISS;
   } catch (e) {
-    console.warn(`Failed to read ${key} from local client state`, e);
+    logFailure(`saved state read failed (${key})`, e, 'storage');
     return STORAGE_MISS;
   }
 }
@@ -61,12 +62,12 @@ async function readStoredJson(key, fallback) {
     const localTime = localValue.updatedAt ? Date.parse(localValue.updatedAt) : 0;
 
     if (localTime > serverTime) {
-      console.log(`[Sync] Local storage value is newer (${localValue.updatedAt}) than server value (${serverValue.updatedAt}). Using local and syncing back to server in background.`);
+      apiLog.debug('local copy is newer; syncing it back to the server', { key });
       // Sync local value back to server asynchronously
-      writeServerStoredJson(key, localValue).catch(e => console.warn("Failed to sync local value to server", e));
+      writeServerStoredJson(key, localValue).catch(e => logFailure(`sync to server failed (${key})`, e, 'storage'));
       return localValue;
     } else {
-      console.log(`[Sync] Server value is newer or equal (${serverValue.updatedAt}) than local value (${localValue.updatedAt}). Updating local storage.`);
+      apiLog.debug('server copy is newer; updating local storage', { key });
       const storage = getLocalStorage();
       if (storage) {
         try { storage.setItem(key, JSON.stringify(serverValue)); } catch {}
@@ -106,7 +107,7 @@ async function writeServerStoredJson(key, value, options = {}) {
     saved = true;
   } catch (e) {
     lastError = e;
-    console.warn(`Failed to write ${key} to local client state`, e);
+    logFailure(`saved state write failed (${key})`, e, 'storage');
   }
 
   if (!saved) throw lastError || new Error(`Failed to write ${key} to server state`);
@@ -129,7 +130,7 @@ async function writeStoredJson(key, value, options = {}) {
   } catch (e) {
     serverError = e;
     if (options.requireServer) throw e;
-    console.warn(`Failed to save ${key} to server state`, e);
+    logFailure(`server save failed (${key})`, e, 'storage');
   }
 
   const storage = getLocalStorage();
@@ -138,7 +139,7 @@ async function writeStoredJson(key, value, options = {}) {
       storage.setItem(key, JSON.stringify(enrichedValue));
       saved = true;
     } catch (e) {
-      console.warn(`Failed to save ${key} to local storage`, e);
+      logFailure(`local storage save failed (${key})`, e, 'storage');
     }
   }
 
@@ -160,7 +161,7 @@ async function removeStoredJson(key) {
       throw new Error(data?.error || `HTTP ${res.status}`);
     }
   } catch (e) {
-    console.warn(`Failed to remove ${key} from local client state`, e);
+    logFailure(`saved state remove failed (${key})`, e, 'storage');
   }
 
 }

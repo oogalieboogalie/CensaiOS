@@ -8,6 +8,7 @@ import { generateToken, hashPassword, verifyPassword } from '../hubAccounts/pass
 import { authSecurityRateLimiter } from '../middleware/standardRateLimits.js';
 import { establishAuthenticatedSession } from '../security/authSession.js';
 import { checkTotp, newTotpSecret, totpUri } from '../hubAccounts/totp.js';
+import { logAuthProblem } from '../security/authLog.js';
 
 const HUB_LIMITER = rateLimit({ windowMs: 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Too many requests. Please try again shortly.' } });
 
@@ -56,13 +57,13 @@ hubAuthRouter.post('/signup', authSecurityRateLimiter, HUB_LIMITER, async (req, 
           body: JSON.stringify({ event: 'hub_account_signup', username: trimmedUsername, emailCipher: emailEncrypted, emailHash, confirmUrl, timestamp: new Date().toISOString() }),
         });
       } catch (err) {
-        console.warn('[hubAuth] n8n webhook failed:', err.message);
+        logAuthProblem('hub sign-up: n8n webhook failed', err, 'warn');
       }
     }
 
     res.status(201).json({ ok: true, account: { id: account.id, username: account.username }, message: 'Account created. Check your email to confirm.', confirmUrl });
   } catch (err) {
-    console.error('Hub signup error:', err);
+    logAuthProblem('hub sign-up failed', err);
     res.status(500).json({ error: 'Failed to create account' });
   }
 });
@@ -90,7 +91,7 @@ hubAuthRouter.post('/login', authSecurityRateLimiter, HUB_LIMITER, async (req, r
     await establishAuthenticatedSession(req, { id: account.id, role: 'user', email });
     res.json({ ok: true, user: { id: account.id, username: account.username } });
   } catch (err) {
-    console.error('Hub login error:', err);
+    logAuthProblem('hub sign-in failed', err);
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -105,7 +106,7 @@ hubAuthRouter.get('/confirm-email', async (req, res) => {
     await pool.query('UPDATE hub_accounts SET email_confirmed = TRUE, email_confirm_token = NULL, email_confirm_expires = NULL, updated_at = NOW() WHERE id = $1', [rows[0].id]);
     res.send(`<!doctype html><html><head><meta charset="utf-8"><title>Email Confirmed</title><style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0a0a12;color:#e8e8ed}.card{text-align:center;padding:2rem;border:1px solid #2a2a3e;border-radius:12px;background:#11111a}</style></head><body><div class="card"><h1>Email Confirmed</h1><p>Your CensaiHub account is ready.</p><a href="${process.env.APP_ORIGIN || 'http://localhost:5173'}" style="color:#f97316">Return to CensaiHub</a></div></body></html>`);
   } catch (err) {
-    console.error('Email confirmation error:', err);
+    logAuthProblem('hub email confirmation failed', err);
     res.status(500).send('Confirmation failed');
   }
 });
@@ -124,7 +125,7 @@ hubAuthRouter.post('/mfa-setup', async (req, res) => {
     const qrDataUrl = await toDataURL(otpauth);
     res.json({ ok: true, secret, qrDataUrl, message: 'Scan QR code with authenticator app, then verify with /mfa-verify' });
   } catch (err) {
-    console.error('MFA setup error:', err);
+    logAuthProblem('hub two-step setup failed', err);
     res.status(500).json({ error: 'MFA setup failed' });
   }
 });
@@ -141,7 +142,7 @@ hubAuthRouter.post('/mfa-verify', async (req, res) => {
     await pool.query('UPDATE hub_accounts SET mfa_enabled = TRUE, updated_at = NOW() WHERE id = $1', [req.session.userId]);
     res.json({ ok: true, message: 'MFA enabled successfully' });
   } catch (err) {
-    console.error('MFA verify error:', err);
+    logAuthProblem('hub two-step check failed', err);
     res.status(500).json({ error: 'MFA verification failed' });
   }
 });
@@ -159,7 +160,7 @@ hubAuthRouter.post('/mfa-disable', async (req, res) => {
     await pool.query('UPDATE hub_accounts SET mfa_enabled = FALSE, mfa_secret = NULL, updated_at = NOW() WHERE id = $1', [req.session.userId]);
     res.json({ ok: true, message: 'MFA disabled' });
   } catch (err) {
-    console.error('MFA disable error:', err);
+    logAuthProblem('hub two-step turn-off failed', err);
     res.status(500).json({ error: 'Failed to disable MFA' });
   }
 });
@@ -179,7 +180,7 @@ hubAuthRouter.get('/me', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'Account not found' });
     res.json({ ok: true, account: rows[0] });
   } catch (err) {
-    console.error('Get account error:', err);
+    logAuthProblem('hub account read failed', err);
     res.status(500).json({ error: 'Failed to get account' });
   }
 });

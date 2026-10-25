@@ -3,7 +3,7 @@ import { DEFAULT_SCRIPT } from './defaultScript.js';
 // Settings one Teleprompter window shares with its pop-out. The pop-out is a
 // separate page (same site), so the two talk through localStorage: every
 // change is written here and the other page hears it as a "storage" event.
-export const PROMPTER_KEY = 'censai.teleprompter.v1';
+export const PROMPTER_KEY = 'censai.teleprompter.v1'; // gitleaks:allow (a browser storage name, not a secret)
 
 export const SPEED_MIN = 1;
 export const SPEED_MAX = 10;

@@ -1,4 +1,4 @@
-// Message router, step one (Alex's diagram 03): read a plain request like
+// Message router, step one (diagram 03): read a plain request like
 // "can we make some documents for work and create a microapp for invoices?"
 // and cut it into parts, each with tags like [create] [docs] [work].
 // Pure: shared by the server route, the Message Router window and tests.
@@ -88,7 +88,7 @@ export function readIntent(part, { previousAction = null } = {}) {
   const words = raw.map(stem);
   const action = words.map((w) => ACTION_BY_WORD.get(w)).find(Boolean) || previousAction || 'create';
   const thing = words.map((w) => THING_BY_WORD.get(w)).find(Boolean) || null;
-  // Topic words keep their own spelling ("invoices", "des moines"); matching uses the trimmed form.
+  // Topic words keep their own spelling ("invoices", "dale city"); matching uses the trimmed form.
   const topicRaw = [...new Set(raw.filter((w, i) => !FILLER.has(w) && !FILLER.has(words[i]) && !ACTION_BY_WORD.has(words[i]) && !THING_BY_WORD.has(words[i])))].slice(0, 3);
   const topicWords = topicRaw.map(stem);
   const topic = topicRaw.join(' ') || null;

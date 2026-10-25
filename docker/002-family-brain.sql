@@ -1,7 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════════
 --  FAMILY BRAIN MIGRATION
 --  Evolves the basic agent memory into the full family brain system
---  Based on Alex's DuckDB FAMILY_BRAIN_ALEX_NO_TOUCH architecture
+--  Based on the family brain's DuckDB architecture
 -- ═══════════════════════════════════════════════════════════════════
 
 -- ─── Enrich memories table ──────────────────────────────────────────

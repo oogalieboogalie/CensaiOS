@@ -2,6 +2,7 @@
 import React from 'react';
 import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
+import { webOnlyFrameSrc } from '../lib/frameSrc.js';
 
 export const WHATSAPP_WEB_URL = 'https://web.whatsapp.com';
 
@@ -71,7 +72,7 @@ export function WebviewShellWindow({ win, onUpdate, defaultUrl = '', title = 'We
         </form>
         <div style={{ flex: 1, position: 'relative', background: 'white' }}>
           {activeUrl ? (
-            <iframe key={frameKey} title={win?.title || title} src={activeUrl} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }} sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
+            <iframe key={frameKey} title={win?.title || title} src={webOnlyFrameSrc(activeUrl) || undefined} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }} sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
           ) : (
             <div style={{ padding: 16, fontSize: 'var(--text-sm)', color: 'var(--ink-faint)', fontStyle: 'italic' }}>Enter a URL above to open it in this webview.</div>
           )}

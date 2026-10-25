@@ -11,7 +11,7 @@ const AGENTS = [
 const DIAGRAM = 'can we make some documents for work and create a microapp for invoices?';
 
 describe('reading a request (diagram 03)', () => {
-  it('cuts Alex\'s example into the two jobs from the drawing', () => {
+  it('cuts Alma\'s example into the two jobs from the drawing', () => {
     expect(splitRequest(DIAGRAM)).toEqual(['can we make some documents for work', 'create a microapp for invoices']);
     const [docs, app] = readRequest(DIAGRAM);
     expect(docs.tags).toEqual(['create', 'docs', 'work', 'work={{$recall_work_memory}}']);
@@ -31,7 +31,7 @@ describe('reading a request (diagram 03)', () => {
   });
 
   it('makes a safe memory slot name', () => {
-    expect(slotWord('Des Moines!')).toBe('des_moines');
+    expect(slotWord('Dale City!')).toBe('dale_city');
     expect(slotWord('')).toBe('general');
     expect(readIntent('make a report').memorySlot).toBe('{{$recall_docs_memory}}');
   });

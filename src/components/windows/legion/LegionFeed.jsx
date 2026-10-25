@@ -21,7 +21,7 @@ function Questions({ questions, onAnswer }) {
 
 const ENOUGH = { now: 'YES · now', more: 'YES · if I knew more', learn: 'NO' };
 
-/** One step of Alex's self-educate loop. */
+/** One step of the self-educate loop. */
 function Educate({ item }) {
   if (item.step === 'check') {
     return (

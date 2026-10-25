@@ -34,7 +34,7 @@ describe('portable project paths', () => {
     delete process.env.HOMEBASE_HOST_PROJECT_ROOT;
     process.env.HOMEBASE_CONTAINER_PROJECT_ROOT = containerRoot;
 
-    const hostPath = 'C:\\Homebase\\CensaiHub';
+    const hostPath = 'C:\\Repos\\CensaiHub';
     expect(normalizeProjectPathForStorage(hostPath)).toBe(hostPath);
     expect(mapProjectPathForRuntime(hostPath)).toBe(containerRoot.replace(/\\/g, '/'));
     expect(resolveProjectPathForRuntime(hostPath)).toBe(path.resolve(containerRoot));

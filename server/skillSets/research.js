@@ -1,4 +1,4 @@
-// The research step: name a position, get a skill set. It follows Alex's
+// The research step: name a position, get a skill set. It follows the
 // Idea Foundry method: research what makes someone GREAT (not just good) at
 // the position, then distill it into the professional skills an agent needs.
 // Pure orchestration over injected deps:

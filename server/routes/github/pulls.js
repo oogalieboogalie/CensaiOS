@@ -10,7 +10,7 @@ export async function listPulls(req, res) {
   try {
     const { owner, repo } = parseRepository(req.query.repo);
     const state = parsePullState(req.query.state);
-    const octokit = getGitHubClient();
+    const octokit = getGitHubClient(req.githubToken);
     const { data } = await octokit.rest.pulls.list({ owner, repo, state, per_page: 100 });
     return res.json(data);
   } catch (err) {
@@ -22,7 +22,7 @@ export async function getPullDetails(req, res) {
   try {
     const { owner, repo } = parseRepository(req.query.repo);
     const pullNumber = parsePositiveInteger(req.query.number, 'number');
-    const octokit = getGitHubClient();
+    const octokit = getGitHubClient(req.githubToken);
     const { data: pr } = await octokit.rest.pulls.get({ owner, repo, pull_number: pullNumber });
     const sha = pr.head?.sha;
 
@@ -56,7 +56,7 @@ export async function mergePull(req, res) {
     if (!['merge', 'squash', 'rebase'].includes(method)) {
       return res.status(400).json({ error: 'Invalid merge method.' });
     }
-    const octokit = getGitHubClient();
+    const octokit = getGitHubClient(req.githubToken);
     const { data } = await octokit.rest.pulls.merge({
       owner,
       repo,

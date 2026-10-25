@@ -16,8 +16,12 @@ const BACK_GIVE_UP_MS = 15 * 60_000;
 
 const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
 
-function friendly(error) {
-  if ([401, 403].includes(error?.status)) return 'Only the owner of this censaiOS can update it.';
+export function friendly(error) {
+  if (error?.status === 401) return "You're signed out. Sign in again to update censaiOS.";
+  if (error?.status === 403 && error.ownerName && error.yourName) {
+    return `Only the owner account (${error.ownerName}) can update censaiOS. You're signed in as ${error.yourName}. Sign in as ${error.ownerName} to update.`;
+  }
+  if (error?.status === 403) return 'Only the owner of this censaiOS can update it.';
   if (error?.status === 404) return 'This copy of censaiOS updates by installing a new release, not from here.';
   return error?.message || 'Something went wrong asking for the update.';
 }

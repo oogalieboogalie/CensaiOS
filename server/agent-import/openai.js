@@ -1,5 +1,5 @@
 // Pull Assistants straight from the person's OpenAI account with their own
-// vault key (Alex's diagram 18: import external agents). Read-only: nothing
+// vault key (diagram 18: import external agents). Read-only: nothing
 // is changed on OpenAI. Each Assistant object already has the shape the
 // file importer reads (name, instructions, model, tools).
 

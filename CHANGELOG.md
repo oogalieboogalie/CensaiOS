@@ -13,6 +13,107 @@ and each Sunday that list becomes the next numbered stable release.
 The Releases page of this repository has each release's notes and container
 tags.
 
+## 0.5.0 (2026-10-25)
+
+### New
+
+- Nightly release: mark the teleprompter storage name as not a secret
+- Send the board's busiest console failures to the app log (item 120)
+- Chat's own failure notes reach the app log
+- Test team: name pictures by theme and link each theme's copy
+- Test team: each chat shows only what its model can do
+- Z.ai GLM chats get the picture button on vision models and show tools
+- Test team: agents asking agents check, and board search knows agent roles
+- Test team: Figma and pasted designs check
+- Test team: LeadHound check, and a brief must be words
+- Test team: window groups check for two people
+- Music Player frames only real music links
+- Group goals and milestones work with whole-number ids too
+- Browser lines reach the app log with quoted values and links taken out
+- Board-help log line names agents by id only
+- Scheduler error answers carry no raw database text
+- Key sharing log lines carry no typed account
+- Add the test team, and stop shared windows from running planted script links
+- Group window: a milestone only shows as done once it is saved
+- Make Docker reads owner-only, and close two side doors into container logs
+- Import guard: parts may only reach into each other less, never more (item 97)
+- Group goals and milestones belong to the person who made them (item 102)
+- Newcomer guide matches the code, with a map of server folders (item 100)
+- Grok Build G5: Music Player radio links are detected by more than words in the address
+- The everyone-is-user-1 shortcut runs only inside jest (item 99)
+- Grok Build 53: two people in one chat window both keep their messages
+- Server notes from five files reach the app log (item 98)
+- Grok Build 47: Figma import lists frames inside Sections
+- Grok Build 48: Agents on a starter board can ask their own teammates
+- Board sync rules live in one shared folder both sides use
+- Grok Build 52: Group Chat uses the AI keys saved in censaiOS
+- Tests for the seven server addresses nobody tested
+- One real end-to-end check: two made-up people on one board
+- A check stops two database setup files from sharing a number
+- Grok Build 50: Scheduler Delete works on a schedule that has run, and the card shows its last answer
+- Database: a setup ledger records which docker/*.sql files each install has
+- Grok Build 56: YouTube search takes your own YouTube key
+- Grok Build 55: Chats say in plain words why the AI provider turned a message down
+- Security: one home for an account's role lookup
+- Server keys: embeddings and Tavily search keep the owner's keys for the owner
+- Grok Build G8: The terminal's Mount to chip fits at narrow widths
+- Logs: http_test refusals and page checks drop typed hosts and paths
+- A role changed in the database counts on the next request, no sign-out
+- Keys: saving, removing and sharing AI keys leave app log lines
+- Terminal: start failures log the kind of folder, not the folder
+- Task worker: the start line logs ids and priority, not the task's text
+- Auth: sign-in problems leave an app log line without the email
+- Grok Build G1: Code Editor and Document never save an error message over a file
+- Grok Build G4: Image Studio's Insert button inserts the picture you clicked
+- Automation: buttons say when Windows said no, and log through the app log
+- Sheets: test two people typing in one cell, and count merges honestly
+- Outside tools started as programs get shared settings only for the owner
+- CENSAI_ENV_KEYS=off also keeps setup-file keys from coding CLIs
+- AI resources: Ask the provider goes through the outbound checks
+- Notes say how to link to them
+- To-do Assign offers only the coding agents this computer has
+- Agent tools and Censai code jobs name the owner account
+- AI resources: say why Codex and Grok show no account name
+- AI resources: decide the owner view with assertSystemAdmin
+- LeadHound: Download CSV saves every lead as a spreadsheet file
+- Design: Figma import, Sync from Figma and remix leave app log lines
+- Agent registry: one app log line for every agent card change
+- Docker: every button leaves a line in the app log
+- Step cards: a page check that asks the project's own running app
+- GitHub window, HTTP Test and Pull merged changes are owner-only where they use the PC or the owner's GitHub key
+- Docker: a container's Open link goes to the computer the board is on
+- Music Player: swirl light show that pulses with the music
+- Music Player: pick the skin yourself, plus a Desktop 2001 skin
+- Calendar: each person keeps their own view on a shared board
+- Mailcow lists and changes are owner only
+- Terminal: the refusal's app log line carries no account names
+- Keep the PC's .env provider keys away from teammates' CLI agents
+- Sheet cells merge one at a time on a shared board
+- "Only the owner" messages name the owner account and yours
+- AI resources window: every AI key and sign-in, what it spent, what is left
+- LeadHound: saved leads keep their drafts and don't pile up twice
+- Docker Run form takes settings, a shared folder and a restart choice
+- Step cards, plain steps that unlock one by one, and .todo files
+
+### Fixed
+
+- A file that cannot play says so instead of PLAYING
+- Raw error text stays out of four leftover answers and log lines (item 104)
+- Chat model front door: parts outside the routes stop borrowing Chat's files
+- Grok Build 51: F1 to F9 full screen stops cutting off what runs outside the group
+- Grok Build G2: A second browser tab no longer counts as another person
+- Chat: a "dev server restarted" note no longer wipes the conversation
+- Grok Build 49: Sketchpad draws again, and two people drawing keep both lines
+- Grok Build 54: Try-it board's Add your AI key step stops breaking Settings
+- Grok Build G6: A stray % in a song link no longer breaks the Music Player
+- Grok Build G3: Lead Queue counts stay right once you pick a filter
+- Docker: log lines give a fixed reason, never Docker's own words
+- Fix the public nightly's failing test and secret scan
+
+### Behind the scenes
+
+- Keep personal details out of the public copy
+
 ## 0.4.0 (2026-10-19)
 
 ### New

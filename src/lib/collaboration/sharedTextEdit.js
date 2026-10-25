@@ -1,5 +1,5 @@
 import { useWorkspaceStore } from '../store.js';
-import { mergeLocalEdit } from '../../../server/collab/textDiff.js';
+import { mergeLocalEdit } from '../../../shared/collab/textDiff.js';
 
 // What a window's text should become after the person typed base -> next,
 // given whatever the shared doc has delivered since the editor last rendered.

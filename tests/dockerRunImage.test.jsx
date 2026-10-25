@@ -51,6 +51,25 @@ test('the computer owner runs an image with a name and a port', async () => {
   expect(screen.getByRole('tab', { name: /Containers/ }).getAttribute('aria-selected')).toBe('true');
 });
 
+test('More settings sends settings, a shared folder and when to start again', async () => {
+  const calls = mockApi('admin');
+  await openImages();
+  fireEvent.click(await screen.findByRole('button', { name: 'Run axllent/mailpit:latest' }));
+  expect(screen.queryByLabelText('Settings')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'More settings' }));
+  fireEvent.change(screen.getByLabelText('Settings'), { target: { value: 'MP_MAX_MESSAGES=500\nMP_UI_AUTH=pat:demo' } });
+  fireEvent.change(screen.getByLabelText('Folder on this computer'), { target: { value: 'D:\\data\\mail' } });
+  fireEvent.change(screen.getByLabelText('Path inside the container'), { target: { value: '/data' } });
+  fireEvent.change(screen.getByLabelText('Start it again'), { target: { value: 'unless-stopped' } });
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Run' })); });
+  const sent = calls.find((c) => c.url === '/api/docker/images/run');
+  expect(sent.body).toMatchObject({
+    env: 'MP_MAX_MESSAGES=500\nMP_UI_AUTH=pat:demo',
+    share: { host: 'D:\\data\\mail', target: '/data' },
+    restart: 'unless-stopped',
+  });
+});
+
 test('a teammate sees no Run button', async () => {
   mockApi('user');
   await openImages();

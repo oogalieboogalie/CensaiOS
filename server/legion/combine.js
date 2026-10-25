@@ -1,4 +1,4 @@
-// Legion: front and back at the same time (Alex's diagram 04).
+// Legion: front and back at the same time (diagram 04).
 //
 //   Request -> Distributor -> Front (Genesis) + Back (Atlas) side by side
 //   -> Synthesis -> Product.

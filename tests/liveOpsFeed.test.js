@@ -18,7 +18,7 @@ const server = {
   tasks: [{ id: 't1', title: 'Clean the CRM', status: 'failed', error: 'Request timed out after 60s', assignee_id: 'sa1', completed_at: ago(40) }],
   schedules: [{ id: 's1', taskText: 'Weekly report', status: 'active', nextRunAt: new Date(NOW + 2 * 3600000).toISOString(), agentName: 'Atlas' }],
   cliTasks: [{ id: 'c1', title: 'Fix login', status: 'done', cliLabel: 'Claude Code', costUsd: 0.42, createdAt: NOW - 3600000, finishedAt: NOW - 600000, summary: 'Fixed it' }],
-  devServers: [{ name: 'censai-dev-x', folder: '/home/alex/site', state: 'running', url: 'http://localhost:5173' }],
+  devServers: [{ name: 'censai-dev-x', folder: '/home/alma/site', state: 'running', url: 'http://localhost:5173' }],
   liveOps: {
     workflowRuns: [
       { id: 'run-1', windowId: 'wf-1', status: 'awaiting_review', startedAt: ago(3) },
@@ -27,7 +27,7 @@ const server = {
     workflowTriggers: [{ windowId: 'wf-1', mode: 'schedule', everyMinutes: 60, nextRunAt: new Date(NOW + 30 * 60000).toISOString() }],
     terminals: [
       { id: 'term-1', cli: 'claudecode', label: 'Claude Code', owner: 'Sam', ownerUserId: '8', lastInputAt: ago(3), lastActivityAt: ago(0.2) },
-      { id: 'term-1', cli: 'claudecode', label: 'Claude Code', owner: 'Alex', ownerUserId: '7', lastActivityAt: ago(0.1) },
+      { id: 'term-1', cli: 'claudecode', label: 'Claude Code', owner: 'Alma', ownerUserId: '7', lastActivityAt: ago(0.1) },
     ],
   },
   jules: [],

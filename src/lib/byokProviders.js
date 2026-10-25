@@ -25,6 +25,11 @@ export const BYOK_PROVIDERS = Object.freeze([
     placeholder: 'AIzaSy...',
   },
   {
+    id: 'youtube',
+    name: 'YouTube',
+    placeholder: 'AIza…',
+  },
+  {
     id: 'moonshot',
     name: 'Moonshot / Kimi',
     placeholder: 'sk-...',

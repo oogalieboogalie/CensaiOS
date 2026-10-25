@@ -13,7 +13,7 @@ import { LOOK_NOTES, PODCAST_DESIGN_HTML } from './podcastDesign.js';
 export const PODCAST_BOARD_EVENT = 'censai:group-hotkeys-changed';
 const SLOT = { w: 1240, h: 760, gap: 160 };
 
-// The brief Alex runs live: censaiOS itself, sold to small agencies.
+// The brief run live on the podcast: censaiOS itself, sold to small agencies.
 export const PODCAST_BRIEF = Object.freeze({
   business: 'censaiOS: one shared canvas where a small team, its clients and its AI agents work together',
   market: 'Small digital marketing agencies with 5 to 30 people',

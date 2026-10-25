@@ -1,4 +1,4 @@
-// WeeWoo avatar bodies: 14x14 cell grids from Alex's WeeWoo design handoff.
+// WeeWoo avatar bodies: 14x14 cell grids from the WeeWoo design handoff.
 // Cell map: '.' empty, 'c' main color, 'd' darker shade, 'e' eye, 's' shine,
 // 'r' red accent, 'w' white, 'k' black. Pure data.
 

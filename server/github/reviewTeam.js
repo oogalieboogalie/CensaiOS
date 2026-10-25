@@ -24,7 +24,7 @@ const ACTIVE = new Set(['starting', 'installing', 'running', 'needs_approval']);
 const jobs = new Map();
 
 export function publicReview(job) {
-  const { token: _t, timer: _timer, lines: _lines, ...rest } = job;
+  const { token: _t, timer: _timer, lines: _lines, userId: _userId, ...rest } = job;
   return rest;
 }
 
@@ -114,7 +114,7 @@ export async function startReview({ octokit, token, owner, repo, number, reviewe
 
   const job = {
     id: crypto.randomBytes(5).toString('hex'), repo: fullRepo, ...info, headSha,
-    by: user.name || 'Someone', startedAt: Date.now(), updatedAt: Date.now(),
+    by: user.name || 'Someone', userId: user.userId ?? null, startedAt: Date.now(), updatedAt: Date.now(),
     status: 'reviewing', text: 'Reviewers are reading the change.', findings: [], posted: null, lines,
     reviewers: ids.map((id) => ({ cli: id, label: getAdapter(id).label, taskId: null, status: 'starting', summary: null, findings: [], error: null })),
   };

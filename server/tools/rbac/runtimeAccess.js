@@ -1,5 +1,6 @@
 import { getRuntimeMode, RUNTIME_MODES } from '../../middleware/runtimeMode.js';
 import { requireWorkspaceMember } from '../../workspaces/context.js';
+import { userRole } from '../../security/systemAdmin.js';
 
 export const RAW_DATABASE_TOOL_NAMES = Object.freeze([
   'postgres_query',
@@ -48,8 +49,7 @@ export async function authorizeToolInvocation(db, {
 
   let role;
   try {
-    const { rows } = await db.query('SELECT role FROM users WHERE id = $1', [userId]);
-    role = String(rows[0]?.role || '').trim().toLowerCase();
+    role = String((await userRole(userId, { db })) || '').trim().toLowerCase();
   } catch {
     throw new ToolAccessUnavailableError();
   }

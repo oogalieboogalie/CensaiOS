@@ -3,15 +3,16 @@ import { getAgentById } from '../../lib/agentStore.js';
 import { getSelectionOffsets } from './DocUtils.js';
 import { FILE_CONTENTS } from './DocData.js';
 import { newId } from '../../lib/ids/newId.js';
-
-const fileContentCache = new Map();
+import { useDocFileLoad } from './useDocFileLoad.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
   const [realContent, setRealContent] = React.useState('');
-  const [loading, setLoading] = React.useState(false);
+  const { loading, loadError, canSave } = useDocFileLoad(win, setRealContent);
   const [saving, setSaving] = React.useState(false);
   const [backlinks, setBacklinks] = React.useState([]);
   const [backlinksCapped, setBacklinksCapped] = React.useState(false);
+  const [backlinksChecked, setBacklinksChecked] = React.useState(false);
   const [showGraph, setShowGraph] = React.useState(false);
   const [selRange, setSelRange] = React.useState(null);
   const [pendingKind, setPendingKind] = React.useState(null);
@@ -37,39 +38,15 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
   }, [win.filePath, win.text, win.content, win.fileName]);
 
   React.useEffect(() => {
-    if (win.filePath) {
-      const url = win.isGithub 
-        ? `/api/github/file?repo=${encodeURIComponent(win.githubRepo)}&path=${encodeURIComponent(win.filePath)}`
-        : `/api/files/content?path=${encodeURIComponent(win.filePath)}`;
-
-      if (fileContentCache.has(url)) {
-        setRealContent(fileContentCache.get(url));
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) throw new Error(data.error);
-          fileContentCache.set(url, data.content);
-          setRealContent(data.content);
-          setLoading(false);
-        })
-        .catch(err => {
-          setRealContent(`Failed to load file: ${err.message}`);
-          setLoading(false);
-        });
-
-      if (!win.isGithub) {
-        fetch(`/api/files/backlinks?path=${encodeURIComponent(win.filePath)}`)
-          .then(res => res.json())
-          .then(data => { setBacklinks(data.results || []); setBacklinksCapped(Boolean(data.capped)); })
-          .catch(err => console.warn('Failed to fetch backlinks', err));
-      }
-    }
-  }, [win.filePath, win.isGithub, win.githubRepo]);
+    if (!win.filePath) return;
+    // Asked even when the text comes from the cache, so a reopened note still lists its backlinks.
+    setBacklinksChecked(false);
+    if (win.isGithub) return;
+    fetch(`/api/files/backlinks?path=${encodeURIComponent(win.filePath)}`)
+      .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+      .then(data => { setBacklinks(data.results || []); setBacklinksCapped(Boolean(data.capped)); setBacklinksChecked(true); })
+      .catch(err => logFailure('backlinks not loaded', err, 'doc'));
+  }, [win.filePath, win.isGithub]);
 
   const clearSelection = () => {
     setSelRange(null);
@@ -131,7 +108,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
         alert(`File "${fileName}" not found in project.`);
       }
     } catch (err) {
-      console.error('Failed to handle wiki link:', err);
+      logFailure('wiki link not opened', err, 'doc', 'error');
     }
   };
 
@@ -178,7 +155,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
   };
 
   const saveFile = async () => {
-    if (!win.filePath || win.isGithub) return;
+    if (!canSave) return;
     setSaving(true);
     try {
       await fetch('/api/files/content', {
@@ -187,16 +164,17 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
         body: JSON.stringify({ path: win.filePath, content: realContent })
       });
     } catch (e) {
-      console.error('Failed to save file:', e);
+      logFailure('file not saved', e, 'doc', 'error');
     }
     setSaving(false);
   };
 
   return {
     realContent, setRealContent,
-    loading, saving,
+    loading, loadError, canSave, saving,
     backlinks,
     backlinksCapped,
+    backlinksChecked,
     showGraph, setShowGraph,
     selRange, pendingKind, setPendingKind,
     activeAnnId, setActiveAnnId,

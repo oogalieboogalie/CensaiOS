@@ -7,6 +7,9 @@ import {
   updateOwnedSchedule,
 } from '../memory/schedules.js';
 import { resolveWorkspaceContext } from '../workspaces/context.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('scheduler');
 
 export const schedulesRouter = express.Router();
 
@@ -27,8 +30,17 @@ async function scheduleScope(req, { write = false } = {}) {
   };
 }
 
+const shortCode = (err) => (err?.code && /^[A-Za-z0-9_]{1,20}$/.test(String(err.code)) ? String(err.code) : null);
+
+// Deliberate refusals (a status below 500) keep their own plain sentence.
+// Anything else is a database or server fault: the browser and the log get
+// a fixed sentence and a short code, never the raw error text.
 function routeError(res, error) {
-  res.status(error.statusCode || 500).json({ error: error.message, code: error.code });
+  const status = Number(error?.statusCode) || 500;
+  const code = shortCode(error);
+  if (status < 500) return res.status(status).json({ error: error.message, code });
+  log.error('schedule request failed', { code });
+  return res.status(500).json({ error: 'The schedule could not be changed. Try again in a moment.', code });
 }
 
 schedulesRouter.get('/schedules', async (req, res) => {

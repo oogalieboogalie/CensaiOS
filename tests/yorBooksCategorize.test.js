@@ -1,5 +1,5 @@
 // YorWare Books: the categorizer and the bank CSV reader, ported with their
-// tests from Open Books (MIT), Alex's bookkeeping app.
+// tests from Open Books (MIT), an open-source bookkeeping app.
 import { categorize, defaultClassifiers } from "../src/lib/yorware/books/engine.js";
 import { parseAmountCents, parseCsv, parseDate, rowsFromCsv } from "../src/lib/yorware/books/csv.js";
 import { isGenericMerchant, merchantKey, normalizeDescription } from "../src/lib/yorware/books/normalize.js";

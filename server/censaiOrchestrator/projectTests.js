@@ -9,6 +9,7 @@
 import path from 'node:path';
 import pool from '../db.js';
 import { assertHostToolAllowed } from '../tools/rbac/hostOwnerOnly.js';
+import { ownerNamesSentence } from '../security/ownerNames.js';
 import { readPackageJson, resolveRunnerContext, runCommand } from '../tools/handlers/runnerUtils.js';
 import { scrubText } from '../selfFix/scrubText.js';
 import { agentName } from './shape.js';
@@ -19,7 +20,7 @@ const CODE_FILE = /\.(c|m)?[jt]sx?$/;
 const PLAIN_PATH = /^[\w@./+-]+$/;
 const KEEP_ENV = ['PATH', 'Path', 'PATHEXT', 'HOME', 'USERPROFILE', 'SystemRoot', 'ComSpec', 'APPDATA', 'LOCALAPPDATA', 'TEMP', 'TMP'];
 
-function plainEnv(env = process.env) {
+export function plainEnv(env = process.env) {
   const out = { NODE_ENV: 'test', CI: '1' };
   for (const key of KEEP_ENV) if (env[key]) out[key] = env[key];
   return out;
@@ -57,7 +58,7 @@ export async function whyTestsCannotRun(db, context = {}) {
     return null;
   } catch (error) {
     return error?.code === 'COMPUTER_OWNER_ONLY'
-      ? 'I could not run the tests: only this computer\'s owner can run them.'
+      ? ['I could not run the tests: only this computer\'s owner can run them.', ownerNamesSentence(error.names)].filter(Boolean).join(' ')
       : `I could not run the tests: ${error?.message || 'the check failed'}`;
   }
 }

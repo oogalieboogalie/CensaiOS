@@ -59,7 +59,7 @@ describe('Jules task sync mapping', () => {
       {
         id: 'task-1',
         title: 'Ship weather window polish',
-        prompt: 'Handoff file: C:\\Homebase\\CensaiHub\\.team\\handoffs\\weather.md',
+        prompt: 'Handoff file: C:\\Repos\\CensaiHub\\.team\\handoffs\\weather.md',
       },
       {
         status: 'completed',

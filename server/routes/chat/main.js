@@ -7,7 +7,10 @@ import { createSessionTrace, finalizeTrace } from '../../operational-intelligenc
 import { applyChatRetryHeader, publicChatError } from './httpErrors.js';
 import { resolveFreeTierRuntime } from '../../aiGateway/freeTierRuntime.js';
 import { isCloudRuntime } from '../../middleware/runtimeMode.js';
+import { isFromAnotherComputer } from '../../webOs/door.js';
 import { safeTimeZone } from '../../../src/lib/agentMemory/timeWords.js';
+import { chatLog, noteFailure } from './chatLog.js';
+import { safeErrorCode } from '../../security/errorCode.js';
 
 export async function handleChat(req, res) {
   const { messages, agentId, windowId, workspaceId, currentProject, stream, conversationId, timeZone } = req.body;
@@ -86,6 +89,8 @@ export async function handleChat(req, res) {
       currentProject,
       userId: req.session?.userId,
       userRole: req.session?.userRole,
+      // Typed at this computer, not through the web door: an owner-only refusal may name the owner.
+      atThisComputer: !isFromAnotherComputer(req),
       workspaceId,
       windowId,
       conversationId: typeof conversationId === 'string' ? conversationId : null,
@@ -98,7 +103,7 @@ export async function handleChat(req, res) {
         ({ changeImpact, projectContext, sevenContexts } = context);
         authorizedWorkspaceId = context.workspaceId;
         if (process.env.NODE_ENV !== 'production') {
-          console.log(`[Perf] Chat setup (prepareChatContext) for agent ${agentId} took ${timings.setup_ms}ms`);
+          chatLog.debug('chat setup timed', { agentId, setupMs: timings.setup_ms });
         }
         if (dbReady()) {
           try {
@@ -110,7 +115,7 @@ export async function handleChat(req, res) {
             });
             traceId = trace.id;
           } catch (traceErr) {
-            console.error('Failed to create session trace:', traceErr.message);
+            noteFailure('session trace not created', { agentId })(traceErr);
           }
         }
         sendEvent({ type: 'status', status: 'thinking', detail: { round: 1 } });
@@ -125,24 +130,21 @@ export async function handleChat(req, res) {
         status: 'success',
         finalText,
         timings,
-      }).catch(err => console.error('Failed to finalize trace:', err.message));
+      }).catch(noteFailure('trace not finalized', { agentId }));
     }
 
     // Log conversation
     const lastUserMsg = messages?.filter(m => m.from === 'me').pop()?.text;
     if (dbReady() && agentId && lastUserMsg && authorizedWorkspaceId && req.session?.userId) {
       const memoryScope = { workspaceId: authorizedWorkspaceId, userId: req.session.userId };
-      logConversation(agentId, 'user', lastUserMsg, memoryScope).catch(err =>
-        console.error('[chat] dropped conversation log (user)', { agentId, error: err.message })
-      );
-      logConversation(agentId, 'assistant', finalText, memoryScope).catch(err =>
-        console.error('[chat] dropped conversation log (assistant)', { agentId, error: err.message })
-      );
+      logConversation(agentId, 'user', lastUserMsg, memoryScope)
+        .catch(noteFailure('dropped conversation log', { agentId, side: 'user' }));
+      logConversation(agentId, 'assistant', finalText, memoryScope)
+        .catch(noteFailure('dropped conversation log', { agentId, side: 'assistant' }));
 
       // Reactive Memory Healing Cascade
-      runHealingCascadeIfMentioned(lastUserMsg, `user:${req.session.userId}`, memoryScope).catch(err => {
-        console.error('[FMHA] Error in chat healing cascade:', err.message);
-      });
+      runHealingCascadeIfMentioned(lastUserMsg, `user:${req.session.userId}`, memoryScope)
+        .catch(noteFailure('memory healing cascade failed', { agentId }));
     }
 
     timings.total_ms = Date.now() - startedAt;
@@ -175,19 +177,19 @@ export async function handleChat(req, res) {
     if (err?.code === 'CHAT_ABORTED') {
       if (traceId) {
         finalizeTrace({ db: pool }, { traceId, status: 'failed', finalText: 'Stopped by user', timings })
-          .catch(e => console.error('Failed to finalize stopped trace:', e.message));
+          .catch(noteFailure('stopped trace not finalized', { agentId }));
       }
       if (!res.writableEnded) res.end();
       return undefined;
     }
-    console.error('Chat API error:', err.message);
+    chatLog.error('chat request failed', { agentId, code: safeErrorCode(err) });
     if (traceId) {
       finalizeTrace({ db: pool }, {
         traceId,
         status: 'failed',
         finalText: `Error: ${err.message}`,
         timings,
-      }).catch(e => console.error('Failed to finalize failed trace:', e.message));
+      }).catch(noteFailure('failed trace not finalized', { agentId }));
     }
     timings.total_ms = Date.now() - startedAt;
     return sendError(err);

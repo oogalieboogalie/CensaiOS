@@ -9,6 +9,8 @@ import { SketchpadActions } from './excalidraw/SketchpadActions.jsx';
 import { createPalmFilter } from '../lib/ink/palmFilter.js';
 import { coalescedSamples, inkPoint } from '../lib/ink/stroke.js';
 import { newId } from '../lib/ids/newId.js';
+import { logToApp } from '../lib/appLog/browserLog.js';
+import { mergeSketchElements } from '../lib/collaboration/windowSketch.js';
 
 // The board's copy is the shared one (spec 9); this browser's saved copy is
 // only a fallback for windows from before the scene was stored on the board.
@@ -23,6 +25,8 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
   const [elements, setElements] = React.useState(() => initialElements(win));
   const palm = React.useMemo(() => createPalmFilter(), []);
   const lastSaved = React.useRef(win.state?.excalidraw?.elements);
+  const sharedRef = React.useRef(null);
+  sharedRef.current = win.state?.excalidraw?.elements;
   const [activeMode, setActiveMode] = React.useState('pencil');
   const [selectedId, setSelectedId] = React.useState(null);
   const [color, setColor] = React.useState('var(--accent)');
@@ -39,13 +43,16 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
   const saveTimerRef = React.useRef(null);
 
   const queueSave = React.useCallback((nextElements) => {
-    setElements(nextElements);
-    lastSaved.current = nextElements;
-    persistExcalidrawScene(win.id, { elements: nextElements });
+    const merged = mergeSketchElements(sharedRef.current, lastSaved.current, nextElements);
+    setElements(merged);
+    persistExcalidrawScene(win.id, { elements: merged });
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null;
-      onUpdate?.({ state: { ...(win.state || {}), excalidraw: { elements: nextElements } } });
+      const atSend = mergeSketchElements(sharedRef.current, lastSaved.current, merged);
+      lastSaved.current = atSend;
+      setElements(atSend);
+      onUpdate?.({ state: { ...(win.state || {}), excalidraw: { elements: atSend } } });
     }, 200);
   }, [onUpdate, win.id, win.state]);
 
@@ -98,19 +105,20 @@ export function ExcalidrawWindow({ win, onUpdate, zoom = 1 }) {
       return;
     }
 
-    const newId = newId();
+    const shapeId = newId();
     let newEl = null;
-    if (activeMode === 'pencil') newEl = { id: newId, type: 'pencil', x, y, pts: [inkPoint({ x, y }, e)], color, strokeWidth, pen: e.pointerType === 'pen' };
-    else if (activeMode === 'rect') newEl = { id: newId, type: 'rect', x, y, w: 0, h: 0, color, strokeWidth };
-    else if (activeMode === 'circle') newEl = { id: newId, type: 'circle', x, y, w: 0, h: 0, color, strokeWidth };
-    else if (activeMode === 'arrow') newEl = { id: newId, type: 'arrow', x, y, pts: [{ x, y }, { x, y }], color, strokeWidth };
+    if (activeMode === 'pencil') newEl = { id: shapeId, type: 'pencil', x, y, pts: [inkPoint({ x, y }, e)], color, strokeWidth, pen: e.pointerType === 'pen' };
+    else if (activeMode === 'rect') newEl = { id: shapeId, type: 'rect', x, y, w: 0, h: 0, color, strokeWidth };
+    else if (activeMode === 'circle') newEl = { id: shapeId, type: 'circle', x, y, w: 0, h: 0, color, strokeWidth };
+    else if (activeMode === 'arrow') newEl = { id: shapeId, type: 'arrow', x, y, pts: [{ x, y }, { x, y }], color, strokeWidth };
     else if (activeMode === 'text') {
-      newEl = { id: newId, type: 'text', x, y, text: '', color };
+      newEl = { id: shapeId, type: 'text', x, y, text: '', color };
       setElements(prev => [...prev, newEl]);
-      setEditingTextId(newId); setTempTextValue(''); setSelectedId(newId);
+      setEditingTextId(shapeId); setTempTextValue(''); setSelectedId(shapeId);
       return;
     }
-    if (newEl) { setDrawingElement(newEl); setElements(prev => [...prev, newEl]); }
+    if (!newEl) { logToApp('warn', `sketchpad: the ${activeMode} tool could not be drawn`, { where: 'sketchpad' }); return; }
+    setDrawingElement(newEl); setElements(prev => [...prev, newEl]);
   };
 
   const handlePointerMove = (e) => {

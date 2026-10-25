@@ -1,5 +1,5 @@
 /**
- * Scheduler tags (Alex's diagram 02): a short colored label on each run's
+ * Scheduler tags (diagram 02): a short colored label on each run's
  * card, like "Maintenance" or "Development". Plain JS so tests can use it.
  */
 

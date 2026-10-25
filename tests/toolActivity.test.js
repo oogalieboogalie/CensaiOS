@@ -30,7 +30,7 @@ describe('describeToolEvent', () => {
   });
 
   test('falls back to args paths when no summary is present', () => {
-    const d = describeToolEvent({ tool: 'local_read_file', args: { file_path: 'C:/Homebase/server.js' } });
+    const d = describeToolEvent({ tool: 'local_read_file', args: { file_path: 'C:/Repos/server.js' } });
     expect(d.label).toBe('Reading server.js');
   });
 
@@ -62,7 +62,7 @@ describe('helpers', () => {
 
   test('basename handles windows and posix paths', () => {
     expect(basename('src/components/Tree.jsx')).toBe('Tree.jsx');
-    expect(basename('C:\\Homebase\\CensaiHub\\server.js')).toBe('server.js');
+    expect(basename('C:\\Repos\\CensaiHub\\server.js')).toBe('server.js');
     expect(basename('plain.txt')).toBe('plain.txt');
   });
 

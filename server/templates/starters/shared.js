@@ -4,6 +4,7 @@
 // fits into each group with the canvas's own layout code.
 
 import { randomUUID } from 'node:crypto';
+import { STARTER_BOARD_TOOL_NAMES } from '../../tools/rbac/familyBaseline.js';
 
 export const leaf = (windowId) => ({ type: 'leaf', windowId });
 export const split = (axis, ratio, first, second) => ({ type: 'split', axis, ratio, first, second });
@@ -18,8 +19,8 @@ export const STARTER_RULES = [
 ].join(' ');
 
 // The tools every starter agent has: write onto the board, post in Team
-// Chat, and remember what the team told it.
-export const BOARD_TOOLS = Object.freeze(['canvas_list_writable_windows', 'canvas_append_window', 'post_team_chat', 'remember', 'recall']);
+// Chat, remember what the team told it, and find and ask teammates on this board.
+export const BOARD_TOOLS = STARTER_BOARD_TOOL_NAMES;
 
 export function starterAgent({ key, name, role, description, glyph, hue, tools = [], prompt, starters }) {
   return {

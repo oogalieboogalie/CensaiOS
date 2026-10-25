@@ -3,3 +3,8 @@
 28862b144c759fbc6038c8832ac5ba7db49e7589:src/components/RookWindow.jsx:generic-api-key:6
 # This value is a localStorage namespace, not a credential.
 9325c665aaa7a40f114ae2379b8adcd117c0da5a:src/lib/api/storage.js:generic-api-key:6
+# This value is a localStorage key name, not a credential.
+5a4fc9d8eb69c6a90ed104fb84e793e75d0aebcc:src/lib/teleprompter/prompterState.js:generic-api-key:6
+# Made-up passwords in a test, not credentials; later builds use a plainly fake one.
+2f7d86a60588f770a85528b27bf028ab054a42b3:server/docker/run.test.js:generic-api-key:63
+2f7d86a60588f770a85528b27bf028ab054a42b3:server/docker/run.test.js:generic-api-key:69

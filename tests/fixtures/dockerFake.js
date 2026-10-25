@@ -20,7 +20,7 @@ function seedContainers() {
     c('d4', 'automation-n8n-1', 'n8nio/n8n:1.62.1', 'running', 'Up 2 hours (healthy)', { Ports: '0.0.0.0:5678->5678/tcp', Networks: 'automation_default', Mounts: 'automation_n8n_data', Labels: compose('automation', 'n8n') }),
     c('e5', 'automation-qdrant-1', 'qdrant/qdrant:v1.11.0', 'running', 'Up 2 hours (unhealthy)', { Ports: '0.0.0.0:6333->6333/tcp, 0.0.0.0:6334->6334/tcp', Networks: 'automation_default', Mounts: 'automation_qdrant', Labels: compose('automation', 'qdrant') }),
     c('f6', 'ollama', 'ollama/ollama:latest', 'running', 'Up 3 days', { Ports: '0.0.0.0:11434->11434/tcp', Mounts: 'ollama' }),
-    c('a7', 'homebase-sbx-7f3a2c', 'homebase-sandbox:node22', 'running', 'Up 12 minutes', { Labels: 'homebase.hostPath=/home/alex/projects/leadhound' }),
+    c('a7', 'homebase-sbx-7f3a2c', 'homebase-sandbox:node22', 'running', 'Up 12 minutes', { Labels: 'homebase.hostPath=/home/alma/projects/leadhound' }),
     c('b8', 'nightly-migrate', 'homebase:latest', 'exited', 'Exited (1) 3 hours ago'),
     c('c9', 'mailpit', 'axllent/mailpit:latest', 'exited', 'Exited (0) 2 days ago', { Ports: '' }),
   ];
@@ -106,17 +106,17 @@ function inspect(ct) {
       } : undefined,
     },
     RestartCount: ct.Names === 'automation-qdrant-1' ? 3 : 0,
-    HostConfig: { RestartPolicy: { Name: ct.Labels.includes('compose') ? 'unless-stopped' : 'no' } },
+    HostConfig: { RestartPolicy: { Name: ct.Restart || (ct.Labels.includes('compose') ? 'unless-stopped' : 'no') } },
     Config: {
       Image: ct.Image, WorkingDir: '/app', Entrypoint: ['docker-entrypoint.sh'], Cmd: ['node', 'server.js'],
-      Env: ['NODE_ENV=production', 'PORT=3001', 'DATABASE_URL=postgres://homebase@postgres:5432/homebase', 'OPENAI_API_KEY=sk-live-should-be-hidden', 'PATH=/usr/local/bin:/usr/bin'],
+      Env: ct.Env || ['NODE_ENV=production', 'PORT=3001', 'DATABASE_URL=postgres://homebase@postgres:5432/homebase', 'OPENAI_API_KEY=sk-live-should-be-hidden', 'PATH=/usr/local/bin:/usr/bin'],
       Labels: {},
     },
     NetworkSettings: {
       Ports: ports,
       Networks: Object.fromEntries(String(ct.Networks).split(',').map((n, i) => [n, { IPAddress: running ? `172.18.0.${i + 2}` : '', Gateway: '172.18.0.1', Aliases: [] }])),
     },
-    Mounts: String(ct.Mounts).split(',').filter(Boolean).map((v) => ({ Type: 'volume', Name: v, Source: `/var/lib/docker/volumes/${v}/_data`, Destination: '/data', Mode: 'z', RW: true })),
+    Mounts: ct.Binds || String(ct.Mounts).split(',').filter(Boolean).map((v) => ({ Type: 'volume', Name: v, Source: `/var/lib/docker/volumes/${v}/_data`, Destination: '/data', Mode: 'z', RW: true })),
   };
 }
 
@@ -141,7 +141,7 @@ export function createFakeDocker({ daemon = 'up', state, live = false } = {}) {
     const target = rest[rest.length - 1];
     switch (verb) {
       case 'info': return ok(JSON.stringify({
-        Name: 'alex-desktop', ServerVersion: '27.3.1', OperatingSystem: 'Docker Desktop', Architecture: 'x86_64', NCPU: 16,
+        Name: 'alma-desktop', ServerVersion: '27.3.1', OperatingSystem: 'Docker Desktop', Architecture: 'x86_64', NCPU: 16,
         MemTotal: 16_664_788_992, Driver: 'overlay2', Images: st.images.length, Containers: st.containers.length,
         ContainersRunning: st.containers.filter((c) => c.State === 'running').length, ContainersPaused: st.containers.filter((c) => c.State === 'paused').length,
         ContainersStopped: st.containers.filter((c) => c.State === 'exited').length,
@@ -195,7 +195,13 @@ export function createFakeDocker({ daemon = 'up', state, live = false } = {}) {
         if (!st.images.some((i) => `${i[1]}:${i[2]}` === target || i[1] === target)) return fail(`Unable to find image '${target}' locally`, 125);
         const ports = rest.flatMap((a, i) => (rest[i - 1] === '-p' ? [`0.0.0.0:${a.split(':')[0]}->${a.split(':')[1]}/tcp`] : [])).join(', ');
         const id = hex(String(st.containers.length % 10));
-        st.containers.push({ ...st.containers[0], ID: id, Names: name, Image: target, State: 'running', Status: 'Up Less than a second', Ports: ports, Networks: 'bridge', Mounts: '', Labels: '', RunningFor: 'Less than a second ago' });
+        const after = (flag) => rest.flatMap((a, i) => (rest[i - 1] === flag ? [a] : []));
+        const Env = after('-e');
+        const Binds = after('--mount').map((m) => {
+          const f = Object.fromEntries(m.split(',').map((kv) => kv.split('=')));
+          return { Type: 'bind', Source: f.source, Destination: f.target, Mode: '', RW: !m.includes(',readonly') };
+        });
+        st.containers.push({ ...st.containers[0], ID: id, Names: name, Image: target, State: 'running', Status: 'Up Less than a second', Ports: ports, Networks: 'bridge', Mounts: Binds.map((b) => b.Source).join(','), Labels: '', RunningFor: 'Less than a second ago', ...(Env.length ? { Env } : {}), ...(Binds.length ? { Binds } : {}), ...(after('--restart')[0] ? { Restart: after('--restart')[0] } : {}) });
         return ok(`${id}\n`);
       }
       case 'pull': st.images.push([Math.random().toString(16).slice(2, 14), target.split(':')[0], target.split(':')[1] || 'latest', 'Less than a second ago', '42.1MB']); return ok(`docker.io/library/${target}\n`);
@@ -223,8 +229,8 @@ export function createFakeDocker({ daemon = 'up', state, live = false } = {}) {
         ]));
       case 'compose':
         if (rest[0] === 'ls') return ok(JSON.stringify([
-          { Name: 'automation', Status: 'running(2)', ConfigFiles: '/home/alex/stacks/automation/compose.yml' },
-          { Name: 'homebase', Status: 'running(3)', ConfigFiles: '/home/alex/Homebase/docker-compose.yml' },
+          { Name: 'automation', Status: 'running(2)', ConfigFiles: '/home/alma/stacks/automation/compose.yml' },
+          { Name: 'homebase', Status: 'running(3)', ConfigFiles: '/home/alma/Homebase/docker-compose.yml' },
         ]));
         return { stdout: '', stderr: `Container ${rest[1]} ${rest[rest.length - 1]} done\n`, code: 0 };
       default: return fail(`docker: '${verb}' is not a docker command.`);

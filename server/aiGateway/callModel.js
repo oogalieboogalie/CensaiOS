@@ -13,6 +13,7 @@ import {
 import { bestEffortUsageSink } from './usageSink.js';
 import { tagRejectedKey } from './missingKey.js';
 import { scopeServerKey } from '../security/serverKeys.js';
+import { meterModelCall } from '../aiResources/meter.js';
 import {
   applyModelAccess,
   resolveModelAccess,
@@ -55,10 +56,10 @@ export async function callModel({
   });
   const effectiveAttribution = access.governed ? access.attribution : usageAttribution;
   if (kind === EMBEDDING_MODEL_KIND) {
-    const resolvedConfig = config || resolveEmbeddingModelConfig({
+    const resolvedConfig = await forCaller(config || resolveEmbeddingModelConfig({
       modelProvider,
       modelName: modelName || body?.model || null,
-    });
+    }), accessContext);
     const prepared = applyModelAccess(access, { config: resolvedConfig, body, retry });
 
     return requestEmbedding({
@@ -111,5 +112,7 @@ export async function callModel({
   } catch (error) {
     return settleModelAccessFailure(access, tagRejectedKey(error, prepared.config?.provider));
   }
+  // AI resources window: count this call against the key that paid for it.
+  meterModelCall({ config: prepared.config, result, attribution: usageAttribution || effectiveAttribution, accessContext, allowance: access.mode === 'platform-free' });
   return settleModelAccessSuccess(access, result);
 }

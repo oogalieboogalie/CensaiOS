@@ -47,7 +47,7 @@ describe('pages', () => {
   });
 
   test('word count reads text, table cells and link words, not link addresses', () => {
-    const doc = toDoc([{ type: 'p', text: 'We ship **censaiOS** on [Friday](https://censai.app).' }, { type: 'table', rows: [['Who', 'What'], ['Alex', '']] }, { type: 'divider' }]);
+    const doc = toDoc([{ type: 'p', text: 'We ship **censaiOS** on [Friday](https://censai.app).' }, { type: 'table', rows: [['Who', 'What'], ['Alma', '']] }, { type: 'divider' }]);
     expect(countWords(doc, 'Launch plan')).toBe(2 + 5 + 3);
   });
 });
@@ -71,14 +71,14 @@ describe('exports follow the page size', () => {
 describe('Word import', () => {
   test('mammoth HTML turns into Writer blocks with marks, lists, tables and pictures', () => {
     const html = '<h1>Plan</h1><p>We ship <strong>censaiOS</strong> on <em>Friday </em>. See <a href="https://censai.app">site</a>.</p>'
-      + '<ol><li>Record<ul><li>Edit</li></ul></li></ol><table><tr><td><p>Who</p></td><td><p>What</p></td></tr><tr><td><p>Alex</p></td></tr></table>'
+      + '<ol><li>Record<ul><li>Edit</li></ul></li></ol><table><tr><td><p>Who</p></td><td><p>What</p></td></tr><tr><td><p>Alma</p></td></tr></table>'
       + `<p><img src="${PNG}" alt="dot" /></p><h4>Small</h4><p></p><blockquote><p>Calm.</p></blockquote>`;
     expect(htmlToBlocks(html)).toEqual([
       { type: 'h1', text: 'Plan' },
       { type: 'p', text: 'We ship **censaiOS** on *Friday* . See [site](https://censai.app).' },
       { type: 'number', text: 'Record' },
       { type: 'bullet', text: 'Edit' },
-      { type: 'table', rows: [['Who', 'What'], ['Alex', '']] },
+      { type: 'table', rows: [['Who', 'What'], ['Alma', '']] },
       { type: 'image', src: PNG, alt: 'dot' },
       { type: 'h3', text: 'Small' },
       { type: 'quote', text: 'Calm.' },
@@ -86,7 +86,7 @@ describe('Word import', () => {
   });
 
   test('a Writer .docx comes back as the same document', async () => {
-    const md = 'We ship **censaiOS** on *Friday*. See [site](https://censai.app).\n\n## Steps\n\n1. Record demo\n2. Post the clip\n\n- Tavily\n- Writer\n\n| Who | What |\n| --- | --- |\n| Alex | Demo |\n\n'
+    const md = 'We ship **censaiOS** on *Friday*. See [site](https://censai.app).\n\n## Steps\n\n1. Record demo\n2. Post the clip\n\n- Tavily\n- Writer\n\n| Who | What |\n| --- | --- |\n| Alma | Demo |\n\n'
       + `![dot](${PNG})\n`;
     const list = markdownToBlocks(md).map((b) => (b.type === 'image' ? { ...b, w: 4, h: 3 } : b));
     const bytes = await docToDocx(toDoc(list), { title: 'Launch plan' });
@@ -94,7 +94,7 @@ describe('Word import', () => {
     expect(back.title).toBe('Launch plan');
     expect(back.blocks.map((b) => b.type)).toEqual(['p', 'h2', 'number', 'number', 'bullet', 'bullet', 'table', 'image']);
     expect(back.blocks[0].text).toBe(list[0].text);
-    expect(back.blocks[6].rows).toEqual([['Who', 'What'], ['Alex', 'Demo']]);
+    expect(back.blocks[6].rows).toEqual([['Who', 'What'], ['Alma', 'Demo']]);
     expect(back.blocks[7].src).toMatch(/^data:image\/png;base64,/);
   });
 });

@@ -49,7 +49,7 @@ describe('Censai Creative merges edits from two people', () => {
     const start = { kind: 'creativeVector', ...CREATIVE_STARTERS.creativeVector, ...seed.patch };
     const { a, b, sync, edit, read } = pair(start);
     const [r, e] = seed.ids;
-    edit(a, { ...addShapesPatch(readVector(start), [makeShape('text', { text: 'Alex' })]).patch, [shapeKey(r)]: moveShape(start[shapeKey(r)], 5, 5) });
+    edit(a, { ...addShapesPatch(readVector(start), [makeShape('text', { text: 'Alma' })]).patch, [shapeKey(r)]: moveShape(start[shapeKey(r)], 5, 5) });
     edit(b, { ...addShapesPatch(readVector(start), [makeShape('line', { x1: 0, y1: 0, x2: 9, y2: 9 })]).patch, [shapeKey(e)]: moveShape(start[shapeKey(e)], 0, 40) });
     sync();
     const va = readVector(read(a));

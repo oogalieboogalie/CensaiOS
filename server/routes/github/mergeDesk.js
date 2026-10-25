@@ -8,6 +8,7 @@ import {
   mergePr,
   resolveGithubToken,
 } from '../../github/mergeDesk.js';
+import { resolveGithubWriteToken } from '../../github/writeToken.js';
 import { fixApprovals, getFixJob, rawFixJob, startFix } from '../../github/conflictFixer.js';
 import { requireLocalFilesystem } from '../../middleware/runtimeMode.js';
 import { assertSystemAdmin, requireSystemAdmin } from '../../security/systemAdmin.js';
@@ -23,14 +24,18 @@ import { assertSystemAdmin, requireSystemAdmin } from '../../security/systemAdmi
  * GET  /api/github/desk/fix/:id           fix progress + pending agent approvals
  * POST /api/github/desk/fix/:id/approve   { approvalId, allow }
  *
+ * Merge, fix and review posts use the person's own GitHub key, or the
+ * owner's GITHUB_TOKEN only for the owner (server/github/writeToken.js).
  * GitHub's own Update branch runs for anyone signed in. The agent part runs
  * a program on this machine, so it needs the Agent Console's guards (local
  * filesystem mode, system admin); without them the job explains why.
  */
 export const mergeDeskRouter = express.Router();
 
-async function octokitFor(req) {
-  const { token } = await resolveGithubToken(req.session?.userId);
+async function octokitFor(req, { write = '' } = {}) {
+  const { token } = write
+    ? await resolveGithubWriteToken(req, { feature: write })
+    : await resolveGithubToken(req.session?.userId);
   return { octokit: createOctokit(token), token };
 }
 
@@ -79,7 +84,7 @@ mergeDeskRouter.get('/desk/pr', wrap(async (req, res) => {
 mergeDeskRouter.post('/desk/merge', wrap(async (req, res) => {
   const target = parseRepository(req.body?.repo);
   const number = parsePositiveInteger(req.body?.number);
-  const { octokit } = await octokitFor(req);
+  const { octokit } = await octokitFor(req, { write: 'github desk merge' });
   const result = await mergePr(octokit, { ...target, number });
   res.json({ ...result, by: (await actorName(req)).name, mergedAt: new Date().toISOString() });
 }));
@@ -95,7 +100,7 @@ export async function canRunAgents(req) {
 mergeDeskRouter.post('/desk/fix', wrap(async (req, res) => {
   const target = parseRepository(req.body?.repo);
   const number = parsePositiveInteger(req.body?.number);
-  const { octokit, token } = await octokitFor(req);
+  const { octokit, token } = await octokitFor(req, { write: 'github desk fix' });
   const agents = await canRunAgents(req);
   const manager = agents ? await managerLoader().catch(() => null) : null;
   const job = await startFix({ octokit, token, ...target, number, user: await actorName(req) }, { manager, canRunAgents: agents });

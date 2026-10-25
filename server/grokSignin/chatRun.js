@@ -75,7 +75,7 @@ export function runGrokChat({ userId, text, history = [], sessionId = null, emit
   fs.mkdirSync(cwd, { recursive: true });
   const lasting = agentHome(env);
   if (lasting) fs.mkdirSync(lasting, { recursive: true });
-  const runEnv = buildAgentEnv({ source: env, managedBin: managedBinDir(env), home: lasting, personal: { adapter: grok, userId } });
+  const runEnv = buildAgentEnv({ source: env, managedBin: managedBinDir(env), home: lasting, personal: { adapter: grok, userId }, serverKeys: false });
   // The subscription, never API credits: no key reaches this run.
   delete runEnv.XAI_API_KEY;
 

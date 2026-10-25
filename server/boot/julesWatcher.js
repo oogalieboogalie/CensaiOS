@@ -4,6 +4,10 @@ import { getSecret } from '../secrets.js';
 import { refreshSession as refreshJulesSession } from '../jules.js';
 import { fetchGitHubPullRequestFiles, fetchGitHubPullRequestState, syncAgentTaskFromJulesSession } from '../jules-task-sync/index.js';
 import { getProject, logProjectActivity } from '../workspaces.js';
+import { createLogger } from '../logger.js';
+
+// Lines carry the session's row id, statuses and PR number only.
+const log = createLogger('jules-watcher');
 
 const seenReviewIds = new Map();
 let watcherBusy = false;
@@ -26,11 +30,11 @@ export async function tickJulesWatcher() {
         if (!db) continue;
 
         if (db.status && db.status !== prev.status) {
-          console.log(`[jules-watcher] ${s.jules_session_name}: ${prev.status} → ${db.status}`);
+          log.info('jules session status changed', { session: s.id, from: prev.status, to: db.status });
           await logProjectActivity(s.project_id, s.agent_id, 'jules_status', `${s.title || 'session'}: ${db.status}`);
         }
         if (db.pr_url && !prev.pr_url) {
-          console.log(`[jules-watcher] PR opened: ${db.pr_url}`);
+          log.info('jules session opened a pull request', { session: s.id, pr: db.pr_number ?? null });
           await logProjectActivity(s.project_id, s.agent_id, 'jules_pr_opened', db.pr_url);
         }
 
@@ -110,11 +114,11 @@ export async function tickJulesWatcher() {
           }
         }
       } catch (e) {
-        console.warn(`[jules-watcher] ${s.jules_session_name}: ${e.message}`);
+        log.warn('jules session refresh failed', { session: s.id, code: e?.code || 'unknown' });
       }
     }
   } catch (e) {
-    console.warn('[jules-watcher] tick failed:', e.message);
+    log.warn('jules watcher tick failed', { code: e?.code || 'unknown' });
   } finally {
     watcherBusy = false;
   }

@@ -1,4 +1,4 @@
-// Legion: the loop from Alex's diagrams, start to finish.
+// Legion: the loop from the diagrams, start to finish.
 //
 //   1. Spec: the person's YAML (server/legion/spec.js), or the Orchestrator
 //      Engine (the Architect) plans one (server/legion/plan.js): questions,
@@ -83,7 +83,7 @@ export async function runLegion({
     const instructions = job.fix
       ? `Job ${job.id} came back from the Validation Engine.\nYour job: ${job.task}\nFixing instructions from the Orchestrator Engine:\n${job.fix}`
       : `Job ${job.id} (only yours): ${job.task}\nOnly touch the files this job needs; other agents are working on other jobs at the same time.`;
-    // Alex's self-educate loop: know enough? If not, memory and Research first.
+    // The self-educate loop: know enough? If not, memory and Research first.
     let educated = { learned: '', remember: '' };
     if (educateFirst) {
       try {

@@ -77,7 +77,7 @@ beforeEach(async () => {
   server = http.createServer();
   attachWorkspaceCollaborationWs(server, {
     db: { query: async (_sql, [workspaceId]) => ({ rows: [{ id: workspaceId, name: workspaceId, role: 'owner' }] }) },
-    authenticate: async () => ({ userId: '7', userEmail: 'alex@example.com' }),
+    authenticate: async () => ({ userId: '7', userEmail: 'alma@example.com' }),
     authenticateGuest: async (request) => {
       const url = new URL(request.url, 'http://localhost');
       if (url.searchParams.get('deny')) throw Object.assign(new Error('gone'), { statusCode: 410 });

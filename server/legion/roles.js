@@ -1,4 +1,4 @@
-// Legion: the team and what each one is told. Alex's diagram ("Not swarms..
+// Legion: the team and what each one is told. The diagram ("Not swarms..
 // Legions.") names them: the Architect plans and orchestrates, Research,
 // Foresight and Echo advise on the plan, Echo judges every build, and four
 // builders work in a fixed order (Foundation, Nexus, Atlas, Genesis).

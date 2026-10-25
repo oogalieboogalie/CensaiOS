@@ -1,4 +1,4 @@
--- Blueprints (Alex's diagram 08): a board's shelf of named recipes that
+-- Blueprints (diagram 08): a board's shelf of named recipes that
 -- worked, each with an ID like 14h7*skyFs^2026 (shelf 1 = Finance, the 4th
 -- blueprint on that shelf, a random code, the year). Asking an agent
 -- "Do we have ..." looks on this shelf first (server/blueprints/phrases.js).

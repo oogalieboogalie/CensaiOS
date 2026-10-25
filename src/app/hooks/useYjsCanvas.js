@@ -6,6 +6,7 @@ import { canvasWorkspaceSnapshot } from '../../lib/workspace/canvasWorkspaceSnap
 import { notifyRemoteHistory } from '../../lib/workspace/historyMerge.js';
 import { SYNCED_KEYS, isDocEmpty, readDocState, writeStateToDoc } from '../../lib/collaboration/yCanvasSync.js';
 import { setListMergeReporter } from '../../lib/collaboration/windowLists.js';
+import { setSheetMergeReporter } from '../../lib/collaboration/windowSheet.js';
 import { logToApp } from '../../lib/appLog/browserLog.js';
 
 const LOCAL_ORIGIN = 'censai-local-store';
@@ -16,6 +17,10 @@ const LIST_NAMES = { items: ['to-dos', 'todos'], ideas: ['Idea Pad bullets', 'id
 setListMergeReporter(({ field, kept }) => {
   const [what, where] = LIST_NAMES[field] || ['list items', 'board'];
   logToApp('info', `board sync: merged ${what}, kept ${kept} added by someone else at the same moment`, { where });
+});
+// ...and when a Sheet write kept cells someone else typed (counts only).
+setSheetMergeReporter(({ kept }) => {
+  logToApp('info', `board sync: merged Sheet cells, kept ${kept} typed by someone else at the same moment`, { where: 'sheet' });
 });
 
 export function hocuspocusUrl(workspaceId, location = globalThis.location, { guest = false } = {}) {

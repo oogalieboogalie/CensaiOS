@@ -3,6 +3,9 @@ import fs from 'fs';
 import * as pty from 'node-pty';
 import { isDockerAvailable, ensureSandbox, sandboxShellArgv, sandboxAgentArgv, OPENCODE_RUN_MAX_PROMPT_CHARS } from '../sandbox/index.js';
 import { log, ptyOptions } from './shared.js';
+import { folderKind, safeReason } from './logSafe.js';
+
+export { folderKind, safeReason };
 
 async function spawnSandboxBackend(cwd, size) {
   const { name } = await ensureSandbox(cwd);
@@ -55,7 +58,7 @@ export async function startBackend(cwd, hasProject, size, owner = null) {
     try {
       return await spawnSandboxBackend(cwd, size);
     } catch (err) {
-      log.warn('sandbox backend failed, falling back', { cwd, error: err.message });
+      log.warn('sandbox backend failed, falling back', { folder: folderKind(cwd, hasProject), error: safeReason(err) });
     }
   }
   if (owner?.role && !HOST_SHELL_ROLES.has(owner.role)) {
@@ -65,7 +68,7 @@ export async function startBackend(cwd, hasProject, size, owner = null) {
     try {
       return spawnWslShell(cwd, size);
     } catch (err) {
-      log.warn('WSL backend failed, falling back to host shell', { error: err.message });
+      log.warn('WSL backend failed, falling back to host shell', { error: safeReason(err) });
     }
   }
   return spawnHostShell(cwd, size);

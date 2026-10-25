@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { LeadDetail } from './LeadDetail.jsx';
+import { downloadLeadsCsv } from './leadsCsv.js';
 
 function Fit({ value }) {
   const pct = Math.max(0, Math.min(100, Number(value) || 0));
@@ -32,6 +33,11 @@ export function LeadResults({ result, onBank, onReset, onEditLead, onOpenDoc }) 
         <span className="hb-lh-mono">
           {usage.searches || 0} searches · {usage.extracts || 0} page reads · {usage.llmCalls || 0} AI steps
         </span>
+        {leads.length > 0 && (
+          <button type="button" className="hb-lh-pill" onClick={() => downloadLeadsCsv(leads, result?.brief)} title="Save every lead as a spreadsheet file">
+            Download CSV
+          </button>
+        )}
         <button type="button" className="hb-lh-pill" onClick={onReset}>New hunt</button>
       </div>
       {(result?.warnings || []).length > 0 && <div className="hb-lh-note">{result.warnings.join(' · ')}</div>}

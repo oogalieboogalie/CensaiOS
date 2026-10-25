@@ -87,12 +87,12 @@ describe('CanvasCursors', () => {
       <CanvasCursors
         zoom={2}
         cursors={{
-          a: { clientId: 'a', x: 10, y: 20, actor: { label: 'Alex' } },
+          a: { clientId: 'a', x: 10, y: 20, actor: { label: 'Alma' } },
           bad: { clientId: 'bad', x: Infinity, y: 0 },
         }}
       />
     );
-    expect(screen.getByText('Alex')).toBeTruthy();
+    expect(screen.getByText('Alma')).toBeTruthy();
     expect(screen.getAllByTestId('remote-cursor')).toHaveLength(1);
   });
 
@@ -103,7 +103,7 @@ describe('CanvasCursors', () => {
 });
 
 describe('diffPresenceNotices', () => {
-  const a = { clientId: 'a', actor: { label: 'Alex' } };
+  const a = { clientId: 'a', actor: { label: 'Alma' } };
   const b = { clientId: 'b', actor: { label: 'Sam' } };
 
   test('join and leave notices with labels', () => {

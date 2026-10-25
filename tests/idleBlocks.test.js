@@ -112,18 +112,18 @@ describe('two people build on one board', () => {
     writeStateToDoc(a, null, base, 'local');
     sync();
 
-    const alex0 = { ...rich('Alex', 20), joinedAt: 1 };
+    const alma0 = { ...rich('Alma', 20), joinedAt: 1 };
     const sam0 = { ...rich('Sam', 20), joinedAt: 2 };
-    const alex = placeBlock(alex0, economyAt({ a: alex0 }, 5), {}, 6, 3, 3, 'soil');
+    const alma = placeBlock(alma0, economyAt({ a: alma0 }, 5), {}, 6, 3, 3, 'soil');
     const sam = placeBlock(sam0, economyAt({ s: sam0 }, 5), {}, 6, 3, 3, 'soil');
-    writeStateToDoc(a, base, { wins: [{ ...frame, [yardField('Alex')]: alex }] }, 'local');
+    writeStateToDoc(a, base, { wins: [{ ...frame, [yardField('Alma')]: alma }] }, 'local');
     writeStateToDoc(b, base, { wins: [{ ...frame, [yardField('Sam')]: sam }] }, 'local');
     sync();
 
     for (const doc of [a, b]) {
       const seats = readYardSeats(readDocState(doc).wins[0]);
       const stacks = stacksOf(seats, 6);
-      expect(stacks['3,3'].map((s) => s.field)).toEqual(['yard_alex', 'yard_sam']);
+      expect(stacks['3,3'].map((s) => s.field)).toEqual(['yard_alma', 'yard_sam']);
       expect(placedCount(stacks)).toBe(2);
       expect(economyAt(seats, 5).wallet).toBe(38);
       expect(builders(seats).map((r) => r.placed)).toEqual([1, 1]);

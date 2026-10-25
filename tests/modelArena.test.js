@@ -81,9 +81,9 @@ describe('request checks', () => {
   });
 
   test('a saved personal key wins and the picked model is kept', async () => {
-    personalKeys.set('u9:anthropic', { apiKey: 'alex-claude-key', modelName: 'claude-opus-5-5' });
+    personalKeys.set('u9:anthropic', { apiKey: 'alma-claude-key', modelName: 'claude-opus-5-5' });
     const config = await laneConfig({ provider: 'anthropic', model: 'claude-haiku-5-5' }, { userId: 'u9' });
-    expect(config).toMatchObject({ provider: 'anthropic', model: 'claude-haiku-5-5', apiKey: 'alex-claude-key' });
+    expect(config).toMatchObject({ provider: 'anthropic', model: 'claude-haiku-5-5', apiKey: 'alma-claude-key' });
     personalKeys.clear();
   });
 });
@@ -95,7 +95,7 @@ describe('POST /api/model-arena/run', () => {
   });
 
   test('two models race: both stream, both report time, tokens and model', async () => {
-    personalKeys.set('u1:anthropic', { apiKey: 'alex-claude-key', modelName: null });
+    personalKeys.set('u1:anthropic', { apiKey: 'alma-claude-key', modelName: null });
     const { res, events } = await race({
       prompt: 'Where is the tax rate?',
       system: 'Be brief.',
@@ -123,7 +123,7 @@ describe('POST /api/model-arena/run', () => {
     expect(sent.body.messages[0]).toEqual({ role: 'system', content: 'Be brief.' });
     expect(sent.headers.authorization).toBe('Bearer server-gemini-key');
     expect(claude.requests.at(-1).body.model).toBe('claude-haiku-5-5');
-    expect(claude.requests.at(-1).headers['x-api-key']).toBe('alex-claude-key');
+    expect(claude.requests.at(-1).headers['x-api-key']).toBe('alma-claude-key');
   });
 
   test('one model failing or missing a key leaves the others running', async () => {

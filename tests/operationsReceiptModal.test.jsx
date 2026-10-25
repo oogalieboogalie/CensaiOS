@@ -7,7 +7,7 @@ import { TaskQueuePanel } from '../src/components/operations/TaskQueuePanel.jsx'
 
 describe('Operations receipt modal', () => {
   test('opens completion receipts in a constrained page-level dialog', () => {
-    const longPath = 'C:\\Homebase\\CensaiHub\\.team\\handoffs\\2026-06-09-bug-when-clicking-the-completion-reciepts-on-the-live-operations-board-it-makes-.md';
+    const longPath = 'C:\\Repos\\CensaiHub\\.team\\handoffs\\2026-06-09-bug-when-clicking-the-completion-reciepts-on-the-live-operations-board-it-makes-.md';
     const tasks = [{
       id: 'task-1',
       title: 'Receipt modal fix',

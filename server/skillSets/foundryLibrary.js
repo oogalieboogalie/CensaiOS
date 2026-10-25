@@ -1,7 +1,7 @@
-// Alex's Idea Foundry research (oogalieboogalie/idea-foundry, issues #250 to
+// The Idea Foundry research (oogalieboogalie/idea-foundry, issues #250 to
 // #432, June 2026), one built-in skill set per profession. Each set's skills
 // come from the research's "Core Mindset Findings"; its `mindsets` keep every
-// Agent-Attribute that research produced, in Alex's own words.
+// Agent-Attribute that research produced, word for word.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

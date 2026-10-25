@@ -1,12 +1,25 @@
 // Figma file -> canvas. Two steps the window drives:
-//   listFigmaFrames: what can be pulled in (top-level frames per page + thumbnails)
+//   listFigmaFrames: what can be pulled in (frames on each page, including
+//     frames kept inside a SECTION, plus thumbnails)
 //   importFigmaFrame: one frame as editable HTML plus a pixel render for reference
 
 import { collectVectorIds, figmaNodeToHtml, hasImageFills, MAX_NODES } from './figmaToHtml.js';
+import { framesInDocument, FIGMA_LIST_DEPTH } from './figmaSections.js';
+import { logFigmaFrameMissing, logFigmaImport } from './figmaImportLog.js';
 
-const FRAME_TYPES = new Set(['FRAME', 'COMPONENT', 'COMPONENT_SET', 'INSTANCE', 'SECTION', 'GROUP']);
 const MAX_FRAMES = 60;
 const MAX_THUMBNAILS = 24;
+const MAX_REMEMBERED = 100;
+
+// Frames found per file at its last listing, for the import log line, so an
+// import never reads the whole file again just to count.
+const listedCounts = new Map();
+
+function rememberCount(fileKey, count) {
+  listedCounts.delete(fileKey);
+  listedCounts.set(fileKey, count);
+  if (listedCounts.size > MAX_REMEMBERED) listedCounts.delete(listedCounts.keys().next().value);
+}
 
 /**
  * How faithful the generated code is likely to be. Frames that are mostly
@@ -20,25 +33,15 @@ export function importFidelity(stats = {}) {
   return 'high';
 }
 
-export async function listFigmaFrames(client, fileKey) {
-  const file = await client.file(fileKey, { depth: 2 });
-  const frames = [];
-  for (const page of file?.document?.children || []) {
-    for (const node of page.children || []) {
-      if (frames.length >= MAX_FRAMES) break;
-      if (!FRAME_TYPES.has(node.type) || node.visible === false) continue;
-      const box = node.absoluteBoundingBox || {};
-      frames.push({
-        id: node.id,
-        name: node.name || node.type,
-        type: node.type,
-        page: page.name || '',
-        width: Math.round(box.width || 0),
-        height: Math.round(box.height || 0),
-        thumbnailUrl: null,
-      });
-    }
-  }
+function listedFrames(file) {
+  return framesInDocument(file?.document).slice(0, MAX_FRAMES);
+}
+
+export async function listFigmaFrames(client, fileKey, { nodeId } = {}) {
+  // Depth reaches inside a SECTION so frames kept there can be picked.
+  const file = await client.file(fileKey, { depth: FIGMA_LIST_DEPTH });
+  const frames = listedFrames(file);
+  rememberCount(fileKey, frames.length);
 
   const thumbIds = frames.slice(0, MAX_THUMBNAILS).map(f => f.id);
   if (thumbIds.length) {
@@ -50,19 +53,26 @@ export async function listFigmaFrames(client, fileKey) {
     }
   }
 
+  const missing = Boolean(nodeId) && !frames.some((frame) => frame.id === nodeId);
+  if (missing) logFigmaFrameMissing({ fileKey, nodeId });
+
   return {
     fileKey,
     name: file?.name || 'Figma file',
     lastModified: file?.lastModified || null,
     thumbnailUrl: file?.thumbnailUrl || null,
     frames,
+    linkFrameId: missing || !nodeId ? null : nodeId,
+    linkError: missing ? 'That frame is not in this file.' : null,
   };
 }
 
 export async function importFigmaFrame(client, fileKey, nodeId) {
+  const framesFound = listedCounts.get(fileKey) ?? null;
   const data = await client.nodes(fileKey, [nodeId]);
   const root = data?.nodes?.[nodeId]?.document;
   if (!root) {
+    logFigmaFrameMissing({ fileKey, nodeId });
     throw Object.assign(new Error('That frame was not found in the Figma file.'), { statusCode: 404, code: 'FIGMA_NOT_FOUND' });
   }
 
@@ -81,6 +91,8 @@ export async function importFigmaFrame(client, fileKey, nodeId) {
     svgUrls: svgRender?.images || {},
     imageUrls: imageFills?.meta?.images || {},
   });
+
+  logFigmaImport({ fileKey, framesFound, imported: nodeId });
 
   return {
     fileKey,

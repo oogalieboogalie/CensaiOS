@@ -16,9 +16,9 @@ function isDirectory(dir) {
   try { return fs.statSync(dir).isDirectory(); } catch { return false; }
 }
 
-// Where the shell starts. A folder this server can't reach (D:\Homebase on a
-// PC running censaiOS in Docker, when only D:\Homebase\CensaiHub is shared
-// with the container) used to become "/app/D:\Homebase": the sandbox refused
+// Where the shell starts. A folder this server can't reach (D:\Repos on a
+// PC running censaiOS in Docker, when only D:\Repos\CensaiHub is shared
+// with the container) used to become "/app/D:\Repos": the sandbox refused
 // it and the plain shell died at once, so the terminal never opened. Now the
 // shell starts in the app's folder and `unreachable` says which folder failed.
 export function resolveTerminalCwd(rawCwd) {

@@ -2,14 +2,23 @@
 import React from 'react';
 import { Icon } from '../../Icons.jsx';
 import { useWorkspaceStore } from '../../../lib/store.js';
+import { logToApp } from '../../../lib/appLog/browserLog.js';
+import { saveYouTubeKey, youtubeNeedsKey } from '../../../lib/youtube/keyStatus.js';
+import { YouTubeKeyPrompt } from '../../youtube/YouTubeKeyPrompt.jsx';
 import {
   CURATED_CHANNELS, parseShortsInput, sourceFromSearch, sourceKey, withPastedVideo,
 } from '../../../lib/shorts/shortsFeed.js';
 
+const KEY_NOTE = 'Search and @handles need a YouTube API key. Paste it here. It stays encrypted in your key vault. Pasted links and channel links work without one.';
+
 async function getJson(url) {
   const res = await fetch(url);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `YouTube request failed (${res.status})`);
+  if (!res.ok) {
+    const error = new Error(data.error || `YouTube request failed (${res.status})`);
+    error.code = data.code || '';
+    throw error;
+  }
   return data;
 }
 
@@ -28,6 +37,7 @@ export function ShortsSources({ source, onChoose, onClose }) {
   const [text, setText] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   const [note, setNote] = React.useState('');
+  const [needsKey, setNeedsKey] = React.useState(false);
   const [tiktok, setTiktok] = React.useState(false);
   const current = sourceKey(source);
 
@@ -36,6 +46,7 @@ export function ShortsSources({ source, onChoose, onClose }) {
   const submit = async () => {
     const parsed = parseShortsInput(text);
     setNote('');
+    setNeedsKey(false);
     setTiktok(false);
     if (!parsed) { setNote('That is not a YouTube link. Paste a Shorts link, a channel link, an @handle, or words to search.'); return; }
     if (parsed.type === 'tiktok') { setTiktok(true); return; }
@@ -47,13 +58,18 @@ export function ShortsSources({ source, onChoose, onClose }) {
         const data = await getJson(`/api/youtube/channel?handle=${encodeURIComponent(parsed.handle)}`);
         pick({ type: 'channel', channelId: data.channelId, name: data.name || parsed.handle });
       } else {
-        const data = await getJson(`/api/youtube/search?q=${encodeURIComponent(parsed.query)}&shorts=1&maxResults=25`);
+        const data = await getJson(`/api/youtube/search?q=${encodeURIComponent(parsed.query)}&shorts=1&maxResults=25&from=shorts`);
         const next = sourceFromSearch(parsed.query, data.items);
         if (next) pick(next);
         else setNote(`No shorts found for "${parsed.query}".`);
       }
     } catch (err) {
-      setNote(friendly(err));
+      if (youtubeNeedsKey(err.message, err.code)) {
+        setNeedsKey(true);
+        logToApp('info', 'youtube search needs a key', { where: 'shorts' });
+      } else {
+        setNote(friendly(err));
+      }
     } finally {
       setBusy(false);
     }
@@ -76,6 +92,17 @@ export function ShortsSources({ source, onChoose, onClose }) {
         />
         <button type="submit" className="hb-btn" data-primary="true" disabled={!text.trim() || busy}>{busy ? 'Finding…' : 'Go'}</button>
       </form>
+      {needsKey && (
+        <YouTubeKeyPrompt
+          who="Shorts"
+          note={KEY_NOTE}
+          onSave={async (apiKey) => {
+            await saveYouTubeKey(apiKey);
+            logToApp('info', 'youtube key saved', { where: 'shorts' });
+            setNeedsKey(false);
+          }}
+        />
+      )}
       {note && <p className="hb-shorts-note" role="status">{note}</p>}
       {tiktok && (
         <div className="hb-shorts-tiktok" role="status">

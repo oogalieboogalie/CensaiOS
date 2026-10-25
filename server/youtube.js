@@ -1,50 +1,59 @@
 import express from 'express';
-import { google } from 'googleapis';
-import { getYouTubeApiKey } from './googleKeys.js';
+import { resolveYouTubeKey } from './googleKeys.js';
+import { youtubeChannel, youtubeSearch } from './youtubeClient.js';
+import { createLogger } from './logger.js';
+
+// One line per search: which window, saved key or setup file, worked or why
+// not. Never the search words and never the key.
+const log = createLogger('youtube');
+
+const WINDOW_NAMES = Object.freeze({
+  music: 'Music Player',
+  stream: 'Stream Viewer',
+  shorts: 'Shorts',
+});
+
+const NEEDS_KEY = Object.freeze({
+  error: 'YouTube search needs a key. Paste one in Settings, under AI keys.',
+  code: 'YOUTUBE_KEY_REQUIRED',
+});
 
 export const youtubeRouter = express.Router();
 
+function windowOf(req) {
+  return WINDOW_NAMES[String(req.query.from || '').trim()] || 'unknown';
+}
+
+youtubeRouter.get('/key', async (req, res) => {
+  const { source } = await resolveYouTubeKey(req.session?.userId);
+  res.json({ configured: Boolean(source), source });
+});
+
 youtubeRouter.get('/search', async (req, res) => {
   const query = String(req.query.q || '').trim();
+  const window = windowOf(req);
   if (!query) return res.status(400).json({ error: 'Missing search query' });
 
-  const apiKey = getYouTubeApiKey();
+  const { apiKey, source } = await resolveYouTubeKey(req.session?.userId);
   if (!apiKey) {
-    return res.status(500).json({
-      error: 'No YouTube API key configured. Set YOUTUBE_API_KEY or GOOGLE_CLOUD_API_KEY in .env.',
-    });
+    log.info('search', { window, source: 'none', worked: false, why: 'needs a key' });
+    return res.status(424).json(NEEDS_KEY);
   }
 
   try {
-    const youtube = google.youtube({ version: 'v3', auth: apiKey });
-    const response = await youtube.search.list({
-      part: ['snippet'],
-      q: query,
-      type: ['video'],
-      // The Shorts window asks for short videos only (under four minutes).
-      ...(req.query.shorts === '1' ? { videoDuration: 'short' } : {}),
-      maxResults: Math.min(Number(req.query.maxResults || 10) || 10, 25),
+    const data = await youtubeSearch(apiKey, {
+      query,
+      shorts: req.query.shorts === '1',
+      maxResults: req.query.maxResults,
     });
-
-    const items = (response.data.items || []).map(item => {
-      const videoId = item.id?.videoId;
-      const snippet = item.snippet || {};
-      return {
-        id: videoId,
-        title: snippet.title || 'Untitled video',
-        channelTitle: snippet.channelTitle || '',
-        description: snippet.description || '',
-        thumbnail: snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url || '',
-        url: videoId ? `https://www.youtube.com/watch?v=${videoId}` : '',
-        embedUrl: videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : '',
-        publishedAt: snippet.publishedAt || null,
-      };
-    }).filter(item => item.id);
-
-    res.json({ items, pageInfo: response.data.pageInfo || null });
+    log.info('search', { window, source, worked: true });
+    res.json(data);
   } catch (err) {
-    console.error('YouTube API error:', err.message);
-    res.status(500).json({ error: err.message });
+    log.info('search', { window, source, worked: false, why: err.why || 'failed' });
+    res.status(err.statusCode || 502).json({
+      error: err.message || 'YouTube search did not work. Try again.',
+      code: err.code || 'YOUTUBE_REQUEST_FAILED',
+    });
   }
 });
 
@@ -52,23 +61,21 @@ youtubeRouter.get('/search', async (req, res) => {
 // channel's Shorts shelf. Pasted /channel/UC… links never need this.
 youtubeRouter.get('/channel', async (req, res) => {
   const handle = String(req.query.handle || '').trim();
-  if (!/^@[A-Za-z0-9._-]{3,30}$/.test(handle)) return res.status(400).json({ error: 'Expected a channel handle like @nasa' });
-
-  const apiKey = getYouTubeApiKey();
-  if (!apiKey) {
-    return res.status(500).json({
-      error: 'No YouTube API key configured. Set YOUTUBE_API_KEY or GOOGLE_CLOUD_API_KEY in .env.',
-    });
+  if (!/^@[A-Za-z0-9._-]{3,30}$/.test(handle)) {
+    return res.status(400).json({ error: 'Expected a channel handle like @nasa' });
   }
 
+  const { apiKey } = await resolveYouTubeKey(req.session?.userId);
+  if (!apiKey) return res.status(424).json(NEEDS_KEY);
+
   try {
-    const youtube = google.youtube({ version: 'v3', auth: apiKey });
-    const response = await youtube.channels.list({ part: ['snippet'], forHandle: handle, maxResults: 1 });
-    const channel = response.data.items?.[0];
-    if (!channel?.id) return res.status(404).json({ error: `No channel found for ${handle}` });
-    res.json({ channelId: channel.id, name: channel.snippet?.title || handle });
+    const channel = await youtubeChannel(apiKey, handle);
+    if (!channel) return res.status(404).json({ error: `No channel found for ${handle}` });
+    res.json(channel);
   } catch (err) {
-    console.error('YouTube API error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 502).json({
+      error: err.message || 'YouTube search did not work. Try again.',
+      code: err.code || 'YOUTUBE_REQUEST_FAILED',
+    });
   }
 });

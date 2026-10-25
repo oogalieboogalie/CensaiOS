@@ -241,5 +241,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     lab: {"title":"Social","props":{}},
     moduleMenu: {"show":true,"status":"ready","order":66,"icon":"Group","label":"Social","hint":"Follow boards and friends, see what they and their agents are building, show off your best boards"},
   },
+  { kind: 'aiResources', canvasType: 'aiResources', label: 'AI resources', componentName: 'AiResourcesWindow', componentPath: 'src/components/windows/aiResources/index.jsx', defaultSize: { w: 920, h: 660 }, lab: { title: 'AI resources', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 67, icon: 'Activity', label: 'AI resources', hint: 'Every AI key and sign-in you have, what each one runs, what it spent and what is left' } },
   // window:sync inserts new windows above this line — do not remove.
 ];

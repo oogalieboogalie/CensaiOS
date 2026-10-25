@@ -51,7 +51,7 @@ function fakeDb({ role = 'owner' } = {}) {
 }
 
 const ctx = { workspaceId: 'b', userId: 7 };
-const ask = (args) => ({ reason: 'Check the deploy finished.', plan: 'Look at the deploy log and tell Alex.', in_minutes: 30, ...args });
+const ask = (args) => ({ reason: 'Check the deploy finished.', plan: 'Look at the deploy log and tell Alma.', in_minutes: 30, ...args });
 
 test('only Censai gets the wake-up tools, and they start off', async () => {
   expect(familyDefaultToolNames('censai')).toEqual(expect.arrayContaining(['wake_me_up', 'my_wake_ups', 'cancel_wake_up']));

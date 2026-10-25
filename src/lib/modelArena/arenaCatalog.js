@@ -30,7 +30,7 @@ export function arenaModels() {
     })));
 }
 
-// Alex's first race: Gemini 3.8 Flash against Claude Haiku 5.5.
+// The first race: Gemini 3.8 Flash against Claude Haiku 5.5.
 export const DEFAULT_LANES = Object.freeze([
   { provider: 'google', model: 'gemini-3.8-flash' },
   { provider: 'anthropic', model: 'claude-haiku-5-5' },

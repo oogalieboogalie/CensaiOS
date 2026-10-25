@@ -17,7 +17,7 @@ import {
 } from '../server/agents/familyBlueprint.js';
 
 const EXPECTED_IDS = ['architect', 'censai', 'atlas', 'genesis', 'nexus', 'foundation', 'echo', 'phoenix'];
-const EXPECTED_HASH = '9a1614b8c8ea62cd481267de1d032d35750a53455fe47251c262b894a966e0cb';
+const EXPECTED_HASH = '2acea49c51e80d93a2f5192c7e12fb39f6ad011bba03efd66beab087fa6eca9c';
 
 function mutableBlueprint() {
   return JSON.parse(FAMILY_BLUEPRINT_SERIALIZED);

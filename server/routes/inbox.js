@@ -2,6 +2,7 @@ import express from 'express';
 import { parsePositiveInteger, parseRepository, sendGitHubError } from './github/client.js';
 import { actorName, canRunAgents } from './github/mergeDesk.js';
 import { buildDesk, createOctokit, resolveGithubToken } from '../github/mergeDesk.js';
+import { resolveGithubWriteToken } from '../github/writeToken.js';
 import { buildInbox } from '../inbox/collect.js';
 import { fixReport, listReports } from '../inbox/sources.js';
 import { startCiFix } from '../inbox/ciFix.js';
@@ -103,7 +104,7 @@ export function createInboxRouter({
     try {
       const target = parseRepository(req.body?.repo);
       const number = parsePositiveInteger(req.body?.number);
-      const { token } = await resolveGithubToken(req.session?.userId);
+      const { token } = await resolveGithubWriteToken(req, { feature: 'inbox fix ci' });
       const octokit = createOctokit(token);
       const allowed = await agentsAllowed(req);
       const manager = allowed ? await loadManager().catch(() => null) : null;

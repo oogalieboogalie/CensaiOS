@@ -1,6 +1,6 @@
-// Nano-agent helpers (Alex's diagram 15, the bottom row): a sub-agent can
+// Nano-agent helpers (diagram 15, the bottom row): a sub-agent can
 // start a tiny one-job helper (create, review, read, write, edit, search).
-// The helper gets Alex's ai_call prompt, answers once with a near-zero
+// The helper gets the diagram's ai_call prompt, answers once with a near-zero
 // temperature, its answer goes into the sub-agent's data box, and it ends.
 // Pure: the server tool and tests use it.
 
@@ -22,7 +22,7 @@ export function helperJob(value) {
   return Object.hasOwn(HELPER_JOBS, job) ? job : null;
 }
 
-/** Alex's ai_call prompt, filled in. */
+/** The diagram's ai_call prompt, filled in. */
 export function helperPrompt({ name = 'Helper', job, parent = 'its sub-agent', task = '' }) {
   return [
     `You are ${name}, the ${job} agent for ${parent}, your task is to ${String(task).trim().replace(/\.$/, '')}.`,

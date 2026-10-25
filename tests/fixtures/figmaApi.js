@@ -90,7 +90,7 @@ export function createFigmaFetch({ token = 'figd_user_token' } = {}) {
     calls.push({ url, headers: init.headers || {} });
     if (init.headers?.['X-Figma-Token'] !== token) return { ok: false, status: 403, json: async () => ({ status: 403, err: 'Invalid token' }) };
     const path = url.pathname.replace('/v1', '');
-    if (path === '/me') return ok({ id: '42', handle: 'Alex Designer', email: 'alex@example.com' });
+    if (path === '/me') return ok({ id: '42', handle: 'Alma Designer', email: 'alma@example.com' });
     if (path === `/files/${FILE_KEY}`) return ok(fileResponse);
     if (path === `/files/${FILE_KEY}/nodes`) {
       const ids = url.searchParams.get('ids').split(',');

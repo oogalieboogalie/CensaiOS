@@ -57,7 +57,7 @@ function LocalSignIn({ onLoginSuccess }) {
       {error && <div className="hb-login-error" role="alert">{error}</div>}
       <label className="hb-login-field">
         <span>Your name (optional)</span>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex" autoFocus />
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Alma" autoFocus />
       </label>
       <button type="submit" className="hb-login-primary" disabled={loading}>
         {loading ? 'Opening…' : 'Open censaiOS'}
@@ -158,7 +158,7 @@ export function Login({ onLoginSuccess, oauthConfigured, localSignIn = false, fr
               </label>
               <label className="hb-login-field">
                 <span>Name (optional)</span>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex" />
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Alma" />
               </label>
               <button type="submit" className="hb-login-primary" disabled={loading}>
                 {loading ? 'Entering…' : 'Enter Canvas'}

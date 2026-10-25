@@ -1,9 +1,44 @@
 import { docker, assertRef, DockerInputError } from './cli.js';
 import { listComposeProjects } from './engine.js';
+import { createLogger } from '../logger.js';
+import { dockerFailureReason } from './failureReason.js';
 
 // Write side of the Docker manager. Every verb is allowlisted and every
 // target goes through assertRef, so nothing user-typed reaches the CLI as a
 // flag. Exec runs inside the container (`sh -c`), never in a host shell.
+// Every action leaves one 'docker' log line: what, which container, image,
+// volume, network or compose project, and whether it worked or why not.
+// Never a typed shell command, its output, or a setting's value.
+
+const log = createLogger('docker');
+const short = (value, max = 64) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+
+// The log scrubs anything that looks like an id, so a container is named by
+// its name, looked up before the action (a removed one is gone afterwards).
+const LOOKS_LIKE_ID = /^[0-9a-f]{6,64}$/i;
+async function containerName(id) {
+  if (!LOOKS_LIKE_ID.test(String(id || ''))) return id;
+  try {
+    const { stdout } = await docker(['inspect', id], { timeout: 10_000 });
+    return String(JSON.parse(stdout)?.[0]?.Name || '').replace(/^\//, '') || 'a container';
+  } catch {
+    return 'a container';
+  }
+}
+
+/** Run one action and log it: "<what> <target>: done" or "...: failed (<why>)". */
+async function logged(what, target, work, describe = () => '') {
+  const label = `${what} ${short(await target) || '(none)'}`;
+  try {
+    const result = await work();
+    const extra = describe(result);
+    log.info(`${label}: done${extra ? ` (${extra})` : ''}`);
+    return result;
+  } catch (err) {
+    log.warn(`${label}: failed (${dockerFailureReason(err)})`);
+    throw err;
+  }
+}
 
 const CONTAINER_ACTIONS = {
   start: ['start'],
@@ -15,20 +50,24 @@ const CONTAINER_ACTIONS = {
 };
 
 export async function containerAction(id, action) {
-  const verb = CONTAINER_ACTIONS[action];
-  if (!verb) throw new DockerInputError(`Unknown container action: ${action}`);
-  assertRef(id, 'container');
-  await docker([...verb, id], { timeout: 60_000 });
-  return { ok: true, id, action };
+  return logged(`${CONTAINER_ACTIONS[action] ? action : 'unknown action on'} container`, containerName(id), async () => {
+    const verb = CONTAINER_ACTIONS[action];
+    if (!verb) throw new DockerInputError(`Unknown container action: ${short(action, 20)}`);
+    assertRef(id, 'container');
+    await docker([...verb, id], { timeout: 60_000 });
+    return { ok: true, id, action };
+  });
 }
 
 export async function removeContainer(id, { force = false, volumes = false } = {}) {
-  assertRef(id, 'container');
-  const args = ['rm'];
-  if (force) args.push('-f');
-  if (volumes) args.push('-v');
-  await docker([...args, id], { timeout: 60_000 });
-  return { ok: true, id };
+  return logged('remove container', containerName(id), async () => {
+    assertRef(id, 'container');
+    const args = ['rm'];
+    if (force) args.push('-f');
+    if (volumes) args.push('-v');
+    await docker([...args, id], { timeout: 60_000 });
+    return { ok: true, id };
+  }, () => [force && 'forced', volumes && 'with its volumes'].filter(Boolean).join(', '));
 }
 
 // Split a command line into argv, honouring simple single/double quotes.
@@ -66,45 +105,56 @@ export function terminalEnv({ cols, rows } = {}) {
 }
 
 export async function execInContainer(id, command, { platformIsWindows = process.platform === 'win32', cols, rows } = {}) {
-  assertRef(id, 'container');
-  const cmd = String(command || '').trim();
-  if (!cmd) throw new DockerInputError('Type a command to run.');
-  if (cmd.length > 2000) throw new DockerInputError('Command is too long.');
-  // On POSIX hosts the whole line goes to the container's own shell. The
-  // Windows runner joins argv through cmd.exe, so there we pass plain argv.
-  const argv = platformIsWindows ? tokenize(cmd) : ['sh', '-c', cmd];
-  const started = Date.now();
-  try {
-    const { stdout, stderr } = await docker(['exec', ...terminalEnv({ cols, rows }), id, ...argv], { timeout: 60_000, platformIsWindows });
-    return { ok: true, exitCode: 0, stdout, stderr, durationMs: Date.now() - started };
-  } catch (err) {
-    if (err.status) throw err;
-    return { ok: false, exitCode: 1, stdout: '', stderr: err.message, durationMs: Date.now() - started };
-  }
+  // The typed command never reaches the log, only that one ran and its exit code.
+  return logged('shell command in container', containerName(id), async () => {
+    assertRef(id, 'container');
+    const cmd = String(command || '').trim();
+    if (!cmd) throw new DockerInputError('Type a command to run.');
+    if (cmd.length > 2000) throw new DockerInputError('Command is too long.');
+    // On POSIX hosts the whole line goes to the container's own shell. The
+    // Windows runner joins argv through cmd.exe, so there we pass plain argv.
+    const argv = platformIsWindows ? tokenize(cmd) : ['sh', '-c', cmd];
+    const started = Date.now();
+    try {
+      const { stdout, stderr } = await docker(['exec', ...terminalEnv({ cols, rows }), id, ...argv], { timeout: 60_000, platformIsWindows });
+      return { ok: true, exitCode: 0, stdout, stderr, durationMs: Date.now() - started };
+    } catch (err) {
+      if (err.status) throw err;
+      return { ok: false, exitCode: 1, stdout: '', stderr: err.message, durationMs: Date.now() - started };
+    }
+  }, (r) => `exit ${r.exitCode}`);
 }
 
 export async function removeImage(id, { force = false } = {}) {
-  assertRef(id, 'image');
-  await docker(force ? ['image', 'rm', '-f', id] : ['image', 'rm', id], { timeout: 120_000 });
-  return { ok: true, id };
+  return logged('remove image', id, async () => {
+    assertRef(id, 'image');
+    await docker(force ? ['image', 'rm', '-f', id] : ['image', 'rm', id], { timeout: 120_000 });
+    return { ok: true, id };
+  }, () => (force ? 'forced' : ''));
 }
 
 export async function pullImage(ref) {
-  assertRef(ref, 'image reference');
-  const { stdout } = await docker(['pull', '--quiet', ref], { timeout: 15 * 60_000 });
-  return { ok: true, ref, digest: stdout.trim() };
+  return logged('pull image', ref, async () => {
+    assertRef(ref, 'image reference');
+    const { stdout } = await docker(['pull', '--quiet', ref], { timeout: 15 * 60_000 });
+    return { ok: true, ref, digest: stdout.trim() };
+  });
 }
 
 export async function removeVolume(name) {
-  assertRef(name, 'volume');
-  await docker(['volume', 'rm', name]);
-  return { ok: true, name };
+  return logged('remove volume', name, async () => {
+    assertRef(name, 'volume');
+    await docker(['volume', 'rm', name]);
+    return { ok: true, name };
+  });
 }
 
 export async function removeNetwork(name) {
-  assertRef(name, 'network');
-  await docker(['network', 'rm', name]);
-  return { ok: true, name };
+  return logged('remove network', name, async () => {
+    assertRef(name, 'network');
+    await docker(['network', 'rm', name]);
+    return { ok: true, name };
+  });
 }
 
 const PRUNE_TARGETS = {
@@ -115,11 +165,13 @@ const PRUNE_TARGETS = {
 };
 
 export async function prune(target) {
-  const args = PRUNE_TARGETS[target];
-  if (!args) throw new DockerInputError(`Unknown prune target: ${target}`);
-  const { stdout } = await docker(args, { timeout: 5 * 60_000 });
-  const reclaimed = stdout.match(/Total reclaimed space:\s*(.+)/i)?.[1]?.trim() || '0B';
-  return { ok: true, target, reclaimed };
+  return logged('clean up unused', PRUNE_TARGETS[target] ? target : 'unknown', async () => {
+    const args = PRUNE_TARGETS[target];
+    if (!args) throw new DockerInputError(`Unknown prune target: ${short(target, 20)}`);
+    const { stdout } = await docker(args, { timeout: 5 * 60_000 });
+    const reclaimed = stdout.match(/Total reclaimed space:\s*(.+)/i)?.[1]?.trim() || '0B';
+    return { ok: true, target, reclaimed };
+  }, (r) => `freed ${short(r.reclaimed, 20)}`);
 }
 
 const COMPOSE_ACTIONS = {
@@ -132,16 +184,18 @@ const COMPOSE_ACTIONS = {
 };
 
 export async function composeAction(project, action) {
-  const verb = COMPOSE_ACTIONS[action];
-  if (!verb) throw new DockerInputError(`Unknown compose action: ${action}`);
-  assertRef(project, 'compose project');
-  const projects = await listComposeProjects();
-  const match = projects.find((p) => p.name === project);
-  if (!match) throw new DockerInputError(`No compose project named ${project}.`);
-  if (action === 'up' && match.configFiles.length === 0) {
-    throw new DockerInputError(`Docker doesn't know where ${project}'s compose file lives, so it can't bring it up from here.`);
-  }
-  const files = match.configFiles.flatMap((f) => ['-f', f]);
-  const { stdout, stderr } = await docker(['compose', '-p', project, ...files, ...verb], { timeout: 10 * 60_000 });
-  return { ok: true, project, action, output: `${stdout}${stderr}`.trim() };
+  return logged(`compose ${COMPOSE_ACTIONS[action] ? action : 'unknown action'}`, project, async () => {
+    const verb = COMPOSE_ACTIONS[action];
+    if (!verb) throw new DockerInputError(`Unknown compose action: ${short(action, 20)}`);
+    assertRef(project, 'compose project');
+    const projects = await listComposeProjects();
+    const match = projects.find((p) => p.name === project);
+    if (!match) throw new DockerInputError(`No compose project named ${project}.`);
+    if (action === 'up' && match.configFiles.length === 0) {
+      throw new DockerInputError(`Docker doesn't know where ${project}'s compose file lives, so it can't bring it up from here.`);
+    }
+    const files = match.configFiles.flatMap((f) => ['-f', f]);
+    const { stdout, stderr } = await docker(['compose', '-p', project, ...files, ...verb], { timeout: 10 * 60_000 });
+    return { ok: true, project, action, output: `${stdout}${stderr}`.trim() };
+  });
 }

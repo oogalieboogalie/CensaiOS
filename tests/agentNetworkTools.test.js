@@ -64,7 +64,7 @@ test('discover_agents lists the coding CLIs and modules on the board', async () 
   discoverAgents.mockResolvedValue({ query: 'tests', items: [] });
   listBoardHelpers.mockResolvedValueOnce([{ card_id: 'window:w-cli', name: 'Claude Code', kind: 'coding_cli', you_can_request: true }]);
   const out = JSON.parse(await handleAgentNetworkTool('atlas', 'discover_agents', { query: 'run the tests' }, context));
-  expect(listBoardHelpers).toHaveBeenCalledWith('ws-a', 'run the tests', 5);
+  expect(listBoardHelpers).toHaveBeenCalledWith('ws-a', 'run the tests', 5, { excludeAgentId: 'atlas' });
   expect(out.board_helpers).toEqual([{ card_id: 'window:w-cli', name: 'Claude Code', kind: 'coding_cli', you_can_request: true }]);
 });
 

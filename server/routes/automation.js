@@ -4,9 +4,25 @@ import { promisify } from 'util';
 import fs from 'fs/promises';
 import os from 'os';
 import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
+import { createLogger } from '../logger.js';
 
-const execAsync = promisify(exec);
+const log = createLogger('automation');
+const defaultExec = promisify(exec);
+let execAsync = defaultExec;
+let platform = () => os.platform();
 export const automationRouter = express.Router();
+
+// Tests swap in a fake PowerShell and platform.
+export function setAutomationRunnerForTests({ exec: fakeExec, platform: fakePlatform } = {}) {
+  execAsync = fakeExec || defaultExec;
+  platform = fakePlatform || (() => os.platform());
+}
+
+const ACTIONS = {
+  run: { verb: 'Start', words: 'start', notWindows: 'Running tasks is only supported on Windows' },
+  enable: { verb: 'Enable', words: 'turn on', notWindows: 'Enabling tasks is only supported on Windows' },
+  disable: { verb: 'Disable', words: 'turn off', notWindows: 'Disabling tasks is only supported on Windows' },
+};
 
 const ALLOWED_TASKS = [
   'CensaiJulesQueue',
@@ -15,12 +31,15 @@ const ALLOWED_TASKS = [
   'OpenHubOverseer'
 ];
 
-async function runPowerShell(command) {
+// Status reads are allowed to fail quietly (a task may not exist yet);
+// the buttons use { strict: true } so a Windows refusal reaches the window.
+async function runPowerShell(command, { strict = false, step = 'status' } = {}) {
   try {
     const { stdout } = await execAsync(`powershell.exe -NoProfile -NonInteractive -Command "${command}"`);
     return stdout;
   } catch (err) {
-    console.warn('[automation] powershell exec failed', { command: command.slice(0, 80), error: err.message });
+    log.warn('powershell call failed', { step, code: err.code ?? null });
+    if (strict) throw err;
     return null;
   }
 }
@@ -30,14 +49,14 @@ async function readJsonSafely(filepath) {
     const content = await fs.readFile(filepath, 'utf-8');
     return JSON.parse(content);
   } catch (err) {
-    console.warn('[automation] json read failed', { filepath, error: err.message });
+    if (err.code !== 'ENOENT') log.warn('queue file read failed', { file: filepath.split('/').pop(), code: err.code || 'parse' });
     return null;
   }
 }
 
 automationRouter.get('/status', requireLocalFilesystem, async (req, res) => {
   try {
-    const isWindows = os.platform() === 'win32';
+    const isWindows = platform() === 'win32';
     const statusResult = {};
     // Additive fields for the Automation Board UI: host (where the task runs) and
     // currentStep (a free-text description of what the task is doing right now).
@@ -117,64 +136,28 @@ automationRouter.get('/status', requireLocalFilesystem, async (req, res) => {
 
     res.json(statusResult);
   } catch (err) {
-    console.error('Error fetching automation status:', err);
-    res.status(500).json({ error: err.message });
+    log.error('status read failed', { code: err.code || null });
+    res.status(500).json({ error: 'Could not read the automation status.' });
   }
 });
 
-automationRouter.post('/:task/run', requireLocalFilesystem, async (req, res) => {
-  const { task } = req.params;
+automationRouter.post('/:task/:action', requireLocalFilesystem, async (req, res) => {
+  const { task, action } = req.params;
+  const spec = ACTIONS[action];
+  if (!spec) return res.status(404).json({ error: 'Unknown action' });
   if (!ALLOWED_TASKS.includes(task)) {
     return res.status(400).json({ error: 'Invalid task name' });
   }
-
-  const isWindows = os.platform() === 'win32';
-  if (!isWindows) {
-    return res.status(400).json({ error: 'Running tasks is only supported on Windows' });
+  if (platform() !== 'win32') {
+    return res.status(400).json({ error: spec.notWindows });
   }
 
   try {
-    await runPowerShell(`Start-ScheduledTask -TaskName '${task}'`);
+    await runPowerShell(`${spec.verb}-ScheduledTask -TaskName '${task}'`, { strict: true, step: action });
+    log.info('task button worked', { task, action });
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-automationRouter.post('/:task/enable', requireLocalFilesystem, async (req, res) => {
-  const { task } = req.params;
-  if (!ALLOWED_TASKS.includes(task)) {
-    return res.status(400).json({ error: 'Invalid task name' });
-  }
-
-  const isWindows = os.platform() === 'win32';
-  if (!isWindows) {
-    return res.status(400).json({ error: 'Enabling tasks is only supported on Windows' });
-  }
-
-  try {
-    await runPowerShell(`Enable-ScheduledTask -TaskName '${task}'`);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-automationRouter.post('/:task/disable', requireLocalFilesystem, async (req, res) => {
-  const { task } = req.params;
-  if (!ALLOWED_TASKS.includes(task)) {
-    return res.status(400).json({ error: 'Invalid task name' });
-  }
-
-  const isWindows = os.platform() === 'win32';
-  if (!isWindows) {
-    return res.status(400).json({ error: 'Disabling tasks is only supported on Windows' });
-  }
-
-  try {
-    await runPowerShell(`Disable-ScheduledTask -TaskName '${task}'`);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    log.warn('task button refused by windows', { task, action, code: err.code ?? null });
+    res.status(502).json({ error: `Windows did not ${spec.words} ${task}. It may be missing, or censaiOS may need to run as an administrator.` });
   }
 });

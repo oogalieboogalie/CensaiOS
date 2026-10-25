@@ -122,7 +122,7 @@ export function LeadDetail({ lead, brief, onBank, onEdit = () => {}, onOpenDoc }
   const bank = async () => {
     try {
       const res = await onBank(lead);
-      setFlash(res?.deduped ? 'Already in your Lead Queue, updated.' : 'Saved to your Lead Queue.');
+      setFlash(`${res?.deduped ? 'Already in your Lead Queue, updated' : 'Saved to your Lead Queue'}${lead.sequence?.length || lead.iceBreaker ? ' with its drafts' : ''}.`);
     } catch (err) {
       setFlash(err.message || 'Could not save the lead');
     }

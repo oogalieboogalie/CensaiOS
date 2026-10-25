@@ -36,11 +36,11 @@ Agents interact with the database through **real OpenAI-compatible function call
 5. If the model returns `tool_calls`:
    - Server executes each tool against the database
    - Feeds results back as `role: "tool"` messages
-   - Calls LLM again (no artificial round limits)
+   - Calls LLM again (at most 10 rounds in chat, `server/routes/chat/shared.js`; 30 in the background task worker)
    - Repeats until model responds with text
 6. Final text response is returned to the frontend
 
-### Tools (24 total)
+### Tools (about 140 today; the list below is the original core set)
 
 **Write tools** (agent -> database):
 

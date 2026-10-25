@@ -1,4 +1,5 @@
 import pool from '../../db.js';
+import { createLogger } from '../../logger.js';
 import { embed, embeddingsAvailable } from '../../embeddings.js';
 import { upsertVector, searchVectors } from '../../qdrant.js';
 import { randomUUID } from 'crypto';
@@ -9,6 +10,8 @@ import {
 } from '../scoring.js';
 import { clampScore, normalizeSearchQuery, tokenizeSearchQuery, likePattern } from './shared.js';
 import { resolveMemoryScope } from '../tenancy.js';
+
+const log = createLogger('memory');
 
 export async function storeMemory(agentId, content, type = 'observation', opts = {}) {
   const memoryContent = typeof content === 'string' ? content.trim() : String(content || '').trim();
@@ -57,21 +60,21 @@ export async function storeMemory(agentId, content, type = 'observation', opts =
       }
     }
   } catch (err) {
-    console.warn('Memory vectorization skipped:', err.message);
+    log.warn('memory vectorization skipped', { code: err?.code || 'unknown' });
   }
 
   if (compressionSafe) {
     try {
       await storeHolographic(memoryId, memoryContent);
     } catch (err) {
-      console.warn('Holographic memory storage skipped:', err.message);
+      log.warn('holographic memory storage skipped', { code: err?.code || 'unknown' });
     }
   }
 
   try {
     if (opts.autoAssociate !== false) await autoAssociate(agentId, memoryContent, scope);
   } catch (err) {
-    console.warn('Memory auto-association skipped:', err.message);
+    log.warn('memory auto-association skipped', { code: err?.code || 'unknown' });
   }
 
   return memoryId;
@@ -110,7 +113,7 @@ export async function recallMemories(agentId, query, opts = {}) {
         }
       }
     } catch (err) {
-      console.warn('Semantic memory recall skipped:', err.message);
+      log.warn('semantic memory recall skipped', { code: err?.code || 'unknown' });
     }
   }
 

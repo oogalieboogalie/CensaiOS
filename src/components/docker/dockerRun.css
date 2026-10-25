@@ -5,9 +5,14 @@
 }
 .dk-run-title { flex-basis: 100%; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); }
 .dk-run-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 160px; font-size: 11px; color: var(--ink-faint); }
-.dk-run-field input {
+.dk-run-field input, .dk-run-field select, .dk-run-field textarea {
   height: 28px; padding: 0 8px; border: 1px solid var(--hairline); border-radius: var(--radius-md);
   background: var(--surface-1); color: var(--ink); font: inherit; font-size: 12px;
 }
-.dk-run-field input:focus { outline: none; border-color: var(--accent-line); }
+.dk-run-field textarea { height: auto; padding: 6px 8px; resize: vertical; font-family: var(--font-mono); }
+.dk-run-field input:focus, .dk-run-field select:focus, .dk-run-field textarea:focus { outline: none; border-color: var(--accent-line); }
+.dk-run-field--wide { flex-basis: 100%; }
+.dk-run-more { all: unset; cursor: pointer; flex-basis: 100%; font-size: 11px; color: var(--ink-faint); }
+.dk-run-more:hover, .dk-run-more:focus-visible { color: var(--ink); text-decoration: underline; }
+.dk-run-extra { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px 10px; }
 .dk-run-buttons { display: flex; gap: 6px; }

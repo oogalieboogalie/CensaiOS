@@ -1,4 +1,4 @@
-// Blueprints (Alex's diagram 08): a board's shelf of recipes that worked,
+// Blueprints (diagram 08): a board's shelf of recipes that worked,
 // each with an ID, found by asking "Do we have ...". Listed under Add > Work.
 export const windowMeta = {
   kind: 'blueprints',

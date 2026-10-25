@@ -13,7 +13,7 @@ import { windowMeta } from './meta.js';
 export { windowMeta };
 
 /**
- * Legion, from Alex's diagram ("Not swarms.. Legions."): the Architect plans
+ * Legion, from the diagram ("Not swarms.. Legions."): the Architect plans
  * with Research, Foresight and Echo, four builders work in order
  * (Foundation, Nexus, Atlas, Genesis), a browser takes a screenshot, Echo
  * says OK or NOK, NOK goes round the fix loop, OK commits, and every agent

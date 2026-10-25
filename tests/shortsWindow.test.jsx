@@ -170,7 +170,7 @@ describe('Shorts window', () => {
     fireEvent.click(screen.getByTitle('Choose what to watch'));
     fireEvent.change(screen.getByLabelText('Shorts link, channel or search'), { target: { value: 'moon landing' } });
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Go' })); });
-    expect(global.fetch.mock.calls[0][0]).toBe('/api/youtube/search?q=moon%20landing&shorts=1&maxResults=25');
+    expect(global.fetch.mock.calls[0][0]).toBe('/api/youtube/search?q=moon%20landing&shorts=1&maxResults=25&from=shorts');
     await waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ shortsSource: { type: 'list', name: 'moon landing', items: [{ id: 'aaaaaaaaaa1', title: 'Moon', channel: 'NASA' }] } }));
   });
 

@@ -11,6 +11,7 @@ import {
   MAX_REMIX_SOURCE_BYTES,
   normalizeRemixSourceType,
 } from '../design/remix.js';
+import { logDesignDone, logDesignFailed } from '../design/designLog.js';
 
 // Design surface: Figma import (BYOK token) and model remixes of on-canvas code.
 export const designRouter = express.Router();
@@ -47,6 +48,7 @@ designRouter.get('/figma/status', async (req, res) => {
       user = me?.handle || me?.email || null;
     } catch (err) {
       if (err.code === 'FIGMA_TOKEN_INVALID') {
+        logDesignFailed('check the Figma connection', err);
         return res.json({ connected: false, source, user: null, invalid: true });
       }
     }
@@ -57,25 +59,38 @@ designRouter.get('/figma/status', async (req, res) => {
 });
 
 designRouter.get('/figma/frames', async (req, res) => {
+  let fileKey = null;
   try {
-    const { fileKey } = requireFileLink(req.query.url);
+    const parsed = requireFileLink(req.query.url);
+    fileKey = parsed.fileKey;
     const client = await figmaClientFor(req);
-    res.json(await listFigmaFrames(client, fileKey));
+    const listed = await listFigmaFrames(client, fileKey, { nodeId: parsed.nodeId });
+    logDesignDone('list frames in', { fileKey, frames: listed?.frames?.length ?? 0 });
+    res.json(listed);
   } catch (err) {
+    logDesignFailed('list frames in', err, { fileKey });
     sendError(res, err, 'FIGMA_FRAMES_FAILED');
   }
 });
 
+// The same call imports a new frame or refreshes one already on the board ({ refresh: true }).
 designRouter.post('/figma/import', async (req, res) => {
+  const step = req.body?.refresh === true ? 'refresh from Figma' : 'import';
+  const where = {};
   try {
     const link = requireFileLink(req.body?.url);
     const nodeId = String(req.body?.nodeId || link.nodeId || '').trim();
+    Object.assign(where, { fileKey: link.fileKey, nodeId });
     if (!nodeId) {
+      logDesignFailed(step, { code: 'no frame picked' }, where);
       return res.status(400).json({ error: 'Pick a frame to import.', code: 'FIGMA_NODE_REQUIRED' });
     }
     const client = await figmaClientFor(req);
-    res.json(await importFigmaFrame(client, link.fileKey, nodeId));
+    const frame = await importFigmaFrame(client, link.fileKey, nodeId);
+    logDesignDone(step, { ...where, fidelity: frame?.fidelity, nodes: frame?.stats?.nodes });
+    res.json(frame);
   } catch (err) {
+    logDesignFailed(step, err, where);
     sendError(res, err, 'FIGMA_IMPORT_FAILED');
   }
 });
@@ -117,10 +132,13 @@ designRouter.post('/remix', async (req, res) => {
     });
     const code = extractRemixedCode(completion?.choices?.[0]?.message?.content);
     if (!code) {
+      logDesignFailed('remix a design', { code: 'the model returned no code' });
       return res.status(502).json({ error: 'The model returned no code.', code: 'REMIX_EMPTY' });
     }
+    logDesignDone('remix a design', { sourceType, model: config.model });
     res.json({ source: code, sourceType, model: config.model, provider: config.provider || null });
   } catch (err) {
+    logDesignFailed('remix a design', err);
     sendPublicModelError(res, err, 'REMIX_FAILED');
   }
 });

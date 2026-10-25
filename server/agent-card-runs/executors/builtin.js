@@ -1,7 +1,8 @@
 import { getAgent, logConversation } from '../../memory.js';
 import { newTimings, runAgentTurn } from '../../runEngine/index.js';
-import { publicTimings, publicToolActions } from '../../routes/chat/shared.js';
+import { publicTimings, publicToolActions } from '../../chatModel/display.js';
 import { completeRun, failRun, recordRunAction } from '../../runs/lifecycle.js';
+import { recordScheduleRunOutcome } from '../../scheduler/lastRun.js';
 import { resolveBuiltInAgentId, safeRuntimeEvent } from '../contract.js';
 import { publishAgentCardEvent } from '../events.js';
 
@@ -61,12 +62,18 @@ export async function executeBuiltInAgentCardRun(run, card) {
       runId: run.id, metadata: { result: finalText, tools: tools || [], timings: safeTimings },
     });
     emit({ type: 'call.complete', status: 'succeeded', result: finalText, tools, timings: safeTimings });
+    await recordScheduleRunOutcome({
+      scheduleId: metadata.scheduleId, runId: run.id, agentId: metadata.agentId, answer: finalText,
+    });
     return { status: 'succeeded', result: finalText };
   } catch (error) {
     await eventWrites.catch(() => {});
     timings.total_ms = Date.now() - startedAt;
     await failRun({ runId: run.id, error });
     emit({ type: 'call.failed', status: 'failed', error: error.message || 'AgentCard call failed.' });
+    await recordScheduleRunOutcome({
+      scheduleId: metadata.scheduleId, runId: run.id, agentId: metadata.agentId, failed: true,
+    });
     return { status: 'failed', error: error.message || 'AgentCard call failed.' };
   }
 }

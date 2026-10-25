@@ -71,9 +71,9 @@ describe('Open anywhere routes', () => {
     const owner = buildApp({ userId: 7, userRole: 'admin' });
     const made = await request(owner).post('/api/web-os/pair').send({});
     expect(made.status).toBe(200);
-    query.mockResolvedValueOnce({ rows: [{ id: 7, email: 'alex@example.com', name: 'Alex', role: 'admin' }] });
+    query.mockResolvedValueOnce({ rows: [{ id: 7, email: 'alma@example.com', name: 'Alma', role: 'admin' }] });
     const other = buildApp();
-    const res = await request(other).post('/api/web-os/pair/redeem').set('Host', 'r2d2:3002').send({ code: made.body.code });
+    const res = await request(other).post('/api/web-os/pair/redeem').set('Host', 'officepc:3002').send({ code: made.body.code });
     expect(res.status).toBe(200);
     expect(lastSession.userId).toBe(7);
     const again = await request(buildApp()).post('/api/web-os/pair/redeem').send({ code: made.body.code });
@@ -95,7 +95,7 @@ describe('Open anywhere routes', () => {
   });
 
   test('the status says whether this request came from another computer', async () => {
-    const res = await request(buildApp({ userId: 7 })).get('/api/web-os').set('Host', 'r2d2:3002');
+    const res = await request(buildApp({ userId: 7 })).get('/api/web-os').set('Host', 'officepc:3002');
     expect(res.status).toBe(200);
     expect(res.body.fromAnotherComputer).toBe(true);
     expect(typeof res.body.open).toBe('boolean');

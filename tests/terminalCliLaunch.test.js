@@ -8,6 +8,7 @@ import { attachTerminalServer } from '../server/terminal/sessions.js';
 import { sessions } from '../server/terminal/shared.js';
 import { startCliBackend, terminalCliAdapter, interactiveCliEnv, cliCredentialFor, privateHome } from '../server/terminal/cliBackend.js';
 import { getAdapter } from '../server/cli-agents/adapters/index.js';
+import { resolveCliKey } from '../server/cli-agents/index.js';
 
 // A stand-in "Claude Code": prints a line, echoes one line of input, exits.
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-cli-term-'));
@@ -58,12 +59,18 @@ describe('terminal that opens into a coding CLI', () => {
     expect(await cliCredentialFor(adapter, '1', env)).toEqual({ key: null, home });
     expect(await cliCredentialFor(adapter, '1', env)).toEqual({ key: null, home });
     await expect(cliCredentialFor(adapter, '2', env)).rejects.toThrow(/another person's Anthropic account/);
+    // Their own vault key: a private home, never the owner's sign-in.
+    const own = async ({ adapter: a, userId }) => resolveCliKey({ adapter: a, userId }, { mayUse: async () => false, vault: async () => ({ apiKey: 'sk-ant-api-teammate-key' }) });
+    const teammate = await cliCredentialFor(adapter, '2', env, own);
+    expect(teammate).toEqual({ key: 'sk-ant-api-teammate-key', home: privateHome('2', env) });
+    expect(teammate.home).not.toBe(home);
+    // The computer's .env key is the owner's: a teammate without sharing is still refused.
     const saved = process.env.ANTHROPIC_API_KEY;
-    process.env.ANTHROPIC_API_KEY = 'sk-ant-api-teammate-key';
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-api-owner-env-key';
     try {
-      const teammate = await cliCredentialFor(adapter, '2', env);
-      expect(teammate).toEqual({ key: 'sk-ant-api-teammate-key', home: privateHome('2', env) });
-      expect(teammate.home).not.toBe(home);
+      // (personalHome here only skips resolveCliKey's own claim on the real owners file.)
+      const envOnly = async ({ adapter: a, userId }) => resolveCliKey({ adapter: { ...a, personalHome: true }, userId }, { mayUse: async () => false, vault: async () => null });
+      await expect(cliCredentialFor(adapter, '2', env, envOnly)).rejects.toThrow(/another person's Anthropic account/);
     } finally {
       if (saved === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = saved;
     }

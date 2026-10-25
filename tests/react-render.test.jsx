@@ -189,31 +189,23 @@ describe('React Jest harness', () => {
         expect(getCalendarEventsSpy).toHaveBeenCalled();
       });
 
+      // The view is each person's own: it is kept in this browser, never
+      // written into the board's shared window data.
       fireEvent.click(screen.getByText('List'));
       await waitFor(() => {
-        expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
-          data: expect.objectContaining({
-            calendar: expect.objectContaining({ viewMode: 'list' }),
-          }),
-        }));
+        expect(JSON.parse(localStorage.getItem('homebase.calendar.view.v1'))['calendar-1']).toEqual(expect.objectContaining({ viewMode: 'list' }));
       });
 
       rerender(React.createElement(CalendarWindow, { win: currentWin, onUpdate, onSpawn: jest.fn() }));
 
       fireEvent.click(screen.getByText('Next'));
+      let persistedDate;
       await waitFor(() => {
-        expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
-          data: expect.objectContaining({
-            calendar: expect.objectContaining({
-              viewMode: 'list',
-              currentDate: expect.any(String),
-            }),
-          }),
-        }));
+        const saved = JSON.parse(localStorage.getItem('homebase.calendar.view.v1'))['calendar-1'];
+        expect(saved).toEqual(expect.objectContaining({ viewMode: 'list', currentDate: expect.any(String) }));
+        persistedDate = saved.currentDate;
       });
-
-      const persistedDate = currentWin.data?.calendar?.currentDate;
-      expect(persistedDate).toBeTruthy();
+      expect(currentWin.data?.calendar).toBeUndefined();
 
       unmount();
       render(React.createElement(CalendarWindow, { win: currentWin, onUpdate, onSpawn: jest.fn() }));

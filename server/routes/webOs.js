@@ -12,6 +12,7 @@ import {
 } from '../webOs/door.js';
 import { createPairCode, redeemPairCode } from '../webOs/pairing.js';
 import { doorPublicPort } from '../webOs/doorListener.js';
+import { isJestRun } from '../security/testShortcut.js';
 
 /**
  * Open anywhere (web OS). The public router is mounted before the sign-in
@@ -55,7 +56,7 @@ export function refuseEmailSignInFromAnotherComputer(req, res, next) {
 }
 
 function canManage(req) {
-  return req.session?.userRole === 'admin' || process.env.NODE_ENV === 'test';
+  return req.session?.userRole === 'admin' || isJestRun();
 }
 
 function statusFor(req) {

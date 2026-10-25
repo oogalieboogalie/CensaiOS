@@ -59,12 +59,12 @@ describe('PDF form fields', () => {
     const { win, fileId } = await winWithForm();
     const fields = await readFormFields(PdfLib, await makeForm());
     const by = Object.fromEntries(fields.map((f) => [f.name, f]));
-    const alex = valuePatch(fileId, by['tenant.name'], 'Alex Green');
+    const alma = valuePatch(fileId, by['tenant.name'], 'Alma Reyes');
     const sam = valuePatch(fileId, by.pets, true);
-    const merged = { ...win, ...alex, ...sam };
-    expect(Object.keys(alex)[0]).toBe(valueKey(fileId, 'tenant.name'));
-    expect(Object.keys(alex)[0]).not.toBe(Object.keys(sam)[0]);
-    expect(readValues(merged)).toEqual({ [fileId]: { 'tenant.name': 'Alex Green', pets: true } });
+    const merged = { ...win, ...alma, ...sam };
+    expect(Object.keys(alma)[0]).toBe(valueKey(fileId, 'tenant.name'));
+    expect(Object.keys(alma)[0]).not.toBe(Object.keys(sam)[0]);
+    expect(readValues(merged)).toEqual({ [fileId]: { 'tenant.name': 'Alma Reyes', pets: true } });
     expect(readPdf(merged).values[fileId].pets).toBe(true);
     expect(shownValue(by.plan, readValues(merged)[fileId])).toBe('');
   });
@@ -83,7 +83,7 @@ describe('PDF form fields', () => {
     const fields = Object.fromEntries((await readFormFields(PdfLib, await makeForm())).map((f) => [f.name, f]));
     const filled = {
       ...win,
-      ...valuePatch(fileId, fields['tenant.name'], 'Alex Green'),
+      ...valuePatch(fileId, fields['tenant.name'], 'Alma Reyes'),
       ...valuePatch(fileId, fields.pets, true),
       ...valuePatch(fileId, fields.plan, 'Yearly'),
       ...valuePatch(fileId, fields.size, 'Large'),
@@ -93,7 +93,7 @@ describe('PDF form fields', () => {
     expect(pdf.numPages).toBe(2);
     const one = (await (await pdf.getPage(1)).getTextContent()).items.map((i) => i.str).join(' ');
     const two = (await (await pdf.getPage(2)).getTextContent()).items.map((i) => i.str).join(' ');
-    expect(one).toContain('Alex Green');
+    expect(one).toContain('Alma Reyes');
     expect(two).toContain('Yearly');
     // Flattened: no fill-in boxes are left to change by accident.
     expect(await readFormFields(PdfLib, out)).toEqual([]);

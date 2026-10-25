@@ -16,7 +16,7 @@ beforeEach(() => {
   resetMe();
   global.fetch = jest.fn(async (url) => {
     if (String(url).includes('/api/auth/session')) return json({ authenticated: true, user: { id: 7, name: 'Sam Rivera' } });
-    if (String(url).includes('/api/cli-agents/roster')) return json({ clis: [{ id: 'claudecode', installed: true, state: 'idle', running: 0 }] });
+    if (String(url).includes('/api/cli-agents/roster')) return json({ clis: [{ id: 'claudecode', installed: true, signedIn: true, state: 'idle', running: 0 }] });
     return json({}, false);
   });
 });

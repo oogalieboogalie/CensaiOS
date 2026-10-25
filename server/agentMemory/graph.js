@@ -7,9 +7,9 @@
 //   valid_from / valid_to       when the connection was true in the world
 //   recorded_at / superseded_at when the agent believed it
 //
-// "Alex works at Iowa AI LLC since 2026-01-01" is one relation. If Alex later
+// "Alma works at Indigo Labs LLC since 2026-01-01" is one relation. If Alma later
 // works somewhere else, the old one is closed on that date and kept, so the
-// agent can still answer "where did Alex work in 2025?".
+// agent can still answer "where did Alma work in 2025?".
 
 import { FactError, day, parseWhen } from './facts.js';
 
@@ -30,7 +30,7 @@ export function normalizeLinkInput(input = {}, now = new Date()) {
   const to = clean(input.to, MAX_NAME);
   const relation = clean(input.relation, MAX_RELATION);
   if (!relation) throw new FactError('Say how they are connected (for example "works at").');
-  if (!to) throw new FactError('Say what it connects to (for example "Iowa AI LLC").');
+  if (!to) throw new FactError('Say what it connects to (for example "Indigo Labs LLC").');
   if (nameKey(from) === nameKey(to)) throw new FactError('A connection needs two different things.');
   const validFrom = parseWhen(input.since ?? input.validFrom ?? input.valid_from, now);
   const validTo = parseWhen(input.until ?? input.validTo ?? input.valid_to, null);
@@ -79,7 +79,7 @@ export function relationsAsOf(rows, { trueAt = new Date(), knownAt = new Date() 
   });
 }
 
-/** "Alex works at Iowa AI LLC (true since 2026-01-01, learned 2026-10-16)" */
+/** "Alma works at Indigo Labs LLC (true since 2026-01-01, learned 2026-10-16)" */
 export function describeRelation(row) {
   const span = row.valid_to
     ? `true ${day(row.valid_from)} to ${day(row.valid_to)}`

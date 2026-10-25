@@ -188,15 +188,16 @@ const UNAVAILABLE_COPY = {
   'runner-disabled': { title: 'Docker control is off on this server', hint: 'Set RUNNER_ENABLED=true (or point RUNNER_URL at a runner) to manage containers from Homebase.' },
   'runner-unreachable': { title: 'Can\'t reach the command runner', hint: 'RUNNER_URL points at a runner that isn\'t answering or is missing RUNNER_SECRET. Start the runner, or remove RUNNER_URL to run Docker commands locally.' },
   forbidden: { title: 'Docker management isn\'t available here', hint: 'This server doesn\'t expose its Docker engine to workspace users.' },
+  'owner-only': { title: 'Only the owner can see Docker here', hint: 'Docker runs on this computer, and its containers and logs can hold private details, so only the computer\'s owner can open it.', quiet: true },
 };
 
 export function UnavailableState({ reason, message, onRetry, retrying }) {
   const copy = UNAVAILABLE_COPY[reason] || { title: 'Can\'t reach Docker', hint: message };
   return (
     <EmptyState icon={<DIcon.Whale size={34} />} title={copy.title}
-      action={onRetry && <IconButton icon={<DIcon.Refresh />} label="Check again" onClick={onRetry} busy={retrying}>Check again</IconButton>}>
+      action={onRetry && !copy.quiet && <IconButton icon={<DIcon.Refresh />} label="Check again" onClick={onRetry} busy={retrying}>Check again</IconButton>}>
       <p>{copy.hint}</p>
-      {message && message !== copy.hint && <p className="dk-empty-detail">{message}</p>}
+      {message && message !== copy.hint && !copy.quiet && <p className="dk-empty-detail">{message}</p>}
     </EmptyState>
   );
 }

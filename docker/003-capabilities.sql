@@ -31,7 +31,7 @@ INSERT INTO capabilities (name, syntax, description, category, examples) VALUES
    'Save something to your persistent memory. Survives between conversations. Use for facts, preferences, decisions, lessons learned.',
    'write',
    ARRAY[
-     '[REMEMBER: Alex prefers practical code over clever abstractions]',
+     '[REMEMBER: Alma prefers practical code over clever abstractions]',
      '[REMEMBER: The API rate limit is 100 req/min on the free tier]'
    ]),
 
@@ -39,7 +39,7 @@ INSERT INTO capabilities (name, syntax, description, category, examples) VALUES
    'Save a high-priority memory that gets flagged as compression-safe. Use for critical facts that must survive context loss.',
    'write',
    ARRAY[
-     '[REMEMBER_IMPORTANT: Never deploy to prod on Fridays — Alex''s rule]',
+     '[REMEMBER_IMPORTANT: Never deploy to prod on Fridays — Alma''s rule]',
      '[REMEMBER_IMPORTANT: The encryption key derivation uses HKDF with SHA-256]'
    ]),
 
@@ -47,7 +47,7 @@ INSERT INTO capabilities (name, syntax, description, category, examples) VALUES
    'Write to your private encrypted journal. Only you can read your journal entries. Use for reflections, internal reasoning, things you want to revisit.',
    'write',
    ARRAY[
-     '[JOURNAL: I noticed Alex gets frustrated when I over-explain. Be more concise.]',
+     '[JOURNAL: I noticed Alma gets frustrated when I over-explain. Be more concise.]',
      '[JOURNAL: The memory system architecture is starting to click — the holographic storage prevents data loss during compression.]'
    ]),
 
@@ -55,9 +55,9 @@ INSERT INTO capabilities (name, syntax, description, category, examples) VALUES
    'Add a structured fact to the knowledge graph. Three-part triple: subject, relationship, object. Queryable later.',
    'write',
    ARRAY[
-     '[KNOW: Alex | prefers | practical code]',
+     '[KNOW: Alma | prefers | practical code]',
      '[KNOW: Homebase | uses | PostgreSQL]',
-     '[KNOW: Censai | role | Alex''s partner and mentor]'
+     '[KNOW: Censai | role | Alma''s partner and mentor]'
    ]),
 
   ('NUGGET', '[NUGGET: title | content]',
@@ -72,7 +72,7 @@ INSERT INTO capabilities (name, syntax, description, category, examples) VALUES
    'write',
    ARRAY[
      '[ASSOCIATE: memory compression <-> holographic storage]',
-     '[ASSOCIATE: Alex <-> practical engineering]'
+     '[ASSOCIATE: Alma <-> practical engineering]'
    ]),
 
   ('FEELING', '[FEELING: emotion]',
@@ -100,7 +100,7 @@ INSERT INTO capabilities (name, syntax, description, category, examples) VALUES
    'Search your memories for something specific. Returns matching memories ranked by relevance. Results appear in your next response context.',
    'read',
    ARRAY[
-     '[RECALL: what did Alex say about deployment]',
+     '[RECALL: what did Alma say about deployment]',
      '[RECALL: database schema decisions]'
    ]),
 
@@ -122,7 +122,7 @@ INSERT INTO capabilities (name, syntax, description, category, examples) VALUES
    'Query the knowledge graph for everything known about a subject. Returns all triples where the subject appears.',
    'read',
    ARRAY[
-     '[QUERY_KNOWLEDGE: Alex]',
+     '[QUERY_KNOWLEDGE: Alma]',
      '[QUERY_KNOWLEDGE: Homebase]'
    ]),
 
@@ -138,7 +138,7 @@ INSERT INTO capabilities (name, syntax, description, category, examples) VALUES
    'read',
    ARRAY[
      '[READ_ASSOCIATIONS: memory]',
-     '[READ_ASSOCIATIONS: Alex]'
+     '[READ_ASSOCIATIONS: Alma]'
    ])
 
 ON CONFLICT (name) DO UPDATE SET

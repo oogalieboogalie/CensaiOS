@@ -27,7 +27,7 @@ export function FileMenu({ onClose, projectName, currentProject, onOpenLocalProj
   };
 
   const aboutCensai = () => {
-    alert('Censai\n\nAn infinite canvas for you and your agents.\nBuilt by Alex.\n\n· Drag agents onto windows to assign them\n· Rubber-band a region to plan\n· Edit system prompts to shape behavior');
+    alert('Censai\n\nAn infinite canvas for you and your agents.\nBuilt by the Censai team.\n\n· Drag agents onto windows to assign them\n· Rubber-band a region to plan\n· Edit system prompts to shape behavior');
     onClose();
   };
 

@@ -117,3 +117,12 @@ export async function terminalRefusal(fetchImpl = typeof fetch === 'undefined' ?
     return null; // server still down: keep quietly retrying
   }
 }
+
+/**
+ * The app log line for a refused terminal. The on-screen message can name the
+ * owner account, so the log gets only the reason code and a fixed sentence.
+ */
+export function refusalLogLine(refusal) {
+  const reason = /^[a-z][a-z0-9-]{0,40}$/.test(String(refusal?.reason || '')) ? refusal.reason : 'unknown';
+  return { message: `terminal refused: ${reason}`, detail: 'The refusal was shown in the terminal.' };
+}

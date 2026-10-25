@@ -1,4 +1,4 @@
-// Places to host censaiOS (Alex's diagram 18, the "Deployment Integrations"
+// Places to host censaiOS (diagram 18, the "Deployment Integrations"
 // row): Docker, Kubernetes, Railway, Render, Jupyter, Supabase, Google Cloud.
 // Pure: the Places to Host window and tests read it; recipes live in
 // hostRecipes.js.

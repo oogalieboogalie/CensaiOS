@@ -116,7 +116,7 @@ function trimTrailingSeparators(value) {
 
 /**
  * File trees speak the path the window asked with. On a Windows PC running
- * censaiOS in Docker that is D:\Homebase\CensaiHub\src, not the container's
+ * censaiOS in Docker that is D:\Repos\CensaiHub\src, not the container's
  * /workspace/CensaiHub/src, so the header, "Up" and new folders stay in
  * the user's own words. Other paths pass through as the server sees them.
  */

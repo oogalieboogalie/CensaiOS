@@ -1,4 +1,4 @@
-// Legion: long-term memory, from Alex's self-educate diagram ("Search Long
+// Legion: long-term memory, from the self-educate diagram ("Search Long
 // term Memory" and "Store any major/important info to memory"). One small
 // JSON file per person, next to their runs, shared by every Legion they run.
 import fs from 'node:fs/promises';

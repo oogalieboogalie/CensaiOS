@@ -4,8 +4,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-// Alex's PC: censaiOS runs in Docker on Windows. The board remembers
-// D:\Homebase\CensaiHub, and the container sees that checkout at
+// The owner's PC: censaiOS runs in Docker on Windows. The board remembers
+// D:\Repos\CensaiHub, and the container sees that checkout at
 // /workspace/CensaiHub. The file tree must open nested folders and move
 // between them using the Windows paths the user sees.
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-browse-'));
@@ -18,7 +18,7 @@ fs.writeFileSync(path.join(containerRoot, 'README.md'), 'hi');
 fs.writeFileSync(path.join(containerRoot, 'src', 'deep', 'notes.txt'), 'deep');
 process.env.CENSAI_STATE_DIR = stateDir;
 
-const HOST = 'D:\\Homebase\\CensaiHub';
+const HOST = 'D:\\Repos\\CensaiHub';
 const previous = {
   container: process.env.HOMEBASE_CONTAINER_PROJECT_ROOT,
   host: process.env.HOMEBASE_HOST_PROJECT_ROOT,
@@ -56,7 +56,7 @@ describe('file tree on Windows + Docker', () => {
   linuxOnly('lists the project with Windows paths for every child', async () => {
     const res = await browse(HOST).expect(200);
     expect(res.body.path).toBe(HOST);
-    expect(res.body.parent).toBe('D:\\Homebase');
+    expect(res.body.parent).toBe('D:\\Repos');
     expect(res.body.children.map(c => [c.name, c.isDir, c.path])).toEqual([
       ['empty', true, `${HOST}\\empty`],
       ['src', true, `${HOST}\\src`],
@@ -73,14 +73,14 @@ describe('file tree on Windows + Docker', () => {
   });
 
   linuxOnly('opens a nested folder even when the board project is its parent folder', async () => {
-    // The board project is D:\Homebase\CensaiHub\src (a folder inside the checkout).
+    // The board project is D:\Repos\CensaiHub\src (a folder inside the checkout).
     setProject(`${HOST}\\src`);
     const res = await browse(`${HOST}\\src`).expect(200);
     expect(res.body.children.map(c => c.name)).toEqual(['deep']);
   });
 
   linuxOnly('accepts forward slashes in a Windows path', async () => {
-    const res = await browse('D:/Homebase/CensaiHub/src').expect(200);
+    const res = await browse('D:/Repos/CensaiHub/src').expect(200);
     expect(res.body.children.map(c => c.name)).toEqual(['deep']);
   });
 
@@ -91,9 +91,9 @@ describe('file tree on Windows + Docker', () => {
   });
 
   linuxOnly('a folder Docker cannot see says so in plain words', async () => {
-    setProject('D:\\Nexus-Delta');
-    const res = await browse('D:\\Nexus-Delta').expect(404);
-    expect(res.body.error).toMatch(/can't see D:\\Nexus-Delta/);
+    setProject('D:\\Archive');
+    const res = await browse('D:\\Archive').expect(404);
+    expect(res.body.error).toMatch(/can't see D:\\Archive/);
   });
 
   test('a folder outside every open project is refused with a reason', async () => {
@@ -110,7 +110,7 @@ describe('file tree on Windows + Docker', () => {
 describe('a typed folder Docker has no copy of', () => {
   beforeEach(() => setProject(HOST));
   linuxOnly('says it cannot be seen, not that it needs opening', async () => {
-    const res = await browse('D:\\Nexus-Delta').expect(404);
-    expect(res.body.error).toMatch(/can't see D:\\Nexus-Delta/);
+    const res = await browse('D:\\Archive').expect(404);
+    expect(res.body.error).toMatch(/can't see D:\\Archive/);
   });
 });

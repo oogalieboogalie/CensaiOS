@@ -7,6 +7,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { getRuntimeMode, RUNTIME_MODES } from './runtimeMode.js';
+import { isJestRun } from '../security/testShortcut.js';
 
 const SWEEP_MS = 5 * 60 * 1000;
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -17,7 +18,7 @@ function normalize(value) {
 
 function isBypassed() {
   if (process.env.NODE_ENV === 'production') return false; // Rule 1: decided first
-  if (process.env.NODE_ENV === 'test') return true;
+  if (isJestRun()) return true;
   return process.env.RATE_LIMIT_DISABLED === 'true'
     && getRuntimeMode() === RUNTIME_MODES.LOCAL_DESKTOP;   // strictest combo required
 }

@@ -26,6 +26,7 @@ export const USER_API_KEY_PROVIDERS = Object.freeze([
   'opencode',
   'figma',
   'tavily',
+  'youtube',
   'anthropic',
   'github',
   'zai',

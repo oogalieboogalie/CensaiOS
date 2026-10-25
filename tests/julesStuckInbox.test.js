@@ -1,4 +1,4 @@
-// Page a person when Jules gets stuck (Alex's diagram 01): every task the
+// Page a person when Jules gets stuck (diagram 01): every task the
 // overnight runner parks shows up in the Inbox under "Needs you", for the
 // owner only.
 import { julesStuckReport, registerJulesStuckSource, setJulesQueueReader } from '../server/inbox/julesStuckSource.js';

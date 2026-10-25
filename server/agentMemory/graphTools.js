@@ -19,11 +19,11 @@ const fn = (name, description, properties, required) => ({
 
 export const GRAPH_TOOL_DEFINITIONS = Object.freeze([
   fn('link_things',
-    'Remember how two things are connected (a person, company, place or project), e.g. "Alex" "works at" "Iowa AI LLC". Connections are kept with the dates they were true, so you can later answer what was true on any date. Set replaces to true when the new connection replaces an old one of the same kind (a new job, a move); the old one is kept as a past connection.',
+    'Remember how two things are connected (a person, company, place or project), e.g. "Alma" "works at" "Indigo Labs LLC". Connections are kept with the dates they were true, so you can later answer what was true on any date. Set replaces to true when the new connection replaces an old one of the same kind (a new job, a move); the old one is kept as a past connection.',
     {
-      from: { type: 'string', description: 'The first thing, e.g. "Alex". Default: the user.' },
+      from: { type: 'string', description: 'The first thing, e.g. "Alma". Default: the user.' },
       relation: { type: 'string', description: 'How they are connected, e.g. "works at", "lives in", "is the sister of".' },
-      to: { type: 'string', description: 'The second thing, e.g. "Iowa AI LLC".' },
+      to: { type: 'string', description: 'The second thing, e.g. "Indigo Labs LLC".' },
       since: { type: 'string', description: 'When it became true (a date like 2026-01-01). Default: now.' },
       until: { type: 'string', description: 'When it stopped being true, if it already has.' },
       replaces: { type: 'boolean', description: 'True if this replaces the earlier connection of the same kind from the same thing.' },

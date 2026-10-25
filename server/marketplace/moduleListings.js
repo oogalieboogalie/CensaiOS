@@ -1,8 +1,8 @@
 // Spec 5b listings of kind "Copy to your board", for spec 6 modules. A
 // seller publishes a module they built; it is checked, fingerprinted and
 // signed before it is listed, and buyers copy it onto their own board.
-// Phase 0: only the platform owner (an admin of this censaiOS install, which
-// is Alex) may sell. Paid listings wait for Stripe, so every listing is free.
+// Phase 0: only the platform owner (an admin of this censaiOS install) may
+// sell. Paid listings wait for Stripe, so every listing is free.
 // Tables are created on first use, like My modules.
 
 import { MAX_MODULE_SOURCE_BYTES, normalizeManifest, sourceBytes } from '../../src/lib/modules/moduleFormat.js';
@@ -10,6 +10,7 @@ import { runModuleChecks, prohibitedUse } from './moduleChecks.js';
 import { namesTooClose } from './listingNames.js';
 import { moduleCard } from '../../src/lib/marketplace/moduleCard.js';
 import { certificateBody, fingerprint, signCertificate, signingKeys, verifyCertificate } from './signing.js';
+import { userRole } from '../security/systemAdmin.js';
 
 export const SELLER_TIERS = Object.freeze({
   probation: { label: 'Probation', maxListings: 3 },
@@ -65,12 +66,11 @@ function requireUser(userId) {
 }
 
 async function sellerFor(db, userId) {
-  const { rows } = await db.query('SELECT role FROM users WHERE id=$1', [userId]);
-  const owner = rows[0]?.role === 'admin';
+  const owner = await userRole(userId, { db }) === 'admin';
   const { rows: acct } = await db.query('SELECT tier, status, note FROM seller_accounts WHERE user_id=$1', [userId]);
   if (acct[0]) return { ...acct[0], canSell: acct[0].status === 'active' };
   if (!owner) return null;
-  // Phase 0: the owner of this install is the one seller, picked by Alex.
+  // Phase 0: the owner of this install is the one seller.
   const { rows: created } = await db.query(
     `INSERT INTO seller_accounts (user_id, tier, status, note) VALUES ($1, 'trusted', 'active', 'Platform owner (phase 0)')
      ON CONFLICT (user_id) DO UPDATE SET user_id=EXCLUDED.user_id RETURNING tier, status, note`,
@@ -83,8 +83,7 @@ export async function sellerStatus(db, userId) {
   const uid = requireUser(userId);
   await ensureSchema(db);
   const seller = await sellerFor(db, uid);
-  const { rows } = await db.query('SELECT role FROM users WHERE id=$1', [uid]);
-  const owner = rows[0]?.role === 'admin';
+  const owner = await userRole(uid, { db }) === 'admin';
   if (!seller?.canSell) {
     return { canSell: false, owner, reason: 'Selling opens to vetted sellers later. For now only the owner of this censaiOS can publish.' };
   }

@@ -11,7 +11,7 @@ export { windowMeta };
 const EXAMPLE = 'Can we make some documents for work and create a microapp for invoices?';
 
 /**
- * Message Router, from Alex's diagram 03. The board's agents share one line
+ * Message Router, from diagram 03. The board's agents share one line
  * (v1/bus/chat/agent...). You say what you need once; the router cuts it
  * into parts, tags each one like [create] [docs] [work], and picks the
  * agent, that agent's memory and a template (a blueprint when the board has

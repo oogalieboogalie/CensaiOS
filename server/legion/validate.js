@@ -1,4 +1,4 @@
-// Legion: the Validation Engine from Alex's diagram ("checks against
+// Legion: the Validation Engine from the diagram ("checks against
 // YAML"). The spec's own checks run first, with no model involved: does the
 // file exist, does it say what it must, does the page show the text, did the
 // page run without script errors. Echo then judges what rules cannot. Every

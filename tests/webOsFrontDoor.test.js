@@ -59,7 +59,7 @@ function knock(port, { method = 'GET', path: urlPath = '/', body, host = 'localh
 function upgrade(port) {
   return new Promise((resolve, reject) => {
     const socket = net.connect(port, '127.0.0.1', () => {
-      socket.write('GET /hocuspocus HTTP/1.1\r\nHost: r2d2:3004\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n'
+      socket.write('GET /hocuspocus HTTP/1.1\r\nHost: officepc:3004\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n'
         + 'Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n');
     });
     let text = '';
@@ -108,7 +108,7 @@ describe('with Open anywhere off (the default)', () => {
     expect(page.status).toBe(403);
     expect(page.text).toContain('not open to other computers yet');
     for (const [method, urlPath] of [['POST', '/api/auth/developer'], ['POST', '/api/web-os/pair/redeem'], ['GET', '/api/web-os']]) {
-      const res = await knock(doorPort(), { method, path: urlPath, body: method === 'POST' ? { email: 'alex@home.test' } : undefined });
+      const res = await knock(doorPort(), { method, path: urlPath, body: method === 'POST' ? { email: 'alma@home.test' } : undefined });
       expect(res.status).toBe(403);
       expect(res.json).toMatchObject({ doorClosed: true });
     }
@@ -130,8 +130,8 @@ describe('with Open anywhere on', () => {
   beforeAll(() => setSwitch(true));
 
   test('typing an email does not sign another computer in, even with a faked Host', async () => {
-    for (const host of ['localhost:3002', '127.0.0.1:3002', 'r2d2:3004']) {
-      const res = await knock(doorPort(), { method: 'POST', path: '/api/auth/developer', host, body: { email: 'alex@home.test' } });
+    for (const host of ['localhost:3002', '127.0.0.1:3002', 'officepc:3004']) {
+      const res = await knock(doorPort(), { method: 'POST', path: '/api/auth/developer', host, body: { email: 'alma@home.test' } });
       expect(res.status).toBe(403);
       expect(res.json).toMatchObject({ pairRequired: true });
     }
@@ -162,7 +162,7 @@ describe('with Open anywhere on', () => {
   });
 
   test('sign-in on this computer itself is untouched', async () => {
-    const res = await knock(mainPort(), { method: 'POST', path: '/api/auth/developer', body: { email: 'alex@home.test' } });
+    const res = await knock(mainPort(), { method: 'POST', path: '/api/auth/developer', body: { email: 'alma@home.test' } });
     expect(res.json?.pairRequired).toBeUndefined();
     const session = await knock(mainPort(), { path: '/api/auth/session' });
     expect(session.json).toMatchObject({ fromAnotherComputer: false });

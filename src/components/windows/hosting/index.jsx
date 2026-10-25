@@ -15,7 +15,7 @@ export { windowMeta };
 const randomBytes = (n) => crypto.getRandomValues(new Uint8Array(n));
 
 /**
- * Places to Host, from Alex's diagram 18. One row of places censaiOS can
+ * Places to Host, from diagram 18. One row of places censaiOS can
  * live. Docker and Kubernetes open their windows; Railway, Render and
  * Google Cloud Run get the file that service reads, with fresh secrets
  * already filled in; Supabase holds the database; Jupyter runs beside it.

@@ -50,6 +50,7 @@ import { overseerRouter } from '../routes/overseer.js';
 import { vexRouter } from '../routes/vex/index.js';
 import { containersRouter } from '../routes/containers.js';
 import { dockerRouter } from '../routes/docker.js';
+import { dockerOwnerOnly } from '../docker/ownerOnly.js';
 import { devServersRouter } from '../routes/devServers.js';
 import { projectGitRouter } from '../routes/projectGit.js';
 import { systemStatusRouter } from '../routes/systemStatus.js';
@@ -65,6 +66,7 @@ import { ollamaRouter } from '../routes/ollama.js';
 import { oauthRouter } from '../routes/oauth.js';
 import { webOsRouter } from '../routes/webOs.js';
 import { keySharingRouter } from '../routes/keySharing.js';
+import { aiResourcesRouter } from '../routes/aiResources.js';
 import { agentRegistryRouter } from '../routes/agentRegistry/index.js';
 import { agentEndpointsRouter } from '../routes/agentEndpoints.js';
 import { outsideToolsRouter } from '../routes/outsideTools.js';
@@ -85,6 +87,7 @@ import { workflowsRouter } from '../routes/workflows.js';
 import { liveOpsRouter } from '../routes/liveOps.js';
 import { inboxRouter } from '../routes/inbox.js';
 import { auctionWatcherRouter } from '../routes/auctionWatcher.js';
+import { stepCardsRouter } from '../routes/stepCards.js';
 import { shareLinksRouter } from '../routes/shareLinks.js';
 import { socialRouter } from '../routes/social.js';
 import { lessonsRouter } from '../routes/lessons.js';
@@ -144,6 +147,7 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api/live-ops', router: liveOpsRouter },
   { method: 'use', path: '/api/inbox', router: inboxRouter },
   { method: 'use', path: '/api/auction-watcher', router: auctionWatcherRouter },
+  { method: 'use', path: '/api/step-cards', router: stepCardsRouter },
   { method: 'use', path: '/api', router: shareLinksRouter },
   { method: 'use', path: '/api/social', router: socialRouter },
   { method: 'use', path: '/api', router: lessonsRouter },
@@ -164,7 +168,7 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api', router: overseerRouter },
   { method: 'use', path: '/api/vex', middleware: [ownerForChanges], router: vexRouter },
   { method: 'use', path: '/api', router: containersRouter },
-  { method: 'use', path: '/api/docker', middleware: [requireLocalFilesystem, ownerForChanges], router: dockerRouter },
+  { method: 'use', path: '/api/docker', middleware: [requireLocalFilesystem, dockerOwnerOnly], router: dockerRouter },
   { method: 'use', path: '/api/dev-servers', middleware: [requireLocalFilesystem, ownerForChanges], router: devServersRouter },
   { method: 'use', path: '/api/project-git', middleware: [requireLocalFilesystem, ownerForChanges], router: projectGitRouter },
   { method: 'use', path: '/api/system', router: systemStatusRouter },
@@ -213,6 +217,7 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api/marketplace', router: marketplaceRouter },
   { method: 'use', path: '/api/web-os', router: webOsRouter },
   { method: 'use', path: '/api/key-sharing', router: keySharingRouter },
+  { method: 'use', path: '/api/ai-resources', router: aiResourcesRouter },
 ]);
 
 /**

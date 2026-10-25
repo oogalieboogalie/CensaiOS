@@ -65,6 +65,6 @@ describe('places to host (diagram 18)', () => {
   test('secrets are 64 hex characters; names are safe', () => {
     expect(makeSecret((n) => new Uint8Array(n).fill(171))).toBe('ab'.repeat(32));
     expect(serviceName('  ')).toBe('censaios');
-    expect(serviceName('Alex & Co')).toBe('alex-co');
+    expect(serviceName('Alma & Co')).toBe('alma-co');
   });
 });

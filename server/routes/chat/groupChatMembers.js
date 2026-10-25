@@ -6,6 +6,46 @@
 import { getAgentsByIds, buildSystemPrompt, getSubAgentById } from '../../memory.js';
 import { resolveChatModelConfig } from '../../aiGateway/index.js';
 import { isFamilyAgentId, requireFamilyAgentIds, requireFamilyRows } from '../../agents/familyRuntimeAccess.js';
+import { createLogger } from '../../logger.js';
+import { applySavedChatKey } from './savedChatKey.js';
+
+const log = createLogger('group-chat');
+
+const KEY_WHY = {
+  MODEL_KEY_MISSING: 'no key',
+  MODEL_KEY_REJECTED: 'key turned down',
+  MODEL_ACCESS_PERSONAL_KEY_REQUIRED: 'no key',
+};
+
+/** A short reason that never includes a message or a key. */
+export function roundWhy(err, quiet = 0) {
+  if (err?.code && KEY_WHY[err.code]) return KEY_WHY[err.code];
+  if (err?.code && /^[A-Z0-9_]{1,80}$/.test(err.code)) return err.code;
+  if (quiet > 0) return 'empty reply';
+  return '';
+}
+
+/** One line per round: how many agents answered, and why any did not. */
+export function logGroupChatRound({ answered = 0, asked = 0, why = '' }) {
+  const reason = why ? `; ${String(why).slice(0, 80)}` : '';
+  log.info(`round: ${answered} of ${asked} answered${reason}`);
+}
+
+/** The model this member runs on, using the person's own saved key. */
+async function memberModel(record, { userId, userRole, preferRecord }) {
+  const base = preferRecord
+    ? resolveChatModelConfig({ modelProvider: record.model_provider, modelName: record.model_name })
+    : resolveChatModelConfig();
+  const keyed = await applySavedChatKey({
+    provider: base.provider,
+    model: base.model,
+    baseUrl: base.baseUrl,
+    apiKey: base.apiKey,
+    userId,
+    userRole,
+  });
+  return { provider: keyed.provider, model: keyed.model, baseUrl: keyed.baseUrl, apiKey: keyed.apiKey };
+}
 
 function httpError(message, statusCode, code) {
   return Object.assign(new Error(message), { statusCode, code });
@@ -26,7 +66,7 @@ export function subAgentGroupPrompt(sub) {
  * Resolve every member in order: { agentId, name, systemPrompt, modelConfig }.
  * Unknown ids fail with 404 so the window can say so instead of going quiet.
  */
-export async function resolveGroupChatMembers(agentIds, { workspaceId, userId, lastText, historyInRequest, deps = {} }) {
+export async function resolveGroupChatMembers(agentIds, { workspaceId, userId, userRole = null, lastText, historyInRequest, deps = {} }) {
   const loadFamily = deps.getAgentsByIds || getAgentsByIds;
   const loadSub = deps.getSubAgentById || getSubAgentById;
   const familyPrompt = deps.buildSystemPrompt || buildSystemPrompt;
@@ -49,7 +89,7 @@ export async function resolveGroupChatMembers(agentIds, { workspaceId, userId, l
         agentId,
         name: family.name || agentId,
         systemPrompt: prompt,
-        modelConfig: family.model_name ? resolveChatModelConfig({ modelProvider: family.model_provider, modelName: family.model_name }) : resolveChatModelConfig(),
+        modelConfig: await memberModel(family, { userId, userRole, preferRecord: Boolean(family.model_name) }),
       });
       continue;
     }
@@ -59,7 +99,7 @@ export async function resolveGroupChatMembers(agentIds, { workspaceId, userId, l
       agentId,
       name: sub.name || agentId,
       systemPrompt: subAgentGroupPrompt(sub),
-      modelConfig: resolveChatModelConfig({ modelProvider: sub.model_provider, modelName: sub.model_name }),
+      modelConfig: await memberModel(sub, { userId, userRole, preferRecord: true }),
     });
   }
   return members;

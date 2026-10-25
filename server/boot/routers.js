@@ -33,6 +33,7 @@ import { socialPublicRouter } from '../routes/socialPublic.js';
 import { apiBarRouter } from '../routes/apiBar.js';
 import { legionViewRouter } from '../routes/legion.js';
 import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
+import { isJestRun } from '../security/testShortcut.js';
 
 export function mountRouters(app) {
   // Pre-guard: /api/auth and /api/hub-auth must come before the guard
@@ -76,8 +77,9 @@ export function mountRouters(app) {
     if (req.path === '/health' || req.path === '/ready') {
       return next();
     }
-    // Bypass authentication in test environment and provide a mock session
-    if (process.env.NODE_ENV === 'test') {
+    // Jest only: every request is user 1. NODE_ENV=test outside jest gets the
+    // normal sign-in check, so a stray setting can't open the door.
+    if (isJestRun()) {
       req.session = req.session || {};
       req.session.userId = req.session.userId || 1;
       return next();

@@ -8,6 +8,7 @@ const FILENAMES = [
   '026-execution-ledger.sql',
   '030-run-causality.sql',
   '031-autonomous-run-causes.sql',
+  '075-scheduler-run-link.sql',
 ];
 let schemaPromise = null;
 

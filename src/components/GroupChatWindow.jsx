@@ -12,6 +12,21 @@ import { ChatBubble } from './chat/ChatBubble.jsx';
 import { ChatInput } from './chat/ChatInput.jsx';
 import { ChatEmptyState } from './chat/ChatEmptyState.jsx';
 import { ChatStatus } from './chat/ChatStatus.jsx';
+import { landChatReply } from './chat/landChatReply.js';
+import { KeyNeededCard } from './chat/KeyNeededCard.jsx';
+import { needsKey } from '../lib/chat/keyNeeded.js';
+import { logToApp } from '../lib/appLog/browserLog.js';
+
+const NO_KEY = 'No AI is set up for this chat yet. Paste a key from Claude, OpenAI or OpenRouter to send your message.';
+
+function keyCardMessage(data, from) {
+  if (!needsKey(data)) return null;
+  return {
+    from: from || 'censai',
+    text: String(data.error || data.message || NO_KEY),
+    error: { code: data.code, keyProvider: data.keyProvider ?? null },
+  };
+}
 
 const GROUP_STARTERS = [
   'Each of you: what would you do first on this project?',
@@ -63,17 +78,20 @@ export function GroupChatWindow({ win, onUpdate }) {
 
   const defaultMsgs = React.useMemo(() => [], [activeMembers.length]);
   const msgs = win.msgs === undefined ? defaultMsgs : win.msgs;
-  const setMsgs = (next) => onUpdate({ msgs: typeof next === 'function' ? next(msgs) : next });
+  const msgsRef = React.useRef(msgs);
+  msgsRef.current = msgs;
+  const setMsgs = (next) => {
+    const value = typeof next === 'function' ? next(msgsRef.current) : next;
+    msgsRef.current = value;
+    onUpdate({ msgs: value });
+  };
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const [copied, setCopied] = React.useState(null);
   const scrollRef = React.useRef(null);
   React.useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [msgs, sending]);
 
-  const send = async (_auto = null, textOverride = null) => {
-    const text = String(textOverride ?? draft).trim();
-    if (!text || sending) return;
-    const withUser = [...msgs, { from: 'me', text }];
+  const deliver = async (withUser) => {
     setMsgs(withUser);
     setDraft('');
     setSending(true);
@@ -84,13 +102,42 @@ export function GroupChatWindow({ win, onUpdate }) {
         body: JSON.stringify({ messages: withUser, agentIds: activeMembers, workspaceId }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || data.message || 'Group chat failed to process.');
+      if (!res.ok) {
+        const card = keyCardMessage(data, activeMembers[0]);
+        if (card) logToApp('info', 'group chat needs a key', { where: 'group-chat' });
+        else logToApp('warn', 'group chat failed', { where: 'group-chat' });
+        landChatReply(setMsgs, withUser, card || { from: 'system', text: data.error || data.message || 'Group chat failed to process.' }, win.id);
+        return;
+      }
       const replies = (data.replies || []).map(reply => ({ from: reply.agentId, text: reply.text }));
-      setMsgs(replies.length ? [...withUser, ...replies] : [...withUser, { from: 'system', text: 'Nobody answered. Check that an AI key is set in Settings.' }]);
+      if (replies.length) {
+        logToApp('info', `group chat: ${replies.length} answered`, { where: 'group-chat' });
+        landChatReply(setMsgs, withUser, replies, win.id);
+        return;
+      }
+      logToApp('info', 'group chat needs a key', { where: 'group-chat' });
+      landChatReply(setMsgs, withUser, keyCardMessage({ code: 'MODEL_KEY_MISSING', keyProvider: null, error: NO_KEY }, activeMembers[0]), win.id);
     } catch (err) {
-      setMsgs([...withUser, { from: 'system', text: err?.message || 'Group chat failed to process.' }]);
+      logToApp('warn', 'group chat failed', { where: 'group-chat' });
+      landChatReply(setMsgs, withUser, { from: 'system', text: err?.message || 'Group chat failed to process.' }, win.id);
+    } finally {
+      setSending(false);
     }
-    setSending(false);
+  };
+
+  const send = (_auto = null, textOverride = null) => {
+    const text = String(textOverride ?? draft).trim();
+    if (!text || sending) return;
+    const history = needsKey(msgs[msgs.length - 1]?.error) ? msgs.slice(0, -1) : msgs;
+    deliver([...history, { from: 'me', text }]);
+  };
+
+  const resend = (index) => {
+    if (sending) return;
+    let upTo = index;
+    while (upTo >= 0 && msgs[upTo]?.from !== 'me') upTo -= 1;
+    if (upTo < 0) return;
+    deliver(msgs.slice(0, upTo + 1));
   };
 
   const copy = async (message, index) => {
@@ -115,6 +162,14 @@ export function GroupChatWindow({ win, onUpdate }) {
           ) : (
             <div className="hb-chat-col">
               {msgs.map((m, i) => {
+                const isLast = i === msgs.length - 1;
+                if (needsKey(m.error) && isLast && !sending) {
+                  const named = getAgentById(m.from);
+                  return (
+                    <KeyNeededCard key="key-needed" keyProvider={m.error.keyProvider}
+                      agentName={named?.name || 'the team'} message={m.text} onSaved={() => resend(i)} />
+                  );
+                }
                 const ag = m.from === 'me' || m.from === 'system' ? null : getAgentById(m.from);
                 if (m.from !== 'me' && m.from !== 'system' && !ag) return null;
                 return (

@@ -1,6 +1,7 @@
 import express from 'express';
 import { parsePositiveInteger, parseRepository, sendGitHubError } from './client.js';
-import { createOctokit, resolveGithubToken } from '../../github/mergeDesk.js';
+import { createOctokit, deskError } from '../../github/mergeDesk.js';
+import { resolveGithubWriteToken } from '../../github/writeToken.js';
 import { getReview, postReview, publicReview, refreshReview, reviewApprovals, startReview } from '../../github/reviewTeam.js';
 import { requireLocalFilesystem } from '../../middleware/runtimeMode.js';
 import { requireSystemAdmin } from '../../security/systemAdmin.js';
@@ -28,6 +29,15 @@ export function setReviewLoaders({ manager, roster } = {}) {
   if (roster) rosterLoader = roster;
 }
 
+// A review is seen, posted and answered only by the person who started it.
+function ownReview(req) {
+  const job = getReview(req.params.id);
+  if (job.userId != null && String(job.userId) !== String(req.session?.userId)) {
+    throw deskError('That review is no longer here. Tap Review again.', 404);
+  }
+  return job;
+}
+
 const wrap = (fn) => async (req, res) => {
   try {
     await fn(req, res);
@@ -48,7 +58,7 @@ reviewTeamRouter.get('/desk/reviewers', wrap(async (req, res) => {
 reviewTeamRouter.post('/desk/review', wrap(async (req, res) => {
   const target = parseRepository(req.body?.repo);
   const number = parsePositiveInteger(req.body?.number);
-  const { token } = await resolveGithubToken(req.session?.userId);
+  const { token } = await resolveGithubWriteToken(req, { feature: 'github desk review' });
   const agents = await canRunAgents(req);
   const manager = agents ? await managerLoader().catch(() => null) : null;
   const review = await startReview(
@@ -59,14 +69,14 @@ reviewTeamRouter.post('/desk/review', wrap(async (req, res) => {
 }));
 
 reviewTeamRouter.get('/desk/review/:id', wrap(async (req, res) => {
-  const job = getReview(req.params.id);
+  const job = ownReview(req);
   const manager = await managerLoader().catch(() => null);
   if (manager && job.status === 'reviewing') refreshReview(job, manager);
   res.json({ review: publicReview(job), approvals: manager ? reviewApprovals(job, manager) : [] });
 }));
 
 reviewTeamRouter.post('/desk/review/:id/approve', requireLocalFilesystem, requireSystemAdmin, wrap(async (req, res) => {
-  const job = getReview(req.params.id);
+  const job = ownReview(req);
   const taskId = String(req.body?.taskId || '');
   if (!job.reviewers.some((r) => r.taskId === taskId)) return res.status(404).json({ error: 'That reviewer is not part of this review.' });
   const manager = await managerLoader();
@@ -75,7 +85,7 @@ reviewTeamRouter.post('/desk/review/:id/approve', requireLocalFilesystem, requir
 }));
 
 reviewTeamRouter.post('/desk/review/:id/post', wrap(async (req, res) => {
-  const job = getReview(req.params.id);
-  const { token } = await resolveGithubToken(req.session?.userId);
+  const job = ownReview(req);
+  const { token } = await resolveGithubWriteToken(req, { feature: 'github desk review post' });
   res.json({ review: await postReview(job, { octokit: createOctokit(token) }) });
 }));

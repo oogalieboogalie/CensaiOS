@@ -2,9 +2,9 @@
 // for the one line the person reads at the end. Same model and key as
 // Censai's chat (the person's own key, through prepareChatContext), no tools.
 
-import { prepareChatContext } from '../routes/chat/chatContext.js';
-import { callChatModelRound, chatModelAccessContext } from '../routes/chat/modelRound.js';
-import { withReasoningContentFallback } from '../routes/chat/reasoningFallback.js';
+import { prepareChatContext } from '../chatModel/context.js';
+import { callChatModelRound, chatModelAccessContext } from '../chatModel/round.js';
+import { withReasoningContentFallback } from '../chatModel/reasoning.js';
 
 export function replyText(message) {
   const content = message?.content;

@@ -1,4 +1,4 @@
-// Deploy buttons in Places to Host (Alex's diagram 18). Each button only
+// Deploy buttons in Places to Host (diagram 18). Each button only
 // opens the service's own page: Render and Cloud Run with the repo filled
 // in, Railway at its repo picker. Nothing deploys from censaiOS itself.
 import { describe, expect, test } from '@jest/globals';

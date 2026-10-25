@@ -1,4 +1,4 @@
-// Board invites waiting for you, one Inbox line each ("Alex invited you to
+// Board invites waiting for you, one Inbox line each ("Alma invited you to
 // Family board"). Opening the board from the Inbox marks the invite opened.
 
 import { registerInboxSource } from '../inbox/sources.js';

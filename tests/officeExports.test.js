@@ -69,13 +69,13 @@ describe('Sheets export and import', () => {
 });
 
 describe('Docs export', () => {
-  const md = `# Launch plan\n\nWe ship **censaiOS** on *Friday*. See [site](https://censai.app).\n\n1. Record demo\n2. Post the clip\n\n- Tavily\n- Docs\n\n> Keep it calm.\n\n| Who | What |\n| --- | --- |\n| Alex | Demo |\n\n---\n\n\`\`\`\nnpm run dev\n\`\`\`\n\n![dot](${PNG})\n`;
+  const md = `# Launch plan\n\nWe ship **censaiOS** on *Friday*. See [site](https://censai.app).\n\n1. Record demo\n2. Post the clip\n\n- Tavily\n- Docs\n\n> Keep it calm.\n\n| Who | What |\n| --- | --- |\n| Alma | Demo |\n\n---\n\n\`\`\`\nnpm run dev\n\`\`\`\n\n![dot](${PNG})\n`;
   const list = markdownToBlocks(md);
   const doc = { order: list.map((_, i) => `b${i}`), blocks: Object.fromEntries(list.map((b, i) => [`b${i}`, { ...b, w: 4, h: 3 }])) };
 
   test('markdown reads into every block type and writes back', () => {
     expect(list.map((b) => b.type)).toEqual(['h1', 'p', 'number', 'number', 'bullet', 'bullet', 'quote', 'table', 'divider', 'code', 'image']);
-    expect(list[7].rows).toEqual([['Who', 'What'], ['Alex', 'Demo']]);
+    expect(list[7].rows).toEqual([['Who', 'What'], ['Alma', 'Demo']]);
     const again = markdownToBlocks(docToMarkdown(doc));
     expect(again.map((b) => b.type)).toEqual(list.map((b) => b.type));
     expect(again[1].text).toBe(list[1].text);
@@ -89,7 +89,7 @@ describe('Docs export', () => {
     expect(xml).toContain('<w:t xml:space="preserve">censaiOS</w:t>');
     expect(xml).toMatch(/<w:b\/>.*censaiOS/s);
     expect(xml).toMatch(/<w:numPr>/);
-    expect(xml).toMatch(/<w:tbl>.*Alex.*Demo.*<\/w:tbl>/s);
+    expect(xml).toMatch(/<w:tbl>.*Alma.*Demo.*<\/w:tbl>/s);
     expect(xml).toContain('<w:drawing>');
     expect(text(zip, 'word/_rels/document.xml.rels')).toContain('https://censai.app');
     expect(Object.keys(zip).some((n) => /^word\/media\/.+\.png$/.test(n))).toBe(true);

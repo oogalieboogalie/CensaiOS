@@ -30,7 +30,7 @@ function fromRow(row) {
 
 export function normalizeBlueprint(input = {}) {
   const title = line(input.title, BLUEPRINT_LIMITS.title);
-  if (!title) throw blueprintError('Give the blueprint a name, like "Alex Finance Blueprint for Budgeting".');
+  if (!title) throw blueprintError('Give the blueprint a name, like "Alma Finance Blueprint for Budgeting".');
   return {
     title,
     shelf: shelfNumber(input.shelf ?? input.category),

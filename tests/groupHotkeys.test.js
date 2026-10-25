@@ -79,7 +79,7 @@ describe('group hotkeys (AoE control groups)', () => {
 describe('group focus view helpers', () => {
   const { filterForGroupFocus, computeGroupFocusView, resolveAssignAction } = groupHotkeysModule;
 
-  test('only the focused group, its nested groups and their windows stay visible', () => {
+  test('a focused group hides outside windows but keeps them mounted', () => {
     const groups = [
       { id: 'g1', x: 0, y: 0, w: 1000, h: 800 },
       { id: 'inner', groupId: 'g1', x: 50, y: 50, w: 300, h: 300 },
@@ -89,11 +89,16 @@ describe('group focus view helpers', () => {
       { id: 'm', groupId: 'g1', x: 2000, y: 2000, w: 100, h: 100 }, // explicit member, centre outside
       { id: 'c', x: 400, y: 400, w: 100, h: 100 },                  // centre inside
       { id: 'far', x: 5100, y: 100, w: 100, h: 100 },
+      { id: 'big', maximized: true, x: 8000, y: 8000, w: 100, h: 100 },
     ];
     const view = filterForGroupFocus(wins, groups, { groupId: 'g1' });
-    expect(view.wins.map((w) => w.id).sort()).toEqual(['c', 'm']);
+    expect(view.wins.map((w) => w.id).sort()).toEqual(['big', 'c', 'm']);
+    expect(view.mountedWins).toBe(wins);
+    expect(view.hiddenOutside).toEqual(['far']);
     expect(view.canvasGroups.map((g) => g.id)).toEqual(['g1', 'inner']);
-    expect(filterForGroupFocus(wins, groups, null).wins).toBe(wins);
+    const idle = filterForGroupFocus(wins, groups, null);
+    expect(idle.wins).toBe(wins);
+    expect(idle.hiddenOutside).toEqual([]);
   });
 
   test('the focus view zooms in to fill a large screen', () => {

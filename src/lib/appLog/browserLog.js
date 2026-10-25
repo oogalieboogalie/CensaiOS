@@ -55,6 +55,16 @@ export function logToApp(level, message, { detail = '', where = windowKind(), no
   if (!timer) timer = setTimeout(flushAppLog, FLUSH_MS);
 }
 
+/**
+ * A failure the board handled itself, as one fixed line: the error's kind
+ * (like QuotaExceededError) goes along, never its text, which can repeat a
+ * file name, a note or a server answer.
+ */
+export function logFailure(message, err, where, level = 'warn') {
+  const kind = /^[A-Za-z]{1,40}$/.test(err?.name || '') ? err.name : '';
+  logToApp(level, message, { where, detail: kind });
+}
+
 export function pendingAppLog() {
   return queue.slice();
 }

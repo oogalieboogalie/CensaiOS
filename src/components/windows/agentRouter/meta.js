@@ -1,4 +1,4 @@
-// Message Router (Alex's diagram 03): one shared line the board's agents
+// Message Router (diagram 03): one shared line the board's agents
 // talk on, and a router that sends each part of a request to the right
 // agent with its memory and the right template. Listed under Add > Work.
 export const windowMeta = {

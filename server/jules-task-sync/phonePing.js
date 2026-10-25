@@ -1,4 +1,4 @@
-// Phone ping when Jules gets stuck (Alex's diagram 01: "page someone"). Off
+// Phone ping when Jules gets stuck (diagram 01: "page someone"). Off
 // until the owner sets JULES_PHONE_PING_URL in .env to their own push topic,
 // for example https://ntfy.sh/<a-long-secret-name> with the free ntfy app on
 // the phone subscribed to it. When the overnight runner parks a task, it

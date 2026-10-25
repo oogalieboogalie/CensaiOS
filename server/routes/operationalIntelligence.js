@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../db.js';
 import { requireFeatureFlag, requireLocalFilesystem } from '../middleware/runtimeMode.js';
+import { requireSystemAdmin } from '../security/systemAdmin.js';
 import { createHandoff, loadArtifactCausality } from '../operational-intelligence/handoffs.js';
 import { safeFastForwardCurrentProject, syncPulledTodoArtifacts } from '../operational-intelligence/localPull.js';
 import { dispatchTodoItem } from '../operational-intelligence/todoDispatch.js';
@@ -156,7 +157,8 @@ operationalIntelligenceRouter.get('/artifacts/:artifactId/causality', async (req
   }
 });
 
-operationalIntelligenceRouter.post('/sync/pull-merged', requireLocalFilesystem, async (req, res) => {
+// Runs git on this computer's current project: the computer's owner only.
+operationalIntelligenceRouter.post('/sync/pull-merged', requireLocalFilesystem, requireSystemAdmin, async (req, res) => {
   try {
     const { workspaceId } = await resolveOperationalScope(req, {
       write: true,

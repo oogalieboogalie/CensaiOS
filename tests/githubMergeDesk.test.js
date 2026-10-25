@@ -27,15 +27,15 @@ describe('merge desk: plain status', () => {
   });
 
   test('the summary skips attribution, comments and headings', () => {
-    const body = '<!-- claude-projects-attribution: {} -->\n_Requested by **Alex** · [thread](https://x)_\n\n## Summary\n\nBefore: the GitHub window needed five clicks to merge. More text here.';
+    const body = '<!-- claude-projects-attribution: {} -->\n_Requested by **Alma** · [thread](https://x)_\n\n## Summary\n\nBefore: the GitHub window needed five clicks to merge. More text here.';
     expect(summarizeBody(body)).toBe('the GitHub window needed five clicks to merge.');
     expect(summarizeBody('', 'Changes 2 files (+3 −1)')).toBe('Changes 2 files (+3 −1)');
   });
 
   test('a PR is green only when checks pass and there are no conflicts', () => {
-    const pr = { number: 3, title: 't', html_url: 'u', user: { login: 'alex' }, draft: true, body: '', mergeable: true, mergeable_state: 'clean', head: { ref: 'a' }, base: { ref: 'master' }, changed_files: 1, additions: 2, deletions: 0 };
+    const pr = { number: 3, title: 't', html_url: 'u', user: { login: 'alma' }, draft: true, body: '', mergeable: true, mergeable_state: 'clean', head: { ref: 'a' }, base: { ref: 'master' }, changed_files: 1, additions: 2, deletions: 0 };
     const passed = summarizeChecks([], [{ context: 'ci', state: 'success' }]);
-    expect(describePr(pr, passed)).toMatchObject({ green: true, conflicts: false, draft: true, author: 'alex' });
+    expect(describePr(pr, passed)).toMatchObject({ green: true, conflicts: false, draft: true, author: 'alma' });
     expect(describePr({ ...pr, mergeable: false, mergeable_state: 'dirty' }, passed)).toMatchObject({ green: false, conflicts: true });
     expect(describePr(pr, summarizeChecks([{ name: 'ci', status: 'in_progress' }], [])).green).toBe(false);
   });
@@ -137,7 +137,7 @@ describe('fix conflicts: agent merge is checked and pushed', () => {
       },
     };
     const job = await startFix(
-      { octokit: fakeOctokit({ pr }), token: '', owner: 'o', repo: 'r', number: 4, user: { name: 'Alex' } },
+      { octokit: fakeOctokit({ pr }), token: '', owner: 'o', repo: 'r', number: 4, user: { name: 'Alma' } },
       { manager, git: runGit, remoteUrl: origin, root: path.join(tmp, 'fixes') },
     );
     expect(job.status).toBe('agent');

@@ -93,23 +93,23 @@ describe('running a program', () => {
 
 describe('the class list', () => {
   test('a level keeps its best solve: more stars, then fewer lines', () => {
-    let seat = mergeSolve(null, 'Alex', 'first-steps', { stars: 2, lines: 6, code: 'a', at: 1 });
+    let seat = mergeSolve(null, 'Alma', 'first-steps', { stars: 2, lines: 6, code: 'a', at: 1 });
     expect(seat.solved['first-steps']).toMatchObject({ stars: 2, lines: 6 });
-    expect(mergeSolve(seat, 'Alex', 'first-steps', { stars: 2, lines: 7, code: 'b', at: 2 })).toBe(seat);
-    seat = mergeSolve(seat, 'Alex', 'first-steps', { stars: 3, lines: 4, code: 'c', at: 3 });
+    expect(mergeSolve(seat, 'Alma', 'first-steps', { stars: 2, lines: 7, code: 'b', at: 2 })).toBe(seat);
+    seat = mergeSolve(seat, 'Alma', 'first-steps', { stars: 3, lines: 4, code: 'c', at: 3 });
     expect(seat.solved['first-steps'].code).toBe('c');
-    expect(mergeSolve(seat, 'Alex', 'turn-the-corner', { stars: 0, lines: 1 })).toBe(seat);
-    expect(mergeSolve(seat, 'Alex', 'made-up', { stars: 3, lines: 1 })).toBe(seat);
+    expect(mergeSolve(seat, 'Alma', 'turn-the-corner', { stars: 0, lines: 1 })).toBe(seat);
+    expect(mergeSolve(seat, 'Alma', 'made-up', { stars: 3, lines: 1 })).toBe(seat);
   });
 
   test('progress rows rank the class and ignore junk fields', () => {
     const coders = readCoders({
       coder_sam: { name: 'Sam', solved: { 'first-steps': { stars: 3 }, 'turn-the-corner': { stars: 1 } } },
-      coder_alex: { name: 'Alex', solved: { 'first-steps': { stars: 2 }, fake: { stars: 3 } } },
+      coder_alma: { name: 'Alma', solved: { 'first-steps': { stars: 2 }, fake: { stars: 3 } } },
       coder_bad: 'nope',
     });
     const rows = classProgress(coders);
-    expect(rows.map((r) => r.name)).toEqual(['Sam', 'Alex']);
+    expect(rows.map((r) => r.name)).toEqual(['Sam', 'Alma']);
     expect(rows[0].levels.slice(0, 3)).toEqual([3, 1, 0]);
     expect(rows[1].solved).toBe(1);
   });
@@ -125,10 +125,10 @@ describe('the class list', () => {
     const base = { wins: [frame] };
     writeStateToDoc(a, null, base, 'local');
     sync();
-    writeStateToDoc(a, base, { wins: [{ ...frame, [coderField('Alex')]: mergeSolve(null, 'Alex', 'first-steps', { stars: 3, lines: 4, code: 'x', at: 1 }) }] }, 'local');
+    writeStateToDoc(a, base, { wins: [{ ...frame, [coderField('Alma')]: mergeSolve(null, 'Alma', 'first-steps', { stars: 3, lines: 4, code: 'x', at: 1 }) }] }, 'local');
     writeStateToDoc(b, base, { wins: [{ ...frame, [coderField('Sam')]: mergeSolve(null, 'Sam', 'first-steps', { stars: 1, lines: 9, code: 'y', at: 1 }) }] }, 'local');
     sync();
-    for (const doc of [a, b]) expect(classProgress(readCoders(readDocState(doc).wins[0])).map((r) => r.name)).toEqual(['Alex', 'Sam']);
+    for (const doc of [a, b]) expect(classProgress(readCoders(readDocState(doc).wins[0])).map((r) => r.name)).toEqual(['Alma', 'Sam']);
   });
 
   test('Code Robot is in the Add palette under Games', () => {

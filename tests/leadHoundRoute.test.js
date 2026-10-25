@@ -153,20 +153,26 @@ describe('LeadHound routes', () => {
     const res = await request(app()).post('/api/leadhound/save').send({ lead: {
       company: 'Acme Plumbing', url: 'https://acmeplumbing.example', fitScore: 88,
       contacts: { emails: ['owner@acmeplumbing.example'], phones: [] }, pain_points: ['missed calls'],
+      sequence: [{ day: 1, channel: 'email', subject: 'Hi', body: 'Hello Jordan' }],
+      iceBreaker: { title: 'Free call audit', deliverable: 'Three fixes' },
     } });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, id: 42, deduped: false });
     expect(saveLead).toHaveBeenCalledWith(expect.objectContaining({
       name: 'Acme Plumbing', email: 'owner@acmeplumbing.example', icp_score: 0.88, buying_signals: ['missed calls'],
+      outreach_sequence: [{ day: 1, channel: 'email', subject: 'Hi', body: 'Hello Jordan' }],
+      ice_breaker: { title: 'Free call audit', deliverable: 'Three fixes' },
     }), { userId: 7, workspaceId: 'ws-1' });
   });
 });
 
 describe('Tavily client', () => {
-  test('falls back to the server key when the user has none', async () => {
+  test('falls back to the server key for the owner when they have none', async () => {
     process.env.TAVILY_API_KEY = 'tvly-server';
-    const key = await resolveTavilyKey(7, { loadUserKey: async () => null });
+    const key = await resolveTavilyKey(7, { loadUserKey: async () => null, mayUse: async () => true });
     expect(key).toEqual({ apiKey: 'tvly-server', source: 'server' });
+    const teammate = await resolveTavilyKey(8, { loadUserKey: async () => null, mayUse: async () => false });
+    expect(teammate).toEqual({ apiKey: '', source: null });
     delete process.env.TAVILY_API_KEY;
   });
 

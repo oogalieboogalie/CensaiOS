@@ -6,7 +6,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { jest } from '@jest/globals';
 
 const logToApp = jest.fn();
-jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({ logToApp, installBrowserLog: () => {}, flushAppLog: () => {}, pendingAppLog: () => [], formatArgs: (a) => a.join(' ') }));
+jest.unstable_mockModule('../src/lib/appLog/browserLog.js', () => ({ logFailure: () => {}, logToApp, installBrowserLog: () => {}, flushAppLog: () => {}, pendingAppLog: () => [], formatArgs: (a) => a.join(' ') }));
 const { useWorkspaceStore } = await import('../src/lib/store.js');
 const { goToTodo, isTodoHere, markTodoDone } = await import('../src/lib/todos/todoActions.js');
 const { InboxDetail } = await import('../src/components/windows/inbox/InboxDetail.jsx');

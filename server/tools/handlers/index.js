@@ -195,7 +195,7 @@ export const TOOL_REGISTRY = {
   'scout_map': handleScoutTool,
   'skill_set_log': handleSkillSetTool,
   'browser_go': handleSkillSetTool,
-  // Blueprints shelf (Alex's diagram 08)
+  // Blueprints shelf (diagram 08)
   'find_blueprints': handleBlueprintTool,
   'save_blueprint': handleBlueprintTool,
   'scout_find': handleScoutTool,

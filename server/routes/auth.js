@@ -16,6 +16,7 @@ import {
 import { establishAuthenticatedSession } from '../security/authSession.js';
 import { authSecurityRateLimiter } from '../middleware/standardRateLimits.js';
 import { isFromAnotherComputer } from '../webOs/door.js';
+import { logAuthProblem } from '../security/authLog.js';
 
 export const authRouter = express.Router();
 
@@ -46,7 +47,7 @@ authRouter.get('/google', authSecurityRateLimiter, rateLimiter, (req, res) => {
   });
   req.session.save((err) => {
     if (err) {
-      console.error('Failed to persist Google OAuth state:', err);
+      logAuthProblem('google sign-in: could not save state', err);
       return res.status(500).send('Could not start Google authentication.');
     }
     res.redirect(url);
@@ -96,12 +97,7 @@ authRouter.get('/google/callback', authSecurityRateLimiter, rateLimiter, async (
     await establishAuthenticatedSession(req, user);
     res.redirect(APP_ORIGIN);
   } catch (err) {
-    console.error('OAuth Callback Error:', {
-      message: err.message,
-      code: err.code,
-      googleError: err.response?.data?.error,
-      googleDescription: err.response?.data?.error_description,
-    });
+    logAuthProblem('google sign-in failed', err);
     res.status(500).send('Google authentication failed.');
   }
 });
@@ -136,8 +132,8 @@ authRouter.post('/developer', authSecurityRateLimiter, rateLimiter, async (req, 
     await establishAuthenticatedSession(req, user);
     res.json({ ok: true, user });
   } catch (err) {
-    console.error('Developer login error:', err);
-    res.status(500).json({ error: err.message });
+    logAuthProblem('developer sign-in failed', err);
+    res.status(500).json({ error: 'Sign-in failed. Please try again.', code: 'developer_signin_failed' });
   }
 });
 
@@ -167,8 +163,8 @@ authRouter.post('/local', localSignInGate, authSecurityRateLimiter, rateLimiter,
     await establishAuthenticatedSession(req, access.user);
     res.json({ ok: true, user: access.user });
   } catch (err) {
-    console.error('Local sign-in error:', err);
-    res.status(500).json({ error: err.message });
+    logAuthProblem('sign-in on this computer failed', err);
+    res.status(500).json({ error: 'Sign-in on this computer failed. Please try again.', code: 'local_signin_failed' });
   }
 });
 
@@ -207,7 +203,7 @@ authRouter.get('/session', async (req, res) => {
         });
       }
     } catch (err) {
-      console.error('Session user fetch error:', err);
+      logAuthProblem('session check failed', err);
     }
   }
   res.json({
@@ -222,7 +218,7 @@ authRouter.get('/session', async (req, res) => {
 authRouter.post('/logout', authSecurityRateLimiter, (req, res) => {
   req.session.destroy((err) => {
     if (err) {
-      console.error('Failed to destroy session:', err);
+      logAuthProblem('sign-out failed', err);
       return res.status(500).send('Could not log out.');
     }
     res.clearCookie('connect.sid');

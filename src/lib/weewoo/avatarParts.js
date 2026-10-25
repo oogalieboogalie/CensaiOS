@@ -1,5 +1,5 @@
 // WeeWoo avatars: the pixel characters that stand in for agents on the
-// office floor. Each body is a 14x14 grid of cells (from Alex's WeeWoo
+// office floor. Each body is a 14x14 grid of cells (from the WeeWoo
 // design handoff). An avatar is { body, color, eyes, accessory }: an agent
 // can pick its own with the choose_avatar tool, a person can build one in
 // the avatar builder, and every agent without one gets a default from its

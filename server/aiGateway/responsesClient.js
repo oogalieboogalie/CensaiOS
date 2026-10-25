@@ -179,7 +179,7 @@ export async function requestResponsesCompletion({
         signal: controller.signal,
       });
       if (!response.ok) {
-        const err = chatCompletionHttpError(response.status, await response.text(), response.headers?.get?.('retry-after') || null);
+        const err = chatCompletionHttpError(response.status, await response.text(), response.headers?.get?.('retry-after') || null, config?.provider || null);
         if (attempt < maxRetriesForStatus(response.status, retryOptions) && err.retryable) {
           await sleepRetry({ attempt, retryOptions, response, error: err, baseDelayMs: baseDelayForStatus(response.status, retryOptions), model: payload.model, context });
           continue;

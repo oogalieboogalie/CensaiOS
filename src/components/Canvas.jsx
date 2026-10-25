@@ -26,7 +26,7 @@ import { usePointedWindowGlide } from './canvas/usePointedWindowGlide.js';
 import { getWindowBounds } from '../lib/layoutAlgo.js';
 import { isPointInRect, screenToCanvas } from '../lib/canvasMath.js';
 
-export function Canvas({ wins, activeId, selectedIds = [], workspaceRevision, onUpdate, onClose, onSelect, onSelection, onDeleteSelected, onSpawn, onRubberBand, onRequestNewAgent, onCreateAgent, onWindowMovePreview, onCursorMove, cursors = {}, agentCursors = {}, dockState, pan, zoom, onPanZoom, onFitView, onJumpNearestCluster, canvasGroups = [], onSpawnGroup, onUpdateGroup, onResizeGroup, onCloseGroup, onMoveGroup, onAutoArrangeGroup, onDockWindow, onUndockWindow, onSetGroupSeam, onShowGroupTab, onSaveGroupPreset, onLoadGroupPreset, onDeleteGroupPreset, onSetDefaultGroupPreset, paths = [], setPaths, links = [], onLinkCreate, onLinkDelete, currentProject = null, activeTool, penColor, penSize, penMode = false, groupHotkeySlotById = {}, inkActions = true, pinnedRailOffset = { top: 24,
+export function Canvas({ wins, mountedWins, activeId, selectedIds = [], workspaceRevision, onUpdate, onClose, onSelect, onSelection, onDeleteSelected, onSpawn, onRubberBand, onRequestNewAgent, onCreateAgent, onWindowMovePreview, onCursorMove, cursors = {}, agentCursors = {}, dockState, pan, zoom, onPanZoom, onFitView, onJumpNearestCluster, canvasGroups = [], onSpawnGroup, onUpdateGroup, onResizeGroup, onCloseGroup, onMoveGroup, onAutoArrangeGroup, onDockWindow, onUndockWindow, onSetGroupSeam, onShowGroupTab, onSaveGroupPreset, onLoadGroupPreset, onDeleteGroupPreset, onSetDefaultGroupPreset, paths = [], setPaths, links = [], onLinkCreate, onLinkDelete, currentProject = null, activeTool, penColor, penSize, penMode = false, groupHotkeySlotById = {}, inkActions = true, pinnedRailOffset = { top: 24,
 left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules, launchpadChipKinds, worldOverlay = null, minimapHidden = false }) {
   const ref = React.useRef(null);
   const themeContext = useTheme();
@@ -97,7 +97,7 @@ left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules
       isPanning={isPanning}
       fixedChildren={<>
         <CanvasWindows
-          wins={wins}
+          wins={mountedWins || wins}
           workspaceRevision={workspaceRevision}
           activeId={activeId}
           selectedIds={selectedIds}

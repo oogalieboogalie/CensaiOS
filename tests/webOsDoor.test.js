@@ -28,14 +28,14 @@ function fakeReq(host) {
 
 describe('home network names', () => {
   test.each([
-    'r2d2', 'r2d2:3002', 'laptop.local', 'nas.lan', 'pc.home.arpa', '192.168.1.23', '10.0.0.5:3002',
+    'officepc', 'officepc:3002', 'laptop.local', 'nas.lan', 'pc.home.arpa', '192.168.1.23', '10.0.0.5:3002',
     '172.20.1.1', '100.101.102.103', '[fd12:3456::1]',
   ])('%s is a home network address', (host) => {
     expect(isHomeNetworkHostname(host)).toBe(true);
   });
 
   test.each([
-    'localhost', '127.0.0.1', 'evil.com', 'r2d2.attacker.example', '8.8.8.8', '172.32.0.1', '', 'bad_name!',
+    'localhost', '127.0.0.1', 'evil.com', 'officepc.attacker.example', '8.8.8.8', '172.32.0.1', '', 'bad_name!',
   ])('%s is not', (host) => {
     expect(isHomeNetworkHostname(host)).toBe(false);
   });
@@ -43,17 +43,17 @@ describe('home network names', () => {
 
 describe('the Open anywhere door', () => {
   test('lets a home-network computer in when it asks its own address', () => {
-    expect(doorAllowsOrigin('http://r2d2:3002', 'r2d2:3002', OPEN)).toBe(true);
+    expect(doorAllowsOrigin('http://officepc:3002', 'officepc:3002', OPEN)).toBe(true);
     expect(doorAllowsOrigin('http://192.168.1.23:3002', '192.168.1.23:3002', OPEN)).toBe(true);
   });
 
   test('stays shut when the switch is off (the default)', () => {
-    expect(doorAllowsOrigin('http://r2d2:3002', 'r2d2:3002', { ...OPEN, settings: { open: false } })).toBe(false);
+    expect(doorAllowsOrigin('http://officepc:3002', 'officepc:3002', { ...OPEN, settings: { open: false } })).toBe(false);
   });
 
   test('never opens cloud or private servers', () => {
     for (const runtimeMode of ['cloud_saas', 'private_server']) {
-      expect(doorAllowsOrigin('http://r2d2:3002', 'r2d2:3002', { ...OPEN, runtimeMode })).toBe(false);
+      expect(doorAllowsOrigin('http://officepc:3002', 'officepc:3002', { ...OPEN, runtimeMode })).toBe(false);
     }
   });
 
@@ -62,10 +62,10 @@ describe('the Open anywhere door', () => {
   });
 
   test('refuses a page on one address asking another', () => {
-    expect(doorAllowsOrigin('http://r2d2:3002', '192.168.1.23:3002', OPEN)).toBe(false);
-    expect(doorAllowsOrigin('http://r2d2:4000', 'r2d2:3002', OPEN)).toBe(false);
-    expect(doorAllowsOrigin('null', 'r2d2:3002', OPEN)).toBe(false);
-    expect(doorAllowsOrigin(undefined, 'r2d2:3002', OPEN)).toBe(false);
+    expect(doorAllowsOrigin('http://officepc:3002', '192.168.1.23:3002', OPEN)).toBe(false);
+    expect(doorAllowsOrigin('http://officepc:4000', 'officepc:3002', OPEN)).toBe(false);
+    expect(doorAllowsOrigin('null', 'officepc:3002', OPEN)).toBe(false);
+    expect(doorAllowsOrigin(undefined, 'officepc:3002', OPEN)).toBe(false);
   });
 });
 
@@ -94,7 +94,7 @@ describe('another computer', () => {
   });
 
   test('is a request that reached a home-network address', () => {
-    expect(isFromAnotherComputer(fakeReq('r2d2:3002'), { env })).toBe(true);
+    expect(isFromAnotherComputer(fakeReq('officepc:3002'), { env })).toBe(true);
     expect(isFromAnotherComputer(fakeReq('192.168.1.23:3002'), { env })).toBe(true);
   });
 
@@ -104,7 +104,7 @@ describe('another computer', () => {
 
   test('is not this computer or APP_ORIGIN', () => {
     expect(isFromAnotherComputer(fakeReq('localhost:3002'), { env })).toBe(false);
-    expect(isFromAnotherComputer(fakeReq('r2d2:3002'), { env: { APP_ORIGIN: 'http://r2d2:3002' } })).toBe(false);
+    expect(isFromAnotherComputer(fakeReq('officepc:3002'), { env: { APP_ORIGIN: 'http://officepc:3002' } })).toBe(false);
   });
 });
 
@@ -122,14 +122,14 @@ describe('door settings', () => {
   test('are off by default and saved to the state folder', () => {
     const env = { HOMEBASE_STATE_DIR: dir };
     expect(readDoorSettings({ env, fresh: true })).toEqual({ open: false, address: '' });
-    writeDoorSettings({ open: true, address: 'http://R2D2:3002/' }, { env });
+    writeDoorSettings({ open: true, address: 'http://OFFICEPC:3002/' }, { env });
     resetDoorCache();
-    expect(readDoorSettings({ env })).toEqual({ open: true, address: 'r2d2' });
+    expect(readDoorSettings({ env })).toEqual({ open: true, address: 'officepc' });
   });
 
   test('the typed computer name comes first among the addresses', () => {
-    const hosts = candidateHosts({ env: { CENSAI_HOST_NAME: 'R2D2' }, settings: { open: true, address: 'pc.local' } });
-    expect(hosts.slice(0, 2)).toEqual(['pc.local', 'r2d2']);
+    const hosts = candidateHosts({ env: { CENSAI_HOST_NAME: 'OFFICEPC' }, settings: { open: true, address: 'pc.local' } });
+    expect(hosts.slice(0, 2)).toEqual(['pc.local', 'officepc']);
     expect(hosts).not.toContain('localhost');
   });
 });

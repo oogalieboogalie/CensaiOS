@@ -273,6 +273,8 @@ describe('operational intelligence routes', () => {
   test('scopes local pull synchronization and ignores caller Git overrides', async () => {
     process.env.CENSAI_FEATURE_OPERATIONAL_INTELLIGENCE = 'true';
     process.env.CENSAI_MODE = 'local_desktop';
+    // The caller is this computer's owner: pulling runs git on the PC.
+    mockPool.query.mockResolvedValueOnce({ rows: [{ role: 'admin' }] });
     resolveWorkspaceContext.mockResolvedValueOnce({ id: 'workspace-1', role: 'owner' });
     safeFastForwardCurrentProject.mockResolvedValueOnce({ ok: true, status: 'up_to_date' });
     syncPulledTodoArtifacts.mockResolvedValueOnce([]);

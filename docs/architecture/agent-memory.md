@@ -7,7 +7,7 @@ Agents remember four things, kept separately for each person and each agent:
 | --- | --- | --- |
 | Episodes | One short summary per run (chat, help request, outside call): what was asked, what was answered, which tools were used, which model answered | `agent_episodes` |
 | Dated facts | What is true, since when (`valid_from`/`valid_to`), and when the agent learned it (`recorded_at`/`superseded_at`). A change or a correction never deletes a row | `agent_facts` |
-| Knowledge graph | Things (people, companies, places, projects) and the connections between them ("Alex works at Iowa AI LLC"), each with the same two clocks as facts, so "what was true on a date" can be answered | `agent_entities`, `agent_relations` |
+| Knowledge graph | Things (people, companies, places, projects) and the connections between them ("Alma works at Indigo Labs LLC"), each with the same two clocks as facts, so "what was true on a date" can be answered | `agent_entities`, `agent_relations` |
 | Identity core | A short self-description the agent reads before every answer, the same whichever model runs it. Versioned | `agent_identity` |
 
 Tables: `docker/056-agent-memory.sql` and `docker/063-agent-graph.sql`, applied at boot by `server/agentMemory/schema.js`. Plain Postgres

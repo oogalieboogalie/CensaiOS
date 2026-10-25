@@ -8,14 +8,14 @@ import { createNewProject, shownProjectPath } from './newProject.js';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'projgit-'));
 const git = (cwd, ...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' }).trim();
-const author = { name: 'Alex', email: 'alex@example.com' };
+const author = { name: 'Alma', email: 'alma@example.com' };
 
 // A GitHub that only knows the calls "Send to GitHub" makes; repositories
 // are bare repos on disk so pushes are real.
 function fakeGithub(root) {
   const calls = [];
   const repoDir = (name) => path.join(root, `${name}.git`);
-  const repo = (name) => ({ full_name: `alex/${name}`, name, owner: { login: 'alex' }, default_branch: 'main', html_url: `https://github.com/alex/${name}`, clone_url: `file://${repoDir(name)}` });
+  const repo = (name) => ({ full_name: `alma/${name}`, name, owner: { login: 'alma' }, default_branch: 'main', html_url: `https://github.com/alma/${name}`, clone_url: `file://${repoDir(name)}` });
   return {
     calls,
     repos: {
@@ -37,7 +37,7 @@ function fakeGithub(root) {
       },
     },
     pulls: {
-      create: async (pr) => { calls.push(['pr', pr.head, pr.base, pr.title]); return { data: { number: 7, html_url: 'https://github.com/alex/x/pull/7' } }; },
+      create: async (pr) => { calls.push(['pr', pr.head, pr.base, pr.title]); return { data: { number: 7, html_url: 'https://github.com/alma/x/pull/7' } }; },
     },
   };
 }
@@ -68,7 +68,7 @@ describe('project versions', () => {
     const after = await saveVersion(dir, { message: 'Add the page', author });
     expect(after.changes).toEqual([]);
     expect(after.versions[0].message).toBe('Add the page');
-    expect(git(dir, 'log', '-1', '--format=%an <%ae>')).toBe('Alex <alex@example.com>');
+    expect(git(dir, 'log', '-1', '--format=%an <%ae>')).toBe('Alma <alma@example.com>');
     await expect(saveVersion(dir, { message: 'again', author })).rejects.toThrow(/Nothing changed/);
   });
 
@@ -85,16 +85,16 @@ describe('project versions', () => {
       { file: 'a.js', status: 'changed' }, { file: 'b.js', status: 'new' },
       { file: 'new.js', status: 'renamed' }, { file: 'c.js', status: 'deleted' },
     ]);
-    expect(repoFromRemote('https://github.com/alex/shop.git')).toBe('alex/shop');
-    expect(repoFromRemote('git@github.com:alex/shop.git')).toBe('alex/shop');
-    expect(repoFromRemote('https://gitlab.com/alex/shop.git')).toBeNull();
+    expect(repoFromRemote('https://github.com/alma/shop.git')).toBe('alma/shop');
+    expect(repoFromRemote('git@github.com:alma/shop.git')).toBe('alma/shop');
+    expect(repoFromRemote('https://gitlab.com/alma/shop.git')).toBeNull();
     expect(redactRemote('https://x-access-token:secret@github.com/a/b.git')).toBe('https://github.com/a/b.git');
     expect(slugify('Add a Phone field!')).toBe('add-a-phone-field');
   });
 
   test('the token only ever goes to GitHub', () => {
-    expect(authArgs('https://github.com/alex/shop.git', 'tok')[1]).toMatch(/^http\.https:\/\/github\.com\/\.extraheader=AUTHORIZATION: basic /);
-    expect(authArgs('https://evil.example/alex/shop.git', 'tok')).toEqual([]);
+    expect(authArgs('https://github.com/alma/shop.git', 'tok')[1]).toMatch(/^http\.https:\/\/github\.com\/\.extraheader=AUTHORIZATION: basic /);
+    expect(authArgs('https://evil.example/alma/shop.git', 'tok')).toEqual([]);
     expect(authArgs('file:///tmp/x.git', 'tok')).toEqual([]);
     expect(authArgs('https://github.com/a/b.git', '')).toEqual([]);
   });
@@ -107,7 +107,7 @@ describe('project versions', () => {
     await expect(sendToGithub(dir, { token: '', octokit: gh })).rejects.toThrow(/Connect GitHub/);
 
     const first = await sendToGithub(dir, { token: 'tok', title: 'First page', author, repoName: 'Lead form', octokit: gh });
-    expect(first).toMatchObject({ kind: 'created', repo: 'alex/lead-form', branch: 'main' });
+    expect(first).toMatchObject({ kind: 'created', repo: 'alma/lead-form', branch: 'main' });
     expect(gh.calls[0]).toEqual(['create', 'lead-form', true]);
     expect(first.status.changes).toEqual([]); // unsaved work was saved first
 
@@ -125,7 +125,7 @@ describe('project versions', () => {
   test('a folder sending somewhere other than GitHub is left alone', async () => {
     const dir = tmp();
     await startVersions(dir, { author });
-    git(dir, 'remote', 'add', 'origin', 'https://gitlab.com/alex/shop.git');
+    git(dir, 'remote', 'add', 'origin', 'https://gitlab.com/alma/shop.git');
     await expect(sendToGithub(dir, { token: 'tok', octokit: fakeGithub(tmp()) })).rejects.toThrow(/other than GitHub/);
   });
 });

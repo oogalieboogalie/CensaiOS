@@ -1,4 +1,4 @@
-// Sub-agent data boxes (Alex's diagram 15): every sub-agent under a main
+// Sub-agent data boxes (diagram 15): every sub-agent under a main
 // agent gets its own numbered box, 001, 002..., that it and its main agent
 // can read and write. The box is the sub-agent's scratchpad
 // (sub_agent_scratchpad); this file only gives the boxes their numbers and

@@ -5,7 +5,9 @@ import { claimKeyboard, releaseKeyboard } from '../lib/keyboardClaim.js';
 import { useMusic, MusicEmbed, EjectIcon, PauseIcon, PlayIcon, SpeakerIcon } from './music/index.js';
 import { formatTime, seedFromString, skinFor, SOURCE_TAGS, VISUALIZER_LABELS } from './music/musicSkins.js';
 import { estimateKbps } from './music/musicLibrary.js';
+import { WEB_PAGE_NOTE } from './music/musicHosts.js';
 import { MusicVisualizer } from './music/MusicVisualizer.jsx';
+import { chosenSkin, loadSkinChoice, saveSkinChoice, SKIN_CHOICES } from './music/skinChoice.js';
 import { LibraryScreen, AddPanel } from './music/MusicLibrary.jsx';
 import {
   ClickWheel, DeviceKey, DeviceScreen, DeviceShell, LcdLine, Marquee, ProgressBar, VolumeOverlay, useElementHeight,
@@ -24,7 +26,10 @@ export function MusicWindow({ win, onUpdate }) {
   const height = useElementHeight(deviceRef);
   const compact = height > 0 && height < COMPACT_HEIGHT;
   const library = music.view === 'library';
-  const skin = skinFor(library ? (tab === 'usb' ? 'local' : 'generic') : music.source);
+  const [skinChoice, setSkinChoice] = React.useState(() => loadSkinChoice(win.id));
+  const picked = chosenSkin(skinChoice);
+  const skin = picked || skinFor(library ? (tab === 'usb' ? 'local' : 'generic') : music.source);
+  const pickSkin = (id) => { setSkinChoice(id); saveSkinChoice(win.id, id); };
   const playing = Boolean(music.mode) && !music.paused;
 
   const addFiles = (files) => {
@@ -59,7 +64,11 @@ export function MusicWindow({ win, onUpdate }) {
         icon={<Icon.Music size={14} />}
         label="Music Player"
         subtitle={music.mode ? (music.mode === 'local' ? 'USB' : 'Now Playing') : 'Select a track'}
-      />
+      >
+        <select className="hb-music-skin-pick" aria-label="Player skin" title="Player skin" value={skinChoice} onChange={(e) => pickSkin(e.target.value)}>
+          {SKIN_CHOICES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+        </select>
+      </WindowTitle>
       <div className="hb-music">
         <DeviceShell
           ref={deviceRef}
@@ -76,7 +85,7 @@ export function MusicWindow({ win, onUpdate }) {
           <DeviceScreen className={library ? 'hb-music-screen-list' : ''} style={{ minHeight: compact ? 120 : 150 }}>
             {library ? <LibraryScreen music={music} tab={tab} setTab={setTab} /> : <StatusRow music={music} />}
             {/* One stage in one place, so MENU and back never reload the stream. */}
-            <Stage music={music} compact={compact} offscreen={library} />
+            <Stage music={music} compact={compact} offscreen={library} skin={picked} windowId={win.id} />
             {!library && <Readout music={music} />}
             <VolumeOverlay volume={music.volume} muted={music.muted} shownAt={music.volumeShownAt} />
           </DeviceScreen>
@@ -99,7 +108,7 @@ export function MusicWindow({ win, onUpdate }) {
   );
 }
 
-const showsEmbed = (music) => music.mode === 'stream' && !music.direct && music.stream.embedVisible;
+const showsEmbed = (music) => music.mode === 'stream' && !music.direct && !music.webPage && music.stream.embedVisible;
 
 function StatusRow({ music }) {
   const { progress, source, usbTrack } = music;
@@ -116,7 +125,7 @@ function StatusRow({ music }) {
   );
 }
 
-function Stage({ music, compact, offscreen }) {
+function Stage({ music, compact, offscreen, skin, windowId }) {
   const { stream, source, usbTrack } = music;
   const playing = Boolean(music.mode) && !music.paused;
   const seed = React.useMemo(() => seedFromString(usbTrack?.id || music.streamSrc), [usbTrack?.id, music.streamSrc]);
@@ -124,18 +133,20 @@ function Stage({ music, compact, offscreen }) {
   const hint = stageHint(music, showEmbed);
   return (
     <div className="hb-music-stage" data-offscreen={offscreen ? 'true' : undefined} style={{ minHeight: compact ? 36 : 70 }}>
-      {music.mode === 'stream' && !music.direct && (
+      {music.mode === 'stream' && !music.direct && !music.webPage && (
         <MusicEmbed ref={stream.frameRef} src={music.streamSrc} title={music.title} visible={showEmbed} onLoad={stream.handleFrameLoad} />
       )}
       {!offscreen && !showEmbed && (
-        <MusicVisualizer mode={music.visMode} skin={skinFor(source)} playing={playing} seed={seed} signal={music.signal} onClick={music.cycleVisualizer} />
+        <MusicVisualizer mode={music.visMode} skin={skin || skinFor(source)} playing={playing} seed={seed} signal={music.signal} onClick={music.cycleVisualizer} windowId={windowId} />
       )}
-      {!offscreen && hint && <LcdLine size="xxs" className="hb-music-hint">{hint}</LcdLine>}
+      {!offscreen && music.webPage && <p className="hb-music-webpage-note" role="note">{WEB_PAGE_NOTE}</p>}
+      {!offscreen && !music.webPage && hint && <LcdLine size="xxs" className="hb-music-hint">{hint}</LcdLine>}
     </div>
   );
 }
 
 function stageHint(music, showEmbed) {
+  if (music.fileProblem) return music.fileProblem;
   if (music.linkProblem) return "CAN'T PLAY THIS LINK";
   if (music.direct && music.mode === 'stream' && !music.paused && !music.signal) return 'VISUALIZER IS GUESSING FOR THIS SITE';
   if (music.stream.kind === 'spotify' && music.mode === 'stream' && music.paused && !showEmbed) return 'Press SCREEN for Spotify controls';

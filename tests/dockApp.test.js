@@ -34,10 +34,10 @@ describe('dock app wire', () => {
     expect(appName({ title: '  Teamfight   Tactics ', process: 'game.exe' })).toBe('Teamfight Tactics');
     expect(appName({ title: '', process: 'tool.exe' })).toBe('tool');
     expect(appName({ title: 'x'.repeat(60) })).toHaveLength(40);
-    const dock = { target: '123', hostName: 'Alex', app: 'Discord' };
-    expect(presenceLine(dock)).toBe('Alex is docking Discord');
+    const dock = { target: '123', hostName: 'Alma', app: 'Discord' };
+    expect(presenceLine(dock)).toBe('Alma is docking Discord');
     expect(presenceLine(dock, { self: true })).toBe('You are docking Discord');
-    expect(presenceLine({ ...dock, target: null })).toBe('Alex docked Discord here');
+    expect(presenceLine({ ...dock, target: null })).toBe('Alma docked Discord here');
     expect(presenceLine(null)).toBe('');
   });
 
@@ -132,7 +132,7 @@ describe('glue loop against a stub shell', () => {
 describe('cast relay on the collaboration socket', () => {
   const errors = [];
   const sendJson = (_ws, payload) => errors.push(payload);
-  const context = { ws: {}, workspaceId: 'ws1', clientId: 'host', actor: { type: 'human', label: 'Alex' }, spectator: false };
+  const context = { ws: {}, workspaceId: 'ws1', clientId: 'host', actor: { type: 'human', label: 'Alma' }, spectator: false };
   beforeEach(() => { published.length = 0; errors.length = 0; __resetDockCastRelayForTests(); });
 
   test('pictures go to other members only, at most five a second', () => {
