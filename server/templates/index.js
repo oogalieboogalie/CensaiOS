@@ -1,7 +1,7 @@
 // Spec 7: board templates. A template is a ready-made board (groups,
 // windows, agents and F-key bindings) a team opens and uses on day one:
-// Developer, Code Workspace, Creative Studio, Agent Team, Small Business
-// and Real Estate Team.
+// Developer, Code Workspace, Creative Studio, Agent Team, Small Business,
+// Notes Workspace and Real Estate Team.
 
 import { createSubAgent } from '../memory.js';
 import { REAL_ESTATE_AGENTS } from './realEstate/agents.js';
@@ -12,6 +12,7 @@ import { buildCreativeBoard, CREATIVE_AGENTS, CREATIVE_TEMPLATE } from './starte
 import { buildSmallBusinessBoard, SMALL_BUSINESS_AGENTS, SMALL_BUSINESS_TEMPLATE } from './starters/smallBusiness.js';
 import { buildCodeWorkspaceBoard, CODE_WORKSPACE_AGENTS, CODE_WORKSPACE_TEMPLATE } from './starters/codeWorkspace.js';
 import { AGENT_TEAM_AGENTS, AGENT_TEAM_TEMPLATE, buildAgentTeamBoard } from './starters/agentTeam.js';
+import { NOTES_WORKSPACE_AGENTS, NOTES_WORKSPACE_TEMPLATE, buildNotesWorkspaceBoard } from './starters/notesWorkspace.js';
 
 // Template agents hang off the default chat agent, like any workspace sub-agent.
 export const TEMPLATE_AGENT_PARENT = 'censai';
@@ -34,7 +35,7 @@ const REAL_ESTATE_TEMPLATE = Object.freeze({
 
 // Starters people are most likely to want first come first.
 export const BOARD_TEMPLATES = Object.freeze([
-  DEVELOPER_TEMPLATE, CODE_WORKSPACE_TEMPLATE, CREATIVE_TEMPLATE, AGENT_TEAM_TEMPLATE, SMALL_BUSINESS_TEMPLATE, REAL_ESTATE_TEMPLATE,
+  DEVELOPER_TEMPLATE, CODE_WORKSPACE_TEMPLATE, CREATIVE_TEMPLATE, AGENT_TEAM_TEMPLATE, SMALL_BUSINESS_TEMPLATE, NOTES_WORKSPACE_TEMPLATE, REAL_ESTATE_TEMPLATE,
 ]);
 
 // How each template makes its agents and its board.
@@ -48,6 +49,7 @@ const BUILDERS = {
   [CODE_WORKSPACE_TEMPLATE.id]: { agents: CODE_WORKSPACE_AGENTS, build: async (agents) => buildCodeWorkspaceBoard({ agents }) },
   [AGENT_TEAM_TEMPLATE.id]: { agents: AGENT_TEAM_AGENTS, build: async (agents) => buildAgentTeamBoard({ agents }) },
   [SMALL_BUSINESS_TEMPLATE.id]: { agents: SMALL_BUSINESS_AGENTS, build: async (agents) => buildSmallBusinessBoard({ agents }) },
+  [NOTES_WORKSPACE_TEMPLATE.id]: { agents: NOTES_WORKSPACE_AGENTS, build: async (agents) => buildNotesWorkspaceBoard({ agents }) },
 };
 
 export function findBoardTemplate(id) {

@@ -60,13 +60,15 @@ export function emptyYardSeat(name, now) {
   return { name: String(name || 'Player').slice(0, 40), digs: 0, digEarned: 0, spent: 0, makers: {}, upgrades: [], cells: {}, joinedAt: now, seenAt: now };
 }
 
-const CELL_KEY = /^(\d{1,2}),(\d{1,2})$/;
+// Squares run from -18 to 29 on the biggest lot; a seat keeps at most 32
+// blocks per square (the stack height).
+const CELL_KEY = /^(-?\d{1,2}),(-?\d{1,2})$/;
 
 function cleanCells(raw) {
   const cells = {};
   for (const [key, list] of Object.entries(raw || {})) {
     if (!CELL_KEY.test(key) || !Array.isArray(list)) continue;
-    const blocks = list.filter((id) => BLOCK_BY_ID.has(id)).slice(0, 16);
+    const blocks = list.filter((id) => BLOCK_BY_ID.has(id)).slice(0, 32);
     if (blocks.length) cells[key] = blocks;
   }
   return cells;

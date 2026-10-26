@@ -11,6 +11,7 @@ import { FlatYard } from './FlatYard.jsx';
 import { IsoYard } from './IsoYard.jsx';
 import { YardShop } from './YardShop.jsx';
 import { DigButton, awayText } from './DigButton.jsx';
+import { Inspiration } from './Inspiration.jsx';
 
 export { windowMeta };
 
@@ -35,7 +36,7 @@ function Palette({ earned, pick, onPick }) {
 
 function Milestone({ earned }) {
   const goal = nextMilestone(earned);
-  if (!goal) return <div className="hb-game-muted">Every milestone reached. Build something huge.</div>;
+  if (!goal) return <div className="hb-game-muted">Every milestone reached: a 48 by 48 city lot, 32 blocks high. Build your skyline.</div>;
   return (
     <div className="hb-blocks-goal" data-testid="blocks-goal">
       <span className="hb-game-muted">Dig {formatAmount(Math.max(0, goal.at - earned))} more: {goal.label}</span>
@@ -63,7 +64,7 @@ export function IdleBlocksWindow({ win = {}, onUpdate }) {
   const shown = game.iso ? view : 'flat';
   const place = (x, y) => game.place(x, y, pick);
   const others = game.team.filter((row) => row.field !== game.field).length;
-  const yardProps = { size: game.size, stacks: game.stacks, field: game.field, canPlay: game.canPlay, onPlace: place, onTake: game.take };
+  const yardProps = { pick, size: game.size, stacks: game.stacks, field: game.field, canPlay: game.canPlay, onPlace: place, onTake: game.take };
   return (
     <>
       <WindowTitle icon={<Icon.Cube size={14} />} label={win.title || windowMeta.label}
@@ -101,6 +102,7 @@ export function IdleBlocksWindow({ win = {}, onUpdate }) {
           <div className="hb-blocks-stage">
             {shown === 'iso' ? <IsoYard {...yardProps} /> : <FlatYard {...yardProps} />}
           </div>
+          <Inspiration />
         </div>
         <YardShop game={game} />
       </div>

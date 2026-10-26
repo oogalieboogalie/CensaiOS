@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# censaiOS Starter Box: turns a fresh Ubuntu or Debian computer into an
-# AI-ready vibecoding box. Safe to run again: every step checks first and
+# censaiOS Starter Box: turns a fresh Ubuntu or Debian computer (or one built
+# on them: Linux Mint, MX Linux) into an AI-ready vibecoding box. Safe to run again: every step checks first and
 # skips what is already there.
 #
 #   sudo bash starter-box/setup.sh            # everything
@@ -15,6 +15,8 @@
 #   CENSAIOS_REPO_URL      where censaiOS comes from (default: public repo)
 #   CENSAIOS_BRANCH        default main
 #   CENSAIOS_DIR           default /opt/censaios
+#   CENSAIOS_BUILD=1       build censaiOS here instead of downloading the
+#                          ready-made one (slow: 10 to 30 minutes, 8 GB)
 #   NODE_MAJOR             Node.js line to install, default 22
 set -Eeuo pipefail
 
@@ -67,9 +69,20 @@ wanted() {
 . /etc/os-release
 case "${ID:-}:${ID_LIKE:-}" in
   ubuntu:*|*:*ubuntu*) DISTRO=ubuntu; CODENAME="${UBUNTU_CODENAME:-$VERSION_CODENAME}" ;;
-  debian:*)            DISTRO=debian; CODENAME="$VERSION_CODENAME" ;;
+  debian:*|*:*debian*) DISTRO=debian; CODENAME="${DEBIAN_CODENAME:-${VERSION_CODENAME:-}}" ;;
   *) die "this only works on Ubuntu or Debian (found ${PRETTY_NAME:-unknown})" ;;
 esac
+# MX Linux and other Debian-based systems may carry their own release name;
+# Docker's download only knows Debian's, so read it from the Debian version.
+if [ "$DISTRO" = debian ]; then
+  case "$CODENAME" in
+    bullseye|bookworm|trixie) ;;
+    *) case "$(cut -d. -f1 /etc/debian_version 2>/dev/null)" in
+         11) CODENAME=bullseye ;; 12) CODENAME=bookworm ;; 13) CODENAME=trixie ;;
+         *) die "could not tell which Debian this is built on (found ${PRETTY_NAME:-unknown})" ;;
+       esac ;;
+  esac
+fi
 ARCH="$(dpkg --print-architecture)"
 case "$ARCH" in amd64|arm64) ;; *) die "this computer's chip ($ARCH) is not supported" ;; esac
 
@@ -78,12 +91,28 @@ BOX_USER="${STARTER_BOX_USER:-${SUDO_USER:-}}"
   die "run it with sudo from your own account, or set STARTER_BOX_USER=yourname"
 id "$BOX_USER" >/dev/null 2>&1 || die "there is no account called $BOX_USER"
 BOX_HOME="$(getent passwd "$BOX_USER" | cut -d: -f6)"
-HAS_SYSTEMD=0; [ -d /run/systemd/system ] && HAS_SYSTEMD=1
+# systemd on most systems; MX Linux starts with the older sysvinit by default.
+INIT=none
+if [ -d /run/systemd/system ]; then INIT=systemd
+elif [ "$(cat /proc/1/comm 2>/dev/null)" = init ] && [ -d /etc/init.d ] && have service; then INIT=sysv
+fi
 
 as_user() { runuser -u "$BOX_USER" -- env HOME="$BOX_HOME" "$@"; }
 enable_now() {
-  if [ "$HAS_SYSTEMD" = 1 ]; then systemctl enable --now "$@" >/dev/null 2>&1 || warn "could not start $*"
-  else note "no systemd here, so $* will start on the next real boot"; fi
+  local s
+  case "$INIT" in
+    systemd) systemctl enable --now "$@" >/dev/null 2>&1 || warn "could not start $*" ;;
+    sysv)
+      for s in "$@"; do
+        if [ -x "/etc/init.d/$s" ]; then
+          update-rc.d "$s" defaults >/dev/null 2>&1 || true
+          service "$s" status >/dev/null 2>&1 || service "$s" start >/dev/null 2>&1 || warn "could not start $s"
+        else
+          warn "$s has no start-up script on this computer; it will not start by itself"
+        fi
+      done ;;
+    *) note "no service manager here, so $* will start on the next real boot" ;;
+  esac
 }
 apt_install() {
   local missing=()
@@ -103,7 +132,7 @@ step_base() {
   apt_install ca-certificates curl gnupg git jq openssl xz-utils unzip htop nano \
     avahi-daemon libnss-mdns build-essential python3 python3-venv
   if [ -n "${STARTER_BOX_HOSTNAME:-}" ] && [ "$(hostname)" != "$STARTER_BOX_HOSTNAME" ]; then
-    if [ "$HAS_SYSTEMD" = 1 ]; then hostnamectl set-hostname "$STARTER_BOX_HOSTNAME"
+    if [ "$INIT" = systemd ]; then hostnamectl set-hostname "$STARTER_BOX_HOSTNAME"
     else echo "$STARTER_BOX_HOSTNAME" > /etc/hostname; fi
     sed -i "/^127\.0\.1\.1 /d" /etc/hosts
     echo "127.0.1.1 $STARTER_BOX_HOSTNAME" >> /etc/hosts
@@ -178,7 +207,10 @@ step_ollama() {
   fi
   # censaiOS runs in Docker and reaches Ollama through the host. Ollama only
   # listens beyond this box when the firewall step limits it to Docker.
-  if [ "$HAS_SYSTEMD" = 1 ] && wanted firewall; then
+  if [ "$INIT" = sysv ] && ! curl -fs -o /dev/null --max-time 3 http://127.0.0.1:11434/api/version; then
+    note "Ollama does not start by itself on this system; start it with: ollama serve &"
+  fi
+  if [ "$INIT" = systemd ] && wanted firewall; then
     mkdir -p /etc/systemd/system/ollama.service.d
     printf '[Service]\nEnvironment="OLLAMA_HOST=0.0.0.0:11434"\n' \
       > /etc/systemd/system/ollama.service.d/starter-box.conf
@@ -210,18 +242,43 @@ step_censaios() {
   fi
   mkdir -p "$BOX_HOME/Projects"
   chown "$BOX_USER:" "$BOX_HOME/Projects"
+  # MemTotal reads a little under the sticker size: an 8 GB laptop shows ~7.6.
+  local mem_gb; mem_gb=$(( ($(awk '/MemTotal/ {print $2}' /proc/meminfo) + 524288) / 1048576 ))
   if [ ! -f "$CENSAIOS_DIR/.env" ]; then
-    printf '# Made by the starter box. "New project" in censaiOS makes folders here.\nCENSAI_PROJECTS_FOLDER_ON_PC=%s/Projects\n' \
-      "$BOX_HOME" > "$CENSAIOS_DIR/.env"
+    {
+      printf '# Made by the starter box. "New project" in censaiOS makes folders here.\nCENSAI_PROJECTS_FOLDER_ON_PC=%s/Projects\n' "$BOX_HOME"
+      if [ "$mem_gb" -lt 7 ]; then
+        printf '# This box has about %s GB of memory, so censaiOS gets smaller caps.\n' "$mem_gb"
+        printf 'CENSAI_APP_MEMORY=2g\nCENSAI_DB_MEMORY=512m\nCENSAI_VECTOR_MEMORY=512m\nCENSAI_RUNNER_MEMORY=256m\n'
+      fi
+    } > "$CENSAIOS_DIR/.env"
     chown "$BOX_USER:" "$CENSAIOS_DIR/.env"; chmod 600 "$CENSAIOS_DIR/.env"
   fi
-  local mem_gb; mem_gb=$(( $(awk '/MemTotal/ {print $2}' /proc/meminfo) / 1048576 ))
-  [ "$mem_gb" -ge 7 ] || warn "this box has about ${mem_gb} GB of memory; censaiOS wants 8 GB to feel quick"
+  [ "$mem_gb" -ge 7 ] || warn "this box has about ${mem_gb} GB of memory; censaiOS runs, but 8 GB feels quicker"
+  # Download the ready-made censaiOS instead of building it on the box: a
+  # build takes 10 to 30 minutes and can run out of memory on 4 GB.
+  # docker-compose.override.yml is read by every plain `docker compose` here.
+  local override="$CENSAIOS_DIR/docker-compose.override.yml" tag=latest
+  [ "$CENSAIOS_BRANCH" = nightly ] && tag=nightly
+  if [ -z "${CENSAIOS_BUILD:-}" ]; then
+    printf '%s\n' '# Made by the starter box: use the ready-made censaiOS, never build it here.' \
+      '# Delete this file to build from this folder instead.' 'services:' \
+      '  homebase:' "    image: ghcr.io/oogalieboogalie/censaios:$tag" '    pull_policy: missing' \
+      '  runner:' "    image: ghcr.io/oogalieboogalie/censaios:$tag" '    pull_policy: missing' > "$override"
+    chown "$BOX_USER:" "$override"
+  else
+    rm -f "$override"
+  fi
   if ! docker info >/dev/null 2>&1; then
     warn "Docker is not running here, so censaiOS will start on the next real boot"; return
   fi
-  note "building and starting censaiOS (the first time takes 10 to 30 minutes)"
-  (cd "$CENSAIOS_DIR" && docker compose up -d --build --quiet-pull)
+  if [ -f "$override" ]; then
+    note "downloading and starting censaiOS (about 2 GB the first time)"
+    (cd "$CENSAIOS_DIR" && docker compose up -d --quiet-pull)
+  else
+    note "building and starting censaiOS (the first time takes 10 to 30 minutes)"
+    (cd "$CENSAIOS_DIR" && docker compose up -d --build --quiet-pull)
+  fi
   note "waiting for censaiOS to answer"
   for _ in $(seq 1 90); do
     if curl -fs -o /dev/null http://127.0.0.1:3002/; then note "censaiOS is up at http://localhost:3002"; return; fi
@@ -243,10 +300,8 @@ step_ssh() {
   apt_install openssh-server
   mkdir -p /etc/ssh/sshd_config.d
   printf '# censaiOS Starter Box\nPermitRootLogin no\n' > /etc/ssh/sshd_config.d/50-starter-box.conf
-  if [ "$HAS_SYSTEMD" = 1 ]; then
-    enable_now ssh
-    systemctl reload ssh 2>/dev/null || true
-  fi
+  enable_now ssh
+  service ssh reload >/dev/null 2>&1 || true
 }
 
 step_remote() {
@@ -260,8 +315,8 @@ step_remote() {
 step_firewall() {
   say "Firewall (nothing gets in except SSH and censaiOS 'Open anywhere')"
   apt_install ufw
-  if [ "$HAS_SYSTEMD" = 0 ]; then
-    note "no systemd here; after a real boot run: sudo bash $0 --only firewall"; return
+  if [ "$INIT" = none ]; then
+    note "no service manager here; after a real boot run: sudo bash $0 --only firewall"; return
   fi
   ufw default deny incoming >/dev/null
   ufw default allow outgoing >/dev/null

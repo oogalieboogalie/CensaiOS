@@ -27,7 +27,7 @@ export const CATEGORIES = Object.freeze([
   // One row per engine; each opens the Search window set to that engine
   // (Tavily opens Research). `entries` rows carry their own props.
   { label: 'Search engines', kinds: [], entries: searchPaletteEntries(), claims: ['searchEngine'] },
-  { label: 'Build', kinds: ['terminal', 'code_editor', 'files', 'doc', 'htmlPreview', 'browser', 'vm', 'designBlock', 'hosting'] },
+  { label: 'Build', kinds: ['terminal', 'code_editor', 'files', 'doc', 'vaultNotes', 'finderFiles', 'htmlPreview', 'browser', 'vm', 'designBlock', 'hosting'] },
   { label: 'Create', kinds: ['genImage', 'imageStudio', 'idea', 'analyticsBoard'] },
   { label: 'Teach', kinds: ['classroom'] },
   // Social canvas: follow boards and friends, a feed, your profile.
@@ -47,7 +47,7 @@ const ICON_BY_KIND = {
   chat: 'Chat', groupChat: 'Group', agentDesigner: 'NewAgent', rook: 'Bot', exoSkeleton: 'Bot',
   todos: 'List', workflow: 'NewWorkflow', scheduler: 'Calendar', operationsBoard: 'Tools',
   julesTasks: 'List', calendar: 'Calendar', terminal: 'Terminal', code_editor: 'Code', files: 'Files',
-  doc: 'Files', htmlPreview: 'Eye', browser: 'Search', genImage: 'Picture', imageStudio: 'Picture',
+  doc: 'Files', vaultNotes: 'Files', finderFiles: 'Folder', htmlPreview: 'Eye', browser: 'Search', genImage: 'Picture', imageStudio: 'Picture',
   idea: 'Flask', analyticsBoard: 'Activity', music: 'Music', stream: 'Video', mailcow: 'Mail',
   vex: 'Bot', sovereignTest: 'Shield',
 };
@@ -74,6 +74,7 @@ export const BOARD_TEMPLATE_ITEMS = Object.freeze([
   { id: 'board:creative-studio', label: 'Creative Studio', hint: 'Ready-made board: brief, design, video and a content calendar', icon: 'Group', cover: 'creativeBoard', action: { type: 'boardTemplate', id: 'creative-studio' } },
   { id: 'board:agent-team', label: 'Agent Team', hint: 'Ready-made board: four agents in one team room; the Lead hands out the work', icon: 'Group', cover: 'agentTeamBoard', action: { type: 'boardTemplate', id: 'agent-team' } },
   { id: 'board:small-business', label: 'Small Business', hint: 'Ready-made board: find customers, money sheet and this week', icon: 'Group', cover: 'smallBusinessBoard', action: { type: 'boardTemplate', id: 'small-business' } },
+  { id: 'board:notes-workspace', label: 'Notes Workspace', hint: 'Ready-made board: Obsidian-style vault over a Finder-style Downloads window', icon: 'Files', cover: 'notesWorkspaceBoard', action: { type: 'boardTemplate', id: 'notes-workspace' } },
   { id: 'board:real-estate-team', label: 'Real Estate Team', hint: 'Ready-made board: listings, showings and follow-ups', icon: 'Group', cover: 'realEstateBoard', action: { type: 'boardTemplate', id: 'real-estate-team' } },
 ]);
 

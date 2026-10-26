@@ -1,5 +1,8 @@
 module.exports = {
   testEnvironment: 'node',
+  // Real git / temp-repo cases (projectGit, merge desk) need more than Jest's
+  // default 5s when the suite runs as a full gate shard under pre-push load.
+  testTimeout: 30_000,
   setupFilesAfterEnv: ['<rootDir>/tests/setupTests.js'],
   testMatch: ['<rootDir>/**/*.test.js', '<rootDir>/**/*.test.jsx'],
   testPathIgnorePatterns: [

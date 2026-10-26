@@ -52,9 +52,11 @@ describe('sample replies', () => {
 });
 
 describe('ready-made boards on the try-it board', () => {
-  test('lists the five starters and builds one with stand-in agents', async () => {
+  test('lists the starter boards and builds one with stand-in agents', async () => {
     const list = await (await demoResponse('/api/board-templates')).json();
-    expect(list.templates.map((t) => t.name)).toEqual(['Developer', 'Code Workspace', 'Creative Studio', 'Agent Team', 'Small Business']);
+    expect(list.templates.map((t) => t.name)).toEqual([
+      'Developer', 'Code Workspace', 'Creative Studio', 'Agent Team', 'Small Business', 'Notes Workspace',
+    ]);
     const res = await demoResponse(`/api/board-templates/${list.templates[0].id}/apply`, { method: 'POST', body: '{}' });
     const { board } = await res.json();
     expect(board.agents.length).toBeGreaterThan(0);

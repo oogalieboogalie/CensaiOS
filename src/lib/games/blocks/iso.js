@@ -31,22 +31,48 @@ export function cubeFaces(x, y, z) {
 }
 
 /**
- * Cubes to draw, back to front. A cube whose top and both front sides are
- * covered by neighbours can't be seen, so it is skipped: a solid build stays
- * cheap to draw.
+ * Which plot square sits at view square (x, y) once the yard has been
+ * turned a quarter `turn` times (0 to 3). Turning the data, not the picture,
+ * keeps the back-to-front order right from every side.
  */
-export function sceneCubes(stacks, size) {
-  const height = (x, y) => (x < size && y < size ? stacks[`${x},${y}`]?.length || 0 : 0);
+export function unturn(x, y, size, turn = 0) {
+  const n = size - 1;
+  switch (((turn % 4) + 4) % 4) {
+    case 1: return [y, n - x];
+    case 2: return [n - x, n - y];
+    case 3: return [n - y, x];
+    default: return [x, y];
+  }
+}
+
+/**
+ * Cubes to draw, back to front, in plot squares (0 is the plot's first
+ * square; `gx`/`gy` are the yard's own square numbers, which start at
+ * `origin`). Only the faces nobody covers are kept: a top under another
+ * block, or a side pressed against a neighbour as tall, is skipped, and a
+ * cube with no face left is not drawn at all. A solid build stays cheap to
+ * draw even on the 48 by 48 lot.
+ */
+export function sceneCubes(stacks, size, origin = 0, turn = 0) {
+  const at = (x, y) => {
+    const [ux, uy] = unturn(x, y, size, turn);
+    return [ux + origin, uy + origin];
+  };
+  const height = (x, y) => (x < size && y < size ? stacks[at(x, y).join(',')]?.length || 0 : 0);
   const cubes = [];
   for (let d = 0; d <= (size - 1) * 2; d += 1) {
     for (let x = Math.max(0, d - size + 1); x <= Math.min(d, size - 1); x += 1) {
       const y = d - x;
-      const stack = stacks[`${x},${y}`];
+      const [gx, gy] = at(x, y);
+      const stack = stacks[`${gx},${gy}`];
       if (!stack) continue;
+      const right = height(x + 1, y);
+      const left = height(x, y + 1);
       for (let z = 0; z < stack.length; z += 1) {
-        const hidden = z < stack.length - 1 && height(x + 1, y) > z && height(x, y + 1) > z;
-        if (hidden) continue;
-        cubes.push({ x, y, z, id: stack[z].id, field: stack[z].field, top: z === stack.length - 1 });
+        const top = z === stack.length - 1;
+        const faces = { top, left: left <= z, right: right <= z };
+        if (!faces.top && !faces.left && !faces.right) continue;
+        cubes.push({ x, y, z, gx, gy, id: stack[z].id, field: stack[z].field, top, faces });
       }
     }
   }

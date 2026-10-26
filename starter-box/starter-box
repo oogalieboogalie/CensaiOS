@@ -41,21 +41,21 @@ info() { printf '  \033[33m[--]\033[0m %s\n' "$*"; }
 doctor() {
   echo; bold "  Checking this box"; echo; echo
   if docker info >/dev/null 2>&1 || sudo -n docker info >/dev/null 2>&1; then ok "Docker is running"
-  else bad "Docker is not running. Fix: sudo systemctl start docker (or sign out and back in once)"; fi
+  else bad "Docker is not running. Fix: sudo service docker start (or sign out and back in once)"; fi
 
   if curl -fs -o /dev/null --max-time 5 http://127.0.0.1:3002/; then ok "censaiOS answers at http://localhost:3002"
   else bad "censaiOS is not answering yet. Fix: cd $CENSAIOS_DIR && docker compose up -d"; fi
 
   if curl -fs -o /dev/null --max-time 3 http://127.0.0.1:11434/api/version; then ok "Ollama is running (free local AI)"
-  elif have ollama; then bad "Ollama is installed but not running. Fix: sudo systemctl start ollama"
+  elif have ollama; then bad "Ollama is installed but not running. Fix: sudo systemctl start ollama, or run: ollama serve &"
   else info "Ollama is not installed (optional)"; fi
 
   for t in git node claude codex; do
     if have "$t"; then ok "$t is installed"; else bad "$t is missing. Fix: run the setup again"; fi
   done
 
-  if systemctl is-active --quiet ssh 2>/dev/null; then ok "SSH is on (reach it at $ME@$NAME.local)"
-  else bad "SSH is off. Fix: sudo systemctl enable --now ssh"; fi
+  if pgrep -x sshd >/dev/null 2>&1 || systemctl is-active --quiet ssh 2>/dev/null; then ok "SSH is on (reach it at $ME@$NAME.local)"
+  else bad "SSH is off. Fix: sudo service ssh start"; fi
 
   if grep -qs '^ENABLED=yes' /etc/ufw/ufw.conf; then ok "Firewall is on"
   else bad "Firewall is off. Fix: sudo ufw enable"; fi
@@ -122,7 +122,11 @@ update() {
   echo "Getting the newest censaiOS, Claude Code and Codex. This can take a few minutes."
   if [ -d "$CENSAIOS_DIR/.git" ]; then
     git -C "$CENSAIOS_DIR" pull --ff-only -q || echo "  Could not update censaiOS (local edits?). Keeping the one you have."
-    (cd "$CENSAIOS_DIR" && sudo docker compose up -d --build --quiet-pull)
+    if [ -f "$CENSAIOS_DIR/docker-compose.override.yml" ]; then
+      (cd "$CENSAIOS_DIR" && sudo docker compose up -d --pull always --quiet-pull)
+    else
+      (cd "$CENSAIOS_DIR" && sudo docker compose up -d --build --quiet-pull)
+    fi
   fi
   sudo npm install -g --no-fund --no-audit --loglevel=error @anthropic-ai/claude-code@latest @openai/codex@latest
   if have ollama; then curl -fsSL https://ollama.com/install.sh | sh; fi

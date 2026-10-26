@@ -8,6 +8,7 @@ import { jest } from '@jest/globals';
 import { CanvasShell } from '../src/components/canvas/CanvasShell.jsx';
 import { useCanvasPointer } from '../src/components/canvas/useCanvasPointer.js';
 import { RegionMenu } from '../src/components/canvas/CanvasRegionMenu.jsx';
+import { isCanvasSelectionSurface } from '../src/components/canvas/canvasSelectionSurface.js';
 
 beforeAll(() => {
   window.PointerEvent = MouseEvent;
@@ -15,7 +16,7 @@ beforeAll(() => {
   HTMLElement.prototype.releasePointerCapture = jest.fn();
 });
 
-function PointerHarness({ wins, onSelection, onRegion, onSpawnGroup, onSuppression }) {
+function PointerHarness({ wins, onSelection, onRegion, onSpawnGroup, onSuppression, onSelect = jest.fn() }) {
   const ref = React.useRef(null);
   const spaceRef = React.useRef(false);
   const pointer = useCanvasPointer({
@@ -23,7 +24,7 @@ function PointerHarness({ wins, onSelection, onRegion, onSpawnGroup, onSuppressi
     pan: { x: 0, y: 0 },
     zoom: 1,
     onPanZoom: jest.fn(),
-    onSelect: jest.fn(),
+    onSelect,
     onSpawnGroup,
     wins,
     onSelection,
@@ -93,13 +94,37 @@ describe('canvas pointer workflow', () => {
     const canvas = container.querySelector('[data-canvas-bg]');
 
     fireEvent.pointerDown(canvas, { button: 2, pointerId: 2, clientX: 10, clientY: 10 });
+    // Selection stays until the drag threshold is crossed (context-menu delete needs it).
+    expect(onSelection).not.toHaveBeenCalled();
     fireEvent.pointerMove(canvas, { buttons: 2, pointerId: 2, clientX: 120, clientY: 120 });
+    expect(onSelection).toHaveBeenCalledWith([]);
     fireEvent.pointerUp(canvas, { button: 2, pointerId: 2, clientX: 120, clientY: 120 });
     fireEvent.contextMenu(canvas, { clientX: 120, clientY: 120 });
 
-    expect(onSelection).toHaveBeenCalledWith([]);
     expect(onSpawnGroup).toHaveBeenCalledWith({ x: 10, y: 10 }, { w: 110, h: 110 });
     expect(onSuppression).toHaveBeenCalledWith(true);
+  });
+
+  test('a plain right-click keeps the multi-selection for context-menu delete', () => {
+    const onSelection = jest.fn();
+    const onSelect = jest.fn();
+    const { container } = render(
+      <PointerHarness
+        wins={[{ id: 'one', x: 20, y: 20, w: 40, h: 40 }]}
+        onSelect={onSelect}
+        onSelection={onSelection}
+        onRegion={jest.fn()}
+        onSpawnGroup={jest.fn()}
+      />,
+    );
+    const canvas = container.querySelector('[data-canvas-bg]');
+
+    fireEvent.pointerDown(canvas, { button: 2, pointerId: 2, clientX: 40, clientY: 40 });
+    fireEvent.pointerUp(canvas, { button: 2, pointerId: 2, clientX: 40, clientY: 40 });
+    fireEvent.contextMenu(canvas, { clientX: 40, clientY: 40 });
+
+    expect(onSelection).not.toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   test('region toolbar backdrop remains a valid right-click selection surface', () => {
@@ -107,6 +132,8 @@ describe('canvas pointer workflow', () => {
       <RegionMenu rect={{ x: 0, y: 0, w: 200, h: 200 }} zoom={1} onCancel={jest.fn()} />,
     );
 
-    expect(container.querySelector('[data-canvas-context-surface]')).toBeInTheDocument();
+    const surface = container.querySelector('[data-canvas-context-surface]');
+    expect(surface).toBeInTheDocument();
+    expect(isCanvasSelectionSurface(surface)).toBe(true);
   });
 });

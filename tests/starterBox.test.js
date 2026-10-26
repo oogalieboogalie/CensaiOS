@@ -26,6 +26,17 @@ describe('starter box kit', () => {
     expect(out).toContain('never in between your computer and the router');
   });
 
+  test('setup starts services without systemd (MX Linux) and downloads the ready-made censaiOS', () => {
+    const source = fs.readFileSync(path.join(kit, 'setup.sh'), 'utf8');
+    expect(source).toContain('INIT=sysv');
+    expect(source).toContain('update-rc.d "$s" defaults');
+    expect(source).toContain('*:*debian*');
+    expect(source).toContain('ghcr.io/oogalieboogalie/censaios:$tag');
+    expect(source).toContain('CENSAI_APP_MEMORY=2g');
+    const guide = fs.readFileSync(path.join(process.cwd(), 'docs', 'install-linux.md'), 'utf8');
+    expect(guide).toContain('sudo bash ~/censaios-kit/starter-box/setup.sh');
+  });
+
   test('the keys template sets no key by itself', () => {
     const lines = fs.readFileSync(path.join(kit, 'keys.env.example'), 'utf8').split('\n');
     expect(lines.filter((l) => l.trim() && !l.startsWith('#'))).toEqual([]);

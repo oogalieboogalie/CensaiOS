@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { BLOCK_BY_ID } from '../../../lib/games/blocks/economy.js';
-import { cellKey } from '../../../lib/games/blocks/yard.js';
+import { cellKey, plotOrigin, sameYard } from '../../../lib/games/blocks/yard.js';
 
 function cellTitle(stack, canPlay) {
   const how = canPlay ? 'Click to add a block, right-click to take one of yours back.' : '';
@@ -14,10 +14,11 @@ function cellTitle(stack, canPlay) {
  * The flat view: the plot seen from above, one square per spot, each showing
  * how many blocks are stacked there and the colour of the top one.
  */
-export function FlatYard({ size, stacks, field, canPlay, onPlace, onTake }) {
+function FlatYardView({ size, stacks, field, canPlay, onPlace, onTake }) {
   const cells = [];
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
+  const lo = plotOrigin(size);
+  for (let y = lo; y < lo + size; y += 1) {
+    for (let x = lo; x < lo + size; x += 1) {
       const stack = stacks[cellKey(x, y)];
       const top = stack?.[stack.length - 1];
       cells.push(
@@ -33,8 +34,10 @@ export function FlatYard({ size, stacks, field, canPlay, onPlace, onTake }) {
     }
   }
   return (
-    <div className="hb-blocks-flat" style={{ '--size': size }} data-testid="blocks-flat" aria-label={`Your yard, ${size} by ${size}`}>
+    <div className="hb-blocks-flat" style={{ '--size': size }} data-big={size > 24 ? 'true' : undefined} data-testid="blocks-flat" aria-label={`Your yard, ${size} by ${size}`}>
       {cells}
     </div>
   );
 }
+
+export const FlatYard = React.memo(FlatYardView, sameYard);

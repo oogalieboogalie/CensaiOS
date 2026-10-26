@@ -196,6 +196,18 @@ export const WORK_COVERS = {
       <rect x="23" y="13" width="7" height="6" rx="0.8" {...F} /><rect x="32" y="13" width="7" height="6" rx="0.8" {...F} />
     </>
   ),
+  // Vault pane over a Finder list: the Notes Workspace board.
+  notesWorkspaceBoard: (
+    <>
+      <rect x="4" y="7" width="16" height="12" rx="1" {...F} />
+      <path d="M8 7 V19 M4 11 H20" {...H} />
+      <rect x="8" y="4" width="16" height="13" rx="1" {...S} />
+      <path d="M12 4 V17 M8 8 H24" {...F} />
+      <path d="M13.5 10 H21 M13.5 12.5 H19" {...A} />
+      <rect x="28" y="5" width="7" height="6" rx="0.8" {...S} /><rect x="37" y="5" width="7" height="6" rx="0.8" {...F} />
+      <rect x="28" y="13" width="7" height="6" rx="0.8" {...F} /><rect x="37" y="13" width="7" height="6" rx="0.8" {...F} />
+    </>
+  ),
   // A blueprint card: the name bar, the ID boxed in accent, three lines.
   blueprints: (
     <>

@@ -163,4 +163,23 @@ export const BUILD_COVERS = {
       <circle cx="28.5" cy="7" r="1.1" fill={ACCENT} /><circle cx="31.8" cy="7" r="1.1" fill={ACCENT} />
     </>
   ),
+  // Obsidian-like vault: sidebar Bases plus a note pane.
+  vaultNotes: (
+    <>
+      <rect x="5" y="4" width="12" height="16" rx="1" {...F} />
+      <path d="M7.5 7 H14 M7.5 10 H13 M7.5 13 H14" {...H} />
+      <rect x="18" y="4" width="21" height="16" rx="1" {...S} />
+      <path d="M21 8 H35 M21 11.5 H32 M21 15 H30" {...A} />
+    </>
+  ),
+  // Finder-like Downloads: sidebar and zebra list.
+  finderFiles: (
+    <>
+      <rect x="5" y="4" width="11" height="16" rx="1" {...F} />
+      <path d="M7 7.5 H13 M7 11 H12 M7 14.5 H13" {...H} />
+      <rect x="17" y="4" width="22" height="16" rx="1" {...S} />
+      <path d="M17 8 H39 M17 12 H39 M17 16 H39" {...H} />
+      <rect x="19" y="8" width="18" height="4" fill={ACCENT} />
+    </>
+  ),
 };
