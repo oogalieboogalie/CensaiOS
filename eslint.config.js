@@ -9,6 +9,7 @@ export default [
       "dist-landing/",
       "dist-site/",
       "dist-demo/",
+      ".laptop-build/",
       "docs-site/public/",
       "docs-site/site/",
       "node_modules/",

@@ -8,7 +8,7 @@
  *   2. `getMarketplaceCatalogByCategory()` partitions rows by category.
  *   3. Categories include window / integration / agent / theme.
  *   4. Each row has the documented shape (id, kind, label, category, ...).
- *   5. Themes come from PRESET_LIBRARY mood + neurodivergent sources.
+ *   5. Themes come from PRESET_LIBRARY mood + calm sources.
  *   6. `filterCatalogBySearch()` does case-insensitive label/description filter.
  */
 import {
@@ -85,12 +85,12 @@ describe('Brief B2 - marketplace registry', () => {
     expect(total).toBe(flat.length);
   });
 
-  test('themes come from PRESET_LIBRARY mood + neurodivergent (not languages)', () => {
+  test('themes come from PRESET_LIBRARY mood + calm (not languages)', () => {
     const catalog = getMarketplaceCatalog();
     const themes = catalog.filter((row) => row.category === 'theme');
     const moodIds = Object.keys(PRESET_LIBRARY).filter((id) => PRESET_LIBRARY[id].source === SOURCES.MOOD);
-    const neuroIds = Object.keys(PRESET_LIBRARY).filter((id) => PRESET_LIBRARY[id].source === SOURCES.NEURODIVERGENT);
-    // Every mood + neurodivergent preset appears as a theme row.
+    const neuroIds = Object.keys(PRESET_LIBRARY).filter((id) => PRESET_LIBRARY[id].source === SOURCES.CALM);
+    // Every mood + calm preset appears as a theme row.
     for (const id of [...moodIds, ...neuroIds]) {
       expect(themes.find((t) => t.kind === id)).toBeDefined();
     }

@@ -4,6 +4,7 @@
 // status and the provider's error type — never the message text.
 import { createLogger } from '../logger.js';
 import { isGoogleInvalidApiKey, KEY_PROVIDER_NAMES, keyProviderFor } from './missingKey.js';
+import { providerErrorFields } from './providerErrorBody.js';
 
 const log = createLogger('ai-gateway');
 
@@ -68,47 +69,8 @@ function loggedProvider(provider) {
 }
 
 export function readProviderError(body) {
-  const parsed = asObject(body);
-  const error = errorNode(parsed);
-  const rawMessage = firstText(error?.message, parsed ? null : body);
-  const errorType = firstText(
-    typeof error?.type === 'string' ? error.type : null,
-    typeof error?.status === 'string' ? error.status : null,
-    typeof error?.code === 'string' ? error.code : null,
-    reasonOf(error),
-  );
+  const { rawMessage, errorType } = providerErrorFields(body);
   return { sentence: toSentence(rawMessage), errorType: safeToken(errorType) };
-}
-
-function asObject(body) {
-  if (body && typeof body === 'object') return body;
-  const text = String(body ?? '').trim();
-  if (!text.startsWith('{') && !text.startsWith('[')) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-function errorNode(parsed) {
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-  const error = parsed.error;
-  if (error && typeof error === 'object' && !Array.isArray(error)) return error;
-  return parsed;
-}
-
-function reasonOf(error) {
-  const details = Array.isArray(error?.details) ? error.details : [];
-  const found = details.find((item) => typeof item?.reason === 'string');
-  return found?.reason || null;
-}
-
-function firstText(...values) {
-  for (const value of values) {
-    if (typeof value === 'string' && value.trim()) return value.trim();
-  }
-  return '';
 }
 
 function toSentence(raw) {

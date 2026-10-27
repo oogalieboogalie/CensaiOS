@@ -4,6 +4,7 @@ const getAgent = jest.fn();
 const buildSystemPrompt = jest.fn();
 const markMessageRead = jest.fn();
 const sendAgentMessage = jest.fn();
+const logConversation = jest.fn();
 const loadWakeupContext = jest.fn();
 const getWakeupTasks = jest.fn();
 const getThreadStats = jest.fn();
@@ -19,6 +20,7 @@ jest.unstable_mockModule('../server/memory.js', () => ({
   buildSystemPrompt,
   markMessageRead,
   sendAgentMessage,
+  logConversation,
 }));
 jest.unstable_mockModule('../server/agent-wakeups/store.js', () => ({
   loadWakeupContext,

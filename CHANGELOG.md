@@ -17,6 +17,7 @@ tags.
 
 ### New
 
+- Sync the PC's Oct 25 local commits to master (Oct 26)
 - Bigger lot, 32 high, turning 3D view, sample builds (Oct 26)
 - Starter Box: install censaiOS on MX Linux and 4 GB ThinkPads (Oct 26)
 - Add Notes Workspace Obsidian+Finder board preset (Oct 26)
@@ -55,6 +56,10 @@ tags.
 - Marketplace: Agents tab points to the Agent Registry instead of an empty list (Oct 23)
 - Two people typing the same words in a note no longer scramble (Oct 23)
 - MCP: stop logging launch arguments, server output and tool arguments (Oct 22)
+
+### Behind the scenes
+
+- Keep the owner's story and health out of the public copy (Oct 26)
 
 ## 0.5.0 (2026-10-25)
 

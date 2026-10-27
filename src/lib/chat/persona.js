@@ -2,16 +2,17 @@
 // one-line description and three starter prompts. Saved agents can carry
 // their own in `description` / `starters` (or `identity.*`); the built-in
 // team has defaults here; anyone else gets prompts built from their role.
+// Censai's own lines live with its prompt in src/data/censai-persona.js,
+// which the public copy swaps for a neutral one.
+
+import { CENSAI_CHAT } from '../../data/censai-persona.js';
 
 const BUILT_IN = {
   architect: {
     blurb: 'Turns a goal into a plan, splits it into tasks and hands them to the right teammate.',
     starters: ['Break this project into milestones', 'Who on the team should own what?', 'Review my plan and find the gaps'],
   },
-  censai: {
-    blurb: 'Your first AI partner. Holds the big plan, hands you the next step and sends specialist work to the rest of the team.',
-    starters: ['What is the one next step today?', 'I am overwhelmed, help me recenter', 'Who on the team should take this?'],
-  },
+  censai: CENSAI_CHAT,
   atlas: {
     blurb: 'Designs and debugs backend code: APIs, data flow, performance and tests.',
     starters: ['Review this API design', 'Why is this endpoint slow?', 'Write tests for a function'],

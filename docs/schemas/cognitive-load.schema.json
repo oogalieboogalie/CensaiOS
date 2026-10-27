@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://censai.dev/schemas/cognitive-load.schema.json",
   "title": "Censai Package Cognitive Load",
-  "description": "Optional, additive metadata field on CensaiHub package and agent listings. Declares setup burden, interaction complexity, and attention cost on a 3-level scale so users (especially ADHD-first) can filter listings by tractability.",
+  "description": "Optional, additive metadata field on CensaiHub package and agent listings. Declares setup burden, interaction complexity, and attention cost on a 3-level scale so users can filter listings by tractability.",
   "type": "object",
   "additionalProperties": false,
   "required": ["cognitiveLoad"],

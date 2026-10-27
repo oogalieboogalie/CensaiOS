@@ -7,6 +7,8 @@
 // non-streaming response would have had. Providers outside the allowlist, and
 // any response that comes back as plain JSON, keep the old path.
 
+import { keepThoughtSignature } from './geminiThoughtSignature.js';
+
 const STREAMING_PROVIDERS = new Set(['openai', 'openrouter', 'ollama', 'google', 'moonshot', 'kimi', 'opencode']);
 // Only these are known to accept stream_options; others would 400 on it.
 const USAGE_STREAM_PROVIDERS = new Set(['openai', 'openrouter']);
@@ -35,6 +37,7 @@ function mergeToolCallDelta(calls, delta) {
   if (delta.type) call.type = delta.type;
   if (delta.function?.name) call.function.name += delta.function.name;
   if (delta.function?.arguments) call.function.arguments += delta.function.arguments;
+  keepThoughtSignature(call, delta);
 }
 
 /** Folds parsed SSE chunks into one chat.completion object. Pure; exported for tests. */
@@ -46,6 +49,7 @@ export function createStreamAssembler(onDelta) {
   let id = null;
   let model = null;
   const toolCalls = [];
+  const carrier = {};
 
   return {
     push(chunk) {
@@ -63,10 +67,20 @@ export function createStreamAssembler(onDelta) {
       const thought = delta.reasoning_content ?? delta.reasoning;
       if (typeof thought === 'string') reasoning += thought;
       if (Array.isArray(delta.tool_calls)) delta.tool_calls.forEach(d => mergeToolCallDelta(toolCalls, d));
+      keepThoughtSignature(carrier, delta);
+      if (choice.message) keepThoughtSignature(carrier, choice.message);
+      const fullCalls = choice.message?.tool_calls;
+      if (Array.isArray(fullCalls)) {
+        fullCalls.forEach((full, i) => {
+          const index = Number.isInteger(full?.index) ? full.index : i;
+          if (toolCalls[index]) keepThoughtSignature(toolCalls[index], full);
+        });
+      }
       if (choice.finish_reason) finishReason = choice.finish_reason;
     },
     result() {
       const message = { role: 'assistant', content };
+      if (carrier.extra_content) message.extra_content = carrier.extra_content;
       if (reasoning) message.reasoning_content = reasoning;
       const calls = toolCalls.filter(Boolean);
       if (calls.length) message.tool_calls = calls;

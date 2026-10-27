@@ -17,8 +17,8 @@ wakeupsRouter.get('/agent-wakeups/:agentId', requireDb, async (req, res) => {
   try {
     const [wakeups, unread] = await Promise.all([
       pool.query(
-        `SELECT aw.id, aw.status, aw.phase, aw.updated_at, aw.error,
-                am.subject, sender.name AS sender_name
+        `SELECT aw.id, aw.agent_id, aw.status, aw.phase, aw.updated_at, aw.error, aw.response,
+                am.subject, am.content, am.message_type, am.thread_id, sender.name AS sender_name
          FROM agent_wakeups aw
          JOIN agent_messages am ON am.id=aw.message_id
          JOIN agents sender ON sender.id=aw.sender_id

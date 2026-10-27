@@ -84,6 +84,7 @@ describe('tray panel wording', () => {
     expect(panelStage({ checked: { at: '2026-10-17T22:00:00Z' } }, asked)).toBe('checking');
     expect(panelStage({ checking: true, checked: { at: '2026-10-17T23:00:01Z' } }, asked)).toBe('checking');
     expect(panelStage({ checked: { at: '2026-10-17T23:00:01Z', result: 'build-failed' } }, asked)).toBe('build-failed');
+    expect(panelStage({ checked: { at: '2026-10-17T23:00:01Z', result: 'blocked' } }, asked)).toBe('blocked');
     expect(panelStage({ ready: { commit: 'b' }, checked: { at: '2026-10-17T23:00:01Z' } }, asked)).toBe('ready');
     expect(panelStage({ checked: { at: '2026-10-17T23:00:01Z', result: 'up-to-date' } }, asked)).toBe('up-to-date');
     expect(lookedSince({}, null)).toBe(true);

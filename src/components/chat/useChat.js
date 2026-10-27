@@ -14,6 +14,7 @@ import { useChatAttachments } from './useChatAttachments.js';
 import { useChatActions } from './useChatActions.js';
 import { useAutoPick } from './useAutoPick.js';
 import { answerMessage, errorMessage, landChatReply, stoppedMessage } from './landChatReply.js';
+import { useIncomingFamilyReply } from './useIncomingFamilyReply.js';
 import { runEnded, runStarted, runTool, toolNameFrom } from '../../lib/weewoo/agentRun.js';
 
 function useAgent(agentId) {
@@ -34,6 +35,19 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
     msgsRef.current = value;
     onUpdate({ msgs: value });
   };
+
+  // A reply wake's answer lands in this chat without anyone typing "check your messages".
+  useIncomingFamilyReply({
+    agentId: agent?.id,
+    workspaceId,
+    messages: msgs,
+    inactive: Boolean(win.demoMode),
+    onReply: (_id, notice) => setMsgs((current) => (
+      current.some((message) => message.familyReplyWakeId === notice.familyReplyWakeId)
+        ? current
+        : [...current, notice]
+    )),
+  });
 
   const [draft, setDraft] = React.useState('');
   const [sending, setSending] = React.useState(false);

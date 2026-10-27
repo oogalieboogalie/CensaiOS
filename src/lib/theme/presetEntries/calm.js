@@ -1,11 +1,11 @@
 /**
- * src/lib/theme/presetEntries/neurodivergent.js
+ * src/lib/theme/presetEntries/calm.js
  *
- * Neurodivergent-friendly colorways for PRESET_LIBRARY v0.1
- * (brief A4 — `.team/handoffs/2026-06-23-a4-adhd-neurodivergent-palettes.md`).
+ * Calm, low-stimulation colorways for PRESET_LIBRARY v0.1
+ * (brief A4).
  */
 
-export const NEURODIVERGENT_MOODS = {
+export const CALM_MOODS = {
   'calm-focus': {
     label: 'Calm Focus',
     mode: 'light',

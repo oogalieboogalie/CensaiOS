@@ -13,7 +13,7 @@
 //   - retro         → win98
 //   - spotlight     → trusty-blue … arctic (recognizable crowd-pleasers)
 //   - acrylic       → acrylic-cobalt … acrylic-kelly (hard vivid colorways)
-//   - neurodivergent → calm-focus, low-stim, sensory-soft, gentle-contrast (brief A4)
+//   - calm → calm-focus, low-stim, sensory-soft, gentle-contrast (brief A4)
 
 import { NATURAL_MOODS } from './moodsNatural.js';
 import { VENDOR_MOODS } from './moodsVendor.js';
@@ -23,7 +23,7 @@ import { RETRO_MOODS } from './moodsRetro.js';
 import { CLASSIC_MOODS } from './moodsClassics.js';
 import { POP_MOODS } from './moodsPop.js';
 import { ACRYLIC_MOODS } from './moodsAcrylic.js';
-import { NEURODIVERGENT_MOODS } from './neurodivergent.js';
+import { CALM_MOODS } from './calm.js';
 import { DESIGN_SYSTEM_MOODS } from './moodsDesignSystem.js';
 
 export const MOOD_ENTRIES = {
@@ -36,5 +36,5 @@ export const MOOD_ENTRIES = {
   ...CLASSIC_MOODS,
   ...POP_MOODS,
   ...ACRYLIC_MOODS,
-  ...NEURODIVERGENT_MOODS,
+  ...CALM_MOODS,
 };

@@ -88,6 +88,8 @@ describe('check now (the tray Update item)', () => {
     fs.rmSync(path.join(dir, 'check-requested'));
     fs.writeFileSync(path.join(dir, 'checked.json'), JSON.stringify({ at: '2026-10-17T23:00:05Z', result: 'docker-off' }));
     expect(updateStatus({ dir }).checked).toEqual({ at: '2026-10-17T23:00:05Z', result: 'docker-off' });
+    fs.writeFileSync(path.join(dir, 'checked.json'), JSON.stringify({ at: '2026-10-17T23:00:06Z', result: 'blocked' }));
+    expect(updateStatus({ dir }).checked).toEqual({ at: '2026-10-17T23:00:06Z', result: 'blocked' });
   });
 
   test('an unknown result reads as up to date and a bad time as never looked', () => {

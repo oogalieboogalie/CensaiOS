@@ -1,5 +1,6 @@
-import { getAgent, buildSystemPrompt, markMessageRead, sendAgentMessage } from '../memory.js';
+import { getAgent, buildSystemPrompt, markMessageRead, sendAgentMessage, logConversation } from '../memory.js';
 import { buildWakePrompt } from './prompt.js';
+import { recordWakeExchange } from './replyDelivery.js';
 import { getThreadStats, getWakeupTasks, loadWakeupContext, updateWakeup } from './store.js';
 import { isAckMessage, MAX_THREAD_WAKES } from './threadGuards.js';
 import { runWakeModel } from './modelLoop.js';
@@ -49,6 +50,10 @@ export async function runAgentWakeup(claimed) {
       messageId: wake.message_id,
       ...ownership,
     });
+    // The reply (or the message that woke this agent) is now part of their
+    // conversation, along with the answer they just gave. A later chat does
+    // not need a person to say "check your messages" for this to have happened.
+    await recordWakeExchange(wake, outcome.text, logConversation);
     const linkedTasks = await getWakeupTasks(wake.id, ownership.workspaceId);
     const active = linkedTasks.some(task => !TERMINAL.has(task.status));
 

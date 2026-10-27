@@ -91,9 +91,9 @@ describe('TodosWindow hand-off refused for a non-owner account', () => {
       ? { ok: false, status: 403, json: async () => ({ error: "Only this computer's owner can do this.", reason: 'owner-only', code: 'computer_owner_only' }) }
       : { ok: false, status: 404, json: async () => ({}) }));
     render(<TodosWindow
-      win={{ id: 'todos-2', kind: 'todos', title: 'To-do List', items: [{ id: 't1', text: 'Vantage needs a landing page', done: false, assignee: 'censai' }] }}
+      win={{ id: 'todos-2', kind: 'todos', title: 'To-do List', items: [{ id: 't1', text: 'Testco needs a landing page', done: false, assignee: 'censai' }] }}
       onUpdate={() => {}}
-      currentProject={{ path: '/workspace/projects/vantage' }}
+      currentProject={{ path: '/workspace/projects/testco' }}
     />);
     fireEvent.click(screen.getByTitle('Create project handoff'));
     await waitFor(() => expect(screen.getByTestId('error-note')).toBeTruthy());

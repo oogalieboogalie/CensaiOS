@@ -1,9 +1,9 @@
 /**
- * tests/adhdPalettes.test.js
+ * tests/calmPalettes.test.js
  *
- * Brief A4 — `.team/handoffs/2026-06-23-a4-adhd-neurodivergent-palettes.md`.
+ * Brief A4.
  *
- * Asserts the four neurodivergent-friendly colorways meet the brief's
+ * Asserts the four calm colorways meet the brief's
  * design constraints:
  *   1. --ink on --bg meets WCAG contrast (AAA >= 7.0 for gentle-contrast,
  *      AA >= 4.5 otherwise).
@@ -63,7 +63,7 @@ function contrastRatio(y1, y2) {
   return (a + 0.05) / (b + 0.05);
 }
 
-const ADHD_PALETTE_SPECS = [
+const CALM_PALETTE_SPECS = [
   { id: 'calm-focus', label: 'Calm Focus', minContrast: 4.5, maxAccentChroma: 0.08 },
   { id: 'low-stim', label: 'Low Stim', minContrast: 4.5, maxAccentChroma: 0.04 },
   { id: 'sensory-soft', label: 'Sensory Soft', minContrast: 4.5, maxAccentChroma: 0.10 },
@@ -72,8 +72,8 @@ const ADHD_PALETTE_SPECS = [
 
 const PER_VAR_CHROMA_CAP = 0.14;
 
-function getNeurodivergentEntries() {
-  return Object.values(filterBySource(SOURCES.NEURODIVERGENT));
+function getCalmEntries() {
+  return Object.values(filterBySource(SOURCES.CALM));
 }
 
 function getChromasFromVars(vars) {
@@ -85,20 +85,20 @@ function getChromasFromVars(vars) {
   return out;
 }
 
-describe('Brief A4 - ADHD/neurodivergent palettes', () => {
-  test('exactly the four expected entries are tagged source=neurodivergent', () => {
-    const ids = Object.keys(filterBySource(SOURCES.NEURODIVERGENT)).sort();
+describe('Brief A4 - calm palettes', () => {
+  test('exactly the four expected entries are tagged source=calm', () => {
+    const ids = Object.keys(filterBySource(SOURCES.CALM)).sort();
     expect(ids).toEqual([
       'calm-focus', 'gentle-contrast', 'low-stim', 'sensory-soft',
     ]);
     for (const id of ids) {
-      expect(PRESET_LIBRARY[id].source).toBe(SOURCES.NEURODIVERGENT);
+      expect(PRESET_LIBRARY[id].source).toBe(SOURCES.CALM);
       expect(PRESET_LIBRARY[id].mood).toBeDefined();
     }
   });
 
-  test('every neurodivergent entry has a well-formed mood block (mode + accent + vars)', () => {
-    for (const entry of getNeurodivergentEntries()) {
+  test('every calm entry has a well-formed mood block (mode + accent + vars)', () => {
+    for (const entry of getCalmEntries()) {
       expect(entry.mood.mode).toMatch(/^(light|dark)$/);
       expect(typeof entry.mood.accent.hue).toBe('number');
       expect(typeof entry.mood.accent.chroma).toBe('number');
@@ -108,7 +108,7 @@ describe('Brief A4 - ADHD/neurodivergent palettes', () => {
     }
   });
 
-  describe.each(ADHD_PALETTE_SPECS)(
+  describe.each(CALM_PALETTE_SPECS)(
     '$id ($label) - design invariants',
     (spec) => {
       let entry;
@@ -118,7 +118,7 @@ describe('Brief A4 - ADHD/neurodivergent palettes', () => {
 
       test('exists in PRESET_LIBRARY and is mood-shaped', () => {
         expect(entry).toBeDefined();
-        expect(entry.source).toBe(SOURCES.NEURODIVERGENT);
+        expect(entry.source).toBe(SOURCES.CALM);
         expect(entry.mood).toBeDefined();
       });
 

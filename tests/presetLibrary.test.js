@@ -25,13 +25,13 @@ describe('PRESET_LIBRARY v0.1 (brief A2)', () => {
     }
   });
 
-  test('every id in original MOODS exists in PRESET_LIBRARY with source in {mood, neurodivergent}', () => {
+  test('every id in original MOODS exists in PRESET_LIBRARY with source in {mood, calm}', () => {
     const moodIds = Object.keys(MOODS);
     expect(moodIds.length).toBeGreaterThan(0);
     for (const id of moodIds) {
       const entry = PRESET_LIBRARY[id];
       expect(entry).toBeDefined();
-      expect([SOURCES.MOOD, SOURCES.NEURODIVERGENT]).toContain(entry.source);
+      expect([SOURCES.MOOD, SOURCES.CALM]).toContain(entry.source);
       expect(entry.mood).toBeDefined();
       expect(entry.mood.mode === 'light' || entry.mood.mode === 'dark').toBe(true);
       expect(entry.mood.accent).toBeDefined();
@@ -55,7 +55,7 @@ describe('PRESET_LIBRARY v0.1 (brief A2)', () => {
 
   test('every PRESET_LIBRARY id is renderable (required keys per source)', () => {
     for (const entry of Object.values(PRESET_LIBRARY)) {
-      if (entry.source === SOURCES.MOOD || entry.source === SOURCES.NEURODIVERGENT) {
+      if (entry.source === SOURCES.MOOD || entry.source === SOURCES.CALM) {
         expect(entry.mood).toBeDefined();
         expect(entry.mood.mode).toMatch(/^(light|dark)$/);
         expect(entry.mood.accent.hue).toEqual(expect.any(Number));
@@ -78,7 +78,7 @@ describe('PRESET_LIBRARY v0.1 (brief A2)', () => {
       // of {mood, accent}; surface may be present in addition to mood.
       const blockCount = (entry.mood ? 1 : 0) + (entry.accent ? 1 : 0);
       expect({ id, blockCount }).toEqual({ id, blockCount: 1 });
-      if (entry.source === SOURCES.MOOD || entry.source === SOURCES.NEURODIVERGENT) {
+      if (entry.source === SOURCES.MOOD || entry.source === SOURCES.CALM) {
         expect(entry.mood).toBeDefined();
         expect(entry.accent).toBeUndefined();
       } else {
@@ -124,7 +124,7 @@ describe('PRESET_LIBRARY v0.1 (brief A2)', () => {
     expect(getPresetSource('cream')).toBe('mood');
     expect(getPresetSource('python')).toBe('language');
     expect(getPresetSource('render')).toBe('brand');
-    expect(getPresetSource('gentle-contrast')).toBe('neurodivergent');
+    expect(getPresetSource('gentle-contrast')).toBe('calm');
     expect(getPresetSource('does-not-exist')).toBe(null);
     expect(getPresetSource(null)).toBe(null);
     expect(getPresetSource(undefined)).toBe(null);
@@ -134,7 +134,7 @@ describe('PRESET_LIBRARY v0.1 (brief A2)', () => {
     const moods = filterBySource(SOURCES.MOOD);
     const langs = filterBySource(SOURCES.LANGUAGE);
     const brands = filterBySource(SOURCES.BRAND);
-    const neuro = filterBySource(SOURCES.NEURODIVERGENT);
+    const neuro = filterBySource(SOURCES.CALM);
     const moodsPlusNeuro = [...Object.keys(moods), ...Object.keys(neuro)].sort();
     expect(moodsPlusNeuro).toEqual(Object.keys(MOODS).sort());
     expect(Object.keys(langs).every((id) => PRESET_LIBRARY[id].source === 'language')).toBe(true);
@@ -157,7 +157,7 @@ describe('PRESET_LIBRARY v0.1 (brief A2)', () => {
     );
     expect(listPresetIds('language').length).toBeGreaterThan(0);
     expect(listPresetIds('brand').length).toBeGreaterThan(0);
-    expect(listPresetIds('neurodivergent').sort()).toEqual([
+    expect(listPresetIds('calm').sort()).toEqual([
       'calm-focus', 'gentle-contrast', 'low-stim', 'sensory-soft',
     ]);
     expect(listPresetIds('bogus')).toEqual([]);
@@ -178,7 +178,7 @@ describe('PRESET_LIBRARY v0.1 (brief A2)', () => {
     }
     for (const id of ['calm-focus', 'low-stim', 'sensory-soft', 'gentle-contrast']) {
       expect(PRESET_LIBRARY).toHaveProperty(id);
-      expect(PRESET_LIBRARY[id].source).toBe('neurodivergent');
+      expect(PRESET_LIBRARY[id].source).toBe('calm');
     }
   });
 
