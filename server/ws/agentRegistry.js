@@ -153,7 +153,8 @@ export function attachAgentRegistryWs(server, opts = {}) {
       }
       handleClientMessage(ws, msg, actor, subscriptions).catch((err) => {
         log.warn('handler error', { type: msg.type, code: safeErrorCode(err) });
-        safeSend(ws, { type: 'error', reason: err.message || 'internal-error' });
+        // A code word only: an error's message can repeat a key, a path or a database detail.
+        safeSend(ws, { type: 'error', reason: safeErrorCode(err) || 'internal-error' });
       });
     });
 
@@ -237,7 +238,7 @@ export async function handleClientMessage(ws, msg, actor, subscriptions) {
           unsubscribe(temporarySubscription.channel, temporarySubscription.clientId);
           subscriptions.delete(temporarySubscription.key);
         }
-        return safeSend(ws, { type: 'call.failed', cardId, taskId: msg.taskId, error: error.code || error.message });
+        return safeSend(ws, { type: 'call.failed', cardId, taskId: msg.taskId, error: safeErrorCode(error) || 'internal-error' });
       }
     }
     case 'pong':

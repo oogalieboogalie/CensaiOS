@@ -2,6 +2,7 @@
 // user's theme takes over the WHOLE editor (background, gutter, selection,
 // caret, token colors) — the "themes don't fully take over" fix.
 
+import { EditorView } from '@codemirror/view';
 import { createTheme } from '@uiw/codemirror-themes';
 import { tags as t } from '@lezer/highlight';
 import { DEFAULT_THEME } from '../windows/WindowThemePanel.jsx';
@@ -11,9 +12,17 @@ function withAlpha(hex, alpha) {
   return `${hex}${alpha}`;
 }
 
+// Gaps on the 4-point grid (docs/ui-yardstick.md): CodeMirror's own
+// defaults use 3px and 5px around the line numbers.
+const SPACING = EditorView.theme({
+  '.cm-content': { padding: 'var(--space-2) 0' },
+  '.cm-gutterElement': { padding: '0 var(--space-1) 0 var(--space-2)' },
+  '.cm-foldGutter .cm-gutterElement': { padding: '0 var(--space-0-5)' },
+});
+
 export function buildEditorTheme(editorTheme = {}) {
   const theme = { ...DEFAULT_THEME, ...editorTheme };
-  return createTheme({
+  return [SPACING, createTheme({
     theme: theme.mode === 'light' ? 'light' : 'dark',
     settings: {
       background: theme.background,
@@ -22,8 +31,10 @@ export function buildEditorTheme(editorTheme = {}) {
       selection: withAlpha(theme.selectionBackground, '55'),
       selectionMatch: withAlpha(theme.selectionBackground, '33'),
       lineHighlight: withAlpha(theme.selectionBackground, '22'),
-      gutterBackground: theme.background,
-      gutterForeground: withAlpha(theme.foreground, '66'),
+      // The gutter sits a step below the code, and its numbers stay
+      // readable (about 64% of the text colour, 4.5:1 or better).
+      gutterBackground: `color-mix(in oklab, ${theme.background} 96%, ${theme.foreground})`,
+      gutterForeground: withAlpha(theme.foreground, 'A3'),
       gutterActiveForeground: theme.foreground,
       gutterBorder: withAlpha(theme.foreground, '22'),
       fontFamily: 'var(--font-mono)',
@@ -42,5 +53,5 @@ export function buildEditorTheme(editorTheme = {}) {
       { tag: t.url, color: theme.magenta },
       { tag: t.invalid, color: theme.red, textDecoration: 'underline wavy' },
     ],
-  });
+  })];
 }

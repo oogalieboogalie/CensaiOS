@@ -15,7 +15,7 @@ import { BRAND_BY_KIND } from '../brands/index.js';
 import { searchPaletteEntries } from '../search/engines.js';
 
 export const CATEGORIES = Object.freeze([
-  { label: 'Chat and agents', kinds: ['chat', 'groupChat', 'group', 'agentDesigner', 'weewoo', 'rook', 'exoSkeleton', 'modelArena', 'arenaBenchmarks'] },
+  { label: 'Chat and agents', kinds: ['chat', 'agentList', 'groupChat', 'group', 'agentDesigner', 'weewoo', 'rook', 'exoSkeleton', 'modelArena', 'arenaBenchmarks'] },
   // Censai Office: spreadsheets and decks that export to real files.
   { label: 'Censai Office', kinds: ['officeSheets', 'officeSlides'] },
   // Censai Creative: picture, vector and video editors (the Adobe-style set).

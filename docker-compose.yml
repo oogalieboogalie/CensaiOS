@@ -199,6 +199,13 @@ services:
     command: ["node", "server/runner/service.js"]
     restart: unless-stopped
     mem_limit: ${CENSAI_RUNNER_MEMORY:-512m}
+    # Runs as the image's normal user, not root. It reaches Docker through
+    # the socket's group: 0 on Docker Desktop (the default here); on Linux
+    # set CENSAI_DOCKER_GID to the docker group's number (getent group
+    # docker). CENSAI_RUNNER_USER=root puts it back the old way.
+    user: ${CENSAI_RUNNER_USER:-node}
+    group_add:
+      - "${CENSAI_DOCKER_GID:-0}"
     environment:
       RUNNER_PORT: 3003
       RUNNER_SECRET: ${RUNNER_SECRET:-}

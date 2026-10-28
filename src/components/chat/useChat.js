@@ -16,6 +16,8 @@ import { useAutoPick } from './useAutoPick.js';
 import { answerMessage, errorMessage, landChatReply, stoppedMessage } from './landChatReply.js';
 import { useIncomingFamilyReply } from './useIncomingFamilyReply.js';
 import { runEnded, runStarted, runTool, toolNameFrom } from '../../lib/weewoo/agentRun.js';
+import { getSelf } from '../../lib/modules/presenceRoster.js';
+import { getCollaborationClientId } from '../../lib/collaboration/clientIdentity.js';
 
 function useAgent(agentId) {
   // Re-render when the agent record changes (e.g. its model is switched).
@@ -150,8 +152,9 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
     // Diagram 14: with Auto-pick on, switch to the model best at this task first.
     if (!isAuto) await autoPick.beforeSend(text);
     // WeeWoo: a small shared run record so everyone's office sees this
-    // agent pick the task up, call tools and finish.
-    let run = runStarted(win.agentRun, { prompt: isAuto ? displayMsgs[displayMsgs.length - 1]?.text : text });
+    // agent pick the task up, call tools and finish. `by` is who asked,
+    // so the Agent list can say "Chatting with Sam".
+    let run = runStarted(win.agentRun, { prompt: isAuto ? displayMsgs[displayMsgs.length - 1]?.text : text, by: getSelf().label });
     onUpdate({ agentRun: run });
     setActivityLog([]);
     setStreamText('');
@@ -205,11 +208,14 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
   const stop = React.useCallback(() => abortRef.current?.abort(), []);
 
   React.useEffect(() => {
-    if (win.autoSend && msgs.length > 0 && msgs[msgs.length - 1].from === 'me' && !sending) {
+    // autoSendBy names the one browser that sends, so teammates watching the
+    // same window do not send it twice.
+    const mine = !win.autoSendBy || win.autoSendBy === getCollaborationClientId();
+    if (win.autoSend && mine && msgs.length > 0 && msgs[msgs.length - 1].from === 'me' && !sending) {
       onUpdate({ autoSend: false });
       send(msgs);
     }
-  }, [win.autoSend, msgs, sending, onUpdate, send]);
+  }, [win.autoSend, win.autoSendBy, msgs, sending, onUpdate, send]);
 
   const actions = useChatActions({ win, agent, msgs, setMsgs, send, sending });
 

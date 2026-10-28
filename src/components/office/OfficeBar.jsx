@@ -21,8 +21,9 @@ export function OfficeSep() {
 
 /**
  * The shared Censai Office toolbar: the app's own tools on the left, Import
- * and Export on the right. `formats` are { ext, label, hint, build } where
- * build() resolves to the file's bytes; the file downloads in the browser.
+ * and Export on the right. `formats` are { ext, label, hint, build, detail }
+ * where build() resolves to the file's bytes; the file downloads in the
+ * browser. `detail`, when set, renders next to that save choice.
  */
 export function OfficeBar({ title, formats = [], onImport, importHint, children }) {
   const [open, setOpen] = React.useState(false);
@@ -70,12 +71,21 @@ export function OfficeBar({ title, formats = [], onImport, importHint, children 
           </button>
           {open && (
             <div className="hb-of-menu" role="menu">
-              {formats.map((f) => (
-                <button key={`${f.ext}-${f.label}`} type="button" role="menuitem" className="hb-of-menu-item" onClick={() => run(f)}>
-                  <span className="hb-of-menu-ext">.{f.ext}</span>
-                  <span className="hb-of-menu-text"><span>{f.label}</span>{f.hint && <span className="hb-of-menu-hint">{f.hint}</span>}</span>
-                </button>
-              ))}
+              {formats.map((f) => {
+                const button = (
+                  <button type="button" role="menuitem" className="hb-of-menu-item" onClick={() => run(f)}>
+                    <span className="hb-of-menu-ext">.{f.ext}</span>
+                    <span className="hb-of-menu-text"><span>{f.label}</span>{f.hint && <span className="hb-of-menu-hint">{f.hint}</span>}</span>
+                  </button>
+                );
+                if (!f.detail) return <React.Fragment key={`${f.ext}-${f.label}`}>{button}</React.Fragment>;
+                return (
+                  <div key={`${f.ext}-${f.label}`} className="hb-of-menu-note">
+                    {f.detail}
+                    {button}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

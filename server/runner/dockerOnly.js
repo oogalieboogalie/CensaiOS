@@ -22,13 +22,12 @@ const TOP = new Set([
 ]);
 const GROUPS = {
   system: new Set(['df', 'info']),
-  image: new Set(['ls', 'list', 'inspect', 'history', 'pull', 'rm', 'prune']),
+  image: new Set(['ls', 'list', 'inspect', 'history', 'pull', 'rm']),
   volume: new Set(['ls', 'list', 'inspect', 'create', 'rm']),
-  network: new Set(['ls', 'list', 'inspect', 'create', 'rm', 'prune']),
+  network: new Set(['ls', 'list', 'inspect', 'create', 'rm']),
   container: new Set(['ls', 'list', 'ps', 'inspect', 'logs', 'stats', 'top', 'port', 'start', 'stop', 'restart', 'pause',
-    'unpause', 'kill', 'rm', 'prune', 'exec', 'run', 'create']),
+    'unpause', 'kill', 'rm', 'exec', 'run', 'create']),
 };
-const DESTRUCTIVE_GROUP_VERBS = new Set(['system prune', 'volume prune']);
 const BANNED = new Set([
   'privileged', 'cap-add', 'device', 'security-opt', 'pid', 'ipc', 'uts', 'userns', 'cgroupns', 'cgroup-parent',
   'volumes-from', 'device-cgroup-rule', 'add-host', 'use-api-socket', 'volume-driver', 'env-file', 'label-file',
@@ -49,7 +48,6 @@ function normalize(list) {
   const [sub, ...rest] = list;
   if (!GROUPS[sub]) return { verb: sub, rest };
   const [inner, ...tail] = rest;
-  if (inner === 'prune' && DESTRUCTIVE_GROUP_VERBS.has(`${sub} prune`)) return { verb: `${sub} prune`, rest: tail };
   if (!GROUPS[sub].has(inner)) return { verb: null, rest: tail };
   if (sub === 'container') return { verb: inner === 'ls' || inner === 'list' ? 'ps' : inner, rest: tail };
   if (sub === 'image' && inner === 'rm') return { verb: 'rmi', rest: tail };
@@ -133,10 +131,12 @@ export function dockerOnlyCheck(command, args = [], facts = {}) {
   const list = (args || []).map(String);
   if (!list.length) return refuse('subcommand', 'docker needs a command');
   if (list[0].startsWith('-')) return refuse('global-flag', 'options before the docker command (like --host) are not allowed');
+  // Every `<noun> prune` (system, volume, image, network, container, builder,
+  // buildx...) deletes in bulk, so all of them are refused by their shape.
+  if (list[1] === 'prune') return refuse('destructive', 'prune commands delete in bulk and are not allowed from censaiOS');
   if (!TOP.has(list[0])) return refuse('subcommand', `docker ${list[0]} is not allowed`);
   const { verb, rest } = normalize(list);
   if (!verb) return refuse('subcommand', `docker ${list[0]} ${list[1] || ''} is not allowed`.trim());
-  if (DESTRUCTIVE_GROUP_VERBS.has(verb)) return refuse('destructive', `docker ${verb} is not allowed from censaiOS`);
   if (verb === 'run' || verb === 'create') return runRefusal(rest, facts);
   if (verb === 'compose') return composeRefusal(rest, facts);
   if (verb === 'exec') {

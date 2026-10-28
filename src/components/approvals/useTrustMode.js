@@ -13,6 +13,7 @@ export function useTrustMode() {
   React.useEffect(() => {
     let alive = true;
     if (!workspaceId) return undefined;
+    setState(s => ({ ...s, ready: false, canChange: false, error: '' })); // another board: don't show the last one's switch
     api.getAgentTrust(workspaceId)
       .then(data => alive && setState(s => ({ ...s, board: data.board !== false, agents: data.agents || {},
         canChange: Boolean(data.canChange), ready: true, error: '' })))

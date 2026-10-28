@@ -10,6 +10,9 @@ import { ACTIVE_HELP_STATUSES, HELP_CARD_KIND } from '../../../server/agent-regi
 import { defaultAvatar, normalizeAvatar } from './avatarParts.js';
 import { LOBBY_ID, listDepartments, listSeats } from './company.js';
 
+// The Agent list reads help cards the same way, through this file.
+export { ACTIVE_HELP_STATUSES, HELP_CARD_KIND };
+
 const MIN = 60 * 1000;
 const STALE_RUN_MS = 10 * MIN; // a "thinking" record older than this was abandoned
 const ERROR_SHOWS_MS = 30 * MIN;

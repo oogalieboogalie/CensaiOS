@@ -4,7 +4,7 @@
 // Reading only `body.error.message` on a plain object dropped those and the
 // chat said "It gave no reason."
 
-const BLOCK_SENTENCES = {
+export const BLOCK_SENTENCES = {
   SAFETY: 'Safety filters blocked the reply',
   IMAGE_SAFETY: 'Safety filters blocked the image',
   PROHIBITED_CONTENT: 'The prompt was blocked as prohibited content',

@@ -16,8 +16,12 @@ import sketchpad from './sketchpad.mjs';
 import sheets from './sheets.mjs';
 import marketplace from './marketplace.mjs';
 import scheduler from './scheduler.mjs';
+import sharedLink from './sharedLink.mjs';
+import terminal from './terminal.mjs';
+import doc from './doc.mjs';
+import messageRouter from './messageRouter.mjs';
 
-export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler];
+export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

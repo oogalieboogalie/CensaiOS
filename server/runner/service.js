@@ -24,6 +24,16 @@ const execFileAsync = promisify(execFile);
 // dockerStack.js). The gate's own lookups run docker directly.
 const runDocker = async (args) => (await execFileAsync('docker', args, { maxBuffer: 10 * 1024 * 1024, timeout: 15_000 })).stdout;
 
+// Asked once (at start, or at the first compose call): without the compose
+// plugin a compose call gets a plain sentence instead of Docker's own error.
+export function composeCheck(run) {
+  let found;
+  return () => (found ??= run(['compose', 'version']).then(() => true, () => false).then((ok) => {
+    log.info(ok ? 'compose plugin found' : 'compose plugin missing');
+    return ok;
+  }));
+}
+
 // The caller's options never reach the child process in docker-only mode
 // (an env could point docker at another engine); elsewhere only these do.
 // The run time and output size are capped here, whatever the caller asked.
@@ -37,7 +47,21 @@ export function childOptions(options, dockerOnly) {
   const maxBuffer = Number.isFinite(askedBuffer) && askedBuffer > 0 ? Math.min(askedBuffer, MAX_BUFFER) : MAX_BUFFER;
   if (dockerOnly) return { timeout, maxBuffer, shell: false, windowsHide: true };
   const { cwd, windowsHide, encoding } = options || {};
-  return { cwd, windowsHide, encoding, timeout, maxBuffer, shell: process.platform === 'win32' || Boolean(options?.shell) };
+  // A missing encoding would hand back raw bytes that turn into JSON junk.
+  return { cwd, windowsHide, encoding: encoding || 'utf8', timeout, maxBuffer, shell: process.platform === 'win32' || Boolean(options?.shell) };
+}
+
+// Asked at start: the runner runs as a normal user and reaches Docker only
+// through the socket's group (docker-compose.yml, CENSAI_DOCKER_GID).
+export async function dockerSocketCheck(run, uid = process.getuid?.() ?? null) {
+  try {
+    await run(['version', '--format', '{{.Server.Version}}']);
+    log.info('docker socket reachable', { uid });
+    return true;
+  } catch {
+    log.warn('docker socket not reachable as a normal user', { uid });
+    return false;
+  }
 }
 
 export function createRunnerApp({
@@ -45,6 +69,7 @@ export function createRunnerApp({
   dockerOnly = process.env.RUNNER_DOCKER_ONLY !== 'false',
   run = runDocker,
   stack = cachedStack(run),
+  composeFound = composeCheck(run),
 } = {}) {
   const secret = requireRunnerSecret(runnerSecret);
   const app = express();
@@ -70,6 +95,10 @@ export function createRunnerApp({
     if (why) {
       log.warn('runner command refused by the Docker gatekeeper', { program: programName(command), reason: why.code });
       return res.json({ stdout: '', stderr: `Refused by the Docker gatekeeper: ${why.why}.`, code: 126 });
+    }
+    if (args?.[0] === 'compose' && !(await composeFound())) {
+      log.warn('runner command refused by the Docker gatekeeper', { program: programName(command), reason: 'compose-missing' });
+      return res.json({ stdout: '', stderr: 'Compose is not installed in this runner.', code: 126 });
     }
     args = withRunnerDefaults(args);
   }
@@ -165,9 +194,13 @@ export function startRunnerService({
   runnerSecret = resolveRunnerSecret(),
   port = process.env.RUNNER_PORT || 3003,
 } = {}) {
-  const app = createRunnerApp({ runnerSecret });
+  const composeFound = composeCheck(runDocker);
+  composeFound();
+  dockerSocketCheck(runDocker);
+  const dockerOnly = process.env.RUNNER_DOCKER_ONLY !== 'false';
+  const app = createRunnerApp({ runnerSecret, dockerOnly, composeFound });
   return app.listen(port, '0.0.0.0', () => {
-    log.info('runner service started', { port: Number(port) });
+    log.info('runner service started', { port: Number(port), mode: dockerOnly ? 'docker-only' : 'open' });
   });
 }
 

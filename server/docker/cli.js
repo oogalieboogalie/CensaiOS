@@ -64,7 +64,12 @@ export function classifyFailure(text) {
   if (/ENOENT|not recognized as an internal|command not found|docker: not found/i.test(t)) {
     return { reason: 'not-installed', message: 'The Docker CLI isn\'t installed on this machine.' };
   }
-  if (/Cannot connect to the Docker daemon|error during connect|Is the docker daemon running|docker_engine|dockerDesktopLinuxEngine|permission denied while trying to connect/i.test(t)) {
+  // The runner runs as a normal user (docker-compose.yml); without the
+  // socket's group Docker answers "permission denied".
+  if (/permission denied while trying to connect/i.test(t)) {
+    return { reason: 'no-socket-access', message: "The runner can't reach Docker as a normal user. See the Docker help page." };
+  }
+  if (/Cannot connect to the Docker daemon|error during connect|Is the docker daemon running|docker_engine|dockerDesktopLinuxEngine/i.test(t)) {
     return { reason: 'daemon-down', message: 'Docker is installed but the engine isn\'t running. Start Docker Desktop (or the docker service) and it will connect automatically.' };
   }
   return null;

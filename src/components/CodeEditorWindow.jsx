@@ -14,6 +14,7 @@ import { LegacyCodePane } from './codeEditor/LegacyCodePane.jsx';
 import { CodeEditorContextMenu } from './codeEditor/CodeEditorContextMenu.jsx';
 import { useCodeFileLoad } from './codeEditor/useCodeFileLoad.js';
 import { FileLoadError } from './files/FileLoadError.jsx';
+import { CodeStatusBar } from './codeEditor/CodeStatusBar.jsx';
 
 const DEFAULT_CODE = `// Write code here.
 function greet(name) {
@@ -164,6 +165,7 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
         )}
       </div>
       )}
+      {!isIframeMode && <CodeStatusBar code={code} language={langLabel} />}
       {menu && (
         <CodeEditorContextMenu x={menu.x} y={menu.y} hasSelection={Boolean(menu.selection.text)} canFormat={canFormat}
           formatHint={`Prettier · ${langLabel}`}

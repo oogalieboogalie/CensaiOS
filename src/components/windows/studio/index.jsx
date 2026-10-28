@@ -12,14 +12,18 @@ import { Mixer } from './Mixer.jsx';
 import { FxPanel } from './FxPanel.jsx';
 import { PianoRoll } from './PianoRoll.jsx';
 import { useStudioActions } from './useStudioActions.js';
+import { useStudioAssist } from './useStudioAssist.js';
+import { useHumTrack } from './useHumTrack.js';
+import { AssistBar } from './AssistBar.jsx';
 
 export { windowMeta };
 
 /**
  * Studio: a multitrack music workstation on the canvas. Audio and synth
  * tracks, a piano roll, a mixer, insert effects per track and on the master,
- * and export to WAV or a project file. The song is shared on the window
- * record; each person plays it back on their own speakers.
+ * a key and scale, humming a tune into a track, a box that asks the person's
+ * own model to change a track, and export to WAV or a project file. The song
+ * is shared on the window record; each person plays it back on their own speakers.
  */
 export function StudioWindow({ win = {}, onUpdate }) {
   const studio = useStudio({ win, onUpdate });
@@ -35,6 +39,10 @@ export function StudioWindow({ win = {}, onUpdate }) {
   const editTrack = editing && project.tracks.find(t => t.id === editing.trackId);
   const editClip = editTrack?.clips.find(c => c.id === editing.clipId);
   const panelTrack = selection.trackId === 'master' || project.tracks.some(t => t.id === selection.trackId) ? selection.trackId : 'master';
+  const beat = React.useCallback(() => audio.ticker.get().beat, [audio.ticker]);
+  const assist = useStudioAssist({ studio, trackId: panelTrack, beat });
+  const hum = useHumTrack({ studio, audio, beat, flash: actions.flash, onDone: t => t && setSelection({ trackId: t.id, clipId: null }) });
+  const target = project.tracks.find(t => t.id === panelTrack) || { name: 'Master', kind: 'master', color: 'master' };
 
   const header = [
     { id: 'wav', label: actions.exporting ? `Rendering ${Math.round(actions.exporting * 100)}%` : 'Export WAV', icon: <Icon.Download size={14} />, onSelect: actions.exportMix },
@@ -43,6 +51,7 @@ export function StudioWindow({ win = {}, onUpdate }) {
     { id: 'json', label: 'Save project file', onSelect: actions.saveProject },
     { id: 'open', label: 'Open project file', onSelect: actions.openProject },
     { id: 'audio', label: 'Add audio files', onSelect: actions.pickAudio },
+    { id: 'stems', label: 'Add stems (a track each)', onSelect: actions.pickStems },
     { id: 'new', label: 'Start a new song', onSelect: actions.newSong },
   ];
 
@@ -60,7 +69,8 @@ export function StudioWindow({ win = {}, onUpdate }) {
         )}
         <Timeline studio={studio} audio={audio} zoom={zoom} selection={selection} setSelection={setSelection}
           onOpenClip={(track, clip) => { if (clip.kind === 'midi') { setEditing({ trackId: track.id, clipId: clip.id }); setTab('editor'); } }}
-          onDropFiles={actions.addFiles} />
+          onDropFiles={actions.addFiles} hum={hum} />
+        <AssistBar assist={assist} target={target} />
         <div className="hb-studio-panel">
           <div className="hb-studio-tabs" role="tablist">
             {[['mixer', 'Mixer'], ['fx', 'Effects'], ['editor', 'Piano roll']].map(([id, label]) => (

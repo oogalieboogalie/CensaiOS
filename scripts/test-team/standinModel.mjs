@@ -2,12 +2,14 @@
 // key and no network. It speaks the OpenAI chat shape (what Ollama and most
 // providers speak) on 127.0.0.1 and gives one short fixed answer, except to
 // LeadHound's three prompts, which get the JSON a real model would return,
-// and to a "Made-up team ask", which uses the agent network tools. A message
+// to a "Made-up team ask", which uses the agent network tools, and to a
+// "Made-up terminal ask", which tries the terminal tool. A message
 // carrying pictures is answered with how many it saw and on which model.
 
 import http from 'node:http';
 import { standinComplete } from '../../tests/fixtures/leadHoundStandin.js';
 import { teamAskReply } from './standinTeamAsk.mjs';
+import { terminalAskReply } from './standinTerminalAsk.mjs';
 
 export const STANDIN_ANSWER = 'Stand-in answer: heard you.';
 
@@ -20,7 +22,7 @@ function replyFor(messages = [], tools = [], model = '') {
   if (LEADHOUND_PROMPTS.some((start) => system.startsWith(start))) return { content: standinComplete(messages) };
   const seen = pictures(messages.filter((m) => m.role === 'user').pop());
   if (seen) return { content: `Stand-in answer: I see ${seen} picture${seen === 1 ? '' : 's'} (${model}).` };
-  return teamAskReply(messages, tools) || { content: STANDIN_ANSWER };
+  return teamAskReply(messages, tools) || terminalAskReply(messages, tools) || { content: STANDIN_ANSWER };
 }
 
 const asToolCalls = (calls, withIndex) => calls.map((c, index) => ({
@@ -48,9 +50,11 @@ function answer(res, body) {
   res.end('data: [DONE]\n\n');
 }
 
-/** Starts the stand-in (port 0 picks a free one); resolves with { port, calls(), close() }. */
+/** Starts the stand-in (port 0 picks a free one); resolves with { port, calls(), recent(), close() }. */
 export function startStandinModel(port = 11434) {
   let calls = 0;
+  // The last few chat requests, so a check can see what a caller sent (tools, words).
+  const recent = [];
   const server = http.createServer((req, res) => {
     let raw = '';
     req.on('data', (chunk) => { raw += chunk; });
@@ -67,6 +71,8 @@ export function startStandinModel(port = 11434) {
         return res.end('{}');
       }
       calls += 1;
+      recent.push({ tools: Array.isArray(body.tools) ? body.tools.length : 0, toolChoice: body.tool_choice ?? null, messages: body.messages || [] });
+      if (recent.length > 20) recent.shift();
       return answer(res, body);
     });
   });
@@ -75,6 +81,7 @@ export function startStandinModel(port = 11434) {
     server.listen(port, '127.0.0.1', () => resolve({
       port: server.address().port,
       calls: () => calls,
+      recent: () => [...recent],
       close: () => new Promise((done) => server.close(() => done())),
     }));
   });

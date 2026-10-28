@@ -1,5 +1,5 @@
 import React from 'react';
-import { starterProject } from '../../../lib/studio/project.js';
+import { starterProject, MAX_TRACKS } from '../../../lib/studio/project.js';
 import { exportWav, exportProject, importProject, startRecording } from './studioFiles.js';
 import { claimKeyboard } from '../../../lib/keyboardClaim.js';
 
@@ -101,13 +101,22 @@ export function useStudioActions({ studio, audio, selection, setSelection, setTa
   React.useEffect(() => () => release.current?.(), []);
 
   return {
-    play, stop, toggleRecord, recording: Boolean(recording), canRecord: Boolean(armed), exporting, exportMix, notice, addFiles,
+    flash, play, stop, toggleRecord, recording: Boolean(recording), canRecord: Boolean(armed), exporting, exportMix, notice, addFiles,
     onKeyDown, onFocus, onBlur,
     saveProject: () => exportProject(project).catch(e => flash(e.message)),
     openProject: async () => {
       const [file] = await pickFile('.json,application/json');
       if (!file) return;
       try { audio.transport.stop(); replace(await importProject(file)); setEditing(null); setTab('mixer'); } catch (e) { flash(e.message); }
+    },
+    // Stems (vocals, drums, backing...) each get their own track, all lined up at the start.
+    pickStems: async () => {
+      for (const file of await pickFile('audio/*')) {
+        const count = studio.get().tracks.length;
+        edit('addTrack', 'audio', { name: file.name.replace(/\.[^.]+$/, '') });
+        if (studio.get().tracks.length === count) { flash(`A song holds ${MAX_TRACKS} tracks. Remove one to add more stems.`); return; }
+        await addFiles([file], studio.get().tracks.at(-1).id, 0);
+      }
     },
     pickAudio: async () => {
       const files = await pickFile('audio/*');

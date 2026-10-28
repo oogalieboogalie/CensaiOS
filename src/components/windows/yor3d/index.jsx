@@ -10,6 +10,7 @@ import { useModels, UNTITLED } from '../../yorware/model3d/useModels.js';
 import { ModelViewport } from '../../yorware/model3d/ModelViewport.jsx';
 import { ModelPanel } from '../../yorware/model3d/ModelPanel.jsx';
 import { MODEL_ACCEPT, MODEL_FORMATS } from '../../../lib/yorware/modelFiles.js';
+import { PrintCheck, printWatch } from './PrintCheck.jsx';
 
 const exporter = () => import('../../../lib/yorware/modelExport.js');
 const TOOLS = [['orbit', 'Turn and look', 'V', ModelIcon.Orbit], ['measure', 'Measure', 'M', ModelIcon.Measure], ['note', 'Pin a note', 'N', ModelIcon.Note]];
@@ -61,7 +62,7 @@ export function Yor3dWindow({ win = {}, onUpdate }) {
 
   const formats = [
     { ext: 'glb', label: 'Everything shown as GLB', hint: 'Opens in Blender, Windows 3D Viewer and web apps', build: async () => (await exporter()).exportGlb(need()) },
-    { ext: 'stl', label: 'Everything shown as STL', hint: 'For a 3D printer slicer, Z up', build: async () => (await exporter()).exportStl(need()) },
+    { ext: 'stl', label: 'Everything shown as STL', hint: 'For a 3D printer slicer, Z up', detail: <PrintCheck stageRef={stageRef} watch={printWatch(m)} />, build: async () => (await exporter()).exportStl(need()) },
     { ext: 'png', label: 'This view as PNG', hint: 'A picture of exactly what you see', build: async () => need().snapshot() },
   ];
 

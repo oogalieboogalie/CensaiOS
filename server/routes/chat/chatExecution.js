@@ -3,7 +3,7 @@ import { executeTool } from '../../tools.js';
 import { MAX_CHAT_MODEL_ROUNDS, FORCE_TOOL_SYNTHESIS_AFTER_ROUNDS, extractMessageText } from './shared.js';
 import { shouldSynthesizeAfterToolBatch, buildToolSynthesisPrompt, summarizeToolActions } from './prompts.js';
 import { withLongcatToolCallFallback } from './longcatToolCalls.js';
-import { withReasoningContentFallback, reportEmptyModelResponse } from './reasoningFallback.js';
+import { heldBackReplyText, withReasoningContentFallback, reportEmptyModelResponse } from './reasoningFallback.js';
 import { processAgentMarkers } from './markers.js';
 import { toolCallOk } from './toolOutcome.js';
 import { detectUnexecutedClaims } from './claimTripwire.js';
@@ -129,7 +129,7 @@ export async function runChatLoop({
       });
       continue;
     }
-    if (!finalText) finalText = summarizeToolActions(toolActions);
+    if (!finalText) finalText = (toolActions.length ? '' : heldBackReplyText(choice)) || summarizeToolActions(toolActions);
     break;
   }
 

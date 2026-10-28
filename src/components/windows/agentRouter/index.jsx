@@ -29,7 +29,7 @@ function RouterEmpty({ title, text, children }) {
  * one). Sending a part opens a chat with that agent, already asked.
  */
 export function AgentRouterWindow({ win = {} }) {
-  const rt = useAgentRouter();
+  const rt = useAgentRouter(win);
   const [text, setText] = React.useState('');
   const inputRef = React.useRef(null);
   const fillExample = () => { setText(EXAMPLE); inputRef.current?.focus(); };
@@ -58,7 +58,7 @@ export function AgentRouterWindow({ win = {} }) {
           <div className="hb-rt-form-row">
             <button type="button" className="hb-rt-link" onClick={fillExample}>Use the example</button>
             <span className="hb-rt-spacer" />
-            {parts.length > 1 && <button type="button" className="hb-rt-btn" onClick={rt.sendAll}><Icon.Send size={12} /> Send all</button>}
+            {parts.length > 1 && <button type="button" className="hb-rt-btn" onClick={rt.sendAll} disabled={parts.every((part) => rt.sent.has(part.index))}><Icon.Send size={12} /> Send all</button>}
             <button type="submit" className="hb-rt-btn hb-rt-btn-primary" disabled={rt.busy || !rt.workspaceId}>{rt.busy ? 'Routing…' : 'Route it'}</button>
           </div>
         </form>

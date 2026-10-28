@@ -3,6 +3,7 @@ import { WindowChromeContext } from './windows/windowChromeContext.js';
 import { useWorkspaceStore } from '../lib/store.js';
 import { buildDesignDocument, normalizeDesignSourceType } from '../lib/design/designSource.js';
 import { DesignBlockToolbar } from './design/DesignBlockToolbar.jsx';
+import { DesignBlockEmpty } from './design/DesignBlockEmpty.jsx';
 import { DesignRemixBar } from './design/DesignRemixBar.jsx';
 import { useFigmaResync } from './design/useFigmaResync.js';
 
@@ -23,8 +24,9 @@ function useDebounced(value, delay) {
 }
 
 // A design block is code rendered straight onto the canvas: no title bar, no
-// border, no background (the frame only shows on hover or when selected).
-// Its source can be opened in a linked code editor or rewritten by any model.
+// border, and no paint behind the design (the frame only shows on hover or
+// when selected). An empty block shows a well and a card instead. Its source
+// can be opened in a linked code editor or rewritten by any model.
 export function DesignBlockWindow({ win, onUpdate }) {
   const chrome = React.useContext(WindowChromeContext);
   const isActive = chrome?.isActive ?? true;
@@ -86,24 +88,24 @@ export function DesignBlockWindow({ win, onUpdate }) {
     if (linkedEditor) updateWindow?.(linkedEditor.id, { code: win.previousSource });
   };
 
+  const empty = !showRender && !doc;
+
   return (
-    <div data-design-block={sourceType} style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex' }}>
+    <div data-design-block={sourceType} data-empty={empty ? 'true' : 'false'} className="hb-db">
       {showRender ? (
-        <img src={win.renderUrl} alt={win.title || 'Figma render'} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'top left', display: 'block' }} />
+        <img className="hb-db-render" src={win.renderUrl} alt={win.title || 'Figma render'} />
       ) : doc ? (
         <iframe
+          className="hb-db-frame"
           title={win.title || 'Design block'}
           srcDoc={doc}
           sandbox="allow-scripts allow-forms allow-popups allow-modals"
-          style={{ flex: 1, width: '100%', height: '100%', border: 0, display: 'block', background: 'transparent', colorScheme: 'normal' }}
         />
       ) : (
-        <div style={{ margin: 'auto', color: 'var(--ink-faint)', font: '13px var(--font-sans)', textAlign: 'center', padding: 24 }}>
-          Paste HTML, Tailwind, JSX or SVG on the canvas, or open the code to start writing.
-        </div>
+        <DesignBlockEmpty onOpenCode={openCode} />
       )}
       {/* Unselected, the iframe would swallow the click that selects the block. */}
-      {!isActive && <div data-design-shield aria-hidden="true" style={{ position: 'absolute', inset: 0 }} />}
+      {!isActive && <div data-design-shield className="hb-db-shield" aria-hidden="true" />}
       {isActive && (
         <DesignBlockToolbar
           sourceType={sourceType}
@@ -124,14 +126,7 @@ export function DesignBlockWindow({ win, onUpdate }) {
         />
       )}
       {isActive && resync.error && (
-        <div role="alert" style={{
-          position: 'absolute', left: '50%', bottom: 60, transform: 'translateX(-50%)', zIndex: 4, padding: '6px 12px',
-          borderRadius: 'var(--radius-full)', background: 'var(--surface)', border: '1px solid var(--hairline)',
-          color: 'var(--ps-red)', font: '12px var(--font-sans)', whiteSpace: 'nowrap',
-        }}
-        >
-          {resync.error}
-        </div>
+        <div role="alert" className="hb-panel hb-db-alert">{resync.error}</div>
       )}
       {isActive && remixOpen && (
         <DesignRemixBar

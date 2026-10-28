@@ -114,8 +114,14 @@ describe('docker-only runner: the review gaps are closed', () => {
     ['B2 --host before the command', ['--host=tcp://127.0.0.1:1', 'ps'], /--host/],
     ['B2 -H before the command', ['-Htcp://127.0.0.1:1', 'ps'], /--host/],
     ['B2 --context before the command', ['--context=other', 'ps'], /--host/],
-    ['C1 system prune', ['system', 'prune', '-a', '--volumes'], /not allowed/],
-    ['C1 volume prune', ['volume', 'prune', '-f'], /not allowed/],
+    ['C1 system prune', ['system', 'prune', '-a', '--volumes'], /prune commands delete in bulk/],
+    ['C1 volume prune', ['volume', 'prune', '-f'], /prune commands delete in bulk/],
+    ['C1 image prune', ['image', 'prune', '-a', '-f'], /prune commands delete in bulk/],
+    ['C1 network prune', ['network', 'prune', '-f'], /prune commands delete in bulk/],
+    ['C1 container prune', ['container', 'prune', '-f'], /prune commands delete in bulk/],
+    ['C1 builder prune', ['builder', 'prune', '-a', '-f'], /prune commands delete in bulk/],
+    ['C1 buildx prune', ['buildx', 'prune', '-f'], /prune commands delete in bulk/],
+    ['C1 a prune of a kind added later', ['plugin', 'prune'], /prune commands delete in bulk/],
     ['C1 removing the database volume', ['volume', 'rm', 'censaihub_pgdata18root'], /can't be removed/],
     ['C1 compose down on censaiOS', ['compose', '-p', 'censaihub', 'down', '-v'], /own containers/],
     ['C1 compose down with no project named', ['compose', 'down', '-v'], /-p/],
@@ -209,6 +215,54 @@ describe('docker-only runner: the review gaps are closed', () => {
   });
 });
 
+// Item 148: only the compose verbs the Docker window uses get through, and a
+// runner without the compose plugin says so in a plain sentence.
+describe('docker-only runner: compose', () => {
+  test.each([
+    ['run', ['compose', '-f', 'x.yml', 'run', 'web']],
+    ['create', ['compose', 'create']],
+    ['exec', ['compose', '-p', 'demo', 'exec', 'web', 'sh']],
+    ['up by --file', ['compose', '--file', 'x.yml', 'up']],
+    ['cp', ['compose', '-p', 'demo', 'cp', 'web:/etc/passwd', '.']],
+    ['a made-up verb', ['compose', '-p', 'demo', 'made-up-verb']],
+  ])('compose %s is refused', (_name, args) => {
+    expect(refused(args)).toMatch(/not allowed/);
+  });
+
+  test('the Docker window calls still pass', () => {
+    expect(refused(['compose', '-p', 'demo', '-f', 'x.yml', 'stop'])).toBeNull();
+    expect(refused(['compose', 'ls', '-a', '--format', 'json'])).toBeNull();
+  });
+
+  const runner = (composeInstalled) => {
+    logged.length = 0;
+    const run = async (args) => {
+      if (args[0] !== 'compose') return fakeRun(args);
+      if (!composeInstalled) throw new Error('docker: unknown command: docker compose');
+      return 'Docker Compose version v2.0.0-made-up';
+    };
+    return createRunnerApp({ runnerSecret: SECRET, dockerOnly: true, run, stack: async () => FACTS });
+  };
+  const send = (app, args) => request(app).post('/exec').set('x-runner-secret', SECRET).send({ command: 'docker', args }).expect(200);
+
+  test('without the compose plugin a compose call gets a plain sentence, asked once', async () => {
+    const app = runner(false);
+    const first = await send(app, ['compose', '-p', 'demo', 'stop']);
+    expect(first.body).toMatchObject({ code: 126, stdout: '', stderr: 'Compose is not installed in this runner.' });
+    await send(app, ['compose', 'ls', '-a', '--format', 'json']);
+    expect(logged.filter(([, msg]) => msg === 'compose plugin missing')).toHaveLength(1);
+    expect(logged).toContainEqual(['warn', 'runner command refused by the Docker gatekeeper', { program: 'docker', reason: 'compose-missing' }]);
+    expect(JSON.stringify(logged)).not.toMatch(/demo|json/);
+  });
+
+  test('with the compose plugin the start-up line says it was found', async () => {
+    const app = runner(true);
+    const res = await send(app, ['compose', '-p', 'demo', 'stop']);
+    expect(res.body.stderr).not.toMatch(/Compose is not installed/);
+    expect(logged).toContainEqual(['info', 'compose plugin found', undefined]);
+  });
+});
+
 describe('the runner learns its stack from Docker', () => {
   test('project, projects folder, censaiOS folder, volumes and networks', async () => {
     const runner = { Id: 'r1', Name: '/censaihub-runner-1', Config: { Labels: { 'com.docker.compose.project': 'censaihub', 'com.docker.compose.service': 'runner' } },
@@ -251,6 +305,19 @@ describe('docker-only runner service', () => {
     expect(logged).toContainEqual(['warn', 'runner command refused by the Docker gatekeeper', { program: 'docker', reason: 'mount-outside-projects' }]);
     expect(text).not.toMatch(/secret-folder|alpine|pwned/);
     await request(app).post('/fs/read').set('x-runner-secret', SECRET).send({ path: '/etc/passwd' }).expect(403);
+  });
+
+  test('a prune is refused before it runs and logs only the reason word', async () => {
+    logged.length = 0;
+    const ran = [];
+    const app = createRunnerApp({ runnerSecret: SECRET, dockerOnly: true, run: async (...a) => { ran.push(a); return fakeRun(...a); }, stack: async () => FACTS });
+    const res = await request(app).post('/exec').set('x-runner-secret', SECRET)
+      .send({ command: 'docker', args: ['image', 'prune', '-a', '--filter', 'label=made-up-147'] }).expect(200);
+    expect(res.body).toMatchObject({ code: 126, stdout: '' });
+    expect(res.body.stderr).toMatch(/prune commands delete in bulk/);
+    expect(logged).toContainEqual(['warn', 'runner command refused by the Docker gatekeeper', { program: 'docker', reason: 'destructive' }]);
+    expect(JSON.stringify(logged)).not.toMatch(/made-up-147|label=|image/);
+    expect(ran).toEqual([]);
   });
 
   test('docker-only is the default unless turned off by name', async () => {

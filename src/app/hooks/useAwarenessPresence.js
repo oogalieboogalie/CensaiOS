@@ -2,6 +2,7 @@ import React from 'react';
 import { diffPresenceNotices } from '../../lib/collaboration/liveText.js';
 import { presenceIdentity, readAwarenessPresence } from '../../lib/collaboration/awarenessPresence.js';
 import { noteSignedInUser } from '../../lib/chat/agentPointer.js';
+import { noteSignedInName } from '../../lib/collaboration/signedInName.js';
 
 const SEND_EVERY_MS = 32;
 const TYPING_CLEAR_MS = 3000;
@@ -23,6 +24,7 @@ export function useAwarenessPresence({ awareness, user, selectedIds }) {
   const selfIdRef = React.useRef(identity.id);
   selfIdRef.current = identity.id;
   React.useEffect(() => { noteSignedInUser(user?.id); }, [user?.id]);
+  React.useEffect(() => { noteSignedInName(user ? identity.name : null); }, [user, identity.name]);
 
   React.useEffect(() => {
     if (!awareness) {

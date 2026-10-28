@@ -39,3 +39,10 @@
 .hb-y3d-notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1-5); }
 .hb-y3d-note { display: flex; flex-direction: column; gap: var(--space-1); }
 .hb-y3d-pin-num { width: 18px; height: 18px; flex-shrink: 0; display: grid; place-items: center; border-radius: var(--radius-full); background: var(--accent); color: var(--color-black); font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
+
+/* Print check, shown next to the STL save choice. */
+.hb-y3d-print { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2); max-width: 22rem; }
+.hb-y3d-print-stats { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.hb-y3d-print .hb-stat { flex: 1 1 6rem; }
+.hb-y3d-print .hb-stat-value { overflow-wrap: anywhere; }
+.hb-y3d-print-unit { margin: 0; color: var(--ink-soft); font-size: var(--text-xs); line-height: 1.4; }

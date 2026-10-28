@@ -5,6 +5,7 @@ import { FILE_CONTENTS } from './DocData.js';
 import { newId } from '../../lib/ids/newId.js';
 import { useDocFileLoad } from './useDocFileLoad.js';
 import { logFailure } from '../../lib/appLog/browserLog.js';
+import { authorName } from '../../lib/collaboration/signedInName.js';
 
 export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
   const [realContent, setRealContent] = React.useState('');
@@ -142,7 +143,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
 
   const commitAnnotation = (kind, body, agentId) => {
     if (!selRange) return;
-    const ann = { id: newId(), kind, start: selRange.start, end: selRange.end, quote: selectionText || text.slice(selRange.start, selRange.end), body: body || '', agentId: agentId || null, author: agentId ? getAgentById(agentId)?.name : 'You', ts: Date.now() };
+    const ann = { id: newId(), kind, start: selRange.start, end: selRange.end, quote: selectionText || text.slice(selRange.start, selRange.end), body: body || '', agentId: agentId || null, author: agentId ? getAgentById(agentId)?.name : authorName(), ts: Date.now() };
     onUpdate({ annotations: [...annotations, ann] });
     clearSelection();
     if (kind === 'ask' && agentId && onSpawn) {

@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../../db.js';
 import { requireDb } from './shared.js';
+import { createLogger } from '../../logger.js';
 import { requireWorkspaceMember } from '../../workspaces/context.js';
 import { getAgents as getDbAgents, getAllSubAgents } from '../../memory.js';
 import { listBlueprints } from '../../blueprints/store.js';
@@ -13,6 +14,7 @@ import { routerWords } from '../../../src/lib/agentRouter/readRequest.js';
 // the right agent with that agent's memory and the right template.
 // This route only plans; the window posts each routed part to its agent.
 export const agentRouterRouter = express.Router();
+const log = createLogger('agent-router');
 
 const MAX_REQUEST = 2000;
 const MAX_NOTES = 3;
@@ -64,6 +66,8 @@ agentRouterRouter.post('/agent-router/plan', requireDb, async (req, res) => {
       agents, blueprints, workspaceId: scope.workspaceId,
       memoryFor: (agentId, intent) => notes.get(`${agentId}\n${intent.text}`) || [],
     });
+    // Only the board, the part count and the agent ids: never the request itself.
+    log.info('routed', { workspaceId: scope.workspaceId, parts: plan.parts.length, agents: plan.parts.map((part) => part.agent.id) });
     return res.json({ plan });
   } catch (error) {
     const status = Number(error?.statusCode || error?.status);

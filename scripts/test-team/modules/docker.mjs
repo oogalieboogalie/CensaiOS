@@ -30,6 +30,7 @@ const VOLUME = 'censai-test-team-vol';
 const NETWORK = 'censai-test-team-net';
 const PROJECT = 'censai-test-team';
 let workDir = null;
+const oneLine = (text) => String(text || '').replace(/\s+/g, ' ').trim().slice(0, 160);
 
 async function docker(args) {
   return run('docker', args, { timeout: 120_000 });
@@ -86,6 +87,17 @@ export default {
     const asSam = (method, url, data) => t.api(sam, method, url, data);
     try {
       let id;
+      await check('walk', 'With no Docker it can reach, the window says why in plain words', async ({ shot }) => {
+        if (ready) throw skip('Docker is reachable here');
+        const blank = await spawnWindow(pat.page, 'containers', {}, { x: 40, y: 40 }, { w: 760, h: 420 });
+        const frame = windowFrame(pat.page, blank);
+        const why = frame.getByText(/can't reach Docker|engine isn't running|isn't installed|Can't reach/i).first();
+        await why.waitFor({ timeout: 20_000 });
+        await shot(pat.page, 'pat-sees-why-docker-is-unavailable');
+        const text = await frame.innerText();
+        if (/Error response from daemon|dial unix|Command failed/i.test(text)) throw new Error('the window shows Docker\'s raw error');
+        return oneLine(await why.innerText());
+      });
       await check('walk', 'Pat opens the Docker window and sees the running container', async ({ shot }) => {
         need();
         id = await spawnWindow(pat.page, 'containers', {}, { x: 40, y: 40 }, { w: 960, h: 620 });

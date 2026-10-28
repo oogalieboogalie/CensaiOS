@@ -7,6 +7,7 @@ import { jest } from '@jest/globals';
 import { useWorkspaceStore } from '../src/lib/store.js';
 import { WindowChromeContext } from '../src/components/windows/windowChromeContext.js';
 import { DesignBlockWindow } from '../src/components/DesignBlockWindow.jsx';
+import { pendingAppLog } from '../src/lib/appLog/browserLog.js';
 import { FigmaWindow } from '../src/components/FigmaWindow.jsx';
 import { layoutImportedFrames } from '../src/components/figma/figmaApi.js';
 import { WindowFrame } from '../src/components/Windows.jsx';
@@ -87,6 +88,25 @@ describe('Design block', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     await waitFor(() => expect(container.querySelector('iframe').getAttribute('srcdoc')).toContain('Hello canvas'));
+  });
+
+  test('toolbar buttons carry the press class and the empty block shows its action', () => {
+    const win = seedBlock({ source: '', title: 'Empty block' });
+    const { container } = render(<Block win={win} />);
+    const toolbar = screen.getByRole('toolbar', { name: 'Design block tools' });
+    expect(toolbar).toHaveClass('hb-bar');
+    const buttons = [...toolbar.querySelectorAll('button')];
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const button of buttons) expect(button).toHaveClass('hb-press');
+
+    const empty = container.querySelector('.hb-empty');
+    const action = screen.getByRole('button', { name: 'Open the code' });
+    expect(empty).toContainElement(action);
+    expect(action).toHaveClass('hb-press');
+    fireEvent.click(action);
+
+    expect(useWorkspaceStore.getState().wins.some((w) => w.kind === 'code_editor')).toBe(true);
+    expect(pendingAppLog().some((entry) => entry.message === 'design-block: opened the code from an empty block')).toBe(true);
   });
 
   test('Figma blocks can flip to Figma\'s own render, and the frame can be turned back on', () => {
