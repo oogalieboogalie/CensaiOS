@@ -68,6 +68,12 @@ export async function startAnthropicStandin(respond) {
       // firstDelayMs / delayMs slow the stream down so a race is visible.
       const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
       if (reply.firstDelayMs) await wait(reply.firstDelayMs);
+      // streamError: an `error` event after message_start, as when Claude is overloaded mid-reply.
+      if (reply.streamError) {
+        res.write(streamEvents({ model: body.model })[0]);
+        res.end(sse('error', { error: { type: reply.streamError, message: 'Overloaded' } }));
+        return;
+      }
       for (const chunk of streamEvents({ model: body.model, ...reply })) {
         res.write(chunk);
         if (reply.delayMs && chunk.includes('text_delta')) await wait(reply.delayMs);

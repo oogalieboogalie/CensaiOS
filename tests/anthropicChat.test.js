@@ -239,6 +239,22 @@ describe('against the stand-in Messages server', () => {
       .rejects.toMatchObject({ name: 'ChatCompletionHttpError', status: 400 });
   });
 
+  test('an overload mid-stream is retried once, then reads as a 529', async () => {
+    standin = await startAnthropicStandin((body, n) => (n === 1
+      ? { streamError: 'overloaded_error' }
+      : { blocks: [{ type: 'text', text: 'back' }] }));
+    const config = { provider: 'anthropic', baseUrl: standin.baseUrl, apiKey: 'k' };
+    const ok = await requestChatCompletion({ config, body: { model: 'claude-haiku-5-5', messages: [{ role: 'user', content: 'hi' }] } });
+    expect(ok.choices[0].message.content).toBe('back');
+    expect(standin.requests).toHaveLength(2);
+
+    await standin.close();
+    standin = await startAnthropicStandin(() => ({ streamError: 'overloaded_error' }));
+    await expect(requestChatCompletion({ config: { ...config, baseUrl: standin.baseUrl }, body: { model: 'claude-haiku-5-5', messages: [{ role: 'user', content: 'hi' }] } }))
+      .rejects.toMatchObject({ name: 'ChatCompletionHttpError', status: 529, retryable: true });
+    expect(standin.requests).toHaveLength(2);
+  });
+
   test('a missing key fails before any request', async () => {
     await expect(requestChatCompletion({ config: { provider: 'anthropic', baseUrl: 'http://127.0.0.1:1', apiKey: '' }, body: { messages: [{ role: 'user', content: 'hi' }] } }))
       .rejects.toThrow('Anthropic API key is missing');

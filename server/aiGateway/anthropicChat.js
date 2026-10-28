@@ -100,12 +100,30 @@ export function toOpenAiChatCompletion(message) {
   };
 }
 
+// An error Claude sends partway through the stream (an `error` event, most
+// often overloaded_error) reaches us with no HTTP status, only its type. Left
+// as is, it skipped the retry and the chat showed a bare 500.
+const STREAM_ERROR_STATUS = {
+  invalid_request_error: 400,
+  authentication_error: 401,
+  permission_error: 403,
+  not_found_error: 404,
+  request_too_large: 413,
+  rate_limit_error: 429,
+  api_error: 500,
+  timeout_error: 504,
+  overloaded_error: 529,
+};
+// One fresh try when the stream broke before any text reached the person.
+const STREAM_ERROR_RETRIES = 1;
+
 function toGatewayError(err) {
-  if (err instanceof Anthropic.APIError && Number.isFinite(err.status)) {
-    const retryAfter = typeof err.headers?.get === 'function' ? err.headers.get('retry-after') : err.headers?.['retry-after'] || null;
-    return chatCompletionHttpError(err.status, err.message, retryAfter, ANTHROPIC_PROVIDER);
-  }
-  return err;
+  if (!(err instanceof Anthropic.APIError)) return err;
+  const type = err.type || err.error?.error?.type || null;
+  const status = Number.isFinite(err.status) ? err.status : STREAM_ERROR_STATUS[type];
+  if (!status) return err;
+  const retryAfter = typeof err.headers?.get === 'function' ? err.headers.get('retry-after') : err.headers?.['retry-after'] || null;
+  return chatCompletionHttpError(status, err.message, retryAfter, ANTHROPIC_PROVIDER);
 }
 
 /**
@@ -145,19 +163,30 @@ export async function requestAnthropicChatCompletion({
     ...(Number.isFinite(timeoutMs) && timeoutMs > 0 ? { timeout: timeoutMs } : {}),
   });
 
-  try {
-    const stream = FALLBACK_MODELS.has(params.model)
-      ? client.beta.messages.stream({ ...params, betas: [FALLBACK_BETA], fallbacks: 'default' })
-      : client.messages.stream(params);
-    if (typeof onDelta === 'function') stream.on('text', (delta) => { if (delta) onDelta(delta); });
-    const message = await stream.finalMessage();
-    const data = toOpenAiChatCompletion(message);
-    record({ ok: true, baseUrl, payload: { ...payload, model: params.model }, data, ms: done(), context, usageAttribution, usageSink });
-    return data;
-  } catch (err) {
-    const error = toGatewayError(err);
-    record({ ok: false, baseUrl, payload: { ...payload, model: params.model }, error, ms: done(), context, usageAttribution, usageSink });
-    throw error;
+  for (let attempt = 0; ; attempt += 1) {
+    let streamed = false;
+    try {
+      const stream = FALLBACK_MODELS.has(params.model)
+        ? client.beta.messages.stream({ ...params, betas: [FALLBACK_BETA], fallbacks: 'default' })
+        : client.messages.stream(params);
+      stream.on('text', (delta) => {
+        if (!delta) return;
+        streamed = true;
+        if (typeof onDelta === 'function') onDelta(delta);
+      });
+      const message = await stream.finalMessage();
+      const data = toOpenAiChatCompletion(message);
+      record({ ok: true, baseUrl, payload: { ...payload, model: params.model }, data, ms: done(), context, usageAttribution, usageSink });
+      return data;
+    } catch (err) {
+      const error = toGatewayError(err);
+      if (!streamed && error.retryable && attempt < STREAM_ERROR_RETRIES && !Number.isFinite(err.status)) {
+        anthropicChatLog.warn('anthropic stream broke before any text, retrying', { ...context, model: params.model, status: error.status });
+        continue;
+      }
+      record({ ok: false, baseUrl, payload: { ...payload, model: params.model }, error, ms: done(), context, usageAttribution, usageSink });
+      throw error;
+    }
   }
 }
 

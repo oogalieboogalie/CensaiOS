@@ -17,6 +17,8 @@ tags.
 
 ### New
 
+- Body-parser 2.4.0 and undici 8.12.3 so the public dependency audit passes (Oct 28)
+- Retry Claude once when it breaks off mid-reply (Oct 28)
 - Sync the PC's Oct 25 local commits to master (Oct 26)
 - Bigger lot, 32 high, turning 3D view, sample builds (Oct 26)
 - Starter Box: install censaiOS on MX Linux and 4 GB ThinkPads (Oct 26)
