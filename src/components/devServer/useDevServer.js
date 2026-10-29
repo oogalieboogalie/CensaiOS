@@ -8,7 +8,7 @@ const BUSY = new Set(['preparing', 'pulling', 'starting', 'installing']);
  * answers, keep it alive with a heartbeat while the window is open (the
  * server removes containers no window pings), stop.
  */
-export function useDevServer({ name, onName }) {
+export function useDevServer({ name, onName, canChange = true }) {
   const [engine, setEngine] = useState({ checked: false, error: null, reason: null, defaults: null });
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -48,13 +48,14 @@ export function useDevServer({ name, onName }) {
   }, [name, phase, poll]);
 
   // Plain interval on purpose: a minimised app must still count as open.
+  // Only the owner's window keeps it alive: a teammate's heartbeat would be refused.
   useEffect(() => {
-    if (!name) return undefined;
+    if (!name || !canChange) return undefined;
     const beat = () => devServerApi.heartbeat([name]).catch(() => {});
     beat();
     const t = setInterval(beat, 20_000);
     return () => clearInterval(t);
-  }, [name]);
+  }, [name, canChange]);
 
   const start = useCallback(async (opts) => {
     setBusy(true);

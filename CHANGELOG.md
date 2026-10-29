@@ -17,6 +17,25 @@ tags.
 
 ### New
 
+- Calendar shows the month without Google (Oct 29)
+- Vault notes opens on your own empty vault (Oct 29)
+- UI team nightly: Image window gets a guiding empty state (Oct 29)
+- @grok sign-in: say to check the code x.ai already fills in (Oct 29)
+- Empty board: the welcome always sits in full view (Oct 29)
+- Tag @grok in GitHub issues and pull requests (Oct 29)
+- Team room agents use their tools; starter boards can open project files (Oct 29)
+- Document: ready to type, one click edits, comments tucked away (Oct 29)
+- Test team: Model Arena for two people (Oct 29)
+- Agent Company: seats belong to an account, and a shared upgrade is paid once (Oct 29)
+- Window groups: add the "Big on top" layout and prove each layout on two screens (Oct 29)
+- Slides: two people typing on one slide keep both people's words (Oct 29)
+- Test team: Inbox for two people, each sees only their own (Oct 28)
+- Git Diff Viewer keeps its editor open while typing; test team for two (Oct 28)
+- Run dev tells a teammate plainly that only the owner can start it; Local Sites test for two (Oct 28)
+- Test team: AI resources for two people (Oct 28)
+- The Market says plainly what it does not do yet (Oct 28)
+- On a computer install, only the computer's owner changes the shared agents (Oct 28)
+- Test team: two people in one Chat window; the agent config route follows the cloud rule (Oct 28)
 - Test team: Message Router for two, and the routed parts shared on the board (Oct 28)
 - Test team: two people write in one Doc; Doc notes carry the writer's name (Oct 28)
 - Test team: only the computer's owner can open a Terminal (Oct 28)
@@ -74,6 +93,15 @@ tags.
 
 ### Fixed
 
+- A file that will not open says why in plain words (Oct 29)
+- One "joined" pop-up per person; reloads and drops stay quiet (Oct 29)
+- Reloading no longer shows a false "unsaved changes" bar (Oct 29)
+- Board map stays out of the way of your windows (Oct 29)
+- Document: comments stay on their words when the text around them changes (Oct 29)
+- Document follow-up: comments open on click, teammates' new docs stay readable, Add finds Document (Oct 29)
+- Step cards: a removed card stays removed; switching cards keeps the open step (Oct 28)
+- Research: questions asked at once both stay; saved pages are quoted (Oct 28)
+- Doc notes stay inside their sentence and land on the right words (Oct 28)
 - Multi-select right-click deletes all selected windows (Oct 26)
 - Test team: Scheduler and To-dos for two, and three fixes it found (Oct 23)
 - Test team: the Market for two, and two listing slips fixed (Oct 23)

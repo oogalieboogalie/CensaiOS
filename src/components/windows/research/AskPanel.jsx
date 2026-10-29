@@ -2,6 +2,7 @@
 import React from 'react';
 import { Icon } from '../../Icons.jsx';
 import { KnowledgeSources } from '../../chat/KnowledgeSources.jsx';
+import { MAX_QUESTION } from '../../../lib/research/researchAsks.js';
 
 export function AskPanel({ research }) {
   const { asks, kb, busy, readOnly } = research;
@@ -19,7 +20,7 @@ export function AskPanel({ research }) {
           <Icon.Chat size={14} />
           <input className="hb-rs-input" value={question} onChange={(e) => setQuestion(e.target.value)}
             placeholder={kb.length ? 'Ask over this board’s knowledge base' : 'Ask anything; nothing saved yet, so it searches the web'}
-            aria-label="Ask a question" />
+            aria-label="Ask a question" maxLength={MAX_QUESTION} />
           <button type="submit" className="hb-lh-pill" data-primary="true" disabled={busy === 'ask' || !question.trim()}>
             {busy === 'ask' ? 'Thinking…' : 'Ask'}
           </button>

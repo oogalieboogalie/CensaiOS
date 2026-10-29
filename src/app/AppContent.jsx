@@ -108,6 +108,7 @@ export function AppContent() {
   const { persistence, collaboration } = useAppCollaboration({
     enabled: isInitialized && (workspaceLoad.status === 'ready' || workspaceLoad.status === 'draft_required'), workspaceId, wins,
     revision: workspaceRevision, onRevision: setWorkspaceRevision, activeId, user: session.user, selectedIds,
+    holdDraft: Boolean(pendingDraft?.value),
   });
   usePresetBootstrap(session.authenticated, setPresets);
 

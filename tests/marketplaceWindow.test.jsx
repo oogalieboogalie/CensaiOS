@@ -130,3 +130,27 @@ describe('Agents tab with no listed agents', () => {
     expect(spawnAt).toHaveBeenCalledWith('registry');
   });
 });
+
+describe('the Market says plainly what it does not do yet', () => {
+  test.each(['window', 'integration', 'theme'])('the %s tab says it only switches built-in windows', (tab) => {
+    render(<MarketplaceWindow win={{ tab }} />);
+    expect(screen.getByTestId('marketplace-tab-note').textContent).toMatch(/built-in windows/);
+  });
+
+  test('the Modules tab says paid listings are not on yet, and a teammate reads who may publish', async () => {
+    const realFetch = global.fetch;
+    global.fetch = jest.fn(async (url) => ({
+      ok: true,
+      status: 200,
+      json: async () => (String(url).includes('/seller') ? { canSell: false, owner: false } : { listings: [] }),
+    }));
+    try {
+      render(<MarketplaceWindow win={{ tab: 'module' }} />);
+      expect((await screen.findByTestId('marketplace-not-yet')).textContent).toMatch(/Paid listings are not on yet/);
+      expect((await screen.findByTestId('marketplace-not-seller')).textContent).toMatch(/Only the owner of this censaiOS can publish/);
+      expect(screen.queryByTestId('marketplace-tab-note')).toBeNull();
+    } finally {
+      global.fetch = realFetch;
+    }
+  });
+});

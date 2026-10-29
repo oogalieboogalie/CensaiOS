@@ -17,6 +17,7 @@ const LOCAL = 'http://127.0.0.1:59999/v1';
 
 const getUserApiKeyConfig = jest.fn(async () => null);
 const callModel = jest.fn(async () => ({ choices: [{ message: { content: 'Stand-in answer.' } }] }));
+const runAgentTurn = jest.fn(async () => ({ finalText: 'Stand-in answer.', toolActions: [] }));
 const resolveChatModelConfig = jest.fn(({ modelProvider = null, modelName = null } = {}) => {
   if (modelProvider === 'openai') {
     return { provider: 'openai', model: modelName || 'gpt-4.1', baseUrl: 'https://api.openai.com/v1', apiKey: process.env.OPENAI_API_KEY || '' };
@@ -44,6 +45,7 @@ jest.unstable_mockModule('../server/aiGateway/index.js', () => ({
   IMAGE_GENERATION_MODEL_KIND: 'image',
   workspaceUsageSink: jest.fn(),
 }));
+jest.unstable_mockModule('../server/runEngine/index.js', () => ({ runAgentTurn }));
 jest.unstable_mockModule('../server/workspaces/context.js', () => ({
   resolveWorkspaceContext: jest.fn(async () => ({ id: 'ws-1' })),
 }));
@@ -126,11 +128,13 @@ describe('group chat with a key saved only in the vault', () => {
   test('two agents both answer with the stand-in model', async () => {
     const res = await groupChat(7, 'admin', [LEAD.id, CRITIC.id], 'Plan the launch page');
 
-    expect(callModel).toHaveBeenCalledTimes(2);
-    for (const [arg] of callModel.mock.calls) {
-      expect(arg.config).toMatchObject({ provider: 'openai', model: 'gpt-4.1', apiKey: VAULT_KEY });
-      expect(arg.config.baseUrl).toBe('https://api.openai.com/v1');
-    }
+    // Each member runs through the run engine as the signed-in person, which
+    // picks up the same saved key as a one-to-one chat.
+    expect(runAgentTurn).toHaveBeenCalledTimes(2);
+    expect(runAgentTurn.mock.calls.map(([arg]) => [arg.agentId, arg.userId, arg.userRole])).toEqual([
+      [LEAD.id, 7, 'admin'], [CRITIC.id, 7, 'admin'],
+    ]);
+    expect(runAgentTurn.mock.calls[1][0].messages.at(-1)).toEqual({ from: 'Lead', text: 'Stand-in answer.' });
     expect(res.json).toHaveBeenCalledWith({
       replies: [
         { agentId: LEAD.id, text: 'Stand-in answer.' },
@@ -143,6 +147,19 @@ describe('group chat with a key saved only in the vault', () => {
     expect(JSON.stringify(round)).not.toContain(VAULT_KEY);
   });
 
+  test('a member that used its tools says which, never what they returned', async () => {
+    runAgentTurn.mockResolvedValueOnce({
+      finalText: 'Found two listings.',
+      toolActions: [{ tool: 'web_search', args: { query: 'thinkpad t480' }, result: 'secret page text', result_chars: 16, ms: 40, ok: true, round: 1 }],
+    });
+    const res = await groupChat(7, 'admin', [LEAD.id], 'Find prices');
+    expect(res.json).toHaveBeenCalledWith({
+      replies: [{ agentId: LEAD.id, text: 'Found two listings.', tools: [{ tool: 'web_search', ms: 40, result_chars: 16, ok: true }] }],
+    });
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain('secret page text');
+    expect(runAgentTurn.mock.calls[0][0].messages[0].text).toMatch(/search the web/);
+  });
+
   test('a teammate cannot use the owner key', async () => {
     process.env.ANTHROPIC_API_KEY = OWNER_KEY;
     getSubAgentById.mockImplementation(async (id) => ({
@@ -153,7 +170,7 @@ describe('group chat with a key saved only in the vault', () => {
 
     const res = await groupChat(8, 'user', [LEAD.id, CRITIC.id], 'Use the owner key');
 
-    expect(callModel).not.toHaveBeenCalled();
+    expect(runAgentTurn).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       code: 'MODEL_KEY_MISSING',

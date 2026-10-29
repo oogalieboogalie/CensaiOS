@@ -31,6 +31,7 @@
 
 import { sovereignTestRouter } from '../sovereignTest.js';
 import { calendarRouter } from '../calendar.js';
+import { myCalendarRouter } from '../ownCalendar/routes.js';
 import { sheetsRouter } from '../sheets.js';
 import { youtubeRouter } from '../youtube.js';
 import { contextRouter } from '../routes/context.js';
@@ -132,6 +133,7 @@ export const ROUTE_MOUNTS = Object.freeze([
   // ----- data routes (auth-guard is mounted separately in routers.js) -----
   { method: 'use', path: '/api/sovereignTest', router: sovereignTestRouter },
   { method: 'use', path: '/api/calendar', router: calendarRouter },
+  { method: 'use', path: '/api/my-calendar', router: myCalendarRouter },
   { method: 'use', path: '/api/sheets', router: sheetsRouter },
   { method: 'use', path: '/api/youtube', router: youtubeRouter },
   { method: 'use', path: '/api', router: contextRouter },

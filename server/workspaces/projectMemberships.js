@@ -54,6 +54,28 @@ export async function listWorkspaceAgentProjects(db, { workspaceId, agentId = nu
   return rows;
 }
 
+/**
+ * A board's own agents (a starter board's Lead, Researcher and so on) live in
+ * sub_agents and reach project files through their parent's membership. A
+ * chat window for one of them stands for its parent here; before this, one
+ * such window made the whole board's project sync fail, so no agent on the
+ * board could open a file.
+ */
+async function boardAgentsAsParents(db, workspaceId, rows) {
+  const { rows: subs } = await db.query(
+    'SELECT id, parent_id FROM sub_agents WHERE workspace_id = $1 AND id = ANY($2)',
+    [workspaceId, rows.map((row) => row.agentId)]
+  );
+  const parentOf = new Map(subs.filter((sub) => sub.parent_id).map((sub) => [sub.id, sub.parent_id]));
+  const merged = new Map();
+  for (const row of rows) {
+    const agentId = parentOf.get(row.agentId) || row.agentId;
+    const before = merged.get(agentId);
+    merged.set(agentId, { agentId, permission: before?.permission === 'work' ? 'work' : row.permission });
+  }
+  return [...merged.values()];
+}
+
 export async function replaceCanvasProjectMemberships(db, {
   workspaceId,
   projectId,
@@ -63,7 +85,7 @@ export async function replaceCanvasProjectMemberships(db, {
 }) {
   const cleanWorkspaceId = requiredText(workspaceId, 'workspaceId');
   const cleanProjectId = requiredText(projectId, 'projectId');
-  const rows = normalizeMemberships(memberships);
+  let rows = normalizeMemberships(memberships);
   const client = await db.connect();
   try {
     await client.query('BEGIN');
@@ -71,6 +93,7 @@ export async function replaceCanvasProjectMemberships(db, {
     if (!project.rows[0]) throw new ProjectMembershipError('Project not found.', { statusCode: 404 });
 
     if (rows.length > 0) {
+      rows = await boardAgentsAsParents(client, cleanWorkspaceId, rows);
       const agents = await client.query('SELECT * FROM agents WHERE id = ANY($1)', [rows.map((row) => row.agentId)]);
       const canonical = new Set(agents.rows
         .filter((agent) => classifyAgentIdentity(agent).betaVisible)

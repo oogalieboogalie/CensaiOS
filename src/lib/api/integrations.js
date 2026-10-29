@@ -29,8 +29,10 @@ export async function createGithubIssue(repo, title, body, labels) {
 export async function getCalendarEvents(start, end) {
     const res = await fetch(`/api/calendar/events?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
     if (!res.ok) {
-      if (res.status === 401) throw new Error('Not authenticated with Google');
-      throw new Error('Failed to fetch calendar events');
+      const data = await res.json().catch(() => ({}));
+      // Not connected says whether Google sign-in is set up on this server.
+      if (res.status === 401) throw Object.assign(new Error('Not authenticated with Google'), { googleSetUp: data?.googleSetUp !== false });
+      throw new Error(data?.error || 'Failed to fetch calendar events');
     }
     return await res.json();
   }

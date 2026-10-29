@@ -124,3 +124,21 @@
 .hb-minimap__agent {
   stroke-dasharray: 1.5 1;
 }
+
+/* The map and its tab fade in when they appear, for example when the map
+   comes back after a window under it moved away. */
+.hb-minimap.hb-glass-host,
+.hb-minimap--tab.hb-glass-host {
+  animation: hb-minimap-in 160ms ease-out;
+}
+
+@keyframes hb-minimap-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hb-minimap.hb-glass-host,
+  .hb-minimap--tab.hb-glass-host {
+    animation: none;
+  }
+}

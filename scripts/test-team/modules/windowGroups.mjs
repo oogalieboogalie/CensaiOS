@@ -7,9 +7,12 @@
 // On the normal board (not full screen) the chat keeps its grouped size and
 // place through a click, a header click, typing, a group drag, a reload and
 // Alt+1, F1 and Escape; Sam clicking the chat does not change Pat's screen.
+// Pat also snaps the group to each common layout (side by side, grid, main +
+// sidebar, big on top) and Sam's screen shows each one the same way.
 
 import { openBoard, readWindow, spawnWindow, updateWindow, windowFrame } from '../../e2e/board.mjs';
 import { note } from '../report.mjs';
+import { sideBySide } from '../sideBySide.mjs';
 
 const state = (page) => page.evaluate(() => {
   const s = window.__e2eStore.getState();
@@ -158,6 +161,39 @@ export default {
       }
       await shot(sam.page, 'sam-sees-the-group');
       return 'Sam sees the group and its three windows in the same places';
+    });
+
+    // What each common layout must look like with three windows.
+    const LAYOUTS = [
+      ['Side by side', (r) => new Set(r.map((w) => Math.round(w.y))).size === 1 && new Set(r.map((w) => Math.round(w.h))).size === 1, 'three equal columns in one row'],
+      ['Grid', (r) => { const top = Math.min(...r.map((w) => w.y)); return r.filter((w) => Math.abs(w.y - top) <= 1).length === 2; }, 'two on top, one across the bottom'],
+      ['Main + sidebar', (r) => { const big = r.reduce((m, w) => (w.w * w.h > m.w * m.h ? w : m)); const rest = r.filter((w) => w !== big); return rest.every((w) => w.x > big.x && Math.abs(w.x - rest[0].x) <= 1); }, 'one big on the left, two small stacked on the right'],
+      ['Big on top', (r) => { const big = r.reduce((m, w) => (w.w * w.h > m.w * m.h ? w : m)); const rest = r.filter((w) => w !== big); return rest.every((w) => w.y > big.y && Math.abs(w.y - rest[0].y) <= 1); }, 'one big across the top, two small side by side underneath'],
+    ];
+
+    await check('walk', 'Pat snaps the group to each common layout and Sam sees each one the same', async ({ shot }) => {
+      const done = [];
+      // Side by side again at the end, for the steps below.
+      for (const [name, shape, words] of [...LAYOUTS, LAYOUTS[0]]) {
+        const label = pat.page.locator(`[data-group-id="${gid}"] [data-group-label]`).first();
+        await label.hover();
+        await label.getByRole('button', { name: 'Layout presets' }).click({ timeout: 10_000 });
+        await pat.page.getByRole('button', { name: new RegExp(`^${name.replace(/[+]/g, '\\+')}`) }).first().click({ timeout: 5_000 });
+        await pat.page.waitForTimeout(800);
+        const mine = (await state(pat.page)).wins.filter((w) => Object.values(ids).includes(w.id));
+        const slug = name.toLowerCase().replace(/[^a-z]+/g, '-');
+        if (mine.some((w) => w.groupId !== gid)) throw new Error(`a window left the group with "${name}"`);
+        const pairs = mine.flatMap((a, i) => mine.slice(i + 1).map((b) => [a, b]));
+        if (pairs.some(([a, b]) => overlap(a, b))) throw new Error(`windows overlap with "${name}": ${mine.map(rect).join(' | ')}`);
+        if (!shape(mine)) throw new Error(`"${name}" is not ${words}: ${mine.map(rect).join(' | ')}`);
+        const want = Object.fromEntries(mine.map((w) => [w.id, w]));
+        const synced = await waitUntil(sam.page, (s) => Object.keys(want).every((id) => sameRect(s.wins.find((w) => w.id === id), want[id])), 5_000);
+        if (done.length < LAYOUTS.length) await sideBySide(t, `layout-${slug}`, shot);
+        if (!synced) throw new Error(`Sam's screen does not show "${name}" the way Pat's does`);
+        if (done.length < LAYOUTS.length) done.push(`${name} (${words})`);
+      }
+      grouped = Object.fromEntries((await state(pat.page)).wins.map((w) => [w.id, w]));
+      return `each layout looks right on Pat's screen and the same on Sam's: ${done.join('; ')}`;
     });
 
     // The chat's place inside its group: its offset from the group's corner and its size.

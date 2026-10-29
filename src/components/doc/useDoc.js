@@ -1,15 +1,21 @@
 import React from 'react';
 import { getAgentById } from '../../lib/agentStore.js';
-import { getSelectionOffsets } from './DocUtils.js';
+import { selectionToRaw, caretToRaw } from './docTextMap.js';
+import { noteAt } from './useNoteHighlights.js';
+import { anchorNotes, noteWords } from './anchorNotes.js';
 import { FILE_CONTENTS } from './DocData.js';
 import { newId } from '../../lib/ids/newId.js';
 import { useDocFileLoad } from './useDocFileLoad.js';
 import { logFailure } from '../../lib/appLog/browserLog.js';
 import { authorName } from '../../lib/collaboration/signedInName.js';
 
-export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
-  const [realContent, setRealContent] = React.useState('');
-  const { loading, loadError, canSave } = useDocFileLoad(win, setRealContent);
+/** A brand-new, empty Document (no file, nothing written yet) opens ready to type for the person who made it. */
+export const startsBlank = (win) => !win.filePath && !win.isGithub && !(win.text || win.content || FILE_CONTENTS[win.fileName]);
+
+export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef, openBlank = false) {
+  // A Document with no file has its words from the first look, so nothing flashes empty.
+  const [realContent, setRealContent] = React.useState(() => (win.filePath ? '' : win.text || win.content || FILE_CONTENTS[win.fileName] || ''));
+  const { loading, loadError, canSave, retryLoad, rememberSaved } = useDocFileLoad(win, setRealContent);
   const [saving, setSaving] = React.useState(false);
   const [backlinks, setBacklinks] = React.useState([]);
   const [backlinksCapped, setBacklinksCapped] = React.useState(false);
@@ -19,10 +25,16 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
   const [pendingKind, setPendingKind] = React.useState(null);
   const [activeAnnId, setActiveAnnId] = React.useState(null);
   const [selectionText, setSelectionText] = React.useState('');
-  const [isEditing, setIsEditing] = React.useState(win.isEditing || false);
+  const [isEditing, setIsEditing] = React.useState(win.isEditing ?? (openBlank && startsBlank(win)));
 
   const annotations = win.annotations || [];
   const text = win.filePath ? (loading ? 'Loading file contents...' : realContent) : realContent;
+  // Where each comment's words sit now (text typed above them moves them).
+  // While a file loads, or after it failed to, its words are not here to look for.
+  const placedNotes = React.useMemo(
+    () => (loading || loadError ? win.annotations || [] : anchorNotes(text, win.annotations || [])),
+    [text, win.annotations, loading, loadError],
+  );
 
   React.useEffect(() => {
     if (win.isEditing !== undefined && win.isEditing !== isEditing) {
@@ -114,17 +126,20 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
   };
 
   const onMouseUp = (e) => {
-    const range = getSelectionOffsets(bodyRef.current);
+    // Places are in the file's own text, so marks like ** or [[ ]] before the words do not shift a note.
+    const range = selectionToRaw(bodyRef.current, text);
     const sel = window.getSelection();
     if (!range || sel.isCollapsed) {
       const wikiLink = e.target.closest('[data-wiki-link]');
       if (wikiLink) handleWikiLinkClick(wikiLink.getAttribute('data-wiki-link'));
+      const hit = noteAt(placedNotes, caretToRaw(bodyRef.current, text));
+      if (hit) setActiveAnnId(hit.id);
       clearSelection();
       return;
     }
     const r = sel.getRangeAt(0).getBoundingClientRect();
     const winRect = bodyRef.current.closest('[data-win-root]')?.getBoundingClientRect() || { left: 0, top: 0 };
-    setSelectionFromRange(range, r.right - winRect.left, r.top - winRect.top, text.slice(range.start, range.end));
+    setSelectionFromRange(range, r.right - winRect.left, r.top - winRect.top, sel.toString().trim() || text.slice(range.start, range.end));
   };
 
   const onTextareaSelection = (e) => {
@@ -143,7 +158,7 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
 
   const commitAnnotation = (kind, body, agentId) => {
     if (!selRange) return;
-    const ann = { id: newId(), kind, start: selRange.start, end: selRange.end, quote: selectionText || text.slice(selRange.start, selRange.end), body: body || '', agentId: agentId || null, author: agentId ? getAgentById(agentId)?.name : authorName(), ts: Date.now() };
+    const ann = { id: newId(), kind, start: selRange.start, end: selRange.end, quote: selectionText || text.slice(selRange.start, selRange.end), ...noteWords(text, selRange.start, selRange.end), body: body || '', agentId: agentId || null, author: agentId ? getAgentById(agentId)?.name : authorName(), ts: Date.now() };
     onUpdate({ annotations: [...annotations, ann] });
     clearSelection();
     if (kind === 'ask' && agentId && onSpawn) {
@@ -159,11 +174,12 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
     if (!canSave) return;
     setSaving(true);
     try {
-      await fetch('/api/files/content', {
+      const res = await fetch('/api/files/content', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: win.filePath, content: realContent })
       });
+      if (res?.ok) rememberSaved(realContent);
     } catch (e) {
       logFailure('file not saved', e, 'doc', 'error');
     }
@@ -172,13 +188,14 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef) {
 
   return {
     realContent, setRealContent,
-    loading, loadError, canSave, saving,
+    loading, loadError, canSave, saving, retryLoad,
     backlinks,
     backlinksCapped,
     backlinksChecked,
     showGraph, setShowGraph,
     selRange, pendingKind, setPendingKind,
     activeAnnId, setActiveAnnId,
+    placedNotes,
     selectionText,
     isEditing, setIsEditing,
     text,

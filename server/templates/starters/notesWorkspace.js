@@ -15,7 +15,6 @@ const NOTE_TEXT = [
   '- Fold nectarines into the browned butter custard',
   '- Bake until the center just sets, then cool before slicing',
 ].join('\n');
-const NOTE_PATH = ['Users', 'alma', 'Desktop', 'Downloads', NOTE_TITLE];
 const FINDER_FILE = {
   id: 'nectarine',
   name: `${NOTE_TITLE}.md`,
@@ -35,7 +34,7 @@ export const NOTES_WORKSPACE_AGENTS = Object.freeze([
     prompt: 'You are the Notes Librarian. Help the person organize notes in the vault: suggest clear titles, short summaries and related links. When asked to write, add text to a document window with canvas_append_window. Prefer short, plain sentences. Do not invent files that are not on the board.',
     starters: [
       'Summarize the open recipe note in three bullets',
-      'Suggest Bases tags for this Downloads folder',
+      'Suggest tags for the files in this Downloads folder',
       'Draft a related note title for brown butter desserts',
     ],
   }),
@@ -77,11 +76,12 @@ export function buildNotesWorkspaceBoard({ agents, makeId = defaultId }) {
     {
       id: ids.vault,
       kind: 'vaultNotes',
-      title: NOTE_TITLE,
-      fileName: `${NOTE_TITLE}.md`,
+      title: 'Vault notes',
+      // The recipe is the vault's example note (vaultNotes/data.js), copied in
+      // so it can be edited and is not listed twice. Its words go in `text`,
+      // where a vault's first note keeps them (vaultNotes/vault.js).
+      notes: [{ id: 'note-1', title: NOTE_TITLE, fromExample: 'example-tart' }],
       text: NOTE_TEXT,
-      pathParts: [...NOTE_PATH],
-      activeBase: 'Recipes',
       templateRole: 'vault',
     },
     {
@@ -131,7 +131,7 @@ export const NOTES_WORKSPACE_TEMPLATE = Object.freeze({
   groups: ['Downloads', 'Notes', 'Library', 'Team Chat'],
   groupContents: {
     Downloads: 'Finder-style Downloads list with sidebar and zebra rows',
-    Notes: 'Vault notes with Bases sidebar, tabs and breadcrumbs',
+    Notes: 'Vault notes with a recipe note open',
     Library: 'Library desk document, Notes Librarian chat',
     'Team Chat': 'Team chat',
   },

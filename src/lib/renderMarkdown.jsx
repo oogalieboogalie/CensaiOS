@@ -17,7 +17,7 @@ export function CodeBlock({ code, lang, onCopyCode, blockKey, extraActions = nul
   };
   return (
     <div key={blockKey} style={{ minWidth: 0, maxWidth: '100%', background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 8, margin: '4px 0', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px 5px 12px', borderBottom: '1px solid var(--hairline)' }}>
+      <div data-md-decor="" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px 5px 12px', borderBottom: '1px solid var(--hairline)' }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-faint)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {lang || 'code'}
         </span>
@@ -171,8 +171,9 @@ export function renderMarkdown(text, { compact = false, onCopyCode = null, rende
       style = { color: 'var(--ink-faint)', fontStyle: 'italic' };
     // --- Unordered lists ---
     } else if (/^[-*]\s+/.test(ln)) {
-      element = ln.replace(/^[-*]\s+/, '•  ');
-      style = { paddingLeft: 16 };
+      // The bullet is drawn, not written, so a Doc note can skip it (data-md-decor).
+      result.push(<div key={i} style={{ paddingLeft: 16 }}><span data-md-decor="">•  </span>{inline(ln.replace(/^[-*]\s+/, ''))}</div>);
+      continue;
     // --- Ordered lists ---
     } else if (/^\d+\.\s+/.test(ln)) {
       style = { paddingLeft: 16 };

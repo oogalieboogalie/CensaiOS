@@ -1,41 +1,17 @@
-import { CLIENT_STATE_ENDPOINT, getLocalStorage, WORKSPACE_KEY } from './storage.js';
+import { CLIENT_STATE_ENDPOINT, WORKSPACE_KEY } from './storage.js';
 import { getCollaborationClientId } from '../collaboration/clientIdentity.js';
+import {
+  BOARD_FIELDS, clearWorkspaceDraft, draftHasUnsaved, dropLegacyDraft, readWorkspaceDraft, readWorkspaceRecovery,
+  removeJson, writeJson,
+} from './workspaceDrafts.js';
 
-export const WORKSPACE_DRAFT_KEY = 'homebase.workspace.draft.v1';
-
-function readJson(key) {
-  const storage = getLocalStorage();
-  if (!storage) return null;
-  try {
-    const raw = storage.getItem(key);
-    return raw === null ? null : JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function writeJson(key, value) {
-  const storage = getLocalStorage();
-  if (!storage) return false;
-  try {
-    storage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function removeJson(key) {
-  try { getLocalStorage()?.removeItem(key); } catch { /* best effort */ }
-}
+export {
+  clearWorkspaceDraft, readWorkspaceDraft, readWorkspaceRecovery, workspaceDraftKey, writeWorkspaceDraft,
+} from './workspaceDrafts.js';
 
 function endpoint(workspaceId = null) {
   const base = `${CLIENT_STATE_ENDPOINT}/${encodeURIComponent(WORKSPACE_KEY)}`;
   return workspaceId ? `${base}?workspaceId=${encodeURIComponent(workspaceId)}` : base;
-}
-
-function sameValue(left, right) {
-  try { return JSON.stringify(left) === JSON.stringify(right); } catch { return false; }
 }
 
 function workspaceError(message, { code = 'workspace_unavailable', status = 0 } = {}) {
@@ -58,32 +34,12 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
   }
 }
 
-export function readWorkspaceRecovery() {
-  return {
-    cachedValue: readJson(WORKSPACE_KEY),
-    draft: readJson(WORKSPACE_DRAFT_KEY),
-  };
-}
-
-export function writeWorkspaceDraft(value, baseRevision) {
-  return writeJson(WORKSPACE_DRAFT_KEY, {
-    value,
-    baseRevision,
-    savedAt: new Date().toISOString(),
-  });
-}
-
-export function clearWorkspaceDraft() {
-  removeJson(WORKSPACE_DRAFT_KEY);
-}
-
 export async function loadWorkspaceAuthoritatively({ timeoutMs = 4000, workspaceId = null } = {}) {
-  const recovery = readWorkspaceRecovery();
   let response;
   try {
     response = await fetchWithTimeout(endpoint(workspaceId), {}, timeoutMs);
   } catch (error) {
-    return { status: 'unavailable', error, ...recovery };
+    return { status: 'unavailable', error, ...readWorkspaceRecovery(workspaceId) };
   }
 
   if (response.status === 404) {
@@ -95,6 +51,7 @@ export async function loadWorkspaceAuthoritatively({ timeoutMs = 4000, workspace
     // sockets and saves for it are refused.
     const empty = await response.json().catch(() => ({}));
     const serverWorkspaceId = typeof empty?.workspaceId === 'string' ? empty.workspaceId : null;
+    const recovery = readWorkspaceRecovery(serverWorkspaceId);
     const recoverable = recovery.draft?.value ?? recovery.cachedValue;
     return recoverable
       ? { status: 'restore_required', value: recoverable, revision: 0, workspaceId: serverWorkspaceId, ...recovery }
@@ -107,7 +64,7 @@ export async function loadWorkspaceAuthoritatively({ timeoutMs = 4000, workspace
       error: workspaceError(payload.error || `Workspace load failed (HTTP ${response.status})`, {
         status: response.status,
       }),
-      ...recovery,
+      ...readWorkspaceRecovery(workspaceId),
     };
   }
 
@@ -116,20 +73,23 @@ export async function loadWorkspaceAuthoritatively({ timeoutMs = 4000, workspace
     return {
       status: 'unavailable',
       error: workspaceError('Workspace server returned an invalid revision'),
-      ...recovery,
+      ...readWorkspaceRecovery(workspaceId),
     };
   }
   writeJson(WORKSPACE_KEY, payload.value);
-  if (recovery.draft?.value && !sameValue(recovery.draft.value, payload.value)) {
+  dropLegacyDraft();
+  const board = payload.workspaceId || workspaceId;
+  const draft = board ? readWorkspaceDraft(board) : null;
+  if (draft?.value && draftHasUnsaved(draft, payload.value)) {
     return {
       status: 'draft_required',
       value: payload.value,
-      draft: recovery.draft,
+      draft,
       revision: payload.revision,
       workspaceId: payload.workspaceId,
     };
   }
-  clearWorkspaceDraft();
+  clearWorkspaceDraft(board);
   return {
     status: 'ready',
     value: payload.value,
@@ -151,8 +111,6 @@ export async function fetchWorkspaceRevision(workspaceId = null, { timeoutMs = 4
   return payload.revision;
 }
 
-const BOARD_FIELDS = ['wins', 'canvasGroups', 'paths', 'links', 'dock'];
-
 function withoutBoard(value) {
   if (!value || typeof value !== 'object') return value;
   const out = { ...value };
@@ -162,12 +120,14 @@ function withoutBoard(value) {
 
 // canvasSource 'yjs': the canvas lives in the shared doc, so the server keeps
 // its own canvas fields and merges only the settings (no revision conflict).
-export async function saveWorkspaceAuthoritatively(value, expectedRevision, { timeoutMs = 8000, canvasSource = null } = {}) {
+// `keepalive`: the save still goes out when the page is closing.
+export async function saveWorkspaceAuthoritatively(value, expectedRevision, { timeoutMs = 8000, canvasSource = null, keepalive = false } = {}) {
   const enriched = value && typeof value === 'object'
     ? { ...value, updatedAt: new Date().toISOString() }
     : value;
   const response = await fetchWithTimeout(endpoint(), {
     method: 'PUT',
+    keepalive,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       // The board itself travels only through the shared doc.
@@ -188,7 +148,9 @@ export async function saveWorkspaceAuthoritatively(value, expectedRevision, { ti
     throw workspaceError('Workspace server returned an invalid save revision');
   }
   writeJson(WORKSPACE_KEY, enriched);
-  clearWorkspaceDraft();
+  // On the shared board, the board half of a draft is the doc's to confirm,
+  // so useWorkspacePersistence decides when the draft goes.
+  if (canvasSource !== 'yjs') clearWorkspaceDraft(payload.workspaceId || value?.workspaceId);
   return { ...payload, value: enriched };
 }
 
@@ -203,7 +165,7 @@ export async function deleteWorkspaceAuthoritatively(expectedRevision, { timeout
     });
   }
   removeJson(WORKSPACE_KEY);
-  clearWorkspaceDraft();
+  clearWorkspaceDraft(payload.workspaceId);
   return payload;
 }
 

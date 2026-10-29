@@ -5,7 +5,6 @@ import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { jest } from '@jest/globals';
 import { mergeCollaborationPreviews } from '../src/app/hooks/useWorkspaceCollaboration.js';
-import { diffPresenceNotices } from '../src/lib/collaboration/liveText.js';
 import {
   setLivePresenceSenders,
   resetLivePresenceSenders,
@@ -15,6 +14,7 @@ import {
 } from '../src/lib/collaboration/liveText.js';
 import { CanvasCursors } from '../src/components/canvas/CanvasCursors.jsx';
 import { PresenceToasts } from '../src/components/PresenceToasts.jsx';
+import { createPresenceNotices, LEAVE_GRACE_MS, RECONNECT_MS } from '../src/lib/collaboration/presenceNotices.js';
 
 describe('mergeCollaborationPreviews presence', () => {
   const wins = [
@@ -102,44 +102,174 @@ describe('CanvasCursors', () => {
   });
 });
 
-describe('diffPresenceNotices', () => {
-  const a = { clientId: 'a', actor: { label: 'Alma' } };
-  const b = { clientId: 'b', actor: { label: 'Sam' } };
+// The "joined" and "left" pop-ups count people, not tabs or connections:
+// someone seen by both the shared doc and the socket, or in two tabs, is
+// announced once; this tab connecting or reconnecting announces nobody; a
+// reload, a short drop or a server restart says nothing at all.
+describe('presence notices', () => {
+  const person = (id, label, clientId = `tab-${id}`, type = 'human') => ({ clientId, actor: { type, id, label } });
+  const pat = person('1', 'Pat Example');
+  const sam = person('2', 'Sam Example');
+  const samSecondTab = person('2', 'Sam Example', 'tab-2b');
 
-  test('join and leave notices with labels', () => {
-    const notices = diffPresenceNotices([a], [a, b]);
-    expect(notices).toHaveLength(1);
-    expect(notices[0].kind).toBe('join');
-    expect(notices[0].text).toBe('Sam joined the canvas');
+  function board() {
+    let clock = 1_000;
+    const tracker = createPresenceNotices({ now: () => clock });
+    tracker.setSelf('1');
+    const texts = (notices) => notices.map((n) => n.text);
+    return {
+      tracker,
+      see: (link, list) => texts(tracker.see(link, list)),
+      wait: (ms) => { clock += ms; return texts(tracker.due()); },
+    };
+  }
 
-    const left = diffPresenceNotices([a, b], [a]);
-    expect(left).toHaveLength(1);
-    expect(left[0].kind).toBe('leave');
-    expect(left[0].text).toBe('Sam left');
+  test('Sam arriving through both the socket and the shared doc is one "joined"', () => {
+    const b = board();
+    b.see('socket', [pat]);
+    b.see('doc', []);
+    expect(b.see('socket', [pat, sam])).toEqual(['Sam Example joined the canvas']);
+    expect(b.see('doc', [sam])).toEqual([]);
   });
 
-  test('no notices without changes', () => {
-    expect(diffPresenceNotices([a], [a])).toEqual([]);
-    expect(diffPresenceNotices([], [])).toEqual([]);
+  test('the same in the other order: the doc first, then the socket', () => {
+    const b = board();
+    b.see('doc', []);
+    b.see('socket', [pat]);
+    expect(b.see('doc', [sam])).toEqual(['Sam Example joined the canvas']);
+    expect(b.see('socket', [pat, sam])).toEqual([]);
   });
 
-  test('falls back to Someone without a label', () => {
-    const notices = diffPresenceNotices([], [{ clientId: 'x', actor: {} }]);
-    expect(notices[0].text).toBe('Someone joined the canvas');
+  test('a second tab of Sam is not news, and closing one of the two is not a "left"', () => {
+    const b = board();
+    b.see('socket', [pat, sam]);
+    expect(b.see('socket', [pat, sam, samSecondTab])).toEqual([]);
+    expect(b.see('socket', [pat, samSecondTab])).toEqual([]);
+    expect(b.wait(LEAVE_GRACE_MS)).toEqual([]);
   });
 
-  test('your own other window never toasts as someone joining or leaving', () => {
-    const me = { clientId: 'a', actor: { type: 'human', id: '7', label: 'test' } };
-    const meAgain = { clientId: 'c', actor: { type: 'human', id: '7', label: 'test' } };
-    expect(diffPresenceNotices([], [meAgain], { selfId: '7' })).toEqual([]);
-    expect(diffPresenceNotices([me, meAgain], [me], { selfId: 7 })).toEqual([]);
-    const sam = { clientId: 'b', actor: { type: 'human', id: '9', label: 'Sam' } };
-    expect(diffPresenceNotices([meAgain], [meAgain, sam], { selfId: '7' }).map((n) => n.text)).toEqual(['Sam joined the canvas']);
+  test('the people already here when this tab connects are not announced', () => {
+    const b = board();
+    expect(b.see('socket', [pat, sam])).toEqual([]);
+    expect(b.see('doc', [sam])).toEqual([]);
   });
 
-  test('a guest is announced even when the id happens to match', () => {
-    const guest = { clientId: 'g', actor: { type: 'guest', id: '7', label: 'test' } };
-    expect(diffPresenceNotices([], [guest], { selfId: '7' })).toHaveLength(1);
+  test('a reload or a short drop says nothing; a real goodbye says "left" once, after the grace time', () => {
+    const b = board();
+    b.see('socket', [pat, sam]);
+    b.see('doc', [sam]);
+    // Sam reloads: both links lose Sam, then the new tab comes back.
+    b.see('socket', [pat]);
+    b.see('doc', []);
+    expect(b.wait(2_000)).toEqual([]);
+    expect(b.see('socket', [pat, person('2', 'Sam Example', 'tab-2-new')])).toEqual([]);
+    expect(b.see('doc', [sam])).toEqual([]);
+    expect(b.wait(LEAVE_GRACE_MS)).toEqual([]);
+
+    // Sam closes the tab for good.
+    b.see('socket', [pat]);
+    b.see('doc', []);
+    expect(b.tracker.nextDueIn()).toBe(LEAVE_GRACE_MS);
+    expect(b.wait(LEAVE_GRACE_MS - 1)).toEqual([]);
+    expect(b.wait(1)).toEqual(['Sam Example left']);
+    expect(b.wait(LEAVE_GRACE_MS)).toEqual([]);
+    expect(b.tracker.nextDueIn()).toBe(null);
+  });
+
+  test('Sam coming back after a real goodbye is announced again', () => {
+    const b = board();
+    b.see('socket', [pat, sam]);
+    b.see('socket', [pat]);
+    expect(b.wait(LEAVE_GRACE_MS)).toEqual(['Sam Example left']);
+    expect(b.see('socket', [pat, sam])).toEqual(['Sam Example joined the canvas']);
+  });
+
+  test('this tab losing its connection is not everyone leaving, however long, and getting it back is not everyone joining', () => {
+    const b = board();
+    b.see('socket', [pat, sam]);
+    b.see('doc', [sam]);
+    b.see('doc', null);
+    b.see('socket', null);
+    expect(b.tracker.nextDueIn()).toBe(null);
+    expect(b.wait(RECONNECT_MS * 3)).toEqual([]);
+    expect(b.see('doc', [sam])).toEqual([]);
+    expect(b.see('socket', [pat, sam])).toEqual([]);
+  });
+
+  test('after a server restart everyone comes back at a different moment, and nobody is announced', () => {
+    const b = board();
+    b.see('socket', [pat, sam]);
+    b.see('doc', [sam]);
+    b.see('socket', null);
+    b.see('doc', null);
+    // This tab is back first; Sam's tab only 20 seconds later.
+    expect(b.see('socket', [pat])).toEqual([]);
+    expect(b.see('doc', [])).toEqual([]);
+    expect(b.wait(20_000)).toEqual([]);
+    expect(b.see('socket', [pat, sam])).toEqual([]);
+    expect(b.see('doc', [sam])).toEqual([]);
+    expect(b.wait(RECONNECT_MS)).toEqual([]);
+  });
+
+  test('someone who left while this tab was offline is forgotten quietly, and announced if they come back later', () => {
+    const b = board();
+    b.see('socket', [pat, sam]);
+    b.see('socket', null);
+    b.see('socket', [pat]);
+    expect(b.tracker.nextDueIn()).toBe(RECONNECT_MS);
+    expect(b.wait(RECONNECT_MS)).toEqual([]);
+    expect(b.tracker.nextDueIn()).toBe(null);
+    expect(b.see('socket', [pat, sam])).toEqual(['Sam Example joined the canvas']);
+  });
+
+  test('a link dropping right after Sam leaves does not swallow "Sam left"', () => {
+    const b = board();
+    b.see('socket', [pat, sam]);
+    b.see('doc', [sam]);
+    b.see('socket', [pat]);
+    b.see('doc', []);
+    expect(b.wait(3_000)).toEqual([]);
+    b.see('doc', null);
+    expect(b.wait(LEAVE_GRACE_MS - 3_000)).toEqual(['Sam Example left']);
+    expect(b.see('doc', [])).toEqual([]);
+  });
+
+  test('someone only one link could see is not "left" when that link drops', () => {
+    const b = board();
+    b.see('socket', [pat]);
+    b.see('doc', []);
+    expect(b.see('doc', [sam])).toEqual(['Sam Example joined the canvas']);
+    b.see('doc', null);
+    expect(b.wait(LEAVE_GRACE_MS)).toEqual([]);
+    // Back on, Sam is simply still here.
+    expect(b.see('doc', [sam])).toEqual([]);
+    // Even after a long outage of that link Sam is never announced again.
+    b.see('doc', null);
+    expect(b.wait(RECONNECT_MS)).toEqual([]);
+    expect(b.see('doc', [sam])).toEqual([]);
+  });
+
+  test('your own other tabs never toast; a guest is announced even when the id matches yours', () => {
+    const b = board();
+    b.see('socket', [pat]);
+    expect(b.see('socket', [pat, person('1', 'Pat Example', 'tab-1b')])).toEqual([]);
+    expect(b.see('socket', [pat, person('1', 'Made-up guest', 'g-1', 'guest')])).toEqual(['Made-up guest joined the canvas']);
+  });
+
+  test('someone without a name is "Someone"', () => {
+    const b = board();
+    b.see('socket', []);
+    expect(b.see('socket', [{ clientId: 'x', actor: { type: 'human', id: '5' } }])).toEqual(['Someone joined the canvas']);
+  });
+
+  test('each notice has its own id and the time it was made', () => {
+    const b = board();
+    b.tracker.see('socket', []);
+    const [first] = b.tracker.see('socket', [sam]);
+    const [second] = b.tracker.see('socket', [sam, person('3', 'Lee Example')]);
+    expect(first.kind).toBe('join');
+    expect(first.at).toBe(1_000);
+    expect(first.id).not.toBe(second.id);
   });
 });
 

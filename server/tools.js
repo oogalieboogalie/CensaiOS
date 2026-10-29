@@ -30,6 +30,10 @@ const DIRECT_REPO_TOOLS = new Set([
   'github_create_issue', 'github_comment_issue',
 ]);
 
+// What the agent passes on to the person when a file tool is refused. Trust
+// mode is often blamed, so say what it does and what actually opens files.
+export const NO_PROJECT_FILES = 'Tell the person in plain words: I can only open files in a project that is open on this board, and none is open for me yet. Open a project from the top bar while my chat window is on the board, then ask again. Trust mode does not change this: it only lets agents use the tools they already have without waiting for an OK.';
+
 // ═══════════════════════════════════════════════════════════════════
 //  TOOL EXECUTOR ORCHESTRATOR
 //  Dynamic entry point routing calls to specialized domain handlers.
@@ -84,10 +88,11 @@ async function executeRegisteredTool(agentId, name, args, context) {
     return result;
   } catch (err) {
     log.error('tool failed', { agentId, name, ms: done(), failed: true });
-    const code = ['TOOL_ACCESS_DENIED', 'TOOL_ACCESS_UNAVAILABLE', 'COMPUTER_OWNER_ONLY'].includes(err?.code)
+    const code = ['TOOL_ACCESS_DENIED', 'TOOL_ACCESS_UNAVAILABLE', 'COMPUTER_OWNER_ONLY', 'PROJECT_ACCESS_DENIED'].includes(err?.code)
       ? `${err.code}: `
       : '';
-    return `Error: ${code}${err.message}`;
+    const why = err?.code === 'PROJECT_ACCESS_DENIED' ? ` ${NO_PROJECT_FILES}` : '';
+    return `Error: ${code}${err.message}${why}`;
   }
 }
 

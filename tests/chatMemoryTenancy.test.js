@@ -8,6 +8,7 @@ const buildSystemPrompt = jest.fn().mockResolvedValue('Scoped prompt');
 const pool = { query: jest.fn(), on: jest.fn(), end: jest.fn() };
 const runChatLoop = jest.fn().mockResolvedValue({ finalText: 'Scoped reply', toolActions: [] });
 const callModel = jest.fn().mockResolvedValue({ choices: [{ message: { content: 'Group reply' } }] });
+const runAgentTurn = jest.fn().mockResolvedValue({ finalText: 'Group reply', toolActions: [] });
 const createModelAccessContext = jest.fn(input => ({ verified: input }));
 const resolveWorkspaceContext = jest.fn().mockResolvedValue({ id: 'workspace-owner' });
 const dbReady = jest.fn(() => true);
@@ -95,16 +96,13 @@ describe('chat memory tenancy propagation', () => {
       },
       session: { userId: 7 },
     };
-    await handleGroupChat(req, responseDouble());
+    await handleGroupChat(req, responseDouble(), { runTurn: runAgentTurn });
 
     expect(buildSystemPrompt).toHaveBeenCalledWith('atlas', 'Plan.', {
       workspaceId: 'workspace-owner', userId: 7, historyInRequest: false,
     });
-    expect(createModelAccessContext).toHaveBeenCalledWith({
-      userId: 7, workspaceId: 'workspace-owner', source: 'group-chat',
-    });
-    expect(callModel).toHaveBeenCalledWith(expect.objectContaining({
-      accessContext: createModelAccessContext.mock.results[0].value,
+    expect(runAgentTurn).toHaveBeenCalledWith(expect.objectContaining({
+      agentId: 'atlas', userId: 7, workspaceId: 'workspace-owner', loopWorkspaceId: 'workspace-owner',
     }));
   });
 
@@ -149,7 +147,7 @@ describe('chat memory tenancy propagation', () => {
   });
 
   test('group chat returns model-access errors instead of an empty success', async () => {
-    callModel.mockRejectedValueOnce(Object.assign(new Error('Free AI request allowance reached'), {
+    runAgentTurn.mockRejectedValueOnce(Object.assign(new Error('Free AI request allowance reached'), {
       name: 'ModelAccessError', statusCode: 429,
       code: 'FREE_TIER_SHARED_DAILY_LIMIT', retryAfter: 23,
     }));
@@ -158,7 +156,7 @@ describe('chat memory tenancy propagation', () => {
     await handleGroupChat({
       body: { agentIds: ['atlas'], workspaceId: 'workspace-owner', messages: [] },
       session: { userId: 7 },
-    }, res);
+    }, res, { runTurn: runAgentTurn });
 
     expect(res.status).toHaveBeenCalledWith(429);
     expect(res.setHeader).toHaveBeenCalledWith('Retry-After', '23');
@@ -175,14 +173,14 @@ describe('chat memory tenancy propagation', () => {
     await handleGroupChat({
       body: { agentIds: ['guardian'], workspaceId: 'workspace-owner', messages: [] },
       session: { userId: 7 },
-    }, res);
+    }, res, { runTurn: runAgentTurn });
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       code: 'GROUP_CHAT_AGENT_NOT_FOUND',
     }));
     expect(getSubAgentById).toHaveBeenCalledWith('guardian', { workspaceId: 'workspace-owner', userId: 7 });
-    expect(callModel).not.toHaveBeenCalled();
+    expect(runAgentTurn).not.toHaveBeenCalled();
   });
 
   test('group chat rejects missing canonical rows before provider work', async () => {
@@ -192,13 +190,13 @@ describe('chat memory tenancy propagation', () => {
     await handleGroupChat({
       body: { agentIds: ['atlas'], workspaceId: 'workspace-owner', messages: [] },
       session: { userId: 7 },
-    }, res);
+    }, res, { runTurn: runAgentTurn });
 
     expect(res.status).toHaveBeenCalledWith(503);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       code: 'FAMILY_AGENT_UNAVAILABLE',
     }));
-    expect(callModel).not.toHaveBeenCalled();
+    expect(runAgentTurn).not.toHaveBeenCalled();
   });
 
   test('group chat fails closed when the context database is unavailable', async () => {
@@ -208,13 +206,13 @@ describe('chat memory tenancy propagation', () => {
     await handleGroupChat({
       body: { agentIds: ['atlas'], workspaceId: 'workspace-owner', messages: [] },
       session: { userId: 7 },
-    }, res);
+    }, res, { runTurn: runAgentTurn });
 
     expect(res.status).toHaveBeenCalledWith(503);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       code: 'AGENT_CONTEXT_UNAVAILABLE',
     }));
     expect(resolveWorkspaceContext).not.toHaveBeenCalled();
-    expect(callModel).not.toHaveBeenCalled();
+    expect(runAgentTurn).not.toHaveBeenCalled();
   });
 });

@@ -7,13 +7,15 @@
 import React from 'react';
 import { getSelf } from '../../../lib/modules/presenceRoster.js';
 import { kbSummary, researchApi } from '../../../lib/research/researchApi.js';
+import { askEntry, asksNewestFirst, clipQuestion, withAsk } from '../../../lib/research/researchAsks.js';
 
-const MAX_ASKS = 12;
 
 export function useResearch({ win = {}, onUpdate }) {
   const saved = win.research || {};
   const savedRef = React.useRef(saved);
   savedRef.current = saved;
+  const winRef = React.useRef(win);
+  winRef.current = win;
   const [status, setStatus] = React.useState({ loaded: false, tavily: false, embedding: null });
   const [busy, setBusy] = React.useState(null); // 'search' | 'save' | 'ask' | 'recipe' | null
   const [error, setError] = React.useState('');
@@ -84,15 +86,16 @@ export function useResearch({ win = {}, onUpdate }) {
     patch({ kb: kbSummary(data.sources), kbAt: new Date().toISOString() });
   }), [run, patch]);
 
-  const ask = React.useCallback((question, meta = {}) => run('ask', async () => {
+  // Each question is its own item on the window, so two people asking at once both keep theirs.
+  const ask = React.useCallback((text, meta = {}) => run('ask', async () => {
+    const question = clipQuestion(text);
     const data = await researchApi.ask({ question });
-    const entry = {
-      id: `ask-${Date.now()}`, question, answer: data.answer, sources: data.sources || [], usedWeb: Boolean(data.usedWeb),
-      by: meta.by || getSelf()?.label || null, at: new Date().toISOString(),
-    };
-    patch({ asks: [entry, ...(savedRef.current.asks || [])].slice(0, MAX_ASKS) });
+    const entry = askEntry({ question, answer: data, by: meta.by || getSelf()?.label || null });
+    const next = withAsk(winRef.current, entry);
+    winRef.current = { ...winRef.current, ...next };
+    onUpdate?.(next);
     return entry;
-  }), [run, patch]);
+  }), [run, onUpdate]);
 
   const runRecipe = React.useCallback((recipe, input) => run('recipe', async () => {
     const data = await researchApi.recipe(recipe, input);
@@ -114,7 +117,7 @@ export function useResearch({ win = {}, onUpdate }) {
     status, busy, error, setError, clearError: () => setError(''),
     lastSearch: saved.search || null,
     kb: Array.isArray(saved.kb) ? saved.kb : [],
-    asks: Array.isArray(saved.asks) ? saved.asks : [],
+    asks: asksNewestFirst(win),
     recipe: saved.recipe || null,
     lastSave: saved.lastSave || null,
     readOnly: !status.loaded,

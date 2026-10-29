@@ -2,7 +2,7 @@
 // sees it listed; Sam Example (a teammate) finds it, adds a copy to the board
 // and uses it. Bug hunt: Sam tries to publish or remove Pat's listing, a
 // listing whose one line holds a script tag, and an empty listing. What is
-// simply not there yet goes in the "not built yet" note. All made up.
+// Sam also reads plainly what the Market does not do yet. All made up.
 
 import { readWindow, spawnWindow, windowFrame } from '../../e2e/board.mjs';
 import { note } from '../report.mjs';
@@ -123,8 +123,25 @@ export default {
       return `refused with "${empty.body?.error}"`;
     });
 
-    await check('hunt', 'what the Market does not do yet', async () => {
-      throw note('not built yet: paid listings (every listing says Free until Stripe is connected), selling for anyone but the owner, and the Windows, Integrations and Themes tabs only switch built-in windows on and off');
+    await check('walk', 'Sam reads plainly what the Market does not do yet', async ({ shot }) => {
+      const mine = await spawnWindow(sam.page, 'marketplace', {}, { x: 60, y: 60 }, { w: 620, h: 420 });
+      const frame = windowFrame(sam.page, mine);
+      await frame.getByTestId('marketplace-not-seller').waitFor({ timeout: 15_000 }).catch(() => {});
+      const top = await frame.getByTestId('marketplace-not-yet').innerText().catch(() => '');
+      await shot(sam.page, 'sam-reads-what-is-not-on-yet');
+      const tabs = [];
+      for (const tab of ['window', 'integration', 'theme']) {
+        await frame.getByTestId(`marketplace-tab-${tab}`).click();
+        tabs.push(await frame.getByTestId('marketplace-tab-note').innerText().catch(() => ''));
+      }
+      const patSees = await windowFrame(pat.page, market).getByTestId('marketplace-not-seller').count();
+      const problems = [];
+      if (!/Paid listings are not on yet/.test(top)) problems.push('no "Paid listings are not on yet" line');
+      if (!/Only the owner of this censaiOS can publish/.test(top)) problems.push('no sentence saying who may publish');
+      if (tabs.some((line) => !/built-in windows/.test(line))) problems.push(`a tab has no line: ${JSON.stringify(tabs)}`);
+      if (patSees) problems.push('Pat (the owner) is told only the owner can publish');
+      if (problems.length) throw new Error(problems.join('; '));
+      return `Sam reads "${top.replace(/\s+/g, ' ').trim()}"; each opt-in tab says it only switches built-in windows`;
     });
   },
 };

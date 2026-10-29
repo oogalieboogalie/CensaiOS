@@ -1,6 +1,5 @@
 import React from 'react';
 import { getCollaborationClientId } from '../../lib/collaboration/clientIdentity.js';
-import { diffPresenceNotices } from '../../lib/collaboration/liveText.js';
 import { collaborationUrl, mergeCollaborationPreviews } from '../../lib/collaboration/previews.js';
 
 // Re-exported so existing importers keep working after the previews extraction.
@@ -24,9 +23,15 @@ const OFFLINE_STATE = {
   lastActivity: null, lastAgentRun: null,
 };
 
+/**
+ * The board's live socket: who is here, window drags, cursors, typing and
+ * board events. `onPeople` hears the people on the socket each time the
+ * list changes, and null while the socket is not connected (the "joined"
+ * pop-ups, usePresenceNotices.js).
+ */
 export function useWorkspaceCollaboration({
   enabled, workspaceId, wins, revision, onAuthoritativeCommit, activeId, crdt = false,
-  guest = false, onEvent = null, awarenessPresence = false,
+  guest = false, onEvent = null, onPeople = null,
 }) {
   const clientId = React.useMemo(() => getCollaborationClientId(), []);
   const [state, setState] = React.useState(OFFLINE_STATE);
@@ -38,13 +43,11 @@ export function useWorkspaceCollaboration({
   const lastTypingAt = React.useRef(new Map());
   const lastTextAt = React.useRef(new Map());
   const sequence = React.useRef(0);
-  const snapshotBaseline = React.useRef(false);
   // Other event types (comments, guest boards, camera) go to the caller via a ref.
   const onEventRef = React.useRef(onEvent);
   React.useEffect(() => { onEventRef.current = onEvent; }, [onEvent]);
-
-  const awarenessRef = React.useRef(awarenessPresence); // live: members' toasts come from awareness
-  awarenessRef.current = awarenessPresence;
+  const onPeopleRef = React.useRef(onPeople);
+  onPeopleRef.current = onPeople;
   React.useEffect(() => { revisionRef.current = revision; }, [revision]);
 
   React.useEffect(() => {
@@ -82,25 +85,16 @@ export function useWorkspaceCollaboration({
         let message;
         try { message = JSON.parse(event.data); } catch { return; }
         if (message.type === 'collaboration.ready') {
+          onPeopleRef.current?.(message.participants || []);
           setState((current) => ({
             ...current, status: 'live', participants: message.participants || [],
             spectators: message.spectators || 0, guest: message.guest || null, self: message.actor || null,
           }));
         } else if (message.type === 'presence.snapshot') {
-          // First snapshot (or first after a reconnect) only sets the
-          // baseline — no join toasts for people already here.
-          const fresh = !snapshotBaseline.current;
-          snapshotBaseline.current = true;
-          setState((current) => {
-            const watched = (list) => (awarenessRef.current ? (list || []).filter((p) => p.actor?.type === 'guest') : list || []);
-            const notices = fresh ? [] : diffPresenceNotices(watched(current.participants), watched(message.participants), { selfId: current.self?.id });
-            return {
-              ...current,
-              participants: message.participants || [],
-              spectators: message.spectators || 0,
-              notices: [...(current.notices || []), ...notices].slice(-5),
-            };
-          });
+          onPeopleRef.current?.(message.participants || []);
+          setState((current) => ({
+            ...current, participants: message.participants || [], spectators: message.spectators || 0,
+          }));
         } else if (message.type === 'window.preview') {
           const priorTimer = previewTimers.current.get(message.windowId);
           if (priorTimer) clearTimeout(priorTimer);
@@ -156,7 +150,7 @@ export function useWorkspaceCollaboration({
       socket.addEventListener('close', (event) => {
         if (socketRef.current === socket) socketRef.current = null;
         if (disposed) return;
-        snapshotBaseline.current = false;
+        onPeopleRef.current?.(null);
         if (GUEST_ENDED_CODES.has(event?.code)) {
           setState((current) => ({ ...current, status: 'ended', participants: [], endedReason: event.reason || 'This link was turned off.' }));
           onEventRef.current?.({ type: 'guest.ended', code: event.code, reason: event.reason });
@@ -172,6 +166,7 @@ export function useWorkspaceCollaboration({
               id: `collaboration-unavailable-${Date.now()}`,
               kind: 'error',
               text: 'Live collaboration unavailable — reconnects when the workspace changes.',
+              at: Date.now(),
             }].slice(-5),
           }));
           return;
@@ -185,6 +180,7 @@ export function useWorkspaceCollaboration({
     connect();
     return () => {
       disposed = true;
+      onPeopleRef.current?.(null);
       clearTimeout(reconnectTimer);
       clearPreviews();
       socketRef.current?.close();

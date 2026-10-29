@@ -6,12 +6,13 @@ const loadWorkspaceAuthoritatively = jest.fn();
 const getSession = jest.fn();
 const getCurrentProject = jest.fn();
 const setCurrentProject = jest.fn();
+const addAgent = jest.fn();
 
 jest.unstable_mockModule('../src/lib/api.js', () => ({
   api: { loadWorkspaceAuthoritatively, getSession, getCurrentProject },
 }));
 jest.unstable_mockModule('../src/lib/agentStore.js', () => ({
-  addAgent: jest.fn(), getAgentById: jest.fn(), updateAgent: jest.fn(),
+  addAgent, getAgentById: jest.fn(), updateAgent: jest.fn(),
   initializeAgents: jest.fn().mockResolvedValue(undefined),
 }));
 jest.unstable_mockModule('../src/lib/store.js', () => ({
@@ -47,6 +48,19 @@ describe('app bootstrap workspace recovery', () => {
     expect(result.current.initial).toEqual(expect.any(Object));
     expect(result.current.workspaceRevision).toBe(0);
     expect(result.current.workspaceLoad.status).toBe('ready');
+  });
+
+  test('a board with an unsaved draft boots into the server copy like any load, its own agents included', async () => {
+    const agent = { id: 'made-up-helper', name: 'Made-up helper' };
+    loadWorkspaceAuthoritatively.mockResolvedValue({
+      status: 'draft_required', value: { wins: [], extraAgents: [agent] }, revision: 4, workspaceId: 'ws-1',
+      draft: { value: { workspaceId: 'ws-1', wins: [{ id: 'unsaved' }] } },
+    });
+    const { result } = renderHook(() => useAppBootstrap());
+    await waitFor(() => expect(result.current.dataLoading).toBe(false));
+    expect(result.current.initial).toEqual(expect.objectContaining({ extraAgents: [agent] }));
+    expect(result.current.workspaceRevision).toBe(4);
+    expect(addAgent).toHaveBeenCalledWith(agent);
   });
 
   test('retry performs a new authoritative load without fabricating state between attempts', async () => {

@@ -67,9 +67,9 @@ test('a code editor that fails to load shows the error and will not save it', as
     onUpdate: jest.fn(),
   }));
 
-  expect(await screen.findByRole('alert')).toHaveTextContent('Failed to load file (status 503).');
+  expect(await screen.findByRole('alert')).toHaveTextContent('This file could not be opened just now.');
   expect(screen.getByDisplayValue('KEEP_THIS')).toBeInTheDocument();
-  expect(screen.queryByDisplayValue(/Failed to load/)).not.toBeInTheDocument();
+  expect(screen.queryByDisplayValue(/could not be opened/)).not.toBeInTheDocument();
 
   const save = screen.getByRole('button', { name: 'Save' });
   expect(save).toBeDisabled();
@@ -80,16 +80,15 @@ test('a code editor that fails to load shows the error and will not save it', as
   expectNoPut(fetchMock);
 });
 
-test('a document that fails to load shows the error and will not save it', async () => {
-  const fetchMock = failedLoadFetch();
-  global.fetch = fetchMock;
+function renderFailedDoc(id, extra = {}) {
   render(React.createElement(DocWindow, {
     win: {
-      id: 'doc-failed',
+      id,
       kind: 'doc',
       fileName: 'notes.md',
-      filePath: '/notes/missing-load.md',
+      filePath: `/notes/${id}.md`,
       annotations: [],
+      ...extra,
     },
     onUpdate: jest.fn(),
     onSpawn: jest.fn(),
@@ -98,16 +97,41 @@ test('a document that fails to load shows the error and will not save it', async
     onAssign: jest.fn(),
     workspaceId: 'workspace-1',
   }));
+}
 
-  expect(await screen.findByRole('alert')).toHaveTextContent('Failed to load file (status 503).');
-  fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
-  expect(screen.getByRole('textbox').value).toBe('');
-  expect(screen.getByRole('textbox').value).not.toContain(SECRET);
-
+async function expectSaveStaysOff(fetchMock) {
   const save = screen.getByRole('button', { name: 'Save' });
   expect(save).toBeDisabled();
   fireEvent.click(save);
-
   await waitFor(() => expectLoadWarning('doc'));
   expectNoPut(fetchMock);
+}
+
+test('a document that fails to load shows the error and will not edit or save it', async () => {
+  const fetchMock = failedLoadFetch();
+  global.fetch = fetchMock;
+  renderFailedDoc('doc-failed');
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('This file could not be opened just now.');
+  const edit = screen.getByRole('button', { name: 'Edit' });
+  expect(edit).toBeDisabled();
+  fireEvent.click(edit);
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  expect(document.body.textContent).not.toContain(SECRET);
+
+  await expectSaveStaysOff(fetchMock);
+});
+
+test('a document already open for editing keeps the error out of its editor and takes no typing', async () => {
+  const fetchMock = failedLoadFetch();
+  global.fetch = fetchMock;
+  renderFailedDoc('doc-failed-editing', { isEditing: true });
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('This file could not be opened just now.');
+  const box = screen.getByRole('textbox');
+  expect(box.value).toBe('');
+  expect(box.value).not.toContain(SECRET);
+  expect(box).toHaveAttribute('readonly');
+
+  await expectSaveStaysOff(fetchMock);
 });

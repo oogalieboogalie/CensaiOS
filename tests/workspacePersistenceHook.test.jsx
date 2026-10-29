@@ -43,7 +43,7 @@ describe('workspace autosave revision boundary', () => {
     expect(persistWorkspaceWithPrewarm).not.toHaveBeenCalled();
 
     rerender({ workspace: { wins: [{ id: 'one' }] } });
-    expect(writeWorkspaceDraft).toHaveBeenCalledWith({ wins: [{ id: 'one' }] }, 2);
+    expect(writeWorkspaceDraft).toHaveBeenCalledWith({ wins: [{ id: 'one' }] }, 2, { board: true });
     await act(async () => {
       jest.advanceTimersByTime(1000);
       await Promise.resolve();
@@ -103,7 +103,7 @@ describe('workspace autosave revision boundary', () => {
 
     // Offline: board edits still go to the local draft.
     rerender({ workspace: { penColor: 'blue', wins: [{ id: 'one', x: 40, agentId: 'atlas' }] }, canvasLive: false });
-    expect(writeWorkspaceDraft).toHaveBeenLastCalledWith({ penColor: 'blue', wins: [{ id: 'one', x: 40, agentId: 'atlas' }] }, 2);
+    expect(writeWorkspaceDraft).toHaveBeenLastCalledWith({ penColor: 'blue', wins: [{ id: 'one', x: 40, agentId: 'atlas' }] }, 2, { board: true });
   });
 
   test('acknowledgeRevision moves forward only', () => {

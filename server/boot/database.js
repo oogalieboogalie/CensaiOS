@@ -36,6 +36,7 @@ import { ensureSocialSchema } from '../social/schema.js';
 import { ensureLessonSchema } from '../lessons/schema.js';
 import { ensureHostedAgentSchema } from '../hostedAgents/schema.js';
 import { ensureAuctionWatcherSchema } from '../auctionWatcher/schema.js';
+import { ensureOwnCalendarSchema } from '../ownCalendar/schema.js';
 import { ensureBoardInviteSchema } from '../invites/schema.js';
 import { ensureResearchSchema } from '../research/schema.js';
 import { ensureCensaiPlanSchema } from '../censaiOrchestrator/schema.js';
@@ -88,6 +89,7 @@ async function probeDb() {
   await ensureLessonSchema(pool);
   await ensureHostedAgentSchema(pool);
   await ensureAuctionWatcherSchema(pool);
+  await ensureOwnCalendarSchema(pool);
   await ensureBoardInviteSchema(pool);
   await ensureResearchSchema(pool);
   await ensureCensaiPlanSchema(pool);

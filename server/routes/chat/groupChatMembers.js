@@ -51,7 +51,7 @@ function httpError(message, statusCode, code) {
   return Object.assign(new Error(message), { statusCode, code });
 }
 
-export const GROUP_RULES = 'You are in a group chat with people and other agents. Messages from others start with their name in brackets. Answer in your own role, briefly, and build on what the others said instead of repeating it. You cannot use tools in this chat.';
+export const GROUP_RULES = 'You are in a group chat with people and other agents. Messages from others start with their name in brackets. Answer in your own role, briefly, and build on what the others said instead of repeating it. Use your own tools here when your part needs them (search the web, read or write files, add to the board), and say plainly what you did. If a tool fails or you do not have the tool your part needs, say so in one line instead of guessing.';
 
 /** The prompt a board sub-agent answers with in a group chat. */
 export function subAgentGroupPrompt(sub) {
@@ -105,16 +105,18 @@ export async function resolveGroupChatMembers(agentIds, { workspaceId, userId, u
   return members;
 }
 
-/** The conversation as one member sees it: its own lines are the assistant's. */
-export function memberMessages(member, messages, names) {
+/**
+ * The conversation as one member is handed it: the group rules first, then
+ * the messages, with other agents' lines tagged by name (not by id). The run
+ * engine turns a name into "[Lead]: ..." and the member's own lines into its own.
+ */
+export function groupTurnMessages(member, messages, names) {
   return [
-    { role: 'system', content: member.systemPrompt },
+    { from: 'system', text: GROUP_RULES },
     ...messages.map((m) => {
-      if (m.from === 'me') return { role: 'user', content: m.text };
-      if (m.from === 'system') return { role: 'user', content: `[SYSTEM]: ${m.text}` };
       // 'agent' is the legacy 1:1 sender tag (pre-agent.id); it can only mean this agent.
-      if (m.from === member.agentId || m.from === 'agent') return { role: 'assistant', content: m.text };
-      return { role: 'user', content: `[${names[m.from] || m.from}]: ${m.text}` };
+      if (m.from === 'me' || m.from === 'system' || m.from === member.agentId || m.from === 'agent') return m;
+      return { ...m, from: names[m.from] || m.from };
     }),
   ];
 }

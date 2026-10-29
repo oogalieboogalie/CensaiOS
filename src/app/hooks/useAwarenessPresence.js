@@ -1,5 +1,4 @@
 import React from 'react';
-import { diffPresenceNotices } from '../../lib/collaboration/liveText.js';
 import { presenceIdentity, readAwarenessPresence } from '../../lib/collaboration/awarenessPresence.js';
 import { noteSignedInUser } from '../../lib/chat/agentPointer.js';
 import { noteSignedInName } from '../../lib/collaboration/signedInName.js';
@@ -7,39 +6,40 @@ import { noteSignedInName } from '../../lib/collaboration/signedInName.js';
 const SEND_EVERY_MS = 32;
 const TYPING_CLEAR_MS = 3000;
 const EMPTY = Object.freeze({ participants: [], cursors: {}, typing: {}, previews: {}, selections: {}, agents: {} });
+const read = (awareness) => readAwarenessPresence(awareness.getStates(), awareness.clientID);
+const others = (presence) => presence.participants.filter((p) => !p.self);
 
 /**
  * Presence for everyone on the board, carried by the shared document's Yjs
  * awareness: cursor, selection, name, colour, the window being dragged and
  * the window being typed in. `awareness` is null until the shared doc
- * connects; everything here is a no-op until then.
+ * connects; everything here is a no-op until then. `onPeople` hears who else
+ * is here while `live` (the doc has synced on its current connection,
+ * useYjsCanvas.js) and null while it is not, for the "joined" pop-ups
+ * (usePresenceNotices.js).
  */
-export function useAwarenessPresence({ awareness, user, selectedIds }) {
+export function useAwarenessPresence({ awareness, live = false, user, selectedIds, onPeople = null }) {
   const [presence, setPresence] = React.useState(EMPTY);
-  const [notices, setNotices] = React.useState([]);
   const lastSent = React.useRef({ cursor: 0, drag: 0 });
   const typingTimer = React.useRef(null);
-  const baseline = React.useRef(null);
+  const onPeopleRef = React.useRef(onPeople);
+  onPeopleRef.current = onPeople;
+  const liveRef = React.useRef(live);
+  liveRef.current = live;
   const identity = React.useMemo(() => presenceIdentity(user), [user?.id, user?.name, user?.email]);
-  const selfIdRef = React.useRef(identity.id);
-  selfIdRef.current = identity.id;
   React.useEffect(() => { noteSignedInUser(user?.id); }, [user?.id]);
   React.useEffect(() => { noteSignedInName(user ? identity.name : null); }, [user, identity.name]);
 
   React.useEffect(() => {
     if (!awareness) {
       setPresence(EMPTY);
-      baseline.current = null;
       return undefined;
     }
-    const refresh = () => {
-      const next = readAwarenessPresence(awareness.getStates(), awareness.clientID);
-      const others = next.participants.filter((p) => !p.self);
-      if (baseline.current) {
-        const joinedOrLeft = diffPresenceNotices(baseline.current, others, { selfId: selfIdRef.current });
-        if (joinedOrLeft.length) setNotices((current) => [...current, ...joinedOrLeft].slice(-5));
-      }
-      baseline.current = others;
+    const refresh = (_changes, origin) => {
+      const next = read(awareness);
+      // When its connection closes the provider drops everyone else (and is
+      // no longer synced): that is this tab going offline, not people leaving.
+      if (liveRef.current && origin?.synced !== false) onPeopleRef.current?.(others(next));
       setPresence(next);
     };
     awareness.on('change', refresh);
@@ -49,6 +49,11 @@ export function useAwarenessPresence({ awareness, user, selectedIds }) {
       clearTimeout(typingTimer.current);
     };
   }, [awareness]);
+
+  // A full list each time the doc (re)syncs, and null while it is offline.
+  React.useEffect(() => {
+    onPeopleRef.current?.(awareness && live ? others(read(awareness)) : null);
+  }, [awareness, live]);
 
   React.useEffect(() => {
     awareness?.setLocalStateField('user', identity);
@@ -85,6 +90,6 @@ export function useAwarenessPresence({ awareness, user, selectedIds }) {
   }, [awareness]);
 
   return React.useMemo(() => ({
-    live: Boolean(awareness), ...presence, notices, identity, sendCursor, sendTyping, previewWindowMove,
-  }), [awareness, presence, notices, identity, sendCursor, sendTyping, previewWindowMove]);
+    live: Boolean(awareness), ...presence, identity, sendCursor, sendTyping, previewWindowMove,
+  }), [awareness, presence, identity, sendCursor, sendTyping, previewWindowMove]);
 }

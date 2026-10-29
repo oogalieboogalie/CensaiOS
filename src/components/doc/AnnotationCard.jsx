@@ -18,6 +18,7 @@ export function AnnotationCard({ ann, isActive, onClick, onRemove }) {
       </div>
       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', borderLeft: `2px solid ${c.ring}`, paddingLeft: 6, fontStyle: 'italic', maxHeight: 38, overflow: 'hidden' }}>"{ann.quote.length > 80 ? ann.quote.slice(0, 80) + '…' : ann.quote}"</div>
       {ann.body && <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink)' }}>{ann.body}</div>}
+      {ann.lost && <div data-note-lost style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Its words were deleted from the page.</div>}
     </div>
   );
 }

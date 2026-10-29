@@ -1,6 +1,6 @@
 import React from 'react';
 import { CanvasWires } from './canvas/CanvasWires.jsx';
-import { CanvasMarks, EmptyState } from './canvas/CanvasEmptyState.jsx';
+import { CanvasMarks, EmptyState, showsWelcome } from './canvas/CanvasEmptyState.jsx';
 import { CanvasDrawingLayer } from './canvas/CanvasDrawingLayer.jsx';
 import { CanvasWindows } from './canvas/CanvasWindowLayers.jsx';
 import { CanvasGroupsLayer, CanvasGroupCards } from './canvas/CanvasGroupsLayer.jsx';
@@ -125,6 +125,8 @@ left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules
           onWireEnd={handleWireEnd}
           groupDrag={groupDrag}
         />
+        {showsWelcome({ wins, groups: canvasGroups, paths, busy: Boolean(band || region), activeTool, suppress: suppressEmptyState }) && <EmptyState
+          onSpawn={onSpawn} onTour={onLaunchpadTour} suggestModules={launchpadSuggestModules} chipKinds={launchpadChipKinds} panMode={theme.canvasPanMode} />}
       </>}
       overlayChildren={<>
         <CanvasGroupsLayer
@@ -186,9 +188,6 @@ left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules
         <CanvasGroupCards groups={canvasGroups} wins={wins} />
         <CanvasSelectionOutline wins={wins} selectedIds={selectedIds} zoom={zoom} />
         <CanvasWires wins={wins} dockState={dockState} pan={pan} zoom={zoom} />
-
-        {wins.length === 0 && !band && !region && !suppressEmptyState && <EmptyState
-onSpawn={onSpawn} onTour={onLaunchpadTour} suggestModules={launchpadSuggestModules} chipKinds={launchpadChipKinds} />}
         <CanvasRubberBand band={band} zoom={zoom} />
     </CanvasShell>
 

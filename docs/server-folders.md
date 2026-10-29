@@ -60,6 +60,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `osvMirror` | A local copy of the OSV vulnerability database and version matching. |
 | `outsideTools` | Outside tools agents may call (MCP servers over HTTP or a command line), with a network guard. |
 | `overseer` | The Overseer window (merging pull requests only when turned on). |
+| `ownCalendar` | Each person's own calendar: the events the Calendar window and agents keep without Google. |
 | `policy` | The policy engine and its evidence. |
 | `project-brief` | Project briefs built from a local folder or GitHub. |
 | `projectGit` | Plain git for one project folder on this computer. |

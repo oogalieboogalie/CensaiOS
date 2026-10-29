@@ -29,6 +29,13 @@ const TABS = [
   { id: 'theme', label: 'Themes', icon: 'Eye' },
 ];
 
+// The opt-in tabs only switch built-in windows on and off; say so plainly.
+const TAB_NOTES = {
+  window: 'These switch built-in windows on and off for this board. Nothing is downloaded or bought.',
+  integration: 'Integrations are built-in windows too. Switching one on or off only changes the Add menu for this board.',
+  theme: 'Themes are built-in windows too. Switching one on or off only changes the Add menu for this board.',
+};
+
 export function MarketplaceWindow({ win } = {}) {
   const windowAllowList = useWorkspaceStore((s) => s.windowAllowList);
   const setWindowAllowed = useWorkspaceStore((s) => s.setWindowAllowed);
@@ -91,6 +98,9 @@ export function MarketplaceWindow({ win } = {}) {
         />
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '4px 4px 8px' }}>
+        {TAB_NOTES[activeTab] && (
+          <p data-testid="marketplace-tab-note" style={{ margin: '4px 6px 8px', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>{TAB_NOTES[activeTab]}</p>
+        )}
         {activeTab === 'module' ? <ModuleListings search={search} /> : activeTab === 'agent' && rows.length === 0 ? (
           // No agents are listed here yet; they live in the Agent Registry window.
           <div data-testid="marketplace-agents-empty" style={{ padding: 16, color: 'var(--ink-faint)', textAlign: 'center' }}>

@@ -9,23 +9,26 @@
 // writer wins per property. Ink paths/links are arrays: appends merge,
 // anything else replaces the list.
 //
-// Window body text (doc `text`, code editor `code`) lives in a Y.Text, so two
-// people typing in the same window merge character by character. A To-do
+// Window body text (doc `text`, code editor `code`, each Vault note's
+// `vt.<noteId>`) lives in a Y.Text, so two people typing in the same window
+// merge character by character. A To-do
 // list's `items` merge one to-do at a time (windowLists.js), a Sheet's
-// cells one cell at a time (windowSheet.js), and a Sketchpad's shapes one
-// shape at a time (windowSketch.js). Fields in
+// cells one cell at a time (windowSheet.js), a Sketchpad's shapes one
+// shape at a time (windowSketch.js), and a slide's boxes one box at a time
+// (windowSlides.js). Fields in
 // LOCAL_WINDOW_FIELDS (like whether *I* have the editor open) never sync.
 import * as Y from 'yjs';
-import { WINDOW_TEXT_FIELDS, applyOp, applyTextDiff, diffText } from '../../../shared/collab/textDiff.js';
+import { applyOp, applyTextDiff, diffText, isWindowTextField } from '../../../shared/collab/textDiff.js';
 import { takeLocalEdit } from './remoteTextEdits.js';
 import { valueFromY, valueToY } from '../../../shared/collab/seedFromSnapshot.js';
 import { CANVAS_ROOT, SCHEMA_VERSION, isValidId, isValidWindowGeometry } from '../../../shared/collab/ySchema.js';
 import { WINDOW_LIST_FIELDS, syncById, writeWindowList } from './windowLists.js';
 import { writeWindowSheet } from './windowSheet.js';
 import { writeWindowSketch } from './windowSketch.js';
+import { isSlideField, writeWindowSlide } from './windowSlides.js';
 
 export const SYNCED_KEYS = ['wins', 'canvasGroups', 'paths', 'links', 'dock'];
-export const LOCAL_WINDOW_FIELDS = new Set(['isEditing']);
+export const LOCAL_WINDOW_FIELDS = new Set(['isEditing', 'showComments']);
 const EMPTY = Object.freeze({ wins: [], canvasGroups: [], paths: [], links: [], dock: {} });
 
 function same(a, b) {
@@ -73,10 +76,11 @@ function writeFields(target, prevEntry, nextEntry, isWindow = false, id = null) 
     if (isWindow && LOCAL_WINDOW_FIELDS.has(field)) continue;
     const pair = isWindow ? PAIRED_WINDOW_FIELDS[field] : null;
     if (!changed(field) && !(pair && pair in nextEntry && changed(pair))) continue;
-    if (isWindow && WINDOW_TEXT_FIELDS.has(field) && typeof value === 'string') writeText(target, field, value, id);
+    if (isWindow && isWindowTextField(field) && typeof value === 'string') writeText(target, field, value, id);
     else if (isWindow && WINDOW_LIST_FIELDS.has(field) && writeWindowList(target, field, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'sheet' && writeWindowSheet(target, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'state' && writeWindowSketch(target, prevEntry?.[field], value)) continue;
+    else if (isWindow && isSlideField(field) && writeWindowSlide(target, field, prevEntry?.[field], value)) continue;
     else target.set(field, valueToY(value));
   }
   for (const field of Object.keys(prevEntry || {})) {

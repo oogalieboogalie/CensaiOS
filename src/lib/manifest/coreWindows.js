@@ -155,7 +155,9 @@ export const CORE_WINDOW_MANIFESTS = [
     label: 'Calendar',
     componentName: 'CalendarWindow',
     componentPath: 'src/components/CalendarWindow.jsx',
-    defaultSize: { w: 360, h: 360 },
+    // Seven day columns wide enough for an event's name on its date.
+    defaultSize: { w: 432, h: 480 },
+    sizeClass: 'fixed',
   },
   {
     kind: 'appearance',

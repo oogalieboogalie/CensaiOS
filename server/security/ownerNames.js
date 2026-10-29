@@ -30,7 +30,8 @@ export function ownerNamesSentence(names) {
   return `The owner account is ${names.owner}; you're signed in as ${names.you}.`;
 }
 
-/** The app-log line for a refusal: the feature and signed-out or not-the-owner. */
-export function logOwnerRefusal(feature, statusCode) {
-  log.info(`refused ${feature || 'an owner-only action'}: ${statusCode === 401 ? 'signed out' : 'not the owner'}`);
+/** The app-log line for a refusal: the feature, the account number when known, and signed-out or not-the-owner. */
+export function logOwnerRefusal(feature, statusCode, account = null) {
+  const who = Number.isInteger(account) && account > 0 ? ` for account ${account}` : '';
+  log.info(`refused ${feature || 'an owner-only action'}${who}: ${statusCode === 401 ? 'signed out' : 'not the owner'}`);
 }

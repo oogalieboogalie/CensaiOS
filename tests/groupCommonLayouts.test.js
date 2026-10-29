@@ -19,7 +19,7 @@ describe('common group layouts', () => {
     expect(getBuiltInPresets(1)).toEqual([]);
   });
 
-  test.each(['COLUMNS', 'ROWS', 'GRID', 'MAIN_SIDEBAR'])('%s places every window without overlaps', (presetId) => {
+  test.each(['COLUMNS', 'ROWS', 'GRID', 'MAIN_SIDEBAR', 'MAIN_TOP'])('%s places every window without overlaps', (presetId) => {
     for (const n of [2, 3, 4, 5, 6, 7]) {
       const list = wins(n);
       const placed = layout(presetId, list);
@@ -53,6 +53,18 @@ describe('common group layouts', () => {
     expect(placed.w0.x).toBe(placed.w1.x);
   });
 
+  test('big on top is offered from three windows and keeps the biggest across the top', () => {
+    expect(getBuiltInPresets(2).map((p) => p.id)).not.toContain('MAIN_TOP');
+    expect(getBuiltInPresets(3).map((p) => p.id)).toContain('MAIN_TOP');
+    const list = wins(3);
+    list[1] = { ...list[1], w: 900, h: 700 };
+    const placed = layout('MAIN_TOP', list);
+    expect(placed.w1.y).toBeLessThan(placed.w0.y);
+    expect(placed.w1.w).toBeGreaterThan(placed.w0.w + placed.w2.w);
+    expect(placed.w0.y).toBe(placed.w2.y);
+    expect(placed.w0.h).toBe(placed.w2.h);
+  });
+
   test('legacy layout ids still arrange groups saved with them', () => {
     expect(Object.keys(layout('QUAD', wins(4)))).toHaveLength(4);
     expect(Object.keys(layout('SPLIT_LR', wins(2)))).toHaveLength(2);
@@ -66,7 +78,8 @@ describe('normalized default window sizes', () => {
     const offClass = Object.entries(DEFAULT_WINDOW_SIZES)
       .filter(([, s]) => !classSizes.includes(`${s.w}x${s.h}`))
       .map(([kind]) => kind);
-    expect(offClass.sort()).toEqual(['music', 'shorts']); // device-shaped players
+    // Device-shaped players, and the Calendar's seven day columns.
+    expect(offClass.sort()).toEqual(['calendar', 'music', 'shorts']);
     expect(getDefaultWindowSize('chat')).toEqual(WINDOW_SIZE_CLASSES.compact);
     expect(getDefaultWindowSize('terminal')).toEqual(WINDOW_SIZE_CLASSES.wide);
   });

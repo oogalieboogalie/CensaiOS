@@ -3,13 +3,15 @@
 // providers speak) on 127.0.0.1 and gives one short fixed answer, except to
 // LeadHound's three prompts, which get the JSON a real model would return,
 // to a "Made-up team ask", which uses the agent network tools, and to a
-// "Made-up terminal ask", which tries the terminal tool. A message
+// "Made-up terminal ask", which tries the terminal tool, and to a Step cards
+// read-over (standinStepCheck.mjs). A message
 // carrying pictures is answered with how many it saw and on which model.
 
 import http from 'node:http';
 import { standinComplete } from '../../tests/fixtures/leadHoundStandin.js';
 import { teamAskReply } from './standinTeamAsk.mjs';
 import { terminalAskReply } from './standinTerminalAsk.mjs';
+import { stepCheckReply } from './standinStepCheck.mjs';
 
 export const STANDIN_ANSWER = 'Stand-in answer: heard you.';
 
@@ -20,6 +22,8 @@ const pictures = (message) => (Array.isArray(message?.content) ? message.content
 function replyFor(messages = [], tools = [], model = '') {
   const system = String(messages[0]?.content || '');
   if (LEADHOUND_PROMPTS.some((start) => system.startsWith(start))) return { content: standinComplete(messages) };
+  const stepCheck = stepCheckReply(messages);
+  if (stepCheck) return stepCheck;
   const seen = pictures(messages.filter((m) => m.role === 'user').pop());
   if (seen) return { content: `Stand-in answer: I see ${seen} picture${seen === 1 ? '' : 's'} (${model}).` };
   return teamAskReply(messages, tools) || terminalAskReply(messages, tools) || { content: STANDIN_ANSWER };
@@ -71,7 +75,9 @@ export function startStandinModel(port = 11434) {
         return res.end('{}');
       }
       calls += 1;
-      recent.push({ tools: Array.isArray(body.tools) ? body.tools.length : 0, toolChoice: body.tool_choice ?? null, messages: body.messages || [] });
+      // Only the key's last four letters, so a check can tell whose key paid.
+      const keyEnd = String(req.headers.authorization || '').slice(-4);
+      recent.push({ tools: Array.isArray(body.tools) ? body.tools.length : 0, toolChoice: body.tool_choice ?? null, messages: body.messages || [], model: body.model || '', keyEnd });
       if (recent.length > 20) recent.shift();
       return answer(res, body);
     });

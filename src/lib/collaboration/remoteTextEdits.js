@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import { WINDOW_TEXT_FIELDS, applyOp } from '../../../shared/collab/textDiff.js';
+import { applyOp, isWindowTextField } from '../../../shared/collab/textDiff.js';
 
 // Where other people's typing actually landed in a window's text, as the
 // shared doc reported it. Guessing that from two strings fails in repeated
@@ -37,7 +37,7 @@ export function collectTextEvents(events, isLocal) {
   for (const event of events) {
     if (!(event.target instanceof Y.Text)) continue;
     const [where, id, field] = event.path.length === 2 ? [...event.path, event.target._item?.parentSub] : event.path;
-    if (where !== 'windows' || !WINDOW_TEXT_FIELDS.has(field)) continue;
+    if (where !== 'windows' || !isWindowTextField(field)) continue;
     const key = keyOf(id, field);
     pending.set(key, [...(pending.get(key) || []), ...opsFromDelta(event.delta)]);
   }
@@ -46,20 +46,17 @@ export function collectTextEvents(events, isLocal) {
 /** After a remote change reached the store: pair each window's old and new text with its ops. */
 export function recordRemoteText(prevWins = [], nextWins = []) {
   const before = new Map(prevWins.map((w) => [String(w?.id), w]));
-  for (const win of nextWins) {
-    for (const field of WINDOW_TEXT_FIELDS) {
-      const key = keyOf(win?.id, field);
-      const ops = pending.get(key);
-      if (!ops) continue;
-      const from = before.get(String(win.id))?.[field];
-      const to = win[field];
-      if (typeof from !== 'string' || typeof to !== 'string') continue;
-      if (ops.reduce(applyOp, from) !== to) continue;
-      const list = steps.get(key) || [];
-      list.push({ before: from, after: to, ops });
-      if (list.length > MAX_STEPS) list.shift();
-      steps.set(key, list);
-    }
+  const after = new Map(nextWins.map((w) => [String(w?.id), w]));
+  for (const [key, ops] of pending) {
+    const [id, field] = key.split('\u0000');
+    const from = before.get(id)?.[field];
+    const to = after.get(id)?.[field];
+    if (typeof from !== 'string' || typeof to !== 'string') continue;
+    if (ops.reduce(applyOp, from) !== to) continue;
+    const list = steps.get(key) || [];
+    list.push({ before: from, after: to, ops });
+    if (list.length > MAX_STEPS) list.shift();
+    steps.set(key, list);
   }
   pending.clear();
 }

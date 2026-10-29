@@ -50,6 +50,31 @@ describe('workspace agent project memberships', () => {
     expect(client.release).toHaveBeenCalled();
   });
 
+  test('a board agent\'s chat window stands for its parent instead of failing the whole board', async () => {
+    const { db, client } = createDatabase(async (sql) => {
+      if (sql.includes('SELECT id FROM projects')) return { rows: [{ id: 'project-1' }] };
+      if (sql.includes('FROM sub_agents')) return { rows: [{ id: 'lead-1', parent_id: 'censai' }, { id: 'critic-1', parent_id: 'censai' }] };
+      if (sql.includes('SELECT * FROM agents')) return { rows: [{ id: 'censai' }, { id: 'atlas' }] };
+      return { rows: [] };
+    });
+
+    await replaceCanvasProjectMemberships(db, {
+      workspaceId: 'workspace-1',
+      projectId: 'project-1',
+      memberships: [
+        { agentId: 'lead-1', permission: 'read' },
+        { agentId: 'critic-1', permission: 'work' },
+        { agentId: 'atlas', permission: 'work' },
+      ],
+    });
+
+    const lookup = client.query.mock.calls.find(([sql]) => sql.includes('FROM sub_agents'));
+    expect(lookup[1]).toEqual(['workspace-1', ['lead-1', 'critic-1', 'atlas']]);
+    const inserts = client.query.mock.calls.filter(([sql]) => sql.trim().startsWith('INSERT INTO workspace_agent_projects'));
+    expect(inserts.map(([, params]) => [params[2], params[3]])).toEqual([['censai', 'work'], ['atlas', 'work']]);
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+  });
+
   test('rolls back before deletion when any agent is non-canonical', async () => {
     const { db, client } = createDatabase(async (sql) => {
       if (sql.includes('SELECT id FROM projects')) return { rows: [{ id: 'project-1' }] };

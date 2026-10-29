@@ -47,8 +47,8 @@ test('launchpad shows the CensaiOS welcome, module tiles, and mouse hints', () =
   expect(screen.queryByText(/take the tour/i)).not.toBeInTheDocument();
 
   // Mouse-hint block and footer hint text are present.
-  expect(screen.getByText(/move through space/)).toBeInTheDocument();
-  expect(screen.getByText(/Open a project from the top bar/)).toBeInTheDocument();
+  expect(screen.getByText(/move around/)).toBeInTheDocument();
+  expect(screen.getByText(/Open a project from the menu at the top left/)).toBeInTheDocument();
 
   // The old inline outcome form is gone from the launchpad by design.
   expect(screen.queryByPlaceholderText(/tell censai/i)).not.toBeInTheDocument();

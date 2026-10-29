@@ -3,7 +3,7 @@ export const calendarTools = [
     type: 'function',
     function: {
       name: 'read_calendar',
-      description: 'Fetch the next 7 days of events from the Google Calendar.',
+      description: "Fetch the next 7 days of events from the person's calendar: their own calendar in censaiOS, plus Google Calendar when it is connected.",
       parameters: { type: 'object', properties: {} },
     },
   },
@@ -11,7 +11,7 @@ export const calendarTools = [
     type: 'function',
     function: {
       name: 'add_calendar_event',
-      description: 'Add a new event to the Google Calendar.',
+      description: "Add a new event to the person's calendar: Google Calendar when it is connected, otherwise their own calendar in censaiOS.",
       parameters: {
         type: 'object',
         properties: {

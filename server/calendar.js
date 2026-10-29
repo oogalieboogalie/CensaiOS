@@ -12,6 +12,11 @@ export const calendarRouter = express.Router();
 
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/auth/google/callback';
 
+export const NOT_CONNECTED = 'Not authenticated with Google';
+
+/** Whether this server has Google sign-in set up, so "Connect Google" can work. */
+export const googleSetUp = () => Boolean(process.env.G_CLIENT_ID && process.env.G_SECRET);
+
 export async function getOAuthClient(userId) {
   if (!dbReady()) return null;
   const oauth2Client = new google.auth.OAuth2(
@@ -37,7 +42,7 @@ export async function getOAuthClient(userId) {
 // Internal function to get upcoming events
 export async function getCalendarEventsInternal(userId, { start, end } = {}) {
   const auth = await getOAuthClient(userId);
-  if (!auth) throw new Error('Not authenticated with Google');
+  if (!auth) throw new Error(NOT_CONNECTED);
 
   const calendar = google.calendar({ version: 'v3', auth });
 
@@ -72,17 +77,18 @@ export async function getCalendarEventsInternal(userId, { start, end } = {}) {
     start: ev.start.dateTime || ev.start.date,
     end: ev.end.dateTime || ev.end.date,
     link: ev.htmlLink,
-    color: ev.colorId ? googleColors[ev.colorId] : 'var(--ps-blue)'
+    color: ev.colorId ? googleColors[ev.colorId] : 'var(--ps-blue)',
+    source: 'google',
   }));
 }
 
 // Internal function to add an event
 export async function addCalendarEventInternal(userId, { title, start, end, description }) {
   const auth = await getOAuthClient(userId);
-  if (!auth) throw new Error('Not authenticated with Google');
+  if (!auth) throw new Error(NOT_CONNECTED);
 
   if (!title || !start || !end) {
-    throw new Error('Missing title, start, or end in request');
+    throw Object.assign(new Error('Missing title, start, or end in request'), { statusCode: 400 });
   }
 
   const calendar = google.calendar({ version: 'v3', auth });
@@ -102,6 +108,15 @@ export async function addCalendarEventInternal(userId, { title, start, end, desc
   return { ok: true, eventId: response.data.id, link: response.data.htmlLink };
 }
 
+// Not connected answers 401 and says whether Google sign-in is set up here.
+// Anything else Google answers stays in the app log, not on screen.
+function sendProblem(res, err, what) {
+  if (err.message === NOT_CONNECTED) return res.status(401).json({ error: NOT_CONNECTED, googleSetUp: googleSetUp() });
+  if (err.statusCode === 400) return res.status(400).json({ error: err.message });
+  log.error(`google calendar: ${what} failed`, { code: safeErrorCode(err) });
+  return res.status(500).json({ error: `Google Calendar could not ${what} just now.` });
+}
+
 // Get upcoming events
 calendarRouter.get('/events', async (req, res) => {
   try {
@@ -111,11 +126,7 @@ calendarRouter.get('/events', async (req, res) => {
     });
     res.json(events);
   } catch (err) {
-    if (err.message === 'Not authenticated with Google') {
-      res.status(401).json({ error: err.message });
-    } else {
-      res.status(500).json({ error: err.message });
-    }
+    sendProblem(res, err, 'read the events');
   }
 });
 
@@ -125,10 +136,6 @@ calendarRouter.post('/add', async (req, res) => {
     const result = await addCalendarEventInternal(req.session.userId, req.body);
     res.json(result);
   } catch (err) {
-    if (err.message === 'Not authenticated with Google') {
-      res.status(401).json({ error: err.message });
-    } else {
-      res.status(500).json({ error: err.message });
-    }
+    sendProblem(res, err, 'add the event');
   }
 });

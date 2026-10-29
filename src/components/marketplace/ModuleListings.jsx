@@ -2,11 +2,14 @@
 import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { useWorkspaceStore } from '../../lib/store.js';
-import { fetchModuleListings, installModuleListing } from '../../lib/marketplace/moduleListingsApi.js';
+import { fetchModuleListings, fetchSellerStatus, installModuleListing } from '../../lib/marketplace/moduleListingsApi.js';
 import { moduleWindowFromSaved } from '../../lib/modules/moduleWindowState.js';
 import { clampModuleSize } from '../../lib/modules/moduleFormat.js';
 import { matches } from '../../lib/modules/addPaletteItems.js';
 import { describePermissions } from '../../lib/modules/manifestV3.js';
+
+const NOT_SELLER = 'Only the owner of this censaiOS can publish to the Market for now.';
+const FREE_HINT = 'Paid listings are not on yet';
 
 function day(at) {
   const t = Date.parse(at || '');
@@ -41,12 +44,15 @@ export function ModuleListings({ search = '' }) {
   const [listings, setListings] = React.useState(null);
   const [error, setError] = React.useState(null);
   const [adding, setAdding] = React.useState(null);
+  const [seller, setSeller] = React.useState(null);
 
   React.useEffect(() => {
     let cancelled = false;
     fetchModuleListings()
       .then(list => { if (!cancelled) setListings(list); })
       .catch(err => { if (!cancelled) { setListings([]); setError(err.message); } });
+    // Who may publish, so a teammate reads why there is no Publish choice.
+    fetchSellerStatus().then(status => { if (!cancelled) setSeller(status); }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
@@ -75,6 +81,10 @@ export function ModuleListings({ search = '' }) {
   return (
     <div className="hb-market-list" data-testid="marketplace-modules">
       {error && <p className="hb-module-error" role="alert">{error}</p>}
+      <p className="hb-market-note" data-testid="marketplace-not-yet">
+        Every listing is free. {FREE_HINT}.
+        {seller && !seller.canSell && <> <span data-testid="marketplace-not-seller">{NOT_SELLER}</span></>}
+      </p>
       {visible.length === 0 && (
         <div className="hb-market-empty">
           {listings.length === 0 ? 'No modules are listed yet. Build one, then choose Publish to marketplace from its menu.' : 'No modules match.'}
@@ -99,7 +109,7 @@ export function ModuleListings({ search = '' }) {
               </div>
             </div>
             <div className="hb-market-actions">
-              <span className="hb-market-price">Free</span>
+              <span className="hb-market-price" title={FREE_HINT}>Free</span>
               <button type="button" className="hb-btn" data-primary="true" onClick={() => add(l)} disabled={adding === l.id}>
                 {adding === l.id ? 'Adding…' : 'Add to board'}
               </button>

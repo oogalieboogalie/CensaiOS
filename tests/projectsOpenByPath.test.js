@@ -32,3 +32,18 @@ test('a folder opened by path alone is named after the folder and put on the boa
   expect(openProject.mock.calls[0][1]).toMatchObject({ name: 'shop-site', existingPath: folder });
   expect(registered).toEqual([folder]);
 });
+
+test("censaiOS's own folder of keys and logins is never opened as a project", async () => {
+  const { OWN_STATE_WORDS } = await import('../server/routes/files/ownState.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'open-by-path-'));
+  const state = path.join(dir, '.homebase-state');
+  fs.mkdirSync(path.join(state, 'made-up'), { recursive: true });
+  const before = [...registered];
+  for (const asked of [state, path.join(state, 'made-up')]) {
+    const res = respond();
+    await openProjectHandler({ body: { path: asked } }, res);
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ error: OWN_STATE_WORDS });
+  }
+  expect(registered).toEqual(before);
+});

@@ -19,7 +19,10 @@ export function useAgentCompany({ win, onUpdate }) {
   const me = getSelf();
   const canPlay = me.canEdit !== false;
   const selfName = me.label || 'You';
-  const field = seatField(selfName);
+  const field = seatField(selfName, me.id);
+  // My seat from before seats were keyed by account: picked up on my next
+  // write and moved under my id.
+  const legacyField = seatField(selfName);
 
   // Remote edits hand back fresh objects; only real seat changes recompute.
   const seatsKey = React.useMemo(() => JSON.stringify(readSeats(win)), [win]);
@@ -41,10 +44,13 @@ export function useAgentCompany({ win, onUpdate }) {
   const wallet = company.wallet + pendingTaps * company.tap;
 
   const writeSeat = React.useCallback((seat) => {
-    updateRef.current?.({ [field]: { ...seat, seenAt: nowSeconds() } });
-  }, [field]);
+    const moving = legacyField !== field && seatsRef.current[legacyField];
+    updateRef.current?.({ [field]: { ...seat, seenAt: nowSeconds() }, ...(moving ? { [legacyField]: null } : {}) });
+  }, [field, legacyField]);
 
-  const mySeat = React.useCallback(() => seatsRef.current[field] || emptySeat(selfName, nowSeconds()), [field, selfName]);
+  const mySeat = React.useCallback(() => seatsRef.current[field]
+    || (legacyField !== field && seatsRef.current[legacyField])
+    || emptySeat(selfName, nowSeconds()), [field, legacyField, selfName]);
 
   const flush = React.useCallback(() => {
     const count = pending.current;

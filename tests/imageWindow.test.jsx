@@ -27,7 +27,8 @@ test('renders ImageWindow empty state when no file attached', async () => {
   });
 
   expect(screen.getByText('Image')).toBeInTheDocument();
-  expect(screen.getByText('No image file attached.')).toBeInTheDocument();
+  expect(screen.getByText('No picture yet')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Open Files' })).toBeNull();
 });
 
 test('renders attached image and toggles fitMode on click', async () => {
@@ -48,4 +49,13 @@ test('renders attached image and toggles fitMode on click', async () => {
 
   expect(onUpdate).toHaveBeenCalledWith({ fitMode: 'fill' });
   expect(screen.getByRole('button', { name: 'fill' })).toBeInTheDocument();
+});
+
+test('the empty state opens Files when the board can spawn windows', async () => {
+  const onSpawn = jest.fn();
+  await act(async () => {
+    render(<ImageWindow win={{ id: 'w-img-open', kind: 'image' }} onUpdate={jest.fn()} onSpawn={onSpawn} />);
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Open Files' }));
+  expect(onSpawn).toHaveBeenCalledWith('files');
 });

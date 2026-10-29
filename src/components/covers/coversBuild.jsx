@@ -163,7 +163,7 @@ export const BUILD_COVERS = {
       <circle cx="28.5" cy="7" r="1.1" fill={ACCENT} /><circle cx="31.8" cy="7" r="1.1" fill={ACCENT} />
     </>
   ),
-  // Obsidian-like vault: sidebar Bases plus a note pane.
+  // Obsidian-like vault: a sidebar of notes plus a note pane.
   vaultNotes: (
     <>
       <rect x="5" y="4" width="12" height="16" rx="1" {...F} />

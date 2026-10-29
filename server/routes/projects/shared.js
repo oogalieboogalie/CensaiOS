@@ -5,6 +5,7 @@ import {
   normalizeProjectPathForStorage,
   resolveProjectPathForRuntime,
 } from '../../workspaces/shared.js';
+import { OWN_STATE_WORDS, isOwnState } from '../files/ownState.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // CENSAI_STATE_DIR isolates local state (tests, sandboxes); same default as
@@ -162,6 +163,8 @@ export async function resolveRequestedProject(requestedPath) {
 export async function assertDirectory(projectPath) {
   const storedPath = normalizeProjectPathForStorage(projectPath);
   const runtimePath = resolveProjectPathForRuntime(storedPath);
+  // censaiOS's own folder of keys and logins never becomes a project.
+  if (await isOwnState(path.resolve(runtimePath))) throw new Error(OWN_STATE_WORDS);
   const stats = await fs.promises.stat(runtimePath);
   if (!stats.isDirectory()) throw new Error('Path is not a directory');
   return storedPath;

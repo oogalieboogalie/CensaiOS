@@ -1,47 +1,61 @@
 import React from 'react';
 import { Icon } from '../../Icons.jsx';
-import { VAULT_BASES, VAULT_FOLDERS } from './data.js';
+import { examplesLeft, UNTITLED } from './vault.js';
 
-export function VaultSidebar({ activeBase, onSelectBase }) {
+function NoteRow({ note, active, example = false, onOpen }) {
+  return (
+    <li>
+      <button
+        type="button"
+        className="hb-vault-base"
+        data-active={active ? 'true' : 'false'}
+        aria-current={active ? 'true' : undefined}
+        onClick={() => onOpen(note.id)}
+      >
+        <span className="hb-vault-base-name">{note.title || UNTITLED}</span>
+        {example && <span className="hb-vault-base-kind">Example</span>}
+      </button>
+    </li>
+  );
+}
+
+export function VaultSidebar({ notes, openId, onNew, onOpen }) {
+  const examples = examplesLeft(notes);
   return (
     <aside className="hb-vault-sidebar" aria-label="Vault sidebar">
       <div className="hb-vault-sidebar-tools">
-        <button type="button" title="New note" aria-label="New note"><Icon.Files size={13} /></button>
-        <button type="button" title="New folder" aria-label="New folder"><Icon.Folder size={13} /></button>
-        <button type="button" title="Search" aria-label="Search"><Icon.Search size={13} /></button>
+        <button type="button" className="hb-vault-new" onClick={onNew}>
+          <Icon.Plus size={13} />
+          New note
+        </button>
       </div>
 
       <div className="hb-vault-section">
-        <div className="hb-vault-section-label">Bases</div>
-        <ul className="hb-vault-base-list">
-          {VAULT_BASES.map((name) => (
-            <li key={name}>
-              <button
-                type="button"
-                className="hb-vault-base"
-                data-active={activeBase === name ? 'true' : 'false'}
-                onClick={() => onSelectBase?.(name)}
-              >
-                <span className="hb-vault-base-name">{name}</span>
-                <span className="hb-vault-base-kind">BASE</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="hb-vault-section-label">Notes</div>
+        {notes.length ? (
+          <ul className="hb-vault-base-list" aria-label="Notes">
+            {notes.map((note) => (
+              <NoteRow key={note.id} note={note} active={note.id === openId} onOpen={onOpen} />
+            ))}
+          </ul>
+        ) : (
+          <p className="hb-vault-none">No notes yet</p>
+        )}
       </div>
 
-      {VAULT_FOLDERS.map((folder) => (
-        <div key={folder} className="hb-vault-section">
-          <div className="hb-vault-section-label">{folder}</div>
+      {examples.length > 0 && (
+        <div className="hb-vault-section">
+          <div className="hb-vault-section-label">Examples</div>
+          <ul className="hb-vault-base-list" aria-label="Examples">
+            {examples.map((note) => (
+              <NoteRow key={note.id} note={note} example active={note.id === openId} onOpen={onOpen} />
+            ))}
+          </ul>
         </div>
-      ))}
+      )}
 
       <div className="hb-vault-sidebar-foot">
-        <span>Notes</span>
-        <span className="hb-vault-sidebar-foot-icons" aria-hidden="true">
-          <span className="hb-vault-help">?</span>
-          <Icon.Gear size={12} />
-        </span>
+        <span>{notes.length === 1 ? '1 note' : `${notes.length} notes`}</span>
       </div>
     </aside>
   );

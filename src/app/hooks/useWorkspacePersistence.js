@@ -15,15 +15,32 @@ const RETRY_DELAYS = [5000, 15000, 30000, 60000];
 // Moving or editing windows doesn't send anything on this path at all: a
 // save goes out only when the settings (or which agents the board uses,
 // for project prewarm) change.
-export function saveSignature(workspace, canvasSource) {
-  if (canvasSource !== 'yjs' || !workspace || typeof workspace !== 'object') return JSON.stringify(workspace);
+//
+// The local draft is a copy of what the server does not have yet: a settings
+// change, or board edits this tab made while the doc was away (`boardSaves`
+// from useYjsCanvas says which; a draft of settings alone says `board:
+// false`). It goes once the server has everything, so a draft found on the
+// next load always holds real unsaved work, and a settings change still
+// waiting when the page closes is sent on the way out. Which agents the board
+// uses is saved too but never drafted: it follows from the board, which the
+// doc already has. `holdDraft`: a draft from an earlier visit is being
+// offered back; leave it alone until the person picks what to do with it.
+function signatures(workspace, canvasSource) {
+  if (canvasSource !== 'yjs' || !workspace || typeof workspace !== 'object') {
+    const whole = JSON.stringify(workspace);
+    return { save: whole, settings: whole };
+  }
   const settings = { ...workspace };
   for (const key of SYNCED_KEYS) delete settings[key];
-  return JSON.stringify({ settings, memberships: deriveCanvasProjectMemberships(workspace) });
+  return {
+    save: JSON.stringify({ settings, memberships: deriveCanvasProjectMemberships(workspace) }),
+    settings: JSON.stringify(settings),
+  };
 }
 
 export function useWorkspacePersistence({
   enabled, workspace, revision, onRevision, rebaseOnConflict = false, canvasSource = null, canvasLive = true,
+  boardSaves = null, holdDraft = false,
 }) {
   const [state, setState] = React.useState({ status: 'idle', error: '' });
   const baselineRef = React.useRef(null);
@@ -42,6 +59,24 @@ export function useWorkspacePersistence({
   React.useEffect(() => { rebaseRef.current = rebaseOnConflict; }, [rebaseOnConflict]);
   const waitingRef = React.useRef(false);
   waitingRef.current = canvasSource === 'yjs' && !canvasLive;
+  const boardSavesRef = React.useRef(boardSaves);
+  boardSavesRef.current = boardSaves;
+  const holdRef = React.useRef(holdDraft);
+  holdRef.current = holdDraft;
+  const savedSettingsRef = React.useRef(null);
+  // Board edits made while the doc was away that the server has not confirmed.
+  const awayEditsRef = React.useRef(false);
+
+  // Without the shared doc's word, a board edit while it is away counts as unsaved.
+  const boardUnsaved = () => (boardSavesRef.current ? boardSavesRef.current.unsaved : true);
+  const dropDraftIfSaved = React.useCallback(() => {
+    if (!recoveryStoredRef.current || holdRef.current) return;
+    if (savingRef.current || blockedRef.current || failedRef.current || boardSavesRef.current?.unsaved) return;
+    if (latestRef.current && latestRef.current.signature !== baselineRef.current) return;
+    recoveryStoredRef.current = false;
+    awayEditsRef.current = false;
+    clearWorkspaceDraft(latestRef.current?.workspace?.workspaceId);
+  }, []);
 
   const flush = React.useCallback(async () => {
     if (savingRef.current || blockedRef.current || waitingRef.current || !latestRef.current) return;
@@ -58,6 +93,7 @@ export function useWorkspacePersistence({
       revisionRef.current = saved.revision;
       onRevision(saved.revision);
       baselineRef.current = candidate.signature;
+      savedSettingsRef.current = candidate.settings;
       failedRef.current = false;
       retryAttemptRef.current = 0;
       rebaseAttemptsRef.current = 0;
@@ -98,28 +134,60 @@ export function useWorkspacePersistence({
       savingRef.current = false;
       if (!blockedRef.current && !failedRef.current && latestRef.current?.signature !== baselineRef.current) {
         timerRef.current = setTimeout(flush, 250);
+      } else {
+        dropDraftIfSaved();
       }
     }
-  }, [onRevision, canvasSource]);
+  }, [onRevision, canvasSource, dropDraftIfSaved]);
 
   React.useEffect(() => {
     if (!enabled) return;
-    const signature = saveSignature(workspace, canvasSource);
+    const { save: signature, settings } = signatures(workspace, canvasSource);
     if (baselineRef.current === null) {
       baselineRef.current = signature;
+      savedSettingsRef.current = settings;
       return;
     }
-    latestRef.current = { workspace, signature };
-    // Offline board edits still land in the local draft; online, only a
-    // settings change is drafted and sent (the doc holds the board).
-    if (signature === baselineRef.current && !waitingRef.current) return;
-    recoveryStoredRef.current = writeWorkspaceDraft(workspace, revisionRef.current);
+    latestRef.current = { workspace, signature, settings };
+    // A settings change is drafted and sent; a change in which agents the
+    // board uses is only sent; board edits made while the doc is away are
+    // drafted (the doc sends them once back). The board arriving from the
+    // doc is not an edit, and online edits go straight to the doc.
+    const awayEdits = waitingRef.current && boardUnsaved();
+    if (awayEdits) awayEditsRef.current = true;
+    if ((awayEdits || settings !== savedSettingsRef.current) && !holdRef.current) {
+      const board = canvasSource !== 'yjs' || awayEditsRef.current;
+      recoveryStoredRef.current = writeWorkspaceDraft(workspace, revisionRef.current, { board });
+    }
     if (signature === baselineRef.current) return;
     if (blockedRef.current || savingRef.current || waitingRef.current) return;
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(flush, 1000);
     return () => clearTimeout(timerRef.current);
   }, [enabled, flush, workspace, canvasSource]);
+
+  // The doc has every board edit this tab made: the draft may be done.
+  React.useEffect(() => {
+    if (!enabled || !boardSaves) return undefined;
+    return boardSaves.onSaved(() => {
+      awayEditsRef.current = false;
+      dropDraftIfSaved();
+    });
+  }, [enabled, boardSaves, dropDraftIfSaved]);
+
+  // Leaving the page (a reload, a closed tab) before a settings save went
+  // out, or while it is on its way: send it with the page, so the next visit
+  // has it. On the shared board a save never conflicts, so a second is safe.
+  React.useEffect(() => {
+    if (!enabled || canvasSource !== 'yjs') return undefined;
+    const sendNow = () => {
+      const latest = latestRef.current;
+      if (!latest || latest.signature === baselineRef.current || waitingRef.current) return;
+      api.saveWorkspace(latest.workspace, revisionRef.current, { canvasSource, keepalive: true }).catch(() => {});
+    };
+    window.addEventListener('pagehide', sendNow);
+    return () => window.removeEventListener('pagehide', sendNow);
+  }, [enabled, canvasSource]);
 
   // Back online: send whatever waited in the draft.
   React.useEffect(() => {
@@ -148,12 +216,13 @@ export function useWorkspacePersistence({
       return false;
     }
     clearTimeout(timerRef.current);
-    const signature = saveSignature(workspace, canvasSource);
+    const { save: signature, settings } = signatures(workspace, canvasSource);
     baselineRef.current = signature;
-    latestRef.current = { workspace, signature };
+    savedSettingsRef.current = settings;
+    latestRef.current = { workspace, signature, settings };
     revisionRef.current = nextRevision;
     recoveryStoredRef.current = false;
-    clearWorkspaceDraft();
+    clearWorkspaceDraft(workspace?.workspaceId);
     onRevision(nextRevision);
     setState({ status: 'saved', error: '' });
     return true;

@@ -3,14 +3,16 @@
 //
 // Sections, top to bottom: Recent, My modules, every built-in module by
 // category, Ready-made boards, Templates, and always a last row "Make a new
-// module…". When a
-// search matches nothing, "Make a new module: <search>" moves to the top.
+// module…". A search puts rows named exactly what was typed first (Best
+// match). When a search matches nothing, "Make a new module: <search>" moves
+// to the top.
 
 import { DEFAULT_HTML_PREVIEW } from '../../components/canvas/CanvasState.js';
 import { OFFICE_STARTERS } from '../office/officeStarters.js';
 import { CREATIVE_STARTERS } from '../creative/creativeStarters.js';
 import { YORWARE_STARTERS } from '../yorware/yorwareStarters.js';
 import { companyStarter } from '../weewoo/company.js';
+import { NEW_VAULT_PROPS } from '../manifest/notesWindows.js';
 import { BRAND_BY_KIND } from '../brands/index.js';
 import { searchPaletteEntries } from '../search/engines.js';
 
@@ -64,6 +66,7 @@ export const PROPS_BY_KIND = Object.freeze({
   ...CREATIVE_STARTERS,
   ...YORWARE_STARTERS,
   weewoo: { ...companyStarter(), seeded: true },
+  vaultNotes: NEW_VAULT_PROPS,
 });
 
 // Ready-made boards (spec 7): one pick lays out a whole board of windows,
@@ -165,6 +168,15 @@ export function buildAddSections({ query = '', manifests = [], recent = [], save
   for (const group of builtIns) sections.push({ id: `cat:${group.label}`, label: group.label, items: filter(group.items) });
   sections.push({ id: 'boards', label: 'Ready-made boards', items: filter(BOARD_TEMPLATE_ITEMS) });
   sections.push({ id: 'templates', label: 'Templates', items: filter(templateItems) });
+
+  // A row named exactly what was typed comes first, so "Document" + Enter
+  // opens the Document, not the first row that merely mentions documents.
+  const exact = q ? sections.flatMap(sec => sec.items).filter(i => i.label.toLowerCase() === q.toLowerCase()) : [];
+  if (exact.length) {
+    const ids = new Set(exact.map(i => i.id));
+    for (const sec of sections) sec.items = sec.items.filter(i => !ids.has(i.id));
+    sections.unshift({ id: 'best', label: 'Best match', items: exact });
+  }
 
   const anyMatch = sections.some(s => s.items.length > 0);
   if (q && !anyMatch) return [{ id: 'make', label: 'No module does that yet', items: [make] }];

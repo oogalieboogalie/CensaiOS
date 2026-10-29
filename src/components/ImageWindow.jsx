@@ -2,6 +2,9 @@ import React from 'react';
 import { ImageIcon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 
+// Image window: one picture from Files, GitHub or a chat. Depth and the
+// empty state come from src/styles/depth.css; the rest is image-window.css.
+
 function imageSrcFor(win) {
   // An image sent from a chat (spec 3) carries its own data or https URL.
   if (typeof win?.src === 'string' && /^(data:image\/|https?:\/\/|blob:)/.test(win.src)) return win.src;
@@ -13,7 +16,18 @@ function imageSrcFor(win) {
   return `/api/files/image?path=${encodeURIComponent(win.filePath)}`;
 }
 
-export function ImageWindow({ win, onUpdate }) {
+function ImageEmpty({ title, text, tone, children }) {
+  return (
+    <div className="hb-empty" data-tone={tone}>
+      <span className="hb-empty-icon" aria-hidden="true"><ImageIcon size={18} /></span>
+      <span className="hb-empty-title">{title}</span>
+      <span className="hb-empty-text">{text}</span>
+      {children && <div className="hb-empty-actions">{children}</div>}
+    </div>
+  );
+}
+
+export function ImageWindow({ win, onUpdate, onSpawn }) {
   const [mode, setMode] = React.useState(win.fitMode || 'fit');
   const [failed, setFailed] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
@@ -39,44 +53,29 @@ export function ImageWindow({ win, onUpdate }) {
         attachedAgentIds={win.attachedAgents}
         onDetach={(id) => onUpdate?.({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
       />
-      <div style={{ display: 'flex', gap: 6, padding: '6px 10px', alignItems: 'center', borderBottom: '1px solid var(--hairline)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={win.filePath}>
+      <div className="hb-img-bar hb-bar">
+        <span className="hb-img-path" title={win.filePath}>
           {win.filePath || (win.src ? 'Image from chat' : 'No file')}
         </span>
         <button
+          type="button"
+          className="hb-img-btn"
           onClick={() => setFitMode(mode === 'fit' ? 'fill' : 'fit')}
           title={mode === 'fit' ? 'Switch to fill (cover)' : 'Switch to fit (contain)'}
-          style={{ all: 'unset', cursor: 'pointer', padding: '2px 8px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', color: 'var(--ink-soft)' }}
         >
           {mode === 'fit' ? 'fit' : 'fill'}
         </button>
         {src && (
-          <a
-            href={src}
-            target="_blank"
-            rel="noreferrer"
-            title="Open original in a new tab"
-            style={{ padding: '2px 8px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', color: 'var(--ink-soft)', textDecoration: 'none' }}
-          >
+          <a className="hb-img-btn" href={src} target="_blank" rel="noreferrer" title="Open original in a new tab">
             open
           </a>
         )}
       </div>
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflow: 'auto',
-          display: 'grid',
-          placeItems: 'center',
-          padding: mode === 'fill' ? 0 : 12,
-          background: 'repeating-conic-gradient(var(--surface-2) 0% 25%, transparent 0% 50%) 50% / 20px 20px, var(--surface)',
-        }}
-      >
+      <div className="hb-img-stage" data-mode={mode}>
         {!src && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
-            No image file attached.
-          </div>
+          <ImageEmpty title="No picture yet" text="Open a picture from Files, or send one here from a chat.">
+            {onSpawn && <button type="button" className="hb-img-btn hb-img-btn-primary" onClick={() => onSpawn('files')}>Open Files</button>}
+          </ImageEmpty>
         )}
         {src && !failed && (
           <img
@@ -88,22 +87,21 @@ export function ImageWindow({ win, onUpdate }) {
             style={
               mode === 'fill'
                 ? { width: '100%', height: '100%', objectFit: 'cover', display: 'block' }
-                : { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', borderRadius: 'var(--radius-lg)', boxShadow: '0 8px 24px oklch(0 0 0 / 0.18)' }
+                : { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--panel-shadow)' }
             }
           />
         )}
         {src && !failed && !loaded && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
-            Loading image…
-          </div>
+          <div className="hb-img-note">Loading image…</div>
         )}
         {src && failed && (
-          <div style={{ padding: 16, fontSize: 'var(--text-sm)', color: 'var(--ps-red)', maxWidth: 320, textAlign: 'center' }}>
-            Couldn&apos;t load this image.
-            {win.isGithub
-              ? ' Private GitHub repos need a token on the server — try downloading it locally first.'
-              : ' The file may have moved or be unreadable.'}
-          </div>
+          <ImageEmpty
+            tone="danger"
+            title="Couldn't load this image"
+            text={win.isGithub
+              ? 'Private GitHub repos need a token on the server. Try downloading it locally first.'
+              : 'The file may have moved or be unreadable.'}
+          />
         )}
       </div>
     </>

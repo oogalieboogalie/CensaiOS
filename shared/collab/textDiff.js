@@ -7,6 +7,14 @@
 /** Window fields stored as Y.Text so concurrent typing merges. */
 export const WINDOW_TEXT_FIELDS = new Set(['text', 'code']);
 
+/** Vault notes keep each note's words in a field of its own, `vt.<noteId>`. */
+export const NOTE_TEXT_PREFIX = 'vt.';
+
+/** True for a window field whose words merge as people type (a Y.Text). */
+export function isWindowTextField(field) {
+  return WINDOW_TEXT_FIELDS.has(field) || (typeof field === 'string' && field.startsWith(NOTE_TEXT_PREFIX));
+}
+
 /** One contiguous change turning `a` into `b`: { index, remove, insert }. */
 export function diffText(a, b) {
   const before = String(a ?? '');

@@ -11,7 +11,7 @@ import { safeErrorCode } from '../security/errorCode.js';
 import { transactCanvasDoc } from './liveDoc.js';
 import { valueFromY, valueToY } from './seedFromSnapshot.js';
 import { CANVAS_ROOT, isValidWindowGeometry } from './ySchema.js';
-import { WINDOW_TEXT_FIELDS, applyTextDiff, diffText } from './textDiff.js';
+import { applyTextDiff, diffText, isWindowTextField } from './textDiff.js';
 
 const log = createLogger('yjs-server-writer');
 
@@ -39,7 +39,7 @@ export function upsertWindowInDoc(doc, win) {
     if (sameValue(valueFromY(current), value)) continue;
     // An agent rewriting a doc body only touches the span it changed, so a
     // person typing in the same window at that moment keeps their edits.
-    if (current instanceof Y.Text && WINDOW_TEXT_FIELDS.has(field) && typeof value === 'string') {
+    if (current instanceof Y.Text && isWindowTextField(field) && typeof value === 'string') {
       applyTextDiff(current, diffText(current.toString(), value));
     } else {
       existing.set(field, valueToY(value));

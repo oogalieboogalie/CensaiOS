@@ -28,7 +28,8 @@ export async function assertSystemAdmin(req, { db = pool } = {}) {
 
 async function refuse(req, res, error) {
   const status = error.statusCode || 500;
-  if (status === 401 || status === 403) logOwnerRefusal(req.baseUrl || req.path, status);
+  // The method and route, plus the account number: never a name or what was sent.
+  if (status === 401 || status === 403) logOwnerRefusal(`${req.method} ${req.baseUrl || req.path}`, status, Number(req.session?.userId) || null);
   // On the desktop app, the person at this computer also gets both account
   // names, so the message can say who to sign in as.
   const names = status === 403 ? await ownerNamesFor(req.session?.userId, { req }) : null;

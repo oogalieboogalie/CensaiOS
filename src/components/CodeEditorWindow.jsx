@@ -28,7 +28,8 @@ console.log(greet('Censai'));`;
 const isLegacyTestEnv = () => typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || '');
 
 export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
-  const [code, setCode] = React.useState(win.code || DEFAULT_CODE);
+  // The sample is for a new, empty editor; a file's window waits for the file's own code.
+  const [code, setCode] = React.useState(win.code || (win.filePath ? '' : DEFAULT_CODE));
   const [saving, setSaving] = React.useState(false);
   const [saveNote, setSaveNote] = React.useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -61,7 +62,11 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
     agentId: (win.attachedAgents || [])[0] || 'censai',
   });
 
-  const { loading, loadError, canSave } = useCodeFileLoad(win, setCode, onUpdate);
+  const { loading, loadError, canSave, retryLoad } = useCodeFileLoad(win, setCode, onUpdate);
+  // A file that did not load takes no typing: Save could never keep it.
+  const readOnly = Boolean(loadError) || Boolean(win.typingActor && !win.typingActor.shared);
+  // Format rewrites the code too, so it is off whenever typing is.
+  const formatOn = canFormat && !readOnly;
 
   const saveFile = async () => {
     if (!canSave) return;
@@ -128,8 +133,8 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
           </button>
         )}
         {!isIframeMode && (
-          <button onClick={(e) => { e.stopPropagation(); formatWhole(); }} disabled={!canFormat} title={canFormat ? `Format ${langLabel} (Prettier)` : `No formatter for ${langLabel}`}
-            style={{ all: 'unset', cursor: canFormat ? 'pointer' : 'default', color: 'var(--accent-ink)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '4px 7px', textTransform: 'none', letterSpacing: 0, fontSize: 'var(--text-xs)', fontWeight: 700, opacity: canFormat ? 1 : 0.45 }}>
+          <button onClick={(e) => { e.stopPropagation(); if (formatOn) formatWhole(); }} disabled={!formatOn} title={formatOn ? `Format ${langLabel} (Prettier)` : (canFormat ? 'Format is off while this code takes no typing' : `No formatter for ${langLabel}`)}
+            style={{ all: 'unset', cursor: formatOn ? 'pointer' : 'default', color: 'var(--accent-ink)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '4px 7px', textTransform: 'none', letterSpacing: 0, fontSize: 'var(--text-xs)', fontWeight: 700, opacity: formatOn ? 1 : 0.45 }}>
             Format
           </button>
         )}
@@ -149,7 +154,7 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
       {showSettings && <SettingsPanel title="Editor Theme" theme={theme} onThemeChange={handleThemeChange} onClose={() => setShowSettings(false)} />}
       {win.typingActor && !win.typingActor.shared && !isIframeMode && <div style={{ padding: '5px 12px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{win.typingActor.label} — read-only while they type, so your saves never collide.</div>}
       {saveNote && !isIframeMode && <div data-testid="code-save-note" style={{ padding: '4px 12px', background: saveNote.kind === 'error' ? 'color-mix(in oklab, var(--danger) 12%, transparent)' : 'var(--accent-soft)', color: saveNote.kind === 'error' ? 'var(--danger)' : 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{saveNote.text}</div>}
-      {!isIframeMode && <FileLoadError message={loadError} />}
+      {!isIframeMode && <FileLoadError message={loadError} onRetry={retryLoad} />}
       {formatStatus && !isIframeMode && <div style={{ padding: '4px 12px', background: formatStatus.kind === 'error' ? 'color-mix(in oklab, var(--danger) 12%, transparent)' : 'var(--accent-soft)', color: formatStatus.kind === 'error' ? 'var(--danger)' : 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{formatStatus.text}</div>}
 
       {isIframeMode ? (
@@ -159,15 +164,15 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (canSave) saveFile(); }
       }} style={{ flex: 1, minHeight: 0, display: 'flex', background: win.opacity !== undefined ? 'transparent' : theme.background }}>
         {useLegacyPane ? (
-          <LegacyCodePane code={code} theme={theme} winOpacity={win.opacity} readOnly={Boolean(win.typingActor && !win.typingActor.shared)} onChange={updateCode} focusProps={focusProps} />
+          <LegacyCodePane code={code} theme={theme} winOpacity={win.opacity} readOnly={readOnly} onChange={updateCode} focusProps={focusProps} />
         ) : (
-          <VSCodeLikeEditor ref={editorRef} code={code} language={language} editorTheme={theme} fontSize={theme.fontSize || 13} readOnly={Boolean(win.typingActor && !win.typingActor.shared)} onChange={updateCode} />
+          <VSCodeLikeEditor ref={editorRef} code={code} language={language} editorTheme={theme} fontSize={theme.fontSize || 13} readOnly={readOnly} onChange={updateCode} />
         )}
       </div>
       )}
       {!isIframeMode && <CodeStatusBar code={code} language={langLabel} />}
       {menu && (
-        <CodeEditorContextMenu x={menu.x} y={menu.y} hasSelection={Boolean(menu.selection.text)} canFormat={canFormat}
+        <CodeEditorContextMenu x={menu.x} y={menu.y} hasSelection={Boolean(menu.selection.text)} canFormat={formatOn}
           formatHint={`Prettier · ${langLabel}`}
           onFormatDocument={formatWhole} onFormatSelection={() => formatRange(menu.selection)}
           onAskAgent={() => askAgentToFix(menu.selection)} onClose={() => setMenu(null)} />

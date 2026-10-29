@@ -92,3 +92,20 @@ test('remote text changes are recorded per window and chained for the editor', (
   noteLocalEdit('w1', 'text', 'MaMad', { index: 4, remove: 0, insert: 'd' });
   expect(takeLocalEdit('w1', 'text', 'MaMad')).toEqual({ index: 4, remove: 0, insert: 'd' });
 });
+
+test('a Vault note\'s words, in a field of their own, are recorded the same way', () => {
+  resetTextEdits();
+  const remote = new Y.Doc();
+  const local = new Y.Doc();
+  local.getMap('canvas').observeDeep((events, tr) => collectTextEvents(events, tr.origin === 'local'));
+  const win = new Y.Map();
+  remote.getMap('canvas').set('windows', new Y.Map());
+  remote.getMap('canvas').get('windows').set('v1', win);
+  win.set('vt.note-a', new Y.Text('Ma'));
+  Y.applyUpdate(local, Y.encodeStateAsUpdate(remote), 'remote');
+  const sv = Y.encodeStateVector(local);
+  win.get('vt.note-a').insert(0, 'Ma');
+  Y.applyUpdate(local, Y.encodeStateAsUpdate(remote, sv), 'remote');
+  recordRemoteText([{ id: 'v1', 'vt.note-a': 'Ma' }], [{ id: 'v1', 'vt.note-a': 'MaMa' }]);
+  expect(remoteOps('v1', 'vt.note-a', 'Ma', 'MaMa')).toEqual([{ index: 0, remove: 0, insert: 'Ma' }]);
+});

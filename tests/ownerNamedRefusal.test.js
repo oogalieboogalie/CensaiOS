@@ -64,8 +64,8 @@ describe('update censaiOS refusal', () => {
     await request(app(null)).post('/api/app-update/check');
     const lines = logs.filter((l) => l.includes('[owner-only]'));
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toMatch(/refused \/api\/app-update\/check: not the owner/);
-    expect(lines[1]).toMatch(/refused \/api\/app-update\/check: signed out/);
+    expect(lines[0]).toMatch(/refused POST \/api\/app-update\/check for account 2: not the owner/);
+    expect(lines[1]).toMatch(/refused POST \/api\/app-update\/check: signed out/);
     expect(lines.join(' ')).not.toMatch(/Pat|Sam/);
   });
 });

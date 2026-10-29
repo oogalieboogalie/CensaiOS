@@ -20,8 +20,25 @@ import sharedLink from './sharedLink.mjs';
 import terminal from './terminal.mjs';
 import doc from './doc.mjs';
 import messageRouter from './messageRouter.mjs';
+import chatTwoPeople from './chatTwoPeople.mjs';
+import aiResources from './aiResources.mjs';
+import localSites from './localSites.mjs';
+import gitDiff from './gitDiff.mjs';
+import inbox from './inbox.mjs';
+import research from './research.mjs';
+import stepCards from './stepCards.mjs';
+import slides from './slides.mjs';
+import agentCompany from './agentCompany.mjs';
+import modelArena from './modelArena.mjs';
+import boardMap from './boardMap.mjs';
+import emptyBoard from './emptyBoard.mjs';
+import unsavedChanges from './unsavedChanges.mjs';
+import joinNotices from './joinNotices.mjs';
+import vaultNotes from './vaultNotes.mjs';
+import calendar from './calendar.mjs';
+import fileGone from './fileGone.mjs';
 
-export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter];
+export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

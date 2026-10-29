@@ -120,6 +120,30 @@ test('two people edit one board like a multiplayer game: nothing is lost, everyo
   expect(actors).toEqual(new Set(['user:alma', 'user:sam']));
 });
 
+test('the server confirms every board edit, also one made while away once back, so the browser copy can go', async () => {
+  const handle = await startServer(yjsMemoryDb());
+  const alma = join(handle, 'alma');
+  await alma.synced;
+  await until(() => !alma.provider.hasUnsyncedChanges);
+
+  edit(alma, (s) => ({ ...s, wins: [win('w1', 0, 0)] }));
+  expect(alma.provider.hasUnsyncedChanges).toBe(true);
+  await until(() => !alma.provider.hasUnsyncedChanges);
+
+  // Away from the server, nothing confirms an edit.
+  alma.provider.disconnect();
+  edit(alma, (s) => ({ ...s, wins: [...s.wins, win('made-away', 400, 0)] }));
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  expect(alma.provider.hasUnsyncedChanges).toBe(true);
+
+  // Back: the sync sends it and the server confirms it, and it is on the board for everyone.
+  await alma.provider.connect();
+  await until(() => !alma.provider.hasUnsyncedChanges);
+  const sam = join(handle, 'sam');
+  await sam.synced;
+  expect(byId(sam.state(), 'made-away')).toBeTruthy();
+});
+
 test('presence rides awareness: name, colour, cursor, selection and the window being dragged', async () => {
   const handle = await startServer(yjsMemoryDb());
   const alma = join(handle, 'alma');

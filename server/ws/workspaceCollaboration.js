@@ -23,9 +23,9 @@ import { handleInkPreviewMessage } from './inkPreviewMessages.js';
 import { handleGameMessage } from './gameMessages.js';
 import { handleDockCastMessage } from './dockCastMessages.js';
 import { noteCursor } from '../lessons/cursorTap.js';
+import { keepAlive } from './socketHeartbeat.js';
 
 export { REACTIONS } from './liveShowMessages.js';
-
 export const WORKSPACE_COLLABORATION_PATH = '/ws/workspace-collaboration';
 
 const MAX_COORDINATE = 1_000_000;
@@ -139,7 +139,7 @@ function upgradeStatus(error) {
 }
 
 export function attachWorkspaceCollaborationWs(server, options = {}) {
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 16 * 1024 });
+  const wss = keepAlive(new WebSocketServer({ noServer: true, maxPayload: 16 * 1024 }), options.heartbeatMs);
   const db = options.db || pool;
   const authenticate = options.authenticate || ((request) => defaultAuthenticate(request, options));
   const authenticateGuest = options.authenticateGuest

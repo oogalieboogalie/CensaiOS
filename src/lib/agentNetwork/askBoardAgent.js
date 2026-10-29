@@ -10,6 +10,7 @@ import { getCollaborationClientId } from '../collaboration/clientIdentity.js';
 import { getSelf } from '../modules/presenceRoster.js';
 import { askFromModule } from '../modules/moduleApi.js';
 import { researchApi } from '../research/researchApi.js';
+import { askEntry, withAsk } from '../research/researchAsks.js';
 import { cliAgentsApi } from '../../components/agentConsole/cliAgentsApi.js';
 import { FAMILY_AGENT_BY_ID } from '../../data/family-agents.js';
 import { researchReply } from '../../../server/agent-registry/researchReply.js';
@@ -91,10 +92,7 @@ export async function askBoardAgent({ target, task, fromWindowId = null, client,
       update(id, { status: 'completed', result: clipResult(researchReply(answer)) });
       // The Research window keeps the exchange with its own questions.
       const live = useWorkspaceStore.getState().wins.find((win) => win.id === target.windowId);
-      if (live) {
-        const entry = { id: `ask-${Date.now()}`, question: text, answer: answer.answer, sources: answer.sources || [], usedWeb: Boolean(answer.usedWeb), by: base.fromLabel, at: new Date().toISOString() };
-        update(live.id, { research: { ...(live.research || {}), asks: [entry, ...(live.research?.asks || [])].slice(0, 12) } });
-      }
+      if (live) update(live.id, withAsk(live, askEntry({ question: text, answer, by: base.fromLabel })));
     } catch (error) {
       update(id, { status: 'failed', error: error.message || 'Research could not answer.' });
     }

@@ -114,3 +114,34 @@ describe('a typed folder Docker has no copy of', () => {
     expect(res.body.error).toMatch(/can't see D:\\Archive/);
   });
 });
+
+describe('a new censaiOS with no default project yet', () => {
+  beforeEach(() => {
+    fs.rmSync(path.join(stateDir, 'current-project.json'), { force: true });
+    fs.writeFileSync(path.join(stateDir, 'open-projects.json'), JSON.stringify([HOST]));
+  });
+  const read = (p) => request(app).get('/api/files/content').query({ path: p });
+
+  linuxOnly('a folder opened from Files lists its files, and they open', async () => {
+    const res = await browse(HOST).expect(200);
+    expect(res.body.children.map(c => c.name)).toEqual(['empty', 'src', 'README.md']);
+    expect((await read(`${HOST}\\README.md`).expect(200)).body.content).toBe('hi');
+  });
+
+  linuxOnly('a Windows path outside the opened folders is outside, not a missing file in the app\'s own folder', async () => {
+    const res = await read('D:\\Elsewhere\\made-up.md').expect(403);
+    expect(res.body.reason).toBe('outside');
+  });
+});
+
+describe("censaiOS's own folder of keys and logins, asked for with a Windows path", () => {
+  beforeEach(() => setProject(HOST));
+  linuxOnly('gets one plain answer, whether or not the folder is there', async () => {
+    const { OWN_STATE_WORDS } = await import('../server/routes/files/ownState.js');
+    fs.mkdirSync(path.join(containerRoot, '.homebase-state', 'made-up-there'), { recursive: true });
+    const there = await browse(`${HOST}\\.homebase-state\\made-up-there`).expect(403);
+    const notThere = await browse(`${HOST}\\.homebase-state\\made-up-not-there`).expect(403);
+    expect(there.body.error).toBe(OWN_STATE_WORDS);
+    expect(notThere.text).toBe(there.text);
+  });
+});
