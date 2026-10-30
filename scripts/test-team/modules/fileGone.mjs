@@ -4,8 +4,9 @@
 // editor, each with its words. Pat adds a line to the note, saves, closes it
 // and opens it again from Files: the saved words show. Pat closes the note
 // again and both files are deleted outside censaiOS, the way another program
-// would: opening the note again from Files (which still lists it) says it is
-// not there any more instead of showing its old words, and after a reload
+// would: opening the note again from Files before its list catches up (held
+// back for that step) says it is not there any more instead of showing its
+// old words, and after a reload
 // Pat's and Sam Example's windows say so too, and nothing can be typed or
 // saved. The files are put back and "Try again" opens each one. Bug hunt: a
 // Document on a file that was never there says it is not there, a file
@@ -184,7 +185,8 @@ export default {
     const codePath = path.join(dir, CODE);
     fs.writeFileSync(notePath, `${NOTE_TEXT}\n`);
     fs.writeFileSync(codePath, CODE_TEXT);
-    t.typed.push(NOTE_TEXT, NOTE_ADDED, CODE_WORD);
+    // The made-up folder is typed into Files: the harness checks no log names it either.
+    t.typed.push(NOTE_TEXT, NOTE_ADDED, CODE_WORD, path.basename(dir));
     let filesId = null;
     let docId = null;
     let codeId = null;
@@ -226,12 +228,19 @@ export default {
         return 'opened again, the note shows the line Pat saved';
       });
 
-      await check('walk', 'Pat closes the note and both files are deleted outside censaiOS: opening the note again from Files (which still lists it) says it is not there any more, not its old words', async ({ shot }) => {
+      await check('walk', 'Pat closes the note and both files are deleted outside censaiOS: opening the note again from Files before its list catches up says it is not there any more, not its old words', async ({ shot }) => {
         if (!docId || !filesId) throw new Error('the note did not open in the steps before');
         await closeWindow(pat.page, docId);
-        fs.rmSync(notePath, { force: true });
-        fs.rmSync(codePath, { force: true });
-        docId = await openFromTree(pat.page, filesId, NOTE, 'doc', { x: 16, y: 64 });
+        // Files catches up with the folder within a few seconds; held back here
+        // so the note's row is still there to click, as it is until then.
+        await pat.page.route('**/api/files/relist**', (route) => route.abort());
+        try {
+          fs.rmSync(notePath, { force: true });
+          fs.rmSync(codePath, { force: true });
+          docId = await openFromTree(pat.page, filesId, NOTE, 'doc', { x: 16, y: 64 });
+        } finally {
+          await pat.page.unroute('**/api/files/relist**');
+        }
         const says = await banner(pat.page, docId);
         await shot(pat.page, 'opened-again-after-delete');
         const problems = bannerProblems('Pat', says, MISSING);

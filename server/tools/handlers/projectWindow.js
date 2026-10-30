@@ -12,14 +12,31 @@ import { followFileInPreview, openRunDevBeside, pointAtWindow } from '../../coll
 import { previewKindForPath } from '../../collaboration/chatPreviewShape.js';
 import { createLogger } from '../../logger.js';
 import { safeErrorCode } from '../../security/errorCode.js';
+import { ownerOnlyKind } from '../../security/ownerOnlyFiles.js';
+import { OWNER_ONLY_FILE, secretRepoPath } from '../../security/secretFiles.js';
+import { PREVIEW_OFF_BOARD } from '../../../shared/files/fileProblems.js';
 
 const log = createLogger('chat-preview');
 
-/** A reader for a project's raw file text (local folder or GitHub branch). */
+// The preview sits on the shared board, so it never shows a file only this
+// computer's owner opens (server/security/ownerOnlyFiles.js), nor one a page
+// pulls in, whoever's agent asks: a .env, a key file, anything in a hidden
+// folder, a link out of the project.
+
+async function ownerOnly(project, relPath) {
+  if (isGithubProject(project)) return secretRepoPath(relPath);
+  const target = resolveInsideProject(project.path, relPath);
+  return Boolean(await ownerOnlyKind({ target, base: resolveInsideProject(project.path, '.') }));
+}
+
+/** A reader for a project's raw file text (local folder or GitHub branch), never one only the owner opens. */
 export function projectFileReader(project, branch) {
-  return async (relPath) => (isGithubProject(project)
-    ? ghGetFile(project.repo, relPath, branch)
-    : fs.promises.readFile(resolveInsideProject(project.path, relPath), 'utf8'));
+  return async (relPath) => {
+    if (await ownerOnly(project, relPath)) throw Object.assign(new Error('owner only'), { code: OWNER_ONLY_FILE });
+    return isGithubProject(project)
+      ? ghGetFile(project.repo, relPath, branch)
+      : fs.promises.readFile(resolveInsideProject(project.path, relPath), 'utf8');
+  };
 }
 
 /**
@@ -74,6 +91,7 @@ export async function handleProjectWindowTool(agentId, _name, args = {}, context
   if (!args.path) return 'Error: show_file needs path (a file in the project).';
   if (!previewKindForPath(args.path)) return 'Error: the preview shows .html, .svg, .md and image files (css/js refresh the page that uses them).';
   if (!chatWindowId) return 'Error: show_file works from a chat window on the board.';
+  if (await ownerOnly(project, String(args.path)).catch(() => false)) return `Error: ${PREVIEW_OFF_BOARD}`;
   const shown = await followFileInPreview({
     workspaceId, chatWindowId, agentId, project, filePath: String(args.path),
     readFile: projectFileReader(project, sub?.github_branch || undefined),

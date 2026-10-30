@@ -5,8 +5,9 @@
 // to Sam Example; each sees only their own in the Inbox. Red team: Sam never
 // gets Pat's to-do or Pat's address (on the screen, in any answer, in the
 // to-do reminder), Pat's acknowledge leaves no address on the shared window,
-// and the server log keeps no to-do words or addresses. The cloud runner has
-// no GitHub token and no coding CLIs, so pull requests and agents stay empty.
+// and the server log keeps no to-do words or addresses. The cloud runner's
+// GitHub is the test team's stand-in, asked for no repo here, and it has no
+// coding CLIs, so pull requests and agents stay empty.
 
 import { spawnWindow, windowFrame, readWindow, PAT } from '../../e2e/board.mjs';
 import { note } from '../report.mjs';

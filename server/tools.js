@@ -11,6 +11,7 @@ import { requestToolApprovalIfRequired } from './approvals/requests.js';
 import { assertApprovedToolExecution } from './approvals/decisions.js';
 import { assertFamilyToolAvailable } from './tools/rbac/executionBoundary.js';
 import { assertHostToolAllowed } from './tools/rbac/hostOwnerOnly.js';
+import { offBoardGithubRead } from './tools/rbac/ownerOnlyReads.js';
 
 export { TOOL_DEFINITIONS, filterToolsForAgent, listToolCatalog } from './tools/definitions.js';
 export { initializeDynamicTools, initializeMcpTools, shutdownMcpTools };
@@ -78,6 +79,10 @@ async function executeRegisteredTool(agentId, name, args, context) {
         agentId: sub?.parent_id || agentId,
         requiredPermission: requiredProjectPermission,
       });
+    } else if (DIRECT_REPO_TOOLS.has(name)) {
+      // Off a board no repo is shared, so only the owner's agents use this computer's GitHub key.
+      const refused = await offBoardGithubRead(context, { feature: `agent tool ${name} off a board` });
+      if (refused) return `Error: ${refused}`;
     }
     const result = await handler(agentId, name, args, {
       ...context,

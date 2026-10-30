@@ -30,9 +30,10 @@ const { HOST_CHANGING_TOOL_NAMES, changesHost } = await import('../server/tools/
 const { OWNER_ONLY_MESSAGE } = await import('../server/security/systemAdmin.js');
 
 // Docker's container_status and container_logs are owner only even though they
-// only look (logs carry addresses and tokens), so they are in the list above.
-const READ_ONLY = ['local_git_status', 'local_read_file', 'local_list_dir',
-  'project_read', 'project_list', 'vex_status', 'pr_status'];
+// only look (logs carry addresses and tokens), and so are local_read_file and
+// local_list_dir (any path on the computer, keys and logins too), so they are
+// in the list above. A project's files stay open through project_read.
+const READ_ONLY = ['local_git_status', 'project_read', 'project_list', 'vex_status', 'pr_status'];
 const ALL = [...HOST_CHANGING_TOOL_NAMES, ...READ_ONLY, 'vex_run', 'postgres_query', 'postgres_exec_file'];
 
 jest.unstable_mockModule('../server/tools/handlers/index.js', () => ({
@@ -64,6 +65,14 @@ describe("a teammate's chat cannot change the computer", () => {
     expect(result).toBe(REFUSED);
     expect(toolCallOk(result)).toBe(false);
     expect(ran).not.toHaveBeenCalled();
+  });
+
+  test("reading any file or folder on the computer by its path is refused, a made-up .env too", async () => {
+    for (const [name, args] of [['local_read_file', { file_path: '/made/up/project/.env' }], ['local_list_dir', { dir_path: '/made/up/project' }]]) {
+      expect(await executeTool(AGENT, name, args, { userId: MO })).toBe(REFUSED);
+      expect(await executeTool(AGENT, name, args, { userId: PAT })).toBe('ran');
+    }
+    expect(ran).toHaveBeenCalledTimes(2);
   });
 
   test('a Vex run that starts agents is refused; a security scan is not', async () => {

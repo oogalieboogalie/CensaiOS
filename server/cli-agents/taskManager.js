@@ -9,6 +9,9 @@ import * as worktrees from './worktrees.js';
 import { TaskStore, RUNNING, httpError } from './taskStore.js';
 import { processMethods, killTree } from './runProcess.js';
 import { cleanupMethods } from './cleanup.js';
+import { diffWithoutSecrets } from '../security/secretFiles.js';
+import { taskForTeammate } from './ownerOnlySteps.js';
+import { taskHiddenTiers } from './taskHiddenWords.js';
 
 /**
  * Agent Console task runner.
@@ -61,7 +64,7 @@ export class CliTaskManager extends TaskStore {
   }
 
   // ── starting work ──────────────────────────────────────────────────────
-  async start({ cli, folder, prompt, model = null, user = {}, handoffFrom = null, patch = '', baseOverride = null, title = null, prepare = null, readOnly = false }) {
+  async start({ cli, folder, prompt, model = null, user = {}, handoffFrom = null, handoffHidden = null, patch = '', baseOverride = null, title = null, prepare = null, readOnly = false }) {
     const adapter = getAdapter(cli);
     if (!adapter) throw httpError('Pick Claude Code, Codex, Gemini CLI, OpenCode, Copilot CLI or Grok.');
     if (readOnly && adapter.noReadOnly) throw httpError(`${adapter.label} cannot run read-only.`);
@@ -85,7 +88,7 @@ export class CliTaskManager extends TaskStore {
       createdBy: { userId: user.userId ?? null, name: user.name || 'You' },
       sessionId: null, model: model || null, costUsd: null, usage: null, durationMs: null, turns: 0,
       summary: null, keySource: null, gate: adapter.gate, gateNote: adapter.gateNote, readOnly: Boolean(readOnly),
-      handoffFrom, items: [], raw: [], permissions: [], rev: 0, install: null,
+      handoffFrom, handoffHidden, items: [], raw: [], permissions: [], rev: 0, install: null,
     };
     this.tasks.set(id, task);
     if (handoffFrom) {
@@ -161,9 +164,10 @@ export class CliTaskManager extends TaskStore {
     return this.wt.changes({ dir: task.worktree.dir, baseSha: task.baseSha });
   }
 
-  readFile(id, rel) {
+  /** { content, secret }; `secrets`: this computer's owner is asking, so files that hold keys open too. */
+  readFile(id, rel, { secrets = false } = {}) {
     const task = this.get(id);
-    return this.wt.readWorktreeFile(task.worktree.dir, rel);
+    return this.wt.readWorktreeFile(task.worktree.dir, rel, { secrets });
   }
 
   /**
@@ -181,6 +185,8 @@ export class CliTaskManager extends TaskStore {
       cli, folder: source.folder, prompt, user, patch,
       baseOverride: source.baseSha,
       handoffFrom: { taskId: source.id, cli: source.cli, cliLabel: source.cliLabel, title: source.title },
+      // Its changes may hold a key a teammate could not see in it, so the words stay hidden here too.
+      handoffHidden: taskHiddenTiers(source),
     });
   }
 }
@@ -189,12 +195,18 @@ export function buildHandoffPrompt({ source, ask, files = [], patch = '', trunca
   const list = files.length
     ? files.map((f) => `- ${f.path} (${f.change}${f.binary ? '' : `, +${f.additions} -${f.deletions}`})`).join('\n')
     : '- (no file changes)';
-  const diff = clip(patch, 24_000);
+  // Everyone watching the new task sees its prompt, so files that hold keys and
+  // hidden folders show only as changed (the agent opens them itself), and the
+  // summary's lines from such files are cut. A key from such a file that the
+  // summary or the diff repeats stays for the agent, as it is in its worktree; a
+  // teammate sees [hidden] in its place, as the new task hides the words this one hid.
+  const diff = clip(diffWithoutSecrets(patch, { hidden: true }), 24_000);
+  const { summary } = taskForTeammate(source);
   return [
     ask,
     '',
     `Context: ${source.cliLabel} worked on "${source.title}" in this repo. Its changes are already applied, uncommitted, in this folder.`,
-    source.summary ? `Its summary:\n${clip(source.summary, 3000)}` : null,
+    summary ? `Its summary:\n${clip(summary, 3000)}` : null,
     '',
     `Files changed:\n${list}`,
     patch ? `\nDiff${truncated ? ' (truncated)' : ''}:\n\`\`\`diff\n${diff}\n\`\`\`` : null,

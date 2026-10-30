@@ -16,6 +16,7 @@ import { managedPrefix } from '../server/cli-agents/install.js';
 import { worktreeRoot } from '../server/cli-agents/worktrees.js';
 import { IDLE_MS, KEEP_MS, ORPHAN_GRACE_MS } from '../server/cli-agents/cleanup.js';
 import { LOCAL_STATE_DIR } from '../server/routes/files/pathUtils.js';
+import { onLogRecord } from '../server/logger.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const STANDIN = path.join(here, 'fixtures', 'cli-agents', 'standin-agent.mjs');
@@ -202,11 +203,20 @@ describe('cleanup', () => {
     await m.sweep(Date.now());
     expect(fs.existsSync(dir)).toBe(true); // could belong to a task starting right now
 
-    await m.sweep(Date.now() + ORPHAN_GRACE_MS + 60_000);
+    const logged = [];
+    const stop = onLogRecord((record) => logged.push(`${record.message} ${JSON.stringify(record.meta ?? {})}`));
+    try {
+      await m.sweep(Date.now() + ORPHAN_GRACE_MS + 60_000);
+    } finally {
+      stop();
+    }
     expect(fs.existsSync(dir)).toBe(false);
     expect(git(['branch', '--list', 'censai/codex-abc123'], repo).trim()).toBe('');
     const saved = fs.readdirSync(path.join(tmp, 'archive')).find((f) => f.includes('abc123'));
     expect(fs.readFileSync(path.join(tmp, 'archive', saved), 'utf8')).toContain('+work in progress');
+    // The log says a leftover was removed, never where it was.
+    expect(logged.filter((line) => line.startsWith('removed leftover cli agent worktree'))).toHaveLength(1);
+    expect(logged.filter((line) => line.includes('leftover-repo') || line.includes('abc123') || line.includes(tmp))).toEqual([]);
   });
 
   test('a task’s own worktree is never treated as leftover', async () => {

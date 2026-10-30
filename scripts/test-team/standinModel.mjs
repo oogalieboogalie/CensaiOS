@@ -2,8 +2,9 @@
 // key and no network. It speaks the OpenAI chat shape (what Ollama and most
 // providers speak) on 127.0.0.1 and gives one short fixed answer, except to
 // LeadHound's three prompts, which get the JSON a real model would return,
-// to a "Made-up team ask", which uses the agent network tools, and to a
-// "Made-up terminal ask", which tries the terminal tool, and to a Step cards
+// to a "Made-up team ask", which uses the agent network tools, to a
+// "Made-up terminal ask", which tries the terminal tool, to a "Made-up file
+// ask", which reads a file (standinFileAsk.mjs), and to a Step cards
 // read-over (standinStepCheck.mjs). A message
 // carrying pictures is answered with how many it saw and on which model.
 
@@ -11,6 +12,7 @@ import http from 'node:http';
 import { standinComplete } from '../../tests/fixtures/leadHoundStandin.js';
 import { teamAskReply } from './standinTeamAsk.mjs';
 import { terminalAskReply } from './standinTerminalAsk.mjs';
+import { fileAskReply } from './standinFileAsk.mjs';
 import { stepCheckReply } from './standinStepCheck.mjs';
 
 export const STANDIN_ANSWER = 'Stand-in answer: heard you.';
@@ -26,7 +28,7 @@ function replyFor(messages = [], tools = [], model = '') {
   if (stepCheck) return stepCheck;
   const seen = pictures(messages.filter((m) => m.role === 'user').pop());
   if (seen) return { content: `Stand-in answer: I see ${seen} picture${seen === 1 ? '' : 's'} (${model}).` };
-  return teamAskReply(messages, tools) || terminalAskReply(messages, tools) || { content: STANDIN_ANSWER };
+  return teamAskReply(messages, tools) || terminalAskReply(messages, tools) || fileAskReply(messages, tools) || { content: STANDIN_ANSWER };
 }
 
 const asToolCalls = (calls, withIndex) => calls.map((c, index) => ({

@@ -36,6 +36,13 @@ export function GrokSourceBar({ grok }) {
   );
 }
 
+/**
+ * xAI's link usually has the code in it already, and its page only asks to
+ * confirm it (Grok itself says "Confirm this code in your browser"): then the
+ * code is there to check, not to type. A link without it still needs it typed.
+ */
+const codeStep = ({ url, code }) => (url.includes(code) ? 'Check that the page shows this code:' : 'Enter this code:');
+
 function GrokSignInCard({ grok }) {
   const { status, login, busy, error, signIn } = grok;
   if (!status.installed) {
@@ -56,7 +63,7 @@ function GrokSignInCard({ grok }) {
         {login.url ? (
           <ol className="hb-grok-card-steps">
             <li>Open <a href={login.url} target="_blank" rel="noopener noreferrer">{login.url}</a></li>
-            {login.code && <li>Enter this code: <code className="hb-grok-card-code">{login.code}</code></li>}
+            {login.code && <li>{codeStep(login)} <code className="hb-grok-card-code">{login.code}</code></li>}
             <li>Approve with your Grok account. This box changes by itself when you are in.</li>
           </ol>
         ) : (

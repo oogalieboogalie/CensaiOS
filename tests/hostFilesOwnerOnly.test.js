@@ -18,15 +18,18 @@ const pool = { query: jest.fn(async (_sql, [id]) => ({ rows: PEOPLE[id] ? [PEOPL
 
 const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-file-role-'));
 process.env.CENSAI_STATE_DIR = stateDir;
+// The made-up folder each test makes is the one project open on the board.
+let dir;
+let file;
 jest.unstable_mockModule('../server/db.js', () => ({ default: pool }));
 jest.unstable_mockModule('../server/workspaces/shared.js', () => ({
   getWorkspacesRoot: () => process.cwd(),
   mapProjectPathForRuntime: (p) => p,
   normalizeProjectPathForStorage: (p) => p,
-  resolveProjectPathForRuntime: () => process.cwd(),
+  resolveProjectPathForRuntime: (p) => p,
 }));
 jest.unstable_mockModule('../server/routes/projects/shared.js', () => ({
-  readOpenProjects: async () => [],
+  readOpenProjects: async () => (dir ? [dir] : []),
   registerOpenProject: jest.fn(),
 }));
 
@@ -42,8 +45,6 @@ function app(userId) {
   return a;
 }
 
-let dir;
-let file;
 beforeEach(async () => {
   dir = await fs.promises.mkdtemp(path.join(process.cwd(), '.tmp-file-role-'));
   file = path.join(dir, 'notes.md');

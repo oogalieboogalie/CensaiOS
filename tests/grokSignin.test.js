@@ -82,6 +82,33 @@ describe('Grok chat on your own Grok sign-in', () => {
     expect(personalSignedIn(grok, 1, env)).toBe(false);
   });
 
+  test('a link and code that come in pieces are read whole', async () => {
+    // The stand-in writes its sign-in with the link cut before and inside its code.
+    const split = { ...env, STANDIN_GROK_SPLIT: '1', CENSAI_CLI_AGENT_ENV_PASS: `${env.CENSAI_CLI_AGENT_ENV_PASS},STANDIN_GROK_SPLIT` };
+    const login = await startGrokLogin(6, { env: split });
+    expect(login).toMatchObject({ running: true, url: 'https://accounts.x.ai/oauth2/device?user_code=WXYZ-4821', code: 'WXYZ-4821' });
+    expect(login.lines).toContain('https://accounts.x.ai/oauth2/device?user_code=WXYZ-4821');
+    for (let i = 0; i < 50 && !personalSignedIn(grok, 6, env); i += 1) await new Promise((r) => setTimeout(r, 50));
+    expect(personalSignedIn(grok, 6, env)).toBe(true);
+  });
+
+  test('Grok\'s last words, with no line end, are what a stopped sign-in shows', async () => {
+    const fake = () => {
+      const child = new EventEmitter();
+      child.stdout = new EventEmitter();
+      child.stderr = new EventEmitter();
+      child.kill = () => {};
+      setTimeout(() => {
+        child.stderr.emit('data', Buffer.from('Made-up first line\nMade-up sign-in was ref'));
+        child.stderr.emit('data', Buffer.from('used'));
+        child.emit('close', 1);
+      }, 5);
+      return child;
+    };
+    const login = await startGrokLogin(9, { env, spawn: fake, waitMs: 2000 });
+    expect(login).toMatchObject({ running: false, ok: false, url: null, error: 'Made-up sign-in was refused' });
+  });
+
   test('an expired sign-in comes back as "sign in again", not a crash', async () => {
     const home = personalHomeDir(grok, 3, env);
     fs.mkdirSync(home, { recursive: true });
@@ -115,6 +142,8 @@ describe('Grok in the Agent Console and Alt+X terminal', () => {
     expect(calls[0].args.slice(-2)).toEqual(['login', '--device-auth']);
     expect(calls[0].env.GROK_HOME).toBe(personalHomeDir(grok, 5, env));
     expect(first.note).toMatch(/Sign in to your own Grok account/);
+    // The link holds the code already: the note says to check it, not to type it.
+    expect(first.note).toMatch(/check that the page shows the code below \(enter it if the page asks for it\)/);
     fs.writeFileSync(path.join(personalHomeDir(grok, 5, env), 'auth.json'), '{}');
     const second = await startCliBackend({ cli: 'grok', cwd: dir, size: { cols: 80, rows: 24 }, userId: 5, env, spawn });
     expect(calls[1].args).not.toContain('login');

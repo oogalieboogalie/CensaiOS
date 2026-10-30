@@ -1,3 +1,5 @@
+import { githubApiUrl } from '../../github/apiUrl.js';
+
 export const githubBranchCache = new Map();
 export const githubFileCache = new Map();
 export const GITHUB_FILE_CACHE_TTL = 60_000;
@@ -8,7 +10,7 @@ export async function fetchGithub(endpoint, res, token) {
     return null;
   }
 
-  const url = endpoint.startsWith('http') ? endpoint : `https://api.github.com${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${githubApiUrl()}${endpoint}`;
   try {
     const r = await fetch(url, {
       headers: {
@@ -33,7 +35,7 @@ export async function getGithubDefaultBranch(repo, token) {
   const cached = githubBranchCache.get(repo);
   if (cached) return cached;
 
-  const repoRes = await fetch(`https://api.github.com/repos/${repo}`, {
+  const repoRes = await fetch(`${githubApiUrl()}/repos/${repo}`, {
     headers: token ? { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'Homebase-App' } : { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'Homebase-App' }
   });
   if (!repoRes.ok) {

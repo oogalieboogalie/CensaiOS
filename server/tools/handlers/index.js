@@ -80,7 +80,7 @@ export const TOOL_REGISTRY = {
   'read_messages': handleMemoryTool,
 
   // Git / GitHub
-  'github_read_file': (agentId, name, args) => githubReadFile(args),
+  'github_read_file': (agentId, name, args, context) => githubReadFile(args, context),
   'github_write_file': (agentId, name, args) => githubWriteFile(args),
   'github_list_issues': (agentId, name, args) => githubListIssues(args),
   'github_create_issue': (agentId, name, args) => githubCreateIssue(args),

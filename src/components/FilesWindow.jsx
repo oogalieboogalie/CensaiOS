@@ -11,8 +11,9 @@ import { FileCreateRow } from './files/FileCreateRow.jsx';
 import { fileWindowKind, fileWindowProps } from './files/fileRouting.js';
 import { parentFolder } from './files/useFiles.js';
 import { ProjectVersions } from './files/ProjectVersions.jsx';
+import { useCatchUp } from './files/useCatchUp.js';
 
-export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject, wins, onSelect }) {
+export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject, wins, onSelect, isActive }) {
   const {
     mode,
     tree,
@@ -37,8 +38,8 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
   const canCreate = mode === 'local' && win.dirPath;
   const openLocalProject = useWorkspaceStore(s => s.openLocalProject);
 
-  const [liveTick, setLiveTick] = React.useState(0);
-  const refreshTree = React.useCallback(() => setLiveTick(t => t + 1), []);
+  // Open folders catch up with changes made outside censaiOS (useCatchUp.js).
+  const live = useCatchUp(mode === 'local' && Boolean(win.dirPath), isActive);
 
   const handleCreated = (made) => {
     setCreating(null);
@@ -144,11 +145,11 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
             {!searchLoading && searchCapped && <div role="status" style={{ padding: '6px 12px', fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>Showing the first {searchResults.length}. Type more of the name to narrow it down.</div>}
             {!searchLoading && searchResults.length === 0 && <div style={{ padding: 12, color: searchError ? 'var(--ps-red)' : 'var(--ink-faint)' }}>{searchError || 'No matches.'}</div>}
             {!searchLoading && searchResults.map(node => (
-               <Tree key={`${node.path}-${refreshTick}`} node={node} depth={0} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={mode === 'github' ? win.githubRepo : null} mode={mode} rootDirPath={win.dirPath} wins={wins} onSelect={onSelect} onSetRoot={(p) => onUpdate({ dirPath: p })} reloadTick={liveTick} />
+               <Tree key={`${node.path}-${refreshTick}`} node={node} depth={0} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={mode === 'github' ? win.githubRepo : null} mode={mode} rootDirPath={win.dirPath} wins={wins} onSelect={onSelect} onSetRoot={(p) => onUpdate({ dirPath: p })} reloadTick={live.tick} usedTick={live.used} />
             ))}
           </div>
         ) : (
-          tree && <Tree key={`root-${mode}-${tree.name}-${tree.path}-${refreshTick}`} node={tree} depth={0} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={mode === 'github' ? win.githubRepo : null} mode={mode} rootDirPath={win.dirPath} wins={wins} onSelect={onSelect} onSetRoot={(p) => onUpdate({ dirPath: p })} reloadTick={liveTick} />
+          tree && <Tree key={`root-${mode}-${tree.name}-${tree.path}-${refreshTick}`} node={tree} depth={0} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={mode === 'github' ? win.githubRepo : null} mode={mode} rootDirPath={win.dirPath} wins={wins} onSelect={onSelect} onSetRoot={(p) => onUpdate({ dirPath: p })} reloadTick={live.tick} usedTick={live.used} />
         )}
 
         {(tree || searchResults) && (
@@ -158,7 +159,7 @@ export function FilesWindow({ win, pan, zoom, onUpdate, onSpawn, currentProject,
           </div>
         )}
       </div>
-      {mode === 'local' && win.dirPath && <ProjectVersions dirPath={win.dirPath} onChanged={refreshTree} onSpawn={onSpawn} />}
+      {mode === 'local' && win.dirPath && <ProjectVersions dirPath={win.dirPath} onChanged={live.catchUp} onSpawn={onSpawn} />}
     </>
   );
 }

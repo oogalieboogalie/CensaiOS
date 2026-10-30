@@ -37,8 +37,18 @@ import joinNotices from './joinNotices.mjs';
 import vaultNotes from './vaultNotes.mjs';
 import calendar from './calendar.mjs';
 import fileGone from './fileGone.mjs';
+import secretFiles from './secretFiles.mjs';
+import versions from './versions.mjs';
+import grokSignIn from './grokSignIn.mjs';
+import finderFiles from './finderFiles.mjs';
+import addNames from './addNames.mjs';
+import filesCatchUp from './filesCatchUp.mjs';
+import notSaved from './notSaved.mjs';
+import githubReads from './githubReads.mjs';
+import logsNameNoFiles from './logsNameNoFiles.mjs';
+import agentHiddenWords from './agentHiddenWords.mjs';
 
-export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone];
+export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone, secretFiles, versions, grokSignIn, finderFiles, addNames, filesCatchUp, notSaved, githubReads, logsNameNoFiles, agentHiddenWords];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

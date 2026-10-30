@@ -25,12 +25,13 @@ export function EmptyPreviewNote() {
   );
 }
 
-// One app-log warning per problem, not one per render.
-export function usePreviewWarnings({ error, missing, label }) {
+// One app-log warning per problem, not one per render. Never the file's name
+// or path: the app log is a file on disk, and what someone opened is theirs.
+export function usePreviewWarnings({ error, missing }) {
   React.useEffect(() => {
-    if (error) logToApp('warn', `shared preview: could not load ${label}: ${error}`, { where: 'htmlPreview' });
-  }, [error, label]);
+    if (error) logToApp('warn', `shared preview: could not load its file: ${error}`, { where: 'htmlPreview' });
+  }, [error]);
   React.useEffect(() => {
-    if (missing) logToApp('warn', `shared preview: the linked code window for ${label} is gone, showing the last saved copy`, { where: 'htmlPreview' });
-  }, [missing, label]);
+    if (missing) logToApp('warn', 'shared preview: the linked code window is gone, showing the last saved copy', { where: 'htmlPreview' });
+  }, [missing]);
 }

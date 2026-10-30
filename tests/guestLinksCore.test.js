@@ -60,6 +60,13 @@ describe('what a link may see', () => {
     expect(PRIVATE_WINDOW_KINDS.has('terminal')).toBe(true);
   });
 
+  test("a Finder, which holds the owner's project folder, never reaches a projected guest", () => {
+    const withFinder = { ...snapshot, wins: [...snapshot.wins, { id: 'made-up-finder', kind: 'finderFiles', project: { name: 'garden', path: '/made-up/garden' } }] };
+    const board = projectBoardForLink(withFinder, { role: 'view', scope_kind: 'board' });
+    expect(board.wins.map((win) => win.id)).not.toContain('made-up-finder');
+    expect(JSON.stringify(board)).not.toContain('/made-up/garden');
+  });
+
   test('a window link shows one window; a group link includes nested groups', () => {
     expect(projectBoardForLink(snapshot, { scope_kind: 'window', scope_id: 'idea' }).wins.map((w) => w.id)).toEqual(['idea']);
     const group = projectBoardForLink(snapshot, { scope_kind: 'group', scope_id: 'g1' });

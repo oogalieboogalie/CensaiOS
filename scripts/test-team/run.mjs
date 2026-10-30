@@ -7,8 +7,10 @@
 // (a teammate on Pat's shared board), and runs three parts: the walk (normal
 // use), the bug hunt (wrong things on purpose) and the red team (the server's
 // checks). Chats answer through a stand-in model, web searches through a
-// stand-in Tavily and design imports through a stand-in Figma, so no AI,
-// Tavily or Figma key is needed.
+// stand-in Tavily, design imports through a stand-in Figma, Send to GitHub
+// and agents' GitHub reads through a stand-in GitHub and the Grok chat's own
+// sign-in through a stand-in Grok, so no AI, Tavily, Figma, GitHub or Grok
+// key or account is needed.
 //
 // Usage:
 //   E2E_DATABASE_URL=postgresql://postgres@127.0.0.1:5432/postgres npm run test-team -- music
@@ -31,6 +33,7 @@ import { createReport, pickThemes, summarize, writeReport } from './report.mjs';
 import { startStandinModel } from './standinModel.mjs';
 import { startStandinTavily } from '../../tests/fixtures/leadHoundStandin.js';
 import { startStandinFigma } from './standinFigma.mjs';
+import { startStandinGithub } from './standinGithub.mjs';
 import { pickModules } from './modules/index.mjs';
 import { commonChecks } from './commonChecks.mjs';
 
@@ -58,8 +61,29 @@ async function startApp(databaseUrl, stand, logDir, children) {
     ZAI_BASE_URL: `http://127.0.0.1:${stand.model.port}/v1`,
     TAVILY_API_BASE: stand.tavily.url,
     FIGMA_API_BASE: stand.figma.url,
+    CENSAI_GITHUB_API_URL: stand.github.url,
+    // This computer's own GitHub key, made up. Every GitHub call the server
+    // makes goes to CENSAI_GITHUB_API_URL (server/github/apiUrl.js), so the key
+    // only ever reaches the stand-in GitHub.
+    GITHUB_TOKEN: 'made-up-standin-github-key',
     // Scheduled runs are checked every 5 seconds, so a test that moves a run's time sees it fire.
     SCHEDULER_POLL_INTERVAL_MS: '5000',
+    // A stand-in for xAI's Grok CLI, which the Grok chat's own sign-in runs:
+    // it prints a made-up link and code, calls the sign-in approved 8 seconds
+    // later and names each person's sign-in after their folder. Everyone's
+    // Grok sign-in lives in this run's own folder (not in the log folder,
+    // which the common checks read).
+    CENSAI_CLI_GROK_BIN: path.join(ROOT, 'tests', 'fixtures', 'cli-agents', 'standin-grok.mjs'),
+    CENSAI_CLI_AGENT_DATA: stand.cliData,
+    STANDIN_GROK_LOGIN_MS: '8000',
+    STANDIN_GROK_ACCOUNT_FROM_HOME: '1',
+    // A stand-in for Claude Code and Codex in the Agent Console: it reads, says,
+    // writes and runs what a module puts in standin-script.json in this run's folder.
+    CENSAI_CLI_CLAUDECODE_BIN: path.join(ROOT, 'tests', 'fixtures', 'cli-agents', 'standin-agent.mjs'),
+    CENSAI_CLI_CODEX_BIN: path.join(ROOT, 'tests', 'fixtures', 'cli-agents', 'standin-agent.mjs'),
+    STANDIN_SCRIPT: path.join(stand.cliData, 'standin-script.json'),
+    STANDIN_DELAY_MS: '300',
+    CENSAI_CLI_AGENT_ENV_PASS: [process.env.CENSAI_CLI_AGENT_ENV_PASS, 'STANDIN_GROK_LOGIN_MS,STANDIN_GROK_ACCOUNT_FROM_HOME,STANDIN_SCRIPT,STANDIN_DELAY_MS'].filter(Boolean).join(','),
   };
   await step('start the server', async () => {
     const server = startProcess(process.execPath, ['server.js'], { env, logFile: path.join(logDir, 'server.log') });
@@ -138,7 +162,12 @@ async function runModule(mod, ctx) {
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
   const reports = [];
-  for (const theme of ctx.themes) reports.push(await runOnce(mod, { ...ctx, ...ctx.people[theme] }, outDir, theme));
+  for (const theme of ctx.themes) {
+    const { pat, sam } = ctx.people[theme];
+    reports.push(await runOnce(mod, { ...ctx, pat, sam }, outDir, theme));
+    // Off the board before the next theme, so its pictures show no pointer left from this one.
+    await Promise.all([pat, sam].map((p) => p.page?.close().catch(() => {})));
+  }
   const [main, ...others] = reports;
   const { verdict } = writeReport(main, outDir, others);
   const worst = reports.map((r) => summarize(r.checks).verdict).find((v) => v !== 'works') || verdict;
@@ -159,18 +188,21 @@ async function main() {
   const outRoot = path.resolve(process.env.TEST_TEAM_OUT || path.join(ROOT, '.homebase-state', 'test-team'));
   const dbName = `censai_team_${Date.now()}`;
   const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-team-'));
+  const cliData = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-team-cli-'));
   const children = [];
   let browser;
   let model;
   let tavily;
   let figma;
+  let github;
   const verdicts = [];
   try {
     model = await startStandinModel(Number(process.env.TEST_TEAM_MODEL_PORT) || 11434);
     tavily = await startStandinTavily();
     figma = await startStandinFigma();
+    github = await startStandinGithub();
     const databaseUrl = await step('scratch database', () => makeScratchDatabase(pg, process.env.E2E_DATABASE_URL, dbName));
-    await startApp(databaseUrl, { model, tavily, figma }, logDir, children);
+    await startApp(databaseUrl, { model, tavily, figma, github, cliData }, logDir, children);
     browser = await chromium.launch({ executablePath: chromiumPath, headless: true, args: ['--autoplay-policy=no-user-gesture-required'] });
     // Pat signs in first, so Pat owns this computer; Sam is a teammate.
     const themes = pickThemes();
@@ -179,7 +211,7 @@ async function main() {
     const first = people[themes[0]];
     const workspaceId = await step('Pat shares the board with Sam', () => shareBoard(first.pat.ctx, SAM, WEB));
     const signedOut = await browser.newContext({ viewport: VIEW });
-    const ctx = { ...first, people, themes, signedOut, workspaceId, outRoot, logDir, model, tavily, figma, browser, databaseUrl };
+    const ctx = { ...first, people, themes, signedOut, workspaceId, outRoot, logDir, cliData, model, tavily, figma, github, browser, databaseUrl };
     for (const mod of modules) verdicts.push(await runModule(mod, ctx));
   } catch (error) {
     console.log(`test-team: could not start: ${String(error.message).split('\n')[0]}`);
@@ -191,8 +223,10 @@ async function main() {
     await model?.close();
     await tavily?.close();
     await figma?.close();
+    await github?.close();
     await new Promise((resolve) => setTimeout(resolve, 1000));
     await dropScratchDatabase(pg, process.env.E2E_DATABASE_URL, dbName).catch(() => {});
+    fs.rmSync(cliData, { recursive: true, force: true });
   }
   if (verdicts.some((v) => v !== 'works')) process.exitCode = 1;
 }

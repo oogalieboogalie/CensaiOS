@@ -116,7 +116,7 @@ export const processMethods = {
       ? path.relative(root, value).split(path.sep).join('/') || '.'
       : value);
     const next = { ...obj };
-    for (const key of ['path', 'detail']) if (key in next) next[key] = rel(next[key]);
+    for (const key of ['path', 'detail', 'where']) if (key in next) next[key] = rel(next[key]);
     if (next.diff?.path) next.diff = { ...next.diff, path: rel(next.diff.path) };
     if (typeof next.command === 'string') next.command = next.command.split(root + path.sep).join('');
     return next;

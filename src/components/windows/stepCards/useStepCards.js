@@ -5,6 +5,7 @@ import { useWorkspaceStore } from '../../../lib/store.js';
 import { parseTodoFile, writeTodoFile } from '../../../lib/stepCards/todoFile.js';
 import { applyResults, makeCard, markChecking, normalizeCards, topStep } from '../../../lib/stepCards/stack.js';
 import { cliAgentsApi } from '../../agentConsole/cliAgentsApi.js';
+import { STEPS_OFF_BOARD } from '../../../../shared/files/fileProblems.js';
 import { readTodoFile, stepCardsApi } from './stepCardsApi.js';
 import { sendStep } from './dispatch.js';
 
@@ -35,8 +36,8 @@ export function useStepCards({ win, onUpdate, currentProject }) {
   }, [save]);
   const patchStep = (cardId, stepId, patch) => patchCard(cardId, (c) => ({ ...c, steps: c.steps.map((s) => (s.id === stepId ? { ...s, ...patch } : s)) }));
 
-  const addCards = React.useCallback((raws, how) => {
-    const made = raws.map((raw) => makeCard(raw, newId)).filter((c) => c.steps.length);
+  const addCards = React.useCallback((raws, how, fromFile = null) => {
+    const made = raws.map((raw) => makeCard(raw, newId)).filter((c) => c.steps.length).map((c) => (fromFile ? { ...c, fromFile } : c));
     if (!made.length) throw new Error('No steps with checks were found in that.');
     save([...latest.current, ...made], { selectedCardId: made[0].id });
     log('info', `${how}: ${made.length} card(s), ${made.reduce((n, c) => n + c.steps.length, 0)} steps`);
@@ -64,22 +65,29 @@ export function useStepCards({ win, onUpdate, currentProject }) {
     return true;
   });
 
-  const importText = (text, how = 'imported a .todo file') => run('importing', async () => {
+  const importText = (text, how = 'imported a .todo file', fromFile = null) => run('importing', async () => {
+    // Every screen showing the window may read its file before any has marked it read: its cards come in once.
+    if (fromFile && latest.current.some((c) => c.fromFile === fromFile)) return true;
     const parsed = parseTodoFile(text);
     if (!parsed.cards.length) throw new Error('That file has no cards with steps in it.');
-    addCards(parsed.cards, how);
+    addCards(parsed.cards, how, fromFile);
     if (parsed.title && !win.title) onUpdate({ title: parsed.title });
     setNote(parsed.skipped ? `${parsed.skipped} check(s) were left out because censaiOS cannot check them.` : null);
     return true;
   });
 
   // Opened from the Files window: read the .todo file once (the ref also covers a second effect run).
+  // A file only the owner opens is marked on the window, with none of its words,
+  // so every screen says why it has no cards, after a reload too.
   const loading = React.useRef(null);
   React.useEffect(() => {
     if (!win.filePath || win.loadedFrom === win.filePath || loading.current === win.filePath) return;
     loading.current = win.filePath;
     onUpdate({ loadedFrom: win.filePath });
-    readTodoFile(win).then((text) => importText(text, 'opened a .todo file')).catch((err) => setError(err.message));
+    readTodoFile(win).then((text) => importText(text, 'opened a .todo file', win.filePath)).catch((err) => {
+      if (err.offBoard) onUpdate({ offBoardFile: win.filePath });
+      else setError(err.message);
+    });
   }, [win.filePath]);
 
   const check = React.useCallback(async (card, step, { automatic = false } = {}) => {
@@ -143,7 +151,8 @@ export function useStepCards({ win, onUpdate, currentProject }) {
   };
 
   return {
-    cards, selected, busy, error, note, folder,
+    cards, selected, busy, note, folder,
+    error: error || (win.filePath && win.offBoardFile === win.filePath ? STEPS_OFF_BOARD : null),
     clearError: () => setError(null),
     translate, importText, check, send, assign, remove, select, setReport, exportText,
   };

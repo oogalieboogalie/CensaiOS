@@ -1,3 +1,5 @@
+import { githubApiUrl } from '../github/apiUrl.js';
+
 function upper(value) {
   return String(value || '').trim().toUpperCase();
 }
@@ -25,8 +27,8 @@ export async function fetchGitHubPullRequestState({ repo, prNumber, token }) {
   };
 
   const [prRes, reviewsRes] = await Promise.all([
-    fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}`, { headers }),
-    fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}/reviews`, { headers }),
+    fetch(`${githubApiUrl()}/repos/${repo}/pulls/${prNumber}`, { headers }),
+    fetch(`${githubApiUrl()}/repos/${repo}/pulls/${prNumber}/reviews`, { headers }),
   ]);
 
   if (!prRes.ok) return null;
@@ -53,7 +55,7 @@ export async function fetchGitHubPullRequestFiles({ repo, prNumber, token }) {
   const files = [];
   for (let page = 1; page <= 3; page++) {
     const res = await fetch(
-      `https://api.github.com/repos/${repo}/pulls/${prNumber}/files?per_page=100&page=${page}`,
+      `${githubApiUrl()}/repos/${repo}/pulls/${prNumber}/files?per_page=100&page=${page}`,
       { headers }
     );
     if (!res.ok) break;

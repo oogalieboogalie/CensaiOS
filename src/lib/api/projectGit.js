@@ -2,7 +2,8 @@
 async function call(url, options) {
   const res = await fetch(url, options);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
+  // A refused send names the files that hold keys (keptOut; githubHas, those GitHub's versions hold; onMain, those its main branch holds) and counts the versions.
+  if (!res.ok) throw Object.assign(new Error(data?.error || `Request failed (${res.status})`), { keptOut: data?.keptOut, githubHas: data?.githubHas, onMain: data?.onMain, versions: data?.versions });
   return data;
 }
 
@@ -17,3 +18,4 @@ export const projectVersionStatus = (path) => call(`/api/project-git/status?path
 export const startProjectVersions = (path) => post('/api/project-git/start', { path });
 export const saveProjectVersion = (path, message) => post('/api/project-git/save', { path, message });
 export const sendProjectToGithub = (path, title, body) => post('/api/project-git/send', { path, title, body });
+export const makeProjectVersionsAgain = (path) => post('/api/project-git/make-again', { path });

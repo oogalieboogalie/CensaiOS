@@ -1,10 +1,14 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
+import { MAKE_AGAIN, githubKeepsLine, keptOutLine, madeAgainLine, makeAgainQuestion } from '../../../shared/files/versionWords.js';
 
 // The bottom of a Files window: save versions of the project and send them
 // to GitHub as a pull request, without leaving the board. Polls the
 // folder's status so files an agent or a terminal just wrote show up in the
-// tree (onChanged) and the "unsaved changes" count stays true.
+// tree (onChanged) and the "unsaved changes" count stays true. Files that
+// hold keys or passwords are never saved in a version, and the bar says so;
+// when earlier versions hold one, a refused send offers to make the versions
+// GitHub does not have yet again without it, after asking.
 
 const POLL_MS = 5000;
 
@@ -25,43 +29,72 @@ export function ProjectVersions({ dirPath, onChanged, onSpawn }) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState('');
   const [sent, setSent] = React.useState(null);
+  const [offer, setOffer] = React.useState(null); // a refused send: { path, keptOut, githubHas, onMain, versions }
+  const [asking, setAsking] = React.useState(false);
+  const [made, setMade] = React.useState(null);
   const signature = React.useRef('');
+  // The folder on show: an answer about another one (the window moved on while it was asked) is dropped.
+  const shown = React.useRef(dirPath);
 
   const refresh = React.useCallback(async () => {
     try {
       const next = await api.projectVersionStatus(dirPath);
+      if (shown.current !== dirPath) return;
       setStatus(next);
       const sig = JSON.stringify((next.changes || []).map((c) => `${c.status}:${c.file}`));
       if (signature.current && sig !== signature.current) onChanged?.();
       signature.current = sig;
     } catch (err) {
-      setStatus({ unavailable: err.message });
+      if (shown.current === dirPath) setStatus({ unavailable: err.message });
     }
   }, [dirPath, onChanged]);
 
   React.useEffect(() => {
+    // Another folder: nothing said or typed about the last one stays.
+    shown.current = dirPath;
     signature.current = '';
+    setStatus(null);
     setSent(null);
+    setError('');
+    setOffer(null);
+    setAsking(false);
+    setMade(null);
+    setForm(null);
+    setText('');
+    setBusy(false);
+  }, [dirPath]);
+
+  React.useEffect(() => {
     refresh();
     const timer = setInterval(refresh, POLL_MS);
     return () => clearInterval(timer);
   }, [refresh]);
 
   const run = async (fn) => {
+    const asked = dirPath;
     setBusy(true);
     setError('');
+    setMade(null);
     try {
       const result = await fn();
+      if (shown.current !== asked) return null;
       if (result?.status) setStatus(result.status);
       else if (result?.tracked !== undefined) setStatus(result);
       setForm(null);
       setText('');
       return result;
     } catch (err) {
+      if (shown.current !== asked) return null;
+      // A send saves the changes as a version before it can be refused, so show where the folder stands now.
+      await refresh();
+      if (shown.current !== asked) return null;
       setError(err.message);
+      // A send refused over files that hold keys offers to make those versions again without them.
+      if (err.keptOut?.length) setOffer({ path: asked, keptOut: err.keptOut, githubHas: err.githubHas || [], onMain: err.onMain || [], versions: err.versions || 0 });
+      setAsking(false);
       return null;
     } finally {
-      setBusy(false);
+      if (shown.current === asked) setBusy(false);
     }
   };
 
@@ -81,12 +114,22 @@ export function ProjectVersions({ dirPath, onChanged, onSpawn }) {
   const changes = status.changes || [];
   const last = status.versions?.[0];
   const submit = async () => {
+    setOffer(null);
     if (form === 'save') {
       await run(() => api.saveProjectVersion(dirPath, text));
     } else {
       const result = await run(() => api.sendProjectToGithub(dirPath, text));
       if (result) setSent(result);
     }
+  };
+  // Only the folder the send was refused for is ever made again.
+  const offered = offer?.path === dirPath ? offer : null;
+  const makeAgain = async () => {
+    const result = await run(() => api.makeProjectVersionsAgain(offered.path));
+    if (!result) return;
+    setOffer(null);
+    setAsking(false);
+    setMade(result);
   };
 
   return (
@@ -109,6 +152,12 @@ export function ProjectVersions({ dirPath, onChanged, onSpawn }) {
           {changes.length > 8 && <div>and {changes.length - 8} more</div>}
         </div>
       )}
+      {status.keptOut?.length > 0 && (
+        <div data-testid="project-versions-kept-out" style={{ color: 'var(--ink-faint)' }}>{keptOutLine(status.keptOut)}</div>
+      )}
+      {status.githubKeeps?.length > 0 && (
+        <div data-testid="project-versions-github-keeps" style={{ color: 'var(--warning-text)' }}>{githubKeepsLine(status.githubKeeps)}</div>
+      )}
       {form && (
         <div style={{ display: 'flex', gap: 6 }}>
           <input autoFocus value={text} onChange={(e) => setText(e.target.value)} style={field}
@@ -124,6 +173,19 @@ export function ProjectVersions({ dirPath, onChanged, onSpawn }) {
         <div>This makes a private repository on your GitHub account and sends every saved version there.</div>
       )}
       {error && <div style={{ color: 'var(--danger)' }} data-testid="project-versions-error">{error}</div>}
+      {offered && !asking && (
+        <div><button style={btn} disabled={busy} onClick={() => setAsking(true)} data-testid="project-versions-make-again">{MAKE_AGAIN}</button></div>
+      )}
+      {offered && asking && (
+        <div style={{ display: 'grid', gap: 6, color: 'var(--ink)' }} data-testid="project-versions-make-again-question">
+          <div>{makeAgainQuestion(offered.keptOut, offered.versions, offered.githubHas, offered.onMain)}</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button style={primary} disabled={busy} onClick={makeAgain} data-testid="project-versions-make-again-yes">{busy ? 'Working...' : 'Make them again'}</button>
+            <button style={btn} disabled={busy} onClick={() => setAsking(false)}>Not now</button>
+          </div>
+        </div>
+      )}
+      {made && <div style={{ color: 'var(--accent-ink)' }} data-testid="project-versions-made-again">{madeAgainLine(made.files, made.made)}</div>}
       {sent && (
         <div data-testid="project-versions-sent" style={{ color: 'var(--accent-ink)' }}>
           {sent.kind === 'pull-request' ? `Pull request #${sent.number} is open on ${sent.repo}. ` : `Your project is on GitHub at ${sent.repo} (private). `}

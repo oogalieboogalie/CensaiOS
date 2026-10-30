@@ -14,6 +14,8 @@ import path from 'path';
 import crypto from 'crypto';
 import { execFile } from 'child_process';
 import { updateBranch, deskError } from './mergeDesk.js';
+import { permissionForViewer } from '../cli-agents/ownerOnlySteps.js';
+import { taskHiddenWords, teammateSummary } from '../cli-agents/taskHiddenWords.js';
 
 const POLL_MS = 1500;
 const MAX_JOBS = 50;
@@ -67,12 +69,15 @@ export function getFixJob(id) {
   return publicJob(job);
 }
 
-/** Pending agent approvals for a job, in the window's words. */
+/** Pending agent approvals for a job, in the window's words: as a teammate sees them, as the window is on the shared board. */
 export function fixApprovals(job, manager) {
   if (!job.taskId) return [];
   try {
-    return manager.get(job.taskId).permissions
+    const task = manager.get(job.taskId);
+    const shown = { root: task.worktree?.dir || '', hidden: taskHiddenWords(task) };
+    return task.permissions
       .filter((p) => p.status === 'pending')
+      .map((p) => permissionForViewer(p, shown))
       .map((p) => ({ id: p.id, title: p.title, detail: String(p.detail || '').slice(0, 300) }));
   } catch {
     return [];
@@ -140,7 +145,8 @@ export function watchTask(job, { manager, git, finish = finishAndPush, agentText
     setJob(job, { status: 'pushing', text: 'Checking the agent’s merge and pushing it.' });
     try {
       const sha = await finish({ job, task, git, token: job.token });
-      setJob(job, { status: 'done', sha, agentSummary: task.summary || null, text: doneText });
+      // The summary shows on the shared board, so it is the one a teammate sees.
+      setJob(job, { status: 'done', sha, agentSummary: teammateSummary(task) || null, text: doneText });
     } catch (err) {
       setJob(job, { status: 'failed', text: err.message });
     } finally {

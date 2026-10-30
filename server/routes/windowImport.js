@@ -137,7 +137,7 @@ windowImportRouter.post('/import', async (req, res) => {
     try {
       adapted = parseLlmJsonResponse(rawContent);
     } catch {
-      log.error('LLM returned non-JSON', { rawContent: rawContent.slice(0, 500) });
+      log.error('LLM returned non-JSON', { chars: rawContent.length });
       return res.status(502).json({
         error: 'LLM did not return valid JSON. Try again or simplify the input.',
         rawLlmOutput: rawContent.slice(0, 1000),
@@ -193,12 +193,13 @@ windowImportRouter.post('/import', async (req, res) => {
     log.info('window files written', {
       kind: filePlan.kind,
       componentName: filePlan.componentName,
-      dir: filePlan.windowDir,
     });
 
     // ── Step 3: window:sync ────────────────────────────────────────────────
+    // Its output (folders, and the error's words when it fails) goes to the
+    // person's screen below, never to the log.
     const syncResult = await runWindowSync();
-    log.info('window:sync result', syncResult);
+    log.info('window:sync result', { ok: syncResult.ok });
 
     res.json({
       ok: true,

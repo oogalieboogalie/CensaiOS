@@ -2,15 +2,19 @@
 // pushes, Docker, files on disk, the app's database, project folders, Vex runs)
 // act for whoever is driving the chat. Only the computer's owner may drive
 // them, the same rule the host routes follow (server/security/systemAdmin.js).
-// Tools that only look (status, file lists, file contents, git history) stay
-// open to everyone on the board.
+// Tools that only look (status, a project's file lists and contents, git
+// history) stay open to everyone on the board.
 import { getRuntimeMode, RUNTIME_MODES } from '../../middleware/runtimeMode.js';
-import { assertSystemAdmin, OWNER_ONLY_MESSAGE } from '../../security/systemAdmin.js';
+import { assertSystemAdmin, OWNER_ONLY_MESSAGE, OWNER_UNCHECKED_MESSAGE } from '../../security/systemAdmin.js';
 import { logOwnerRefusal, ownerNamesFor, ownerNamesSentence } from '../../security/ownerNames.js';
 
 export const HOST_CHANGING_TOOL_NAMES = Object.freeze([
   // Files and project folders on this computer
   'local_write_file', 'open_project', 'refresh_brief', 'report',
+  // Reading any file or folder by its path reaches the owner's keys and logins
+  // anywhere; a teammate's agent reads a project's files with project_read,
+  // which keeps the ones only the owner opens (server/tools/rbac/ownerOnlyReads.js)
+  'local_read_file', 'local_list_dir',
   'project_write', 'project_edit', 'project_multi_edit', 'generate_tests',
   // Git and GitHub with the owner's own checkout and token
   'local_git_fetch', 'local_git_pull_ff_only', 'local_git_checkpoint', 'local_git_verify',
@@ -84,7 +88,7 @@ export async function assertHostToolAllowed(db, { name, args, context = {}, mode
       const names = context.atThisComputer === true ? await ownerNamesFor(userId, { db, mode }) : null;
       throw new ComputerOwnerOnlyError(OWNER_ONLY_MESSAGE, { names });
     }
-    throw new ComputerOwnerOnlyError("Couldn't check who owns this computer right now. Try again in a moment.");
+    throw new ComputerOwnerOnlyError(OWNER_UNCHECKED_MESSAGE);
   }
   return { enforced: true, userId };
 }

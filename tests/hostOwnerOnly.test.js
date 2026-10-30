@@ -127,6 +127,15 @@ describe('looking stays open to teammates', () => {
     expect(routeGuards(browserRouter, 'get', '/files/content').map((h) => h.name))
       .not.toContain('requireSystemAdmin');
   });
+
+  test('a folder listed again (Files catching up) is guarded and answered exactly as when opened', () => {
+    const handlers = (path) => [...routeGuards(browserRouter, 'get', path),
+      browserRouter.stack.find((l) => l.route?.path === path).route.stack.at(-1).handle];
+    const [again, opened] = [handlers('/files/relist'), handlers('/files/browse')];
+    expect(again).toHaveLength(opened.length);
+    again.forEach((handle, i) => expect(handle).toBe(opened[i]));
+    expect(again.map((h) => h.name)).toContain('requireLocalFilesystem');
+  });
 });
 
 describe('board content stays with the board', () => {

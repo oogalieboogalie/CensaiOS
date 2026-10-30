@@ -23,6 +23,7 @@ export const PROJECT_AWARE_KINDS = new Set([
   'idea',
   'todos',
   'scheduler',
+  'finderFiles',
 ]);
 
 export function isProjectAware(win) {

@@ -41,7 +41,8 @@ const DEFAULT_STEPS = [
 
 function loadSteps(task) {
   const file = process.env.STANDIN_SCRIPT;
-  if (!file) return DEFAULT_STEPS;
+  // A run may name a script file that no module has written (the test team's server does).
+  if (!file || !fs.existsSync(file)) return DEFAULT_STEPS;
   const script = JSON.parse(fs.readFileSync(file, 'utf8'));
   // A script can branch on words in the task: { match: { "review": [...] }, default: [...] }
   if (Array.isArray(script)) return script;

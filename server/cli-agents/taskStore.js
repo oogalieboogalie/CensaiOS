@@ -119,7 +119,7 @@ export class TaskStore extends EventEmitter {
   }
 
   summary(task) {
-    const { items, raw: _raw, prompt: _prompt, permissions, ...meta } = task;
+    const { items, raw: _raw, prompt: _prompt, permissions, handoffHidden: _handoffHidden, ...meta } = task;
     const lastError = task.status === 'failed' ? [...(items || [])].reverse().find((i) => i.kind === 'error')?.text : null;
     return {
       ...meta,

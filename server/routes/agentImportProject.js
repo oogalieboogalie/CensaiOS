@@ -30,7 +30,8 @@ export function createAgentImportProjectRouter(deps = {}) {
     const root = toRuntime(project.path);
     try {
       const found = await list(root);
-      log.info(`agent-import: project pull: ${found.folder}: found ${found.agents.length}, skipped ${found.skipped.length}`);
+      // Counts only: never the project's folder or a helper's name.
+      log.info(`agent-import: project pull: found ${found.agents.length}, skipped ${found.skipped.length}`);
       return res.json({ ...found, project: project.name || project.path });
     } catch (err) {
       log.error('agent-import: project pull failed', { code: safeErrorCode(err) });
@@ -40,7 +41,7 @@ export function createAgentImportProjectRouter(deps = {}) {
 
   router.post('/imported', requireOwner, (req, res) => {
     const names = (Array.isArray(req.body?.names) ? req.body.names : []).map(String).slice(0, 50);
-    log.info(`agent-import: project pull: imported ${names.length} (${names.join(', ')})`);
+    log.info(`agent-import: project pull: imported ${names.length}`);
     return res.json({ ok: true });
   });
 

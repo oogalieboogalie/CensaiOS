@@ -42,6 +42,9 @@ export function clearLines() {
 export function watchServerLog(onError) {
   detach?.();
   detach = onLogRecord((record) => {
+    // The app's own repeated asks, answered (boot/requestLog.js logs them at
+    // debug), would push what happened before an error out of the tail.
+    if (record.namespace === 'http' && record.level === 'debug') return;
     recordLine(record);
     // Copied console lines and the board's own errors (server/appLog/) are
     // kept in the tail but are not reports: the board reports its own.

@@ -6,7 +6,7 @@
  * GET  /api/cli-agents/folders                repos the console can work in
  * GET  /api/cli-agents/tasks                  every task, newest first
  * POST /api/cli-agents/tasks                  { cli, folder, prompt, model? } start
- * GET  /api/cli-agents/tasks/:id?since=<rev>  transcript items changed after rev
+ * GET  /api/cli-agents/tasks/:id?since=<rev>  transcript items changed after rev (&board=1: as a teammate sees them)
  * GET  /api/cli-agents/tasks/:id/raw          raw output lines (power users)
  * GET  /api/cli-agents/tasks/:id/changes      files changed + unified diff
  * GET  /api/cli-agents/tasks/:id/file?path=   one file from the worktree
@@ -30,7 +30,11 @@ import { getCliTaskManager, cliRoster, forgetVersions } from '../cli-agents/inde
 import { getAdapter } from '../cli-agents/adapters/index.js';
 import { installCli } from '../cli-agents/install.js';
 import { allowedRoots, assertAllowedFolder } from '../cli-agents/folders.js';
-import { requireSystemAdmin } from '../security/systemAdmin.js';
+import { isComputerOwner, requireSystemAdmin } from '../security/systemAdmin.js';
+import { diffWithoutSecrets } from '../security/secretFiles.js';
+import { permissionForViewer, stepForTeammate, taskForTeammate } from '../cli-agents/ownerOnlySteps.js';
+import { hiddenWordsOf, listedForTeammate } from '../cli-agents/taskHiddenWords.js';
+import { withoutHiddenWords } from '../cli-agents/hiddenWords.js';
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { grokSigninRouter } from './grokSignin.js';
@@ -55,7 +59,7 @@ async function actor(req) {
 function send(res, error) {
   const status = Number(error?.statusCode) || 500;
   if (status >= 500) log.error('cli agents request failed', { code: safeErrorCode(error) });
-  res.status(status).json({ error: status >= 500 ? 'The Agent Console hit a server error.' : error.message });
+  res.status(status).json({ error: status >= 500 ? 'The Agent Console hit a server error.' : error.message, ...(error?.reason ? { reason: error.reason } : {}) });
 }
 
 const wrap = (fn) => async (req, res) => {
@@ -84,8 +88,10 @@ cliAgentsRouter.get('/folders', wrap(async (_req, res) => {
   res.json({ folders: await allowedRoots() });
 }));
 
-cliAgentsRouter.get('/tasks', wrap(async (_req, res) => {
-  res.json({ tasks: getCliTaskManager().list() });
+cliAgentsRouter.get('/tasks', wrap(async (req, res) => {
+  const manager = getCliTaskManager();
+  const tasks = manager.list();
+  res.json({ tasks: await ownerWatching(req) ? tasks : tasks.map(listedForTeammate(manager)) });
 }));
 
 cliAgentsRouter.post('/tasks', requireSystemAdmin, wrap(async (req, res) => {
@@ -96,25 +102,64 @@ cliAgentsRouter.post('/tasks', requireSystemAdmin, wrap(async (req, res) => {
   res.status(201).json({ task });
 }));
 
+// Anyone on the board may watch a task; a teammate sees steps on a file only
+// this computer's owner opens without its words (server/cli-agents/ownerOnlySteps.js),
+// nor a key from one repeated anywhere else in the task (hiddenWordsOf), and no
+// one while that cannot be checked.
+const ownerWatching = (req) => isComputerOwner(req).catch(() => false);
+
 cliAgentsRouter.get('/permissions', wrap(async (req, res) => {
   const status = req.query.status === 'all' ? null : 'pending';
-  res.json({ permissions: getCliTaskManager().permissions({ status }) });
+  const owner = await ownerWatching(req);
+  const manager = getCliTaskManager();
+  const roots = new Map(manager.list().map((t) => [t.id, t.worktree?.dir]));
+  const hidden = (id) => (owner ? [] : hiddenWordsOf(manager, id));
+  res.json({ permissions: manager.permissions({ status }).map((p) => permissionForViewer(p, { owner, root: roots.get(p.taskId), hidden: hidden(p.taskId) })) });
 }));
 
 cliAgentsRouter.get('/tasks/:id', wrap(async (req, res) => {
-  res.json(getCliTaskManager().snapshot(req.params.id, req.query.since));
+  const manager = getCliTaskManager();
+  const snapshot = manager.snapshot(req.params.id, req.query.since);
+  // `board=1`: for a help card on the shared board, as a teammate sees it whoever asks.
+  const owner = req.query.board !== '1' && await ownerWatching(req);
+  const root = snapshot.task?.worktree?.dir;
+  const hidden = owner ? [] : hiddenWordsOf(manager, req.params.id);
+  res.json({
+    ...snapshot,
+    task: owner ? snapshot.task : taskForTeammate(snapshot.task, { hidden }),
+    items: owner ? snapshot.items : snapshot.items.map((item) => stepForTeammate(item, { root, hidden })),
+    permissions: snapshot.permissions.map((p) => permissionForViewer(p, { owner, root, hidden })),
+  });
 }));
 
+// The CLI's raw output holds every file it read, keys included, so it is the owner's alone.
 cliAgentsRouter.get('/tasks/:id/raw', wrap(async (req, res) => {
-  res.json({ lines: getCliTaskManager().raw(req.params.id) });
+  const lines = getCliTaskManager().raw(req.params.id);
+  res.json(await ownerWatching(req) ? { lines } : { lines: [], ownerOnly: true });
 }));
 
 cliAgentsRouter.get('/tasks/:id/changes', wrap(async (req, res) => {
-  res.json(await getCliTaskManager().changes(req.params.id));
+  // What changed in a file that holds keys is never shown, so it cannot ride
+  // into a review chat. A hidden folder's changes are left out for a teammate,
+  // and for the board (`board=1`: the review chat sits on the shared board,
+  // so it also gets the summary a teammate sees).
+  const manager = getCliTaskManager();
+  const changes = await manager.changes(req.params.id);
+  const board = req.query.board === '1';
+  const hidden = board || !(await ownerWatching(req));
+  const words = hidden ? hiddenWordsOf(manager, req.params.id) : [];
+  const summary = board ? { summary: taskForTeammate(manager.summary(manager.get(req.params.id)), { hidden: words }).summary ?? null } : {};
+  res.json({ ...changes, patch: withoutHiddenWords(diffWithoutSecrets(changes.patch, { hidden }), words), ...summary });
 }));
 
+// A file only the owner opens shows only on the owner's screen: ownerOnly
+// tells it to keep the words off the shared board.
 cliAgentsRouter.get('/tasks/:id/file', wrap(async (req, res) => {
-  res.json({ path: req.query.path, content: getCliTaskManager().readFile(req.params.id, req.query.path) });
+  const secrets = await ownerWatching(req);
+  const manager = getCliTaskManager();
+  const { content, secret } = manager.readFile(req.params.id, req.query.path, { secrets });
+  const shown = secrets ? content : withoutHiddenWords(content, hiddenWordsOf(manager, req.params.id));
+  res.json({ path: req.query.path, content: shown, ...(secret ? { ownerOnly: true } : {}) });
 }));
 
 cliAgentsRouter.post('/tasks/:id/message', requireSystemAdmin, wrap(async (req, res) => {

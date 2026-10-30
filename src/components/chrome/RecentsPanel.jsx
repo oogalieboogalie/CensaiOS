@@ -4,8 +4,7 @@ import { Icon } from '../Icons.jsx';
 import { agentMemoryApi } from '../../lib/agentMemory/api.js';
 import { getAgentById } from '../../lib/agentStore.js';
 import { useWorkspaceStore } from '../../lib/store.js';
-import { panToShow } from '../../lib/freeSpot.js';
-import { glidePan } from '../../lib/glideView.js';
+import { glideToWindow } from '../../lib/showWindow.js';
 import { createLogger } from '../../lib/logger.js';
 import { useEscapeDismiss } from '../../lib/useEscapeDismiss.js';
 import { agoWords, stamp } from '../../lib/agentMemory/timeWords.js';
@@ -20,11 +19,8 @@ function agentName(agentId) {
 
 /** Glide the board so a window is in view, and bring it to the front. */
 function showWindow(win) {
-  const store = useWorkspaceStore.getState();
-  store.setActiveId(win.id);
-  const rect = { x: win.x, y: win.y, w: win.w || win.width || 400, h: win.h || win.height || 300 };
-  const next = panToShow(rect, { pan: store.pan, zoom: store.zoom, width: window.innerWidth, height: window.innerHeight });
-  if (next) glidePan(store.pan, next, (pan) => store.setPan(pan), { read: () => useWorkspaceStore.getState().pan });
+  useWorkspaceStore.getState().setActiveId(win.id);
+  glideToWindow(win);
 }
 
 /**

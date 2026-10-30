@@ -23,11 +23,12 @@ export async function createDirectory(parentPath, name) {
     return data;
   }
 
+/** Makes a new file; one already there by that name is refused, never emptied. */
 export async function createFile(filePath, content = '') {
     const res = await fetch('/api/files/content', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: filePath, content }),
+      body: JSON.stringify({ path: filePath, content, create: true }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.error || 'Failed to create file');

@@ -54,16 +54,16 @@ export function baseName(p) {
  */
 export function stepFromTool({ id, name, input = {}, aliases }) {
   const kind = aliases[name] || 'tool';
-  const path = input.file_path || input.absolute_path || input.path || input.notebook_path || '';
+  // file_path (Claude Code, Gemini), filePath (OpenCode), absolute_path (older Gemini), notebook_path.
+  const path = input.file_path || input.filePath || input.absolute_path || input.path || input.notebook_path || '';
   const base = { id, kind, tool: name, status: 'running' };
   if (kind === 'read') {
     return { ...base, title: `Read ${baseName(path) || 'file'}`, path };
   }
   if (kind === 'edit') {
-    const before = typeof input.old_string === 'string' ? input.old_string : null;
-    const after = typeof input.new_string === 'string'
-      ? input.new_string
-      : typeof input.content === 'string' ? input.content : null;
+    const text = (value) => (typeof value === 'string' ? value : null);
+    const before = text(input.old_string ?? input.oldString);
+    const after = text(input.new_string ?? input.newString) ?? text(input.content);
     const isNew = typeof input.content === 'string' && before == null;
     return {
       ...base,
@@ -78,7 +78,8 @@ export function stepFromTool({ id, name, input = {}, aliases }) {
   }
   if (kind === 'search') {
     const query = input.pattern || input.query || input.glob || input.url || '';
-    return { ...base, title: `${name} ${clip(String(query), 80)}`.trim(), query: String(query) };
+    // where: the file or folder searched, so a teammate's view can leave out one only the owner opens.
+    return { ...base, title: `${name} ${clip(String(query), 80)}`.trim(), query: String(query), ...(path ? { where: path } : {}) };
   }
   if (kind === 'todo') {
     const todos = Array.isArray(input.todos) ? input.todos : [];

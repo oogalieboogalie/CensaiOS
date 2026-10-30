@@ -22,6 +22,10 @@ import {
 } from './chatPreviewShape.js';
 
 const log = createLogger('chat-preview');
+// The kinds a preview is logged as. A model names its own preview type, so any
+// other word is logged as 'other', never as written.
+const LOGGED_KINDS = new Set(['html', 'svg', 'markdown', 'image', 'tailwind', 'css', 'threejs', 'react']);
+const loggedKind = (type) => (LOGGED_KINDS.has(type) ? type : 'other');
 export const POINT_SIZE = Object.freeze({ devServer: { w: 520, h: 420 } });
 
 function docLinks(doc) {
@@ -67,8 +71,9 @@ export async function showInChatPreview(workspaceId, input, deps = {}) {
     return null;
   }
   if (shown) {
+    // What kind of file, never its name or path.
     log.info(shown.created ? 'preview opened' : 'preview refreshed', {
-      workspaceId, chatWindowId: input.chatWindowId, windowId: shown.window.id, fileName: shown.window.fileName,
+      workspaceId, chatWindowId: input.chatWindowId, windowId: shown.window.id, type: loggedKind(shown.window.previewType),
       revision: shown.window.previewRevision, bytes: Buffer.byteLength(shown.window.html, 'utf8'),
     });
   }
@@ -105,7 +110,7 @@ export async function followFileInPreview({ workspaceId, chatWindowId, agentId, 
     if (dev) ensureLinkInDoc(doc, chatWindowId, dev.id);
   }).catch(() => undefined);
   if (dev) {
-    log.info('write follows Run dev', { workspaceId, chatWindowId, windowId: dev.id, filePath });
+    log.info('write follows Run dev', { workspaceId, chatWindowId, windowId: dev.id, kind });
     return { status: 'dev', window: dev };
   }
   let pagePath = filePath;

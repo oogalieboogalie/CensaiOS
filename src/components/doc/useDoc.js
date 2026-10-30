@@ -6,6 +6,8 @@ import { anchorNotes, noteWords } from './anchorNotes.js';
 import { FILE_CONTENTS } from './DocData.js';
 import { newId } from '../../lib/ids/newId.js';
 import { useDocFileLoad } from './useDocFileLoad.js';
+import { useFileSave } from '../files/useFileSave.js';
+import { saveFileContent } from '../files/fileSave.js';
 import { logFailure } from '../../lib/appLog/browserLog.js';
 import { authorName } from '../../lib/collaboration/signedInName.js';
 
@@ -15,8 +17,8 @@ export const startsBlank = (win) => !win.filePath && !win.isGithub && !(win.text
 export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef, openBlank = false) {
   // A Document with no file has its words from the first look, so nothing flashes empty.
   const [realContent, setRealContent] = React.useState(() => (win.filePath ? '' : win.text || win.content || FILE_CONTENTS[win.fileName] || ''));
-  const { loading, loadError, canSave, retryLoad, rememberSaved } = useDocFileLoad(win, setRealContent);
-  const [saving, setSaving] = React.useState(false);
+  const { loading, loadError, canSave, retryLoad, offBoard, rememberSaved } = useDocFileLoad(win, setRealContent);
+  const { saving, note: saveNote, save, closeNote: closeSaveNote } = useFileSave(win.filePath, win.fileName, 'doc', rememberSaved);
   const [backlinks, setBacklinks] = React.useState([]);
   const [backlinksCapped, setBacklinksCapped] = React.useState(false);
   const [backlinksChecked, setBacklinksChecked] = React.useState(false);
@@ -49,6 +51,11 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef, openBlank = fa
       setRealContent(win.text || win.content || FILE_CONTENTS[win.fileName] || '');
     }
   }, [win.filePath, win.text, win.content, win.fileName]);
+
+  // Words typed here before a file only the owner may read stayed off the board are taken off it.
+  React.useEffect(() => {
+    if (offBoard && win.filePath && win.text) onUpdate({ text: '' });
+  }, [offBoard, win.filePath, win.text, onUpdate]);
 
   React.useEffect(() => {
     if (!win.filePath) return;
@@ -110,12 +117,10 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef, openBlank = fa
         const dir = win.filePath.split(/[\\/]/).slice(0, -1).join('/');
         const newPath = dir ? `${dir}/${fileName}` : fileName;
         if (confirm(`File "${fileName}" not found. Create it at ${newPath}?`)) {
-          await fetch('/api/files/content', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ path: newPath, content: `# ${linkText}\n\n` })
-          });
-          onSpawn?.('doc', { fileName, filePath: newPath });
+          const made = await saveFileContent(newPath, `# ${linkText}\n\n`, 'doc', { create: true });
+          // A note already there by that name (the search missed it) opens as it is.
+          if (made.ok || made.reason === 'exists') onSpawn?.('doc', { fileName, filePath: newPath });
+          else alert(`${fileName} was not created. ${made.why}`);
         }
       } else {
         alert(`File "${fileName}" not found in project.`);
@@ -170,25 +175,12 @@ export function useDoc(win, onUpdate, onSpawn, onAssign, bodyRef, openBlank = fa
     }
   };
 
-  const saveFile = async () => {
-    if (!canSave) return;
-    setSaving(true);
-    try {
-      const res = await fetch('/api/files/content', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: win.filePath, content: realContent })
-      });
-      if (res?.ok) rememberSaved(realContent);
-    } catch (e) {
-      logFailure('file not saved', e, 'doc', 'error');
-    }
-    setSaving(false);
-  };
+  // A save that did not happen says so (saveNote), and the words stay here.
+  const saveFile = () => (canSave ? save(realContent) : undefined);
 
   return {
     realContent, setRealContent,
-    loading, loadError, canSave, saving, retryLoad,
+    loading, loadError, canSave, saving, saveNote, closeSaveNote, retryLoad, offBoard,
     backlinks,
     backlinksCapped,
     backlinksChecked,

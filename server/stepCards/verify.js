@@ -17,6 +17,7 @@ import { plainEnv, testCounts } from '../censaiOrchestrator/projectTests.js';
 import { runCommand } from '../tools/handlers/runnerUtils.js';
 import { checkPage } from './pageCheck.js';
 import { scrubText } from '../selfFix/scrubText.js';
+import { inHiddenFolder, isSecretFileName } from '../security/secretFiles.js';
 
 export const RUN_TIMEOUT_MS = Math.max(30_000, Number(process.env.STEP_CARDS_RUN_TIMEOUT_MS) || 10 * 60 * 1000);
 const MAX_READ = 2 * 1024 * 1024;
@@ -29,19 +30,36 @@ export function insideFolder(cwd, rel) {
   return inside && !inside.startsWith('..') && !path.isAbsolute(inside) ? target : null;
 }
 
-export async function checkFile(cwd, check, { stat = fs.stat, readFile = fs.readFile, realpath = fs.realpath } = {}) {
+/**
+ * isOwner: whether the person checking is this computer's owner (asked only
+ * when it matters). root: the project the folder is in; hidden folders count
+ * from there, so picking one (.git) as the folder hides nothing.
+ */
+export async function checkFile(cwd, check, { stat = fs.stat, readFile = fs.readFile, realpath = fs.realpath, isOwner = async () => false, root = cwd } = {}) {
   const outside = { ok: null, line: `I only look inside the project, and ${check.path} is outside it.` };
   const target = insideFolder(cwd, check.path);
   if (!target) return outside;
   let info;
+  let real;
+  let realRoot;
   try {
     // A link that points out of the project is outside it, wherever it sits.
-    if (!insideFolder(await realpath(cwd), await realpath(target))) return outside;
+    real = await realpath(target);
+    if (!insideFolder(await realpath(cwd), real)) return outside;
+    realRoot = await realpath(root);
     info = await stat(target);
   } catch {
     return { ok: false, line: `${check.path} is not in the project yet.` };
   }
   if (!check.says) return { ok: true, line: `Found ${check.path}${info.isDirectory() ? ' (a folder)' : ''}.` };
+  // Never read, so a card cannot spell out its keys one guess at a time; in a
+  // hidden folder (.git, .ssh) only for this computer's owner, as on the board.
+  if (isSecretFileName(path.basename(target)) || isSecretFileName(path.basename(real))) {
+    return { ok: null, line: `${check.path} can hold keys or passwords, so I do not read it.` };
+  }
+  if ((inHiddenFolder(path.relative(root, target)) || inHiddenFolder(path.relative(realRoot, real))) && !(await isOwner())) {
+    return { ok: null, line: `${check.path} is in a hidden folder, so only this computer's owner can have me read it.` };
+  }
   if (info.isDirectory()) return { ok: false, line: `${check.path} is a folder, so it cannot say anything.` };
   if (!info.isFile()) return { ok: null, line: `${check.path} is not a plain file, so I did not read it.` };
   if (info.size > MAX_READ) return { ok: null, line: `${check.path} is too big for me to read through.` };
@@ -114,21 +132,23 @@ export function askMessages({ step, asks, report, seen = [] }) {
 }
 
 /**
- * Check every check on one step. ctx: { cwd, report, isOwner() -> bool, complete(messages) -> text,
+ * Check every check on one step. ctx: { cwd, root (the project cwd is in), report, isOwner() -> bool, complete(messages) -> text,
  * trustFrom (the project a worktree came from), skipRuns (an automatic check never runs commands) }.
  * Files, runs and pages go first, so Censai's read-over sees what they found.
  */
 export async function verifyStep({ step, checks, ctx, deps = {} }) {
   const results = new Map();
   const seen = [];
+  let ownerAnswer;
+  const isOwner = () => (ownerAnswer ||= Promise.resolve(ctx.isOwner()));
   for (const check of checks.filter((c) => c.kind === 'file')) {
-    const r = ctx.cwd ? await checkFile(ctx.cwd, check, deps) : { ok: null, line: ctx.noFolder };
+    const r = ctx.cwd ? await checkFile(ctx.cwd, check, { ...deps, isOwner, root: ctx.root || ctx.cwd }) : { ok: null, line: ctx.noFolder };
     results.set(check.id, r);
     seen.push(r.line);
   }
   const runs = checks.filter((c) => c.kind === 'run');
   const pages = checks.filter((c) => c.kind === 'page');
-  const owner = runs.length || pages.length ? await ctx.isOwner() : false;
+  const owner = runs.length || pages.length ? await isOwner() : false;
   for (const check of runs) {
     let r;
     if (!ctx.cwd) r = { ok: null, line: ctx.noFolder };

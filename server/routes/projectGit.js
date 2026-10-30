@@ -3,8 +3,10 @@ import fs from 'fs';
 import pool from '../db.js';
 import { resolveGithubToken } from '../github/mergeDesk.js';
 import { validateProjectPath } from './files/pathUtils.js';
+import { OWN_STATE, OWN_STATE_WORDS } from './files/ownState.js';
 import { projectStatus, saveVersion, startVersions } from '../projectGit/git.js';
 import { sendToGithub } from '../projectGit/publish.js';
+import { makeVersionsAgain } from '../projectGit/makeAgain.js';
 import { createNewProject } from '../projectGit/newProject.js';
 
 /**
@@ -16,6 +18,7 @@ import { createNewProject } from '../projectGit/newProject.js';
  * POST /api/project-git/start        { path }           turn version saving on
  * POST /api/project-git/save         { path, message }  save a version
  * POST /api/project-git/send         { path, title, body }  to GitHub / pull request
+ * POST /api/project-git/make-again   { path }           the versions GitHub does not have yet, again without key files
  *
  * Only folders open on this board are accepted.
  */
@@ -40,8 +43,8 @@ async function folderFor(raw) {
   let cwd;
   try {
     cwd = await validateProjectPath(asked);
-  } catch {
-    throw Object.assign(new Error(`${asked} isn't a project open on this board.`), { status: 403 });
+  } catch (err) {
+    throw Object.assign(new Error(err.code === OWN_STATE ? OWN_STATE_WORDS : `${asked} isn't a project open on this board.`), { status: 403 });
   }
   const stat = await fs.promises.stat(cwd).catch(() => null);
   if (!stat?.isDirectory()) throw Object.assign(new Error(`This folder doesn't exist: ${raw}`), { status: 404 });
@@ -52,7 +55,9 @@ const handle = (fn) => async (req, res) => {
   try {
     res.json(await fn(req));
   } catch (err) {
-    res.status(err.status || err.statusCode || 500).json({ error: err.message });
+    // A send refused for files that hold keys names them (and those GitHub's versions hold) and counts the versions, so the bar can offer to make those again.
+    const keptOut = Array.isArray(err.keptOut) ? { keptOut: err.keptOut, githubHas: err.githubHas || [], onMain: err.onMain || [], versions: err.versions } : {};
+    res.status(err.status || err.statusCode || 500).json({ error: err.message, ...keptOut });
   }
 };
 
@@ -66,4 +71,9 @@ projectGitRouter.post('/send', handle(async (req) => {
   const cwd = await folderFor(req.body?.path);
   const { token } = await resolveGithubToken(req.session?.userId);
   return sendToGithub(cwd, { token, title: req.body?.title, body: req.body?.body, author: await author(req) });
+}));
+projectGitRouter.post('/make-again', handle(async (req) => {
+  const cwd = await folderFor(req.body?.path);
+  const { token } = await resolveGithubToken(req.session?.userId);
+  return makeVersionsAgain(cwd, { token });
 }));

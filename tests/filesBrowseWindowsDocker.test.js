@@ -94,6 +94,14 @@ describe('file tree on Windows + Docker', () => {
     setProject('D:\\Archive');
     const res = await browse('D:\\Archive').expect(404);
     expect(res.body.error).toMatch(/can't see D:\\Archive/);
+    expect(res.body.reason).toBe('unseen');
+  });
+
+  linuxOnly('a folder deleted from the shared checkout is gone, not out of sight', async () => {
+    const res = await browse(`${HOST}\\made-up-gone`).expect(404);
+    expect(res.body.reason).toBe('missing');
+    expect(res.body.error).toMatch(/doesn't exist/);
+    expect(res.body.error).not.toMatch(/can't see|CENSAI_PROJECTS_FOLDER_ON_PC/);
   });
 
   test('a folder outside every open project is refused with a reason', async () => {

@@ -1,10 +1,25 @@
 import { fetchGithub } from '../../helpers.js';
 import { recordProvenance } from '../../../operational-intelligence/provenance.js';
 import { noteToolFailure } from '../../toolsLog.js';
+import { ownerOnlyProjectRead } from '../../rbac/ownerOnlyReads.js';
+import { isRepoName } from '../../../github.js';
+import { LINKED_SECRET, linkedSecret } from '../../../security/secretFiles.js';
 
-export async function githubReadFile(args) {
-  const res = await fetchGithub(`/repos/${args.repo}/contents/${args.path}`);
+/**
+ * One file from GitHub with this computer's GitHub key. A teammate's agent
+ * gets plain words for a file that holds keys by its name, as in a GitHub
+ * project (server/tools/rbac/ownerOnlyReads.js), and no one's agent reads one
+ * through a link in the repo. The repo and path are checked and spelled out,
+ * so neither can reach past the repo's files.
+ */
+export async function githubReadFile(args, context = {}) {
+  const parts = String(args.path || '').split('/');
+  if (!isRepoName(args.repo) || parts.includes('..')) return 'Error: repo must be owner/name, and path a file in it.';
+  const refused = await ownerOnlyProjectRead(context, { repo: args.repo }, args.path, { tool: 'github_read_file' });
+  if (refused) return `Error: ${refused}`;
+  const res = await fetchGithub(`/repos/${args.repo}/contents/${parts.map(encodeURIComponent).join('/')}`);
   if (res.type === 'file' && res.content) {
+    if (linkedSecret(args.path, res.path)) return `Error: ${LINKED_SECRET}`;
     return Buffer.from(res.content, 'base64').toString('utf8');
   }
   return JSON.stringify(res);

@@ -4,12 +4,15 @@ import { fileURLToPath } from 'url';
 import pool from '../db.js';
 import { getSubAgentById } from '../memory.js';
 import { getProject, getProjectByName, getProjectByRepoOrPath, listProjects, openProject } from '../workspaces.js';
+import { isGithubProject } from '../workspaces/shared.js';
 import { getSecret } from '../secrets.js';
+import { githubApiUrl } from '../github/apiUrl.js';
 import {
   assertAgentProjectAccess,
 } from '../workspaces/projectMemberships.js';
 import { resolveAuthorizedWorkspaceProject } from '../workspaces/projectAccess.js';
 import { noteToolFailure } from './toolsLog.js';
+import { offBoardGithubRead } from './rbac/ownerOnlyReads.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CURRENT_PROJECT_FILE = path.resolve(path.join(__dirname, '..', '..', '.homebase-state', 'current-project.json'));
@@ -61,6 +64,10 @@ async function authorizedProjectResult(agentId, project, isSubAgent, context) {
       agentId: sub?.parent_id || agentId,
       requiredPermission: context.requiredProjectPermission || 'read',
     });
+  } else if (isGithubProject(project)) {
+    // Off a board a GitHub project is read with this computer's GitHub key, as a repo by its name is.
+    const refused = await offBoardGithubRead(context, { feature: 'agent read of a GitHub project off a board' });
+    if (refused) throw new Error(refused);
   }
   return { project, isSubAgent };
 }
@@ -198,7 +205,7 @@ export async function fetchGithub(endpoint, options = {}) {
   const token = getSecret('GITHUB_TOKEN');
   if (!token) throw new Error('GITHUB_TOKEN not configured in .env');
   const needsContentType = options.method && ['POST', 'PUT', 'PATCH'].includes(options.method.toUpperCase());
-  const res = await fetch(`https://api.github.com${endpoint}`, {
+  const res = await fetch(`${githubApiUrl()}${endpoint}`, {
     ...options,
     headers: {
       'Authorization': `Bearer ${token}`,

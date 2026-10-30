@@ -6,6 +6,7 @@ import { SideBySideDiff } from '../../diffViewer/SideBySideDiff.jsx';
 import { rowsFromHunks, rowsFromTexts, countRows } from '../../diffViewer/sideBySide.js';
 import { windowMeta } from './meta.js';
 import { useGitDiff } from './useGitDiff.js';
+import { SECRET_CHANGES } from '../../../../shared/files/fileProblems.js';
 
 export { windowMeta };
 
@@ -65,6 +66,7 @@ export function GitDiffWindow({ win = {}, onUpdate }) {
   else if (taskId && !changes.loaded) body = <p className="gdv-note">Reading changes…</p>;
   else if (taskId && error) body = <p className="gdv-note" data-tone="danger">{error}</p>;
   else if (taskId && !files.length) body = <p className="gdv-note">This agent has not changed any files yet.</p>;
+  else if (taskId && patches.find((p) => p.path === filePath)?.secret) body = <p className="gdv-note" data-testid="gdv-secret">{SECRET_CHANGES}</p>;
   else if (taskId && !rows.length) body = <p className="gdv-note">{file?.change === 'deleted' ? 'This file was deleted.' : 'Binary file: nothing to show line by line.'}</p>;
   else body = <SideBySideDiff rows={rows} beforeLabel={taskId ? `Before · ${filePath}` : 'Before'} afterLabel={taskId ? `After · ${filePath}` : 'After'} />;
 

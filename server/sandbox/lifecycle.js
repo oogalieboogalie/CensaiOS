@@ -37,18 +37,19 @@ export async function ensureSandbox(hostPath, options = {}) {
 
   const lock = (async () => {
     const state = await containerState(name);
+    // The sandbox's name is a hash: the log never names the project's folder.
     if (state === 'running') {
-      log.debug('reusing running sandbox', { name, hostPath });
+      log.debug('reusing running sandbox', { name });
       return false;
     }
     if (state === 'stopped') {
-      log.info('starting stopped sandbox', { name, hostPath });
+      log.info('starting stopped sandbox', { name });
       const { code, stderr } = await runnerClient.exec('docker', ['start', name], { windowsHide: true });
       if (code !== 0) throw new Error(`Start failed: ${stderr}`);
       return false;
     }
 
-    log.info('creating sandbox container', { name, hostPath });
+    log.info('creating sandbox container', { name });
     await ensureSandboxImage();
     const src = bindMountSource(hostPath);
 

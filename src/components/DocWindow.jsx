@@ -11,6 +11,8 @@ import { SelectionBar, AnnotationComposer } from './doc/AnnotationUI.jsx';
 import { NoteGraph } from './doc/NoteGraph.jsx';
 import { useDoc } from './doc/useDoc.js';
 import { FileLoadError } from './files/FileLoadError.jsx';
+import { OffBoardNote } from './files/OffBoardNote.jsx';
+import { SaveNote } from './files/SaveNote.jsx';
 import { RelatedContext } from './doc/RelatedContext.jsx';
 import { BacklinksBox } from './doc/BacklinksBox.jsx';
 import { reportTyping, reportTextPreview } from '../lib/collaboration/liveText.js';
@@ -28,7 +30,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
   const isActive = useWorkspaceStore((s) => s.activeId === win.id);
   const {
     realContent, setRealContent,
-    loading, loadError, canSave, saving, retryLoad,
+    loading, loadError, canSave, saving, saveNote, closeSaveNote, retryLoad,
     backlinks,
     backlinksCapped,
     backlinksChecked,
@@ -43,7 +45,8 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
     onMouseUp,
     onTextareaSelection,
     commitAnnotation,
-    saveFile
+    saveFile,
+    offBoard,
   } = useDoc(win, onUpdate, onSpawn, onAssign, bodyRef, isActive);
   const textareaRef = React.useRef(null);
   useSharedCaret(textareaRef, realContent, React.useMemo(() => ({ id: win.id, field: 'text' }), [win.id]));
@@ -130,6 +133,8 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
         ]}
       />
       <FileLoadError message={loadError} onRetry={retryLoad} />
+      <OffBoardNote show={offBoard && !loadError} />
+      <SaveNote note={saveNote} onClose={closeSaveNote} />
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: showComments ? '1fr 200px' : '1fr', overflow: 'hidden' }}>
         {showGraph ? (
           <NoteGraph
@@ -169,6 +174,8 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
                   value={realContent}
                   readOnly={Boolean(loadError) || Boolean(win.typingActor && !win.typingActor.shared)}
                   onChange={(e) => {
+                    // A file only this computer's owner may read keeps its words on this screen.
+                    if (offBoard) return setRealContent(e.target.value);
                     const next = mergeWithLatest(win.id, 'text', realContent, e.target.value, e.target.selectionEnd);
                     setRealContent(next);
                     onUpdate({ text: next });

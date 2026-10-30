@@ -1,4 +1,4 @@
-/* Finder-inspired Downloads browser — tokens only. */
+/* Finder: the files of a window's project, Finder-style — tokens only. */
 
 .hb-finder {
   flex: 1;
@@ -8,6 +8,11 @@
   background: var(--surface);
   color: var(--ink);
   font-size: var(--text-sm);
+}
+
+/* No project yet: the offer to open one fills the window. */
+.hb-finder[data-alone='true'] {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .hb-finder-sidebar {
@@ -21,7 +26,6 @@
   background: color-mix(in oklab, var(--surface-2) 88%, transparent);
 }
 
-.hb-finder-nav,
 .hb-finder-section ul,
 .hb-finder-rows {
   list-style: none;
@@ -39,8 +43,7 @@
   padding: var(--space-1) var(--space-1-5);
 }
 
-.hb-finder-nav-item,
-.hb-finder-tag {
+.hb-finder-nav-item {
   all: unset;
   box-sizing: border-box;
   width: 100%;
@@ -53,37 +56,24 @@
   cursor: pointer;
 }
 
-.hb-finder-nav-item:hover,
-.hb-finder-tag:hover {
+.hb-finder-nav-item > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hb-finder-nav-item svg {
+  flex: none;
+}
+
+.hb-finder-nav-item:hover {
   background: var(--surface-hover);
 }
 
 .hb-finder-nav-item[data-active='true'] {
   background: var(--accent-soft);
   color: var(--accent-ink);
-}
-
-.hb-finder-tag-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-  background: var(--ink-faint);
-  flex: none;
-}
-
-.hb-finder-tag-dot[data-tone='outline'] {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--ink-faint);
-}
-
-.hb-finder-tag-dot[data-tone='danger'] { background: var(--status-danger); }
-.hb-finder-tag-dot[data-tone='purple'] { background: var(--status-purple); }
-.hb-finder-tag-dot[data-tone='success'] { background: var(--status-success); }
-.hb-finder-tag-dot[data-tone='faint'] { background: var(--ink-faint); }
-.hb-finder-tag-dot[data-tone='orange'] { background: var(--status-orange); }
-
-.hb-finder-tag-all {
-  color: var(--ink-soft);
 }
 
 .hb-finder-main {
@@ -104,14 +94,12 @@
   background: var(--surface-2);
 }
 
-.hb-finder-toolbar-nav,
-.hb-finder-toolbar-views {
+.hb-finder-toolbar-nav {
   display: inline-flex;
   gap: var(--space-1);
 }
 
-.hb-finder-toolbar-nav button,
-.hb-finder-toolbar-views button {
+.hb-finder-toolbar-nav button {
   all: unset;
   display: inline-flex;
   align-items: center;
@@ -123,22 +111,26 @@
   cursor: pointer;
 }
 
-.hb-finder-toolbar-nav button:hover,
-.hb-finder-toolbar-views button:hover {
+.hb-finder-toolbar-nav button:hover:not(:disabled) {
   background: var(--surface-hover);
   color: var(--ink);
 }
 
-.hb-finder-toolbar-views button[data-active='true'] {
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--hairline);
+.hb-finder-toolbar-nav button:disabled {
+  color: var(--ink-faint);
+  opacity: 0.5;
+  cursor: default;
 }
 
+/* Centred over the list, as in Finder: the nav's width balances it. */
 .hb-finder-toolbar-title {
   text-align: center;
   font-weight: 600;
   color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: calc(var(--control-h) * 2 + var(--space-1));
 }
 
 .hb-finder-columns {
@@ -169,7 +161,14 @@
   min-height: var(--row-h);
   padding: 0 var(--space-3);
   color: var(--ink);
-  cursor: pointer;
+  cursor: default;
+}
+
+.hb-finder-row > span:not(.hb-finder-name) {
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hb-finder-row[data-zebra='odd'] {
@@ -181,11 +180,13 @@
 }
 
 .hb-finder-row[data-selected='true'] {
-  background: color-mix(in oklab, var(--ink-faint) 28%, var(--surface));
+  background: var(--accent-soft);
+  color: var(--accent-ink);
 }
 
-.hb-finder-row[data-empty='true'] {
-  cursor: default;
+.hb-finder-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .hb-finder-name {
@@ -195,8 +196,170 @@
   min-width: 0;
 }
 
+.hb-finder-name svg {
+  flex: none;
+  color: var(--ink-faint);
+}
+
+.hb-finder-row[data-kind='folder'] .hb-finder-name svg {
+  color: var(--accent);
+}
+
 .hb-finder-name > span:last-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Loading, an empty folder, or why a folder could not be listed. */
+.hb-finder-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--row-h);
+  padding: var(--space-1-5) var(--space-3);
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.hb-finder-note[data-problem='true'] {
+  color: var(--danger-text);
+  font-style: normal;
+}
+
+.hb-finder-pathbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-1) var(--space-3);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-2);
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  overflow: hidden;
+}
+
+.hb-finder-crumb {
+  all: unset;
+  min-width: 0;
+  padding: var(--space-0-5) var(--space-1);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.hb-finder-crumb:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+.hb-finder-crumb[aria-current='location'] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.hb-finder-crumb-sep {
+  color: var(--ink-faint);
+}
+
+.hb-finder-count {
+  margin-left: auto;
+  flex: none;
+  color: var(--ink-faint);
+}
+
+/* "No project is open on this board" and its offer to open one. Scrolls
+   rather than cut anything off in a very short window. It sits in a well,
+   with the folder on a raised tile (.hb-empty-icon, depth.css). */
+.hb-finder-none {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-16) var(--space-6) var(--space-6);
+  background: var(--layer-well);
+  box-shadow: var(--well-shadow);
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.hb-finder-none-words {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.hb-finder-none-hint {
+  margin: 0;
+  max-width: var(--space-80);
+  color: var(--ink-soft);
+}
+
+.hb-finder-open {
+  position: relative;
+  display: inline-flex;
+  font-style: normal;
+}
+
+.hb-finder-open-button {
+  all: unset;
+  box-sizing: border-box;
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  box-shadow: var(--panel-shadow);
+  /* Dark text on the accent fill: white on a light accent read at 2.1:1. */
+  color: var(--accent-contrast);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
+}
+
+.hb-finder-open-button:hover {
+  background: color-mix(in oklab, var(--accent) 88%, var(--ink));
+}
+
+.hb-finder-open-button:active {
+  transform: scale(var(--press-scale));
+}
+
+.hb-finder-open-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A teammate's Finder: only the computer's owner opens projects. */
+.hb-finder-open-note {
+  color: var(--ink-soft);
+  font-style: normal;
+}
+
+/* The folder picker drops below the button, centred on it. */
+.hb-folder-picker.hb-finder-picker {
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: left;
+}
+
+/* With no project, the picker opens in place under the button and shrinks to
+   the room left in the window: its folder list scrolls, and Mount here stays
+   in sight. */
+.hb-finder-open[data-inline='true'] {
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 0;
+}
+
+.hb-finder-open[data-inline='true'] > .hb-folder-picker {
+  position: static;
+  transform: none;
+  min-height: 0;
 }

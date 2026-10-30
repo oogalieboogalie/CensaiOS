@@ -6,6 +6,7 @@ import { useVisibilityAwareInterval } from '../lib/usePolling.js';
 import { ScoutPanel } from './leads/ScoutPanel.jsx';
 import { SavedOutreach } from './leads/SavedOutreach.jsx';
 import { noteLeadList, queueCountsFromPayload, shiftQueueCount } from './leads/queueCounts.js';
+import { webLink } from './leads/leadLinks.js';
 
 const STATUS_DOT = { new: 'var(--ps-green)', contacted: 'var(--accent)', qualified: 'var(--ps-teal)', dead: 'var(--ink-faint)' };
 
@@ -156,10 +157,9 @@ export function LeadsWindow({ win = {}, onUpdate }) {
         )}
         {leads.map((lead) => {
           const socials = [
-            lead.facebook && ['fb', lead.facebook],
-            lead.instagram && ['ig', lead.instagram],
-            lead.linkedin && ['li', lead.linkedin],
-          ].filter(Boolean);
+            ['fb', webLink(lead.facebook)], ['ig', webLink(lead.instagram)], ['li', webLink(lead.linkedin)],
+          ].filter(([, url]) => url);
+          const site = webLink(lead.website);
           return (
             <div key={lead.id} style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '8px 10px', background: 'var(--surface)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -177,7 +177,7 @@ export function LeadsWindow({ win = {}, onUpdate }) {
               <div style={{ fontSize: 'var(--text-xs)', marginTop: 3, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {lead.phone && <a href={`tel:${lead.phone}`} style={{ color: 'var(--accent-ink)', textDecoration: 'none' }}>{lead.phone}</a>}
                 {lead.email && <a href={`mailto:${lead.email}`} style={{ color: 'var(--accent-ink)', textDecoration: 'none' }}>{lead.email}</a>}
-                {lead.website && <a href={lead.website} target="_blank" rel="noreferrer" style={{ color: 'var(--ink-faint)', textDecoration: 'none' }}>site ↗</a>}
+                {site && <a href={site} target="_blank" rel="noreferrer" style={{ color: 'var(--ink-faint)', textDecoration: 'none' }}>site ↗</a>}
                 {socials.map(([label, url]) => (
                   <a key={label} href={url} target="_blank" rel="noreferrer" title={url} style={{ color: 'var(--ink-faint)', textDecoration: 'none' }}>{label} ↗</a>
                 ))}

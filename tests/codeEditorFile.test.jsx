@@ -13,7 +13,7 @@ describe('CodeEditorWindow file loading', () => {
         return { json: async () => ({ content: 'export default function App() {}' }) };
       }
       if (url === '/api/files/content' && options?.method === 'PUT') {
-        return { json: async () => ({ ok: true }) };
+        return { ok: true, status: 200, json: async () => ({ ok: true, path: 'C:\\Project\\src\\App.jsx' }) };
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -44,6 +44,7 @@ describe('CodeEditorWindow file loading', () => {
         }),
       }));
     });
+    expect(await screen.findByText('Saved App.jsx.')).toBeTruthy();
   });
 
   test('loads GitHub source file content without showing local save controls', async () => {

@@ -10,7 +10,8 @@ export function buildFixPrompt({ fileLabel, language, selectionText }) {
   return `In ${fileLabel} (${langName}), please fix and format this snippet and return the corrected code:\n\n\`\`\`${language}\n${selectionText}\n\`\`\``;
 }
 
-export function useCodeEditorActions({ code, setCode, language, fileLabel, onUpdate, onSpawn, agentId }) {
+// offBoard: a file only this computer's owner may read; formatting it keeps its words on this screen.
+export function useCodeEditorActions({ code, setCode, language, fileLabel, onUpdate, onSpawn, agentId, offBoard = false }) {
   const [formatStatus, setFormatStatus] = React.useState(null); // { kind, text }
   const canFormat = isFormattableLanguage(language);
 
@@ -27,9 +28,9 @@ export function useCodeEditorActions({ code, setCode, language, fileLabel, onUpd
       return;
     }
     setCode(next);
-    onUpdate?.({ code: next });
+    if (!offBoard) onUpdate?.({ code: next });
     flash('ok', verb);
-  }, [code, setCode, onUpdate, flash]);
+  }, [code, setCode, onUpdate, flash, offBoard]);
 
   const formatWhole = React.useCallback(async () => {
     const res = await formatDocument(code, language);

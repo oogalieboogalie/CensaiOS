@@ -4,10 +4,13 @@
 // Sections, top to bottom: Recent, My modules, every built-in module by
 // category, Ready-made boards, Templates, and always a last row "Make a new
 // module…". A search puts rows named exactly what was typed first (Best
-// match). When a search matches nothing, "Make a new module: <search>" moves
-// to the top.
+// match). A window is also found by the other names the board shows for it
+// (addPaletteNames.js), listed after the rows whose own name or description
+// holds what was typed. When a search matches nothing, "Make a new module:
+// <search>" moves to the top.
 
 import { DEFAULT_HTML_PREVIEW } from '../../components/canvas/CanvasState.js';
+import { shownAs, startsWords, windowNames, withChipName } from './addPaletteNames.js';
 import { OFFICE_STARTERS } from '../office/officeStarters.js';
 import { CREATIVE_STARTERS } from '../creative/creativeStarters.js';
 import { YORWARE_STARTERS } from '../yorware/yorwareStarters.js';
@@ -77,7 +80,7 @@ export const BOARD_TEMPLATE_ITEMS = Object.freeze([
   { id: 'board:creative-studio', label: 'Creative Studio', hint: 'Ready-made board: brief, design, video and a content calendar', icon: 'Group', cover: 'creativeBoard', action: { type: 'boardTemplate', id: 'creative-studio' } },
   { id: 'board:agent-team', label: 'Agent Team', hint: 'Ready-made board: four agents in one team room; the Lead hands out the work', icon: 'Group', cover: 'agentTeamBoard', action: { type: 'boardTemplate', id: 'agent-team' } },
   { id: 'board:small-business', label: 'Small Business', hint: 'Ready-made board: find customers, money sheet and this week', icon: 'Group', cover: 'smallBusinessBoard', action: { type: 'boardTemplate', id: 'small-business' } },
-  { id: 'board:notes-workspace', label: 'Notes Workspace', hint: 'Ready-made board: Obsidian-style vault over a Finder-style Downloads window', icon: 'Files', cover: 'notesWorkspaceBoard', action: { type: 'boardTemplate', id: 'notes-workspace' } },
+  { id: 'board:notes-workspace', label: 'Notes Workspace', hint: "Ready-made board: Obsidian-style vault over a Finder of the open project's files", icon: 'Files', cover: 'notesWorkspaceBoard', action: { type: 'boardTemplate', id: 'notes-workspace' } },
   { id: 'board:real-estate-team', label: 'Real Estate Team', hint: 'Ready-made board: listings, showings and follow-ups', icon: 'Group', cover: 'realEstateBoard', action: { type: 'boardTemplate', id: 'real-estate-team' } },
 ]);
 
@@ -90,6 +93,25 @@ export function matches(query, ...fields) {
   if (!words.length) return true;
   const hay = fields.filter(Boolean).join(' ').toLowerCase();
   return words.every(w => hay.includes(w));
+}
+
+// A ready-made board is found by its chip's name on the empty board too.
+const BOARD_ITEMS = BOARD_TEMPLATE_ITEMS.map(withChipName);
+
+function builtInItem(m) {
+  const names = windowNames(m);
+  return {
+    id: `kind:${m.kind}`,
+    label: m.label,
+    hint: m.moduleMenu?.hint || m.launcher?.hint || '',
+    icon: manifestIcon(m),
+    ...(BRAND_BY_KIND[m.kind] ? { brand: BRAND_BY_KIND[m.kind] } : {}),
+    ...(names.length ? { names } : {}),
+    // Every row shows a cover picture (components/covers), the style
+    // the Games set started (spec 11); kinds without one keep the icon.
+    cover: m.kind,
+    action: { type: 'spawn', kind: m.kind },
+  };
 }
 
 function builtInItems(manifests) {
@@ -106,17 +128,7 @@ function builtInItems(manifests) {
   return groups.map(g => ({
     label: g.label,
     items: [
-      ...g.manifests.map(m => ({
-        id: `kind:${m.kind}`,
-        label: m.label,
-        hint: m.moduleMenu?.hint || m.launcher?.hint || '',
-        icon: manifestIcon(m),
-        ...(BRAND_BY_KIND[m.kind] ? { brand: BRAND_BY_KIND[m.kind] } : {}),
-        // Every row shows a cover picture (components/covers), the style
-        // the Games set started (spec 11); kinds without one keep the icon.
-        cover: m.kind,
-        action: { type: 'spawn', kind: m.kind },
-      })),
+      ...g.manifests.map(builtInItem),
       ...(g.entries || []).map(e => ({
         id: e.id, label: e.label, hint: e.hint, icon: 'Search', brand: e.brand, cover: 'searchEngine',
         action: { type: 'spawn', kind: e.kind, props: e.props },
@@ -151,9 +163,13 @@ export function buildAddSections({ query = '', manifests = [], recent = [], save
     id: `template:${t.id}`, label: t.manifest?.name || t.id, hint: t.manifest?.description || '',
     icon: t.manifest?.icon || 'Toolbox', cover: 'module', action: { type: 'template', id: t.id },
   }));
-  const everything = [...savedItems, ...builtIns.flatMap(g => g.items), ...BOARD_TEMPLATE_ITEMS, ...templateItems];
+  const everything = [...savedItems, ...builtIns.flatMap(g => g.items), ...BOARD_ITEMS, ...templateItems];
   const byId = new Map(everything.map(i => [i.id, i]));
-  const filter = items => items.filter(i => matches(q, i.label, i.hint, i.id));
+  const own = i => matches(q, i.label, i.hint, i.id);
+  const filter = items => items.filter(own).map(i => shownAs(i, q));
+  // Rows found only by another name come after the rows found by their own.
+  const byOtherName = [...builtIns.flatMap(g => g.items), ...BOARD_ITEMS]
+    .filter(i => q && !own(i) && (i.names || []).some(n => startsWords(q, n))).map(i => shownAs(i, q));
 
   const make = q
     ? { id: 'make:query', label: `Make a new module: ${q}`, hint: 'Built in a sandbox', icon: 'Plus', cover: 'makeModule', action: { type: 'make', request: q } }
@@ -166,12 +182,15 @@ export function buildAddSections({ query = '', manifests = [], recent = [], save
   }
   sections.push({ id: 'mine', label: 'My modules', items: filter(savedItems) });
   for (const group of builtIns) sections.push({ id: `cat:${group.label}`, label: group.label, items: filter(group.items) });
-  sections.push({ id: 'boards', label: 'Ready-made boards', items: filter(BOARD_TEMPLATE_ITEMS) });
+  sections.push({ id: 'also', label: 'Also known as', items: byOtherName });
+  sections.push({ id: 'boards', label: 'Ready-made boards', items: filter(BOARD_ITEMS) });
   sections.push({ id: 'templates', label: 'Templates', items: filter(templateItems) });
 
   // A row named exactly what was typed comes first, so "Document" + Enter
   // opens the Document, not the first row that merely mentions documents.
-  const exact = q ? sections.flatMap(sec => sec.items).filter(i => i.label.toLowerCase() === q.toLowerCase()) : [];
+  // A module's own name goes before another module's other name.
+  const named = q ? sections.flatMap(sec => sec.items).filter(i => i.label.toLowerCase() === q.toLowerCase()) : [];
+  const exact = [...named.filter(i => !i.ownLabel), ...named.filter(i => i.ownLabel)];
   if (exact.length) {
     const ids = new Set(exact.map(i => i.id));
     for (const sec of sections) sec.items = sec.items.filter(i => !ids.has(i.id));

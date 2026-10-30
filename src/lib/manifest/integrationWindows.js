@@ -97,6 +97,7 @@ export const INTEGRATION_WINDOW_MANIFEST_DATA = [
     type: 'integration',
     canvasType: 'githubConsole',
     label: 'GitHub Console',
+    header: { title: 'GitHub' },
     componentName: 'GithubConsoleWindow',
     componentPath: 'src/components/GithubConsoleWindow.jsx',
     defaultSize: { w: 720, h: 540 },

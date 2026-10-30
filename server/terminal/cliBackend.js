@@ -116,6 +116,7 @@ export async function startCliBackend({ cli, cwd, size, userId, write = () => {}
   const proc = launch.shell
     ? spawn(env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', launch.command, ...args], options)
     : spawn(launch.command, [...launch.prefixArgs, ...args], options);
-  const note = signIn ? `Sign in to your own ${adapter.label} account: open the link below and enter the code. When it says you are signed in, press Enter to start ${adapter.label}.` : undefined;
+  // xAI's link has the code in it already and its page only asks to confirm it.
+  const note = signIn ? `Sign in to your own ${adapter.label} account: open the link below and check that the page shows the code below (enter it if the page asks for it). When it says you are signed in, press Enter to start ${adapter.label}.` : undefined;
   return { proc, label: adapter.label, isSandbox: false, shell: 'bash', cli: adapter.id, note };
 }

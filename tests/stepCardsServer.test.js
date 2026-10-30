@@ -9,7 +9,8 @@ import express from 'express';
 import request from 'supertest';
 import { translateCard } from '../server/stepCards/translate.js';
 import { checkFile, checkRun, verifyStep } from '../server/stepCards/verify.js';
-import { cleanChecks, createStepCardsRouter } from '../server/routes/stepCards.js';
+import { cleanChecks, createStepCardsRouter, whereToCheck } from '../server/routes/stepCards.js';
+import { HIDDEN_MARK } from '../shared/files/fileProblems.js';
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'step-cards-'));
 fs.mkdirSync(path.join(tmp, 'src'));
@@ -53,6 +54,61 @@ describe('checks', () => {
     fs.symlinkSync(path.join(outside, 'secret.txt'), path.join(tmp, 'leak'));
     expect(await checkFile(tmp, { path: 'leak', says: 'BEGIN' })).toMatchObject({ ok: null });
     expect(await checkFile(tmp, { path: 'leak' })).toMatchObject({ ok: null });
+  });
+
+  test('a file that holds keys is found but never read, even through a link or for the owner', async () => {
+    fs.writeFileSync(path.join(tmp, '.env'), 'MADE_UP_KEY=not-a-real-made-up-key\n');
+    fs.symlinkSync(path.join(tmp, '.env'), path.join(tmp, 'made-up-link.md'));
+    const isOwner = async () => true;
+    expect(await checkFile(tmp, { path: '.env' })).toEqual({ ok: true, line: 'Found .env.' });
+    for (const p of ['.env', 'made-up-link.md']) {
+      expect(await checkFile(tmp, { path: p, says: 'MADE_UP_KEY=n' }, { isOwner })).toEqual({ ok: null, line: `${p} can hold keys or passwords, so I do not read it.` });
+    }
+  });
+
+  test('a file in a hidden folder is read only for the owner, asked for there or through a link', async () => {
+    fs.mkdirSync(path.join(tmp, '.git'));
+    fs.writeFileSync(path.join(tmp, '.git', 'config'), 'url = https://made-up-token@example.invalid/made-up.git\n');
+    fs.symlinkSync(path.join(tmp, '.git', 'config'), path.join(tmp, 'made-up-config.md'));
+    const isOwner = jest.fn(async () => false);
+    for (const p of [path.join('.git', 'config'), 'made-up-config.md']) {
+      expect(await checkFile(tmp, { path: p, says: 'made-up-token' }, { isOwner })).toEqual({ ok: null, line: `${p} is in a hidden folder, so only this computer's owner can have me read it.` });
+      expect(await checkFile(tmp, { path: p, says: 'made-up-token' }, { isOwner: async () => true })).toMatchObject({ ok: true });
+    }
+    expect(await checkFile(tmp, { path: path.join('.git', 'config') })).toMatchObject({ ok: true });
+    const checks = [{ id: 'a', kind: 'file', path: '.git/config', says: 'url' }, { id: 'b', kind: 'file', path: 'made-up-config.md', says: 'url' }];
+    const results = await verifyStep({ step: { title: 's' }, checks, ctx: { cwd: tmp, isOwner } });
+    expect(results.map((r) => r.ok)).toEqual([null, null]);
+    expect(isOwner).toHaveBeenCalledTimes(3);
+  });
+
+  test('picking a hidden folder itself as the folder to check hides nothing', async () => {
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), 'step-cards-hidden-'));
+    fs.mkdirSync(path.join(project, '.git'));
+    fs.writeFileSync(path.join(project, '.git', 'config'), 'url = https://made-up-token@example.invalid/made-up.git\n');
+    const isOwner = async () => false;
+    const hidden = { ok: null, line: "config is in a hidden folder, so only this computer's owner can have me read it." };
+    expect(await checkFile(path.join(project, '.git'), { path: 'config', says: 'made-up-token' }, { isOwner, root: project })).toEqual(hidden);
+    const checks = [{ id: 'a', kind: 'file', path: 'config', says: 'made-up-token' }];
+    const results = await verifyStep({ step: { title: 's' }, checks, ctx: { cwd: path.join(project, '.git'), root: project, isOwner } });
+    expect(results[0]).toMatchObject(hidden);
+    // The open project, or the coding agent's whole worktree, is where hidden folders count from.
+    const folders = (task = null) => async () => ({ assertAllowedFolder: async (f) => f, rootOf: async () => project, tasks: { get: () => task } });
+    expect(await whereToCheck({ folder: path.join(project, '.git'), folders: folders() })).toMatchObject({ cwd: path.join(project, '.git'), root: project });
+    const task = { status: 'done', folder: project, worktree: { cwd: path.join(project, '.git'), dir: project } };
+    expect(await whereToCheck({ folder: null, cliTaskId: 'made-up-task', folders: folders(task) })).toMatchObject({ cwd: path.join(project, '.git'), root: project });
+  });
+
+  test("a coding agent's report, which the card shows on the shared board, has a key it read in .env as [hidden]", async () => {
+    const KEY = 'made-up-key-0123456789';
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), 'step-cards-report-'));
+    const task = {
+      id: 'made-up-task', status: 'done', rev: 1, folder: project, summary: `I added the badge and put ${KEY} in config.js.`, permissions: [],
+      worktree: { cwd: project, dir: project }, items: [{ id: 'r', kind: 'read', title: 'Read .env', path: '.env', output: `MADE_UP_KEY=${KEY}`, rev: 1 }],
+    };
+    const folders = async () => ({ assertAllowedFolder: async (f) => f, rootOf: async () => project, tasks: { get: () => task } });
+    expect(await whereToCheck({ folder: null, cliTaskId: 'made-up-task', folders })).toMatchObject({ report: `I added the badge and put ${HIDDEN_MARK} in config.js.`, worktree: true });
+    fs.rmSync(project, { recursive: true, force: true });
   });
 
   test("a coding agent that changed the project's npm scripts does not get them run", async () => {

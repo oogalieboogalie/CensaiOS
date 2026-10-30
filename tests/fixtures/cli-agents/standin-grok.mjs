@@ -35,18 +35,27 @@ if (argv.includes('--version')) {
 }
 
 // What the real `grok login --device-auth` (1.0.70) prints on a runner with
-// no browser, line for line.
+// no browser, line for line. STANDIN_GROK_SPLIT=1 writes it in pieces that
+// cut the link before and inside its code, and a colour code in two, the way
+// a pipe can hand over one line in parts.
 if (argv[0] === 'login') {
-  process.stderr.write([
+  const said = [
     '', 'To sign in, open this URL in your browser:', '', '  https://accounts.x.ai/oauth2/device?user_code=WXYZ-4821', '',
     '  (Could not open browser automatically — open the URL above manually.)', '',
     'Confirm this code in your browser:', '', '  WXYZ-4821', '',
     "\u001b[90mOnly continue with a code you requested. Don't share it with anyone.\u001b[0m", '',
     'Waiting for authorization...', '',
-  ].join('\n'));
+  ].join('\n');
+  const cuts = process.env.STANDIN_GROK_SPLIT ? ['user_co', 'user_code=WXYZ-48', '\u001b[9'].map((at) => said.indexOf(at) + at.length) : [];
+  for (const [i, end] of [...cuts, said.length].entries()) {
+    process.stderr.write(said.slice(i ? cuts[i - 1] : 0, end));
+    if (end < said.length) await sleep(40);
+  }
   await sleep(Number(process.env.STANDIN_GROK_LOGIN_MS || 1500));
   fs.mkdirSync(home, { recursive: true });
-  fs.writeFileSync(authFile, JSON.stringify({ access_token: 'standin-token', account: process.env.STANDIN_GROK_ACCOUNT || 'standin' }));
+  // STANDIN_GROK_ACCOUNT_FROM_HOME=1 names each sign-in after its folder, so two people's answers tell whose sign-in ran.
+  const account = process.env.STANDIN_GROK_ACCOUNT || (process.env.STANDIN_GROK_ACCOUNT_FROM_HOME ? path.basename(home) : 'standin');
+  fs.writeFileSync(authFile, JSON.stringify({ access_token: 'standin-token', account }));
   process.stderr.write('✓ Signed in\n');
   process.exit(0);
 }

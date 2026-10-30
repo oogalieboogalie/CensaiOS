@@ -1,5 +1,6 @@
-// Notes-workspace windows: Obsidian-like vault and Finder-like file browser.
-// Used by the Notes Workspace ready-made board. Pure data.
+// Notes-workspace windows: Obsidian-like vault, and the Finder (the files of
+// the window's project, Finder-style). Used by the Notes Workspace ready-made
+// board. Pure data.
 
 // A new vault starts with an empty list of notes, so two people adding the
 // first notes at the same moment both keep theirs (the list then merges one
@@ -40,22 +41,22 @@ export const NOTES_WINDOW_MANIFESTS = [
     componentName: 'FinderFilesWindow',
     componentPath: 'src/components/windows/finderFiles/index.jsx',
     defaultSize: { w: 920, h: 620 },
-    header: { title: 'Downloads', icon: 'Folder' },
-    lab: { title: 'Downloads', props: { folderName: 'Downloads' } },
+    header: { title: 'Finder', icon: 'Folder' },
+    lab: { title: 'Finder', props: {} },
     moduleMenu: {
       show: true,
       status: 'ready',
       order: 49,
       icon: 'Folder',
       label: 'Finder',
-      hint: 'Finder-style file list with sidebar and zebra rows',
+      hint: "The open project's files, Finder-style: double-click opens one",
     },
     launcher: {
       show: true,
       order: 49,
       icon: 'Folder',
       label: 'Finder',
-      hint: 'Finder-style Downloads browser',
+      hint: "The open project's files, Finder-style",
     },
   },
 ];

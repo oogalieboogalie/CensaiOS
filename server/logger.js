@@ -55,16 +55,32 @@ export function redact(value, depth = 0) {
   return value;
 }
 
-// One-time codes travel in web addresses (?invite=, ?pair=, ?join=, ?class=, ?code=).
-const SECRET_QUERY_KEY = /^(code|pair|invite|join|class|otp|state|sig|signature|key)$/i;
-// ...and as path parts: share links, lesson links, the Legion's secret view link.
+// The query values a logged address keeps: ids, counts, dates, switches and
+// fixed choices. Every other value is [redacted]: one-time codes (?invite=,
+// ?pair=, ?join=, ?class=, ?code=) sign people in, and a file or folder
+// (?path=), a repo, search words, a prompt or a web address is someone's.
+const PLAIN_QUERY_KEY = new Set([
+  'id', 'workspaceid', 'workspace_id', 'workspace', 'board', 'windowid', 'agentid', 'userid', 'owner_id', 'follow',
+  'number', 'limit', 'offset', 'after', 'page', 'maxresults', 'lines', 'tail', 'hours', 'minutes',
+  'since', 'start', 'end', 'date', 'created', 'expectedrevision', 'minimportance', 'min_score',
+  'refresh', 'force', 'wait', 'details', 'shorts', 'unread', 'open', 'includecompleted', 'volumes', 'guest',
+  'status', 'type', 'kind', 'scope', 'level', 'visibility',
+]);
+// ...and only while the value looks like one: a path, a web address or words
+// under a plain name are [redacted] too.
+const PLAIN_VALUE = /^[\w.:+-]*$/;
+// Codes also travel as path parts: share links, lesson links, the Legion's secret view link.
 const SECRET_PATH_PART = [
   /^(\/api\/guest\/links\/)[^/?#]+/i,
   /^(\/api\/guest\/classes\/)[^/?#]+/i,
   /^(\/api\/legion-view\/[^/?#]+\/)[^/?#]+/i,
 ];
 
-/** A web address for the log: secret path parts and secret-looking query values become [redacted]. */
+function decodedQueryText(text) {
+  try { return decodeURIComponent(text.replace(/\+/g, ' ')); } catch { return text; }
+}
+
+/** A web address for the log: secret path parts and every query value that is not a plain setting become [redacted]. */
 export function redactUrl(url) {
   let text = String(url ?? '');
   for (const re of SECRET_PATH_PART) text = text.replace(re, '$1[redacted]');
@@ -73,11 +89,12 @@ export function redactUrl(url) {
   const hash = text.indexOf('#', at);
   const query = text.slice(at + 1, hash < 0 ? undefined : hash);
   const parts = query.split('&').map((part) => {
+    if (!part) return part;
     const eq = part.indexOf('=');
-    if (eq < 0) return part;
-    let name = part.slice(0, eq);
-    try { name = decodeURIComponent(name.replace(/\+/g, ' ')); } catch { /* keep as written */ }
-    return SECRET_QUERY_KEY.test(name) || SENSITIVE_KEY.test(name) ? `${part.slice(0, eq)}=[redacted]` : part;
+    const written = eq < 0 ? part : part.slice(0, eq);
+    const [name, value] = [written, eq < 0 ? '' : part.slice(eq + 1)].map(decodedQueryText);
+    if (PLAIN_QUERY_KEY.has(name.toLowerCase()) && PLAIN_VALUE.test(value)) return part;
+    return eq < 0 ? '[redacted]' : `${written}=[redacted]`;
   });
   return `${text.slice(0, at)}?${parts.join('&')}`;
 }

@@ -24,6 +24,7 @@ import {
   listWorkspaceAgentProjects,
 } from '../../workspaces/projectMemberships.js';
 import { noteToolFailure } from '../toolsLog.js';
+import { ownerOnlyProjectRead } from '../rbac/ownerOnlyReads.js';
 
 export async function handleProjectsTool(agentId, name, args, context = {}) {
   switch (name) {
@@ -92,6 +93,8 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
     }
     case 'project_read': {
       const { project } = await resolveProjectForCall(agentId, args.project, context);
+      const refused = await ownerOnlyProjectRead(context, project, args.path, { tool: name });
+      if (refused) return `Error: ${refused}`;
       const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
       const branch = sub?.github_branch || undefined;
       const content = await projectRead(project, args.path, {
@@ -103,6 +106,8 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
     }
     case 'project_file_outline': {
       const { project } = await resolveProjectForCall(agentId, args.project, context);
+      const refused = await ownerOnlyProjectRead(context, project, args.path, { tool: name });
+      if (refused) return `Error: ${refused}`;
       const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
       const branch = sub?.github_branch || undefined;
       return await projectFileOutline(project, args.path, {

@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { getSecret } from '../../secrets.js';
+import { githubApiUrl } from '../../github/apiUrl.js';
 
 const REPOSITORY_PART = /^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,98}[A-Za-z0-9])?$/;
 
@@ -45,7 +46,7 @@ export function getGitHubClient(token = getSecret('GITHUB_TOKEN')) {
     err.status = 401;
     throw err;
   }
-  return new Octokit({ auth: token, userAgent: 'Censai-App' });
+  return new Octokit({ auth: token, userAgent: 'Censai-App', baseUrl: githubApiUrl() });
 }
 
 export function sendGitHubError(res, err) {

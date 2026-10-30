@@ -100,6 +100,24 @@ describe('map', () => {
 describe('find where to change', () => {
   const request = 'make the welcome screen start button say Go';
 
+  test('never maps, points at or quotes a file that holds keys, nor sends its words to the scout model', async () => {
+    const KEY = 'not-a-real-made-up-key';
+    write('config/credentials.json', `{ "start_button_secret": "${KEY}" }\n`);
+    write('config/.credentials.json', `{ "start_button_secret": "${KEY}" }\n`);
+    const map = await getRepoMap(root);
+    expect(map.files.has('config/credentials.json')).toBe(false);
+    expect(map.files.has('config/.credentials.json')).toBe(false);
+    let sent = '';
+    const complete = async (messages) => {
+      sent = JSON.stringify(messages);
+      return '{"file":"config/credentials.json","line":1}';
+    };
+    const result = await findWhereToChange(map, 'where is the start button secret set', { complete });
+    expect(JSON.stringify(result)).not.toContain(KEY);
+    expect(sent).not.toContain(KEY);
+    expect(result.file).not.toBe('config/credentials.json');
+  });
+
   test('without a model, points from the map with the line and column', async () => {
     const map = await getRepoMap(root);
     const result = await findWhereToChange(map, request);

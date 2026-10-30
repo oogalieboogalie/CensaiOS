@@ -21,6 +21,7 @@ import { localFilesystemAllowed } from '../middleware/runtimeMode.js';
 import { assertSystemAdmin } from '../security/systemAdmin.js';
 import { getCliTaskManager } from '../cli-agents/index.js';
 import { RUNNING } from '../cli-agents/taskStore.js';
+import { teammateSummary } from '../cli-agents/taskHiddenWords.js';
 import { allowedRoots, assertAllowedFolder } from '../cli-agents/folders.js';
 import { askModule } from '../modules/ask.js';
 import { listBoardAgents, searchBoardAgents } from '../../src/lib/agentNetwork/boardAgents.js';
@@ -80,12 +81,13 @@ function helpPrompt(task, fromLabel) {
   return `${task}\n\n(Asked by ${fromLabel}, an agent on the shared board. Your answer goes back to ${fromLabel}.)`;
 }
 
+// The answer lands on a help card on the shared board, so it is the summary a teammate sees.
 export function cliOutcome(task) {
   if (!task) return { status: 'failed', error: 'That coding task is gone.' };
   const status = CLI_STATUS[task.status] || 'working';
   return {
     status,
-    result: task.summary || null,
+    result: teammateSummary(task) || null,
     error: task.status === 'failed' ? (task.error || 'The coding agent stopped with an error.') : null,
   };
 }

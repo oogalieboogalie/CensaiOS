@@ -105,6 +105,15 @@ test('a finished CLI task comes back as the answer', async () => {
   expect(await boardHelpStatus(scope, 'cli:gone')).toMatchObject({ status: 'failed' });
 });
 
+test("a CLI task's answer on the shared board shows [hidden] where it repeats a key the agent read in a file only the owner opens", async () => {
+  const KEY = 'made-up-key-0123456789';
+  tasks.set('t3', {
+    id: 't3', status: 'done', summary: `Done: config.js holds ${KEY}.`, permissions: [],
+    items: [{ id: 'i1', kind: 'read', title: 'Read .env', path: '.env', output: `MADE_UP_KEY=${KEY}`, status: 'done' }],
+  });
+  expect(await boardHelpStatus(scope, 'cli:t3')).toEqual({ request_id: 'cli:t3', status: 'completed', result: 'Done: config.js holds [hidden].', error: null });
+});
+
 test('coding CLIs stay off on cloud installs and for non-admins', async () => {
   mode = 'cloud_saas';
   await expect(requestBoardHelp(scope, { cardId: 'window:w-cli', task: 'x' })).rejects.toThrow(/desktop install/);

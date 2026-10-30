@@ -42,7 +42,8 @@ export const copilot = {
       if (!text) return [];
       if (!started) {
         started = true;
-        return [{ op: 'add', item: { id, kind: 'message', role: 'assistant', text } }];
+        // printed: Copilot's own lines as they came, tool output included, so a teammate's view judges them as output.
+        return [{ op: 'add', item: { id, kind: 'message', role: 'assistant', text, printed: true } }];
       }
       return [{ op: 'append', id, text: `\n${text}` }];
     };

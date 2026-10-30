@@ -3,6 +3,8 @@ import path from 'path';
 import crypto from 'crypto';
 import { execFile } from 'child_process';
 import { cliDataRoot } from './paths.js';
+import { inHiddenFolder, isSecretFileName } from '../security/secretFiles.js';
+import { FILE_PROBLEMS } from '../../shared/files/fileProblems.js';
 
 /**
  * One git worktree per task, so two consoles can work on one repo at once
@@ -120,7 +122,9 @@ export async function changes({ dir, baseSha }) {
   const [numstat, status, patch] = await Promise.all([
     git(['diff', '--numstat', baseSha], dir),
     git(['diff', '--name-status', baseSha], dir),
-    git(['diff', '--binary', baseSha], dir),
+    // Fixed prefixes and no colours or outside diff tools, whatever the person's
+    // git settings say, so diffWithoutSecrets always finds each file's name.
+    git(['diff', '--binary', '--no-color', '--no-ext-diff', '--src-prefix=a/', '--dst-prefix=b/', baseSha], dir),
   ]);
   const kinds = parseStatus(status);
   const files = parseNumstat(numstat).map((f) => ({ ...f, change: kinds.get(f.path) || 'modified' }));
@@ -128,13 +132,29 @@ export async function changes({ dir, baseSha }) {
   return { files, patch: truncated ? patch.slice(0, MAX_PATCH_CHARS) : patch, truncated };
 }
 
-/** Read one file from a task's worktree, refusing paths that escape it. */
-export function readWorktreeFile(dir, rel) {
+const inside = (target, dir) => target === dir || target.startsWith(dir + path.sep);
+
+/**
+ * Read one file from a task's worktree: { content, secret }. Refuses paths
+ * that escape it (a link counts where it leads) and, unless `secrets` (this
+ * computer's owner is asking), a file whose name says it holds keys or
+ * passwords or one in a hidden folder, as on the board; `secret` says it was one.
+ */
+export function readWorktreeFile(dir, rel, { secrets = false } = {}) {
+  const outside = () => Object.assign(new Error('That path is outside the task’s worktree.'), { statusCode: 400 });
+  const ownerOnly = () => Object.assign(new Error(FILE_PROBLEMS.ownerOnly), { statusCode: 403, reason: 'ownerOnly' });
+  const kept = (file, from) => isSecretFileName(path.basename(file)) || inHiddenFolder(path.relative(from, file));
   const target = path.resolve(dir, String(rel || ''));
-  if (target !== dir && !target.startsWith(dir + path.sep)) {
-    throw Object.assign(new Error('That path is outside the task’s worktree.'), { statusCode: 400 });
-  }
-  const stat = fs.statSync(target);
+  if (!inside(target, dir)) throw outside();
+  let secret = kept(target, dir);
+  if (secret && !secrets) throw ownerOnly();
+  // The native lookup also turns a Windows short name (ENV~1) into the real one.
+  const realDir = fs.realpathSync.native(dir);
+  const real = fs.realpathSync.native(target);
+  if (!inside(real, realDir)) throw outside();
+  secret ||= kept(real, realDir);
+  if (secret && !secrets) throw ownerOnly();
+  const stat = fs.statSync(real);
   if (stat.size > 2 * 1024 * 1024) throw Object.assign(new Error('That file is too large to open here.'), { statusCode: 413 });
-  return fs.readFileSync(target, 'utf8');
+  return { content: fs.readFileSync(real, 'utf8'), secret };
 }

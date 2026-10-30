@@ -17,6 +17,13 @@ tags.
 
 ### New
 
+- More files that hold keys count as key files (Oct 30)
+- Version bar: say when GitHub already has a key file (crew 194) (Oct 30)
+- UI team nightly: Finder's "no project" page gets depth and a readable button (Oct 30)
+- Lead Queue: only real web addresses become links (Oct 30)
+- Files catches up with files changed outside censaiOS (Oct 30)
+- Find windows in Add by every name the board shows (Oct 30)
+- A project's secret files open only for this computer's owner (Oct 29)
 - Calendar shows the month without Google (Oct 29)
 - Vault notes opens on your own empty vault (Oct 29)
 - UI team nightly: Image window gets a guiding empty state (Oct 29)
@@ -93,6 +100,14 @@ tags.
 
 ### Fixed
 
+- Send to GitHub: make unsent versions again without key files (crew 193) (Oct 30)
+- Hide a secret file's words a coding agent repeats from teammates (Oct 30)
+- Logs never name the file someone asked for (Oct 30)
+- Off a board, only the owner's agents read GitHub with this computer's key (Oct 30)
+- A Save that did not save says so in plain words (Oct 30)
+- Show the open project's real files in the Finder (Oct 30)
+- Ask to check the Grok sign-in code the link already holds (Oct 29)
+- Keep files that hold keys out of saved versions and off GitHub (Oct 29)
 - A file that will not open says why in plain words (Oct 29)
 - One "joined" pop-up per person; reloads and drops stay quiet (Oct 29)
 - Reloading no longer shows a false "unsaved changes" bar (Oct 29)
