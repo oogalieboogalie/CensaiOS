@@ -71,7 +71,7 @@ export const INTEGRATION_WINDOW_MANIFEST_DATA = [
       dangerLevel: 'low',
       defaultPermissions: ['read', 'write'],
     },
-    launcher: { show: true, order: 160, icon: 'List', label: 'Spreadsheet', hint: 'board sheet with Research columns' },
+    launcher: { show: true, order: 160, icon: 'List', hint: 'board sheet with Research columns' },
   },
   // COMMENTED OUT: contextFeed - hide from launcher menu (descoped 2026-06-23)
   // {
@@ -90,7 +90,7 @@ export const INTEGRATION_WINDOW_MANIFEST_DATA = [
   //     dangerLevel: 'low',
   //     defaultPermissions: ['read'],
   //   },
-  //   launcher: { show: true, order: 115, icon: 'Chat', label: 'Context Feed', hint: 'Unified notification feed' },
+  //   launcher: { show: true, order: 115, icon: 'Chat', hint: 'Unified notification feed' },
   // },
   {
     kind: 'githubConsole',
@@ -110,6 +110,6 @@ export const INTEGRATION_WINDOW_MANIFEST_DATA = [
       defaultPermissions: ['read', 'write'],
       statusLabels: { connected: 'Connected to GitHub' },
     },
-    launcher: { show: true, order: 150, icon: 'Github', label: 'GitHub Console', hint: 'View issues, PRs, and merge status' },
+    launcher: { show: true, order: 150, icon: 'Github', hint: 'View issues, PRs, and merge status' },
   },
 ];

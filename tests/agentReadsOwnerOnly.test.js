@@ -137,12 +137,15 @@ test("Sam's agent gets plain words for key files a service, a framework or Terra
   write(inProject('config', 'secrets.yml'), `made_up_key: ${KEY_WORDS}\n`);
   write(inProject('serviceAccountKey.json'), `{"made_up_key":"${KEY_WORDS}"}\n`);
   write(inProject('config', 'secrets.example.json'), '{"made_up_key":""}\n');
-  for (const rel of [path.join('config', 'secrets.yml'), 'serviceAccountKey.json']) {
+  write(inProject('infra', 'terraform.tfstate'), `{"made_up_password":"${KEY_WORDS}"}\n`);
+  write(inProject('infra', 'prod.tfvars'), `made_up_password = "${KEY_WORDS}"\n`);
+  for (const rel of [path.join('config', 'secrets.yml'), 'serviceAccountKey.json', path.join('infra', 'terraform.tfstate'), path.join('infra', 'prod.tfvars')]) {
     expect(await askAgent(SAM, rel)).toBe(`Error: ${FILE_PROBLEMS.ownerOnly}`);
     expect(await askAgent(PAT, rel)).toContain(KEY_WORDS);
   }
   expect(await askAgent(SAM, path.join('config', 'secrets.example.json'))).toContain('"made_up_key":""');
   fetchGithub.mockClear();
   expect(await githubReadFile({ repo: 'made-up/repo', path: 'infra/terraform.tfvars' }, { userId: SAM })).toBe(`Error: ${FILE_PROBLEMS.ownerOnly}`);
+  expect(await githubReadFile({ repo: 'made-up/repo', path: 'infra/terraform.tfstate' }, { userId: SAM })).toBe(`Error: ${FILE_PROBLEMS.ownerOnly}`);
   expect(fetchGithub).not.toHaveBeenCalled();
 });

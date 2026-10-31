@@ -3,7 +3,10 @@
 // read; Add (Ctrl+K) finds each window and board by these names too.
 
 // The three still starting points under the welcome line (awe-and-polish
-// friction 3); icons, hints and spawn props come from each window's manifest.
+// friction 3), the only windows the empty board offers. Each button's icon
+// and hover hint come from that window's manifest `launcher` block (which
+// must say `show: true`); Chat and Find leads open their window with its
+// `launcher.props`, and Browse modules opens Add instead.
 export const LAUNCHPAD_STARTS = [
   { kind: 'chat', label: 'Chat with Censai' },
   { kind: 'leadHound', label: 'Find leads' },

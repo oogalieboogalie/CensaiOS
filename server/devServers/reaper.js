@@ -1,3 +1,4 @@
+import { runDevHash } from '../../shared/logs/addressNames.js';
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { listDevServers, stopDevServer } from './manager.js';
@@ -5,7 +6,8 @@ import { listDevServers, stopDevServer } from './manager.js';
 // Run dev containers live only while a Run dev window is open. Each open
 // window pings every 20 seconds; a container nobody has pinged for two
 // minutes (window closed, app closed) is removed. Containers left over from
-// before a restart get the same two minutes to be claimed again.
+// before a restart get the same two minutes to be claimed again. A container's
+// name carries its project's folder, so the log names its folder's hash.
 
 const log = createLogger('dev-servers');
 export const IDLE_MS = 2 * 60_000;
@@ -32,10 +34,10 @@ export async function reapIdle(now = Date.now()) {
       lastSeen.delete(s.name);
       removed.push(s.name);
     } catch (err) {
-      log.warn('Could not remove idle dev server', { name: s.name, code: safeErrorCode(err) });
+      log.warn('Could not remove idle dev server', { folderHash: runDevHash(s.name), code: safeErrorCode(err) });
     }
   }
-  if (removed.length) log.info('Removed dev servers no window is using', { removed });
+  if (removed.length) log.info('Removed dev servers no window is using', { count: removed.length, folderHashes: removed.map(runDevHash) });
   return removed;
 }
 

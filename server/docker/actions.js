@@ -2,19 +2,22 @@ import { docker, assertRef, DockerInputError } from './cli.js';
 import { listComposeProjects } from './engine.js';
 import { createLogger } from '../logger.js';
 import { dockerFailureReason } from './failureReason.js';
+import { runDevHash, runDevNameForLog } from '../../shared/logs/addressNames.js';
 
 // Write side of the Docker manager. Every verb is allowlisted and every
 // target goes through assertRef, so nothing user-typed reaches the CLI as a
 // flag. Exec runs inside the container (`sh -c`), never in a host shell.
-// Every action leaves one 'docker' log line: what, which container, image,
-// volume, network or compose project, and whether it worked or why not.
-// Never a typed shell command, its output, or a setting's value.
+// Every action leaves one 'docker' log line: what was done to which kind of
+// thing, and whether it worked or why not. Never a name: containers, images,
+// volumes, networks and compose projects are often named after a project's
+// folder (a Run dev container keeps its folder's hash). Never a typed shell
+// command, its output, or a setting's value.
 
 const log = createLogger('docker');
 const short = (value, max = 64) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 
-// The log scrubs anything that looks like an id, so a container is named by
-// its name, looked up before the action (a removed one is gone afterwards).
+// A container pressed by its id is looked up by name before the action (a
+// removed one is gone afterwards), so a Run dev container's hash can be told.
 const LOOKS_LIKE_ID = /^[0-9a-f]{6,64}$/i;
 async function containerName(id) {
   if (!LOOKS_LIKE_ID.test(String(id || ''))) return id;
@@ -26,9 +29,10 @@ async function containerName(id) {
   }
 }
 
-/** Run one action and log it: "<what> <target>: done" or "...: failed (<why>)". */
+/** Run one action and log it: "<what>: done" or "<what>: failed (<why>)", a Run dev container by its hash. */
 async function logged(what, target, work, describe = () => '') {
-  const label = `${what} ${short(await target) || '(none)'}`;
+  const name = await target;
+  const label = runDevHash(name) ? `${what} ${runDevNameForLog(name)}` : what;
   try {
     const result = await work();
     const extra = describe(result);
@@ -165,7 +169,7 @@ const PRUNE_TARGETS = {
 };
 
 export async function prune(target) {
-  return logged('clean up unused', PRUNE_TARGETS[target] ? target : 'unknown', async () => {
+  return logged(`clean up unused ${PRUNE_TARGETS[target] ? target : 'unknown'}`, null, async () => {
     const args = PRUNE_TARGETS[target];
     if (!args) throw new DockerInputError(`Unknown prune target: ${short(target, 20)}`);
     const { stdout } = await docker(args, { timeout: 5 * 60_000 });

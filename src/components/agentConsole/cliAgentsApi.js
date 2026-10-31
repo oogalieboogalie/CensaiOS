@@ -25,7 +25,7 @@ export const cliAgentsApi = {
   task: (id, since = 0, { board = false } = {}) => request(`/tasks/${encodeURIComponent(id)}?since=${since}${board ? '&board=1' : ''}`),
   raw: (id) => request(`/tasks/${encodeURIComponent(id)}/raw`),
   changes: (id, { board = false } = {}) => request(`/tasks/${encodeURIComponent(id)}/changes${board ? '?board=1' : ''}`),
-  file: (id, path) => request(`/tasks/${encodeURIComponent(id)}/file?path=${encodeURIComponent(path)}`),
+  file: (id, path, { board = false } = {}) => request(`/tasks/${encodeURIComponent(id)}/file?path=${encodeURIComponent(path)}${board ? '&board=1' : ''}`),
   message: (id, prompt) => request(`/tasks/${encodeURIComponent(id)}/message`, { method: 'POST', body: { prompt } }),
   stop: (id) => request(`/tasks/${encodeURIComponent(id)}/stop`, { method: 'POST' }),
   handoff: (id, cli, instruction) => request(`/tasks/${encodeURIComponent(id)}/handoff`, { method: 'POST', body: { cli, instruction } }),

@@ -8,6 +8,7 @@ import { projectStatus, saveVersion, startVersions } from '../projectGit/git.js'
 import { sendToGithub } from '../projectGit/publish.js';
 import { makeVersionsAgain } from '../projectGit/makeAgain.js';
 import { createNewProject } from '../projectGit/newProject.js';
+import { markNewKeys } from '../projectGit/newKeys.js';
 
 /**
  * Versions for a project folder, from the Files window. Mounted behind
@@ -19,6 +20,7 @@ import { createNewProject } from '../projectGit/newProject.js';
  * POST /api/project-git/save         { path, message }  save a version
  * POST /api/project-git/send         { path, title, body }  to GitHub / pull request
  * POST /api/project-git/make-again   { path }           the versions GitHub does not have yet, again without key files
+ * POST /api/project-git/new-keys     { path, names }    new keys made: the bar puts away those files GitHub keeps
  *
  * Only folders open on this board are accepted.
  */
@@ -77,3 +79,4 @@ projectGitRouter.post('/make-again', handle(async (req) => {
   const { token } = await resolveGithubToken(req.session?.userId);
   return makeVersionsAgain(cwd, { token });
 }));
+projectGitRouter.post('/new-keys', handle(async (req) => markNewKeys(await folderFor(req.body?.path), req.body?.names)));

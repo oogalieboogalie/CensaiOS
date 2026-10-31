@@ -4,11 +4,13 @@ const PERMISSIONS = new Set(['read', 'work']);
 const MAX_MEMBERSHIPS = 64;
 
 export class ProjectMembershipError extends Error {
-  constructor(message, { code = 'INVALID_PROJECT_MEMBERSHIP', statusCode = 400 } = {}) {
+  constructor(message, { code = 'INVALID_PROJECT_MEMBERSHIP', statusCode = 400, readOnly = false } = {}) {
     super(message);
     this.name = 'ProjectMembershipError';
     this.code = code;
     this.statusCode = statusCode;
+    // The agent may read the project here but was asked to change it.
+    if (readOnly) this.readOnly = true;
   }
 }
 
@@ -149,11 +151,13 @@ export async function assertAgentProjectAccess(db, {
   const permission = rows[0]?.permission;
   const allowed = permission === 'work' || (permission === 'read' && requiredPermission === 'read');
   if (!allowed) {
+    // Read-only only when the board gave it to read: a project it was not given at all is not read-only.
+    const readOnly = permission === 'read';
     throw new ProjectMembershipError(
-      requiredPermission === 'work'
+      readOnly
         ? 'This agent has read-only project access in the current workspace.'
         : 'This agent is not authorized for that project in the current workspace.',
-      { code: 'PROJECT_ACCESS_DENIED', statusCode: 403 }
+      { code: 'PROJECT_ACCESS_DENIED', statusCode: 403, readOnly }
     );
   }
   return { workspaceId, projectId, agentId, permission };

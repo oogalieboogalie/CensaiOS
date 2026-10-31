@@ -152,7 +152,7 @@ export const TOOL_REGISTRY = {
   'http_test': handleHttpTool,
 
   // Deps
-  'analyze_deps': (agentId, name, args) => handleAnalyzeDeps(agentId, args),
+  'analyze_deps': (agentId, name, args, context) => handleAnalyzeDeps(agentId, args, context),
 
   // Runner
   'run_tests': handleRunnerTool,

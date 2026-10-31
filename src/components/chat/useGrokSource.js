@@ -11,7 +11,8 @@ const POLL_MS = 3000;
  * a signed-in person gets their sign-in, everyone else their key.
  *
  * `sendVia` is set only while the sign-in is in use; useChat sends through
- * it instead of /api/chat.
+ * it instead of /api/chat. Each person's Grok conversation in the chat is kept
+ * on the server, in their own Grok folder, never on the shared window.
  */
 export function useGrokSource({ win, onUpdate, provider }) {
   const active = isGrokChat(provider) && !win.demoMode;
@@ -47,7 +48,7 @@ export function useGrokSource({ win, onUpdate, provider }) {
   }, [active, waiting, refresh]);
 
   const source = win.grokVia || (status?.signedIn ? 'signin' : 'key');
-  const setSource = (next) => onUpdate({ grokVia: next, grokSessionId: null });
+  const setSource = (next) => onUpdate({ grokVia: next });
 
   const signIn = async () => {
     setBusy(true);
@@ -67,17 +68,12 @@ export function useGrokSource({ win, onUpdate, provider }) {
     setBusy(true);
     await grokSignOut().catch((err) => logToApp('warn', 'Grok sign-out failed', { detail: err?.message }));
     setLogin(null);
-    onUpdate({ grokSessionId: null });
     await refresh();
     setBusy(false);
   };
 
   const sendVia = active && source === 'signin'
-    ? (_agentId, messages, opts) => sendGrokSigninMessage(messages, { ...opts, sessionId: win.grokSessionId || null })
-      .then((reply) => {
-        onUpdate({ grokSessionId: reply.grokSessionId });
-        return reply;
-      })
+    ? (_agentId, messages, opts) => sendGrokSigninMessage(messages, opts)
       .catch((err) => {
         if (err?.code === 'GROK_SIGNIN_REQUIRED' || err?.code === 'GROK_NOT_INSTALLED') refresh();
         throw err;

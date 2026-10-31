@@ -104,7 +104,7 @@ test('a module named exactly what was typed comes before a window that only show
 });
 
 test('a module named exactly what was typed comes before another module that shows that name', () => {
-  // The Image Generator's header says "Image" too; Image stays first.
+  // The Image Generator's name starts with "Image"; Image stays first.
   expect(first('Image')).toMatchObject({ label: 'Image', action: { kind: 'image' } });
   expect(first('Settings')).toMatchObject({ label: 'Settings', action: { kind: 'appearance' } });
   expect(first('Document')).toMatchObject({ label: 'Document', action: { kind: 'doc' } });
@@ -134,6 +134,11 @@ test.each(LAUNCHPAD_BOARDS.map((b) => [b.label, b.id]))('the empty board\'s "%s"
 test('the windows\' own titles are all checked', () => {
   expect(TITLES.length).toBeGreaterThan(40);
   expect(TITLES).toEqual(expect.arrayContaining([['Project files', 'files'], ['Idea Pad', 'idea'], ['AI coding assistants', 'toolchainSettings']]));
+});
+
+test('the Image Generator\'s header says its own name, never just "Image" like the Image window', () => {
+  expect(TITLES.filter(([, kind]) => kind === 'genImage')).toEqual([['Image Generator', 'genImage']]);
+  expect(first('Image Generator')).toMatchObject({ label: 'Image Generator', action: { type: 'spawn', kind: 'genImage' } });
 });
 
 test.each(TITLES)('the title "%s" finds its window (first, unless another module has that name)', (title, kind) => {

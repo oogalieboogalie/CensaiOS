@@ -9,6 +9,7 @@
 
 import crypto from 'crypto';
 import { deskError } from '../github/mergeDesk.js';
+import { githubGitUrl } from '../github/apiUrl.js';
 import {
   ensureClone, fixRoot, publicJob, runGit, setJob, trackFixJob, watchTask,
 } from '../github/conflictFixer.js';
@@ -106,7 +107,7 @@ export async function startCiFix({ octokit, token, owner, repo, number, user = {
   }
   const checks = await failingChecks(octokit, { owner, repo, sha: pr.head.sha }).catch(() => []);
   setJob(job, { text: 'Getting a copy of the repo for the agent.', failing: checks.map((c) => c.name) });
-  const dir = await ensureClone({ owner, repo, token, root: deps.root || fixRoot(), remoteUrl: deps.remoteUrl || `https://github.com/${owner}/${repo}.git`, git });
+  const dir = await ensureClone({ owner, repo, token, root: deps.root || fixRoot(), remoteUrl: deps.remoteUrl || githubGitUrl(`${owner}/${repo}`), git });
   await git(['fetch', 'origin', `+refs/heads/${info.headRef}:refs/remotes/origin/${info.headRef}`], dir, { token });
   const task = await deps.manager.start({
     cli: deps.cli || 'claudecode', folder: dir, prompt: buildCiFixPrompt({ pr: info, repo: job.repo, checks }),

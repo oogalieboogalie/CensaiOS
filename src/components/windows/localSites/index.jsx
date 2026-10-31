@@ -3,6 +3,7 @@ import React from 'react';
 import { Icon } from '../../Icons.jsx';
 import { WindowTitle } from '../WindowTitle.jsx';
 import { SITE_PRESETS } from '../../../lib/localSites/presets.js';
+import { useFramePage } from '../../../lib/useFramePage.js';
 import { useLocalSite } from './useLocalSite.js';
 import { SiteForm } from './SiteForm.jsx';
 import { windowMeta } from './meta.js';
@@ -23,11 +24,13 @@ function Preview({ html, width }) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  // A teammate's form often changes just after their frame opens: one page at a time.
+  const [page, onLoad] = useFramePage(html);
   const zoom = width === 'wide' && box.w ? Math.min(1, box.w / WIDE) : 1;
   const style = width === 'wide' && box.w ? { width: WIDE, height: box.h / zoom, zoom } : undefined;
   return (
     <div className="hb-ls-stage" ref={stageRef}>
-      <iframe title="Website preview" className={`hb-ls-frame hb-ls-frame-${width}`} srcDoc={html} style={style}
+      <iframe title="Website preview" className={`hb-ls-frame hb-ls-frame-${width}`} srcDoc={page} onLoad={onLoad} style={style}
         sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" />
     </div>
   );

@@ -17,6 +17,14 @@ tags.
 
 ### New
 
+- Starter box: keep Ollama private until the firewall is on (Oct 31)
+- UI team nightly: Image Studio gets a sunken board, raised tool keys and a readable chosen tool (Oct 31)
+- The "GitHub already has" line can be put away once the keys are new (Oct 31)
+- Stream Viewer: YouTube live/Shorts and Twitch past-broadcast links play (Oct 31)
+- Close three agent write and run gaps (Oct 31)
+- A teammate's folder picker shows only the projects open on the board (Oct 30)
+- Each person keeps their own Grok conversation in a shared Grok chat (Oct 30)
+- A model picked in a chat reaches teammates' screens at once (Oct 30)
 - More files that hold keys count as key files (Oct 30)
 - Version bar: say when GitHub already has a key file (crew 194) (Oct 30)
 - UI team nightly: Finder's "no project" page gets depth and a readable button (Oct 30)
@@ -100,6 +108,24 @@ tags.
 
 ### Fixed
 
+- A model picked for a board's own agent reaches teammates and survives a reload (Oct 31)
+- Terraform's state and its other values files count as key files (Oct 31)
+- A coding agent's command that names a key file in quotes shows a teammate only its title (Oct 31)
+- The request log never names a project (Oct 31)
+- The owner sees a fix job's waiting request whole before answering (Oct 31)
+- The review team never sends GitHub a key from a file only the owner opens (Oct 31)
+- A console opened by Hand off names its project (Oct 31)
+- Open in Code Editor never puts a copied key on the shared board (Oct 31)
+- Names with _ keep them in messages (Oct 31)
+- A teammate's Local Sites preview keeps up with the form (Oct 31)
+- Board log never names a window's file, a group or a watch's words (Oct 31)
+- Run dev and Docker logs name a folder's hash, never the folder (Oct 31)
+- A refused project's words name the ones the board gave the agent (Oct 30)
+- An agent runs only the tools it was given (Oct 30)
+- Only this computer's owner gives a board's agents a new project (Oct 30)
+- Off a board, only the owner's agents reach this computer's projects (Oct 30)
+- A Save never leaves a file cut short (Oct 30)
+- The Image Generator's header says "Image Generator" (Oct 30)
 - Send to GitHub: make unsent versions again without key files (crew 193) (Oct 30)
 - Hide a secret file's words a coding agent repeats from teammates (Oct 30)
 - Logs never name the file someone asked for (Oct 30)
@@ -126,6 +152,7 @@ tags.
 
 ### Behind the scenes
 
+- The crew's guide says what the empty board draws; unused tile names go (Oct 30)
 - Keep the owner's story and health out of the public copy (Oct 26)
 
 ## 0.5.0 (2026-10-25)

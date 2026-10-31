@@ -100,10 +100,16 @@ export function hiddenWordsOf(manager, id) {
   }
 }
 
+/** What a teammate reads of `text`, words `task`'s agent wrote (its steps say which words are hidden). */
+export function teammateWords(task, text) {
+  if (typeof text !== 'string') return text;
+  return taskForTeammate({ summary: text, worktree: task?.worktree }, { hidden: taskHiddenWords(task) }).summary;
+}
+
 /** What a teammate reads as `task`'s summary, from the task itself (its steps say which words are hidden). */
 export function teammateSummary(task) {
   if (typeof task?.summary !== 'string') return task?.summary ?? null;
-  return taskForTeammate({ summary: task.summary, worktree: task.worktree }, { hidden: taskHiddenWords(task) }).summary;
+  return teammateWords(task, task.summary);
 }
 
 /** For the task manager's list of tasks: each as a teammate sees it, with the words hidden in the task itself. */

@@ -1,4 +1,5 @@
 import React from 'react';
+import { GenIcon } from '../../Icons.jsx';
 
 export function ImageStudioGallery({
   gallery,
@@ -8,17 +9,19 @@ export function ImageStudioGallery({
   onDelete,
 }) {
   return (
-    <aside style={{ width: 280, borderLeft: '1px solid var(--hairline)', padding: 12, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
+    <aside className="hb-is-side">
       <div>
-        <div style={{ font: '800 12px var(--font-mono)', color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Gallery</div>
-        <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>Generated and saved images</div>
+        <div className="hb-is-side-title">Gallery</div>
+        <div className="hb-is-side-sub">Generated and saved images</div>
       </div>
       {gallery.length === 0 ? (
-        <div style={{ flex: 1, display: 'grid', placeItems: 'center', textAlign: 'center', color: 'var(--ink-faint)', border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 16 }}>
-          Images will appear here
+        <div className="hb-empty">
+          <span className="hb-empty-icon" aria-hidden="true"><GenIcon size={20} /></span>
+          <div className="hb-empty-title">No images yet</div>
+          <div className="hb-empty-text">Describe a picture below and press Generate. It will show up here.</div>
         </div>
       ) : (
-        <div style={{ overflow: 'auto', display: 'grid', gap: 10, paddingRight: 2 }}>
+        <div className="hb-is-list">
           {gallery.map(item => (
             <GalleryCard
               key={item.id}
@@ -78,19 +81,7 @@ function GalleryCard({ item, selected, onSelect, onInsert, onDelete }) {
 
 function SmallButton({ danger, onClick, children }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        all: 'unset',
-        cursor: 'pointer',
-        borderRadius: 'var(--radius-md)',
-        padding: '5px 7px',
-        background: danger ? 'color-mix(in oklab, var(--ps-red) 15%, transparent)' : 'var(--surface)',
-        color: danger ? 'var(--ps-red)' : 'var(--ink-soft)',
-        font: '700 10px var(--font-mono)',
-      }}
-    >
+    <button type="button" onClick={onClick} className="hb-is-key" data-tone={danger ? 'danger' : undefined}>
       {children}
     </button>
   );

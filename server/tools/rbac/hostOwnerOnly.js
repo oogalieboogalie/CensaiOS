@@ -19,6 +19,8 @@ export const HOST_CHANGING_TOOL_NAMES = Object.freeze([
   // Git and GitHub with the owner's own checkout and token
   'local_git_fetch', 'local_git_pull_ff_only', 'local_git_checkpoint', 'local_git_verify',
   'github_write_file', 'github_create_issue', 'github_comment_issue', 'submit_pr', 'merge_pr',
+  // Jules works on a GitHub repo and opens a pull request there, with the owner's own Jules key
+  'jules_submit',
   // Commands, Docker and the shared terminal
   'run_tests', 'run_linter', 'sandbox_exec', 'terminal_run', 'restart_service',
   // Docker reads too: container lists and logs can carry addresses and

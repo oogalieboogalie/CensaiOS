@@ -3,16 +3,29 @@
 // inside the group (it must keep its grouped size and place), picks a common
 // layout, and Sam sees the same group on the shared board. Then the wrong
 // things: F-keys with no saved group, Escape twice, ungrouping one window.
-// Red team: a group name made of script text.
+// Red team: a group name made of script text; the app log tells of a group
+// drag and a team card without the made-up group's name or a file's name.
 // On the normal board (not full screen) the chat keeps its grouped size and
 // place through a click, a header click, typing, a group drag, a reload and
 // Alt+1, F1 and Escape; Sam clicking the chat does not change Pat's screen.
 // Pat also snaps the group to each common layout (side by side, grid, main +
 // sidebar, big on top) and Sam's screen shows each one the same way.
 
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { openBoard, readWindow, spawnWindow, updateWindow, windowFrame } from '../../e2e/board.mjs';
 import { note } from '../report.mjs';
 import { sideBySide } from '../sideBySide.mjs';
+
+// The run's log files: the server's output and the app's own log, where the board's lines go.
+const logFiles = (dir) => fs.readdirSync(dir).filter((n) => /\.(log|jsonl)$/.test(n)).map((n) => path.join(dir, n));
+const logLengths = (dir) => new Map(logFiles(dir).map((f) => [f, fs.readFileSync(f, 'utf8').length]));
+const logAddedSince = (dir, start) => logFiles(dir).flatMap((f) => fs.readFileSync(f, 'utf8').slice(start.get(f) || 0).split('\n'));
+/** A log line's words, from the app log's JSON lines or the server's own output. */
+const logMessage = (line) => {
+  try { return String(JSON.parse(line).message || ''); } catch { return line.replace(/^\S+\s+\w+\s+\[[^\]]+\]\s*/, ''); }
+};
 
 const state = (page) => page.evaluate(() => {
   const s = window.__e2eStore.getState();
@@ -323,6 +336,47 @@ export default {
       await leaveFullScreen(pat.page);
       if (ideaShows) throw new Error('the window that left the group still shows in the group\'s full screen');
       return `${undocked ? 'the tile came out' : 'the window came out'}; the group keeps two and F1 still works`;
+    });
+
+    await check('redteam', "the app log tells of a group drag and a team card without the made-up group's name or a file's name", async ({ shot }) => {
+      // One made-up word in both names, so any log line that repeats either one is found.
+      const groupName = 'Made-up Zinnia Beds';
+      const fileName = 'made-up-zinnia-taxes.docx';
+      t.typed.push(groupName, fileName);
+      const start = logLengths(t.logDir);
+      await pat.page.evaluate(([id, l]) => window.__e2eStore.getState().onUpdateGroup(id, { label: l }), [gid, groupName]);
+      const g = (await state(pat.page)).groups.find((x) => x.id === gid);
+      // A Document named after the made-up file sits loose under the tiled group, so the drag leaves it behind.
+      const doc = await spawnWindow(pat.page, 'doc', { title: fileName, fileName, text: 'Made-up notes' }, { x: g.x + g.w / 2 - 120, y: g.y + g.h - 200 }, { w: 240, h: 160 });
+      // The group's team card asks for its goals and milestones by the group's name.
+      const card = await spawnWindow(pat.page, 'group', { groupName }, { x: g.x + g.w + 80, y: g.y }, { w: 380, h: 520 });
+      await windowFrame(pat.page, card).waitFor({ state: 'visible', timeout: 15_000 });
+      const label = pat.page.locator(`[data-group-id="${gid}"] [data-group-label]`).first();
+      await label.hover();
+      const r = await label.boundingBox();
+      await pat.page.mouse.move(r.x + 12, r.y + r.height / 2);
+      await pat.page.mouse.down();
+      await pat.page.mouse.move(r.x + 52, r.y + r.height / 2 + 30, { steps: 6 });
+      await pat.page.mouse.up();
+      await shot(pat.page, 'pat-drags-the-made-up-group-past-a-document');
+      // The board sends its lines every 3 seconds, into the app's own log file next to the server's.
+      const until = Date.now() + 15_000;
+      let added;
+      for (;;) {
+        added = logAddedSince(t.logDir, start);
+        if (added.some((line) => line.includes('browser:canvas')) || Date.now() > until) break;
+        await pat.page.waitForTimeout(500);
+      }
+      await pat.page.evaluate((list) => list.forEach((id) => window.__e2eStore.getState().onClose(id)), [doc, card]);
+      const board = added.filter((line) => line.includes('browser:canvas')).map(logMessage);
+      const asked = added.map(logMessage).filter((line) => /^GET \/api\/(goals|milestones)\/\[redacted\] /.test(line));
+      const naming = added.filter((line) => line.toLowerCase().includes('zinnia'));
+      const problems = [];
+      if (!board.includes('groups: a group drag left behind 1 window with no tile (doc)')) problems.push(`the drag that left the Document behind is not told by kind and count (the board said ${board.length ? `"${board[0]}"` : 'nothing'})`);
+      if (asked.length < 2) problems.push(`${asked.length} of the team card's two requests are in the log without the group's name`);
+      if (naming.length) problems.push(`${naming.length} log lines name the made-up group or file, e.g. "${logMessage(naming[0]).slice(0, 140)}"`);
+      if (problems.length) throw new Error(problems.join('; '));
+      return `the board said "${board[0]}" and the server "${asked[0].replace(/ \d+ms$/, '')}"; no line names the made-up group or file`;
     });
 
     await check('redteam', 'a group named with script text stays plain text on Sam\'s board', async ({ shot }) => {

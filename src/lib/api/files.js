@@ -39,6 +39,13 @@ export async function createFile(filePath, content = '') {
 export async function listFolders(path = '') {
     const res = await fetch(`/api/files/folders${path ? `?path=${encodeURIComponent(path)}` : ''}`);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw Object.assign(new Error(data?.error || 'Could not list folders'), { places: data?.places || [] });
+    if (!res.ok) {
+      // An answer with no places (offline, signed out) says nothing about what the picker may offer.
+      const offers = Array.isArray(data?.places);
+      throw Object.assign(new Error(data?.error || 'Could not list folders'), {
+        places: offers ? data.places : null,
+        openProjectsOnly: offers ? Boolean(data.openProjectsOnly) : null,
+      });
+    }
     return data;
   }

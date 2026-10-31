@@ -5,13 +5,12 @@ import { getAgent, getSubAgentById } from '../../memory.js';
 import { getProject } from '../../workspaces.js';
 import { resolveTavilyKey, tavilyBase } from '../../leadhound/tavily.js';
 import { noteToolFailure } from '../toolsLog.js';
+import { defaultWriteFolders } from './localWriteFolders.js';
 
 const TAVILY_KEY_MISSING = 'Error: no Tavily key yet. Paste one in the LeadHound window (or set TAVILY_API_KEY on the server) to search the web.';
 
 function isPathAllowed(targetPath, allowedPaths) {
-  if (!Array.isArray(allowedPaths) || allowedPaths.length === 0) {
-    return true; // No restrictions
-  }
+  if (!Array.isArray(allowedPaths) || allowedPaths.length === 0) return false;
   const resolvedTarget = path.resolve(targetPath);
   return allowedPaths.some(p => {
     const resolvedAllowed = path.resolve(p);
@@ -61,7 +60,7 @@ export async function handleLocalTool(agentId, name, args, context = {}) {
         // agents don't have to guess the absolute root. Absolute paths pass
         // through unchanged.
         const abs = path.resolve(args.dir_path);
-        if (allowedPaths && !isPathAllowed(abs, allowedPaths)) {
+        if (allowedPaths?.length && !isPathAllowed(abs, allowedPaths)) {
           return `Failed to read directory: Access restricted by agent's directory scopes. Allowed paths: ${allowedPaths.join(', ')}`;
         }
         const files = await runnerClient.fsList(abs);
@@ -75,7 +74,7 @@ export async function handleLocalTool(agentId, name, args, context = {}) {
     case 'local_read_file': {
       try {
         const abs = path.resolve(args.file_path);
-        if (allowedPaths && !isPathAllowed(abs, allowedPaths)) {
+        if (allowedPaths?.length && !isPathAllowed(abs, allowedPaths)) {
           return `Failed to read file: Access restricted by agent's directory scopes. Allowed paths: ${allowedPaths.join(', ')}`;
         }
         const content = await runnerClient.fsRead(abs);
@@ -87,8 +86,15 @@ export async function handleLocalTool(agentId, name, args, context = {}) {
     case 'local_write_file': {
       try {
         const abs = path.resolve(args.file_path);
-        if (allowedPaths && !isPathAllowed(abs, allowedPaths)) {
+        if (allowedPaths?.length && !isPathAllowed(abs, allowedPaths)) {
           return `Failed to write file: Access restricted by agent's directory scopes. Allowed paths: ${allowedPaths.join(', ')}`;
+        }
+        // No folders of its own: the projects folder or an open project only.
+        if (!allowedPaths?.length) {
+          const folders = await defaultWriteFolders();
+          if (!isPathAllowed(abs, folders)) {
+            return `Failed to write file: this agent has no folders of its own, so it can only write inside the projects folder or a project censaiOS has open (${folders.join(', ')}). Add a folder to this agent in the Agent Designer to let it write somewhere else.`;
+          }
         }
         await runnerClient.fsWrite(abs, args.content);
 

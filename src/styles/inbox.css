@@ -64,7 +64,8 @@
 .hb-inbox-log-working { display: flex; align-items: center; gap: var(--space-1-5); color: var(--ink-faint); }
 .hb-inbox-approvals { display: flex; flex-direction: column; gap: var(--space-1); padding: 0 var(--space-3) var(--space-2); }
 .hb-inbox-approval { display: flex; align-items: center; gap: var(--space-2); }
-.hb-inbox-approval span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-inbox-approval-what { flex: 1; min-width: 0; max-height: 12em; overflow: auto; overflow-wrap: anywhere; }
+.hb-inbox-approval-what code { display: block; font-family: var(--font-mono); white-space: pre-wrap; color: var(--ink-soft); }
 .hb-inbox-actions { display: flex; align-items: center; gap: var(--space-2); margin-top: auto; padding-top: var(--space-2); border-top: 1px solid var(--hairline); }
 .hb-inbox-spacer { flex: 1; }
 .hb-inbox-ack { background: var(--ink); color: var(--surface); border-color: var(--ink); }

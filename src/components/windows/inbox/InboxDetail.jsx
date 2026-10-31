@@ -19,13 +19,14 @@ export function logLine(step) {
   return '';
 }
 
+/** An agent's waiting requests, as this screen's own ask got them: whole for this computer's owner, a teammate's words for anyone else. */
 function Approvals({ approvals, onAnswer }) {
   if (!approvals?.length) return null;
   return (
     <div className="hb-inbox-approvals">
       {approvals.map((a) => (
         <div key={a.id} className="hb-inbox-approval">
-          <span>Allow: {a.title}</span>
+          <span className="hb-inbox-approval-what">Allow: {a.title}{a.detail ? <code>{a.detail}</code> : null}</span>
           <button type="button" className="hb-btn" onClick={() => onAnswer(a.id, false)}>Deny</button>
           <button type="button" className="hb-btn" data-primary="true" onClick={() => onAnswer(a.id, true)}>Allow</button>
         </div>

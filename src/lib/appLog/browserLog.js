@@ -5,7 +5,11 @@
 //
 // Only what the board itself prints goes out: error messages, warnings and
 // failed /api calls (method, path, status), never typed text or file
-// contents. The server scrubs keys, tokens and emails before writing.
+// contents, nor the names people gave a project's folder or a canvas group
+// (shared/logs/addressNames.js). The server scrubs keys, tokens and emails
+// before writing.
+
+import { hideNamesInAddress } from '../../../shared/logs/addressNames.js';
 
 const FLUSH_MS = 3000;
 const MAX_QUEUE = 100;
@@ -99,7 +103,7 @@ function wrapFetch(target) {
       const path = (typeof input === 'string' ? input : input?.url || '').replace(/^https?:\/\/[^/]+/, '');
       if (response.status >= 400 && path.startsWith('/api/') && !path.startsWith('/api/logs')) {
         const method = String(init?.method || input?.method || 'GET').toUpperCase();
-        logToApp(response.status >= 500 ? 'error' : 'warn', `${method} ${path.replace(/\?.*$/, '')} returned ${response.status}`);
+        logToApp(response.status >= 500 ? 'error' : 'warn', `${method} ${hideNamesInAddress(path.replace(/\?.*$/, ''))} returned ${response.status}`);
       }
     } catch { /* never get in the way of the request */ }
     return response;

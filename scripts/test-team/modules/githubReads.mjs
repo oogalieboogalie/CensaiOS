@@ -3,13 +3,17 @@
 // GitHub on the board shared with Sam Example (a teammate) and gives Atlas
 // the repo there. In a chat window on that board Sam asks Atlas for the
 // repo's README and Atlas reads it to Sam, on both screens; asked for a
-// made-up repo the board never shared, Atlas says it cannot. Red team: off a
+// made-up repo the board never shared, Atlas says that repo is not open for
+// it on this board and names the one that is. Red team: off a
 // board (a chat sent to censaiOS with no board, as a teammate's own browser
 // can send it, or a run started elsewhere), a shared agent Pat gave GitHub
 // reads gives Sam plain words for the README and for the repo's issues, and
 // so does Atlas reading the repo as a GitHub project; the made-up GitHub is
-// never asked, and for Pat both read. The refusals are logged with the
-// account number only, never the repo, the file or its words. Atlas's
+// never asked, and for Pat both read. Sam's own requests to give the
+// board's Atlas a made-up repo the board does not have, on the shared board
+// and on Sam's own board, get plain words and give nothing; Sam still hands
+// Atlas the board's own repo, and Pat gives the new one. The refusals are
+// logged with the account number only, never the repo, the file or its words. Atlas's
 // modules on the board, and GitHub Reader on it, are put back as the module
 // found them. All repos, files and words are made up.
 
@@ -24,8 +28,15 @@ const ISSUE = 'Made-up issue: order more napkins';
 // A shared agent Pat made and gave GitHub reads to (not one of the built-in family).
 const READER = { id: 'made-up-github-reader', name: 'Made-up GitHub Reader', tools: ['github_read_file', 'github_list_issues'] };
 const OFF_BOARD = "Only this computer's owner's agents read GitHub with its key outside a board.";
+// Off a board no project is shared, a GitHub one or a folder (server/tools/rbac/ownerOnlyReads.js).
+const PROJECT_OFF_BOARD = "Only this computer's owner's agents work in its projects outside a board.";
 const READER_PACKAGE = `/api/tool-packages/${encodeURIComponent('censai/github-reader')}/install`;
 const NOT_GIVEN = 'not authorized for that repository';
+// The words name the projects the board did give the agent (server/workspaces/projectRefusalWords.js).
+const NOT_OPEN_HERE = 'that project is not open for me on this board';
+// A project new to a board is the owner's to give its agents (server/routes/projects/newProjectOwnerOnly.js).
+const NEW_PROJECT = "Only this computer's owner can give this board's agents a project that is not open on this board.";
+const ATLAS_READS = [{ agentId: 'atlas', permission: 'read' }];
 
 const msgsOf = async (page, id) => (await readWindow(page, id))?.msgs || [];
 const answersAfter = (msgs, text) => {
@@ -124,7 +135,7 @@ export default {
         return fail(problems, `Atlas read Sam the README on the board ("${README.slice(0, 40)}…"), and Pat sees it too`);
       });
 
-      await check('hunt', 'on the board, Sam asks Atlas for a made-up repo the board never shared: Atlas says it cannot, and the made-up GitHub is never asked', async ({ shot }) => {
+      await check('hunt', 'on the board, Sam asks Atlas for a made-up repo the board never shared: Atlas says that repo is not open for it on this board and names the one that is, and the made-up GitHub is never asked', async ({ shot }) => {
         if (!chat) throw new Error('the chat did not open in the step before');
         const readsBefore = t.github.reads().length;
         const ask = fileAsk(privateRepo, 'README.md', 'github_read_file');
@@ -137,8 +148,11 @@ export default {
         const problems = [];
         if (answer.includes(PRIVATE_README)) problems.push('Atlas read Sam the repo the board never shared');
         else if (!answer.includes(NOT_GIVEN)) problems.push(`Atlas answered ${answer ? `"${answer.slice(0, 120)}"` : 'nothing'}`);
+        else if (!answer.includes(NOT_OPEN_HERE) || !answer.includes(`"${repo}"`) || answer.includes('none is open for me')) {
+          problems.push(`Atlas's words do not name the repo the board gave it: "${answer.slice(answer.indexOf('Tell the person'), answer.indexOf('Tell the person') + 160)}"`);
+        }
         if (asked.length) problems.push(`the made-up GitHub was asked ${asked.map(([method, , what]) => `${method} ${what}`).join(', ')}`);
-        return fail(problems, 'Atlas answered that it is not given that repo on this board; GitHub was not asked');
+        return fail(problems, `Atlas answered that repo is not open for it on this board and named the one that is (${repo}); GitHub was not asked`);
       });
 
       await check('redteam', "off a board, the shared agent Pat gave GitHub reads gives Sam plain words for the README and the issues, and the made-up GitHub is never asked; for Pat it reads both", async () => {
@@ -165,17 +179,43 @@ export default {
         const ask = fileAsk(projectName, 'README.md', 'project_read');
         const forSam = await askOffBoard(t, sam, 'atlas', ask);
         if (forSam.raw.includes(README) || forSam.results.some((r) => r.includes(README))) problems.push("Sam's Atlas got the README");
-        else if (!forSam.results.some((r) => r.includes(OFF_BOARD))) problems.push(`Sam's Atlas got ${said(forSam.results)}`);
+        else if (!forSam.results.some((r) => r.includes(PROJECT_OFF_BOARD))) problems.push(`Sam's Atlas got ${said(forSam.results)}`);
         const asked = t.github.reads().slice(readsBefore).filter(([, name]) => name === repoName);
         if (asked.length) problems.push(`the made-up GitHub was asked ${asked.length} time(s) for Sam`);
         const forPat = await askOffBoard(t, pat, 'atlas', ask);
         if (!forPat.results.some((r) => r.includes(README))) problems.push(`Pat's Atlas got ${said(forPat.results)}`);
-        return fail(problems, `Sam's Atlas gets "${OFF_BOARD}" and GitHub is not asked; Pat's Atlas reads the README`);
+        return fail(problems, `Sam's Atlas gets "${PROJECT_OFF_BOARD}" and GitHub is not asked; Pat's Atlas reads the README`);
+      });
+
+      await check('redteam', "Sam's own requests to give the board's Atlas a made-up repo the board does not have, on the shared board and on Sam's own board, get plain words and give nothing, a project that is not there too; Sam still hands Atlas the board's own repo, and Pat gives the new one", async () => {
+        if (!projectId) throw new Error('the made-up repo was not given to Atlas in the first step');
+        const opened = await t.api(pat, 'POST', '/api/projects/open', { repo: privateRepo });
+        const privateId = opened.body?.project?.id;
+        if (!privateId) throw new Error(`the second made-up repo did not open as a project (${opened.status} ${opened.body?.error || ''})`);
+        const own = await t.api(sam, 'POST', '/api/workspaces/personal');
+        const samBoard = own.body?.workspace?.id;
+        if (!samBoard) throw new Error(`could not find Sam's own board (${own.status})`);
+        const onBoard = (board) => `/api/workspaces/${encodeURIComponent(board)}/agent-projects`;
+        const giveTo = (who, board, id) => t.api(who, 'PUT', `${onBoard(board)}/${encodeURIComponent(id)}`, { memberships: ATLAS_READS, sourceId: 'made-up-board' });
+        const atlasHas = async (who, board, id) => ((await t.api(who, 'GET', `${onBoard(board)}?agentId=atlas`)).body?.memberships || []).some((m) => m.projectId === id);
+        const problems = [];
+        for (const [where, board, id] of [['the shared board', t.workspaceId, privateId], ["Sam's own board", samBoard, privateId], ['the shared board, for a project that is not there', t.workspaceId, `shared-made-up-nothing-${stamp}`]]) {
+          const res = await giveTo(sam, board, id);
+          if (res.status !== 403 || !String(res.body?.error || '').startsWith(NEW_PROJECT)) problems.push(`on ${where} Sam's request answered ${res.status} ${String(res.body?.error || '').slice(0, 80)}`);
+          if (await atlasHas(sam, board, id)) problems.push(`on ${where} Atlas was given the made-up repo`);
+        }
+        const keep = await giveTo(sam, t.workspaceId, projectId);
+        if (keep.status !== 200) problems.push(`Sam handing Atlas the board's own repo answered ${keep.status}`);
+        const byPat = await giveTo(pat, t.workspaceId, privateId);
+        if (byPat.status !== 200 || !(await atlasHas(pat, t.workspaceId, privateId))) problems.push(`Pat giving Atlas the new repo answered ${byPat.status}`);
+        // Back to the board as the first step left it.
+        await giveTo(pat, t.workspaceId, projectId);
+        return fail(problems, `Sam gets 403 "${NEW_PROJECT}" on both boards, for a project that is not there too, and Atlas is given nothing; Sam still hands Atlas the board's own repo; Pat gives the new one`);
       });
 
       await check('redteam', "the refusals are logged with the account number only, never the repo, the file or its words", async () => {
         const added = t.serverLog().slice(logStart);
-        const refusals = added.split('\n').filter((line) => line.includes('off a board'));
+        const refusals = added.split('\n').filter((line) => line.includes('off a board') || line.includes("a board's agents a new project"));
         const problems = [];
         if (!refusals.length) problems.push('the server log has no line for the refusals');
         for (const [what, words] of [['the repo', repoName], ['the file', 'README.md'], ['its words', README], ['an issue', ISSUE]]) {

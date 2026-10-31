@@ -11,8 +11,9 @@
 // window in Add is put on the board the way Add puts it, and whatever name
 // its header shows, typed back into Add, opens that same window (headers
 // that show what is inside, such as a document's name, are listed apart).
-// Bug hunt: a module named exactly what was typed still comes first (Image,
-// not the Image Generator, whose header also says "Image"), and a search for
+// The Image Generator, opened from Add beside Image, says "Image Generator"
+// in its header on both screens, and Image still says "Image". Bug hunt: a module named exactly what was typed still comes first (Image,
+// not the Image Generator, whose name starts with it), and a search for
 // nothing that exists still offers to make a new module.
 
 import fs from 'node:fs';
@@ -280,6 +281,39 @@ export default {
     await check('walk', 'headers that show what is inside a window (a document\'s or an agent\'s name) are not names Add finds it by', async () => {
       const content = other.filter((w) => SHOWS_CONTENT.has(w.kind));
       return `${content.length}: ${content.map((w) => `${w.label} "${w.title}"`).join(', ')}`;
+    });
+
+    await check('walk', 'the Image Generator, opened from Add beside Image, says "Image Generator" in its header on both screens, and Image still says "Image"', async ({ shot }) => {
+      await clearBoard(t);
+      const gen = await addFromMenu(pat.page, 'Image Generator');
+      const image = await addFromMenu(pat.page, 'Image');
+      const problems = [];
+      if (gen.kind !== 'genImage') problems.push(`"Image Generator" opened ${gen.kind || 'nothing'}`);
+      if (image.kind !== 'image') problems.push(`"Image" opened ${image.kind || 'nothing'}`);
+      // Set side by side, in view on both screens, so one picture shows both headers.
+      const besideX = await pat.page.evaluate(([a, b]) => {
+        const st = window.__e2eStore.getState();
+        const first = st.wins.find((w) => w.id === a);
+        const x = (first?.w || first?.width || 560) + 40;
+        st.onUpdate(a, { x: 0, y: 0 });
+        st.onUpdate(b, { x, y: 0 });
+        return x;
+      }, [gen.id, image.id]);
+      for (const p of [pat, sam]) await p.page.evaluate(() => { const st = window.__e2eStore.getState(); st.setZoom(1); st.setPan({ x: 120, y: 90 }); });
+      await sam.page.waitForFunction(([id, x]) => window.__e2eStore.getState().wins.find((w) => w.id === id)?.x === x,
+        [image.id, besideX], { timeout: 10_000 }).catch(() => problems.push('Sam\'s screen did not get both windows side by side'));
+      await pat.page.waitForTimeout(600);
+      const said = [];
+      for (const [who, p] of [['Pat', pat], ['Sam', sam]]) {
+        const [genTitle, imageTitle] = [await titleOf(p.page, gen.id), await titleOf(p.page, image.id)];
+        if (genTitle !== 'Image Generator') problems.push(`the Image Generator's header on ${who}'s screen says "${genTitle}"`);
+        if (imageTitle !== 'Image') problems.push(`Image's header on ${who}'s screen says "${imageTitle}"`);
+        said.push(`${who}: "${genTitle}" and "${imageTitle}"`);
+      }
+      await shot(pat.page, 'image-generator-beside-image-pat');
+      await sideBySide(t, 'image-generator-beside-image', shot);
+      if (problems.length) throw new Error(problems.join('; '));
+      return `the two headers read ${said.join('; ')}`;
     });
 
     await check('hunt', 'a module named exactly what was typed still comes first, and a search for nothing that exists still offers to make one', async ({ shot }) => {

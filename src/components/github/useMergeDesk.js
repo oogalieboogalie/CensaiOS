@@ -6,9 +6,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * What everyone on the board should see lives on the window itself, so it
  * syncs through the board's Yjs doc like any other window field:
  *   win.prDesk      { repo, prs, recent, fetchedAt }   last fetched snapshot
- *   win.prActivity  { [number]: { state, by, text, jobId, approvals, at } }
+ *   win.prActivity  { [number]: { state, by, text, jobId, taskId, approvals, at } }
  * A merge or fix started by anyone shows on every screen. Each client
  * refreshes from GitHub with its own token; only successes are written.
+ * A fix's waiting requests go on the board in a teammate's words; this
+ * computer's owner also gets them whole (`whole`, by job), kept on this
+ * screen only and never written to the window.
  */
 
 const REFRESH_MS = 45_000;
@@ -28,8 +31,20 @@ export function useMergeDesk(win, onUpdate, repo) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [bulk, setBulk] = useState(null); // { done, total } while "Merge all green" runs
+  const [whole, setWholeByJob] = useState({}); // { [jobId]: requests } in the owner's whole words
   const latest = useRef(win);
   latest.current = win;
+
+  const setWhole = useCallback((jobId, list) => {
+    setWholeByJob((current) => {
+      if (!Array.isArray(list)) {
+        if (!(jobId in current)) return current;
+        const { [jobId]: _gone, ...rest } = current;
+        return rest;
+      }
+      return JSON.stringify(current[jobId]) === JSON.stringify(list) ? current : { ...current, [jobId]: list };
+    });
+  }, []);
 
   const desk = win.prDesk?.repo === repo ? win.prDesk : null;
   const activity = win.prActivity || {};
@@ -125,7 +140,7 @@ export function useMergeDesk(win, onUpdate, repo) {
     setActivity(number, { state: 'fixing', by: connection.me, text: 'Starting…' });
     try {
       const { job } = await readJson(await post('/api/github/desk/fix', { repo, number }), 'Could not start the fix');
-      setActivity(number, { state: job.status === 'done' ? 'fixed' : job.status === 'failed' ? 'error' : 'fixing', by: job.by, text: job.text, jobId: job.id });
+      setActivity(number, { state: job.status === 'done' ? 'fixed' : job.status === 'failed' ? 'error' : 'fixing', by: job.by, text: job.text, jobId: job.id, taskId: job.taskId || null });
       if (job.status === 'done') refresh();
     } catch (err) {
       setActivity(number, { state: 'error', by: connection.me, text: err.message });
@@ -164,21 +179,28 @@ export function useMergeDesk(win, onUpdate, repo) {
       for (const [number, entry] of Object.entries(latest.current.prActivity || {})) {
         if (entry.state !== 'fixing' || !entry.jobId) continue;
         try {
-          const { job, approvals } = await readJson(await fetch(`/api/github/desk/fix/${entry.jobId}`), 'lost');
+          const { job, approvals, whole: wholeAsks } = await readJson(await fetch(`/api/github/desk/fix/${entry.jobId}`), 'lost');
           const state = job.status === 'done' ? 'fixed' : job.status === 'failed' ? 'error' : 'fixing';
-          const same = entry.state === state && entry.text === job.text && JSON.stringify(entry.approvals || []) === JSON.stringify(approvals);
-          if (!same) setActivity(Number(number), { ...entry, state, text: job.text, approvals, agentSummary: job.agentSummary || null });
+          const taskId = job.taskId || null;
+          const same = entry.state === state && entry.text === job.text && (entry.taskId || null) === taskId
+            && JSON.stringify(entry.approvals || []) === JSON.stringify(approvals);
+          // Only `approvals` (a teammate's words) are written to the board.
+          if (!same) setActivity(Number(number), { ...entry, state, text: job.text, taskId, approvals, agentSummary: job.agentSummary || null });
+          setWhole(entry.jobId, state === 'fixing' ? wholeAsks : null);
           if (state === 'fixed') refresh();
         } catch (err) {
-          if (err.status === 404) setActivity(Number(number), { ...entry, state: 'error', text: err.message });
+          if (err.status === 404) {
+            setWhole(entry.jobId, null);
+            setActivity(Number(number), { ...entry, state: 'error', text: err.message });
+          }
         }
       }
     }, FIX_POLL_MS);
     return () => clearInterval(timer);
-  }, [fixingKey, setActivity, refresh]);
+  }, [fixingKey, setActivity, setWhole, refresh]);
 
   return {
-    connection, desk, activity, loading, error, bulk,
+    connection, desk, activity, whole, loading, error, bulk,
     refresh, saveToken, merge, mergeAllGreen, fixConflicts, answerApproval,
     dismiss: (number) => setActivity(number, null),
   };

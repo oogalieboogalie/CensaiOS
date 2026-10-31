@@ -181,6 +181,18 @@ test('the review chat and a help card on the shared board get the words a teamma
   expect(card.body.items).toEqual([]);
 });
 
+test('Open in Code Editor gets a file for the shared board as a teammate sees it, whoever asks', async () => {
+  // The Code Editor window's words reach everyone on the board (TaskView's openFile asks with board=1).
+  const board = await get(PAT, `/tasks/${task.id}/file?path=config.js&board=1`);
+  expect(board.body).toEqual({ path: 'config.js', content: `export const madeUpKey = '${HIDDEN_MARK}';\n`, hiddenWords: true });
+  expect((await get(SAM, `/tasks/${task.id}/file?path=config.js&board=1`)).body).toEqual(board.body);
+  expect((await get(PAT, `/tasks/${task.id}/file?path=README.md&board=1`)).body).toEqual({ path: 'README.md', content: '# Made-up shop\n' });
+  // A file only the owner opens still comes to Pat whole, marked to stay on Pat's screen.
+  const own = await get(PAT, `/tasks/${task.id}/file?path=.env&board=1`);
+  expect(own.body).toMatchObject({ ownerOnly: true, content: expect.stringContaining(`MADE_UP_KEY=${KEY}`) });
+  expect(own.body).not.toHaveProperty('hiddenWords');
+});
+
 test('the agent handed the changes gets them as they are, as it reviews them on this computer', async () => {
   const { files, patch } = await live.changes(task.id);
   const prompt = buildHandoffPrompt({ source: live.get(task.id), ask: 'Review the made-up change.', files, patch });

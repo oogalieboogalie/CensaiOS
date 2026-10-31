@@ -129,9 +129,12 @@ export const MODULE_MANIFESTS_BY_TYPE = Object.freeze(
 );
 
 /**
- * Launcher tiles, declaratively derived from the manifest and sorted by
- * `launcher.order`. The canvas empty-state renders these directly, so adding a
- * window's tile is a manifest `launcher` block — never a hand-edited button.
+ * Windows whose manifest `launcher` block says `show: true`, sorted by
+ * `launcher.order`. Only the empty board reads this list: it draws a starting
+ * button just for the three windows LAUNCHPAD_STARTS names
+ * (src/lib/launchpadStarts.js), with each one's icon and hover hint from here,
+ * and the spawn props of the two that open a window. The window header and
+ * Add (Ctrl+K) read a `launcher` block whether or not the window is listed.
  */
 export const LAUNCHER_MANIFESTS = Object.freeze(
   WINDOW_MANIFESTS

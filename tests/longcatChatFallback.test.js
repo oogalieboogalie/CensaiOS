@@ -50,7 +50,8 @@ test('chat loop executes a longcat text tool call', async () => {
   const result = await runChatLoop({
     agentId: 'atlas',
     chatMessages: [{ role: 'user', content: 'read it' }],
-    toolsForCaller: [],
+    // The chat gave its agent project_read; only tools it gave run.
+    toolsForCaller: [{ type: 'function', function: { name: 'project_read' } }],
     reqModel: 'longcat',
     authorizationWorkspaceId: 'workspace-1',
     userId: 7,

@@ -14,13 +14,18 @@
 // Forward, the path bar and the sidebar move between folders. Sam sees the
 // same files in the same Finder (of the made-up key file, only its name),
 // browses on their own while Pat's Finder stays put, and opens a file from it.
-// Bug hunt: a file added and one deleted outside censaiOS show when Pat comes
+// Sam's folder picker (the window's project, Mount to another folder) offers
+// only the projects open on the board and says so, while Pat's still offers
+// every folder censaiOS can reach. Bug hunt: a file added and one deleted outside censaiOS show when Pat comes
 // back to the Finder; an empty folder says so; a folder deleted while it is
 // open says so in plain words, and Back still works. Red team: Sam's
 // double-click on a made-up key file shows Sam none of it; a signed-out
 // visitor gets no list, and nobody gets the list of a folder outside the open
-// projects. The board's default project and open projects are put back as the
-// module found them. All files and words are made up.
+// projects; Sam's folder picker is refused Pat's home folder, censaiOS's own
+// folder, a folder that is not there, a hidden folder and a link out of the
+// project, in the same plain words each time. The board's default project and
+// open projects are put back as the module found them. All files and words
+// are made up.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -48,6 +53,10 @@ const KEY = 'made-up-server.key';
 const KEY_WORDS = 'not-a-real-made-up-key';
 const MADE_UP_COMPUTER = /Downloads|AirDrop|officepc|Brown butter|nectarine|All Tags/;
 const GONE = 'This folder is not there any more. It may have been moved or deleted.';
+// The folder picker on a teammate's screen (server/routes/files/folders.js).
+const PICKER_REFUSAL = "Only this computer's owner can look in that folder.";
+const TEAMMATE_NOTE = 'Only projects open on this board are shown.';
+const OWNER_NOTE = 'Only folders censaiOS can reach are shown.';
 
 // censaiOS's own folder, where it keeps the board's default project and its
 // open projects (server/routes/projects/shared.js), so the module can put them back.
@@ -89,6 +98,13 @@ function onDisk(folder) {
     .filter((e) => !e.name.startsWith('.') && e.name !== 'node_modules')
     .sort((a, b) => (a.isDirectory() === b.isDirectory() ? a.name.localeCompare(b.name) : a.isDirectory() ? -1 : 1))
     .map((e) => ({ name: e.name, size: e.isDirectory() ? '--' : formatSize(fs.lstatSync(path.join(folder, e.name)).size) }));
+}
+
+/** The projects open on the board, as this person's server reads them. */
+async function openRoots(t, person) {
+  const res = await t.api(person, 'GET', '/api/projects');
+  // A GitHub project (as githubReads opens one in the same run) has no folder.
+  return (res.body?.projects || []).filter((p) => p.path).map((p) => path.resolve(p.path));
 }
 
 /** The Finder's rows on this person's screen, as [name, date, size]. */
@@ -376,6 +392,36 @@ export default {
         return `Sam's Finder lists the same ${ROOT_NAMES().length} entries (${KEY} with no date or size), went into ${PHOTOS} while Pat's stayed at the top, and Sam's double-click opened ${LIST} with its words`;
       });
 
+      await check('walk', "Sam's folder picker (the window's project, Mount to another folder) offers only the projects open on the board and says so; Pat's still offers every folder censaiOS can reach", async ({ shot }) => {
+        const open = await openRoots(t, sam);
+        const seen = {};
+        for (const [who, person] of [['Pat', pat], ['Sam', sam]]) {
+          await homeView(person.page);
+          const frame = windowFrame(person.page, finderId);
+          await frame.locator('.hb-win-project-chip').click({ timeout: 5_000 });
+          await frame.getByRole('menuitem', { name: 'Mount to another folder…' }).click({ timeout: 5_000 });
+          const picker = frame.getByRole('dialog', { name: 'Mount to a folder' });
+          await picker.locator('.hb-folder-picker-path', { hasText: dir }).waitFor({ timeout: 10_000 });
+          seen[who] = {
+            places: await picker.locator('.hb-folder-picker-place').evaluateAll((els) => els.map((el) => ({ name: el.textContent, path: el.title }))),
+            note: (await picker.locator('.hb-folder-picker-foot .hb-folder-picker-note').innerText()).trim(),
+          };
+        }
+        await sideBySide(t, 'sams-picker-shows-only-open-projects', shot);
+        for (const person of [pat, sam]) await person.page.keyboard.press('Escape');
+        const problems = [];
+        const sams = seen.Sam.places;
+        if (!sams.some((p) => p.path === dir)) problems.push("Sam's picker does not offer the made-up project");
+        const extra = sams.filter((p) => !open.includes(p.path)).map((p) => p.name);
+        if (extra.length) problems.push(`Sam's picker offers ${extra.join(', ')}, not open on the board`);
+        if (seen.Sam.note !== TEAMMATE_NOTE) problems.push(`Sam's picker says "${seen.Sam.note}"`);
+        const pats = seen.Pat.places.map((p) => p.name);
+        if (!pats.includes('Home')) problems.push(`Pat's picker offers only ${pats.join(', ')}, without Home`);
+        if (seen.Pat.note !== OWNER_NOTE) problems.push(`Pat's picker says "${seen.Pat.note}"`);
+        if (problems.length) throw new Error(problems.join('; '));
+        return `Sam's offers ${sams.map((p) => p.name).join(', ')} with "${TEAMMATE_NOTE}"; Pat's offers ${pats.join(', ')} with "${OWNER_NOTE}"`;
+      });
+
       await check('hunt', 'a file added and one deleted outside censaiOS show when Pat comes back to the Finder', async ({ shot }) => {
         if (!planId) throw new Error('the note did not open in the steps before');
         const back = await turnAway(pat.page, finderId, planId);
@@ -419,6 +465,45 @@ export default {
         if ((await shownText(sam.page, keyId)).includes(KEY_WORDS)) problems.push('the made-up key shows on Sam\'s screen');
         if (problems.length) throw new Error(problems.join('; '));
         return `Sam's window says "${says.split('\n')[0]}" and shows none of the file`;
+      });
+
+      await check('redteam', "Sam's folder picker is refused Pat's home folder, censaiOS's own folder, a folder that is not there, a hidden folder and a link out of the project, in the same plain words each time; Pat's still lists them", async () => {
+        const hidden = path.join(dir, '.made-up-logins');
+        const link = path.join(dir, 'made-up-link-out');
+        fs.mkdirSync(path.join(hidden, 'made-up-inner'), { recursive: true });
+        fs.symlinkSync(os.homedir(), link, 'dir');
+        try {
+          const open = await openRoots(t, sam);
+          const inOpen = (folder) => open.some((root) => folder === root || folder.startsWith(`${root}${path.sep}`));
+          // A folder open on the board (censaiOS's own, when a module before opened it) is Sam's to look in.
+          const asks = [
+            ["Pat's home folder", os.homedir()],
+            ["censaiOS's own folder", ROOT],
+            ['a folder that is not there', path.join(os.homedir(), 'made-up-not-there')],
+            ['/etc', '/etc'],
+          ].filter(([, folder]) => !inOpen(folder)).concat([
+            ['a hidden folder in the project', hidden],
+            ['a folder inside it', path.join(hidden, 'made-up-inner')],
+            ['a link out of the project', link],
+          ]);
+          const problems = [];
+          for (const [what, folder] of asks) {
+            const res = await t.api(sam, 'GET', `/api/files/folders?path=${encodeURIComponent(folder)}`);
+            if (res.status !== 403 || res.body?.error !== PICKER_REFUSAL) problems.push(`Sam asking for ${what} got ${res.status} "${res.body?.error || res.text.slice(0, 80)}"`);
+            const keys = Object.keys(res.body || {}).sort().join(',');
+            if (keys !== 'code,error,openProjectsOnly,places,reason') problems.push(`Sam's answer for ${what} carries ${keys}`);
+            const others = (res.body?.places || []).filter((p) => !open.includes(p.path));
+            if (others.length) problems.push(`Sam's answer for ${what} names ${others.length} folder(s) not open on the board`);
+            if (res.text.includes('made-up-inner')) problems.push(`Sam's answer for ${what} names a folder inside the hidden one`);
+          }
+          const patHome = await t.api(pat, 'GET', `/api/files/folders?path=${encodeURIComponent(os.homedir())}`);
+          if (patHome.status !== 200 || !patHome.body?.folders?.some((f) => f.path === dir)) problems.push(`Pat's picker could not list the home folder (${patHome.status})`);
+          if (problems.length) throw new Error(problems.join('; '));
+          return `${asks.map(([what]) => what).join(', ')}: each "${PICKER_REFUSAL}" with only the open projects; Pat's picker still lists the home folder`;
+        } finally {
+          fs.rmSync(link, { force: true });
+          fs.rmSync(hidden, { recursive: true, force: true });
+        }
       });
 
       await check('redteam', 'a signed-out visitor gets no list, and nobody gets the list of a folder outside the open projects', async () => {

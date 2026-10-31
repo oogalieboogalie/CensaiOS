@@ -1,7 +1,8 @@
 import { COPY_SAMPLES, SECRET_ENDINGS, SECRET_SAMPLES, inHiddenFolder, isSecretFileName } from '../security/secretFiles.js';
 import { baseName } from './adapters/shared.js';
 import { withoutHiddenIn } from './hiddenWords.js';
-import { colonParts, withoutLinkLogins, wordsForTeammate } from './teammateOutput.js';
+import { shellWords } from './shellWords.js';
+import { colonParts, withoutLinkLogins, withoutRoot, wordsForTeammate } from './teammateOutput.js';
 
 // Anyone on the board may watch a coding agent's task, but a teammate never
 // sees the words of a file only this computer's owner opens (one that holds
@@ -119,16 +120,26 @@ const MAX_WILDCARDS = 32;
 
 /** True when some words (a command, a tool's input) name such a file or a hidden folder to work in, or may reach one. */
 export function namesOwnerOnly(words, { root = '', keysOnly = false } = {}) {
-  const list = String(words || '').split(/\s+/).flatMap(spelledOut).join(' ')
-    .split(/[\s;|&<>()'"`=$,{}[\]]+/).filter(Boolean);
-  if (new Set(list.filter((word) => /[*?]/.test(word))).size > MAX_WILDCARDS) return true;
+  const text = String(words || '');
+  const bash = shellWords(text);
+  // Without the worktree's folder where a path starts in a word: {"file":"<worktree>/notes.md"} reads file:notes.md.
+  const read = (list) => (list.length ? withoutRoot(list.join('\0'), root).split('\0').flatMap(spelledOut) : []);
+  const lists = [
+    // Each word whole, as bash hands it on: `cat "server (1).pem"` names server (1).pem.
+    read(bash.words),
+    // What each pair of quotes holds, as a tool's input in JSON names a file: {"file":"secrets copy.json"}.
+    read(bash.quoted),
+    // And loosely, split at brackets, quotes and signs too: KEY=$(cat .env).
+    text.split(/\s+/).flatMap(spelledOut).join(' ').split(/[\s;|&<>()'"`=$,{}[\]]+/).filter(Boolean),
+  ];
+  if (new Set(lists.flat().filter((word) => /[*?]/.test(word))).size > MAX_WILDCARDS) return true;
   const judged = new Set(); // a word said again is judged once
-  return list.some((word, at) => {
+  return lists.some((list) => list.some((word, at) => {
     const isFile = !FOLDER_BEFORE.has(list[at - 1]);
     if (judged.has(`${isFile}:${word}`)) return false;
     judged.add(`${isFile}:${word}`);
     return [word, ...colonParts(word)].some((part) => part && (ownerOnlyStepPath(part, { root, isFile, keysOnly }) || globReachesSecret(part)));
-  });
+  }));
 }
 
 /** True when `title` repeats any eight characters in a row of `command`, as some agents title a step with its command, whole or cut short. */

@@ -1,0 +1,51 @@
+/* Image Studio window (src/components/windows/imageStudio): the drawing board
+   sits in a well, the tools are raised keys that sink when pressed, and the
+   gallery is its own lit side panel. Depth tokens come from depth.css. */
+.hb-is { flex: 1; min-height: 0; display: flex; background: var(--surface); color: var(--ink); }
+.hb-is-main { flex: 1; min-width: 0; padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-is-board { flex: 1; min-height: 0; overflow: hidden; }
+.hb-is-board-fill { fill: var(--layer-well); }
+
+.hb-is-tools { display: grid; gap: var(--space-2); }
+.hb-is-row { display: flex; flex-wrap: wrap; gap: var(--space-1-5); align-items: center; }
+.hb-is-label { color: var(--ink-soft); font: 700 var(--text-xs) / 1 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; }
+.hb-is-divider { width: 1px; height: var(--space-6); background: var(--hairline); }
+
+.hb-is-key { display: inline-grid; place-items: center; min-width: var(--space-6); height: var(--space-6); padding: 0 var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--layer-panel); box-shadow: var(--panel-shadow); color: var(--ink-soft); font: 700 var(--text-xs) / 1 var(--font-mono); cursor: pointer; transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.hb-is-key:hover:not(:disabled) { background: var(--layer-panel-hover); border-color: var(--hairline-strong); color: var(--ink); }
+.hb-is-key:active:not(:disabled) { transform: scale(var(--press-scale)); }
+.hb-is-key:focus-visible, .hb-is-swatch:focus-visible, .hb-is-go:focus-visible, .hb-is-more:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+.hb-is-key[aria-pressed='true'] { background: var(--accent); border-color: transparent; color: var(--accent-contrast); }
+.hb-is-key[aria-pressed='true']:hover { background: color-mix(in oklab, var(--accent) 88%, var(--ink)); color: var(--accent-contrast); }
+.hb-is-key:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+.hb-is-swatch { width: var(--space-6); height: var(--space-6); padding: 0; border: 1px solid var(--hairline); border-radius: var(--radius-full); box-shadow: var(--panel-shadow); cursor: pointer; transition: transform var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard); }
+.hb-is-swatch:hover { transform: translateY(-1px); }
+.hb-is-swatch:active { transform: scale(var(--press-scale)); }
+.hb-is-swatch[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent-line); }
+
+.hb-is-input { min-width: 0; background: var(--layer-well); box-shadow: var(--well-shadow); border: 1px solid var(--hairline); border-radius: var(--radius-md); color: var(--ink); font: inherit; font-size: var(--text-sm); padding: var(--space-2) var(--space-3); transition: border-color var(--dur-fast) var(--ease-standard); }
+.hb-is-input:hover { border-color: var(--hairline-strong); }
+.hb-is-input:focus { outline: none; border-color: var(--accent-line); }
+.hb-is-input-text { flex: 1 1 160px; min-width: 120px; padding: var(--space-1) var(--space-2); }
+.hb-is-input-main { flex: 1; font-size: var(--text-md); }
+.hb-is-notes { resize: vertical; font-family: var(--font-sans); }
+.hb-is-select { padding: 0 var(--space-2); }
+
+.hb-is-prompt { display: grid; gap: var(--space-2); }
+.hb-is-prompt > .hb-is-row { flex-wrap: nowrap; align-items: stretch; }
+.hb-is-go { display: inline-grid; place-items: center; padding: 0 var(--space-4); border: 0; border-radius: var(--radius-md); background: var(--accent); box-shadow: var(--panel-shadow); color: var(--accent-contrast); font: 700 var(--text-sm) / 1 var(--font-sans); cursor: pointer; transition: background var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.hb-is-go:hover:not(:disabled) { background: color-mix(in oklab, var(--accent) 88%, var(--ink)); }
+.hb-is-go:active:not(:disabled) { transform: scale(var(--press-scale)); }
+.hb-is-go:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+.hb-is-go[aria-busy='true'] { cursor: wait; }
+.hb-is-more { justify-self: start; padding: 0; border: 0; background: none; color: var(--ink-soft); font: 700 var(--text-xs) / 1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; transition: color var(--dur-fast) var(--ease-standard); }
+.hb-is-more:hover { color: var(--ink); }
+.hb-is-error { color: var(--danger-text); font-size: var(--text-sm); }
+
+.hb-is-side { width: 280px; display: flex; flex-direction: column; gap: var(--space-3); min-height: 0; padding: var(--space-3); background: var(--layer-panel); border-left: 1px solid var(--hairline); }
+.hb-is-side-title { font: 800 var(--text-xs) / 1.4 var(--font-mono); color: var(--ink); text-transform: uppercase; letter-spacing: 0.08em; }
+.hb-is-side-sub { color: var(--ink-soft); font-size: var(--text-sm); }
+.hb-is-side .hb-empty { flex: 1; align-self: stretch; max-width: none; justify-content: center; }
+.hb-is-list { overflow: auto; display: grid; gap: var(--space-3); padding-right: var(--space-0-5); }
+.hb-is-key[data-tone='danger'], .hb-is-key[data-tone='danger']:hover:not(:disabled) { background: color-mix(in oklab, var(--danger) 12%, var(--layer-panel)); color: var(--danger-text); }

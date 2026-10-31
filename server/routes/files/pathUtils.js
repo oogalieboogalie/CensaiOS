@@ -177,7 +177,9 @@ const WRITE_PROBLEMS = {
 export function fileWriteProblem(err) {
   const [status, reason] = (Object.hasOwn(WRITE_PROBLEMS, err?.code) && WRITE_PROBLEMS[err.code])
     || (err?.message?.startsWith('Access denied') ? [403, 'outside'] : [500, 'unsaved']);
-  return { status, reason, error: SAVE_PROBLEMS[reason] };
+  // A full disk met while writing in place (saveWhole.js) may have cut the file short.
+  const said = reason === 'full' && err.cutShort === true ? 'fullCutShort' : reason;
+  return { status, reason: said, error: SAVE_PROBLEMS[said] };
 }
 
 /** A Windows folder this (Docker) server has no copy of at all. */

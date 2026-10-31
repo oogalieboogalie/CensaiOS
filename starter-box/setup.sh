@@ -121,6 +121,24 @@ apt_install() {
   note "installing ${missing[*]}"
   apt-get install -y -q --no-install-recommends "${missing[@]}" >/dev/null
 }
+# Ollama answers anyone who can reach it (no password), so it listens beyond
+# this box only while the firewall is on and limits it to Docker.
+OLLAMA_DROPIN="${OLLAMA_DROPIN:-/etc/systemd/system/ollama.service.d/starter-box.conf}"
+firewall_active() { have ufw && ufw status 2>/dev/null | grep -q '^Status: active'; }
+ollama_open_to_docker() {
+  mkdir -p "$(dirname "$OLLAMA_DROPIN")"
+  printf '[Service]\nEnvironment="OLLAMA_HOST=0.0.0.0:11434"\n' > "$OLLAMA_DROPIN"
+  systemctl daemon-reload
+  systemctl restart ollama 2>/dev/null || true
+  note "Ollama reachable from censaiOS (the firewall keeps everyone else out)"
+}
+ollama_keep_private() {
+  [ -f "$OLLAMA_DROPIN" ] || return 0
+  rm -f "$OLLAMA_DROPIN"
+  systemctl daemon-reload
+  systemctl restart ollama 2>/dev/null || true
+  note "the firewall is off, so Ollama stays on this box only"
+}
 installed_desktop() {
   [ -n "$(ls -A /usr/share/xsessions /usr/share/wayland-sessions 2>/dev/null)" ]
 }
@@ -205,18 +223,13 @@ step_ollama() {
   else
     curl -fsSL https://ollama.com/install.sh | sh
   fi
-  # censaiOS runs in Docker and reaches Ollama through the host. Ollama only
-  # listens beyond this box when the firewall step limits it to Docker.
+  # censaiOS runs in Docker and reaches Ollama through the host. Ollama has no
+  # password, so it stays on this box only until the firewall is really on;
+  # the firewall step opens it to Docker after that.
   if [ "$INIT" = sysv ] && ! curl -fs -o /dev/null --max-time 3 http://127.0.0.1:11434/api/version; then
     note "Ollama does not start by itself on this system; start it with: ollama serve &"
   fi
-  if [ "$INIT" = systemd ] && wanted firewall; then
-    mkdir -p /etc/systemd/system/ollama.service.d
-    printf '[Service]\nEnvironment="OLLAMA_HOST=0.0.0.0:11434"\n' \
-      > /etc/systemd/system/ollama.service.d/starter-box.conf
-    systemctl daemon-reload
-    systemctl restart ollama 2>/dev/null || true
-  fi
+  if [ "$INIT" = systemd ] && ! firewall_active; then ollama_keep_private; fi
   if [ -n "${STARTER_BOX_MODEL:-}" ]; then
     note "downloading $STARTER_BOX_MODEL (this can take a while)"
     ollama pull "$STARTER_BOX_MODEL" || warn "could not download $STARTER_BOX_MODEL; try later with: ollama pull $STARTER_BOX_MODEL"
@@ -325,7 +338,11 @@ step_firewall() {
   ufw allow 3004/tcp comment 'censaiOS Open anywhere' >/dev/null
   ufw allow in on tailscale0 comment 'your own devices on Tailscale' >/dev/null
   ufw allow from 172.16.0.0/12 to any port 11434 proto tcp comment 'censaiOS to Ollama' >/dev/null
-  ufw --force enable >/dev/null && note "firewall on"
+  ufw --force enable >/dev/null || die "could not turn the firewall on; Ollama stays on this box only. Run: sudo bash $0 --only firewall"
+  note "firewall on"
+  # Only now, with the firewall on and limiting it to Docker, may Ollama
+  # listen beyond this box (censaiOS in Docker reaches it that way).
+  if [ "$INIT" = systemd ] && have ollama && firewall_active; then ollama_open_to_docker; fi
 }
 
 step_keys() {

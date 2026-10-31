@@ -6,6 +6,7 @@ import { approvalRequestHash, sanitizeApprovalArguments } from './requestContrac
 import { toolHasApprovalModule } from '../../src/data/agent-capability-modules.js';
 import { toolPackageLockKey } from '../capabilities/packageCatalog.js';
 import { agentIsTrusted, TRUSTED_ROLES } from './trustMode.js';
+import { assertHelperTrusted } from './helperTrust.js';
 
 export class ToolApprovalError extends Error {
   constructor(message, statusCode = 400, code = 'TOOL_APPROVAL_INVALID') {
@@ -26,8 +27,14 @@ function canonicalAgentId(value) {
 
 export async function requestToolApprovalIfRequired(db, { agentId, toolName, args, context = {} }) {
   const workspaceId = String(context.workspaceId || '').trim();
+  // Helper agents have no approval card; with Trust mode off their writes and
+  // commands refuse instead (server/approvals/helperTrust.js).
+  if (!FAMILY_AGENT_BY_ID[String(agentId || '').trim().toLowerCase()]) {
+    return assertHelperTrusted(db, {
+      agentId, toolName, workspaceId, approvalTool: toolHasApprovalModule(toolName),
+    });
+  }
   if (!toolHasApprovalModule(toolName)) return { required: false };
-  if (!FAMILY_AGENT_BY_ID[String(agentId || '').trim().toLowerCase()]) return { required: false };
   if (!workspaceId) {
     throw new ToolApprovalError(
       'Approval-controlled family tools require a signed workspace.',

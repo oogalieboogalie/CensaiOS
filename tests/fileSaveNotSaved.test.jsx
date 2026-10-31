@@ -89,6 +89,7 @@ describe('the words for a save that did not happen', () => {
     [403, 'owner-only', true, SAVE_PROBLEMS.ownerOnly, false],
     [400, 'folder', true, SAVE_PROBLEMS.folder, false],
     [507, 'full', true, SAVE_PROBLEMS.full, false],
+    [507, 'fullCutShort', true, SAVE_PROBLEMS.fullCutShort, false],
     [403, 'filesOff', true, SAVE_PROBLEMS.filesOff, false],
     [500, 'unsaved', true, SAVE_PROBLEMS.unsaved, false],
     [403, undefined, false, 'You may not save this file here.', false],

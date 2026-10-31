@@ -7,6 +7,7 @@ import { usePresenceNotices } from './usePresenceNotices.js';
 import { useWorkspaceCollaboration } from './useWorkspaceCollaboration.js';
 import { useYjsCanvas } from './useYjsCanvas.js';
 import { emitBoardEvent } from '../../lib/collaboration/boardEvents.js';
+import { useAgentChanges } from '../../lib/collaboration/agentChanges.js';
 import { DEMO } from '../../lib/demo/demoMode.js';
 
 export function useAppCollaboration({ enabled: wanted, workspaceId, wins, revision, onRevision, activeId, user, selectedIds, holdDraft }) {
@@ -82,7 +83,10 @@ export function useAppCollaboration({ enabled: wanted, workspaceId, wins, revisi
       sendInk: socket.send,
       sendGame: socket.send,
       sendDock: socket.send,
+      sendAgent: socket.send,
     });
   }, [crdtLive, collaboration.sendCursor, collaboration.sendTyping, socket.sendTextPreview, socket.send]);
+  // A teammate's model picked in a chat shows on this board's copies at once.
+  useAgentChanges(enabled, socket.status);
   return { persistence, collaboration, crdtStatus: yjs.status };
 }

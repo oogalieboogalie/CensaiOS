@@ -51,7 +51,7 @@ export const colonParts = (text) => text.split(/(?<!^[A-Za-z]):/);
 export const withoutLinkLogins = (words) => String(words).replace(LINK_LOGIN, '$1…@');
 
 /** `words` without the worktree's own folder, only where a path starts: git's "a/" before an absolute path keeps it, so that path is judged whole. */
-function withoutRoot(words, root) {
+export function withoutRoot(words, root) {
   if (!root) return words;
   return words.replace(new RegExp(`(?<![\\w.-])${root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\\\/]`, 'g'), '');
 }

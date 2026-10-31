@@ -299,11 +299,13 @@ describe('key files a service, a framework or Terraform names', () => {
   const keys = [
     'serviceAccountKey.json', 'made-up-app-firebase-adminsdk-ab1cd-0123456789.json', 'client_secret_0123-made-up.apps.googleusercontent.com.json',
     path.join('config', 'secrets.yml'), 'secrets.json', 'terraform.tfvars', path.join('infra', 'made-up.auto.tfvars'),
+    path.join('infra', 'terraform.tfstate'), path.join('infra', 'terraform.tfstate.backup'), path.join('infra', 'prod.tfvars'),
   ];
 
   test("open only for Pat, the owner, while their examples open for Sam", async () => {
     for (const name of keys) write(cloud(name), `made_up_key: ${KEY_WORDS}\n`);
     write(cloud('secrets.example.json'), '{ "made_up_key": "" }\n');
+    write(cloud('infra', 'prod.tfvars.example'), 'made_up_password = ""\n');
     for (const name of keys) {
       const res = await read(SAM, cloud(name)).expect(403);
       expect(res.body).toEqual(OWNER_ONLY);
@@ -313,5 +315,6 @@ describe('key files a service, a framework or Terraform names', () => {
       expect(body.ownerOnly).toBe(true);
     }
     expect((await read(SAM, cloud('secrets.example.json')).expect(200)).body.content).toBe('{ "made_up_key": "" }\n');
+    expect((await read(SAM, cloud('infra', 'prod.tfvars.example')).expect(200)).body.content).toBe('made_up_password = ""\n');
   });
 });

@@ -7,7 +7,9 @@ import { jest } from '@jest/globals';
 import { getDefaultWindowSize, WINDOW_MANIFESTS } from '../src/lib/windowManifest.js';
 import { wakeUpWindows } from '../src/lib/wakeUp/boardWakeUp.js';
 import { layoutTemplateBoard } from '../src/lib/templates/boardTemplates.js';
-import { CanvasStarterGrid } from '../src/components/canvas/CanvasStarterGrid.jsx';
+import { EmptyState } from '../src/components/canvas/CanvasEmptyState.jsx';
+import { LAUNCHPAD_STARTS } from '../src/lib/launchpadStarts.js';
+import { PROPS_BY_KIND } from '../src/lib/modules/addPaletteItems.js';
 
 const sizeOf = (spawnArgs) => spawnArgs[3];
 
@@ -30,15 +32,20 @@ describe('one default window size, wherever a window comes from', () => {
     }
   });
 
-  test('no Start-here or launcher shortcut carries its own size', () => {
+  test('no starting button or launcher block carries its own size', () => {
     expect(WINDOW_MANIFESTS.filter((m) => m.launcher?.sizeOverride).map((m) => m.kind)).toEqual([]);
   });
 
-  test('the Start-here grid opens a window the same way the Add menu does', () => {
-    const scheduler = WINDOW_MANIFESTS.find((m) => m.kind === 'scheduler');
+  test('the empty board\'s starting buttons open a window the same way the Add menu does', () => {
     const onSpawn = jest.fn();
-    render(<CanvasStarterGrid starters={[scheduler]} onSpawn={onSpawn} />);
-    fireEvent.click(screen.getByText(scheduler.launcher.label));
-    expect(onSpawn).toHaveBeenCalledWith('scheduler', scheduler.launcher.props);
+    render(<EmptyState onSpawn={onSpawn} />);
+    // "Browse modules" opens Add itself rather than a window.
+    const opens = LAUNCHPAD_STARTS.filter((start) => start.kind !== 'marketplace');
+    expect(opens.length).toBeGreaterThan(0);
+    for (const start of opens) {
+      fireEvent.click(screen.getByText(start.label));
+      // The kind and Add's own props for it, and no size of its own.
+      expect(onSpawn).toHaveBeenLastCalledWith(start.kind, PROPS_BY_KIND[start.kind] || {});
+    }
   });
 });

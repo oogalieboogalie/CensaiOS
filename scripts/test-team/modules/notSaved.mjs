@@ -8,7 +8,11 @@
 // Sam Example, a teammate, types in the note and presses Save: Sam's window
 // says only this computer's owner can save files, Sam's line stays on Sam's
 // screen and the file is unchanged; Close takes the words away and leaves
-// the line. Bug hunt: the code file replaced by a folder outside censaiOS
+// the line. A note kept on a small disk (a 128 KB tmpfs, only where this
+// machine can make one: root and mount): the disk fills up while Pat adds a
+// long passage and presses Save, the Document says the disk is full and the
+// file on disk is as it was, the passage stays on screen, and once there is
+// room Save keeps it all. Bug hunt: the code file replaced by a folder outside censaiOS
 // says so in plain words, never the server's own, and Files' New file with
 // the name of a file already there says so and leaves that file as it was.
 // Red team: Sam's save sent straight to the server is refused and writes
@@ -17,6 +21,7 @@
 // The board's list of open projects is put back as the module found it. All
 // files and words are made up.
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -24,6 +29,7 @@ import { updateWindow, windowFrame } from '../../e2e/board.mjs';
 import { ROOT } from '../../e2e/runner.mjs';
 import * as fileProblems from '../../../shared/files/fileProblems.js';
 import { addFromMenu } from '../addMenu.mjs';
+import { skip } from '../report.mjs';
 import { sideBySide } from '../sideBySide.mjs';
 
 const SAVE = fileProblems.SAVE_PROBLEMS || {};
@@ -41,6 +47,12 @@ const LINES = {
   codeAway: '// made-up line typed while its folder was away',
   sam: 'Made-up line typed on the teammate screen.',
 };
+const SMALL_DISK = 'small-disk';
+const SMALL_NOTE = 'made-up-small-disk-note.md';
+const SMALL_TEXT = 'Made-up note on a small disk: the plan for the garden.';
+// Far longer than the room left on the small disk, so writing it fills the disk partway.
+const PASSAGE_MARK = 'Made-up passage too long for the disk';
+const PASSAGE = Array.from({ length: 400 }, (_, i) => `${PASSAGE_MARK}, line ${i + 1}.`).join('\n');
 const TECHNICAL = /status \d|ENOENT|EISDIR|EACCES|no such file|illegal operation|Access denied|the server said|undefined/i;
 
 const STATE_DIR = process.env.CENSAI_STATE_DIR ? path.resolve(process.env.CENSAI_STATE_DIR) : path.join(ROOT, '.homebase-state');
@@ -128,6 +140,49 @@ function sayingProblems(who, said, want, dir) {
 
 const fileHas = (file, words) => fs.existsSync(file) && fs.readFileSync(file, 'utf8').includes(words);
 
+/** A small disk (a 128 KB tmpfs) at `folder`, or null where this machine cannot make one. */
+function makeSmallDisk(folder) {
+  fs.mkdirSync(folder);
+  try {
+    execFileSync('mount', ['-t', 'tmpfs', '-o', 'size=128k', 'tmpfs', folder], { stdio: 'ignore' });
+    return folder;
+  } catch {
+    fs.rmdirSync(folder);
+    return null;
+  }
+}
+
+/** Fills the small disk until about one 4 KB block is left, the way another program would; the filler file. */
+function fillDisk(folder) {
+  const filler = path.join(folder, 'made-up-filler.bin');
+  const fd = fs.openSync(filler, 'w');
+  const room = () => { const s = fs.statfsSync(folder); return s.bavail * s.bsize; };
+  try {
+    while (room() > 4096) fs.writeSync(fd, Buffer.alloc(4096));
+  } catch {
+    // Full already.
+  } finally {
+    fs.closeSync(fd);
+  }
+  return filler;
+}
+
+/** Adds `text` on a new line at the end of a Document all at once, as pasting does. */
+async function addPassage(page, id, text) {
+  const frame = windowFrame(page, id);
+  if (!(await frame.locator('textarea').count())) await frame.locator('[data-doc-body]').first().click();
+  await frame.locator('textarea').first().click({ timeout: 5_000 });
+  await page.keyboard.press('Control+End');
+  await page.keyboard.press('Enter');
+  await page.keyboard.insertText(text);
+}
+
+/** Closes a window with its own close button, the way a person does. */
+async function closeWindow(page, id) {
+  await windowFrame(page, id).locator('[data-window-control="close"]').click({ timeout: 5_000 });
+  await page.waitForFunction((wid) => !window.__e2eStore.getState().wins.some((w) => w.id === wid), id, { timeout: 5_000 });
+}
+
 export default {
   id: 'notSaved',
   label: 'A Save that did not save says so',
@@ -144,8 +199,11 @@ export default {
     fs.writeFileSync(notePath, `${NOTE_TEXT}\n`);
     fs.writeFileSync(codePath, CODE_TEXT);
     fs.writeFileSync(listPath, `${LIST_TEXT}\n`);
+    const smallDisk = makeSmallDisk(path.join(dir, SMALL_DISK));
+    const smallNote = smallDisk && path.join(smallDisk, SMALL_NOTE);
+    if (smallNote) fs.writeFileSync(smallNote, `${SMALL_TEXT}\n`);
     // The made-up folder is typed into Files: the harness checks no log names it either.
-    t.typed.push(NOTE_TEXT, CODE_WORD, LIST_TEXT, ...Object.values(LINES), path.basename(dir));
+    t.typed.push(NOTE_TEXT, CODE_WORD, LIST_TEXT, SMALL_TEXT, PASSAGE_MARK, ...Object.values(LINES), path.basename(dir));
     let filesId = null;
     let docId = null;
     let codeId = null;
@@ -246,6 +304,51 @@ export default {
         return `Sam's Document says "${said}", and the file on disk is as it was; Close takes the words away and leaves Sam's line`;
       });
 
+      await check('walk', 'a note kept on a small disk: the disk fills up while Pat adds a long passage and presses Save; the Document says the disk is full and the file on disk is as it was, with the passage still on screen; once there is room, Save keeps it all', async ({ shot }) => {
+        if (!smallDisk) throw skip('this machine cannot make a small disk to fill (it needs root and mount)');
+        if (!filesId) throw new Error('Files did not open in the first step');
+        // The board as it opened, and Files where all of it shows, so its rows take clicks;
+        // the view is put back after, so the steps that follow find their windows where they were.
+        const view = await pat.page.evaluate(() => { const st = window.__e2eStore.getState(); return { pan: { ...st.pan }, zoom: st.zoom }; });
+        await pat.page.evaluate(() => { const st = window.__e2eStore.getState(); st.setZoom(1); st.setPan({ x: 0, y: 0 }); });
+        await updateWindow(pat.page, filesId, { x: 540, y: 100 });
+        await sam.page.mouse.move(8, 8);
+        let id = null;
+        try {
+          await openFromTree(pat.page, filesId, SMALL_DISK);
+          if (!(await waitFor(async () => (await windowFrame(pat.page, filesId).getByText(SMALL_NOTE).count()) > 0, pat.page))) {
+            throw new Error('Files does not list the note on the small disk');
+          }
+          id = await openFromTree(pat.page, filesId, SMALL_NOTE, 'doc', { x: 300, y: 100 });
+          if (!(await waitFor(async () => (await shownText(pat.page, id)).includes(SMALL_TEXT), pat.page))) throw new Error('the note opened without its words');
+          const filler = fillDisk(smallDisk);
+          await addPassage(pat.page, id, PASSAGE);
+          await pressSave(pat.page, id);
+          const said = await sayingOf(pat.page, id, (s) => s !== '' && !/^saved/i.test(s));
+          await pat.page.mouse.move(8, 8);
+          await shot(pat.page, 'not-saved-disk-full');
+          const problems = sayingProblems("Pat's Document", said, notSaved(SMALL_NOTE, SAVE.full), dir);
+          const onDisk = fs.readFileSync(smallNote, 'utf8');
+          if (onDisk !== `${SMALL_TEXT}\n`) problems.push(onDisk.includes(PASSAGE_MARK) ? `the file on disk was cut short (${onDisk.length} of ${SMALL_TEXT.length + PASSAGE.length + 2} characters)` : 'the file on disk changed');
+          const beside = fs.readdirSync(smallDisk).filter((name) => ![SMALL_NOTE, path.basename(filler)].includes(name));
+          if (beside.length) problems.push(`a half-written copy was left beside the note (${beside.length} file${beside.length === 1 ? '' : 's'})`);
+          if (!(await shownText(pat.page, id)).includes(PASSAGE_MARK)) problems.push('the passage is gone from the screen');
+          fs.rmSync(filler);
+          await pressSave(pat.page, id);
+          if (!(await waitFor(async () => fileHas(smallNote, `${PASSAGE_MARK}, line 400.`), pat.page))) problems.push('once there was room, Save did not keep the passage');
+          const after = await sayingOf(pat.page, id, (s) => !/not saved/i.test(s), 5_000);
+          await pat.page.mouse.move(8, 8);
+          await shot(pat.page, 'saved-once-there-is-room');
+          if (/not saved/i.test(after)) problems.push(`once there was room, the Document still says ${sayWhat(after)}`);
+          if (problems.length) throw new Error(problems.join('; '));
+          return `the Document says "${said}"; the file on disk kept its words with nothing beside it, and once there was room Save kept the passage`;
+        } finally {
+          if (id) await closeWindow(pat.page, id).catch(() => {});
+          await updateWindow(pat.page, filesId, { x: 540, y: 480 }).catch(() => {});
+          await pat.page.evaluate((v) => { const st = window.__e2eStore.getState(); st.setZoom(v.zoom); st.setPan(v.pan); }, view).catch(() => {});
+        }
+      });
+
       await check('hunt', 'the code file replaced by a folder outside censaiOS: Save says so in plain words, never the server\'s own', async ({ shot }) => {
         if (!codeId) throw new Error('the code file did not open in the first step');
         const kept = fs.readFileSync(codePath, 'utf8');
@@ -326,6 +429,10 @@ export default {
       });
     } finally {
       putBackOpenProjects();
+      if (smallDisk) {
+        // A lazy unmount when the small disk is still busy, so the made-up folder can go.
+        try { execFileSync('umount', [smallDisk], { stdio: 'ignore' }); } catch { try { execFileSync('umount', ['-l', smallDisk], { stdio: 'ignore' }); } catch { /* left for the machine */ } }
+      }
       for (const folder of [dir, away]) fs.rmSync(folder, { recursive: true, force: true });
     }
   },

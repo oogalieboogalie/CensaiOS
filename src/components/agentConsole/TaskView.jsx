@@ -8,6 +8,7 @@ import { ChangesPanel } from './ChangesPanel.jsx';
 import { PrivateFileView } from './PrivateFileView.jsx';
 import { cliAgentsApi } from './cliAgentsApi.js';
 import { refreshCliRoster } from './useCliRoster.js';
+import { pathInside, slimProject } from '../../lib/windowProject.js';
 import { HIDDEN_MARK, HIDDEN_WORDS, OWNER_ONLY_RAW } from '../../../shared/files/fileProblems.js';
 
 const CLI_LABEL = { claudecode: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI', grok: 'Grok' };
@@ -81,7 +82,8 @@ function HandoffPanel({ task, onClose, onHandoff }) {
   );
 }
 
-export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
+/** `project`: the project this console's window names in its header, for a console Hand off opens. */
+export function TaskView({ taskId, live: liveState, onSpawn, onNewTask, project = null }) {
   const { task, items, changes, error, poll, loadChanges, live } = liveState;
   const [tab, setTab] = React.useState('transcript');
   const [followUp, setFollowUp] = React.useState('');
@@ -110,11 +112,12 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
   const decide = (permissionId, allow) => act(() => cliAgentsApi.decide(taskId, permissionId, allow));
   const openFile = async (filePath) => {
     try {
-      const { content, ownerOnly } = await cliAgentsApi.file(taskId, filePath);
+      // A window's words reach everyone on the board, so a file only the owner may read stays here,
+      // and any other comes as a teammate sees it: a key the agent copied into it shows as [hidden].
+      const { content, ownerOnly, hiddenWords } = await cliAgentsApi.file(taskId, filePath, { board: true });
       const name = filePath.split('/').pop();
-      // A window's words reach everyone on the board, so a file only the owner may read stays here.
       if (ownerOnly) setPrivateFile({ path: filePath, content });
-      else onSpawn?.('code_editor', { title: `${name} · ${task?.cliLabel || 'agent'}`, fileName: name, code: content });
+      else onSpawn?.('code_editor', { title: `${name} · ${task?.cliLabel || 'agent'}`, fileName: name, code: content, ...(hiddenWords ? { hiddenWords: true } : {}) });
     } catch (err) {
       setActionError(err.message);
     }
@@ -137,7 +140,9 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
       return;
     }
     const { task: next } = await cliAgentsApi.handoff(taskId, target, instruction);
-    onSpawn?.('agentConsole', { taskId: next.id, cli: next.cli, title: next.cliLabel });
+    // The new console works in this one's folder, so it names the same project.
+    const same = next.folder && pathInside(next.folder, project?.path) ? { project: slimProject(project) } : {};
+    onSpawn?.('agentConsole', { taskId: next.id, cli: next.cli, title: next.cliLabel, ...(next.folder ? { folder: next.folder } : {}), ...same });
     refreshCliRoster(true);
   };
 

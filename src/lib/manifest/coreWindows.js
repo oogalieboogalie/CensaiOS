@@ -11,7 +11,7 @@ export const CORE_WINDOW_MANIFESTS = [
     componentPath: 'src/components/ChatWindow.jsx',
     defaultSize: { w: 360, h: 420 },
     lab: { props: { agentId: 'censai' } },
-    launcher: { show: true, order: 10, icon: 'Chat', label: 'Chat with Censai', hint: 'memory-aware workspace chat', props: { agentId: 'censai' } },
+    launcher: { show: true, order: 10, icon: 'Chat', hint: 'memory-aware workspace chat', props: { agentId: 'censai' } },
   },
   {
     kind: 'groupChat',
@@ -20,7 +20,7 @@ export const CORE_WINDOW_MANIFESTS = [
     componentName: 'GroupChatWindow',
     componentPath: 'src/components/GroupChatWindow.jsx',
     defaultSize: { w: 420, h: 540 },
-    launcher: { show: true, startHere: true, startHereOrder: 20, order: 20, icon: 'Group', label: 'Open team room', hint: 'coordinate multiple agents' },
+    launcher: { show: true, order: 20, icon: 'Group', hint: 'coordinate multiple agents' },
   },
   // Model arena: one request to up to four models, raced side by side.
   {
@@ -66,7 +66,7 @@ export const CORE_WINDOW_MANIFESTS = [
     componentName: 'TodosWindow',
     componentPath: 'src/components/TodosWindow.jsx',
     defaultSize: { w: 320, h: 360 },
-    launcher: { show: true, order: 30, icon: 'List', label: 'To-do list', hint: 'project tasks' },
+    launcher: { show: true, order: 30, icon: 'List', hint: 'project tasks' },
     lab: {
       title: 'Plan',
       props: {
@@ -104,7 +104,7 @@ export const CORE_WINDOW_MANIFESTS = [
     componentName: 'WorkflowWindow',
     componentPath: 'src/components/WorkflowWindow.jsx',
     defaultSize: { w: 980, h: 560 },
-    launcher: { show: true, order: 40, icon: 'NewWorkflow', label: 'Workflow', hint: 'chain agents on a node canvas' },
+    launcher: { show: true, order: 40, icon: 'NewWorkflow', hint: 'chain agents on a node canvas' },
   },
   {
     kind: 'files',
@@ -117,7 +117,7 @@ export const CORE_WINDOW_MANIFESTS = [
     persistence: 'local_only',
     entitlement: 'local_filesystem.access',
     modeAvailability: { cloud_saas: false },
-    launcher: { show: true, order: 50, icon: 'Folder', label: 'Project files', hint: 'VS Code-style' },
+    launcher: { show: true, order: 50, icon: 'Folder', hint: 'VS Code-style' },
   },
   {
     kind: 'doc',
@@ -169,7 +169,7 @@ export const CORE_WINDOW_MANIFESTS = [
     componentName: 'AppearanceWindow',
     componentPath: 'src/components/AppearanceWindow.jsx',
     defaultSize: { w: 960, h: 580 },
-    launcher: { show: true, order: 60, icon: 'Gear', label: 'Settings', hint: 'appearance, sharing & AI keys' },
+    launcher: { show: true, order: 60, icon: 'Gear', hint: 'appearance, sharing & AI keys' },
   },
   // Git Diff Viewer (diagram 16): before | after, split by a red line.
   {

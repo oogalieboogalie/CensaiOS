@@ -31,7 +31,9 @@ describe('Run a new container from an image', () => {
     const list = await request(app).get('/api/docker/containers');
     const made = list.body.containers.find((c) => c.name === 'mail-test');
     expect(made).toMatchObject({ state: 'running', image: 'axllent/mailpit:latest' });
-    expect(logged).toEqual([['info', expect.stringMatching(/run: started axllent\/mailpit:latest as mail-test, ports 8025:8025, 1025:1025, 0 settings, shared folder no, restart no/)]]);
+    expect(logged).toEqual([['info', expect.stringMatching(/^run: started a container, ports 8025:8025, 1025:1025, 0 settings, shared folder no, restart no \(\w+\)$/)]]);
+    // Neither the image nor the container's name: either can carry a project folder's name.
+    expect(JSON.stringify(logged)).not.toMatch(/mailpit|mail-test/);
   });
 
   test('a name already in use is Docker\'s own message, and the log says why', async () => {
@@ -39,7 +41,8 @@ describe('Run a new container from an image', () => {
     expect(res.status).toBe(500);
     expect(res.body.error).toMatch(/already in use/);
     expect(logged[0][0]).toBe('warn');
-    expect(logged[0][1]).toMatch(/could not start redis:7 as ollama.*: name taken$/);
+    expect(logged[0][1]).toMatch(/^run: could not start a container, .*: name taken$/);
+    expect(logged[0][1]).not.toMatch(/redis|ollama/);
   });
 
   test('nothing typed can become a docker flag', async () => {
@@ -74,8 +77,8 @@ describe('Run a new container from an image', () => {
     expect(info.mounts).toEqual([expect.objectContaining({ type: 'bind', source: 'D:\\data\\notes', destination: '/data' })]);
     expect(info.env.map((e) => e.key)).toEqual(['REDIS_PASSWORD', 'APP_MODE']);
     expect(info.env[0].masked).toBe(true);
-    expect(logged).toEqual([['info', expect.stringMatching(/run: started redis:7 as notes-db, ports 6380:6379, 2 settings, shared folder yes, restart unless-stopped/)]]);
-    expect(JSON.stringify(logged)).not.toMatch(/fake-pw|REDIS_PASSWORD|APP_MODE|D:|\/data/);
+    expect(logged).toEqual([['info', expect.stringMatching(/^run: started a container, ports 6380:6379, 2 settings, shared folder yes, restart unless-stopped/)]]);
+    expect(JSON.stringify(logged)).not.toMatch(/fake-pw|REDIS_PASSWORD|APP_MODE|D:|\/data|redis|notes-db/);
   });
 
   test('bad settings, folders and restart choices are refused before Docker runs', async () => {

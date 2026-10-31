@@ -1,6 +1,7 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
-import { MAKE_AGAIN, githubKeepsLine, keptOutLine, madeAgainLine, makeAgainQuestion } from '../../../shared/files/versionWords.js';
+import { MAKE_AGAIN, NEW_KEYS_DONE, githubKeepsLine, keptOutLine, madeAgainLine, makeAgainQuestion, newKeysLine } from '../../../shared/files/versionWords.js';
+import { useComputerOwner } from '../docker/useComputerOwner.js';
 
 // The bottom of a Files window: save versions of the project and send them
 // to GitHub as a pull request, without leaving the board. Polls the
@@ -8,7 +9,8 @@ import { MAKE_AGAIN, githubKeepsLine, keptOutLine, madeAgainLine, makeAgainQuest
 // tree (onChanged) and the "unsaved changes" count stays true. Files that
 // hold keys or passwords are never saved in a version, and the bar says so;
 // when earlier versions hold one, a refused send offers to make the versions
-// GitHub does not have yet again without it, after asking.
+// GitHub does not have yet again without it, after asking. Such a file GitHub
+// already keeps is named until this computer's owner says they made new keys.
 
 const POLL_MS = 5000;
 
@@ -32,6 +34,8 @@ export function ProjectVersions({ dirPath, onChanged, onSpawn }) {
   const [offer, setOffer] = React.useState(null); // a refused send: { path, keptOut, githubHas, onMain, versions }
   const [asking, setAsking] = React.useState(false);
   const [made, setMade] = React.useState(null);
+  const [putAway, setPutAway] = React.useState(null);
+  const isOwner = useComputerOwner();
   const signature = React.useRef('');
   // The folder on show: an answer about another one (the window moved on while it was asked) is dropped.
   const shown = React.useRef(dirPath);
@@ -59,6 +63,7 @@ export function ProjectVersions({ dirPath, onChanged, onSpawn }) {
     setOffer(null);
     setAsking(false);
     setMade(null);
+    setPutAway(null);
     setForm(null);
     setText('');
     setBusy(false);
@@ -75,6 +80,7 @@ export function ProjectVersions({ dirPath, onChanged, onSpawn }) {
     setBusy(true);
     setError('');
     setMade(null);
+    setPutAway(null);
     try {
       const result = await fn();
       if (shown.current !== asked) return null;
@@ -131,6 +137,12 @@ export function ProjectVersions({ dirPath, onChanged, onSpawn }) {
     setAsking(false);
     setMade(result);
   };
+  // The owner made new keys: the line puts away the files it names.
+  const newKeys = async () => {
+    const names = status.githubKeeps;
+    const result = await run(() => api.markProjectNewKeys(dirPath, names));
+    if (result) setPutAway(names.filter((name) => !(result.githubKeeps || []).includes(name)));
+  };
 
   return (
     <div style={bar} data-testid="project-versions" onPointerDown={stop}>
@@ -156,8 +168,12 @@ export function ProjectVersions({ dirPath, onChanged, onSpawn }) {
         <div data-testid="project-versions-kept-out" style={{ color: 'var(--ink-faint)' }}>{keptOutLine(status.keptOut)}</div>
       )}
       {status.githubKeeps?.length > 0 && (
-        <div data-testid="project-versions-github-keeps" style={{ color: 'var(--warning-text)' }}>{githubKeepsLine(status.githubKeeps)}</div>
+        <div data-testid="project-versions-github-keeps" style={{ color: 'var(--warning-text)' }}>
+          {githubKeepsLine(status.githubKeeps)}
+          {isOwner && <>{' '}<button style={{ ...btn, padding: '2px 7px' }} disabled={busy} onClick={newKeys} data-testid="project-versions-new-keys">{NEW_KEYS_DONE}</button></>}
+        </div>
       )}
+      {putAway?.length > 0 && <div style={{ color: 'var(--accent-ink)' }} data-testid="project-versions-new-keys-done">{newKeysLine(putAway)}</div>}
       {form && (
         <div style={{ display: 'flex', gap: 6 }}>
           <input autoFocus value={text} onChange={(e) => setText(e.target.value)} style={field}

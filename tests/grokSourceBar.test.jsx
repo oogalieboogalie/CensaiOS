@@ -36,7 +36,7 @@ function mockServer({ installed = true, signedIn = false, login = null } = {}) {
       return ndjson([
         { type: 'delta', text: 'Hello from ' },
         { type: 'delta', text: 'your plan.' },
-        { type: 'result', text: 'Hello from your plan.', grokSessionId: 'sess-42' },
+        { type: 'result', text: 'Hello from your plan.' },
       ]);
     }
     return { ok: true, json: async () => ({}) };
@@ -65,7 +65,7 @@ test('signed out, the key is used until the person picks their sign-in', async (
   await waitFor(() => expect(screen.getByRole('radio', { name: 'xAI key' })).toHaveAttribute('aria-checked', 'true'));
   expect(hook.sendVia).toBeNull();
   fireEvent.click(screen.getByRole('radio', { name: 'My Grok sign-in' }));
-  expect(onUpdate).toHaveBeenCalledWith({ grokVia: 'signin', grokSessionId: null });
+  expect(onUpdate).toHaveBeenCalledWith({ grokVia: 'signin' });
 });
 
 // The link xAI's `grok login --device-auth` (1.0.70) prints has the code in it
@@ -124,22 +124,37 @@ test('not installed says so and points to the key meanwhile', async () => {
   expect(await screen.findByTestId('grok-not-installed')).toHaveTextContent(/pick "xAI key"/);
 });
 
-test('signed in, chats go through the sign-in and keep Grok\'s conversation', async () => {
+test('signed in, chats go through the sign-in and name the chat, never a Grok conversation', async () => {
   const calls = mockServer({ signedIn: true });
   const onUpdate = jest.fn();
+  // A window from before each person kept their own conversation still holds one; it is never sent.
   render(<Harness win={{ id: 'w1', grokSessionId: 'sess-41' }} onUpdate={onUpdate} />);
   await waitFor(() => expect(screen.getByRole('radio', { name: 'My Grok sign-in' })).toHaveAttribute('aria-checked', 'true'));
   expect(screen.getByText(/no API cost/)).toBeInTheDocument();
   const deltas = [];
   let reply;
   await act(async () => {
-    reply = await hook.sendVia('agent-1', [{ from: 'me', text: 'Hi' }, { from: 'agent-1', text: 'Hey' }, { from: 'me', text: 'Plan?' }], { onDelta: (t) => deltas.push(t) });
+    reply = await hook.sendVia('agent-1', [{ from: 'me', text: 'Hi' }, { from: 'agent-1', text: 'Hey' }, { from: 'me', text: 'Plan?' }], { conversationId: 'chat:w1', workspaceId: 'made-up-board', onDelta: (t) => deltas.push(t) });
   });
   expect(reply.text).toBe('Hello from your plan.');
   expect(deltas.join('')).toBe('Hello from your plan.');
-  expect(onUpdate).toHaveBeenCalledWith({ grokSessionId: 'sess-42' });
   const sent = calls.find((c) => c.url.endsWith('/chat')).body;
-  expect(sent).toEqual({ text: 'Plan?', sessionId: 'sess-41', history: [{ from: 'me', text: 'Hi' }, { from: 'agent', text: 'Hey' }] });
+  // The board is part of the chat's name: two boards' chats never share one person's conversation.
+  expect(sent).toEqual({ text: 'Plan?', chat: 'made-up-board/chat:w1', history: [{ from: 'me', text: 'Hi' }, { from: 'agent', text: 'Hey' }] });
+  // Each person's conversation is kept on the server, never on the window everyone shares.
+  expect(onUpdate.mock.calls.flat().filter((update) => 'grokSessionId' in update)).toEqual([]);
+});
+
+test("the chat's error notes and stopped answers are never handed to Grok as its own words", async () => {
+  const calls = mockServer({ signedIn: true });
+  await sendGrokSigninMessage([
+    { from: 'me', text: 'Hi' },
+    { from: 'agent-1', text: 'Grok stopped: made-up hiccup.', error: { code: 'GROK_CHAT_FAILED' } },
+    { from: 'agent-1', text: '(stopped before replying)', stopped: true },
+    { from: 'agent-1', text: 'Hey' },
+    { from: 'me', text: 'Plan?' },
+  ], { conversationId: 'chat:w1' });
+  expect(calls.find((c) => c.url.endsWith('/chat')).body.history).toEqual([{ from: 'me', text: 'Hi' }, { from: 'agent', text: 'Hey' }]);
 });
 
 test('files stay on the key route for now', async () => {

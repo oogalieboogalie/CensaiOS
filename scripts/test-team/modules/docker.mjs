@@ -4,7 +4,8 @@
 // missing and odd container names, a huge log request, a bad image name,
 // sharing the whole drive or Docker's own socket. Red team: signed out, and
 // Sam (a teammate) trying the owner-only actions and reads. The container's
-// log line and the image's build steps must never reach the app log.
+// log line and the image's build steps must never reach the app log, nor
+// the made-up names: Docker's names often carry a project folder's name.
 //
 // Needs a Docker engine on the machine the test runs on; without one every
 // step is "skip". The test makes one small image, container, volume, network
@@ -85,6 +86,7 @@ export default {
     const need = () => { if (!ready) throw skip('no Docker engine on this machine'); };
     const asPat = (method, url, data) => t.api(pat, method, url, data);
     const asSam = (method, url, data) => t.api(sam, method, url, data);
+    const logStart = t.serverLog().length;
     try {
       let id;
       await check('walk', 'With no Docker it can reach, the window says why in plain words', async ({ shot }) => {
@@ -160,6 +162,13 @@ export default {
         await shot(pat.page, 'pat-sees-the-compose-project');
         await frame.getByRole('tab', { name: /Containers/ }).click();
         return `the ${PROJECT} project is listed`;
+      });
+      await check('walk', 'Pat restarts the made-up Compose project', async () => {
+        need();
+        const projects = (await asPat('GET', '/api/docker/compose')).body?.projects || [];
+        if (!projects.some((p) => p.name === PROJECT)) throw skip('docker compose could not start the made-up project here');
+        expectStatus(await asPat('POST', `/api/docker/compose/${PROJECT}/restart`), [200], 'compose restart');
+        return 'Docker restarted the made-up project';
       });
       await check('walk', 'Sam sees the Docker window on the shared board', async ({ shot }) => {
         need();
@@ -238,6 +247,17 @@ export default {
         const res = await t.api({ ctx: signedOut }, 'GET', `/api/docker/images/history?ref=${encodeURIComponent(MADE)}`);
         if (res.status !== 401 && res.status !== 403) throw new Error(`answered ${res.status} with no sign-in`);
         return `answered ${res.status}`;
+      });
+      await check('redteam', 'the app log says what Pat did and never names the made-up container, image, volume, network or Compose project', async () => {
+        need();
+        const added = t.serverLog().slice(logStart).split('\n');
+        const did = added.filter((line) => line.includes('[docker]') && /container: done|compose restart: done|read an image's layers/.test(line));
+        const naming = added.filter((line) => line.toLowerCase().includes(PROJECT));
+        const problems = [];
+        if (!did.length) problems.push('no docker line says what Pat did');
+        if (naming.length) problems.push(`${naming.length} log lines name a made-up container, image, volume, network or project, e.g. "${naming[0].replace(/^\S+\s+/, '').slice(0, 140)}"`);
+        if (problems.length) throw new Error(problems.join('; '));
+        return `${did.length} docker lines say what Pat did, e.g. "${did.map((line) => line.replace(/^.*\[docker\]\s*/, '')).join('", "').slice(0, 160)}"; none names the made-up ones`;
       });
     } finally {
       if (ready) await removeAll();

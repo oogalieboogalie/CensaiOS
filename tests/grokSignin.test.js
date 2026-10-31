@@ -37,8 +37,9 @@ describe('Grok chat on your own Grok sign-in', () => {
     expect(grokChatArgs({ prompt: 'x', sessionId: 'bad id; rm' })).not.toContain('-r');
   });
 
-  test('earlier messages ride along on the first sign-in turn only', () => {
+  test('the chat so far rides along on a first turn, and what was said meanwhile on a later one', () => {
     expect(grokPrompt('Now?', [{ from: 'me', text: 'Hi' }, { from: 'agent', text: 'Hello' }])).toBe('Earlier in this chat:\n\nMe: Hi\n\nYou: Hello\n\nNow:\nNow?');
+    expect(grokPrompt('Now?', [{ from: 'me', text: 'Hi' }], 'Meanwhile in this chat')).toBe('Meanwhile in this chat:\n\nMe: Hi\n\nNow:\nNow?');
     expect(grokPrompt('Only this')).toBe('Only this');
   });
 
@@ -61,7 +62,7 @@ describe('Grok chat on your own Grok sign-in', () => {
     expect(personalSignedIn(grok, 1, env)).toBe(true);
     expect(personalSignedIn(grok, 2, env)).toBe(false);
 
-    const result = await runGrokChat({ userId: 1, text: 'What is the latest news?', emit: (e) => events.push(e), env });
+    const result = await runGrokChat({ userId: 1, text: 'What is the latest news?', chat: 'chat:made-up-window', emit: (e) => events.push(e), env });
     expect(result.ok).toBe(true);
     const text = events.filter((e) => e.type === 'delta').map((e) => e.text).join('');
     expect(text).toMatch(/Grok sign-in of standin/);
@@ -70,10 +71,11 @@ describe('Grok chat on your own Grok sign-in', () => {
     expect(events.some((e) => e.type === 'status' && e.status === 'calling_tool')).toBe(true);
     const done = events.find((e) => e.type === 'result');
     expect(done.text).toBe(text);
-    expect(done.grokSessionId).toMatch(/^[0-9a-f-]{36}$/);
+    // The conversation is kept in the person's own folder, never handed to the browser.
+    expect(done).not.toHaveProperty('grokSessionId');
 
     const more = [];
-    await runGrokChat({ userId: 1, text: 'And then?', sessionId: done.grokSessionId, emit: (e) => more.push(e), env });
+    await runGrokChat({ userId: 1, text: 'And then?', chat: 'chat:made-up-window', emit: (e) => more.push(e), env });
     expect(more.find((e) => e.type === 'result').text).toMatch(/Picking up our conversation/);
 
     expect(() => runGrokChat({ userId: 2, text: 'hi', emit: () => {}, env })).toThrow(expect.objectContaining({ code: 'GROK_SIGNIN_REQUIRED' }));

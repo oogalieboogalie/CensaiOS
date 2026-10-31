@@ -10,12 +10,18 @@
  *                              $GROK_HOME/auth.json after STANDIN_GROK_LOGIN_MS
  *   grok logout                removes it
  *   grok -p <prompt> --output-format streaming-json [-r <id>] ...
- *                              refuses without auth.json; otherwise streams
- *                              thought / tool_call / text / end lines
+ *                              refuses without auth.json, or to pick up a
+ *                              conversation its folder does not have;
+ *                              otherwise streams thought / tool_call / text /
+ *                              end lines, naming the conversation and how
+ *                              many earlier messages the prompt handed it
  *   grok --prompt-file <path> ...   the same, with the prompt in a file
  *
  * STANDIN_GROK_EDIT=<file> makes a task write that file under --cwd, the way
- * an edit would; STANDIN_GROK_FAIL=<message> makes it fail with that error.
+ * an edit would; STANDIN_GROK_FAIL=<message> makes it fail with that error,
+ * before it says a word (or after its answer's words, with
+ * STANDIN_GROK_FAIL_LATE=1). STANDIN_GROK_FORGETS=1 makes it start a new
+ * conversation, without a word, when asked to pick up one it does not have.
  */
 import fs from 'fs';
 import os from 'os';
@@ -82,14 +88,25 @@ if (!fs.existsSync(authFile) && !process.env.XAI_API_KEY) {
 }
 
 const auth = fs.existsSync(authFile) ? JSON.parse(fs.readFileSync(authFile, 'utf8')) : null;
-const sessionId = resumed || crypto.randomUUID();
+// Like the real one, it keeps its conversations in its own folder, so it
+// cannot pick up one that another person's Grok started.
+const conversations = path.join(home, 'standin-conversations');
+const picked = Boolean(resumed) && fs.existsSync(path.join(conversations, path.basename(resumed)));
+if (resumed && !picked && !process.env.STANDIN_GROK_FORGETS) {
+  out({ type: 'error', message: `No conversation ${resumed.slice(0, 8)} in this Grok folder.` });
+  process.exit(1);
+}
+const sessionId = picked ? resumed : crypto.randomUUID();
+fs.mkdirSync(conversations, { recursive: true });
+fs.writeFileSync(path.join(conversations, sessionId), '');
 const ask = prompt.split('\n').pop().trim();
 out({ type: 'thought', data: 'Reading the question.' });
 await sleep(delay);
-if (process.env.STANDIN_GROK_FAIL) {
+const fail = () => {
   out({ type: 'error', message: process.env.STANDIN_GROK_FAIL });
   process.exit(1);
-}
+};
+if (process.env.STANDIN_GROK_FAIL && !process.env.STANDIN_GROK_FAIL_LATE) fail();
 if (process.env.STANDIN_GROK_EDIT) {
   const cwdAt = argv.indexOf('--cwd');
   const target = path.join(cwdAt >= 0 ? argv[cwdAt + 1] : process.cwd(), process.env.STANDIN_GROK_EDIT);
@@ -103,8 +120,13 @@ if (/news|search|today|latest/i.test(ask)) {
   await sleep(delay);
   out({ type: 'tool_call_update', toolCallId: 'call_1', status: 'completed', rawOutput: { results: 3 } });
 }
+// What the chat handed over before the message (server/grokSignin/chatRun.js, grokPrompt).
+const handedKind = /^Earlier in this chat:/.test(prompt) ? 'earlier' : /^Meanwhile in this chat:/.test(prompt) ? 'meanwhile' : null;
+const handed = handedKind ? (prompt.slice(0, prompt.lastIndexOf('\n\nNow:\n')).match(/^(Me|You): /gm) || []).length : 0;
 const lines = [
-  resumed ? `Picking up our conversation (${resumed.slice(0, 8)}). ` : '',
+  picked ? `Picking up our conversation (${resumed.slice(0, 8)}). ` : `Starting a conversation (${sessionId.slice(0, 8)}). `,
+  handedKind === 'earlier' ? `I was handed the chat so far (${handed} messages). ` : '',
+  handedKind === 'meanwhile' ? `I was handed ${handed} messages said meanwhile. ` : '',
   `Grok here, on ${auth ? `the Grok sign-in of ${auth.account}` : 'an API key'}. `,
   `You said: "${ask.slice(0, 200)}". `,
   `Tools allowed: \`${tools}\`. API key in my environment: ${process.env.XAI_API_KEY ? 'yes' : 'none'}.`,
@@ -113,4 +135,5 @@ for (const piece of lines) {
   out({ type: 'text', data: piece });
   await sleep(delay);
 }
+if (process.env.STANDIN_GROK_FAIL) fail();
 out({ type: 'end', stopReason: 'end_turn', sessionId, requestId: 'req-standin', usage: { input_tokens: 40, output_tokens: 30 } });

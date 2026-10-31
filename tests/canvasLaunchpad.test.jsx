@@ -6,22 +6,16 @@ import '@testing-library/jest-dom';
 import { jest } from '@jest/globals';
 import { EmptyState } from '../src/components/canvas/CanvasEmptyState.jsx';
 import { LAUNCHPAD_STARTS } from '../src/components/canvas/CanvasLaunchpad.jsx';
-import { LAUNCHER_MANIFESTS } from '../src/lib/windowManifest.js';
-
-const starters = LAUNCHER_MANIFESTS
-  .filter(manifest => manifest.launcher.startHere)
-  .sort((a, b) => a.launcher.startHereOrder - b.launcher.startHereOrder);
+import { LAUNCHER_MANIFESTS, WINDOW_MANIFESTS } from '../src/lib/windowManifest.js';
 
 // The launchpad's three still starting points, each backed by a manifest.
 const tiles = LAUNCHPAD_STARTS
   .map((start) => LAUNCHER_MANIFESTS.find((m) => m.kind === start.kind));
 
-test('manifest owns exactly the four expected beta starting points', () => {
-  // The manifest data (startHere entries) must stay stable regardless of
-  // how the launchpad UI renders them.
-  expect(starters.map(m => m.kind)).toEqual([
-    'agentDesigner', 'groupChat', 'scheduler', 'marketplace',
-  ]);
+test('the board draws only the starting buttons LAUNCHPAD_STARTS names, so no window keeps a tile name or a Start-here place nothing shows', () => {
+  const unused = WINDOW_MANIFESTS
+    .filter((m) => m.launcher && ['label', 'startHere', 'startHereOrder'].some((key) => key in m.launcher));
+  expect(unused.map((m) => m.kind)).toEqual([]);
 });
 
 test('launchpad shows the CensaiOS welcome, module tiles, and mouse hints', () => {

@@ -34,7 +34,8 @@ test('a failed run that names a folder and a setting leaves neither in the log',
   expect(res.body.error).toMatch(/secret-plans/);
   expect(logged).toHaveLength(1);
   expect(logged[0][0]).toBe('warn');
-  expect(logged[0][1]).toMatch(/^run: could not start redis:7 as pat-cache, .*: other$/);
+  expect(logged[0][1]).toMatch(/^run: could not start a container, .*: other$/);
+  expect(logged[0][1]).not.toMatch(/redis|pat-cache/);
   expect(logged[0][1]).not.toMatch(SECRET_BITS);
 });
 

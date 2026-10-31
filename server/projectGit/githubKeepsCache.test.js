@@ -3,14 +3,15 @@ import { jest } from '@jest/globals';
 // The version bar asks for the files that hold keys GitHub keeps every few
 // seconds, so git reads the history once per move of origin's branches: a
 // slow or failed read never holds the bar up, a name once seen stays, and
-// names from one history never stand for another. git here is a stand-in;
-// all names are made up.
+// names from one history never stand for another. Names put away once new
+// keys were made are read the same way. git here is a stand-in; all names
+// are made up.
 
 const reads = [];
 jest.unstable_mockModule('./keptOut.js', () => ({
   keptOutChangedIn: jest.fn((top, revs, options) => new Promise((resolve, reject) => { reads.push({ top, revs, options, resolve, reject }); })),
 }));
-const { githubKeeps } = await import('./githubKeeps.js');
+const { githubKeeps, lookAtGithub } = await import('./githubKeeps.js');
 const names = (...list) => list.map((name) => Buffer.from(name));
 
 beforeEach(() => { reads.length = 0; });
@@ -85,4 +86,36 @@ test('settings that cannot be written now are written at a later look', async ()
   expect(await first).toEqual(['.env']);
   expect(await githubKeeps('/made-up/six', { tips: 'aaa', kept: [], keep })).toEqual(['.env']);
   expect(keep).toHaveBeenCalledTimes(2);
+});
+
+test('names put away stay away until a version after then adds or changes one, read once per move of the branches', async () => {
+  const THEN = 'a'.repeat(40);
+  const keepDone = jest.fn(async () => {});
+  const done = { names: ['.env'], since: [THEN] };
+  const first = lookAtGithub('/made-up/seven', { tips: 'aaa', kept: ['.env'], done, keepDone });
+  expect(reads.map((read) => read.revs)).toEqual([['--remotes=origin'], ['--ignore-missing', '--remotes=origin', '--not', THEN]]);
+  reads[0].resolve(names('.env'));
+  reads[1].resolve(names('made-up.pem'));
+  expect(await first).toEqual({ all: ['.env', 'made-up.pem'], names: ['made-up.pem'], done: ['.env'], settled: true });
+  expect(await lookAtGithub('/made-up/seven', { tips: 'aaa', kept: ['.env', 'made-up.pem'], done, keepDone })).toMatchObject({ names: ['made-up.pem'] });
+  expect(reads).toHaveLength(2);
+  expect(keepDone).not.toHaveBeenCalled();
+
+  // A version GitHub got after then changes the .env: it comes back, and is taken off for good.
+  const moved = lookAtGithub('/made-up/seven', { tips: 'bbb', kept: ['.env', 'made-up.pem'], done, keepDone });
+  reads[2].resolve(names('.env'));
+  reads[3].resolve(names('.env', 'made-up.pem'));
+  expect(await moved).toEqual({ all: ['.env', 'made-up.pem'], names: ['.env', 'made-up.pem'], done: [], settled: true });
+  expect(keepDone).toHaveBeenCalledWith({ names: [], since: [THEN] });
+});
+
+test('only a version id from the settings reaches git, and a read still under way leaves the names put away', async () => {
+  const THEN = 'b'.repeat(64);
+  const look = lookAtGithub('/made-up/eight', { tips: 'aaa', kept: ['.env'], done: { names: ['.env', 7], since: ['--output=/made-up/file', THEN, 'HEAD'] }, wait: 50 });
+  expect(reads[1].revs).toEqual(['--ignore-missing', '--remotes=origin', '--not', THEN]);
+  reads[0].resolve(names('.env'));
+  expect(await look).toEqual({ all: ['.env'], names: [], done: ['.env'], settled: false });
+  // Nothing put away: no second read.
+  expect(await githubKeeps('/made-up/nine', { tips: 'aaa', kept: ['.env'], done: { names: [], since: [THEN] } })).toEqual(['.env']);
+  expect(reads.filter((read) => read.top === '/made-up/nine')).toHaveLength(1);
 });

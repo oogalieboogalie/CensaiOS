@@ -43,8 +43,9 @@ function app(userId) {
   return a;
 }
 const save = (asked, who = PAT, content = 'Made-up words saved', more = {}) => request(app(who)).put('/api/files/content').send({ path: asked, content, ...more });
+// Every write refused, the in-place write a Save falls back to as well (server/routes/files/saveWhole.js).
 const failWrite = (code) => jest.spyOn(fs.promises, 'writeFile')
-  .mockRejectedValueOnce(Object.assign(new Error(`${code || 'made-up failure'}: open '${note}'`), code ? { code } : {}));
+  .mockRejectedValue(Object.assign(new Error(`${code || 'made-up failure'}: open '${note}'`), code ? { code } : {}));
 
 /** What the answer must never carry: the server's folders or its error's own words. */
 function expectNoServerWords(res) {
@@ -195,6 +196,10 @@ describe('fileWriteProblem', () => {
     [{ code: 'ETXTBSY' }, 409, 'busy'],
     [{ code: 'ENOSPC' }, 507, 'full'],
     [{ code: 'EDQUOT' }, 507, 'full'],
+    // Met while writing in place (server/routes/files/saveWhole.js).
+    [{ code: 'ENOSPC', cutShort: true }, 507, 'fullCutShort'],
+    [{ code: 'EDQUOT', cutShort: true }, 507, 'fullCutShort'],
+    [{ code: 'EIO', cutShort: true }, 500, 'unsaved'],
     [{ code: OWN_STATE }, 403, 'secret'],
     [new Error('Access denied: Path is outside the current project root'), 403, 'outside'],
     [{ code: 'EMFILE', message: '/made/up/server/folder' }, 500, 'unsaved'],

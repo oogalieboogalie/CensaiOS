@@ -16,6 +16,9 @@ import { runGit, fixRoot, ensureClone, setJob } from './conflictFixer.js';
 import { prepareDiff, commentableLines, placeFindings, splitDiff } from './reviewCore.js';
 import { DIFF_FILE, buildReviewPrompt, parseReviewText, mergeFindings, formatTeamFinding, formatTeamSummary } from './reviewMerge.js';
 import { getAdapter } from '../cli-agents/adapters/index.js';
+import { teammateWords } from '../cli-agents/taskHiddenWords.js';
+import { githubGitUrl } from './apiUrl.js';
+import { HIDDEN_MARK } from '../../shared/files/fileProblems.js';
 
 const POLL_MS = 2000;
 const MAX_JOBS = 30;
@@ -43,7 +46,32 @@ export function finalText(task) {
   return task.summary || '';
 }
 
-/** Pending agent approvals across the team, in the window's words. */
+// A finding's words that show in the window and go to GitHub.
+const FINDING_WORDS = ['title', 'explanation', 'suggestion', 'pattern'];
+const marks = (text) => String(text).split(HIDDEN_MARK).length;
+
+/**
+ * A reviewer's answer as the window shows it and GitHub gets it: in its
+ * summary and findings, a key it read in a file only this computer's owner
+ * opens shows as [hidden], as its task shows a teammate. `hiddenWords` is
+ * true when one did.
+ */
+export function answerForEveryone(task, { summary, findings }) {
+  let hiddenWords = false;
+  const words = (text) => {
+    const shown = teammateWords(task, text);
+    if (typeof shown === 'string' && marks(shown) > marks(text)) hiddenWords = true;
+    return shown;
+  };
+  const shownFindings = findings.map((f) => {
+    const shown = { ...f };
+    for (const key of FINDING_WORDS) if (typeof shown[key] === 'string') shown[key] = words(shown[key]);
+    return shown;
+  });
+  return { summary: words(summary), findings: shownFindings, hiddenWords };
+}
+
+/** Pending agent approvals across the team, in the window's words: only the person who started the review sees them. */
 export function reviewApprovals(job, manager) {
   const out = [];
   for (const r of job.reviewers) {
@@ -66,7 +94,7 @@ export function refreshReview(job, manager) {
     if (!task) { Object.assign(r, { status: 'failed', error: 'The task was discarded.' }); continue; }
     if (ACTIVE.has(task.status)) { r.status = task.status === 'needs_approval' ? 'needs_approval' : 'reviewing'; continue; }
     const parsed = task.status === 'done' ? parseReviewText(finalText(task)) : null;
-    if (parsed) Object.assign(r, { status: 'done', summary: parsed.summary, findings: parsed.findings, costUsd: task.costUsd ?? null });
+    if (parsed) Object.assign(r, { status: 'done', ...answerForEveryone(task, parsed), costUsd: task.costUsd ?? null });
     else Object.assign(r, { status: 'failed', error: task.status === 'done' ? 'It finished without a findings list.' : `It stopped (${task.status}). Open the Agent Console to see why.` });
   }
   const working = job.reviewers.filter((r) => r.status !== 'done' && r.status !== 'failed');
@@ -77,7 +105,7 @@ export function refreshReview(job, manager) {
   const done = job.reviewers.filter((r) => r.status === 'done');
   const findings = mergeFindings(done.map((r) => ({ reviewer: r.label, findings: r.findings })));
   setJob(job, {
-    status: done.length ? 'done' : 'failed', findings,
+    status: done.length ? 'done' : 'failed', findings, hiddenWords: done.some((r) => r.hiddenWords),
     text: done.length ? (findings.length ? `${findings.length} possible bug${findings.length === 1 ? '' : 's'} found.` : 'No real bugs found.') : 'No reviewer finished. Open the Agent Console to see why.',
   });
   return true;
@@ -104,7 +132,7 @@ export async function startReview({ octokit, token, owner, repo, number, reviewe
   const info = { number, title: pr.title, headRef: pr.head.ref, baseRef: pr.base.ref };
   const fullRepo = `${owner}/${repo}`;
   // refs/pull/N/head works for PRs from forks too: reviewing never pushes.
-  const dir = await ensureClone({ owner, repo, token, root: deps.root || fixRoot(), remoteUrl: deps.remoteUrl || `https://github.com/${fullRepo}.git`, git });
+  const dir = await ensureClone({ owner, repo, token, root: deps.root || fixRoot(), remoteUrl: deps.remoteUrl || githubGitUrl(fullRepo), git });
   await git(['fetch', 'origin', `+refs/heads/${info.baseRef}:refs/remotes/origin/${info.baseRef}`, `+refs/pull/${number}/head:refs/remotes/origin/pr-${number}`], dir, { token });
   const headSha = (await git(['rev-parse', `origin/pr-${number}`], dir)).trim();
   const raw = await git(['diff', '--no-color', '--unified=5', `origin/${info.baseRef}...${headSha}`], dir);
@@ -115,8 +143,8 @@ export async function startReview({ octokit, token, owner, repo, number, reviewe
   const job = {
     id: crypto.randomBytes(5).toString('hex'), repo: fullRepo, ...info, headSha,
     by: user.name || 'Someone', userId: user.userId ?? null, startedAt: Date.now(), updatedAt: Date.now(),
-    status: 'reviewing', text: 'Reviewers are reading the change.', findings: [], posted: null, lines,
-    reviewers: ids.map((id) => ({ cli: id, label: getAdapter(id).label, taskId: null, status: 'starting', summary: null, findings: [], error: null })),
+    status: 'reviewing', text: 'Reviewers are reading the change.', findings: [], hiddenWords: false, posted: null, lines,
+    reviewers: ids.map((id) => ({ cli: id, label: getAdapter(id).label, taskId: null, status: 'starting', summary: null, findings: [], error: null, hiddenWords: false })),
   };
   if (jobs.size >= MAX_JOBS) jobs.delete(jobs.keys().next().value);
   jobs.set(job.id, job);

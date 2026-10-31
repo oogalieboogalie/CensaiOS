@@ -14,6 +14,7 @@ import { safeErrorCode } from '../../security/errorCode.js';
 import { resolveProjectPathForRuntime } from '../../workspaces/shared.js';
 import { createLogger } from '../../logger.js';
 import { walkFiles, RESULT_LIMIT } from './limitedWalk.js';
+import { saveWhole } from './saveWhole.js';
 
 const log = createLogger('files');
 
@@ -158,7 +159,8 @@ browserRouter.put('/files/content', requireLocalFileWrite, requireSystemAdmin, a
   try {
     const resolvedPath = await validateProjectPath(filePath);
     // create: a new file only (Files' New file, a note a link asks for), never over one already there.
-    await fs.promises.writeFile(resolvedPath, content, { encoding: 'utf8', flag: create === true ? 'wx' : 'w' });
+    // Either way a Save that fails leaves the file as it was (saveWhole.js).
+    await saveWhole(resolvedPath, content, { create: create === true });
     res.json({ ok: true, path: filePath });
   } catch (err) {
     // A refused save gets its reason in plain words (the window says it was not saved and why).

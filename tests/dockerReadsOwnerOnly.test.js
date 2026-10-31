@@ -77,12 +77,12 @@ describe("the 'docker' log line", () => {
     expect(logged.filter(([name]) => name === 'docker')).toEqual([]);
   });
 
-  test("reading an image's layers names the image only, never a step's command", async () => {
+  test("reading an image's layers names neither the image nor a step's command", async () => {
     const res = await request(appAs(PAT)).get('/api/docker/images/history?ref=homebase:latest');
     expect(res.body.layers.map((l) => l.step)).toContain('ENV MADE_UP_TOKEN=made-up-secret-value');
     const lines = logged.filter(([name]) => name === 'docker');
     expect(lines.map(([, , msg]) => msg)).toEqual(["read an image's layers"]);
-    expect(JSON.stringify(logged)).not.toMatch(/made-up-secret-value|MADE_UP_TOKEN|npm ci/);
+    expect(JSON.stringify(logged)).not.toMatch(/made-up-secret-value|MADE_UP_TOKEN|npm ci|homebase/);
   });
 
   test('route labels keep only known words', () => {

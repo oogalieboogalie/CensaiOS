@@ -2,12 +2,18 @@
 // the shared board and the stand-in model's answer comes in; Sam Example sees
 // both on their own screen, asks a follow-up in the same window, and Pat sees
 // that and its answer. Pat attaches a made-up text file and Sam sees its chip.
+// Pat makes an agent in Agent Designer and opens its chat: Sam's copy is that
+// agent's chat too; Pat picks Grok from its chip and Sam's chip and Grok's
+// bar show it at once, and after both reload both chats still show both
+// (the chip asks the server, the bar goes by the agent this browser holds).
 // Red team: Sam never sees Pat's model key or its last letters, Sam cannot
 // change Pat's agent's model, and a script tag shows as plain words.
 
-import { readWindow, spawnWindow, windowFrame } from '../../e2e/board.mjs';
+import { openBoard, readWindow, spawnWindow, windowFrame } from '../../e2e/board.mjs';
 import { STANDIN_ANSWER } from '../standinModel.mjs';
 import { note } from '../report.mjs';
+import { addFromMenu } from '../addMenu.mjs';
+import { sideBySide } from '../sideBySide.mjs';
 
 const QUESTION = 'Made-up question: what should Pat Example bake on Friday?';
 const FOLLOW_UP = 'Made-up follow-up from Sam: and for Saturday?';
@@ -16,6 +22,8 @@ const SCRIPT = '<script>window.__madeUpPwned = 155</script><img src=x onerror="w
 const KEY = 'made-up-openai-key-155QX7J';
 const KEY_END = 'QX7J';
 const HELPER = { id: 'pat-helper-155', name: 'Made-up Helper', model: 'gpt-4.1', changed: 'gpt-4o-mini' };
+// An agent Pat makes in Agent Designer, then switches to Grok from its chat's chip.
+const PLANNER = { name: 'Made-up Planner', model: 'gpt-4.1', picked: 'grok-4' };
 
 const msgsOf = async (page, id) => (await readWindow(page, id))?.msgs || [];
 
@@ -38,6 +46,45 @@ async function say(page, id, text) {
   const box = windowFrame(page, id).getByPlaceholder(/^Message /).first();
   await box.fill(text);
   await box.press('Enter');
+}
+
+/** The model a chat's chip shows on this person's screen, once it shows `want` (or after `ms`). */
+async function chipOf(page, id, want, ms = 20_000) {
+  const chip = windowFrame(page, id).getByTestId('chat-capabilities');
+  const until = Date.now() + ms;
+  for (;;) {
+    const shown = (await chip.innerText({ timeout: 5_000 }).catch(() => '')).replace(/\s+/g, ' ').trim();
+    if (shown.startsWith(want) || Date.now() > until) return shown;
+    await page.waitForTimeout(250);
+  }
+}
+
+/** What Grok's bar in a chat says on this person's screen ('' when there is none after `ms`). */
+async function grokBar(page, id, ms = 10_000) {
+  const bar = windowFrame(page, id).getByTestId('grok-source');
+  await bar.waitFor({ timeout: ms }).catch(() => {});
+  return (await bar.count()) ? (await bar.innerText()).replace(/\s+/g, ' ').trim() : '';
+}
+
+/** The id of the first window of `kind` this person's board shows that is not in `before`. */
+async function newWindow(page, kind, before, ms = 15_000) {
+  const handle = await page.waitForFunction(([k, ids]) => window.__e2eStore.getState().wins.find((w) => w.kind === k && !ids.includes(w.id))?.id,
+    [kind, before], { timeout: ms }).catch(() => null);
+  return handle ? handle.jsonValue() : null;
+}
+
+const winIds = (page) => page.evaluate(() => window.__e2eStore.getState().wins.map((w) => w.id));
+
+/** Moves this person's view of the board so window `id` sits near the top left, as a person drags the board to it. */
+async function lookAt(page, id) {
+  // A new window may still be gliding into view; let it land first.
+  await page.waitForTimeout(1200);
+  await page.evaluate((wid) => {
+    const store = window.__e2eStore.getState();
+    const win = store.wins.find((w) => w.id === wid);
+    if (win) store.setPan({ x: 60 - win.x * store.zoom, y: 90 - win.y * store.zoom });
+  }, id);
+  await page.waitForTimeout(300);
 }
 
 /** Everything a browser could show or was sent: its page text plus every answer body it received. */
@@ -108,6 +155,74 @@ export default {
       if (!shown) throw new Error('no made-up-notes.txt chip on Sam\'s screen');
       const stored = (await msgsOf(sam.page, chat)).find((m) => m.text === FILE_ASK)?.attachments?.[0] || {};
       return `Sam sees the made-up-notes.txt chip (the board keeps ${stored.dataUrl ? 'the file itself' : 'the name only, not the file'})`;
+    });
+
+    const planner = { id: null, chat: null };
+    await check('walk', 'Pat makes an agent in Agent Designer and opens its chat: Sam\'s copy is that agent\'s chat too, on its model', async ({ shot }) => {
+      const designer = await addFromMenu(pat.page, 'Agent Designer');
+      if (designer.kind !== 'agentDesigner') throw new Error(`the Add menu opened ${designer.kind || 'nothing'}, not Agent Designer`);
+      const form = windowFrame(pat.page, designer.id);
+      await form.locator('label', { hasText: /^Name/ }).locator('input').fill(PLANNER.name);
+      await form.locator('label', { hasText: /^Provider/ }).locator('select').selectOption('openai');
+      await form.locator('label', { hasText: /^Model/ }).locator('select').first().selectOption(PLANNER.model);
+      const before = await winIds(pat.page);
+      await form.getByRole('button', { name: 'Create agent' }).click();
+      const profile = await newWindow(pat.page, 'agent', before);
+      if (!profile) throw new Error('no profile opened after Create agent');
+      planner.id = (await readWindow(pat.page, profile)).agentId;
+      await lookAt(pat.page, profile);
+      await shot(pat.page, 'pat-made-an-agent-in-agent-designer');
+      const beforeChat = await winIds(pat.page);
+      await windowFrame(pat.page, profile).getByRole('button', { name: 'Open chat' }).click({ timeout: 10_000 });
+      planner.chat = await newWindow(pat.page, 'chat', beforeChat);
+      if (!planner.chat) throw new Error(`${PLANNER.name}'s Open chat opened no chat`);
+      await Promise.all([pat, sam].map((who) => lookAt(who.page, planner.chat)));
+      const asks = windowFrame(sam.page, planner.chat).getByPlaceholder(`Message ${PLANNER.name}`);
+      await asks.waitFor({ timeout: 20_000 }).catch(() => {});
+      const [patChip, samChip] = await Promise.all([pat, sam].map((who) => chipOf(who.page, planner.chat, PLANNER.model)));
+      await sideBySide(t, 'pats-new-agent-on-both-screens', shot);
+      if (!await asks.count()) {
+        const box = await windowFrame(sam.page, planner.chat).getByPlaceholder(/^Message /).first().getAttribute('placeholder').catch(() => null);
+        throw new Error(`Sam's copy of ${PLANNER.name}'s chat is ${box ? `"${box}"` : 'not there'}, another agent's chat`);
+      }
+      if (!patChip.startsWith(PLANNER.model) || !samChip.startsWith(PLANNER.model)) throw new Error(`the chips show "${patChip}" (Pat) and "${samChip}" (Sam), not ${PLANNER.model}`);
+      return `both screens show ${PLANNER.name}'s chat on ${PLANNER.model}`;
+    });
+
+    await check('walk', 'Pat picks Grok from the chip: Sam\'s open copy shows it and Grok\'s bar at once, with no reload', async ({ shot }) => {
+      if (!planner.chat) throw note(`${PLANNER.name}'s chat never opened`);
+      const frame = windowFrame(pat.page, planner.chat);
+      await frame.getByTestId('chat-capabilities').click({ timeout: 10_000 });
+      await frame.getByRole('menuitemradio', { name: PLANNER.picked, exact: true }).click({ timeout: 5_000 });
+      const patChip = await chipOf(pat.page, planner.chat, PLANNER.picked);
+      const samChip = await chipOf(sam.page, planner.chat, PLANNER.picked);
+      const samBar = await grokBar(sam.page, planner.chat);
+      await sideBySide(t, 'the-picked-model-on-both-screens', shot);
+      const kept = await t.api(pat, 'GET', `/api/agents/${encodeURIComponent(planner.id)}`);
+      if (!patChip.startsWith(PLANNER.picked)) throw new Error(`Pat's chip shows "${patChip}"`);
+      if (kept.body?.model_name !== PLANNER.picked) throw new Error(`the server keeps ${kept.body?.model_name} for ${PLANNER.name}`);
+      if (!samChip.startsWith(PLANNER.picked)) throw new Error(`with no reload, Sam's chip still shows "${samChip}", not ${PLANNER.picked}`);
+      if (!samBar) throw new Error(`Sam's chip shows ${PLANNER.picked} but Sam's chat has no Grok bar`);
+      return `with no reload, Sam's chip shows ${samChip} and Grok's bar says: ${samBar}`;
+    });
+
+    await check('hunt', 'after both reload, both chats still show the model Pat picked and Grok\'s bar', async ({ shot }) => {
+      if (!planner.chat) throw note(`${PLANNER.name}'s chat never opened`);
+      // What the board keeps in its own agent list, which a reload lays in first.
+      const saved = await t.api(pat, 'GET', `/api/client-state/homebase.workspace.v1?workspaceId=${encodeURIComponent(t.workspaceId)}`);
+      const kept = (saved.body?.value?.extraAgents || []).find((a) => a.id === planner.id);
+      await Promise.all([pat, sam].map((who) => openBoard(who.page, t.workspaceId, t.web)));
+      await Promise.all([pat, sam].map((who) => lookAt(who.page, planner.chat)));
+      const chips = await Promise.all([pat, sam].map((who) => chipOf(who.page, planner.chat, PLANNER.picked, 30_000)));
+      const bars = await Promise.all([pat, sam].map((who) => grokBar(who.page, planner.chat)));
+      await sideBySide(t, 'the-picked-model-after-a-reload', shot);
+      const list = kept ? `holds ${PLANNER.name} on ${kept.model_name}` : `does not hold ${PLANNER.name}`;
+      const wrong = [['Pat', 0], ['Sam', 1]].flatMap(([who, i]) => [
+        ...(chips[i].startsWith(PLANNER.picked) ? [] : [`${who}'s chip shows "${chips[i]}"`]),
+        ...(bars[i] ? [] : [`${who}'s chat has no Grok bar`]),
+      ]);
+      if (wrong.length) throw new Error(`${wrong.join('; ')} (the board's own agent list ${list})`);
+      return `after a reload both chips show ${PLANNER.picked} and both chats have Grok's bar; the board's own agent list ${list}`;
     });
 
     await check('redteam', 'a message with a script tag shows as plain words on both screens', async ({ shot }) => {

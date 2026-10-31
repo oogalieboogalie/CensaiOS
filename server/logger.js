@@ -19,6 +19,7 @@
 import fs from 'fs';
 import { getLogFilePath, LOG_CONFIG } from './logRetention.js';
 import { scrubText } from './selfFix/scrubText.js';
+import { hideNamesInAddress, isProjectId } from '../shared/logs/addressNames.js';
 
 const LEVELS = { error: 0, warn: 1, info: 2, debug: 3, trace: 4 };
 
@@ -67,7 +68,7 @@ const PLAIN_QUERY_KEY = new Set([
   'status', 'type', 'kind', 'scope', 'level', 'visibility',
 ]);
 // ...and only while the value looks like one: a path, a web address or words
-// under a plain name are [redacted] too.
+// under a plain name are [redacted] too, as is a project's id (made from its name).
 const PLAIN_VALUE = /^[\w.:+-]*$/;
 // Codes also travel as path parts: share links, lesson links, the Legion's secret view link.
 const SECRET_PATH_PART = [
@@ -80,9 +81,13 @@ function decodedQueryText(text) {
   try { return decodeURIComponent(text.replace(/\+/g, ' ')); } catch { return text; }
 }
 
-/** A web address for the log: secret path parts and every query value that is not a plain setting become [redacted]. */
+/**
+ * A web address for the log: secret path parts, the names people gave a
+ * project, its folder or a canvas group (shared/logs/addressNames.js) and
+ * every query value that is not a plain setting become [redacted].
+ */
 export function redactUrl(url) {
-  let text = String(url ?? '');
+  let text = hideNamesInAddress(url);
   for (const re of SECRET_PATH_PART) text = text.replace(re, '$1[redacted]');
   const at = text.indexOf('?');
   if (at < 0) return text;
@@ -93,7 +98,7 @@ export function redactUrl(url) {
     const eq = part.indexOf('=');
     const written = eq < 0 ? part : part.slice(0, eq);
     const [name, value] = [written, eq < 0 ? '' : part.slice(eq + 1)].map(decodedQueryText);
-    if (PLAIN_QUERY_KEY.has(name.toLowerCase()) && PLAIN_VALUE.test(value)) return part;
+    if (PLAIN_QUERY_KEY.has(name.toLowerCase()) && PLAIN_VALUE.test(value) && !isProjectId(value)) return part;
     return eq < 0 ? '[redacted]' : `${written}=[redacted]`;
   });
   return `${text.slice(0, at)}?${parts.join('&')}`;

@@ -115,8 +115,8 @@ test('revalidates the grant after taking the package lock', async () => {
   expect(client.query).toHaveBeenCalledWith('ROLLBACK');
 });
 
-test('non-approval and permission-tiered sub-agent calls do not enter the canonical gate', async () => {
-  const db = { connect: jest.fn() };
+test('sub-agent calls never enter the canonical gate; with Trust mode off their writes refuse', async () => {
+  const db = { connect: jest.fn(), query: jest.fn(async () => ({ rows: [] })) };
   await expect(requestToolApprovalIfRequired(db, {
     agentId: 'sub-agent-1', toolName: 'recall', args: {},
     context: { workspaceId: 'workspace-a', userId: 7 },
@@ -124,8 +124,14 @@ test('non-approval and permission-tiered sub-agent calls do not enter the canoni
   await expect(requestToolApprovalIfRequired(db, {
     agentId: 'sub-agent-1', toolName: 'project_write', args: {},
     context: { workspaceId: 'workspace-a', userId: 7 },
-  })).resolves.toEqual({ required: false });
+  })).rejects.toMatchObject({ code: 'TOOL_APPROVAL_HELPER_NEEDS_TRUST' });
+  agentIsTrusted.mockResolvedValue(true);
+  await expect(requestToolApprovalIfRequired(db, {
+    agentId: 'sub-agent-1', toolName: 'project_write', args: {},
+    context: { workspaceId: 'workspace-a', userId: 7 },
+  })).resolves.toEqual({ required: false, trusted: true });
   expect(findApprovalGrant).not.toHaveBeenCalled();
+  expect(db.connect).not.toHaveBeenCalled();
 });
 
 test('canonical approval tools cannot fall back to unscoped execution', async () => {

@@ -37,6 +37,9 @@ describe('project membership routes', () => {
     requireWorkspaceMember.mockResolvedValue({ id: 'workspace-1', role: 'owner' });
     listWorkspaceAgentProjects.mockResolvedValue([]);
     replaceCanvasProjectMemberships.mockResolvedValue([]);
+    // The board already has the project, so anyone on it may hand it to its
+    // agents (a project new to the board: tests/boardNewProjectOwnerOnly.test.js).
+    pool.query.mockResolvedValue({ rows: [{ on_board: 1 }] });
   });
 
   test('lists memberships only after workspace access is proven', async () => {

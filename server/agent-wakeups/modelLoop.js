@@ -2,6 +2,7 @@ import {
   callModel, createModelAccessContext, resolveChatModelConfig, workspaceUsageSink,
 } from '../aiGateway/index.js';
 import { executeTool, filterToolsForAgent } from '../tools.js';
+import { offeredToolNames, toolNotOfferedResult } from '../tools/rbac/offeredTools.js';
 
 const MAX_ROUNDS = 20;
 
@@ -12,6 +13,8 @@ export async function runWakeModel({ agent, systemPrompt, userPrompt, wakeId, me
     modelName: agent.model_name,
   });
   const tools = await filterToolsForAgent(agent.id, { workspaceId, userId });
+  // Only the tools offered here run (server/tools/rbac/offeredTools.js).
+  const offered = offeredToolNames(tools);
   const messages = [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
@@ -42,12 +45,14 @@ export async function runWakeModel({ agent, systemPrompt, userPrompt, wakeId, me
     for (const call of calls) {
       let args = {};
       try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
-      const result = await executeTool(agent.id, call.function.name, args, {
-        agentWakeId: wakeId,
-        sourceMessageId: messageId,
-        workspaceId,
-        userId,
-      });
+      const result = offered.has(call.function.name)
+        ? await executeTool(agent.id, call.function.name, args, {
+          agentWakeId: wakeId,
+          sourceMessageId: messageId,
+          workspaceId,
+          userId,
+        })
+        : toolNotOfferedResult(call.function.name);
       toolCalls.push(call.function.name);
       messages.push({ role: 'tool', tool_call_id: call.id, content: String(result) });
     }

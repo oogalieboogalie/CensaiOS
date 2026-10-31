@@ -11,8 +11,9 @@
 // the project on Sam's screen. Bug hunt: the made-up .env.example and an
 // ordinary note still open for Sam; key files a cloud service, a framework
 // and Terraform name (serviceAccountKey.json, opened from Files, secrets.yml,
-// an .auto.tfvars) show Pat their words and Sam the plain words, while their
-// look-alike secrets.example.json opens for Sam; a .env asked for through a link, and a
+// an .auto.tfvars, Terraform's state and a values file handed to it) show Pat
+// their words and Sam the plain words, while the look-alikes
+// secrets.example.json and prod.tfvars.example open for Sam; a .env asked for through a link, and a
 // file in the hidden .git folder opened by its path the way an agent opens
 // one, show Pat their words and Sam the plain words; a settings file in a
 // hidden folder that Pat formats stays off Sam's board; a plan in a hidden
@@ -24,7 +25,9 @@
 // linked-out folders; Step cards never read a key file's words, and a hidden
 // folder's only for Pat; an agent given the project reads Sam its ordinary
 // note but gives Sam plain words for the key files, never their words, while
-// it reads Pat the key; the live preview beside a chat gives plain words for
+// it reads Pat the key; off a board (a chat sent with no board) the same
+// agent gives Sam plain words even for the ordinary note, and reads it to
+// Pat; the live preview beside a chat gives plain words for
 // the link to the .env and a page in a hidden folder, whoever's agent asks,
 // and shows an ordinary page without what it would pull in from the .env or
 // the hidden folder; a link to the server's own settings
@@ -59,16 +62,20 @@ const HIDDEN_PLAN = ['.made-up', 'steps.todo'];
 const PLAN = 'made-up-steps.todo';
 // A copy and a backup of files that hold keys hold the same keys.
 const BACKUPS = ['made-up-server.key.bak', '.env~'];
-// Key files a cloud service, a framework and Terraform name, and a look-alike example of one.
+// Key files a cloud service, a framework and Terraform name (the values it reads by
+// itself, the state it writes them into, values handed to it), and look-alike examples.
 const SERVICE_KEY = 'serviceAccountKey.json';
-const MORE_KEYS = [['config', 'secrets.yml', 'secrets'], ['infra', 'made-up.auto.tfvars', 'tfvars']];
+const MORE_KEYS = [['config', 'secrets.yml', 'secrets'], ['infra', 'made-up.auto.tfvars', 'tfvars'], ['infra', 'terraform.tfstate', 'tfstate'], ['infra', 'prod.tfvars', 'prod-tfvars']];
 const LOOK_ALIKE = ['config', 'secrets.example.json'];
+const TERRAFORM_LOOK_ALIKE = ['infra', 'prod.tfvars.example'];
 const PAGE = 'made-up-page.html';
 const PAGE_TEXT = 'Made-up page for the live preview';
 // No underscores: the Document shows Markdown, where they would turn into slanted words.
 const PAT_LINE = `Made-up second line ${KEY}-typed`;
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const { ownerOnly: OWNER_ONLY, outside: OUTSIDE } = FILE_PROBLEMS;
+// Off a board no project is shared with anyone (server/tools/rbac/ownerOnlyReads.js).
+const PROJECT_OFF_BOARD = "Only this computer's owner's agents work in its projects outside a board.";
 const TECHNICAL = /status \d|ENOENT|EACCES|no such file|Access denied|Failed to load|undefined/i;
 
 // Where this censaiOS keeps the projects opened on its board (as
@@ -104,6 +111,7 @@ function makeProject() {
   write(path.join(dir, SERVICE_KEY), `{"made_up_key":"${KEY}-service"}\n`);
   for (const [folder, name, kind] of MORE_KEYS) write(path.join(dir, folder, name), `made_up_key: ${KEY}-${kind}\n`);
   write(path.join(dir, ...LOOK_ALIKE), '{"made_up_key":""}\n');
+  write(path.join(dir, ...TERRAFORM_LOOK_ALIKE), 'made_up_password = ""\n');
   write(path.join(dir, KEY_FILE), `MADE-UP PRIVATE KEY ${KEY}-pem\n`);
   write(path.join(dir, '.git', 'config'), `[remote "origin"]\n  url = https://${KEY}-token@example.invalid/made-up.git\n`);
   write(path.join(dir, ...HIDDEN_SETTINGS), `{"madeUp":"${KEY}-json","alsoMadeUp":true}\n`);
@@ -361,27 +369,29 @@ export default {
         return fail(problems, 'both open for Sam with their made-up words');
       });
 
-      await check('hunt', `key files a cloud service, a framework and Terraform name (${SERVICE_KEY} opened from Files, secrets.yml, made-up.auto.tfvars) show Pat their words and Sam the plain words, while their look-alike ${LOOK_ALIKE[1]} opens for Sam`, async ({ shot }) => {
+      await check('hunt', `key files a cloud service, a framework and Terraform name (${SERVICE_KEY} opened from Files, ${MORE_KEYS.map(([, name]) => name).join(', ')}) show Pat their words and Sam the plain words, while the look-alikes ${LOOK_ALIKE[1]} and ${TERRAFORM_LOOK_ALIKE[1]} open for Sam`, async ({ shot }) => {
         if (!filesId) throw new Error('Files did not open in the first step');
         const opened = [[await openFromTree(pat.page, filesId, SERVICE_KEY, 'code_editor', { x: 16, y: 1400 }), SERVICE_KEY, 'service']];
         for (const [index, [folder, name, kind]] of MORE_KEYS.entries()) {
-          const where = { x: 492, y: 1400 + index * 220 };
-          opened.push([await spawnWindow(pat.page, 'code_editor', { title: name, fileName: name, filePath: at(folder, name), language: 'text' }, where, { w: 460, h: 200 }), name, kind]);
+          const where = { x: 492, y: 1400 + index * 180 };
+          opened.push([await spawnWindow(pat.page, 'code_editor', { title: name, fileName: name, filePath: at(folder, name), language: 'text' }, where, { w: 460, h: 160 }), name, kind]);
         }
         const exampleId = await spawnWindow(sam.page, 'code_editor', { title: LOOK_ALIKE[1], fileName: LOOK_ALIKE[1], filePath: at(...LOOK_ALIKE), language: 'json' }, { x: 968, y: 1400 }, { w: 420, h: 200 });
+        const terraformExampleId = await spawnWindow(sam.page, 'code_editor', { title: TERRAFORM_LOOK_ALIKE[1], fileName: TERRAFORM_LOOK_ALIKE[1], filePath: at(...TERRAFORM_LOOK_ALIKE), language: 'text' }, { x: 968, y: 1620 }, { w: 420, h: 200 });
         const problems = [];
         for (const [id, name, kind] of opened) {
           if (!(await waitForText(pat.page, id, `${KEY}-${kind}`))) problems.push(`Pat's ${name} window does not show its made-up key`);
           problems.push(...(await samProblems(sam.page, id, `${name} window`, OWNER_ONLY)).problems);
         }
         if (!(await waitForText(sam.page, exampleId, '"made_up_key":""'))) problems.push(`Sam's ${LOOK_ALIKE[1]} does not show its words`);
+        if (!(await waitForText(sam.page, terraformExampleId, 'made_up_password = ""'))) problems.push(`Sam's ${TERRAFORM_LOOK_ALIKE[1]} does not show its words`);
         const leaked = await keyReachesSam(t);
         await lookAt(t, 0, 1380);
         await sideBySide(t, 'key-files-a-service-names', shot);
         await homeView(pat.page);
         await homeView(sam.page);
         if (leaked.length) problems.push(`a made-up key reached Sam ${leaked.join(' and ')}`);
-        return fail(problems, `Pat reads all three; Sam's windows say "${OWNER_ONLY}", ${LOOK_ALIKE[1]} opens for Sam, and no key reached Sam`);
+        return fail(problems, `Pat reads all ${opened.length}; Sam's windows say "${OWNER_ONLY}", ${LOOK_ALIKE[1]} and ${TERRAFORM_LOOK_ALIKE[1]} open for Sam, and no key reached Sam`);
       });
 
       await check('hunt', `a .env asked for through a link (${LINK}), and a file in the hidden .git folder opened by its path the way an agent opens one, show Pat their words and Sam the plain words`, async ({ shot }) => {
@@ -539,6 +549,22 @@ export default {
         return fail(problems, `Sam's agent reads ${NOTE} and gets "${OWNER_ONLY}" for the other four, with no key; Pat's agent reads ${ENV}`);
       });
 
+      await check('redteam', "off a board (a chat sent with no board, as Sam's own browser can send one), the same agent gives Sam plain words for the ordinary note, asked by the project's id or by its folder, never its words; for Pat it reads the note", async () => {
+        if (!projectId) throw new Error('the made-up project did not open for agents in the step before');
+        const problems = [];
+        const said = (results) => (results.length ? `"${results.at(-1).slice(0, 90)}"` : 'no answer from its file tool');
+        // Leaving the board out of the request, as a chat sent from outside one does.
+        const offBoard = (who, project) => askAtlas(t, who, fileAsk(project, NOTE), { workspaceId: undefined });
+        for (const [how, project] of [["the project's id", projectId], ['its folder', dir]]) {
+          const { results, raw } = await offBoard(sam, project);
+          if (raw.includes(NOTE_TEXT) || results.some((r) => r.includes(NOTE_TEXT))) problems.push(`Sam's agent got the note asked by ${how}`);
+          else if (!results.some((r) => r.includes(PROJECT_OFF_BOARD))) problems.push(`Sam's agent asked by ${how} got ${said(results)}`);
+        }
+        const pats = await offBoard(pat, projectId);
+        if (!pats.results.some((r) => r.includes(NOTE_TEXT))) problems.push(`Pat's agent got ${said(pats.results)}`);
+        return fail(problems, `Sam's agent gets "${PROJECT_OFF_BOARD}" both ways, with no words of the note; Pat's agent reads ${NOTE}`);
+      });
+
       await check('redteam', "the live preview beside a chat gives plain words for the link to the .env and a page in a hidden folder, whoever's agent asks; an ordinary page shows without what it would pull in from the .env or the hidden folder", async ({ shot }) => {
         if (!projectId) throw new Error('the made-up project was not given to Atlas in the step before');
         const chatId = await spawnWindow(pat.page, 'chat', { agentId: 'atlas' }, { x: 968, y: 1080 }, { w: 400, h: 420 });
@@ -594,6 +620,19 @@ export default {
         }
         if (added.includes(KEY)) problems.push('a made-up key is in the server log');
         return fail(problems, `${refusals.length} refusal lines (for example "${refusals[0]?.replace(/^\S+\s+/, '').slice(0, 90)}"), none naming a file, a folder or a key`);
+      });
+
+      // A project's id is made from its folder's name, lower case (shared-<name>),
+      // so the log is searched in any case.
+      await check('redteam', "the request log keeps Pat's project save with its method, route and status, and never the made-up project's name in any case", async () => {
+        const lines = t.serverLog().slice(logStart).split('\n');
+        const name = path.basename(dir).toLowerCase();
+        const saves = lines.filter((line) => /PUT \/api\/workspaces\/[^/\s]+\/agent-projects\/\S+ 200 \d+ms/.test(line));
+        const named = lines.filter((line) => line.toLowerCase().includes(name));
+        const problems = [];
+        if (!saves.length) problems.push('the request log has no line for the project save');
+        if (named.length) problems.push(`${named.length} log line(s) carry the made-up project's name, for example "${named[0].replace(/^\S+\s+/, '').slice(0, 120)}"`);
+        return fail(problems, `the save is logged as "${saves[0]?.replace(/^.*?(PUT )/, '$1').slice(0, 100)}", and no line carries the project's name`);
       });
     } finally {
       putBackOpenProjects();

@@ -1,5 +1,5 @@
 import { execFile } from 'child_process';
-import { githubKeeps } from './githubKeeps.js';
+import { githubKeeps, githubKeepsSettings } from './githubKeeps.js';
 import { listKeptOut, withKeptOutAside } from './keptOut.js';
 
 // Plain git for one project folder on this computer: what changed, save a
@@ -78,21 +78,10 @@ export async function projectStatus(cwd) {
     const upstream = await quiet(cwd, ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${branch}`]);
     unsent = upstream ? Number(await quiet(cwd, ['rev-list', '--count', `${upstream}..HEAD`])) || 0 : versions.length;
   }
-  // Files that hold keys GitHub keeps (./githubKeeps.js): only in the home censaiOS made, so never in someone else's repository.
-  const onGithub = home && remote ? await keysOnGithub(top) : [];
+  // Files that hold keys GitHub keeps (./githubKeeps.js), but those put away once new keys were made: only in the home censaiOS made, so never in someone else's repository.
+  const onGithub = home && remote ? await githubKeeps(top, await githubKeepsSettings(top, runGit)) : [];
   const folder = (await quiet(cwd, ['rev-parse', '--show-prefix'])) || '';
   return { tracked: true, root: top, partOfBigger: Boolean(folder), branch, changes, keptOut, githubKeeps: onGithub, versions, remote: remote ? redactRemote(remote) : null, githubRepo, unsent };
-}
-
-/** The files that hold keys GitHub keeps of this repository, kept in its settings (censai.githubKeeps) once seen, since GitHub keeps them. */
-async function keysOnGithub(top) {
-  let kept = [];
-  try { kept = JSON.parse(await quiet(top, ['config', '--get', 'censai.githubKeeps']) || '[]'); } catch { /* none kept yet */ }
-  return githubKeeps(top, {
-    tips: await quiet(top, ['for-each-ref', '--format=%(objectname)', 'refs/remotes/origin']),
-    kept: Array.isArray(kept) ? kept.filter((name) => typeof name === 'string') : [],
-    keep: (names) => runGit(top, ['config', 'censai.githubKeeps', JSON.stringify(names)]),
-  });
 }
 
 export function repoFromRemote(url) {

@@ -12,7 +12,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentPath: 'src/components/TerminalWindow.jsx',
     defaultSize: { w: 760, h: 480 },
     modeAvailability: { cloud_saas: false },
-    launcher: { show: true, order: 60, icon: 'Terminal', label: 'Terminal', hint: 'WSL shell', props: { title: 'Terminal' } },
+    launcher: { show: true, order: 60, icon: 'Terminal', hint: 'WSL shell', props: { title: 'Terminal' } },
   },
   {
     kind: 'code_editor',
@@ -35,7 +35,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'SchedulerWindow',
     componentPath: 'src/components/SchedulerWindow.jsx',
     defaultSize: { w: 760, h: 560 },
-    launcher: { show: true, startHere: true, startHereOrder: 30, order: 90, icon: 'Calendar', label: 'Schedule a run', hint: 'automate recurring work' },
+    launcher: { show: true, order: 90, icon: 'Calendar', hint: 'automate recurring work' },
   },
   {
     kind: 'julesTasks',
@@ -52,7 +52,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'OperationsBoardWindow',
     componentPath: 'src/components/OperationsBoardWindow.jsx',
     defaultSize: { w: 900, h: 620 },
-    launcher: { show: true, order: 80, icon: 'Monitor', label: 'Live operations', hint: 'runtime board' },
+    launcher: { show: true, order: 80, icon: 'Monitor', hint: 'runtime board' },
   },
   {
     kind: 'rook',
@@ -89,7 +89,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'AgentDesignerWindow',
     componentPath: 'src/components/AgentDesignerWindow.jsx',
     defaultSize: { w: 1120, h: 700 },
-    launcher: { show: true, startHere: true, startHereOrder: 10, order: 14, icon: 'NewAgent', label: 'Create an agent', hint: 'configure a new specialist' },
+    launcher: { show: true, order: 14, icon: 'NewAgent', hint: 'configure a new specialist' },
   },
   {
     kind: 'overseer',
@@ -98,7 +98,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'OverseerWindow',
     componentPath: 'src/components/OverseerWindow.jsx',
     defaultSize: { w: 560, h: 460 },
-    launcher: { show: true, order: 120, icon: 'Eye', label: 'Overseer Watcher', hint: 'runs Jules hourly, can merge PRs' },
+    launcher: { show: true, order: 120, icon: 'Eye', hint: 'runs Jules hourly, can merge PRs' },
   },
   {
     kind: 'automation',
@@ -108,7 +108,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentPath: 'src/components/AutomationWindow.jsx',
     defaultSize: { w: 600, h: 500 },
     moduleMenu: { show: false, status: 'coming-soon' },
-    launcher: { show: true, order: 125, icon: 'Server', label: 'Automation', hint: 'manage running scripts' },
+    launcher: { show: true, order: 125, icon: 'Server', hint: 'manage running scripts' },
   },
   {
     kind: 'vex',
@@ -127,7 +127,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentPath: 'src/components/RegistryTestWindow.jsx',
     defaultSize: { w: 400, h: 300 },
     moduleMenu: { show: false, status: 'internal' },
-    launcher: { show: true, order: 130, icon: 'Flask', label: 'Registry Test Window', hint: 'test window' },
+    launcher: { show: true, order: 130, icon: 'Flask', hint: 'test window' },
   },
   {
     kind: 'containers',
@@ -136,7 +136,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'ContainersWindow',
     componentPath: 'src/components/ContainersWindow.jsx',
     defaultSize: { w: 960, h: 620 },
-    launcher: { show: true, order: 150, icon: 'Container', label: 'Docker', hint: 'containers, images, compose' },
+    launcher: { show: true, order: 150, icon: 'Container', hint: 'containers, images, compose' },
   },
   {
     kind: 'devServer',
@@ -149,7 +149,7 @@ export const OPS_WINDOW_MANIFESTS = [
     persistence: 'local_only',
     entitlement: 'local_filesystem.access',
     modeAvailability: { cloud_saas: false },
-    launcher: { show: true, order: 152, icon: 'Play', label: 'Run dev', hint: 'run a project, see it live' },
+    launcher: { show: true, order: 152, icon: 'Play', hint: 'run a project, see it live' },
   },
   {
     kind: 'kubernetes',
@@ -159,7 +159,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentPath: 'src/components/KubernetesWindow.jsx',
     defaultSize: { w: 720, h: 540 },
     moduleMenu: { show: false, status: 'coming-soon' },
-    launcher: { show: true, order: 170, icon: 'Helm', label: 'Kubernetes', hint: 'read-only cluster view' },
+    launcher: { show: true, order: 170, icon: 'Helm', hint: 'read-only cluster view' },
   },
   {
     kind: 'toolchainSettings',
@@ -169,9 +169,9 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'ToolchainSettingsWindow',
     componentPath: 'src/components/ToolchainSettingsWindow.jsx',
     defaultSize: { w: 520, h: 580 },
-    // The Agent Console's Agents page replaced this launcher tile (spec 8);
+    // The Agent Console's Agents page replaced this window's old starting tile (spec 8);
     // the window stays for Docker sandbox image settings.
-    launcher: { show: false, order: 160, icon: 'Toolbox', label: 'Toolchains', hint: 'Docker sandbox image for AI CLIs' },
+    launcher: { show: false, order: 160, icon: 'Toolbox', hint: 'Docker sandbox image for AI CLIs' },
   },
   {
     kind: 'windowImporter',
@@ -180,7 +180,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'WindowImporterWindow',
     componentPath: 'src/components/WindowImporterWindow.jsx',
     defaultSize: { w: 560, h: 520 },
-    launcher: { show: true, order: 155, icon: 'ImportTray', label: 'Import Window', hint: 'drop AI Studio exports onto the canvas' },
+    launcher: { show: true, order: 155, icon: 'ImportTray', hint: 'drop AI Studio exports onto the canvas' },
   },
   {
     kind: 'agent_trace',
@@ -189,7 +189,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'TracingWindow',
     componentPath: 'src/components/TracingWindow.jsx',
     defaultSize: { w: 800, h: 600 },
-    launcher: { show: true, order: 85, icon: 'Search', label: 'Agent Tracing', hint: 'observability board' },
+    launcher: { show: true, order: 85, icon: 'Search', hint: 'observability board' },
   },
   {
     kind: 'provenance_explorer',
@@ -198,7 +198,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'ProvenanceExplorerWindow',
     componentPath: 'src/components/ProvenanceExplorerWindow.jsx',
     defaultSize: { w: 800, h: 600 },
-    launcher: { show: true, order: 180, icon: 'Search', label: 'Provenance', hint: 'trace AI code to prompt' },
+    launcher: { show: true, order: 180, icon: 'Search', hint: 'trace AI code to prompt' },
   },
   {
     kind: 'mlops_dashboard',
@@ -208,7 +208,7 @@ export const OPS_WINDOW_MANIFESTS = [
     componentName: 'MlopsDashboardWindow',
     componentPath: 'src/components/MlopsDashboardWindow.jsx',
     defaultSize: { w: 800, h: 600 },
-    launcher: { show: true, order: 190, icon: 'Activity', label: 'MLOps', hint: 'drift detection & retraining' },
+    launcher: { show: true, order: 190, icon: 'Activity', hint: 'drift detection & retraining' },
   },
   {
     kind: 'inbox',

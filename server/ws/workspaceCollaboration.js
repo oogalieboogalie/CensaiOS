@@ -18,10 +18,8 @@ import { trackGuestSocket } from '../shareLinks/liveGuests.js';
 import { usesProjection } from '../shareLinks/access.js';
 import { actionForMessage, can, guestPrincipal, memberPrincipal } from '../access/policy.js';
 import { subscribeProjection } from '../shareLinks/projector.js';
-import { isMember, handleLiveShowMessage, notSpectator } from './liveShowMessages.js';
-import { handleInkPreviewMessage } from './inkPreviewMessages.js';
-import { handleGameMessage } from './gameMessages.js';
-import { handleDockCastMessage } from './dockCastMessages.js';
+import { isMember, notSpectator } from './liveShowMessages.js';
+import { RELAY_HANDLERS } from './relayHandlers.js';
 import { noteCursor } from '../lessons/cursorTap.js';
 import { keepAlive } from './socketHeartbeat.js';
 
@@ -32,7 +30,6 @@ const MAX_COORDINATE = 1_000_000;
 const ID_PATTERN = /^[a-zA-Z0-9._:-]{1,96}$/;
 const MAX_TEXT_PREVIEW_BYTES = 8 * 1024;
 const log = createLogger('workspace-collaboration');
-const RELAY_HANDLERS = [handleLiveShowMessage, handleInkPreviewMessage, handleGameMessage, handleDockCastMessage];
 
 function sendJson(ws, payload) {
   if (ws.readyState !== WebSocket.OPEN) return false;

@@ -3,10 +3,11 @@ import fs from 'fs';
 import path from 'path';
 
 // A made-up GitHub that only knows the calls "Send to GitHub" makes
-// (server/projectGit/publish.js), and a repo's files and issues as an agent
-// or a GitHub project reads and writes them (server/github.js), shaped like
-// Octokit. Its repositories are bare repositories on disk under `root`, so
-// pushes to them are real.
+// (server/projectGit/publish.js), a repo's files and issues as an agent
+// or a GitHub project reads and writes them (server/github.js), and the pull
+// requests and reviews of the GitHub window, shaped like Octokit. Its
+// repositories are bare repositories on disk under `root`, so pushes to them
+// are real.
 
 const git = (cwd, ...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' }).trim();
 const MADE_UP_AUTHOR = { GIT_AUTHOR_NAME: 'Made-up GitHub', GIT_AUTHOR_EMAIL: 'made-up@example.invalid', GIT_COMMITTER_NAME: 'Made-up GitHub', GIT_COMMITTER_EMAIL: 'made-up@example.invalid' };
@@ -58,6 +59,13 @@ export function fakeGithubRepos(root, { owner = 'alma' } = {}) {
   };
   const notFound = () => Object.assign(new Error('Not Found'), { status: 404 });
   const issuesOf = new Map();
+  const pullsOf = new Map();
+  const reviews = [];
+  const findPull = (name, number) => {
+    const pr = (pullsOf.get(name) || []).find((p) => p.number === Number(number));
+    if (!pr) throw notFound();
+    return pr;
+  };
   return {
     calls,
     repoDir,
@@ -67,6 +75,30 @@ export function fakeGithubRepos(root, { owner = 'alma' } = {}) {
       commitFiles(repoDir(name), 'main', files, 'Made-up first version');
       issuesOf.set(name, issues);
     },
+    /**
+     * Opens the made-up pull request `number` on `name`: `files` on the branch
+     * `head`, made from `base`, also at refs/pull/<number>/head. `conflicts`
+     * ({ path: words }) land on `base` afterwards, so both sides changed them:
+     * GitHub says it cannot merge it, and Update branch fails with a conflict.
+     */
+    seedPull(name, { number, title, head, base = 'main', files, conflicts = null }) {
+      const dir = repoDir(name);
+      git(dir, 'update-ref', `refs/heads/${head}`, git(dir, 'rev-parse', `refs/heads/${base}`));
+      const sha = commitFiles(dir, head, files, title);
+      git(dir, 'update-ref', `refs/pull/${number}/head`, sha);
+      const baseSha = conflicts ? commitFiles(dir, base, conflicts, 'Made-up change on the base') : git(dir, 'rev-parse', `refs/heads/${base}`);
+      const where = { full_name: `${owner}/${name}` };
+      const pr = {
+        number, title, state: 'open', draft: false, mergeable: !conflicts, mergeable_state: conflicts ? 'dirty' : 'clean', merged_at: null,
+        node_id: `made-up-pull-${number}`, user: { login: owner }, updated_at: new Date().toISOString(),
+        html_url: `https://github.com/${owner}/${name}/pull/${number}`,
+        head: { ref: head, sha, repo: where }, base: { ref: base, sha: baseSha, repo: where },
+      };
+      pullsOf.set(name, [...(pullsOf.get(name) || []), pr]);
+      return pr;
+    },
+    /** The reviews posted to the made-up pull requests of `name`, oldest first. */
+    reviewsOf: (name) => reviews.filter((review) => review.repo === name).map((review) => ({ ...review })),
     /** Every path any commit on any branch of the made-up repository `name` holds. */
     pathsIn(name) {
       const commits = git(repoDir(name), 'rev-list', '--all').split('\n').filter(Boolean);
@@ -134,6 +166,20 @@ export function fakeGithubRepos(root, { owner = 'alma' } = {}) {
       },
     },
     pulls: {
+      list: async ({ repo: name, state = 'open' }) => ({ data: (pullsOf.get(name) || []).filter((pr) => state === 'all' || pr.state === state) }),
+      get: async ({ repo: name, pull_number: number }) => ({ data: findPull(name, number) }),
+      updateBranch: async ({ repo: name, pull_number: number }) => {
+        const pr = findPull(name, number);
+        calls.push(['update-branch', name, Number(number)]);
+        if (pr.mergeable === false) throw Object.assign(new Error('merge conflict between base and head'), { status: 422 });
+        return { data: { message: 'Updating pull request branch.' } };
+      },
+      createReview: async ({ repo: name, pull_number: number, body = '', comments = [], event, commit_id: commitId }) => {
+        findPull(name, number);
+        calls.push(['review', name, Number(number)]);
+        reviews.push({ repo: name, number: Number(number), body, comments, event, commitId });
+        return { data: { id: reviews.length, html_url: `https://github.com/${owner}/${name}/pull/${number}#pullrequestreview-${reviews.length}` } };
+      },
       create: async (pr) => {
         calls.push(['pr', pr.head, pr.base, pr.title]);
         return { data: { number: 7, html_url: `https://github.com/${owner}/${pr.repo}/pull/7` } };

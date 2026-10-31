@@ -25,6 +25,7 @@ export function projectKey(folder) {
   return crypto.createHash('sha1').update(folder.replace(/\\/g, '/').toLowerCase()).digest('hex').slice(0, 10);
 }
 
+// Logs and logged addresses keep only the hash at its end (shared/logs/addressNames.js).
 export function containerName(folder) {
   const base = folder.split(/[\\/]/).filter(Boolean).pop() || 'project';
   const slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'project';

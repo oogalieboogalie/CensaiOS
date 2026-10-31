@@ -26,7 +26,9 @@
 //     artifactTypes: [],                   // Artifact Graph node types it emits/reads
 //     lab: { title, props },               // optional window-lab fixture
 //     moduleMenu: { show, status },         // discovery; defaults dark for new windows
-//     launcher: { show, order, icon, label, hint }, // optional empty-canvas tile
+//     launcher: { show, order, icon, hint, props }, // optional: fallback icon for the header and
+//                                           // Add, hint in Add, and the starting button if
+//                                           // LAUNCHPAD_STARTS lists the kind
 //   };
 
 import { WINDOW_SIZE_CLASSES } from './windowSizeClasses.js';

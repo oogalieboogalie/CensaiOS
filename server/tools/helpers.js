@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 import pool from '../db.js';
 import { getSubAgentById } from '../memory.js';
 import { getProject, getProjectByName, getProjectByRepoOrPath, listProjects, openProject } from '../workspaces.js';
-import { isGithubProject } from '../workspaces/shared.js';
 import { getSecret } from '../secrets.js';
 import { githubApiUrl } from '../github/apiUrl.js';
 import {
@@ -12,7 +11,7 @@ import {
 } from '../workspaces/projectMemberships.js';
 import { resolveAuthorizedWorkspaceProject } from '../workspaces/projectAccess.js';
 import { noteToolFailure } from './toolsLog.js';
-import { offBoardGithubRead } from './rbac/ownerOnlyReads.js';
+import { refuseProjectsOffBoard } from './rbac/ownerOnlyReads.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CURRENT_PROJECT_FILE = path.resolve(path.join(__dirname, '..', '..', '.homebase-state', 'current-project.json'));
@@ -64,15 +63,13 @@ async function authorizedProjectResult(agentId, project, isSubAgent, context) {
       agentId: sub?.parent_id || agentId,
       requiredPermission: context.requiredProjectPermission || 'read',
     });
-  } else if (isGithubProject(project)) {
-    // Off a board a GitHub project is read with this computer's GitHub key, as a repo by its name is.
-    const refused = await offBoardGithubRead(context, { feature: 'agent read of a GitHub project off a board' });
-    if (refused) throw new Error(refused);
   }
   return { project, isSubAgent };
 }
 
 // Resolve which project a tool call should operate against.
+// - On a board: a project the board gave the agent.
+// - Off a board: for this computer's owner's agents only (refuseProjectsOffBoard).
 // - Sub-agents: bound project (always).
 // - Head agents: project name from args, or most-recent if omitted.
 // Forgiving lookup: agents often pass "owner/repo" as the project name when the
@@ -80,6 +77,7 @@ async function authorizedProjectResult(agentId, project, isSubAgent, context) {
 // literal name first, then fall back to matching the last `/`-segment OR the
 // `repo` field directly, before giving up.
 export async function resolveProjectForCall(agentId, projectName, context = {}) {
+  await refuseProjectsOffBoard(context);
   const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
   if (context.workspaceId) {
     let projectIdentifier = projectName || null;

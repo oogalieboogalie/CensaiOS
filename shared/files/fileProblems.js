@@ -57,8 +57,12 @@ export const SAVE_PROBLEMS = Object.freeze({
   secret: 'censaiOS does not write into its own folder of keys and logins.',
   ownerOnly: "Only this computer's owner can save files on this computer.",
   folder: 'It is a folder now, not a file.',
-  // Writing had begun, so the file may hold only part of what was there.
-  full: "This computer's disk is full. The file on disk may now be cut short, so free up some space and save again.",
+  // The whole new copy did not fit, so the file on disk is as it was
+  // (server/routes/files/saveWhole.js).
+  full: "This computer's disk is full. The file on disk is as it was, so free up some space and save again.",
+  // Written in place, where a whole copy could not stand in for the file:
+  // writing had begun, so the file may hold only part of what was there.
+  fullCutShort: "This computer's disk is full. The file on disk may now be cut short, so free up some space and save again.",
   exists: 'There is already a file with that name there.',
   tooBig: 'It is too big to save from here.',
   filesOff: "This censaiOS does not save to its computer's folders.",

@@ -33,7 +33,7 @@ const priorToken = process.env.GITHUB_TOKEN;
 process.env.GITHUB_TOKEN = 'made-up-token';
 
 const { executeTool } = await import('../server/tools.js');
-const { GITHUB_OFF_BOARD } = await import('../server/tools/rbac/ownerOnlyReads.js');
+const { GITHUB_OFF_BOARD, PROJECT_OFF_BOARD } = await import('../server/tools/rbac/ownerOnlyReads.js');
 const { OWNER_UNCHECKED_MESSAGE } = await import('../server/security/systemAdmin.js');
 
 // A shared agent the owner gave GitHub reads to (not one of the built-in family).
@@ -124,8 +124,9 @@ describe('off a board', () => {
   });
 
   test("Sam's agent cannot read the repo as a GitHub project either, while Pat's can", async () => {
+    // Off a board no project is shared, a GitHub one or a folder (tests/projectsOffBoard.test.js).
     for (const result of [await readProject({ userId: SAM }), await prStatus({ userId: SAM })]) {
-      expect(result).toBe(REFUSED);
+      expect(result).toBe(`Error: ${PROJECT_OFF_BOARD}`);
     }
     expect(global.fetch).not.toHaveBeenCalled();
     expect(await readProject({ userId: PAT })).toContain(README);
@@ -145,7 +146,7 @@ describe('off a board', () => {
     const refusals = logged.filter((line) => line.includes('not the owner'));
     expect(refusals).toEqual([
       `info refused agent tool github_read_file off a board for account ${SAM}: not the owner `,
-      `info refused agent read of a GitHub project off a board for account ${SAM}: not the owner `,
+      `info refused agent use of a project off a board for account ${SAM}: not the owner `,
     ]);
     expect(logged.join('\n')).not.toMatch(/made-up-repo|made-up-project|README|Made-up readme/);
   });

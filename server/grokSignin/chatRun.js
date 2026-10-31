@@ -7,6 +7,8 @@ import { resolveCli, managedBinDir } from '../cli-agents/install.js';
 import { buildAgentEnv } from '../cli-agents/env.js';
 import { agentHome } from '../cli-agents/paths.js';
 import { personalHomeDir, personalSignedIn } from '../cli-agents/personalHome.js';
+import { safeErrorCode } from '../security/errorCode.js';
+import { chatKey, fingerprint, readChatThread, saveChatThread } from './chatThreads.js';
 
 /**
  * The Grok chat on "Use my Grok sign-in": one chat turn through xAI's own
@@ -39,14 +41,18 @@ export function grokChatArgs({ prompt, sessionId = null }) {
   return args;
 }
 
-/** First turn of a chat that already has messages (say, from the key): carry them in. */
-export function grokPrompt(text, history = []) {
+/**
+ * The message, with the chat's messages this person's Grok has not been
+ * handed yet: the chat so far on their first message (say, from the key or
+ * from a teammate), and what was said meanwhile on a later one.
+ */
+export function grokPrompt(text, history = [], heading = 'Earlier in this chat') {
   const earlier = history
     .filter((m) => m && typeof m.text === 'string' && m.text.trim())
     .slice(-12)
     .map((m) => `${m.from === 'me' ? 'Me' : 'You'}: ${m.text.trim()}`)
     .join('\n\n');
-  const prompt = earlier ? `Earlier in this chat:\n\n${earlier}\n\nNow:\n${text}` : text;
+  const prompt = earlier ? `${heading}:\n\n${earlier}\n\nNow:\n${text}` : text;
   return prompt.length > MAX_PROMPT_CHARS ? prompt.slice(-MAX_PROMPT_CHARS) : prompt;
 }
 
@@ -61,38 +67,20 @@ function signInWords(text) {
 }
 
 /**
- * Run one turn. `emit(event)` gets the chat stream's own events (delta,
- * status, result, error) so the browser reads it like any other chat.
- * Resolves when Grok has finished; `signal` (the request closing) stops it.
+ * One run of Grok: its text and steps reach `emit` as they come, and it
+ * resolves with how the run ended, which the turn then tells the browser.
  */
-export function runGrokChat({ userId, text, history = [], sessionId = null, emit, signal, env = process.env, spawn = nodeSpawn }) {
-  const ready = grokReadiness(userId, env);
-  if (!ready.installed) throw new GrokChatError('Grok is not installed in censaiOS yet.', 'GROK_NOT_INSTALLED', 409);
-  if (!ready.signedIn) throw new GrokChatError('Sign in to your own Grok account first.', 'GROK_SIGNIN_REQUIRED', 409);
-
-  const home = personalHomeDir(grok, userId, env);
-  const cwd = path.join(home, 'chat');
-  fs.mkdirSync(cwd, { recursive: true });
-  const lasting = agentHome(env);
-  if (lasting) fs.mkdirSync(lasting, { recursive: true });
-  const runEnv = buildAgentEnv({ source: env, managedBin: managedBinDir(env), home: lasting, personal: { adapter: grok, userId }, serverKeys: false });
-  // The subscription, never API credits: no key reaches this run.
-  delete runEnv.XAI_API_KEY;
-
-  const prompt = grokPrompt(text, sessionId ? [] : history);
-  const args = [...ready.launch.prefixArgs, ...grokChatArgs({ prompt, sessionId })];
-  const started = Date.now();
-  log.info('grok chat started', { userId, resume: Boolean(sessionId) });
-
+function runOnce({ launch, args, cwd, runEnv, emit, signal, spawn, turnLimitMs }) {
   return new Promise((resolve) => {
-    const child = spawn(ready.launch.command, args, { cwd, env: runEnv, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(launch.command, args, { cwd, env: runEnv, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     let buffer = '';
     let reply = '';
     let stderr = '';
     let ended = null;
     let failed = null;
+    let timedOut = false;
     const tools = new Map();
-    const timer = setTimeout(() => child.kill('SIGTERM'), TURN_LIMIT_MS);
+    const timer = setTimeout(() => { timedOut = true; child.kill('SIGTERM'); }, turnLimitMs);
     const onAbort = () => child.kill('SIGTERM');
     signal?.addEventListener?.('abort', onAbort);
 
@@ -138,22 +126,85 @@ export function runGrokChat({ userId, text, history = [], sessionId = null, emit
       clearTimeout(timer);
       signal?.removeEventListener?.('abort', onAbort);
       if (buffer) onLine(buffer);
-      const ms = Date.now() - started;
       if (!startError && ended && !failed && ended.stopReason !== 'error') {
-        const newSession = SAFE_ID.test(String(ended.sessionId || '')) ? ended.sessionId : null;
-        emit({ type: 'result', text: reply, grokSessionId: newSession, timings: { total_ms: ms } });
-        log.info('grok chat finished', { userId, ms, stopReason: ended.stopReason || null });
-        resolve({ ok: true });
+        resolve({ ok: true, reply, sessionId: SAFE_ID.test(String(ended.sessionId || '')) ? ended.sessionId : null, stopReason: ended.stopReason || null });
         return;
       }
       const why = startError?.message || failed || stderr.trim().split(/\r?\n/).pop() || `Grok exited with code ${code}.`;
       const code2 = signal?.aborted ? 'CHAT_ABORTED' : signInWords(`${failed || ''} ${stderr}`) ? 'GROK_SIGNIN_REQUIRED' : 'GROK_CHAT_FAILED';
-      const message = code2 === 'GROK_SIGNIN_REQUIRED' ? 'Your Grok sign-in has run out. Sign in to Grok again, then send this once more.' : `Grok stopped: ${why}`;
-      if (!signal?.aborted) emit({ type: 'error', error: { message, code: code2 } });
-      log.warn('grok chat failed', { userId, ms, code: code2, exit: code, reason: why.slice(0, 300) });
-      resolve({ ok: false, code: code2 });
+      resolve({ ok: false, code: code2, exit: code, why, said: Boolean(reply), timedOut });
     };
     child.on('error', (err) => finish(null, err));
     child.on('close', (code) => finish(code));
   });
+}
+
+/**
+ * Run one turn. `emit(event)` gets the chat stream's own events (delta,
+ * status, result, error) so the browser reads it like any other chat.
+ * Resolves when Grok has finished; `signal` (the request closing) stops it.
+ * `chat` names the chat, so each person picks up their own Grok conversation
+ * in it (./chatThreads.js).
+ */
+export function runGrokChat({ userId, text, history = [], chat = null, emit, signal, env = process.env, spawn = nodeSpawn, turnLimitMs = TURN_LIMIT_MS }) {
+  const ready = grokReadiness(userId, env);
+  if (!ready.installed) throw new GrokChatError('Grok is not installed in censaiOS yet.', 'GROK_NOT_INSTALLED', 409);
+  if (!ready.signedIn) throw new GrokChatError('Sign in to your own Grok account first.', 'GROK_SIGNIN_REQUIRED', 409);
+
+  const home = personalHomeDir(grok, userId, env);
+  const cwd = path.join(home, 'chat');
+  fs.mkdirSync(cwd, { recursive: true });
+  const lasting = agentHome(env);
+  if (lasting) fs.mkdirSync(lasting, { recursive: true });
+  const runEnv = buildAgentEnv({ source: env, managedBin: managedBinDir(env), home: lasting, personal: { adapter: grok, userId }, serverKeys: false });
+  // The subscription, never API credits: no key reaches this run.
+  delete runEnv.XAI_API_KEY;
+
+  // This person's own conversation in this chat, with what others said
+  // meanwhile; on their first message here, a new one with the chat so far.
+  const key = chatKey(chat);
+  const thread = readChatThread(userId, key, env);
+  const unseen = thread ? history.filter((m) => !thread.seen.includes(fingerprint(m))) : history;
+  const turn = (sessionId, handed, heading) => runOnce({
+    launch: ready.launch,
+    args: [...ready.launch.prefixArgs, ...grokChatArgs({ prompt: grokPrompt(text, handed, heading), sessionId })],
+    cwd, runEnv, emit, signal, spawn, turnLimitMs,
+  });
+  // The conversation Grok answered in now holds what it had, what it was just
+  // handed, and its own answer; one it started instead of picking this one up
+  // holds only what it was handed. Nothing is kept once the person has signed out.
+  const keep = (sessionId, reply, handed) => {
+    if (!key || !sessionId || !personalSignedIn(grok, userId, env)) return;
+    const had = sessionId === thread?.sessionId ? [...thread.seen, ...history.map(fingerprint)] : handed.map(fingerprint);
+    const seen = [...had, fingerprint({ from: 'me', text }), fingerprint({ from: 'agent', text: reply })];
+    try { saveChatThread(userId, key, { sessionId, seen }, env); } catch (err) { log.warn('grok chat conversation not kept', { userId, code: safeErrorCode(err) }); }
+  };
+
+  const started = Date.now();
+  log.info('grok chat started', { userId, resume: Boolean(thread) });
+  return (async () => {
+    let handed = unseen;
+    let run = await (thread ? turn(thread.sessionId, unseen, 'Meanwhile in this chat') : turn(null, history));
+    // Picking it up failed before Grok said a word (say, its folder lost the
+    // conversation): a new one with the chat so far, in the same send. The
+    // old one is replaced only if the new one answers.
+    if (thread && !run.ok && run.code === 'GROK_CHAT_FAILED' && !run.said && !run.timedOut) {
+      log.info('grok chat starts over', { userId });
+      handed = history;
+      run = await turn(null, history);
+    }
+    const ms = Date.now() - started;
+    if (run.ok) {
+      keep(run.sessionId, run.reply, handed);
+      emit({ type: 'result', text: run.reply, timings: { total_ms: ms } });
+      log.info('grok chat finished', { userId, ms, stopReason: run.stopReason });
+      return { ok: true };
+    }
+    const message = run.code === 'GROK_SIGNIN_REQUIRED'
+      ? 'Your Grok sign-in has run out. Sign in to Grok again, then send this once more.'
+      : `Grok stopped: ${run.why}`;
+    if (!signal?.aborted) emit({ type: 'error', error: { message, code: run.code } });
+    log.warn('grok chat failed', { userId, ms, code: run.code, exit: run.exit, reason: run.why.slice(0, 300) });
+    return { ok: false, code: run.code };
+  })();
 }

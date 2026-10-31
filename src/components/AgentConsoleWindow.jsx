@@ -9,6 +9,7 @@ import { CliMark, StatusDot, stateLabel } from './agentConsole/CliMark.jsx';
 import { useCliRoster } from './agentConsole/useCliRoster.js';
 import { useCliTask } from './agentConsole/useCliTask.js';
 import { cliAgentsApi } from './agentConsole/cliAgentsApi.js';
+import { windowProject } from '../lib/windowProject.js';
 import './agentConsole/agentConsole.css';
 
 // Agent Console: a coding CLI (Claude Code, Codex, Gemini CLI, OpenCode) as
@@ -47,8 +48,9 @@ export function AgentConsoleWindow({ win = {}, onUpdate, onSpawn, currentProject
 
   React.useEffect(() => { if (taskId) setView('task'); }, [taskId]);
 
+  // The window names the project its task works in (its folder).
   const openTask = (task) => {
-    onUpdate?.({ taskId: task.id, cli: task.cli, title: task.cliLabel });
+    onUpdate?.({ taskId: task.id, cli: task.cli, title: task.cliLabel, ...(task.folder ? { folder: task.folder } : {}) });
     setView('task');
   };
   const newTask = () => {
@@ -64,6 +66,11 @@ export function AgentConsoleWindow({ win = {}, onUpdate, onSpawn, currentProject
     if (!status || status === win.cliStatus) return;
     onUpdate?.({ cliStatus: status, cliStatusAt: Date.now(), cliTask: String(task?.prompt || task?.title || '').slice(0, 140) || null });
   }, [status]);
+  // A console opened with only its task (the Inbox, a help card's Open task)
+  // takes that task's folder too.
+  React.useEffect(() => {
+    if (task?.folder && !win.folder) onUpdate?.({ folder: task.folder });
+  }, [task?.folder, win.folder]);
   const subtitle = view === 'settings'
     ? 'Agents'
     : task && view === 'task' ? stateLabel(task.status) : 'New task';
@@ -78,7 +85,7 @@ export function AgentConsoleWindow({ win = {}, onUpdate, onSpawn, currentProject
   } else if (view === 'settings') {
     body = <AgentsSettings roster={roster.clis} onOpenToolchains={() => onSpawn?.('toolchainSettings', { title: 'Toolchains' })} />;
   } else if (view === 'task' && taskId) {
-    body = <TaskView taskId={taskId} live={live} onSpawn={onSpawn} onNewTask={newTask} />;
+    body = <TaskView taskId={taskId} live={live} onSpawn={onSpawn} onNewTask={newTask} project={windowProject(win, currentProject)} />;
   } else {
     body = (
       <div className="ac-scroll">

@@ -66,6 +66,10 @@ async function startApp(databaseUrl, stand, logDir, children) {
     // makes goes to CENSAI_GITHUB_API_URL (server/github/apiUrl.js), so the key
     // only ever reaches the stand-in GitHub.
     GITHUB_TOKEN: 'made-up-standin-github-key',
+    // The GitHub window's reviewers and conflict fixer fetch the stand-in's
+    // repositories with git, into this run's own folder.
+    CENSAI_GITHUB_GIT_URL: stand.github.gitUrl,
+    CENSAI_GITHUB_FIX_DIR: path.join(stand.cliData, 'github-fixes'),
     // Scheduled runs are checked every 5 seconds, so a test that moves a run's time sees it fire.
     SCHEDULER_POLL_INTERVAL_MS: '5000',
     // A stand-in for xAI's Grok CLI, which the Grok chat's own sign-in runs:

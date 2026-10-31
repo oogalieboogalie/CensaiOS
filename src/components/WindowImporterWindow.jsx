@@ -41,7 +41,7 @@ export function WindowImporterWindow() {
         rawCss: css,
         hint,
         ...(addLauncher ? {
-          launcher: { show: true, order: 200, icon: 'Tools', label: '', hint: '' },
+          launcher: { show: true, order: 200, icon: 'Tools', hint: '' },
         } : {}),
       };
 

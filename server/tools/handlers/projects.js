@@ -24,7 +24,7 @@ import {
   listWorkspaceAgentProjects,
 } from '../../workspaces/projectMemberships.js';
 import { noteToolFailure } from '../toolsLog.js';
-import { ownerOnlyProjectRead } from '../rbac/ownerOnlyReads.js';
+import { ownerOnlyProjectRead, refuseProjectsOffBoard } from '../rbac/ownerOnlyReads.js';
 
 export async function handleProjectsTool(agentId, name, args, context = {}) {
   switch (name) {
@@ -73,6 +73,8 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
           + ` [${membership.permission}; ${membership.source_kind}]`
         ).join('\n');
       }
+      // Off a board this computer's projects, and the folders they are in, are listed for the owner's agents only.
+      await refuseProjectsOffBoard(context);
       const projects = await listProjects(agentId);
       if (projects.length === 0) return 'There are no shared projects yet. Use open_project to create one.';
       return projects.map(p =>

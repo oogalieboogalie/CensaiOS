@@ -72,7 +72,7 @@ export function GenImageWindow({ win, onUpdate }) {
 
   return (
     <>
-      <WindowTitle accent="var(--ps-pink)" icon={<GenIcon size={14}/>} label="Image" subtitle={finalPrompt ? 'nanobanana' : 'awaiting prompt'} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} />
+      <WindowTitle accent="var(--ps-pink)" icon={<GenIcon size={14}/>} label="Image Generator" subtitle={finalPrompt ? 'nanobanana' : 'awaiting prompt'} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'var(--surface-sunken)', margin: '6px 8px 0 8px', borderRadius: 'var(--radius-lg)' }}>
           {generatedImage && !loading && <img src={generatedImage} alt={finalPrompt} draggable="true" onDragStart={handleDragStart} onDragEnd={handleDragEnd} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', animation: 'gen-fade 0.5s ease-out both', cursor: dragImage ? 'grabbing' : 'grab' }} />}

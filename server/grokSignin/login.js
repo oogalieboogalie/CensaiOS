@@ -7,6 +7,7 @@ import { resolveCli, managedBinDir } from '../cli-agents/install.js';
 import { buildAgentEnv } from '../cli-agents/env.js';
 import { agentHome } from '../cli-agents/paths.js';
 import { personalHomeDir, personalSignedIn } from '../cli-agents/personalHome.js';
+import { forgetChatThreads } from './chatThreads.js';
 
 /**
  * Signing in to your own Grok account from the Grok chat, with no terminal:
@@ -125,5 +126,7 @@ export async function grokLogout(userId, { env = process.env, spawn = nodeSpawn 
     });
   }
   fs.rmSync(path.join(home, grok.personalHome.loginFile), { force: true });
+  // The next sign-in may be another Grok account, which has none of these conversations.
+  forgetChatThreads(userId, env);
   log.info('grok signed out', { userId });
 }

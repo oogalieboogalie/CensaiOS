@@ -33,29 +33,43 @@ async function kindOf(project, rel) {
   return ownerOnlyKind({ target, base: resolveInsideProject(project.path, '.') });
 }
 
-// Off a board no repo is shared with anyone, so only this computer's owner's
-// agents read GitHub through its key there: a repo by its name, or a GitHub
-// project (an agent on a board reads the repos the board gave it:
-// server/workspaces/projectMemberships.js). Changing something on GitHub with
-// the key is the owner's alone everywhere (server/tools/rbac/hostOwnerOnly.js).
+// Off a board nothing is shared with anyone, so only this computer's owner's
+// agents reach its projects there (a folder or a GitHub repo opened as one)
+// and read GitHub through its key (a repo by its name). An agent on a board
+// works in the projects and repos the board gave it
+// (server/workspaces/projectMemberships.js). Changing something is the
+// owner's alone everywhere (server/tools/rbac/hostOwnerOnly.js).
 export const GITHUB_OFF_BOARD = "Only this computer's owner's agents read GitHub with its key outside a board. Tell the person in plain words: I can read a GitHub repo for you in my chat on a board where that repo is open as a project.";
+export const PROJECT_OFF_BOARD = "Only this computer's owner's agents work in its projects outside a board. Tell the person in plain words: I can work in a project for you in my chat on a board where that project is open.";
 
-/**
- * The plain words an agent gets for a GitHub read off a board, or null for
- * the owner's; `feature` names the read in the refusal's log line.
- */
-export async function offBoardGithubRead(context, { feature, db = pool, mode = getRuntimeMode() } = {}) {
+/** `words` for anyone but the owner, or null for the owner's agents; `feature` names the use in the refusal's log line. */
+async function ownerOnlyOffBoard(context, words, { feature, db = pool, mode = getRuntimeMode() } = {}) {
   const userId = Number(context.userId);
   if (!Number.isInteger(userId) || userId <= 0) {
     if (context.userId == null && mode === RUNTIME_MODES.LOCAL_DESKTOP) return null;
     logOwnerRefusal(feature, 401);
-    return GITHUB_OFF_BOARD;
+    return words;
   }
   try {
-    return await isComputerOwner({ session: { userId } }, feature, { db }) ? null : GITHUB_OFF_BOARD;
+    return await isComputerOwner({ session: { userId } }, feature, { db }) ? null : words;
   } catch {
     return OWNER_UNCHECKED_MESSAGE;
   }
+}
+
+/** The plain words an agent gets for a GitHub repo read by its name off a board, or null for the owner's. */
+export const offBoardGithubRead = (context, options) => ownerOnlyOffBoard(context, GITHUB_OFF_BOARD, options);
+
+/**
+ * Off a board (a chat sent with no board, as a teammate's own browser can
+ * send one, or a run started elsewhere) only this computer's owner's agents
+ * find, list or read a project; anyone else's get PROJECT_OFF_BOARD, thrown
+ * before any project is looked up. On a board this checks nothing.
+ */
+export async function refuseProjectsOffBoard(context = {}, { db = pool, mode = getRuntimeMode() } = {}) {
+  if (context.workspaceId) return;
+  const refused = await ownerOnlyOffBoard(context, PROJECT_OFF_BOARD, { feature: 'agent use of a project off a board', db, mode });
+  if (refused) throw Object.assign(new Error(refused), { statusCode: 403 });
 }
 
 /**

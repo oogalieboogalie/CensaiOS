@@ -17,7 +17,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
     componentName: 'ImageStudioWindow',
     componentPath: 'src/components/windows/imageStudio/index.jsx',
     defaultSize: { w: 1200, h: 680 },
-    launcher: { show: true, order: 75, icon: 'NewWindow', label: 'Image Studio', hint: 'draw + generate' },
+    launcher: { show: true, order: 75, icon: 'NewWindow', hint: 'draw + generate' },
   },
   {
     kind: 'image',
@@ -55,7 +55,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
     componentPath: 'src/components/MusicWindow.jsx',
     defaultSize: { w: 300, h: 460 },
     sizeClass: 'fixed', // device-shaped player, not a document window
-    launcher: { show: true, order: 100, icon: 'Music', label: 'Music Player', hint: 'Retro MP3 player' },
+    launcher: { show: true, order: 100, icon: 'Music', hint: 'Retro MP3 player' },
   },
   {
     kind: 'stream',
@@ -64,7 +64,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
     componentName: 'StreamWindow',
     componentPath: 'src/components/StreamWindow.jsx',
     defaultSize: { w: 480, h: 320 },
-    launcher: { show: true, order: 110, icon: 'Video', label: 'Stream Viewer', hint: 'Twitch & YT' },
+    launcher: { show: true, order: 110, icon: 'Video', hint: 'Twitch & YT' },
   },
   {
     kind: 'htmlPreview',
@@ -73,7 +73,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
     componentName: 'HtmlPreviewWindow',
     componentPath: 'src/components/HtmlPreviewWindow.jsx',
     defaultSize: { w: 720, h: 520 },
-    launcher: { show: true, order: 70, icon: 'Eye', label: 'Shared preview', hint: 'live HTML from a code window', props: { title: 'Shared Preview', fileName: 'preview.html' } },
+    launcher: { show: true, order: 70, icon: 'Eye', hint: 'live HTML from a code window', props: { title: 'Shared Preview', fileName: 'preview.html' } },
     lab: {
       title: 'Shared Preview',
       props: {
@@ -105,7 +105,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
     componentName: 'N8nWindow',
     componentPath: 'src/components/N8nWindow.jsx',
     defaultSize: { w: 900, h: 640 },
-    launcher: { show: true, order: 140, icon: 'NewWorkflow', label: 'n8n', hint: 'workflow automation' },
+    launcher: { show: true, order: 140, icon: 'NewWorkflow', hint: 'workflow automation' },
   },
   {
     kind: 'sketchpad',
@@ -114,7 +114,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
     componentName: 'ExcalidrawWindow',
     componentPath: 'src/components/ExcalidrawWindow.jsx',
     defaultSize: { w: 800, h: 600 },
-    launcher: { show: true, order: 180, icon: 'Edit', label: 'Sketchpad', hint: 'sketch & diagram' },
+    launcher: { show: true, order: 180, icon: 'Edit', hint: 'sketch & diagram' },
   },
   // COMMENTED OUT: spotify - hide from launcher menu
   // {
@@ -124,7 +124,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
   //   componentName: 'SpotifyWindow',
   //   componentPath: 'src/components/SpotifyWindow.jsx',
   //   defaultSize: { w: 400, h: 560 },
-  //   launcher: { show: true, order: 200, icon: 'Music', label: 'Spotify', hint: 'embedded player' },
+  //   launcher: { show: true, order: 200, icon: 'Music', hint: 'embedded player' },
   // },
   {
     kind: 'youtube',
@@ -133,7 +133,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
     componentName: 'YouTubeWindow',
     componentPath: 'src/components/YouTubeWindow.jsx',
     defaultSize: { w: 640, h: 420 },
-    launcher: { show: true, order: 210, icon: 'Video', label: 'YouTube', hint: 'embedded video' },
+    launcher: { show: true, order: 210, icon: 'Video', hint: 'embedded video' },
   },
   {
     kind: 'figma',
@@ -143,7 +143,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
     componentPath: 'src/components/FigmaWindow.jsx',
     defaultSize: { w: 768, h: 528 },
     sizeClass: 'wide', // room for the frame grid
-    launcher: { show: true, order: 220, icon: 'Edit', label: 'Figma', hint: 'import designs as live code' },
+    launcher: { show: true, order: 220, icon: 'Edit', hint: 'import designs as live code' },
   },
   {
     kind: 'designBlock',
@@ -155,7 +155,7 @@ export const MEDIA_WINDOW_MANIFESTS = [
     sizeClass: 'large', // pasted UI opens at a desktop-ish board; Figma imports pass their frame size
     header: { title: 'Design block', icon: 'Code', mode: 'bare' },
     launcher: {
-      show: true, order: 225, icon: 'Code', label: 'Design block', hint: 'borderless live UI code',
+      show: true, order: 225, icon: 'Code', hint: 'borderless live UI code',
       props: { title: 'Design block', sourceType: 'tailwind', frameless: true, bare: true, source: '<section class="min-h-screen grid place-items-center bg-gradient-to-br from-slate-50 to-indigo-100 p-12"><div class="max-w-xl text-center space-y-5"><p class="text-sm font-semibold tracking-widest text-indigo-600 uppercase">Design block</p><h1 class="text-5xl font-bold tracking-tight text-slate-900">Paste UI code on the canvas</h1><p class="text-lg text-slate-600">HTML, Tailwind, React or SVG renders right here with no window around it. Select it to edit the code or remix it with any model.</p></div></section>' },
     },
   },

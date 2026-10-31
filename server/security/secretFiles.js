@@ -4,8 +4,8 @@ import { SECRET_CHANGES } from '../../shared/files/fileProblems.js';
 // Files that hold keys and passwords by their very name: a project's .env (not
 // its .env.example), key and certificate files, SSH keys and the files tools
 // keep their logins in, keys downloaded from Google and Firebase, a project's
-// secrets file (not secrets.example.json), the values Terraform reads by
-// itself, and copies and backups of them (.env~, id_rsa.bak,
+// secrets file (not secrets.example.json), Terraform's values and the state
+// it writes them into, and copies and backups of them (.env~, id_rsa.bak,
 // "credentials (1).json"). Only this computer's owner opens them on the board
 // (server/security/ownerOnlyFiles.js), and Step cards never read their words.
 // Hidden folders (.git, .ssh, a tool's logins) are kept for the owner too.
@@ -21,15 +21,22 @@ const KEY_EXTENSIONS = new Set(['.pem', '.key', '.p8', '.p12', '.pfx', '.jks', '
 const SECRET_NAMES = new Set([
   '.envrc', 'id_rsa', 'id_dsa', 'id_ecdsa', 'id_ed25519', 'credentials', 'credentials.json', '.credentials.json',
   '.netrc', '_netrc', '.npmrc', '.pypirc', '.pgpass', '.git-credentials', '.htpasswd',
-  '.vault-token', '.s3cfg', '.my.cnf', '.boto', '.dockercfg', '.terraformrc', '.bash_history', '.zsh_history',
+  '.vault-token', '.s3cfg', '.my.cnf', '.boto', '.dockercfg', '.terraformrc', 'terraform.rc', '.bash_history', '.zsh_history',
   'serviceaccountkey.json', 'secrets.json', 'secrets.yml', 'secrets.yaml', 'terraform.tfvars', 'terraform.tfvars.json',
 ]);
 // Keys downloaded from Google (client_secret_<id>.apps.googleusercontent.com.json)
-// and Firebase (<project>-firebase-adminsdk-<id>.json), and the values Terraform
-// reads by itself from any *.auto.tfvars; an example of one says so before its
-// extension (client_secret.example.json, client_secret_sample.json).
-const SECRET_PATTERNS = [/^client_secret.*\.json$/, /^.+-firebase-adminsdk-.+\.json$/, /\.auto\.tfvars(?:\.json)?$/];
+// and Firebase (<project>-firebase-adminsdk-<id>.json); an example of one says
+// so before its extension (client_secret.example.json, client_secret_sample.json).
+const SECRET_PATTERNS = [/^client_secret.*\.json$/, /^.+-firebase-adminsdk-.+\.json$/];
 const EXAMPLE_BEFORE_EXTENSION = /[._-](?:example|sample|template)\.[^.]+$/;
+// Terraform's state, which holds every value it manages, passwords too
+// (terraform.tfstate, errored.tfstate, their backups and lock), and the values
+// it reads by itself from any *.auto.tfvars or is handed (-var-file=prod.tfvars),
+// all of which GitHub's own ignore list for Terraform keeps out. A handed one
+// that is an example says so before its ending (prod.example.tfvars).
+const TERRAFORM_STATE = /\.tfstate(?:\.\d+)?(?:\.backup|\.lock\.info)?$/;
+const TERRAFORM_VALUES = /^(.*?)(\.auto)?\.tfvars(?:\.json)?$/;
+const EXAMPLE_NAME = /(?:^|[._-])(?:example|sample|template)$/;
 // What a copy or a backup adds to a name: "~", ".bak", ".old", " copy", " - Copy", " (1)", "(1)".
 const COPY_MARK = /(?:~|\.(?:bak|backup|old|orig|save|swp|tmp)|(?: -)?[ _-]copy(?: \d+)?| \([^)]*\)|\(\d+\))$/;
 // Vim keeps a file's unsaved words beside it as ".<name>.swp" (.swo, .swn, ... when there are more).
@@ -42,9 +49,10 @@ const SHARED_HIDDEN_FOLDERS = new Set(['.github', '.team']);
 export const SECRET_SAMPLES = Object.freeze([
   '.env', '.env.local', 'name.env', 'name_key', 'name-key', ...SECRET_NAMES, ...[...KEY_EXTENSIONS].map((ext) => `name${ext}`),
   'client_secret_x.apps.googleusercontent.com.json', 'name-firebase-adminsdk-x.json', 'name.auto.tfvars', 'name.auto.tfvars.json',
+  'name.tfvars', 'name.tfvars.json', 'terraform.tfstate', 'terraform.tfstate.backup',
 ]);
 /** What makes a name hold keys whatever comes before it, to test a glob's own start with (`server.*` reaches server.key). */
-export const SECRET_ENDINGS = Object.freeze(['', '.env', '_key', '-key', '.auto.tfvars', ...KEY_EXTENSIONS]);
+export const SECRET_ENDINGS = Object.freeze(['', '.env', '_key', '-key', '.auto.tfvars', '.tfvars', '.tfstate', ...KEY_EXTENSIONS]);
 /** What a copy or a backup adds to a name (COPY_MARK), one of each kind, to test a glob such as `*.bak` with. */
 export const COPY_SAMPLES = Object.freeze(['', '~', '.bak', '.backup', '.old', '.orig', '.save', '.swp', '.tmp', ' copy', ' (1)']);
 
@@ -72,6 +80,9 @@ function secretName(lower) {
   // SSH keys by any name they are given (id_rsa_work, id_ed25519-2, not their .pub halves), and deploy_key, private-key.
   if (/^id_(?:rsa|dsa|ecdsa|ed25519)(?:[_-][a-z0-9_-]*|\d+)?$/.test(name) || /^[a-z0-9_-]+[_-]key$/.test(name)) return true;
   if (SECRET_NAMES.has(name) || KEY_EXTENSIONS.has(path.extname(name))) return true;
+  if (TERRAFORM_STATE.test(name)) return true;
+  const values = TERRAFORM_VALUES.exec(name);
+  if (values) return Boolean(values[2]) || !EXAMPLE_NAME.test(values[1]);
   return !EXAMPLE_BEFORE_EXTENSION.test(name) && SECRET_PATTERNS.some((pattern) => pattern.test(name));
 }
 

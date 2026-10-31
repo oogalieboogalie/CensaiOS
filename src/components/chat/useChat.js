@@ -1,5 +1,5 @@
 import React from 'react';
-import { getAgents, getAgentById, subscribe as subscribeAgents } from '../../lib/agentStore.js';
+import { useChatAgent } from './useChatAgent.js';
 import { sendMessageWithMeta } from '../../lib/chat.js';
 import { scriptedReply, replyDelayMs } from '../../data/landing-chat-script.js';
 import { useVisibilityAwareInterval } from '../../lib/usePolling.js';
@@ -19,15 +19,9 @@ import { runEnded, runStarted, runTool, toolNameFrom } from '../../lib/weewoo/ag
 import { getSelf } from '../../lib/modules/presenceRoster.js';
 import { getCollaborationClientId } from '../../lib/collaboration/clientIdentity.js';
 
-function useAgent(agentId) {
-  // Re-render when the agent record changes (e.g. its model is switched).
-  const agent = React.useSyncExternalStore(subscribeAgents, () => getAgentById(agentId), () => getAgentById(agentId));
-  return agent || getAgents()[1];
-}
-
 export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, isActive, sendVia = null }) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
-  const agent = useAgent(win.agentId);
+  const agent = useChatAgent(win.agentId);
   const defaultMsgs = React.useMemo(() => [], [agent.id]);
   const msgs = win.msgs === undefined ? defaultMsgs : win.msgs;
 

@@ -1,8 +1,9 @@
 // A stand-in GitHub REST API for the test team: the made-up GitHub of
 // tests/fixtures/fakeGithubRepos.js served over HTTP, whose repositories are
-// bare repositories on disk, so Send to GitHub, a GitHub project and an
-// agent's GitHub reads can be tried with no GitHub account. Point
-// CENSAI_GITHUB_API_URL at `url`.
+// bare repositories on disk, so Send to GitHub, a GitHub project, an agent's
+// GitHub reads and the GitHub window's pull requests can be tried with no
+// GitHub account. Point CENSAI_GITHUB_API_URL at `url` and
+// CENSAI_GITHUB_GIT_URL at `gitUrl` (git fetches the repositories there).
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -17,6 +18,8 @@ export const STANDIN_GITHUB_OWNER = 'pat-example';
 export function startStandinGithub() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'made-up-github-'));
   const gh = fakeGithubRepos(root, { owner: STANDIN_GITHUB_OWNER });
+  // git asks for <gitUrl>/<owner>/<name>.git: the owner's folder is this one.
+  fs.symlinkSync('.', path.join(root, STANDIN_GITHUB_OWNER));
   // Every ask about a repo, answered or not: [method, repo, what is asked].
   const reads = [];
   // m[1] is the repo's name; a repo of any other owner is not there.
@@ -29,6 +32,10 @@ export function startStandinGithub() {
     ['PUT', /^\/repos\/[^/]+\/([^/]+)\/contents\/(.+)$/, (m, body) => gh.repos.createOrUpdateFileContents({ ...body, repo: m[1], path: m[2] })],
     ['GET', /^\/repos\/[^/]+\/([^/]+)\/issues$/, (m) => gh.issues.listForRepo({ repo: m[1] })],
     ['POST', /^\/repos\/[^/]+\/([^/]+)\/pulls$/, (m, body) => gh.pulls.create({ ...body, repo: m[1] })],
+    ['GET', /^\/repos\/[^/]+\/([^/]+)\/pulls$/, (m, body, query) => gh.pulls.list({ repo: m[1], state: query.get('state') || 'open' })],
+    ['GET', /^\/repos\/[^/]+\/([^/]+)\/pulls\/(\d+)$/, (m) => gh.pulls.get({ repo: m[1], pull_number: m[2] })],
+    ['POST', /^\/repos\/[^/]+\/([^/]+)\/pulls\/(\d+)\/reviews$/, (m, body) => gh.pulls.createReview({ ...body, repo: m[1], pull_number: m[2] })],
+    ['PUT', /^\/repos\/[^/]+\/([^/]+)\/pulls\/(\d+)\/update-branch$/, (m) => gh.pulls.updateBranch({ repo: m[1], pull_number: m[2] })],
   ];
   const server = http.createServer(async (req, res) => {
     let raw = '';
@@ -54,10 +61,15 @@ export function startStandinGithub() {
   return new Promise((resolve) => {
     server.listen(0, '127.0.0.1', () => resolve({
       url: `http://127.0.0.1:${server.address().port}`,
+      gitUrl: `file://${root}`,
       calls: () => gh.calls.map((call) => [...call]),
       reads: () => reads.map((read) => [...read]),
       /** Makes the made-up repository `name` (owner STANDIN_GITHUB_OWNER) holding `files` and `issues`. */
       seed: (name, files, options) => gh.seed(name, files, options),
+      /** Opens a made-up pull request on the made-up repository `name` (see fakeGithubRepos' seedPull). */
+      seedPull: (name, pull) => gh.seedPull(name, pull),
+      /** The reviews posted to the pull requests of `name`, oldest first. */
+      reviewsOf: (name) => gh.reviewsOf(name),
       repos,
       pathsIn: (name) => gh.pathsIn(name),
       /** Every word the made-up repository `name` holds: each version's message and changes, on every branch. */

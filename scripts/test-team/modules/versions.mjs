@@ -28,21 +28,31 @@
 // The bar of that project then names the .env GitHub already has, on Pat's
 // screen and Sam's, and says to make new keys, since censaiOS cannot take
 // GitHub's copy back; the project GitHub has no such file for has no such
-// line. Red team: Sam's own save, send and making again are refused (only
-// the owner changes versions); the bar's status names the files whose
-// changes it leaves out but never their words; no repository, branch or
-// version on the made-up GitHub holds a key; and the refusals and the
-// versions made again are logged without a file's name, path or key. The
-// board's list of open projects is put back as the module found it. All
-// files, keys and repositories are made up.
+// line. Pat says "Done, I made new keys" on it: the line goes away on both
+// screens and stays away after both reload, while Sam never gets the button
+// and Sam's own Done is refused. A made-up key file a terminal pushes to
+// GitHub after that brings the line back naming only it, and a new copy of
+// the .env pushed after it brings the .env back too, still named once that
+// branch is deleted on GitHub. In a made-up Terraform project the bar lists
+// its values and state (prod.tfvars, terraform.tfstate and its backup) as
+// left out, on Sam's screen too, and neither the first version nor Send to
+// GitHub takes them, while main.tf and prod.tfvars.example are saved and
+// sent. Red team: Sam's own save, send and making
+// again are refused (only the owner changes versions); the bar's status
+// names the files whose changes it leaves out but never their words; no
+// repository, branch or version on the made-up GitHub holds a key; and the
+// refusals, the versions made again and the files put away are logged
+// without a file's name, path or key. The board's list of open projects is
+// put back as the module found it. All files, keys and repositories are made
+// up.
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { updateWindow, windowFrame } from '../../e2e/board.mjs';
+import { openBoard, updateWindow, windowFrame } from '../../e2e/board.mjs';
 import { ROOT } from '../../e2e/runner.mjs';
-import { MAKE_AGAIN, githubKeepsLine, keptOutLine, madeAgainLine, makeAgainQuestion, sendRefusal } from '../../../shared/files/versionWords.js';
+import { MAKE_AGAIN, NEW_KEYS_DONE, githubKeepsLine, keptOutLine, madeAgainLine, makeAgainQuestion, newKeysLine, sendRefusal } from '../../../shared/files/versionWords.js';
 import { addFromMenu } from '../addMenu.mjs';
 import { sideBySide } from '../sideBySide.mjs';
 
@@ -54,11 +64,17 @@ const ORDINARY = ['.env.example', 'made-up-notes.md', PAGE];
 // In the order git lists them, as the bar names them.
 const SECRETS = ['.env', 'made-up-server.key', 'made-up-server.key.bak'];
 const LATER_KEY = 'made-up-deploy.key';
+// A Terraform project: the values and state it keeps out (in git's order, as the bar names them), and the files it saves.
+const TERRAFORM_KEPT = ['prod.tfvars', 'terraform.tfstate', 'terraform.tfstate.backup'];
+const TERRAFORM_SHOWN = ['main.tf', 'prod.tfvars.example'];
 const OLD_PAGE = 'made-up-old-page.html';
 const OLD_ENV_CHANGED = `MADE_UP_KEY=${KEY}-oldenvchanged\n`;
 // What a terminal pushes to the made-up GitHub itself: not the made-up key censaiOS must never send.
 const PUSHED_KEY = `made-up-pushed-by-a-terminal-${Date.now().toString(36)}`;
+// A key file a terminal pushes to GitHub after Pat made new keys.
+const PUSHED_LATER = 'made-up-later-deploy.key';
 const SEND_REFUSED = 'send to GitHub refused';
+const PUT_AWAY = 'files GitHub keeps put away: new keys made';
 const MADE_AGAIN = 'versions made again without files that can hold keys';
 
 const STATE_DIR = process.env.CENSAI_STATE_DIR ? path.resolve(process.env.CENSAI_STATE_DIR) : path.join(ROOT, '.homebase-state');
@@ -74,14 +90,14 @@ function keepOpenProjects() {
 }
 
 const git = (dir, ...args) => execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-/** Saves a version with plain git, the way a terminal or an agent would. */
-function plainCommit(dir, message) {
-  git(dir, 'add', '-A');
+/** Saves a version with plain git, the way a terminal or an agent would: every change, or only `files`. */
+function plainCommit(dir, message, files = null) {
+  git(dir, 'add', ...(files ? ['--', ...files] : ['-A']));
   git(dir, '-c', 'user.name=Made Up', '-c', 'user.email=made-up@example.com', '-c', 'commit.gpgsign=false', 'commit', '-qm', message);
 }
 
 /** The made-up words of each file: a made-up key in each that holds keys, tagged by file. */
-const wordsOf = (file, tag = file) => ([...SECRETS, LATER_KEY].includes(file) ? `MADE_UP_KEY=${KEY}-${tag.replace(/\W/g, '')}\n` : `Made-up words in ${file}\n`);
+const wordsOf = (file, tag = file) => ([...SECRETS, LATER_KEY, ...TERRAFORM_KEPT].includes(file) ? `MADE_UP_KEY=${KEY}-${tag.replace(/\W/g, '')}\n` : `Made-up words in ${file}\n`);
 
 function makeProject(prefix, files) {
   const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `${prefix}-`)));
@@ -135,7 +151,7 @@ async function keyShows(page) {
 function githubProblems(t, repos, pushed) {
   const problems = [];
   for (const repo of repos) {
-    const held = t.github.pathsIn(repo).filter((file) => [...SECRETS, LATER_KEY].includes(file) && !(repo === pushed && file === '.env'));
+    const held = t.github.pathsIn(repo).filter((file) => [...SECRETS, LATER_KEY, ...TERRAFORM_KEPT].includes(file) && !(repo === pushed && file === '.env'));
     if (held.length) problems.push(`${repo} on the made-up GitHub holds ${held.join(', ')}`);
     if (t.github.everything(repo).includes(KEY)) problems.push(`a version on ${repo} holds a made-up key`);
   }
@@ -164,9 +180,10 @@ export default {
     const old = makeProject('made-up-old-site', [OLD_PAGE, '.env']);
     git(old, 'init', '-q', '-b', 'main');
     plainCommit(old, 'Made-up first version, saved with plain git');
+    const infra = makeProject('made-up-infra', [...TERRAFORM_SHOWN, ...TERRAFORM_KEPT]);
     const logStart = t.serverLog().length;
     // The made-up folders are typed into Files: the harness checks no log names them either.
-    t.typed.push(KEY, GITHUB_KEY, path.basename(site), path.basename(old));
+    t.typed.push(KEY, GITHUB_KEY, path.basename(site), path.basename(old), path.basename(infra));
     let filesId = null;
     let repo = null;
     let oldRepo = null;
@@ -453,6 +470,112 @@ export default {
         return fail(problems, `both bars say "${want}"; the project GitHub has no key file for has no such line`);
       });
 
+      await check('walk', `Pat says "${NEW_KEYS_DONE}" on that line: it goes away on Pat's screen and Sam's and stays away after both reload, while Sam's bar never shows the button and Sam's own Done is refused`, async ({ shot }) => {
+        if (!filesId || !oldRepo) throw new Error('that project was not sent in the steps before');
+        const want = githubKeepsLine(['.env']);
+        const statusOf = async (who) => (await t.api(who, 'GET', `/api/project-git/status?path=${encodeURIComponent(old)}`)).body?.githubKeeps;
+        const problems = [];
+        await openFolder(pat.page, filesId, old);
+        await homeView(pat.page);
+        const patSays = await barSays(pat.page, filesId, (w) => w.includes(want) && w.includes(NEW_KEYS_DONE));
+        await shot(pat.page, 'the-line-with-done-i-made-new-keys');
+        if (!patSays.includes(want) || !patSays.includes(NEW_KEYS_DONE)) problems.push(`Pat's bar says "${patSays}", not "${want}" with a "${NEW_KEYS_DONE}" button`);
+        await homeView(sam.page);
+        const samSays = await barSays(sam.page, filesId, (w) => w.includes(want));
+        if (!samSays.includes(want)) problems.push(`Sam's bar says "${samSays}", not "${want}"`);
+        if (await windowFrame(sam.page, filesId).getByTestId('project-versions-new-keys').count()) problems.push(`Sam's bar shows the "${NEW_KEYS_DONE}" button`);
+        const refused = await t.api(sam, 'POST', '/api/project-git/new-keys', { path: old, names: ['.env'] });
+        if (refused.status < 400) problems.push(`Sam's own Done was answered ${refused.status}`);
+        if (JSON.stringify(await statusOf(pat)) !== '[".env"]') problems.push(`after Sam's Done the status says GitHub keeps ${JSON.stringify(await statusOf(pat))}`);
+        await windowFrame(pat.page, filesId).getByTestId('project-versions-new-keys').click({ timeout: 5_000 });
+        const note = newKeysLine(['.env']);
+        const away = (w) => w.includes(keptOutLine(['.env'])) && !w.includes('GitHub already has');
+        const patAfter = await barSays(pat.page, filesId, (w) => away(w) && w.includes(note));
+        const samAfter = await barSays(sam.page, filesId, away);
+        await sideBySide(t, 'the-line-put-away-on-both-screens', shot);
+        if (!away(patAfter) || !patAfter.includes(note)) problems.push(`Pat's bar says "${patAfter}", not "${note}" without the line`);
+        if (!away(samAfter)) problems.push(`Sam's bar still says "${samAfter}"`);
+        await Promise.all([pat, sam].map((who) => openBoard(who.page, t.workspaceId, t.web)));
+        for (const who of [pat, sam]) await homeView(who.page);
+        for (const [who, name] of [[pat, 'Pat'], [sam, 'Sam']]) {
+          const reloaded = await barSays(who.page, filesId, away);
+          if (!away(reloaded)) problems.push(`after a reload ${name}'s bar says "${reloaded}"`);
+          if (JSON.stringify(await statusOf(who)) !== '[]') problems.push(`after a reload ${name}'s status says GitHub keeps ${JSON.stringify(await statusOf(who))}`);
+        }
+        await shot(pat.page, 'the-line-stays-away-after-a-reload');
+        return fail(problems, `the line is gone on both screens and after both reload; Sam had no button and Sam's Done was answered ${refused.status}`);
+      });
+
+      await check('hunt', 'a made-up key file a terminal pushes to GitHub after that brings the line back naming only it, on both screens; a new copy of the .env pushed after it brings the .env back too, still named once that branch is deleted on GitHub', async ({ shot }) => {
+        if (!filesId || !oldRepo) throw new Error('that project was not sent in the steps before');
+        const statusOf = async () => JSON.stringify((await t.api(pat, 'GET', `/api/project-git/status?path=${encodeURIComponent(old)}`)).body?.githubKeeps);
+        const problems = [];
+        fs.writeFileSync(path.join(old, PUSHED_LATER), `MADE_UP_KEY=${PUSHED_KEY}-later\n`);
+        // Only that file: the .env's change on this computer stays off GitHub.
+        plainCommit(old, 'Made-up version with a key file, saved with plain git', [PUSHED_LATER]);
+        // Saved on this computer only: GitHub does not have it yet.
+        if (await statusOf() !== '[]') problems.push(`a key file saved on this computer only brought the line back: ${await statusOf()}`);
+        git(old, 'push', '-q', 'origin', 'HEAD:refs/heads/made-up-terminal');
+        const later = githubKeepsLine([PUSHED_LATER]);
+        await homeView(pat.page);
+        await homeView(sam.page);
+        const patSays = await barSays(pat.page, filesId, (w) => w.includes(later));
+        const samSays = await barSays(sam.page, filesId, (w) => w.includes(later));
+        await sideBySide(t, 'a-key-file-pushed-later-brings-the-line-back', shot);
+        if (!patSays.includes(later)) problems.push(`Pat's bar says "${patSays}", not "${later}"`);
+        if (!samSays.includes(later)) problems.push(`Sam's bar says "${samSays}", not "${later}"`);
+        fs.writeFileSync(path.join(old, '.env'), `MADE_UP_KEY=${PUSHED_KEY}-new\n`);
+        plainCommit(old, 'Made-up version with a new copy of the .env, saved with plain git', ['.env']);
+        git(old, 'push', '-q', 'origin', 'HEAD:refs/heads/made-up-terminal');
+        const both = githubKeepsLine(['.env', PUSHED_LATER]);
+        const patBoth = await barSays(pat.page, filesId, (w) => w.includes(both));
+        await shot(pat.page, 'a-new-copy-of-the-env-brings-it-back');
+        if (!patBoth.includes(both)) problems.push(`after a new copy of the .env Pat's bar says "${patBoth}", not "${both}"`);
+        git(old, 'push', '-q', 'origin', ':refs/heads/made-up-terminal');
+        git(old, 'fetch', '-q', '--prune', 'origin');
+        if (await statusOf() !== JSON.stringify(['.env', PUSHED_LATER])) problems.push(`once the branch is deleted the status says GitHub keeps ${await statusOf()}`);
+        return fail(problems, `the bars said "${later}", then "${both}", which stays once the branch is gone`);
+      });
+
+      await check('hunt', `in a made-up Terraform project Pat turns versions on: the bar lists ${TERRAFORM_KEPT.join(', ')} as left out, on Sam's screen too, and neither the first version nor Send to GitHub takes them, while ${TERRAFORM_SHOWN.join(' and ')} are saved and sent`, async ({ shot }) => {
+        if (!filesId) throw new Error('Files did not open in the first step');
+        await openFolder(pat.page, filesId, infra);
+        const off = await barSays(pat.page, filesId, (w) => w.includes('Start saving versions'));
+        if (!off.includes('Start saving versions')) throw new Error(`the bar says "${off}", with no Start saving versions`);
+        await windowFrame(pat.page, filesId).getByRole('button', { name: 'Start saving versions' }).click({ timeout: 5_000 });
+        const want = keptOutLine(TERRAFORM_KEPT);
+        await homeView(pat.page);
+        await homeView(sam.page);
+        const patSays = await barSays(pat.page, filesId, (w) => w.includes(want));
+        const samSays = await barSays(sam.page, filesId, (w) => w.includes(want));
+        await sideBySide(t, 'terraform-state-and-values-left-out', shot);
+        const problems = [];
+        // The bar's words on one line, so the report's table keeps them whole.
+        const flat = (words) => words.replace(/\s+/g, ' ').trim();
+        if (!patSays.includes(want)) problems.push(`Pat's bar says "${flat(patSays)}", not "${want}"`);
+        if (!samSays.includes(want)) problems.push(`Sam's bar says "${flat(samSays)}", not "${want}"`);
+        // What a version or a repository lacks of the files it should hold, or holds of the ones kept out (censaiOS adds its own .team notes).
+        const wrong = (files, what) => [...TERRAFORM_SHOWN.filter((file) => !files.includes(file)).map((file) => `${what} lacks ${file}`),
+          ...files.filter((file) => TERRAFORM_KEPT.includes(file)).map((file) => `${what} holds ${file}`)];
+        const first = git(infra, 'ls-tree', '-r', '--name-only', 'HEAD').split('\n');
+        problems.push(...wrong(first, 'the first version'));
+        const callsBefore = t.github.calls().length;
+        await useBar(pat.page, filesId, 'Send to GitHub', 'Made-up Terraform send');
+        const sent = await barSays(pat.page, filesId, (w) => w.includes('is on GitHub at') || w.includes('Nothing was sent'));
+        await shot(pat.page, 'a-terraform-project-sent-without-its-state');
+        const created = t.github.calls().slice(callsBefore).find(([kind]) => kind === 'create');
+        const onGithub = created ? t.github.pathsIn(created[1]) : [];
+        if (!sent.includes('is on GitHub at')) problems.push(`the bar says "${flat(sent)}", not that the project is on GitHub`);
+        if (!created) problems.push('the made-up GitHub got no repository');
+        else problems.push(...wrong(onGithub, 'the made-up GitHub'));
+        if (created && t.github.everything(created[1]).includes(KEY)) problems.push('a version on the made-up GitHub holds a made-up key');
+        if (git(infra, 'log', '--all', '-p', '--no-color').includes(KEY)) problems.push('a version holds a made-up key');
+        for (const file of TERRAFORM_KEPT) if (!fs.readFileSync(path.join(infra, file), 'utf8').includes(KEY)) problems.push(`${file} lost its words on this computer`);
+        const leaked = await keyShows(sam.page);
+        if (leaked.length) problems.push(`a made-up key reached Sam ${leaked.join(' and ')}`);
+        return fail(problems, `both bars say "${want}"; the first version holds ${first.join(', ')} and the private repository ${created?.[1]} ${onGithub.join(', ')}`);
+      });
+
       await check('redteam', "Sam's own requests to save a version or send one are refused, and nothing changes on this computer or the made-up GitHub", async () => {
         const versions = git(site, 'rev-list', '--count', 'HEAD');
         const calls = t.github.calls().length;
@@ -487,23 +610,25 @@ export default {
         return fail(problemsOnGithub(), `${repos.length} repositories looked at, every branch and version (the .env a terminal pushed itself aside)`);
       });
 
-      await check('redteam', "the refusals and the versions made again are logged without a file's name, path or key", async () => {
+      await check('redteam', "the refusals, the versions made again and the files put away are logged without a file's name, path or key", async () => {
         const lines = t.serverLog().slice(logStart).split('\n');
         const refused = lines.filter((line) => line.includes(SEND_REFUSED));
         const made = lines.filter((line) => line.includes(MADE_AGAIN));
+        const putAway = lines.filter((line) => line.includes(PUT_AWAY));
         const problems = [];
         if (refused.length < 2) problems.push(`${refused.length} refusals logged, not 2`);
         if (made.length < 2) problems.push(`${made.length} times making versions again logged, not 2`);
-        for (const words of [KEY, site, old, '.env', LATER_KEY, 'made-up-server']) {
-          if ([...refused, ...made].some((line) => line.includes(words))) problems.push(`a log line holds ${words === KEY ? 'a made-up key' : `"${words}"`}`);
+        if (putAway.length !== 1) problems.push(`${putAway.length} times files were put away logged, not 1`);
+        for (const words of [KEY, PUSHED_KEY, site, old, '.env', LATER_KEY, PUSHED_LATER, 'made-up-server']) {
+          if ([...refused, ...made, ...putAway].some((line) => line.includes(words))) problems.push(`a log line holds ${words === KEY || words === PUSHED_KEY ? 'a made-up key' : `"${words}"`}`);
         }
-        if (lines.some((line) => line.includes(KEY))) problems.push('the server log holds a made-up key');
-        return fail(problems, `${refused.length} refusals and ${made.length} times making versions again logged with counts only`);
+        if (lines.some((line) => line.includes(KEY) || line.includes(PUSHED_KEY))) problems.push('the server log holds a made-up key');
+        return fail(problems, `${refused.length} refusals, ${made.length} times making versions again and ${putAway.length} put away logged with counts only`);
       });
     } finally {
       await t.api(pat, 'DELETE', '/api/keys/github').catch(() => {});
       putBackOpenProjects();
-      for (const dir of [site, old]) fs.rmSync(dir, { recursive: true, force: true });
+      for (const dir of [site, old, infra]) fs.rmSync(dir, { recursive: true, force: true });
     }
   },
 };

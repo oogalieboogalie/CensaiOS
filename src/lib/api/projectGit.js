@@ -19,3 +19,4 @@ export const startProjectVersions = (path) => post('/api/project-git/start', { p
 export const saveProjectVersion = (path, message) => post('/api/project-git/save', { path, message });
 export const sendProjectToGithub = (path, title, body) => post('/api/project-git/send', { path, title, body });
 export const makeProjectVersionsAgain = (path) => post('/api/project-git/make-again', { path });
+export const markProjectNewKeys = (path, names) => post('/api/project-git/new-keys', { path, names });

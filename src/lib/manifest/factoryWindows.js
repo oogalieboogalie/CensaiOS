@@ -24,7 +24,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     componentName: 'LeadsWindow',
     componentPath: 'src/components/LeadsWindow.jsx',
     defaultSize: { w: 380, h: 520 },
-    launcher: { show: true, order: 45, icon: 'Group', label: 'Lead queue', hint: 'Search & Rescue pipeline' },
+    launcher: { show: true, order: 45, icon: 'Group', hint: 'Search & Rescue pipeline' },
     lab: { title: 'Lead Queue' },
   },
   {
@@ -35,7 +35,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     componentPath: 'src/components/LeadHoundWindow.jsx',
     defaultSize: { w: 820, h: 600 },
     moduleMenu: { show: true, order: 46, icon: 'Search', label: 'LeadHound', hint: 'Find leads and draft a 7-day intro sequence' },
-    launcher: { show: true, order: 46, icon: 'Search', label: 'LeadHound', hint: 'find leads with Tavily' },
+    launcher: { show: true, order: 46, icon: 'Search', hint: 'find leads with Tavily' },
     lab: { title: 'LeadHound' },
   },
   {
@@ -46,7 +46,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     componentPath: 'src/components/windows/research/index.jsx',
     defaultSize: { w: 760, h: 620 },
     moduleMenu: { show: true, order: 47, icon: 'Search', label: 'Research', hint: 'Search with Tavily, save to the board, ask over it' },
-    launcher: { show: true, order: 47, icon: 'Search', label: 'Research', hint: 'Tavily search and knowledge base' },
+    launcher: { show: true, order: 47, icon: 'Search', hint: 'Tavily search and knowledge base' },
     lab: { title: 'Research' },
   },
   {
@@ -58,7 +58,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     defaultSize: { w: 720, h: 520 },
     header: { title: 'Marketplace', icon: 'ShoppingBag' },
     moduleMenu: { show: true, order: 5, icon: 'ShoppingBag', label: 'Marketplace', hint: 'Modules people published, and which windows you use' },
-    launcher: { show: true, startHere: true, startHereOrder: 40, order: 16, icon: 'ShoppingBag', label: 'Browse modules', hint: 'add reviewed capabilities' },
+    launcher: { show: true, order: 16, icon: 'ShoppingBag', hint: 'add reviewed capabilities' },
   },
   {
     kind: 'registry',
@@ -68,7 +68,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     componentPath: 'src/components/RegistryWindow.jsx',
     defaultSize: { w: 800, h: 560 },
     moduleMenu: { show: true, order: 10, icon: 'Plug', label: 'Agent Registry', hint: 'Browse, install, publish agents' },
-    launcher: { show: true, order: 15, icon: 'Plug', label: 'Agent Registry', hint: 'review agents and add-ons' },
+    launcher: { show: true, order: 15, icon: 'Plug', hint: 'review agents and add-ons' },
   },
   {
     kind: 'helloFactory',
@@ -89,7 +89,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     componentPath: 'src/components/PolicyDashboardWindow.jsx',
     defaultSize: { w: 520, h: 360 },
     moduleMenu: { show: true, order: 18, icon: 'Alert', label: 'Action Approvals', hint: 'Review agent-requested write actions' },
-    launcher: { show: true, order: 18, icon: 'Alert', label: 'Action Approvals', hint: 'review agent-requested writes' },
+    launcher: { show: true, order: 18, icon: 'Alert', hint: 'review agent-requested writes' },
     lab: { title: 'Action Approvals' },
   },
   {
@@ -120,7 +120,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     componentPath: 'src/components/IdeaFoundryWindow.jsx',
     defaultSize: { w: 1000, h: 800 },
     moduleMenu: { show: true, order: 22, icon: 'Flask', label: 'Idea Foundry', hint: 'Route idea cards' },
-    launcher: { show: true, order: 42, icon: 'Flask', label: 'Idea Foundry', hint: 'route idea cards' },
+    launcher: { show: true, order: 42, icon: 'Flask', hint: 'route idea cards' },
     lab: { title: 'Idea Foundry' },
   },
   {
@@ -131,7 +131,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     componentPath: 'src/components/OllamaNodeWindow.jsx',
     defaultSize: { w: 600, h: 700 },
     moduleMenu: { show: true, order: 24, icon: 'Bot', label: 'Ollama', hint: 'Chat with local models' },
-    launcher: { show: true, order: 44, icon: 'Bot', label: 'Ollama', hint: 'chat with local models' },
+    launcher: { show: true, order: 44, icon: 'Bot', hint: 'chat with local models' },
     lab: { title: 'Ollama' },
   },
   {
@@ -154,7 +154,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     defaultSize: { w: 420, h: 640 },
     embedMode: 'webview',
     moduleMenu: { show: true, order: 26, icon: 'Chat', label: 'WhatsApp', hint: 'Open WhatsApp Web or send a quick message' },
-    launcher: { show: true, order: 46, icon: 'Chat', label: 'WhatsApp', hint: 'message via WhatsApp Web' },
+    launcher: { show: true, order: 46, icon: 'Chat', hint: 'message via WhatsApp Web' },
     lab: { title: 'WhatsApp' },
   },
   {
@@ -166,7 +166,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
     defaultSize: { w: 640, h: 640 },
     modeAvailability: { cloud_saas: false },
     moduleMenu: { show: true, order: 19, icon: 'Terminal', label: 'Agent Console', hint: 'Claude Code, Codex and Gemini CLI as teammates' },
-    launcher: { show: true, order: 59, icon: 'Terminal', label: 'Coding Agent', hint: 'Claude Code, Codex, Gemini CLI' },
+    launcher: { show: true, order: 59, icon: 'Terminal', hint: 'Claude Code, Codex, Gemini CLI' },
     lab: { title: 'Agent Console' },
   },
   {

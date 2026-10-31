@@ -7,24 +7,26 @@
 // that the page shows the code (not to type it in), and changes by itself
 // once the sign-in is approved; Pat's made-up question then goes through
 // Pat's own Grok sign-in, with no xAI key. Sam Example (a teammate on the
-// shared board) sees Pat's question and answer; after a reload (a model
-// picked in a chat reaches a teammate's open board only then, noted) Sam is
+// shared board) sees Pat's question and answer, and Sam's open copy of the
+// chat shows grok-4 and Grok's bar with no reload; after a reload Sam is
 // asked to sign in with their own Grok account, gets their own box with the
 // same wording, and once approved chats on their own sign-in. Bug hunt: Sam's
 // message through the sign-in before Sam signs in is refused, never answered
-// on Pat's sign-in; whose Grok conversation Sam's question picks up (noted:
-// the chat keeps one for everyone); Pat signs out from the bar and the chat
-// asks Pat to sign in again. Red team: Sam signing out leaves Pat signed in,
-// a signed-out visitor can neither start a Grok sign-in nor read one, and the
-// sign-in's code and link never land in censaiOS's logs. The chat's agent
-// goes back to its own model at the end and everyone is signed out of Grok.
-// All accounts are made up.
+// on Pat's sign-in; Sam's question starts Sam's own Grok conversation, handed
+// the chat so far, and Pat's next one picks up Pat's own, handed what Sam
+// said meanwhile (the stand-in says which conversation it is in and what it
+// was handed); Pat signs out from the bar and the chat asks Pat to sign in
+// again. Red team: the chat window everyone shares holds no one's Grok
+// conversation, Sam signing out leaves Pat signed in, a signed-out visitor
+// can neither start a Grok sign-in nor read one, and the sign-in's code and
+// link never land in censaiOS's logs. The chat's agent goes back to its own
+// model at the end and everyone is signed out of Grok. All accounts are made
+// up.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { openBoard, readWindow, windowFrame } from '../../e2e/board.mjs';
 import { addFromMenu } from '../addMenu.mjs';
-import { note } from '../report.mjs';
 
 // What the stand-in prints, as xAI's `grok login --device-auth` (1.0.70) does.
 const CODE = 'WXYZ-4821';
@@ -36,15 +38,15 @@ const GROK = '/api/cli-agents/grok-signin';
 const QUESTION = 'Made-up question for Grok: which herbs grow well on a windowsill?';
 const SAM_EARLY = 'Made-up early message from Sam before signing in';
 const SAM_QUESTION = 'Made-up question from Sam for Grok: and which need the most light?';
+const PAT_AGAIN = 'Made-up question from Pat for Grok: and which of those grow fastest?';
 const VISITOR = 'Made-up message from a signed-out visitor';
 // The stand-in's answer names the sign-in it ran on (here after each person's
 // own Grok folder) and says whether it was handed an API key.
 const ANSWER = /Grok here, on the Grok sign-in of/;
 const signInOf = (said) => said.match(/on the Grok sign-in of ([^.\s]+)\./)?.[1] || null;
-// Filed from this module's first run: a model picked in a chat reaches a teammate's open board only after a reload.
-const LIVE_MODEL_ITEM = 196;
-// Filed from the same run: a shared Grok chat asks a teammate's Grok to pick up the conversation of whoever chatted first.
-const SHARED_CONVERSATION_ITEM = 197;
+// The stand-in starts each answer with the conversation it is in, and what the chat handed it.
+const conversationOf = (said) => said.match(/(Starting a|Picking up our) conversation \(([^)]+)\)/)?.slice(1) || [null, null];
+const handedOf = (said) => said.match(/I was handed (the chat so far \((\d+) messages\)|(\d+) messages said meanwhile)/) || null;
 
 const flat = (text) => String(text || '').replace(/\s+/g, ' ').trim();
 const oneLine = (text) => flat(text).slice(0, 200);
@@ -95,7 +97,7 @@ export default {
   label: 'Grok chat: sign in with your own Grok account',
   async run(t) {
     const { pat, sam, check } = t;
-    t.typed.push(QUESTION, SAM_EARLY, SAM_QUESTION, VISITOR);
+    t.typed.push(QUESTION, SAM_EARLY, SAM_QUESTION, PAT_AGAIN, VISITOR);
     let chat = null;
     let agentBefore = null;
     let patConversation = null;
@@ -148,20 +150,23 @@ export default {
       await check('walk', 'Pat asks Grok a made-up question: the answer comes through Pat\'s own Grok sign-in, with no xAI key', async ({ shot }) => {
         await say(pat.page, chat, QUESTION);
         const said = await answerTo(pat.page, chat, QUESTION);
-        patConversation = (await readWindow(pat.page, chat))?.grokSessionId || null;
+        patConversation = conversationOf(said)[1];
         patSignIn = signInOf(said);
         await shot(pat.page, 'grok-answers-pat');
         if (!said.includes('API key in my environment: none') || !patSignIn) throw new Error(`the answer says: ${said}`);
         return said;
       });
 
-      await check('hunt', 'Sam\'s open copy of the chat shows the model Pat picked', async ({ shot }) => {
+      await check('hunt', 'Sam\'s open copy of the chat shows the model Pat picked, and Grok\'s bar, with no reload', async ({ shot }) => {
         const frame = windowFrame(sam.page, chat);
         await frame.getByText(ANSWER).first().waitFor({ timeout: 20_000 });
+        const bar = frame.getByTestId('grok-source');
+        await bar.waitFor({ timeout: 10_000 }).catch(() => {});
         const chip = oneLine(await frame.getByTestId('chat-capabilities').innerText());
-        if (chip.startsWith('grok-4')) return `Sam's chat shows ${chip} at once`;
-        await shot(sam.page, 'sam-still-sees-the-old-model');
-        throw note(`Sam sees Pat's question and answer, but Sam's open copy of the chat still shows "${chip}", not grok-4, and no "Grok runs on" bar until Sam reloads the board: a model picked in a chat reaches a teammate's screen only after a reload (backlog item ${LIVE_MODEL_ITEM}, not part of this change)`);
+        await shot(sam.page, 'sam-sees-the-model-pat-picked');
+        if (!chip.startsWith('grok-4')) throw new Error(`Sam sees Pat's question and answer, but Sam's open copy of the chat still shows "${chip}", not grok-4`);
+        if (!await bar.count()) throw new Error(`Sam's chat shows ${chip} but no "Grok runs on" bar`);
+        return `with no reload, Sam's chat shows ${chip} and its bar says: ${oneLine(await bar.innerText())}`;
       });
 
       await check('walk', 'Sam reloads the board: Sam\'s copy of the chat keeps Pat\'s answer and asks Sam to sign in with Sam\'s own Grok account', async ({ shot }) => {
@@ -204,12 +209,41 @@ export default {
         return `on Sam's own sign-in ("${samSignIn}"; Pat's is "${patSignIn}"): ${samSaid}`;
       });
 
-      await check('hunt', 'Sam\'s question starts Sam\'s own Grok conversation, not Pat\'s', async () => {
-        const picked = samSaid.match(/Picking up our conversation \(([0-9a-f]{8})\)/)?.[1];
+      let samConversation = null;
+      await check('hunt', 'Sam\'s question starts Sam\'s own Grok conversation, not Pat\'s, handed the chat so far', async () => {
         if (!samSaid) throw new Error('Sam got no answer to look at');
-        if (!picked) return 'Sam\'s Grok started a conversation of its own';
-        if (picked !== patConversation?.slice(0, 8)) throw new Error(`Sam's Grok picked up a conversation (${picked}…) that is not Pat's (${patConversation})`);
-        throw note(`Sam's own Grok was asked to pick up the conversation ${picked}…, which is the one Pat's Grok started in this chat: the chat keeps one Grok conversation for everyone on the board, though each person's Grok has only their own (backlog item ${SHARED_CONVERSATION_ITEM}, not part of this change)`);
+        const [how, id] = conversationOf(samSaid);
+        if (!patConversation) throw new Error('Pat\'s answer did not say which conversation it started');
+        if (how !== 'Starting a' || id === patConversation) throw new Error(`Sam's Grok was asked to pick up the conversation ${id}, ${id === patConversation ? 'the one Pat\'s Grok started' : 'not one of its own'}: ${samSaid}`);
+        const handed = handedOf(samSaid);
+        if (!handed?.[2] || Number(handed[2]) < 2) throw new Error(`Sam's Grok was not handed Pat's question and answer: ${samSaid}`);
+        samConversation = id;
+        return `Sam's Grok started its own conversation (${id}; Pat's is ${patConversation}), handed the chat so far (${handed[2]} messages)`;
+      });
+
+      await check('walk', 'Pat writes again: Pat\'s Grok picks up Pat\'s own conversation, handed what Sam said meanwhile', async ({ shot }) => {
+        // Pat writes once Pat's own screen shows Sam's question and its answer.
+        await answerTo(pat.page, chat, SAM_QUESTION);
+        await say(pat.page, chat, PAT_AGAIN);
+        const said = await answerTo(pat.page, chat, PAT_AGAIN);
+        await shot(pat.page, 'pat-picks-up-own-conversation');
+        const [how, id] = conversationOf(said);
+        if (how !== 'Picking up our' || id !== patConversation) throw new Error(`Pat's Grok ${how === 'Picking up our' ? `picked up ${id}` : `started ${id}`}, not Pat's own conversation ${patConversation}: ${said}`);
+        if (signInOf(said) !== patSignIn) throw new Error(`Pat's answer ran on the sign-in "${signInOf(said)}", not Pat's "${patSignIn}"`);
+        const handed = handedOf(said);
+        if (handed?.[3] !== '2') throw new Error(`Pat's Grok was not handed just Sam's question and its answer: ${said}`);
+        return `picked up Pat's own conversation (${id}; Sam's is ${samConversation}), handed ${handed[3]} messages said meanwhile`;
+      });
+
+      await check('redteam', 'the chat window everyone on the board shares holds no one\'s Grok conversation', async () => {
+        const shared = await readWindow(pat.page, chat);
+        if (!shared) throw new Error('the chat window could not be read');
+        // The stand-in's answers name their own conversation, and the window keeps each
+        // answer (in its messages and its last run), so only that sentence is left out of the search.
+        const held = JSON.stringify(shared).replace(/(Starting a|Picking up our) conversation \([^)]*\)/g, '');
+        const found = [patConversation, samConversation].filter((id) => id && held.includes(id));
+        if ('grokSessionId' in shared || found.length) throw new Error(`the shared window holds a Grok conversation (${found[0] || shared.grokSessionId})`);
+        return 'the window holds neither Pat\'s nor Sam\'s conversation; each is kept in that person\'s own Grok folder on the server';
       });
 
       await check('redteam', 'Sam signing out signs out only Sam: Pat stays signed in', async () => {

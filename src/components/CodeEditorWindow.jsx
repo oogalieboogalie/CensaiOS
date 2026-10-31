@@ -18,6 +18,7 @@ import { OffBoardNote } from './files/OffBoardNote.jsx';
 import { SaveNote } from './files/SaveNote.jsx';
 import { useFileSave } from './files/useFileSave.js';
 import { CodeStatusBar } from './codeEditor/CodeStatusBar.jsx';
+import { HIDDEN_MARK, HIDDEN_WORDS } from '../../shared/files/fileProblems.js';
 
 const DEFAULT_CODE = `// Write code here.
 function greet(name) {
@@ -143,6 +144,8 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
       {!isIframeMode && <SaveNote note={saveNote} onClose={closeSaveNote} />}
       {!isIframeMode && <FileLoadError message={loadError} onRetry={retryLoad} />}
       {!isIframeMode && <OffBoardNote show={offBoard && !loadError} />}
+      {/* A file the Agent Console opened on the board comes as a teammate sees it (TaskView's openFile). */}
+      {win.hiddenWords && code.includes(HIDDEN_MARK) && !isIframeMode && <div role="note" data-testid="code-hidden-words" style={{ padding: '4px 12px', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{HIDDEN_WORDS}</div>}
       {formatStatus && !isIframeMode && <div style={{ padding: '4px 12px', background: formatStatus.kind === 'error' ? 'color-mix(in oklab, var(--danger) 12%, transparent)' : 'var(--accent-soft)', color: formatStatus.kind === 'error' ? 'var(--danger)' : 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>{formatStatus.text}</div>}
 
       {isIframeMode ? (

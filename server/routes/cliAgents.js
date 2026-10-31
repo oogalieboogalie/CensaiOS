@@ -9,7 +9,7 @@
  * GET  /api/cli-agents/tasks/:id?since=<rev>  transcript items changed after rev (&board=1: as a teammate sees them)
  * GET  /api/cli-agents/tasks/:id/raw          raw output lines (power users)
  * GET  /api/cli-agents/tasks/:id/changes      files changed + unified diff
- * GET  /api/cli-agents/tasks/:id/file?path=   one file from the worktree
+ * GET  /api/cli-agents/tasks/:id/file?path=   one file from the worktree (&board=1: as a teammate sees it)
  * POST /api/cli-agents/tasks/:id/message      follow-up (resumes the session)
  * POST /api/cli-agents/tasks/:id/stop
  * POST /api/cli-agents/tasks/:id/handoff      { cli, instruction? }
@@ -153,13 +153,16 @@ cliAgentsRouter.get('/tasks/:id/changes', wrap(async (req, res) => {
 }));
 
 // A file only the owner opens shows only on the owner's screen: ownerOnly
-// tells it to keep the words off the shared board.
+// tells it to keep the words off the shared board. `board=1`: for a Code
+// Editor window on the shared board, any other file comes with the words a
+// teammate sees, whoever asks; hiddenWords says one shows as HIDDEN_MARK.
 cliAgentsRouter.get('/tasks/:id/file', wrap(async (req, res) => {
   const secrets = await ownerWatching(req);
   const manager = getCliTaskManager();
   const { content, secret } = manager.readFile(req.params.id, req.query.path, { secrets });
-  const shown = secrets ? content : withoutHiddenWords(content, hiddenWordsOf(manager, req.params.id));
-  res.json({ path: req.query.path, content: shown, ...(secret ? { ownerOnly: true } : {}) });
+  const whole = secrets && (secret || req.query.board !== '1');
+  const shown = whole ? content : withoutHiddenWords(content, hiddenWordsOf(manager, req.params.id));
+  res.json({ path: req.query.path, content: shown, ...(secret ? { ownerOnly: true } : {}), ...(shown !== content ? { hiddenWords: true } : {}) });
 }));
 
 cliAgentsRouter.post('/tasks/:id/message', requireSystemAdmin, wrap(async (req, res) => {

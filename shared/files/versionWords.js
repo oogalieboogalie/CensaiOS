@@ -21,6 +21,12 @@ export const githubKeepsLine = (names) => (names.length === 1
   ? `GitHub already has an earlier copy of ${names[0]}, and keeps it. If it held keys or passwords, make new ones where you got them and turn the old ones off, then put the new ones in ${names[0]}: censaiOS cannot take GitHub's copy back.`
   : `GitHub already has earlier copies of ${someNames(names)}, and keeps them. If they held keys or passwords, make new ones where you got them and turn the old ones off, then put the new ones in those files: censaiOS cannot take GitHub's copies back.`);
 
+/** The button on that line, for this computer's owner, once the new keys are made. */
+export const NEW_KEYS_DONE = 'Done, I made new keys';
+
+/** What the bar says once that button put the line away for `names`. */
+export const newKeysLine = (names) => `Put away for ${someNames(names)}. If GitHub gets a new copy of ${names.length === 1 ? 'it' : 'one of them'}, or another file like ${names.length === 1 ? 'it' : 'these'}, the line comes back.`;
+
 /** What Send to GitHub says when versions it would send hold such a file. */
 export const sendRefusal = (names) => `Nothing was sent to GitHub: earlier saved versions of this project hold ${someNames(names)}, ${names.length === 1 ? 'a file' : 'files'} that can hold keys or passwords, and GitHub would keep a copy. Saving a version never takes in such files or changes to them.`;
 

@@ -10,6 +10,7 @@ import {
 } from '../chatModel/agentPrompts.js';
 import { callModel, createModelAccessContext, workspaceUsageSink } from '../aiGateway/index.js';
 import { executeTool, filterToolsForAgent } from '../tools.js';
+import { offeredToolNames, toolNotOfferedResult } from '../tools/rbac/offeredTools.js';
 import { 
   log, TASK_SUBMISSION_PREVIEW_CHARS, MAX_ROUNDS, TASK_TIMEOUT_MS 
 } from './shared.js';
@@ -71,6 +72,8 @@ export async function runTask(task) {
     const modelConfig = getSubAgentModelConfig(sub);
     const { modelName, baseUrl, apiKey, modelProvider } = modelConfig;
     const tools = await filterToolsForAgent(sub.id, scope);
+    // Only the tools offered here run (server/tools/rbac/offeredTools.js).
+    const offered = offeredToolNames(tools);
     const accessContext = createModelAccessContext({
       userId: task.created_by_user_id,
       workspaceId: task.workspace_id,
@@ -147,10 +150,9 @@ export async function runTask(task) {
           try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
           log.debug('task tool call', { taskId: task.id, round, tool: toolName });
           const toolStartedAt = Date.now();
-          const result = await executeTool(sub.id, toolName, args, {
-            agentTaskId: task.id,
-            ...scope,
-          });
+          const result = offered.has(toolName)
+            ? await executeTool(sub.id, toolName, args, { agentTaskId: task.id, ...scope })
+            : toolNotOfferedResult(toolName);
           toolCalls.push({ tool: toolName, ok: toolCallOk(result), ms: Date.now() - toolStartedAt, round });
           messages.push({ role: 'tool', tool_call_id: call.id, content: String(result) });
         }

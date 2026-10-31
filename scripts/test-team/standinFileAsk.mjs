@@ -7,7 +7,10 @@
 // chat loads tools on demand), then says what came back. Used to prove a
 // teammate's agent cannot read a file only the computer's owner opens, that
 // no one's agent puts one on the board, and that a teammate's agent reads
-// GitHub only where a board shared the repo.
+// GitHub only where a board shared the repo. An ask made `anyway` names the
+// tool even when the chat did not offer it, as a model may from its training
+// or because words in the chat asked for it, to prove the tool does not run;
+// an ask with `args` calls any tool with exactly those arguments.
 
 export const FILE_ASK = 'Made-up file ask';
 const ARGS = {
@@ -18,7 +21,7 @@ const ARGS = {
 };
 
 /** What a tester writes to ask an agent for the file at `path` in `project` (a repo for the GitHub tools) with `tool`. */
-export const fileAsk = (project, path, tool = 'project_read') => `${FILE_ASK}: ${JSON.stringify({ project, path, tool })}`;
+export const fileAsk = (project, path, tool = 'project_read', { anyway = false, args = null } = {}) => `${FILE_ASK}: ${JSON.stringify({ project, path, tool, ...(anyway ? { anyway } : {}), ...(args ? { args } : {}) })}`;
 
 const textOf = (message) => (typeof message?.content === 'string' ? message.content : '');
 const call = (name, args) => ({ toolCalls: [{ id: `standin-${name}-${Date.now()}`, name, arguments: JSON.stringify(args) }] });
@@ -38,12 +41,13 @@ export function fileAskReply(messages = [], tools = []) {
   if (!lastUser || !textOf(lastUser[0]).includes(`${FILE_ASK}:`)) return null;
   const asked = askedFor(textOf(lastUser[0]));
   if (!asked) return { content: 'Made-up file answer: the ask did not say which file.' };
-  const tool = Object.hasOwn(ARGS, asked.tool) ? asked.tool : 'project_read';
+  const given = asked.args && typeof asked.args === 'object' ? asked.args : null;
+  const tool = Object.hasOwn(ARGS, asked.tool) || (given && typeof asked.tool === 'string') ? asked.tool : 'project_read';
   const after = messages.slice(lastUser[1] + 1);
   const named = new Map(after.flatMap((m) => (m.tool_calls || []).map((c) => [c.id, c.function?.name])));
   const read = after.filter((m) => m.role === 'tool' && named.get(m.tool_call_id) === tool).pop();
   if (read) return { content: `Made-up file answer: ${textOf(read).slice(0, 300)}` };
-  if (tools.some((t) => t?.function?.name === tool)) return call(tool, ARGS[tool](asked));
+  if (asked.anyway === true || tools.some((t) => t?.function?.name === tool)) return call(tool, given || ARGS[tool](asked));
   const fetched = after.some((m) => m.role === 'tool' && named.get(m.tool_call_id) === 'get_tool');
   if (!fetched && tools.some((t) => t?.function?.name === 'get_tool')) return call('get_tool', { name: tool });
   return { content: 'Made-up file answer: no file tool was offered.' };

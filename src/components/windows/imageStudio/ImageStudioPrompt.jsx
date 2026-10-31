@@ -10,20 +10,22 @@ export function ImageStudioPrompt({
 }) {
   const [expanded, setExpanded] = React.useState(Boolean(state.additionalInstructions));
 
+  const empty = !state.prompt.trim();
+
   return (
-    <section style={{ display: 'grid', gap: 8, paddingTop: 10 }}>
-      <div style={{ display: 'flex', gap: 8 }}>
+    <section className="hb-is-prompt">
+      <div className="hb-is-row">
         <input
           value={state.prompt}
           onChange={event => updateFields({ prompt: event.target.value })}
           placeholder="Describe your image ..."
-          style={{ flex: 1, minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--hairline)', color: 'var(--ink)', borderRadius: 'var(--radius-lg)', padding: '9px 11px', fontSize: 'var(--text-md)' }}
+          className="hb-is-input hb-is-input-main"
         />
         <select
           aria-label="Image generation model"
           value={state.model}
           onChange={event => updateFields({ model: event.target.value })}
-          style={{ background: 'var(--surface-2)', border: '1px solid var(--hairline)', color: 'var(--ink)', borderRadius: 'var(--radius-lg)', padding: '0 8px', fontSize: 'var(--text-sm)' }}
+          className="hb-is-input hb-is-select"
         >
           {IMAGE_STUDIO_MODELS.map(model => (
             <option key={model.id} value={model.id}>{model.label}</option>
@@ -31,17 +33,19 @@ export function ImageStudioPrompt({
         </select>
         <button
           type="button"
-          disabled={loading || !state.prompt.trim()}
+          disabled={loading || empty}
+          aria-busy={loading || undefined}
           onClick={onGenerate}
-          style={{ all: 'unset', cursor: loading ? 'wait' : 'pointer', borderRadius: 'var(--radius-lg)', padding: '0 14px', background: 'var(--accent)', color: 'var(--accent-contrast)', fontWeight: 800, fontSize: 'var(--text-sm)', opacity: loading || !state.prompt.trim() ? 0.55 : 1 }}
+          className="hb-is-go"
         >
           {loading ? 'Generating' : 'Generate'}
         </button>
       </div>
       <button
         type="button"
+        aria-expanded={expanded}
         onClick={() => setExpanded(open => !open)}
-        style={{ all: 'unset', cursor: 'pointer', color: 'var(--ink-faint)', font: '700 10px var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
+        className="hb-is-more"
       >
         Additional Instructions
       </button>
@@ -51,10 +55,10 @@ export function ImageStudioPrompt({
           onChange={event => updateFields({ additionalInstructions: event.target.value })}
           rows={2}
           placeholder="Style, constraints, composition notes, or what to avoid."
-          style={{ resize: 'vertical', background: 'var(--surface-2)', border: '1px solid var(--hairline)', color: 'var(--ink)', borderRadius: 'var(--radius-lg)', padding: 10, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}
+          className="hb-is-input hb-is-notes"
         />
       )}
-      {error && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)' }}>{error}</div>}
+      {error && <div className="hb-is-error">{error}</div>}
     </section>
   );
 }
