@@ -48,8 +48,14 @@ export function seatKey(name) {
   return slug || 'player';
 }
 
-export function seatField(name) {
-  return SEAT_PREFIX + seatKey(name);
+/**
+ * The seat field for a player. Signed-in players sit under their account id,
+ * so two people with the same name (or one renaming themselves after another)
+ * never write into each other's seat; seats from before ids keep the name key.
+ */
+export function seatField(name, id) {
+  const account = String(id ?? '').trim();
+  return SEAT_PREFIX + (account ? `u-${seatKey(account)}` : seatKey(name));
 }
 
 export function emptySeat(name, now) {
@@ -98,7 +104,12 @@ export function companyAt(seats, now) {
   for (const seat of Object.values(seats)) {
     earned += seat.tapEarned;
     spent += seat.spent;
-    for (const id of seat.upgrades) upgrades.add(id);
+    for (const id of seat.upgrades) {
+      // Two people buying the same upgrade at once both pay; it only counts
+      // once, so the second payment goes back into the wallet.
+      if (upgrades.has(id)) earned += UPGRADE_BY_ID.get(id).cost;
+      upgrades.add(id);
+    }
     for (const [id, h] of Object.entries(seat.hires)) {
       const hire = HIRE_BY_ID.get(id);
       owned[id] = (owned[id] || 0) + h.n;

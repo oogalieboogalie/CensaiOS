@@ -8,9 +8,10 @@ import * as Y from 'yjs';
 import { valueFromY, valueToY } from '../../../server/collab/seedFromSnapshot.js';
 import { isValidId } from '../../../server/collab/ySchema.js';
 
-// Window fields holding lists that merge item by item: to-dos keyed by `id`,
-// Idea Pad bullets (plain text) keyed by their words.
-export const WINDOW_LIST_FIELDS = new Set(['items', 'ideas']);
+// Window fields holding lists that merge item by item: to-dos, Research
+// questions, Step cards and Vault notes keyed by `id`, Idea Pad bullets
+// (plain text) keyed by their words.
+export const WINDOW_LIST_FIELDS = new Set(['items', 'ideas', 'researchAsks', 'cards', 'notes']);
 
 let reportMerge = null;
 
@@ -25,6 +26,18 @@ function same(a, b) {
 }
 
 const idOf = (item) => (isValidId(item?.id) ? String(item.id) : null);
+const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+
+// An edited item changes in place, field by field, so someone removing it at
+// the same moment still removes it (a fresh copy would bring it back).
+function editInPlace(map, prev, next) {
+  for (const [key, value] of Object.entries(next)) {
+    if (value !== undefined && !same(prev[key], value)) map.set(key, valueToY(value));
+  }
+  for (const key of Object.keys(prev)) {
+    if (!(key in next) || next[key] === undefined) map.delete(key);
+  }
+}
 
 // One key per item: its id, or for plain-text bullets the words plus which
 // copy of those words it is, so two identical bullets stay two items.
@@ -64,6 +77,11 @@ export function syncById(arr, prev, next) {
     const id = docIds[i];
     const target = nextById.has(id) ? id : swapped.get(id);
     if (prevById.has(id) && (!target || !same(prevById.get(id), nextById.get(target)))) {
+      const live = arr.get(i);
+      if (target === id && live instanceof Y.Map && isRecord(prevById.get(id)) && isRecord(nextById.get(id))) {
+        editInPlace(live, prevById.get(id), nextById.get(id));
+        continue;
+      }
       arr.delete(i, 1);
       if (target) { arr.insert(i, [valueToY(nextById.get(target))]); placed.add(target); }
     }

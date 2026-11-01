@@ -8,7 +8,7 @@
 
 import { BLOCKS, BLOCK_BY_ID, unlockedBlocks } from './economy.js';
 
-export const MAX_HEIGHT = 12;
+export const MAX_HEIGHT = 32;
 
 /** The plot grows as the yard digs more over its life. */
 export const LAND = [
@@ -16,6 +16,10 @@ export const LAND = [
   { size: 8, at: 300 },
   { size: 10, at: 3000 },
   { size: 12, at: 30000 },
+  { size: 16, at: 250000 },
+  { size: 24, at: 1.5e6 },
+  { size: 32, at: 8e6 },
+  { size: 48, at: 4e7 },
 ];
 
 /** Dig this much and the flat grid opens up into the isometric view. */
@@ -25,6 +29,21 @@ export const cellKey = (x, y) => `${x},${y}`;
 
 export function landSize(earned) {
   return LAND.reduce((size, step) => (earned >= step.at ? step.size : size), LAND[0].size);
+}
+
+/**
+ * The first square of a plot. Up to 12 wide the plot starts at 0,0 as it
+ * always has; past that it grows out on every side, so a yard built on the
+ * old 12 by 12 plot sits in the middle of the bigger lot. Squares can go
+ * below zero.
+ */
+export function plotOrigin(size) {
+  return size <= 12 ? 0 : 6 - Math.floor(size / 2);
+}
+
+export function inPlot(x, y, size) {
+  const lo = plotOrigin(size);
+  return x >= lo && y >= lo && x < lo + size && y < lo + size;
 }
 
 export function isoUnlocked(earned) {
@@ -44,7 +63,7 @@ export function stacksOf(seats, size) {
   for (const [field, seat] of seatOrder(seats)) {
     for (const [key, list] of Object.entries(seat.cells || {})) {
       const [x, y] = key.split(',').map(Number);
-      if (x >= size || y >= size) continue;
+      if (!inPlot(x, y, size)) continue;
       const stack = stacks[key] || (stacks[key] = []);
       for (const id of list) if (stack.length < MAX_HEIGHT) stack.push({ id, field });
     }
@@ -63,7 +82,7 @@ export function tallest(stacks) {
 /** Put a block on a square. Returns the new seat, or null when it can't. */
 export function placeBlock(seat, eco, stacks, size, x, y, id) {
   const block = BLOCK_BY_ID.get(id);
-  if (!block || x < 0 || y < 0 || x >= size || y >= size) return null;
+  if (!block || !inPlot(x, y, size)) return null;
   if (!unlockedBlocks(eco).some((b) => b.id === id)) return null;
   const key = cellKey(x, y);
   if ((stacks[key]?.length || 0) >= MAX_HEIGHT) return null;
@@ -111,4 +130,13 @@ export function builders(seats) {
     placed: Object.values(s.cells).reduce((n, list) => n + list.length, 0),
     makers: Object.values(s.makers).reduce((n, m) => n + m.n, 0),
   })).sort((a, b) => (b.placed + b.digs) - (a.placed + a.digs));
+}
+
+/**
+ * The yard views redraw only when the plot itself changes, not on every
+ * wallet tick: a full 48 by 48 lot is thousands of shapes. Click handlers
+ * are read fresh through the props on the next real redraw.
+ */
+export function sameYard(a, b) {
+  return a.size === b.size && a.stacks === b.stacks && a.canPlay === b.canPlay && a.field === b.field && a.pick === b.pick;
 }

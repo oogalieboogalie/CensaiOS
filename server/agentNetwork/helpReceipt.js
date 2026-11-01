@@ -10,6 +10,7 @@
 
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { getInstallSigner } from './installIdentity.js';
 import { buildReceiptBody, cardPrice, signReceipt, tokensFromTimings } from './receipts.js';
 import { insertReceipt } from './receiptStore.js';
@@ -65,7 +66,7 @@ export async function recordHelpRunReceipt(run, { db = pool } = {}) {
     const receipt = signReceipt(helpReceiptBody(row, signer), signer);
     return await insertReceipt(db, { workspaceId: row.workspace_id, receipt, helpRequestId: row.help_id });
   } catch (error) {
-    log.warn('help receipt not written', { runId: run.id, error: error.message });
+    log.warn('help receipt not written', { runId: run.id, code: safeErrorCode(error) });
     return null;
   }
 }

@@ -1,4 +1,5 @@
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { listDevServers, stopDevServer } from './manager.js';
 
 // Run dev containers live only while a Run dev window is open. Each open
@@ -31,7 +32,7 @@ export async function reapIdle(now = Date.now()) {
       lastSeen.delete(s.name);
       removed.push(s.name);
     } catch (err) {
-      log.warn('Could not remove idle dev server', { name: s.name, error: err.message });
+      log.warn('Could not remove idle dev server', { name: s.name, code: safeErrorCode(err) });
     }
   }
   if (removed.length) log.info('Removed dev servers no window is using', { removed });

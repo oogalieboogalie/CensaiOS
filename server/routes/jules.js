@@ -6,6 +6,10 @@ import { fetchGitHubPullRequestFiles, fetchGitHubPullRequestState, syncAgentTask
 import { getSecret } from '../secrets.js';
 import { getProject } from '../workspaces.js';
 import { readJulesQueue } from '../julesQueue.js';
+import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
+
+const log = createLogger('jules');
 
 export const julesRouter = express.Router();
 
@@ -65,7 +69,7 @@ julesRouter.get('/jules/sessions', async (req, res) => {
       try {
         await syncAllJulesSessions();
       } catch (e) {
-        console.error('Failed to sync all Jules sessions:', e);
+        log.error('could not sync sessions', { code: safeErrorCode(e) });
       }
     }
 

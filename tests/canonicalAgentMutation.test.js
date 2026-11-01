@@ -2,6 +2,10 @@ import { jest } from '@jest/globals';
 import request from 'supertest';
 import { FAMILY_AGENT_IDS } from '../src/data/family-agents.js';
 
+// Signed in as the computer's owner, who may change shared agents.
+jest.unstable_mockModule('../server/db.js', () => ({
+  default: { query: jest.fn().mockResolvedValue({ rows: [{ role: 'admin' }] }) },
+}));
 jest.unstable_mockModule('../server/dbState.js', () => ({
   dbReady: () => true,
   setDbReady: jest.fn(),
@@ -34,6 +38,7 @@ describe('canonical core-agent mutation boundary', () => {
     const express = (await import('express')).default;
     app = express();
     app.use(express.json());
+    app.use((req, _res, next) => { req.session = { userId: 1 }; next(); });
     app.use('/api', coreRouter);
   });
 

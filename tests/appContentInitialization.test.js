@@ -5,7 +5,8 @@ describe('AppContent initialization order', () => {
   test('initializes canvas actions before an effect dependency can read spawnAt', () => {
     const source = fs.readFileSync(path.resolve('src/app/AppContent.jsx'), 'utf8');
     const actions = source.indexOf('const { spawnAt, spawnGroup');
-    const initializationEffect = source.indexOf('React.useEffect(() => {');
+    // The initialization effect lives in useApplyInitialWorkspace, which takes spawnAt.
+    const initializationEffect = source.indexOf('useApplyInitialWorkspace({');
 
     expect(actions).toBeGreaterThan(-1);
     expect(initializationEffect).toBeGreaterThan(-1);

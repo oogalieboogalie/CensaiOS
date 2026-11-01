@@ -2,11 +2,14 @@
 // the demo runs the same ones the server does (server/templates/starters),
 // with stand-in agent ids instead of saved agents. Real Estate Team reads
 // module files from disk on the server, so it stays out of the demo.
-import { buildDeveloperBoard, DEVELOPER_AGENTS, DEVELOPER_TEMPLATE } from '../../../server/templates/starters/developer.js';
-import { buildCreativeBoard, CREATIVE_AGENTS, CREATIVE_TEMPLATE } from '../../../server/templates/starters/creative.js';
-import { buildSmallBusinessBoard, SMALL_BUSINESS_AGENTS, SMALL_BUSINESS_TEMPLATE } from '../../../server/templates/starters/smallBusiness.js';
-import { buildCodeWorkspaceBoard, CODE_WORKSPACE_AGENTS, CODE_WORKSPACE_TEMPLATE } from '../../../server/templates/starters/codeWorkspace.js';
-import { AGENT_TEAM_AGENTS, AGENT_TEAM_TEMPLATE, buildAgentTeamBoard } from '../../../server/templates/starters/agentTeam.js';
+import {
+  buildDeveloperBoard, DEVELOPER_AGENTS, DEVELOPER_TEMPLATE,
+  buildCodeWorkspaceBoard, CODE_WORKSPACE_AGENTS, CODE_WORKSPACE_TEMPLATE,
+  buildCreativeBoard, CREATIVE_AGENTS, CREATIVE_TEMPLATE,
+  AGENT_TEAM_AGENTS, AGENT_TEAM_TEMPLATE, buildAgentTeamBoard,
+  buildSmallBusinessBoard, SMALL_BUSINESS_AGENTS, SMALL_BUSINESS_TEMPLATE,
+  buildNotesWorkspaceBoard, NOTES_WORKSPACE_AGENTS, NOTES_WORKSPACE_TEMPLATE,
+} from '../../../server/templates/demoStarters.js';
 
 const STARTERS = {
   [DEVELOPER_TEMPLATE.id]: { template: DEVELOPER_TEMPLATE, agents: DEVELOPER_AGENTS, build: buildDeveloperBoard },
@@ -14,6 +17,7 @@ const STARTERS = {
   [CREATIVE_TEMPLATE.id]: { template: CREATIVE_TEMPLATE, agents: CREATIVE_AGENTS, build: buildCreativeBoard },
   [AGENT_TEAM_TEMPLATE.id]: { template: AGENT_TEAM_TEMPLATE, agents: AGENT_TEAM_AGENTS, build: buildAgentTeamBoard },
   [SMALL_BUSINESS_TEMPLATE.id]: { template: SMALL_BUSINESS_TEMPLATE, agents: SMALL_BUSINESS_AGENTS, build: buildSmallBusinessBoard },
+  [NOTES_WORKSPACE_TEMPLATE.id]: { template: NOTES_WORKSPACE_TEMPLATE, agents: NOTES_WORKSPACE_AGENTS, build: buildNotesWorkspaceBoard },
 };
 
 export const DEMO_TEMPLATES = Object.values(STARTERS).map((s) => s.template);

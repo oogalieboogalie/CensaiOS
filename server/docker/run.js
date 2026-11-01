@@ -55,7 +55,8 @@ export async function runContainer({ image, name, ports, env, share, restart } =
     what.restart = parseRestart(restart);
     const args = ['run', '-d'];
     if (cleanName) args.push('--name', cleanName);
-    for (const p of what.ports) args.push('-p', p);
+    // This computer only: the runner refuses ports open to the Wi-Fi.
+    for (const p of what.ports) args.push('-p', `127.0.0.1:${p}`);
     args.push(...optionArgs({ env: settings, share: folder, restart: what.restart }));
     const { stdout } = await docker([...args, image], { timeout: 5 * 60_000 });
     const id = stdout.trim().split('\n').pop() || '';

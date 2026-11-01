@@ -16,10 +16,11 @@ function withLog(run, entry) {
   return [...(Array.isArray(run?.log) ? run.log : []), entry].slice(-MAX_LOG);
 }
 
-/** A run starts: the agent is thinking about `prompt`. */
-export function runStarted(run, { prompt = '', now = Date.now() } = {}) {
+/** A run starts: the agent is thinking about `prompt`, asked by `by` (a display name, or empty). */
+export function runStarted(run, { prompt = '', by = '', now = Date.now() } = {}) {
   const task = clip(prompt);
-  return { state: 'thinking', task, tool: null, startedAt: now, at: now, log: withLog(run, { at: now, kind: 'start', text: task }) };
+  const who = clip(by).slice(0, 40) || null;
+  return { state: 'thinking', task, by: who, tool: null, startedAt: now, at: now, log: withLog(run, { at: now, kind: 'start', text: task }) };
 }
 
 /** The agent calls a tool. */

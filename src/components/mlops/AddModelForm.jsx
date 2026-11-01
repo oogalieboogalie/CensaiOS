@@ -6,7 +6,7 @@ export const MODEL_PROVIDERS = ['OpenAI', 'Anthropic', 'Google', 'xAI', 'Hugging
 const field = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 'var(--text-sm)', color: 'var(--ink-soft)' };
 const input = {
   padding: '8px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)',
-  background: 'var(--surface-2)', color: 'var(--ink)', fontSize: 'var(--text-base)', font: 'inherit',
+  background: 'var(--layer-well)', boxShadow: 'var(--well-shadow)', color: 'var(--ink)', fontSize: 'var(--text-base)', font: 'inherit',
 };
 
 // "Add a model" in the MLOps Dashboard: a name, the provider and what it is
@@ -57,12 +57,12 @@ export function AddModelForm({ workspaceId, onAdded, onCancel }) {
         What it is for
         <textarea style={{ ...input, minHeight: 70, resize: 'vertical' }} value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Sets prices for the online shop" />
       </label>
-      {problem && <div role="alert" style={{ fontSize: 'var(--text-sm)', color: 'var(--red)' }}>{problem}</div>}
+      {problem && <div role="alert" style={{ fontSize: 'var(--text-sm)', color: 'var(--danger-text)' }}>{problem}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
-        <button type="submit" disabled={saving} style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)', border: 'none', background: 'var(--accent)', color: 'var(--on-fill)', fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+        <button type="submit" disabled={saving} className="ml-btn ml-btn--primary">
           {saving ? 'Adding…' : 'Add model'}
         </button>
-        <button type="button" onClick={onCancel} style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'transparent', color: 'var(--ink)', cursor: 'pointer' }}>
+        <button type="button" onClick={onCancel} className="ml-btn ml-btn--tall">
           Cancel
         </button>
       </div>

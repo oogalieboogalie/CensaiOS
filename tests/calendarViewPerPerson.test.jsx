@@ -7,7 +7,7 @@ import { jest } from '@jest/globals';
 
 // Sam and Pat on one board with one Calendar. Which month and view each of
 // them is on is their own; it never goes into the board's shared window.
-jest.unstable_mockModule('../src/lib/api.js', () => ({ api: { getCalendarEvents: jest.fn(async () => []) } }));
+jest.unstable_mockModule('../src/lib/api.js', () => ({ api: { getCalendarEvents: jest.fn(async () => []), getMyCalendarEvents: jest.fn(async () => []) } }));
 const { CalendarWindow } = await import('../src/components/CalendarWindow.jsx');
 const { pendingAppLog } = await import('../src/lib/appLog/browserLog.js');
 

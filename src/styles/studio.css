@@ -150,7 +150,7 @@
 
 /* Piano roll */
 .hb-studio-pr { display: flex; flex-direction: column; height: 100%; outline: none; }
-.hb-studio-pr-bar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-1-5) var(--space-3); border-bottom: 1px solid var(--hairline-soft); flex-shrink: 0; }
+.hb-studio-pr-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-1-5) var(--space-3); border-bottom: 1px solid var(--hairline-soft); flex-shrink: 0; }
 .hb-studio-pr-bar .hb-studio-link { margin-left: auto; }
 .hb-studio-pr-scroll { flex: 1; min-height: 0; overflow: auto; display: flex; align-items: flex-start; }
 .hb-studio-pr-keys { position: sticky; left: 0; z-index: 2; flex: none; width: 44px; background: var(--surface); border-right: 1px solid var(--hairline); }
@@ -161,3 +161,18 @@
 .hb-studio-pr-note { position: absolute; height: 11px; box-sizing: border-box; border-radius: var(--radius-xs); background: var(--accent); border: 1px solid var(--accent-line); cursor: grab; }
 .hb-studio-pr-note[data-selected="true"] { border-color: var(--ink); }
 .hb-studio-pr-edge { position: absolute; right: -1px; top: 0; bottom: 0; width: 5px; cursor: ew-resize; }
+
+/* Ask-a-model box under the timeline, and the hum button */
+.hb-studio-assist { flex-shrink: 0; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-top: 1px solid var(--hairline); background: var(--surface-2); }
+.hb-studio-assist-row { display: flex; align-items: center; gap: var(--space-2); }
+.hb-studio-assist-target { --track: var(--ink-soft); display: inline-flex; align-items: center; gap: var(--space-1); height: 26px; padding: 0 var(--space-2); border-radius: var(--radius-full); border: 1px solid var(--track); color: var(--ink); font-size: var(--text-xs); white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.hb-studio-assist-target::before { content: ''; width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--track); flex-shrink: 0; }
+.hb-studio-assist-input { flex: 1; min-width: 0; height: 30px; box-sizing: border-box; padding: 0 var(--space-2); background: var(--surface-sunken); border: 1px solid var(--hairline); border-radius: var(--radius-md); color: var(--ink); font: inherit; font-size: var(--text-sm); outline: none; }
+.hb-studio-assist-input:focus { border-color: var(--accent-line); }
+.hb-studio-assist-input::placeholder { color: var(--ink-faint); }
+.hb-studio-assist-answer { display: flex; align-items: baseline; gap: var(--space-2); font-size: var(--text-xs); color: var(--ink-soft); }
+.hb-studio-assist-answer > span:first-child { flex: 1; }
+.hb-studio-assist-answer[data-error="true"] { color: var(--danger); }
+.hb-studio-chip[data-primary="true"] { color: var(--on-fill); background: var(--accent); border-color: var(--accent); }
+.hb-studio-chip:disabled { opacity: 0.45; cursor: default; }
+.hb-studio-chip[data-rec="true"] { color: var(--danger); border-color: var(--danger); background: var(--status-danger-10); }

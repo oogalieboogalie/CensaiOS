@@ -56,7 +56,7 @@ describe('Grok chat on your own Grok sign-in', () => {
     expect(() => runGrokChat({ userId: 1, text: 'hi', emit: (e) => events.push(e), env })).toThrow(expect.objectContaining({ code: 'GROK_SIGNIN_REQUIRED' }));
 
     const login = await startGrokLogin(1, { env });
-    expect(login).toMatchObject({ running: true, url: 'https://accounts.x.ai/device', code: 'WXYZ-4821' });
+    expect(login).toMatchObject({ running: true, url: 'https://accounts.x.ai/oauth2/device?user_code=WXYZ-4821', code: 'WXYZ-4821' });
     for (let i = 0; i < 50 && !personalSignedIn(grok, 1, env); i += 1) await new Promise((r) => setTimeout(r, 50));
     expect(personalSignedIn(grok, 1, env)).toBe(true);
     expect(personalSignedIn(grok, 2, env)).toBe(false);

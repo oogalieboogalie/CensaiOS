@@ -90,6 +90,8 @@ coreRouter.put('/agents/:id', requireDb, async (req, res) => {
  */
 coreRouter.patch('/agents/:id/config', requireDb, async (req, res) => {
   try {
+    // The same cloud rule as PUT: global agents are operator-managed.
+    await requireGlobalAgentMutationAccess(req);
     const existing = await getAgent(req.params.id);
     const updatedPayload = {
       ...(existing || {}),

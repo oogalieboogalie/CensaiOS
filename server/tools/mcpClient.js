@@ -3,6 +3,7 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { TOOL_DEFINITIONS } from './definitions.js';
 import { TOOL_REGISTRY } from './handlers/index.js';
 import { registerHandAddedTool } from './rbac/hostOwnerOnly.js';
@@ -25,7 +26,8 @@ class McpServerConnection {
 
   async connect() {
     const { command, args = [], env = {} } = this.config;
-    log.info(`Connecting to MCP server: ${this.name}`, { command, args });
+    // Arguments often carry an API key or token: log only the program's name and how many there are.
+    log.info(`Connecting to MCP server: ${this.name}`, { program: path.basename(String(command || '')), argCount: args.length });
 
     this.process = spawn(command, args, {
       env: { ...process.env, ...env },
@@ -38,7 +40,7 @@ class McpServerConnection {
     });
 
     this.process.stderr.on('data', (data) => {
-      log.debug(`[MCP Server ${this.name} stderr] ${data.toString().trim()}`);
+      log.debug(`MCP server ${this.name} wrote to its error output`, { chars: data.length });
     });
 
     this.process.on('close', (code) => {
@@ -47,7 +49,7 @@ class McpServerConnection {
     });
 
     this.process.on('error', (err) => {
-      log.error(`MCP server ${this.name} process error`, { error: err.message });
+      log.error(`MCP server ${this.name} process error`, { code: safeErrorCode(err) });
       this.rejectAllPending(err.message);
     });
 
@@ -127,7 +129,7 @@ class McpServerConnection {
         const message = JSON.parse(line);
         this.handleMessage(message);
       } catch (err) {
-        log.error(`Failed to parse incoming MCP JSON message from ${this.name}`, { line, error: err.message });
+        log.error(`Failed to parse incoming MCP JSON message from ${this.name}`, { chars: line.length, code: safeErrorCode(err) });
       }
     }
   }
@@ -165,7 +167,7 @@ class McpServerConnection {
 export async function initializeMcpTools() {
   const configPath = path.join(__dirname, '../../config/mcp_servers.json');
   if (!fs.existsSync(configPath)) {
-    log.info(`No MCP server config found at ${configPath}. Skipping.`);
+    log.info('No MCP server config found. Skipping.');
     return;
   }
 
@@ -173,7 +175,7 @@ export async function initializeMcpTools() {
   try {
     configContent = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   } catch (err) {
-    log.error(`Failed to parse MCP config file ${configPath}`, { error: err.message });
+    log.error('Failed to parse the MCP config file', { code: safeErrorCode(err) });
     return;
   }
 
@@ -208,7 +210,7 @@ export async function initializeMcpTools() {
         // Owner-only for teammates unless the server marks it read-only.
         registerHandAddedTool(namespacedName, { looksOnly: mcpTool.annotations?.readOnlyHint === true });
         TOOL_REGISTRY[namespacedName] = async (agentId, name, args) => {
-          log.debug(`Executing namespaced MCP tool: ${namespacedName}`, { args });
+          log.debug(`Executing namespaced MCP tool: ${namespacedName}`);
           const response = await connection.callTool(mcpTool.name, args);
           
           if (response.isError) {
@@ -225,7 +227,7 @@ export async function initializeMcpTools() {
         };
       }
     } catch (err) {
-      log.error(`Failed to connect to MCP server: ${serverName}`, { error: err.message });
+      log.error(`Failed to connect to MCP server: ${serverName}`, { code: safeErrorCode(err) });
       connection.disconnect();
     }
   }

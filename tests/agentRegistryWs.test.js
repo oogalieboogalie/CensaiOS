@@ -320,6 +320,37 @@ describe('WS endpoint protocol', () => {
     expect(failed.error).toBe('card-not-found');
   });
 
+  // An error's message can repeat a key, a path or a database detail, so a
+  // connected agent only ever gets a code word back.
+  test('a failed call sends a code word, never the error text', async () => {
+    createAgentCardRun.mockRejectedValueOnce(new Error('insert failed for made-up-secret-147'));
+    const c = await connect();
+    await c.next((m) => m.type === 'ready');
+    c.send({ type: 'call', cardId: 'agent:architect', taskId: 'secret-call', payload: 'noop' });
+    const failed = await c.next((m) => m.type === 'call.failed');
+    expect(failed.error).toBe('internal-error');
+    expect(JSON.stringify(failed)).not.toContain('made-up-secret-147');
+  });
+
+  test('a failed call keeps a safe error code', async () => {
+    createAgentCardRun.mockRejectedValueOnce(Object.assign(new Error('made-up-secret-147'), { code: 'run-limit' }));
+    const c = await connect();
+    await c.next((m) => m.type === 'ready');
+    c.send({ type: 'call', cardId: 'agent:architect', taskId: 'limit-call', payload: 'noop' });
+    const failed = await c.next((m) => m.type === 'call.failed');
+    expect(failed.error).toBe('run-limit');
+  });
+
+  test('a handler error sends a code word, never the error text', async () => {
+    getAgentCard.mockRejectedValueOnce(new Error('lookup failed for made-up-secret-147'));
+    const c = await connect();
+    await c.next((m) => m.type === 'ready');
+    c.send({ type: 'call', cardId: 'agent:architect', taskId: 'boom-call', payload: 'noop' });
+    const err = await c.next((m) => m.type === 'error');
+    expect(err.reason).toBe('internal-error');
+    expect(JSON.stringify(err)).not.toContain('made-up-secret-147');
+  });
+
   test('malformed JSON yields an error frame', async () => {
     const c = await connect();
     await c.next((m) => m.type === 'ready');

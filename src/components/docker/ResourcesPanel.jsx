@@ -3,6 +3,7 @@ import { DIcon } from './dockerIcons.jsx';
 import { EmptyState, SkeletonRows, ConfirmButton, IconButton, Badge } from './DockerUi.jsx';
 import { dockerApi, formatBytes } from './dockerApi.js';
 import { RunImageForm } from './RunImageForm.jsx';
+import { ImageDetail } from './ImageDetail.jsx';
 
 // Images, volumes and networks share one table layout; each kind supplies
 // how to name a row, what to show beside it and how to remove it.
@@ -68,6 +69,7 @@ function PullBar({ run, busy }) {
 export function ResourcesPanel({ kind, rows, error, busy, run, query, canRun = false, onStarted }) {
   const k = KINDS[kind];
   const [running, setRunning] = useState(null);
+  const [opened, setOpened] = useState(null);
   if (error && !rows) return <div className="dk-inline-error">{error}</div>;
   if (!rows) return <SkeletonRows count={5} />;
   const q = query.toLowerCase();
@@ -115,6 +117,7 @@ export function ResourcesPanel({ kind, rows, error, busy, run, query, canRun = f
               </div>
               <div className="dk-row-ports dk-mono">{k.aside(r)}</div>
               <div className="dk-actions">
+                {kind === 'images' && <IconButton icon={<DIcon.Layers />} label={`What ${k.removeRef(r)} is made of`} onClick={() => setOpened(opened === k.key(r) ? null : k.key(r))} />}
                 {runnable && <IconButton icon={<DIcon.Play />} label={`Run ${r.ref}`} onClick={() => setRunning(running === r.ref ? null : r.ref)} />}
                 {removable ? (
                   <ConfirmButton icon={<DIcon.Trash />} label={`Remove ${k.noun}`} busy={busy[busyKey]}
@@ -129,6 +132,7 @@ export function ResourcesPanel({ kind, rows, error, busy, run, query, canRun = f
                 ) : <IconButton icon={<DIcon.Trash />} label="Built-in networks can't be removed" disabled />}
               </div>
             </div>
+            {kind === 'images' && opened === k.key(r) && <ImageDetail imageRef={k.removeRef(r)} onClose={() => setOpened(null)} />}
             {runnable && running === r.ref && (
               <RunImageForm image={r} run={run} busy={busy} onCancel={() => setRunning(null)}
                 onStarted={(result) => { setRunning(null); onStarted?.(result); }} />

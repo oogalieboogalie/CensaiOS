@@ -1,4 +1,5 @@
 import { chatResponseError, chatStreamError, ChatRequestError } from './chatErrors.js';
+import { logFailure } from './appLog/browserLog.js';
 
 export async function sendMessage(agentId, messages) {
   const data = await sendMessageWithMeta(agentId, messages);
@@ -97,7 +98,7 @@ export async function readChatStream(res, opts = {}) {
         finalError = chatStreamError(event);
       }
     } catch (err) {
-      console.error('Failed to parse streaming line:', err, line);
+      logFailure('chat: could not read a streamed line', err, 'chat');
     }
   };
 

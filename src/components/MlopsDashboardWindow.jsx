@@ -3,6 +3,8 @@ import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { useWorkspaceStore } from '../lib/store.js';
 import { AddModelForm } from './mlops/AddModelForm.jsx';
+import { logFailure } from '../lib/appLog/browserLog.js';
+import './mlops/mlops.css';
 
 const workspaceStillActive = workspaceId => useWorkspaceStore.getState().workspaceId === workspaceId;
 
@@ -35,7 +37,7 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
       const added = openId && list.find((m) => m.id === openId);
       if (added && workspaceStillActive(requestedScope)) selectModel(added);
     } catch (err) {
-      console.error('Failed to fetch models:', err);
+      logFailure('mlops: could not load models', err, 'mlops', 'error');
     } finally {
       if (workspaceStillActive(requestedScope)) setLoading(false);
     }
@@ -51,10 +53,12 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
       if (!res.ok) throw new Error(data?.error || 'MLOps alerts unavailable');
       if (workspaceStillActive(requestedScope)) setAlerts(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Failed to fetch alerts:', err);
+      logFailure('mlops: could not load alerts', err, 'mlops', 'error');
       if (workspaceStillActive(requestedScope)) setAlerts([]);
     }
   };
+
+  const overThreshold = (m) => (m.data.lastDriftScore || 0) > (m.data.thresholds?.driftScore ?? Infinity);
 
   return (
     <>
@@ -64,57 +68,37 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
         subtitle="Real-time Drift Detection"
       />
 
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        overflow: 'hidden',
-        background: 'var(--window-bg, var(--surface))',
-      }}>
-        {/* Model List Sidebar */}
-        <div style={{
-          width: 240,
-          borderRight: '1px solid var(--hairline)',
-          display: 'flex',
-          flexDirection: 'column',
-          background: 'var(--surface-1)',
-        }}>
-          <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-faint)', textTransform: 'uppercase' }}>Deployed Models</span>
-            <button
-              onClick={() => setAdding(true)}
-              disabled={!workspaceId}
-              style={{ padding: '3px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', color: 'var(--ink)', fontSize: 'var(--text-xs)', cursor: 'pointer' }}
-            >
+      <div className="ml-root">
+        <aside className="ml-side">
+          <div className="ml-side-head">
+            <span className="ml-label">Deployed models</span>
+            <button type="button" className="ml-btn" onClick={() => setAdding(true)} disabled={!workspaceId}>
               Add a model
             </button>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div className="ml-list">
             {models.map(m => (
-              <div
+              <button
+                type="button"
                 key={m.id}
+                className="ml-model"
+                aria-current={selectedModel?.id === m.id ? 'true' : undefined}
                 onClick={() => selectModel(m)}
-                style={{
-                  padding: '10px 16px',
-                  cursor: 'pointer',
-                  background: selectedModel?.id === m.id ? 'var(--accent-faint)' : 'transparent',
-                  borderLeft: selectedModel?.id === m.id ? '3px solid var(--accent)' : '3px solid transparent',
-                  transition: 'all 0.2s',
-                }}
               >
-                <div style={{ fontSize: 'var(--text-md)', fontWeight: 500, color: 'var(--ink)' }}>{m.data.modelName}</div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>v{m.data.version} • Drift: {(m.data.lastDriftScore || 0).toFixed(3)}</div>
-              </div>
+                <span className="ml-model-name">
+                  <span className="ml-dot" data-tone={overThreshold(m) ? 'danger' : 'ok'} />
+                  {m.data.modelName}
+                </span>
+                <span className="ml-model-sub">v{m.data.version} · Drift {(m.data.lastDriftScore || 0).toFixed(3)}</span>
+              </button>
             ))}
             {models.length === 0 && !loading && (
-              <div style={{ padding: 20, fontSize: 'var(--text-sm)', color: 'var(--ink-faint)', textAlign: 'center' }}>
-                No models yet. Press Add a model to start watching one.
-              </div>
+              <p className="ml-side-empty">No models yet. Press Add a model to start watching one.</p>
             )}
           </div>
-        </div>
+        </aside>
 
-        {/* Detail View */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: 20 }}>
+        <section className="ml-main">
           {adding ? (
             <AddModelForm
               workspaceId={workspaceId}
@@ -123,69 +107,76 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
             />
           ) : selectedModel ? (
             <>
-              <div style={{ marginBottom: 24 }}>
-                <h2 style={{ margin: 0, fontSize: 'var(--text-xl)', fontWeight: 600 }}>{selectedModel.data.modelName} <span style={{ fontSize: 'var(--text-base)', fontWeight: 400, color: 'var(--ink-soft)' }}>v{selectedModel.data.version}</span></h2>
+              <header className="ml-head">
+                <h2 className="ml-title">{selectedModel.data.modelName} <span className="ml-version">v{selectedModel.data.version}</span></h2>
                 {(selectedModel.data.provider || selectedModel.data.purpose) && (
-                  <div style={{ fontSize: 'var(--text-base)', color: 'var(--ink)', marginTop: 6 }}>
+                  <div className="ml-purpose">
                     {[selectedModel.data.provider, selectedModel.data.purpose].filter(Boolean).join(' · ')}
                   </div>
                 )}
-                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', marginTop: 4 }}>Deployment ID: {selectedModel.id}</div>
-              </div>
+                <div className="ml-id">Deployment ID: {selectedModel.id}</div>
+              </header>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-                <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--hairline)' }}>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Drift Score</div>
-                  <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: (selectedModel.data.lastDriftScore > selectedModel.data.thresholds.driftScore) ? 'var(--red)' : 'var(--green)' }}>
+              <div className="ml-stats">
+                <div className="hb-stat">
+                  <span className="hb-stat-label">Drift score</span>
+                  <span className="hb-stat-value" data-tone={overThreshold(selectedModel) ? 'danger' : 'ok'}>
                     {(selectedModel.data.lastDriftScore || 0).toFixed(4)}
-                  </div>
+                  </span>
                 </div>
-                <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--hairline)' }}>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Threshold</div>
-                  <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{selectedModel.data.thresholds?.driftScore}</div>
+                <div className="hb-stat">
+                  <span className="hb-stat-label">Threshold</span>
+                  <span className="hb-stat-value">{selectedModel.data.thresholds?.driftScore}</span>
                 </div>
-                <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--hairline)' }}>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Last Seen</div>
-                  <div style={{ fontSize: 'var(--text-base)', fontWeight: 500 }}>{selectedModel.data.lastSeenAt ? new Date(selectedModel.data.lastSeenAt).toLocaleString() : 'N/A'}</div>
+                <div className="hb-stat">
+                  <span className="hb-stat-label">Last seen</span>
+                  <span className="hb-stat-value ml-stat-small">{selectedModel.data.lastSeenAt ? new Date(selectedModel.data.lastSeenAt).toLocaleString() : 'N/A'}</span>
                 </div>
               </div>
 
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 12 }}>Drift Alerts</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {alerts.map(a => (
-                    <div key={a.id} style={{ padding: 12, background: 'color-mix(in oklab, var(--danger) 10%, transparent)', border: '1px solid color-mix(in oklab, var(--danger) 20%, transparent)', borderRadius: 'var(--radius-lg)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--red)' }}>Drift Detected: {a.data.maxDrift.toFixed(4)}</div>
-                          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>{new Date(a.created_at).toLocaleString()}</div>
-                        </div>
-                        <button
-                          onClick={() => setOpenAlertId(openAlertId === a.id ? null : a.id)}
-                          aria-expanded={openAlertId === a.id}
-                          style={{ padding: '4px 12px', borderRadius: 'var(--radius-md)', background: 'var(--red)', color: 'var(--on-fill)', fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer' }}
-                        >
-                          {openAlertId === a.id ? 'Hide' : 'Investigate'}
-                        </button>
+              <h3 className="ml-section">Drift alerts</h3>
+              <div className="ml-alerts">
+                {alerts.map(a => (
+                  <div key={a.id} className="ml-alert">
+                    <div className="ml-alert-row">
+                      <div>
+                        <div className="ml-alert-title">Drift Detected: {a.data.maxDrift.toFixed(4)}</div>
+                        <div className="ml-alert-when">{new Date(a.created_at).toLocaleString()}</div>
                       </div>
-                      {openAlertId === a.id && <DriftBreakdown results={a.data.driftResults} threshold={selectedModel.data.thresholds?.driftScore} />}
+                      <button
+                        type="button"
+                        className="ml-btn ml-btn--danger"
+                        onClick={() => setOpenAlertId(openAlertId === a.id ? null : a.id)}
+                        aria-expanded={openAlertId === a.id}
+                      >
+                        {openAlertId === a.id ? 'Hide' : 'Investigate'}
+                      </button>
                     </div>
-                  ))}
-                  {alerts.length === 0 && (
-                    <div style={{ padding: 20, background: 'var(--surface-2)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--hairline)', textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--ink-soft)' }}>
-                      No active alerts
-                    </div>
-                  )}
-                </div>
+                    {openAlertId === a.id && <DriftBreakdown results={a.data.driftResults} threshold={selectedModel.data.thresholds?.driftScore} />}
+                  </div>
+                ))}
+                {alerts.length === 0 && <div className="ml-quiet hb-well">No active alerts</div>}
               </div>
             </>
           ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-faint)', flexDirection: 'column' }}>
-              <Icon.Tools size={48} style={{ opacity: 0.2, marginBottom: 16 }} />
-              <div>Select a model to view drift analytics</div>
+            <div className="hb-empty">
+              <div className="hb-empty-icon"><Icon.Tools size={22} /></div>
+              <div className="hb-empty-title">{models.length ? 'Pick a model to see its drift' : 'Watch a model for drift'}</div>
+              <p className="hb-empty-text">
+                {models.length
+                  ? 'Choose a model on the left to see its drift score, its threshold and any alerts.'
+                  : 'Add a model you run, send it the inputs it sees, and this window warns you when they drift from what it was trained on.'}
+              </p>
+              {!models.length && (
+                <div className="hb-empty-actions">
+                  <button type="button" className="ml-btn ml-btn--primary" onClick={() => setAdding(true)} disabled={!workspaceId}>
+                    Add your first model
+                  </button>
+                </div>
+              )}
             </div>
           )}
-        </div>
+        </section>
       </div>
     </>
   );
@@ -195,23 +186,20 @@ export function MlopsDashboardWindow({ win, onUpdate }) {
 function DriftBreakdown({ results, threshold }) {
   const rows = Object.entries(results || {}).sort(([, x], [, y]) => (y?.score || 0) - (x?.score || 0));
   if (rows.length === 0) {
-    return <div style={{ marginTop: 10, fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>This alert has no per-input details saved.</div>;
+    return <div className="ml-alert-when ml-breakdown-empty">This alert has no per-input details saved.</div>;
   }
   return (
-    <table style={{ marginTop: 10, width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
+    <table className="ml-table">
       <thead>
-        <tr style={{ color: 'var(--ink-faint)', textAlign: 'left' }}>
-          <th style={{ padding: '4px 6px' }}>Input</th><th style={{ padding: '4px 6px' }}>Drift</th>
-          <th style={{ padding: '4px 6px' }}>Seen</th><th style={{ padding: '4px 6px' }}>Usual</th>
-        </tr>
+        <tr><th>Input</th><th>Drift</th><th>Seen</th><th>Usual</th></tr>
       </thead>
       <tbody>
         {rows.map(([name, r]) => (
-          <tr key={name} style={{ borderTop: '1px solid var(--hairline)', color: threshold != null && r?.score > threshold ? 'var(--red)' : 'var(--ink)' }}>
-            <td style={{ padding: '4px 6px', fontFamily: 'var(--font-mono)' }}>{name.replace(/_/g, ' ')}</td>
-            <td style={{ padding: '4px 6px' }}>{Number(r?.score || 0).toFixed(3)}</td>
-            <td style={{ padding: '4px 6px' }}>{typeof r?.value === 'number' ? r.value.toFixed(3) : String(r?.value ?? '')}</td>
-            <td style={{ padding: '4px 6px' }}>{typeof r?.baselineMean === 'number' ? r.baselineMean.toFixed(3) : 'n/a'}</td>
+          <tr key={name} data-over={threshold != null && r?.score > threshold ? 'true' : undefined}>
+            <td className="ml-mono">{name.replace(/_/g, ' ')}</td>
+            <td>{Number(r?.score || 0).toFixed(3)}</td>
+            <td>{typeof r?.value === 'number' ? r.value.toFixed(3) : String(r?.value ?? '')}</td>
+            <td>{typeof r?.baselineMean === 'number' ? r.baselineMean.toFixed(3) : 'n/a'}</td>
           </tr>
         ))}
       </tbody>

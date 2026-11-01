@@ -12,9 +12,12 @@ import {
   normalizeRemixSourceType,
 } from '../design/remix.js';
 import { logDesignDone, logDesignFailed } from '../design/designLog.js';
+import { studioRouter } from './studio.js';
 
 // Design surface: Figma import (BYOK token) and model remixes of on-canvas code.
 export const designRouter = express.Router();
+// The Studio's ask-a-model box ("change this track with any model") lives beside the remix: /api/design/studio/assist.
+designRouter.use('/studio', studioRouter);
 
 function sendError(res, err, fallbackCode) {
   const status = Number(err?.statusCode) || 500;

@@ -3,7 +3,9 @@ import { useWorkspaceStore } from '../../lib/store.js';
 import { canvasWorkspaceSnapshot } from '../../lib/workspace/canvasWorkspaceSnapshot.js';
 import { useWorkspacePersistence } from './useWorkspacePersistence.js';
 
-export function useCanvasWorkspacePersistence({ enabled, revision, onRevision, rebaseOnConflict, canvasSource, canvasLive }) {
+export function useCanvasWorkspacePersistence({
+  enabled, revision, onRevision, rebaseOnConflict, canvasSource, canvasLive, boardSaves, holdDraft,
+}) {
   const state = useWorkspaceStore();
   const workspace = React.useMemo(() => canvasWorkspaceSnapshot(state),
     [state.workspaceId, state.currentProject, state.wins, state.canvasGroups,
@@ -11,6 +13,6 @@ export function useCanvasWorkspacePersistence({ enabled, revision, onRevision, r
     state.extraAgents, state.penColor, state.penSize, state.penMode,
     state.sidebarFavorites, state.windowAllowList]);
   return useWorkspacePersistence({
-    enabled, workspace, revision, onRevision, rebaseOnConflict, canvasSource, canvasLive,
+    enabled, workspace, revision, onRevision, rebaseOnConflict, canvasSource, canvasLive, boardSaves, holdDraft,
   });
 }

@@ -1,4 +1,8 @@
 import session from 'express-session';
+import { createLogger } from '../logger.js';
+import { safeErrorCode } from './errorCode.js';
+
+const log = createLogger('session');
 
 const DEFAULT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const DEFAULT_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
@@ -14,7 +18,7 @@ export class PostgresSessionStore extends session.Store {
   constructor(dbPool, {
     cleanupIntervalMs = DEFAULT_CLEANUP_INTERVAL_MS,
     cleanupOnStart = true,
-    onCleanupError = (error) => console.warn('[session] cleanup failed:', error.message),
+    onCleanupError = (error) => log.warn('expired session cleanup failed', { code: safeErrorCode(error) }),
   } = {}) {
     super();
     this.pool = dbPool;

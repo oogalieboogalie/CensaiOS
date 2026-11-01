@@ -12,6 +12,7 @@ import {
 } from './constants.js';
 import { canExposeRawDatabaseTools, isRawDatabaseTool } from './runtimeAccess.js';
 import { FAMILY_AGENT_BY_ID } from '../../../src/data/family-agents.js';
+import { noteToolFailure } from '../toolsLog.js';
 
 export async function hasUnreadTaskSubmission(agentId, context = {}) {
   if (!context.workspaceId) return false;
@@ -70,7 +71,7 @@ export async function filterToolsForAgent(agentId, context = {}) {
           agentId,
         });
       } catch (dbErr) {
-        console.warn(`[Capabilities] Failed to fetch scoped capabilities for agent ${agentId}:`, dbErr.message);
+        noteToolFailure('could not load scoped capabilities', { agentId }, dbErr);
       }
     }
 
@@ -99,7 +100,7 @@ export async function filterToolsForAgent(agentId, context = {}) {
       matched = matched.filter(tool => !isRawDatabaseTool(tool.function.name));
     }
   } catch (error) {
-    console.warn(`[Tools] Failed closed while resolving permissions for ${agentId}:`, error.message);
+    noteToolFailure('permissions check failed closed', { agentId }, error);
   }
 
   matched = appendToolsByName(matched, TOOL_DISCOVERY_NAMES);

@@ -25,6 +25,7 @@ import {
 import { createAgentCardRun } from '../agent-card-runs/store.js';
 import { agentCardActorChannel } from '../agent-card-runs/events.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import {
   canActorInvokeCard,
 } from '../agent-registry/access.js';
@@ -42,7 +43,7 @@ const MAX_MESSAGE_BYTES = 256 * 1024;
 function safeSend(ws, payload) {
   if (ws.readyState !== ws.OPEN) return false;
   try { ws.send(JSON.stringify(payload)); return true; }
-  catch (err) { log.warn('send failed', { error: err.message }); return false; }
+  catch (err) { log.warn('send failed', { code: safeErrorCode(err) }); return false; }
 }
 
 function parseCookieSid(req) {
@@ -117,7 +118,7 @@ export function attachAgentRegistryWs(server, opts = {}) {
         wss.emit('connection', ws, request, { kind: 'user', id: userId });
       });
     }).catch((err) => {
-      log.error('upgrade auth failed', { error: err.message });
+      log.error('upgrade auth failed', { code: safeErrorCode(err) });
       socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
       socket.destroy();
     });
@@ -151,8 +152,9 @@ export function attachAgentRegistryWs(server, opts = {}) {
         return;
       }
       handleClientMessage(ws, msg, actor, subscriptions).catch((err) => {
-        log.warn('handler error', { type: msg.type, error: err.message });
-        safeSend(ws, { type: 'error', reason: err.message || 'internal-error' });
+        log.warn('handler error', { type: msg.type, code: safeErrorCode(err) });
+        // A code word only: an error's message can repeat a key, a path or a database detail.
+        safeSend(ws, { type: 'error', reason: safeErrorCode(err) || 'internal-error' });
       });
     });
 
@@ -167,7 +169,7 @@ export function attachAgentRegistryWs(server, opts = {}) {
       subscriptions.clear();
     });
 
-    ws.on('error', (err) => log.warn('socket error', { userId: actor.id, error: err.message }));
+    ws.on('error', (err) => log.warn('socket error', { userId: actor.id, code: safeErrorCode(err) }));
   });
 
   return wss;
@@ -236,7 +238,7 @@ export async function handleClientMessage(ws, msg, actor, subscriptions) {
           unsubscribe(temporarySubscription.channel, temporarySubscription.clientId);
           subscriptions.delete(temporarySubscription.key);
         }
-        return safeSend(ws, { type: 'call.failed', cardId, taskId: msg.taskId, error: error.code || error.message });
+        return safeSend(ws, { type: 'call.failed', cardId, taskId: msg.taskId, error: safeErrorCode(error) || 'internal-error' });
       }
     }
     case 'pong':

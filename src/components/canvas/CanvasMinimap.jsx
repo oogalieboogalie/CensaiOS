@@ -7,6 +7,7 @@ import {
   fromMap, mapLayout, mapWindows, panToCenter, toMap, viewportRect, windowAt, worldBounds,
 } from '../../lib/canvas/minimapMath.js';
 import { cursorColor } from './CanvasCursors.jsx';
+import { useMapTuck } from './useMapTuck.js';
 
 function useScreenSize() {
   const read = () => ({ w: window.innerWidth || 1280, h: window.innerHeight || 800 });
@@ -23,7 +24,9 @@ function useScreenSize() {
  * The board map: a small picture of the whole board in the corner, like a
  * game minimap. Every window, group (with its F-key), person and agent is on
  * it, and the bright frame is what's on your screen. Click to jump there,
- * drag to slide the board, click a window to jump to it and select it.
+ * drag to slide the board, click a window to jump to it and select it. It
+ * keeps out of the way (useMapTuck): while a window sits under it, it tucks
+ * into its small tab (a click still opens it), and new windows open clear of it.
  */
 export function CanvasMinimap({ wins = [], canvasGroups = [], activeId, pan, zoom, onPanZoom, onSelect, cursors = {}, agentCursors = {}, groupHotkeySlotById = {}, onClose }) {
   const screen = useScreenSize();
@@ -33,6 +36,7 @@ export function CanvasMinimap({ wins = [], canvasGroups = [], activeId, pan, zoo
   const view = viewportRect(pan, zoom, screen);
   const world = worldBounds([...shown, ...canvasGroups], view);
   const { scale, w, h } = mapLayout(world);
+  const tuck = useMapTuck({ w, h, screen, shown, pan, zoom, small });
   const drag = React.useRef(null);
   const panRef = React.useRef(pan);
   panRef.current = pan;
@@ -81,10 +85,11 @@ export function CanvasMinimap({ wins = [], canvasGroups = [], activeId, pan, zoo
   const dot = (p) => ({ cx: (p.x - world.x) * scale, cy: (p.y - world.y) * scale });
 
   const count = `${shown.length} ${shown.length === 1 ? 'window' : 'windows'}`;
-  if (small) {
+  if (small || tuck.tucked) {
     return (
-      <button type="button" data-present-hide data-testid="board-map-tab" className={`hb-minimap hb-minimap--tab ${GLASS_HOST}`}
-        style={glossContainer()} title="Open the board map" aria-label="Open the board map" onClick={() => setSmall(false)}>
+      <button type="button" data-present-hide data-testid="board-map-tab" data-tucked={!small || undefined} className={`hb-minimap hb-minimap--tab ${GLASS_HOST}`}
+        style={glossContainer()} title="Open the board map" aria-label="Open the board map"
+        onClick={() => { setSmall(false); tuck.hold(); }}>
         <span className="hb-minimap__tab-icon" aria-hidden="true">▢</span>
         <span>Map</span>
         <span className="hb-minimap__count">{shown.length}</span>
@@ -93,7 +98,7 @@ export function CanvasMinimap({ wins = [], canvasGroups = [], activeId, pan, zoo
   }
 
   return (
-    <div data-present-hide data-testid="board-map" className={`hb-minimap ${GLASS_HOST}`} style={glossContainer()}>
+    <div ref={tuck.mapRef} data-present-hide data-testid="board-map" className={`hb-minimap ${GLASS_HOST}`} style={glossContainer()} {...tuck.pointer}>
       <div className="hb-minimap__head">
         <span>Board map</span>
         <span className="hb-minimap__count">{count}</span>

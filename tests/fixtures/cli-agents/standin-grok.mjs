@@ -12,6 +12,10 @@
  *   grok -p <prompt> --output-format streaming-json [-r <id>] ...
  *                              refuses without auth.json; otherwise streams
  *                              thought / tool_call / text / end lines
+ *   grok --prompt-file <path> ...   the same, with the prompt in a file
+ *
+ * STANDIN_GROK_EDIT=<file> makes a task write that file under --cwd, the way
+ * an edit would; STANDIN_GROK_FAIL=<message> makes it fail with that error.
  */
 import fs from 'fs';
 import os from 'os';
@@ -30,13 +34,20 @@ if (argv.includes('--version')) {
   process.exit(0);
 }
 
+// What the real `grok login --device-auth` (1.0.70) prints on a runner with
+// no browser, line for line.
 if (argv[0] === 'login') {
-  process.stderr.write('To sign in, open https://accounts.x.ai/device in a browser and enter the code WXYZ-4821\n');
-  process.stderr.write('Waiting for you to approve...\n');
+  process.stderr.write([
+    '', 'To sign in, open this URL in your browser:', '', '  https://accounts.x.ai/oauth2/device?user_code=WXYZ-4821', '',
+    '  (Could not open browser automatically — open the URL above manually.)', '',
+    'Confirm this code in your browser:', '', '  WXYZ-4821', '',
+    "\u001b[90mOnly continue with a code you requested. Don't share it with anyone.\u001b[0m", '',
+    'Waiting for authorization...', '',
+  ].join('\n'));
   await sleep(Number(process.env.STANDIN_GROK_LOGIN_MS || 1500));
   fs.mkdirSync(home, { recursive: true });
   fs.writeFileSync(authFile, JSON.stringify({ access_token: 'standin-token', account: process.env.STANDIN_GROK_ACCOUNT || 'standin' }));
-  process.stderr.write('Signed in.\n');
+  process.stderr.write('✓ Signed in\n');
   process.exit(0);
 }
 
@@ -46,11 +57,12 @@ if (argv[0] === 'logout') {
 }
 
 const promptAt = argv.indexOf('-p');
-if (promptAt < 0) {
+const promptFileAt = argv.indexOf('--prompt-file');
+if (promptAt < 0 && promptFileAt < 0) {
   process.stderr.write('stand-in grok: only headless -p is supported\n');
   process.exit(2);
 }
-const prompt = argv[promptAt + 1] || '';
+const prompt = promptAt >= 0 ? argv[promptAt + 1] || '' : fs.readFileSync(argv[promptFileAt + 1], 'utf8');
 const resumeAt = argv.indexOf('-r');
 const resumed = resumeAt >= 0 ? argv[resumeAt + 1] : null;
 const tools = argv.includes('--tools') ? argv[argv.indexOf('--tools') + 1] : 'all';
@@ -65,6 +77,18 @@ const sessionId = resumed || crypto.randomUUID();
 const ask = prompt.split('\n').pop().trim();
 out({ type: 'thought', data: 'Reading the question.' });
 await sleep(delay);
+if (process.env.STANDIN_GROK_FAIL) {
+  out({ type: 'error', message: process.env.STANDIN_GROK_FAIL });
+  process.exit(1);
+}
+if (process.env.STANDIN_GROK_EDIT) {
+  const cwdAt = argv.indexOf('--cwd');
+  const target = path.join(cwdAt >= 0 ? argv[cwdAt + 1] : process.cwd(), process.env.STANDIN_GROK_EDIT);
+  out({ type: 'tool_call', toolCallId: 'call_edit', title: `Edit ${path.basename(target)}`, kind: 'edit', status: 'in_progress', toolName: 'search_replace', rawInput: { path: target } });
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, `${ask.slice(0, 80)}\n`);
+  out({ type: 'tool_call_update', toolCallId: 'call_edit', status: 'completed' });
+}
 if (/news|search|today|latest/i.test(ask)) {
   out({ type: 'tool_call', toolCallId: 'call_1', title: 'Search the web', kind: 'fetch', status: 'in_progress', toolName: 'web_search', rawInput: { query: ask } });
   await sleep(delay);

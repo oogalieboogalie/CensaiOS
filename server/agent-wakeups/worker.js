@@ -1,6 +1,7 @@
 import { dbReady } from '../dbState.js';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { claimAgentWakeup, requeueInProgressAgentWakeups } from './store.js';
 import { runAgentWakeup } from './execution.js';
 import { runRestartSelfCheck } from './restartSelfCheck.js';
@@ -38,7 +39,7 @@ function scheduleRestartSelfCheckOnce() {
       log,
       processStartedAt: PROCESS_STARTED_AT,
       scheduledDelayMs: RESTART_CHECK_DELAY_MS,
-    })).catch((err) => log.error('restart self-check crashed', { error: err.message }));
+    })).catch((err) => log.error('restart self-check crashed', { code: safeErrorCode(err) }));
   }, RESTART_CHECK_DELAY_MS);
   if (typeof restartSelfCheckHandle.unref === 'function') restartSelfCheckHandle.unref();
 }
@@ -55,12 +56,12 @@ export async function pollAgentWakeups() {
     }
     state.active += 1;
     runAgentWakeup(wake)
-      .catch(err => log.error('wake failed', { wakeId: wake.id, error: err.message }))
+      .catch(err => log.error('wake failed', { wakeId: wake.id, code: safeErrorCode(err) }))
       .finally(() => { state.active -= 1; });
     state.lastPollError = null;
   } catch (err) {
     state.lastPollError = err.message;
-    log.error('poll failed', { error: err.message });
+    log.error('poll failed', { code: safeErrorCode(err) });
   }
 }
 
@@ -70,7 +71,7 @@ export function startAgentWakeupWorker() {
   log.info('agent wakeup worker enabled', { pollIntervalMs: POLL_MS, maxConcurrent: MAX_CONCURRENT });
   if (dbReady()) recoverInterruptedWakeups().catch((err) => {
     state.lastPollError = err.message;
-    log.error('startup recovery failed', { error: err.message });
+    log.error('startup recovery failed', { code: safeErrorCode(err) });
   });
   intervalHandle = setInterval(pollAgentWakeups, POLL_MS);
   if (typeof intervalHandle.unref === 'function') intervalHandle.unref();

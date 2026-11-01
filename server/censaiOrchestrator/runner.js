@@ -10,6 +10,7 @@
 
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { PlanStopped, runJob } from './job.js';
 import { finish, markStopped, planFromRow, skipRest, stickJob } from './planState.js';
 import { reportMessages, summaryLine } from './prompts.js';
@@ -41,7 +42,7 @@ const isQueued = (id) => running.has(id) || waiting.some((item) => item.id === i
 // One save after another, each writing the plan as it is by then, so the last write holds the latest state.
 function saveEntry(entry, deps) {
   entry.chain = entry.chain.then(() => savePlan(deps.db, entry.plan)).catch((error) => {
-    log.warn('plan not saved', { planId: entry.id, error: error.message });
+    log.warn('plan not saved', { planId: entry.id, code: safeErrorCode(error) });
   });
   return entry.chain;
 }
@@ -51,7 +52,7 @@ async function finalLine(plan, censai, deps) {
   try {
     return summaryLine(plan, await deps.askCensai(await censai(), reportMessages(plan), { userId: plan.userId, reasoning: false }));
   } catch (error) {
-    log.warn('report sentence not written, using the plain one', { planId: plan.id, error: error.message });
+    log.warn('report sentence not written, using the plain one', { planId: plan.id, code: safeErrorCode(error) });
     return summaryLine(plan);
   }
 }
@@ -93,7 +94,7 @@ async function runPlan(entry, deps) {
   } catch (error) {
     if (error instanceof PlanStopped || entry.stopped) return;
     // Something on my side broke: say so instead of leaving the plan running.
-    log.error('plan failed', { planId: plan.id, error: error.message });
+    log.error('plan failed', { planId: plan.id, code: safeErrorCode(error) });
     const job = plan.jobs.find((item) => !FINAL_JOB.has(item.status));
     stickJob(plan, job, { why: 'something went wrong on my side', error: 'Something went wrong on my side while running this part.' });
     await save();
@@ -106,7 +107,7 @@ function pump() {
     const entry = { id, plan: null, controller: new AbortController(), stopped: false, chain: Promise.resolve() };
     running.set(id, entry);
     entry.done = runPlan(entry, withDefaults(deps))
-      .catch((error) => log.error('plan crashed', { planId: id, error: error.message }))
+      .catch((error) => log.error('plan crashed', { planId: id, code: safeErrorCode(error) }))
       .finally(() => {
         running.delete(id);
         pump();
@@ -182,7 +183,7 @@ let recovering = null;
 export function recoverOnce(deps = {}) {
   recovering ||= recover(withDefaults(deps)).catch((error) => {
     recovering = null;
-    log.warn('could not pick up earlier plans', { error: error.message });
+    log.warn('could not pick up earlier plans', { code: safeErrorCode(error) });
   });
   return recovering;
 }

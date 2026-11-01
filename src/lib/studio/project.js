@@ -1,6 +1,7 @@
 import { normalizeEffect, newEffect } from './effects.js';
 import { normalizeSynth } from './dsp/synth.js';
 import { DIVISIONS } from './dsp/util.js';
+import { SCALE_NAMES } from './musicKey.js';
 
 // The Studio project as saved on the window record (win.studio). Positions
 // are in beats (quarter notes) so changing the tempo keeps everything on
@@ -79,6 +80,9 @@ export function normalizeProject(raw) {
     title: str(p.title, 'Untitled song', 60),
     bpm: n(p.bpm, 30, 300, 120),
     beatsPerBar: Math.round(n(p.beatsPerBar, 2, 12, 4)),
+    key: Math.round(n(p.key, 0, 11, 0)),
+    scale: SCALE_NAMES.includes(p.scale) ? p.scale : 'major',
+    scaleLock: Boolean(p.scaleLock),
     snap: SNAPS.includes(p.snap) ? p.snap : '1/16',
     metronome: Boolean(p.metronome),
     loop: { on: Boolean(p.loop?.on), start: loopStart, end: Math.max(loopStart + 0.25, n(p.loop?.end, 0, 4096, 16)) },
@@ -99,6 +103,8 @@ export function starterProject() {
   return normalizeProject({
     title: 'First idea',
     bpm: 96,
+    key: 9,
+    scale: 'minor',
     tracks: [
       { id: 'track-keys', name: 'Keys', kind: 'synth', synth: { preset: 'keys' }, fx: keysFx,
         clips: [{ id: 'clip-keys', start: 0, len: 8, notes: [...chord(0, [57, 60, 64]), ...chord(2, [53, 57, 60]), ...chord(4, [55, 59, 62]), ...chord(6, [52, 55, 59])] }] },

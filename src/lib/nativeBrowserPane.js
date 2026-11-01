@@ -2,7 +2,7 @@ import React from 'react';
 import { isAdBlockEnabled } from './adBlock.js';
 import { gripRects } from './paneGrips.js';
 import { coverLogLine, fitPane } from './paneCover.js';
-import { logToApp } from './appLog/browserLog.js';
+import { logToApp, logFailure } from './appLog/browserLog.js';
 
 // Desktop (Tauri) only: drives a native child webview layered over a Browser
 // window's content area (see src-tauri/src/browser_pane.rs). Real sites refuse
@@ -134,7 +134,7 @@ export function useNativeBrowserPane({ winId, areaRef, url, onNavigated, coverWh
         opening = true;
         invoke('browser_pane_open', { id, url: urlRef.current, ...box, adblock: isAdBlockEnabled() })
           .then(() => { openedRef.current = true; lastKey = JSON.stringify(box); lastVisible = true; lastZoom = null; setVisible(true); })
-          .catch((err) => console.error('[browser-pane] open failed', err))
+          .catch((err) => logFailure('browser-pane: open failed', err, 'browser', 'error'))
           .finally(() => { opening = false; });
         return;
       }
@@ -188,7 +188,7 @@ export function useNativeBrowserPane({ winId, areaRef, url, onNavigated, coverWh
   const call = React.useCallback((cmd, args = {}) => {
     const invoke = tauriInvoke();
     if (!invoke || !openedRef.current) return Promise.resolve();
-    return invoke(cmd, { id, ...args }).catch((err) => console.error(`[browser-pane] ${cmd} failed`, err));
+    return invoke(cmd, { id, ...args }).catch((err) => logFailure(`browser-pane: ${cmd} failed`, err, 'browser', 'error'));
   }, [id]);
 
   return {

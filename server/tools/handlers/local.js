@@ -4,6 +4,7 @@ import { runnerClient } from '../../runner/client.js';
 import { getAgent, getSubAgentById } from '../../memory.js';
 import { getProject } from '../../workspaces.js';
 import { resolveTavilyKey, tavilyBase } from '../../leadhound/tavily.js';
+import { noteToolFailure } from '../toolsLog.js';
 
 const TAVILY_KEY_MISSING = 'Error: no Tavily key yet. Paste one in the LeadHound window (or set TAVILY_API_KEY on the server) to search the web.';
 
@@ -46,7 +47,7 @@ export async function handleLocalTool(agentId, name, args, context = {}) {
     }
   } catch (err) {
     scopeLoadError = err;
-    console.warn(`[LocalTools] Failed to load agent scopes for ${agentId}:`, err.message);
+    noteToolFailure('could not load agent scopes', { agentId }, err);
   }
 
   if (scopeLoadError && ['local_list_dir', 'local_read_file', 'local_write_file'].includes(name)) {
@@ -101,7 +102,7 @@ export async function handleLocalTool(agentId, name, args, context = {}) {
             code_snippet: args.content,
             file_path: args.file_path,
             metadata: { abs_path: abs }
-          }).catch(err => console.error('[Provenance] Failed to record:', err.message));
+          }).catch(err => noteToolFailure('provenance not recorded', { agentId: args.__provenance.agent_id }, err));
         }
 
         return `Successfully wrote to ${abs}`;

@@ -1,4 +1,8 @@
 import { fetchChatCompletion } from '../chatModel/completion.js';
+import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
+
+const log = createLogger('ops');
 
 /**
  * Score and prioritize artifacts based on importance and relevance.
@@ -37,7 +41,7 @@ Example: [0.9, 0.1, 0.5]
       .map((a, i) => ({ ...a, priorityScore: scores[i] || 0 }))
       .sort((a, b) => b.priorityScore - a.priorityScore);
   } catch (err) {
-    console.error('Prioritization error:', err);
+    log.error('prioritization failed, sorted by time', { code: safeErrorCode(err) });
     // Fallback to time-based sorting
     return artifacts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }

@@ -1,0 +1,114 @@
+/*
+ * Depth inside a window (docs/ui-yardstick.md): the shared surfaces every
+ * module can stand on, so depth comes from one place. Values come only from
+ * tokens.css (--layer-*, --panel-shadow, --well-shadow, --rim-light).
+ *
+ *   .hb-well    sunken: lists, tables, code, logs
+ *   .hb-bar     a toolbar or tab band across the window
+ *   .hb-panel   a raised card; add .hb-lift to rise on hover
+ *   .hb-press   sinks a little when pressed
+ *   .hb-stat    a number tile (value over a small label)
+ *   .hb-empty   an empty or "can't reach" state: icon, title, words, action
+ */
+
+.hb-well {
+  background: var(--layer-well);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--well-shadow);
+}
+
+.hb-bar {
+  background: var(--layer-bar);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.hb-panel {
+  background: var(--layer-panel);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--panel-shadow);
+}
+
+.hb-lift {
+  transition:
+    box-shadow var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard);
+}
+.hb-lift:hover {
+  background: var(--layer-panel-hover);
+  box-shadow: var(--panel-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.hb-press { transition: transform var(--dur-fast) var(--ease-standard); }
+.hb-press:active:not(:disabled) { transform: scale(var(--press-scale)); }
+
+.hb-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: var(--space-20);
+  padding: var(--space-2) var(--space-3);
+  background: var(--layer-panel);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--panel-shadow);
+}
+.hb-stat-value {
+  color: var(--ink);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.hb-stat-label { color: var(--ink-faint); font-size: var(--text-xs); }
+
+.hb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: var(--space-96);
+  margin: auto;
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+}
+.hb-empty-icon {
+  display: grid;
+  place-items: center;
+  width: var(--space-12);
+  height: var(--space-12);
+  margin-bottom: var(--space-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-xl);
+  background: var(--layer-panel);
+  box-shadow: var(--panel-shadow);
+  color: var(--ink-soft);
+}
+.hb-empty-title { color: var(--ink); font-size: var(--text-base); font-weight: 600; }
+.hb-empty-text { color: var(--ink-soft); font-size: var(--text-md); line-height: 1.5; }
+.hb-empty-detail {
+  max-width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--layer-well);
+  box-shadow: var(--well-shadow);
+  color: var(--ink-faint);
+  font: var(--text-xs) / 1.5 var(--font-mono);
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.hb-empty-actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
+
+/* A command or name inside running text. */
+.hb-code {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--layer-well);
+  color: var(--ink);
+  font: var(--text-sm) / 1.4 var(--font-mono);
+}

@@ -2,6 +2,10 @@ import pool from '../../db.js';
 import { LRUCache } from 'lru-cache';
 import { readJournals } from '../journal.js';
 import { FAMILY_BLUEPRINT_AGENT_IDS } from '../../agents/familyBlueprint.js';
+import { createLogger } from '../../logger.js';
+import { safeErrorCode } from '../../security/errorCode.js';
+
+const log = createLogger('memory');
 
 const contextCache = new LRUCache({
   max: 100,
@@ -93,7 +97,7 @@ export async function loadAgentContext(agentId, opts = {}) {
 
   const duration = Date.now() - start;
   if (process.env.NODE_ENV !== 'production') {
-    console.log(`[Perf] loadAgentContext for agent ${agentId} took ${duration}ms`);
+    log.debug('agent context loaded', { agentId, ms: duration });
   }
 
   const result = {
@@ -125,7 +129,7 @@ async function optionalMemoryRows(label, sql, params = []) {
     return rows;
   } catch (err) {
     if (isOptionalMemorySchemaError(err)) {
-      console.warn(`Memory context "${label}" skipped: ${err.message}`);
+      log.warn('memory context skipped', { label, code: safeErrorCode(err) });
       return [];
     }
     throw err;

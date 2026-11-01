@@ -1,20 +1,18 @@
 import React from 'react';
 import { WindowTitle } from './Windows.jsx';
-import { api } from '../lib/api.js';
 import { CalendarEventComposer } from './calendar/CalendarEventComposer.jsx';
 import { CalendarMonthView } from './calendar/CalendarMonthView.jsx';
 import { CalendarListView } from './calendar/CalendarListView.jsx';
 import { CalendarWeekHeader } from './calendar/CalendarWeekHeader.jsx';
 import { CalendarDateModal } from './calendar/CalendarDateModal.jsx';
 import { CalendarToolbar } from './calendar/CalendarToolbar.jsx';
-import { toCalendarEvent } from './calendar/calendarEvents.js';
+import { CalendarFooter } from './calendar/CalendarFooter.jsx';
+import { useCalendarEvents } from './calendar/useCalendarEvents.js';
 import { loadCalendarView, logCalendarViewSetAside, saveCalendarView } from './calendar/calendarView.js';
 
-// A beautifully minimal calendar UI for the infinite canvas
+// A calendar on the canvas. It always shows the month, keeps each person's
+// own events (useCalendarEvents) and adds Google Calendar once it is connected.
 export function CalendarWindow({ win, onUpdate, onSpawn }) {
-  const [events, setEvents] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
   const ownView = React.useMemo(() => loadCalendarView(win.id), [win.id]);
 
   const [currentDate, setCurrentDate] = React.useState(() => ownView.currentDate || new Date());
@@ -23,6 +21,9 @@ export function CalendarWindow({ win, onUpdate, onSpawn }) {
 
   // Composer State
   const [isComposing, setIsComposing] = React.useState(Boolean(ownView.isComposing));
+  const [composeDay, setComposeDay] = React.useState(null);
+  const calendar = useCalendarEvents(currentDate, viewMode);
+  const { events } = calendar;
 
   // Each person's view stays in their own browser, never in the board's
   // shared window (calendarView.js).
@@ -39,42 +40,6 @@ export function CalendarWindow({ win, onUpdate, onSpawn }) {
     onUpdate?.({ data: rest });
   }, [hasSharedView]);
 
-  const fetchEvents = React.useCallback(() => {
-    setLoading(true);
-    setError(null);
-    let start, end;
-
-    if (viewMode === 'month') {
-      start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      // add padding to fetch full week for first/last days
-      start.setDate(start.getDate() - start.getDay());
-      end.setDate(end.getDate() + (6 - end.getDay()));
-    } else {
-      start = new Date(currentDate);
-      start.setDate(start.getDate() - start.getDay());
-      end = new Date(start);
-      end.setDate(end.getDate() + 7);
-    }
-
-    start.setHours(0,0,0,0);
-    end.setHours(23,59,59,999);
-
-    api.getCalendarEvents(start.toISOString(), end.toISOString())
-      .then(data => {
-        setEvents(data.map((ev) => toCalendarEvent(ev)));
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, [currentDate, viewMode]);
-
-  React.useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
-
   // Handle pre-fill from win.data
   React.useEffect(() => {
     if (win.data?.prefill) {
@@ -82,8 +47,11 @@ export function CalendarWindow({ win, onUpdate, onSpawn }) {
     }
   }, [win.data]);
 
-
-
+  const compose = (day) => {
+    setSelectedDateStr(null);
+    setComposeDay(day);
+    setIsComposing(true);
+  };
 
   const groupedEvents = React.useMemo(() => {
     const groups = {};
@@ -113,15 +81,13 @@ export function CalendarWindow({ win, onUpdate, onSpawn }) {
 
   const isToday = (d) => new Date().toDateString() === d.toDateString();
 
-
-
   return (
     <>
       <WindowTitle
         accent="var(--ps-red)"
         icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>}
         label={win.title || "Calendar"}
-        subtitle="Google Calendar"
+        subtitle={calendar.googleStatus === 'connected' ? 'yours + Google' : undefined}
         attachedAgentIds={win.attachedAgents}
         onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
       >
@@ -129,64 +95,44 @@ export function CalendarWindow({ win, onUpdate, onSpawn }) {
 
       </WindowTitle>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--surface)', position: 'relative' }}>
+      <div className="hb-cal" aria-busy={calendar.loading ? 'true' : undefined}>
 
-        {/* Selected Date Modal */}
-        {selectedDateStr && <CalendarDateModal selectedDateStr={selectedDateStr} groupedEvents={groupedEvents} onClose={() => setSelectedDateStr(null)} onSpawn={onSpawn} />}
-
-        <CalendarWeekHeader weekDays={weekDays} viewMode={viewMode} isToday={isToday} />
-
-        {/* Schedule View */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>
-              Loading events...
-            </div>
-          ) : error === 'Not authenticated with Google' ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              <span>Google Calendar is not connected</span>
-              <a href="/api/auth/google" style={{ padding: '8px 16px', background: 'var(--accent)', color: 'var(--accent-contrast)', textDecoration: 'none', borderRadius: 'var(--radius-md)', fontWeight: 600 }}>Connect Google Calendar</a>
-            </div>
-          ) : error ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ps-red)', fontSize: 'var(--text-sm)' }}>
-              Error: {error}
-            </div>
-          ) : events.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>
-              {viewMode === 'month' ? 'No events scheduled this month.' : 'No events scheduled this week.'}
-            </div>
-          ) : viewMode === 'month' ? (
-            <CalendarMonthView monthDays={monthDays} groupedEvents={groupedEvents} isToday={isToday} onSelectDate={setSelectedDateStr} />
-          ) : (
-            <CalendarListView groupedEvents={groupedEvents} onSpawn={onSpawn} />
-          )}
-        </div>
-
-        {/* Event Composer */}
-        {isComposing && (
-          <CalendarEventComposer
-            onSuccess={fetchEvents}
-            onClose={() => setIsComposing(false)}
-            prefillData={win.data?.prefill}
-            onClearPrefill={() => onUpdate({ data: { ...win.data, prefill: null } })}
+        {/* The picked day: its events, Delete for your own, and Add event on this day */}
+        {selectedDateStr && (
+          <CalendarDateModal
+            selectedDateStr={selectedDateStr}
+            groupedEvents={groupedEvents}
+            onClose={() => setSelectedDateStr(null)}
+            onSpawn={onSpawn}
+            onAddOnDay={compose}
+            onDelete={calendar.remove}
           />
         )}
 
-        {/* Add Event Toggle */}
-        {!isComposing && (
-          <div style={{ padding: 12, borderTop: '1px dashed var(--hairline)' }}>
-            <button
-              onClick={() => setIsComposing(true)}
-              style={{
-                width: '100%', padding: '8px', borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)',
-                border: '1px solid var(--hairline)', color: 'var(--ink-soft)', fontSize: 'var(--text-sm)',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-              }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              Add Event
-            </button>
-          </div>
+        <CalendarWeekHeader weekDays={weekDays} viewMode={viewMode} isToday={isToday} />
+
+        <div className="hb-cal-body">
+          {viewMode === 'month' ? (
+            <CalendarMonthView monthDays={monthDays} groupedEvents={groupedEvents} isToday={isToday} onSelectDate={setSelectedDateStr} />
+          ) : events.length > 0 ? (
+            <CalendarListView groupedEvents={groupedEvents} onSpawn={onSpawn} />
+          ) : (
+            <p className="hb-cal-empty">{calendar.loading ? 'Loading events...' : 'Nothing on this week yet.'}</p>
+          )}
+        </div>
+
+        {isComposing ? (
+          <CalendarEventComposer
+            onAdd={calendar.add}
+            onClose={() => { setIsComposing(false); setComposeDay(null); }}
+            prefillData={win.data?.prefill}
+            onClearPrefill={() => onUpdate({ data: { ...win.data, prefill: null } })}
+            googleStatus={calendar.googleStatus}
+            initialDate={composeDay}
+            covered={Boolean(selectedDateStr)}
+          />
+        ) : (
+          <CalendarFooter googleStatus={calendar.googleStatus} ownProblem={calendar.ownProblem} onAdd={() => compose(null)} onRetry={calendar.reload} />
         )}
 
       </div>

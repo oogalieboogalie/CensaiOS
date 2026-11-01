@@ -28,14 +28,36 @@ export function moduleCard({ manifest, source }) {
   return { ...card, manifest: m.manifest, id: m.id, version: m.version, permissions: m.permissions, network: m.network, tools: m.tools };
 }
 
+async function sha256Hex(text) {
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 /** SHA-256 hex of a module's card in the browser; null where hashing is unavailable. */
 export async function browserModuleFingerprint(win) {
-  const subtle = globalThis.crypto?.subtle;
-  if (!subtle || !win?.source) return null;
+  if (!globalThis.crypto?.subtle || !win?.source) return null;
   try {
-    const bytes = new TextEncoder().encode(canonicalJson(moduleCard(win)));
-    const digest = await subtle.digest('SHA-256', bytes);
-    return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+    return await sha256Hex(canonicalJson(moduleCard(win)));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Has a listed module changed since it was listed? Publishing cleans the
+ * manifest first (an older module gets a v3 label), so the signed card is the
+ * cleaned one; the window still holds the label it was built with. Either
+ * matching means unchanged. Before, every older module read "Changed since
+ * listing" the moment it was published. Null where hashing is unavailable.
+ */
+export async function browserListingChanged(win) {
+  const signed = win?.listingFingerprint;
+  const asIs = await browserModuleFingerprint(win);
+  if (!signed || !asIs) return null;
+  if (asIs === signed) return false;
+  try {
+    const cleaned = normalizeManifest(win.manifest, { request: win.request || '' });
+    return (await sha256Hex(canonicalJson(moduleCard({ manifest: cleaned, source: win.source })))) !== signed;
   } catch {
     return null;
   }

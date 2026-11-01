@@ -88,6 +88,24 @@ describe('the economy', () => {
     expect(seatField('Sam')).toBe('seat_sam');
   });
 
+  test('signed-in players sit under their account, so the same name never shares a seat', () => {
+    expect(seatField('Sam', '7')).toBe('seat_u-7');
+    expect(seatField('Pat Example', '7')).toBe(seatField('Sam', '7'));
+    expect(seatField('Pat Example', '3')).not.toBe(seatField('Pat Example', '4'));
+    expect(seatField('Sam', '')).toBe('seat_sam');
+  });
+
+  test('an upgrade two people buy at the same moment is paid for once', () => {
+    const rich = { ...emptySeat('Alma', 0), tapEarned: 300 };
+    const both = { ...emptySeat('Sam', 0), tapEarned: 0 };
+    const before = companyAt(seatsOf(['seat_a', rich], ['seat_b', both]), 0);
+    const a = buyUpgrade(rich, before, 'keyboard');
+    const b = buyUpgrade(both, { ...before, wallet: 300 }, 'keyboard');
+    const after = companyAt(seatsOf(['seat_a', a], ['seat_b', b]), 0);
+    expect(after.wallet).toBe(200);
+    expect(after.tap).toBe(2);
+  });
+
   test('big numbers read like money', () => {
     expect(formatAmount(0)).toBe('0');
     expect(formatAmount(2.5)).toBe('2.5');

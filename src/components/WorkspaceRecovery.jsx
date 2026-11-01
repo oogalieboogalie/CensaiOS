@@ -46,7 +46,7 @@ export function WorkspaceRecovery({ load, onRetry }) {
   if (load.status === 'draft_required') {
     return <RecoveryShell eyebrow="Unsaved draft found" title="A prior save did not finish" detail="The server copy is intact and a newer browser draft was preserved separately. Choose which version to keep." error={actionError}>
       <button disabled={busy} style={buttonStyle} onClick={() => saveChoice(load.draft.value)}>{busy ? 'Restoring…' : 'Restore draft to server'}</button>
-      <button disabled={busy} style={{ ...buttonStyle, background: 'var(--surface-2)', color: 'var(--ink)' }} onClick={() => { api.clearWorkspaceDraft(); onRetry(); }}>Use server copy</button>
+      <button disabled={busy} style={{ ...buttonStyle, background: 'var(--surface-2)', color: 'var(--ink)' }} onClick={() => { api.clearWorkspaceDraft(load.workspaceId); onRetry(); }}>Use server copy</button>
       <button style={{ ...buttonStyle, background: 'transparent', color: 'var(--ink-soft)', border: '1px solid var(--hairline)' }} onClick={() => api.downloadWorkspaceSnapshot(load.draft.value, 'draft')}>Download draft</button>
     </RecoveryShell>;
   }
@@ -102,34 +102,46 @@ export function PersistencePill({ persistence }) {
   );
 }
 
+const draftButton = {
+  all: 'unset', cursor: 'pointer', padding: '4px 10px', borderRadius: 'var(--radius-full)',
+  fontSize: 'var(--text-xs)', fontWeight: 600, flexShrink: 0,
+};
+
+/**
+ * Offers back a board's changes that did not reach the server before the
+ * last visit ended. The whole sentence always shows: on a narrow window the
+ * buttons drop below it instead of cutting it off.
+ */
 export function DraftRestoreBar({ savedAt, onRestore, onDownload, onDiscard }) {
   return (
     <div
-      role="status" data-present-hide
+      role="status" data-present-hide data-testid="draft-restore-bar"
       style={{
         position: 'fixed', top: 56, left: '50%', transform: 'translateX(-50%)', zIndex: 200,
-        display: 'flex', alignItems: 'center', gap: 8,
-        maxWidth: 'min(560px, calc(100vw - 24px))',
+        display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 8,
+        width: 'max-content', maxWidth: 'calc(100vw - 24px)', boxSizing: 'border-box',
         background: 'color-mix(in oklab, var(--surface) 92%, transparent)',
         backdropFilter: 'blur(12px)',
-        border: '1px solid var(--hairline)', borderRadius: 'var(--radius-full)',
+        border: '1px solid var(--hairline)', borderRadius: 'var(--radius-xl)',
         boxShadow: 'var(--shadow-card)',
-        padding: '7px 8px 7px 12px',
-        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--ink-soft)',
+        padding: '7px 8px 7px 14px',
+        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', lineHeight: 1.4, color: 'var(--ink-soft)',
       }}
     >
-      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        A newer unsaved draft{savedAt ? ` from ${savedAt}` : ''} is kept in this browser.
+      <span style={{ flex: '1 1 240px', minWidth: 0 }}>
+        Your changes{savedAt ? ` from ${savedAt}` : ''} did not reach the server. This browser kept a copy.
       </span>
-      <button type="button" onClick={onRestore} style={{ all: 'unset', cursor: 'pointer', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontWeight: 700, flexShrink: 0 }}>
-        Restore draft
-      </button>
-      <button type="button" onClick={onDownload} style={{ all: 'unset', cursor: 'pointer', padding: '4px 10px', borderRadius: 'var(--radius-full)', border: '1px solid var(--hairline)', color: 'var(--ink-soft)', fontSize: 'var(--text-xs)', fontWeight: 600, flexShrink: 0 }}>
-        Download
-      </button>
-      <button type="button" onClick={onDiscard} style={{ all: 'unset', cursor: 'pointer', padding: '4px 10px', borderRadius: 'var(--radius-full)', color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', fontWeight: 600, flexShrink: 0 }}>
-        Discard
-      </button>
+      <span style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+        <button type="button" onClick={onRestore} style={{ ...draftButton, background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontWeight: 700 }}>
+          Restore them
+        </button>
+        <button type="button" onClick={onDownload} style={{ ...draftButton, border: '1px solid var(--hairline)', color: 'var(--ink-soft)' }}>
+          Download
+        </button>
+        <button type="button" onClick={onDiscard} style={{ ...draftButton, color: 'var(--ink-faint)' }}>
+          Discard
+        </button>
+      </span>
     </div>
   );
 }

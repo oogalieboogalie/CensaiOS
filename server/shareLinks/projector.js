@@ -10,6 +10,7 @@
 import { docToSnapshot } from '../collab/seedFromSnapshot.js';
 import { openCanvasDocReader } from '../collab/liveDoc.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { projectBoardForLink } from './access.js';
 
 const FLUSH_MS = 250;
@@ -41,7 +42,7 @@ async function flush(projector) {
   try {
     snapshot = await readSnapshot(projector);
   } catch (error) {
-    log.warn('board projection failed', { workspaceId: projector.workspaceId, error: error.message });
+    log.warn('board projection failed', { workspaceId: projector.workspaceId, code: safeErrorCode(error) });
     return;
   }
   const perLink = new Map();
@@ -76,7 +77,7 @@ async function ensureProjector(workspaceId) {
     try {
       projector.reader = await openReader(workspaceId);
     } catch (error) {
-      log.warn('could not open the live board for guests', { workspaceId, error: error.message });
+      log.warn('could not open the live board for guests', { workspaceId, code: safeErrorCode(error) });
     }
     if (projector.reader?.doc) {
       projector.doc = projector.reader.doc;

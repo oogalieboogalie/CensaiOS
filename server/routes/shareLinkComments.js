@@ -15,6 +15,7 @@ import {
 import { answerAgentMentions } from '../shareLinks/agentReplies.js';
 import { publicComment } from '../shareLinks/store.js';
 import { COMMENT_ROLES, log, memberActor, requireUser, sendError } from './shareLinkHttp.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 export function registerMemberCommentRoutes(commentsRouter) {
   commentsRouter.get('/workspaces/:workspaceId/comments', async (req, res) => {
@@ -45,7 +46,7 @@ export function registerMemberCommentRoutes(commentsRouter) {
       answerAgentMentions(pool, {
         workspaceId: workspace.id, root: result.root, mentions: result.mentions,
         ownerUserId: req.session.userId, callModel, createAccessContext: createModelAccessContext,
-      }).catch((error) => log.warn('agent mention failed', { error: error.message }));
+      }).catch((error) => log.warn('agent mention failed', { code: safeErrorCode(error) }));
     } catch (error) {
       sendError(res, error);
     }

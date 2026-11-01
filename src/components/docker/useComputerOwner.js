@@ -4,14 +4,19 @@ import { useEffect, useState } from 'react';
 // anyone else), so teammates don't see the button. Until the session answers,
 // the button stays hidden.
 export function useComputerOwner(fetchImpl = typeof fetch === 'undefined' ? null : fetch) {
-  const [owner, setOwner] = useState(false);
+  return useComputerOwnerAnswer(fetchImpl) === true;
+}
+
+/** null until the session answers, then true for the owner and false for anyone else. */
+export function useComputerOwnerAnswer(fetchImpl = typeof fetch === 'undefined' ? null : fetch) {
+  const [owner, setOwner] = useState(null);
   useEffect(() => {
     let live = true;
     if (!fetchImpl) return undefined;
     fetchImpl('/api/auth/session', { credentials: 'include' })
       .then((res) => (res.ok ? res.json() : null))
       .then((body) => { if (live) setOwner(body?.user?.role === 'admin'); })
-      .catch(() => {});
+      .catch(() => { if (live) setOwner(false); });
     return () => { live = false; };
   }, [fetchImpl]);
   return owner;

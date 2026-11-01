@@ -89,7 +89,9 @@ export function StepStack({ card, sc }) {
   React.useEffect(() => {
     const previous = lastTop.current ? steps.current.find((s) => s.id === lastTop.current) : null;
     lastTop.current = top?.id || null;
-    if (!previous?.done) return undefined;
+    // Another card opened (or the step is not finished): nothing slides away, so
+    // a slide cut short by the switch does not hide the new card's open step.
+    if (!previous?.done) { setLeaving(null); return undefined; }
     setLeaving(previous);
     const timer = setTimeout(() => setLeaving(null), LEAVE_MS);
     return () => clearTimeout(timer);

@@ -1,5 +1,6 @@
 import express from 'express';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { assertSystemAdmin } from '../security/systemAdmin.js';
 import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
 import { MAX_CHECKS, checkLine, parseCheck } from '../../src/lib/stepCards/todoFile.js';
@@ -84,7 +85,7 @@ export function createStepCardsRouter({ completer = defaultCompleter, folders = 
     try {
       await fn(req, res);
     } catch (err) {
-      if (!err.statusCode) log.error('request failed', { path: req.path, error: err.message });
+      if (!err.statusCode) log.error('request failed', { path: req.path, code: safeErrorCode(err) });
       res.status(err.statusCode || 500).json({ error: err.statusCode ? err.message : 'Step cards hit a problem. It is in the app log.' });
     }
   };

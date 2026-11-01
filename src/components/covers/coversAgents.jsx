@@ -50,6 +50,15 @@ export const AGENT_COVERS = {
       <circle cx="34" cy="7" r="1.4" fill={SOFT} /><circle cx="28" cy="12" r="1.4" fill={ACCENT} /><circle cx="36" cy="17" r="1.4" fill={SOFT} />
     </>
   ),
+  // A friends list: faces with presence dots, one working (accent), lines for what each does.
+  agentList: (
+    <>
+      <circle cx="9" cy="6" r="2.4" {...S} /><circle cx="11" cy="8" r="1" fill={ACCENT} /><path d="M15 5 H27 M15 7.5 H22" {...F} />
+      <circle cx="9" cy="12.5" r="2.4" {...S} /><circle cx="11" cy="14.5" r="1" fill={SOFT} /><path d="M15 11.5 H25 M15 14 H20" {...F} />
+      <circle cx="9" cy="19" r="2.4" {...F} /><path d="M15 18 H23" {...F} />
+      <rect x="31" y="4" width="8" height="5" rx="1" {...A} />
+    </>
+  ),
   // Departments as rooms, avatars at work inside.
   weewoo: (
     <>

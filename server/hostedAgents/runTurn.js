@@ -6,6 +6,7 @@
 
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { netFetch } from '../security/publicAddress.js';
 import { getUserApiKeyConfig } from '../security/userApiKeys.js';
 import { resolveWorkspaceContext } from '../workspaces/context.js';
@@ -106,7 +107,7 @@ export async function runHostedTurn({
     }
     if (keepsThread && reply?.thread && reply.thread !== thread) {
       await saveThread(db, { agentId, userId, conversationKey, thread: reply.thread })
-        .catch((err) => log.warn('could not remember the vendor conversation', { agentId, error: err.message }));
+        .catch((err) => log.warn('could not remember the vendor conversation', { agentId, code: safeErrorCode(err) }));
     }
     log.info('hosted agent answered', {
       agentId, vendor: hosted.vendor, origin, ms: Date.now() - startedAt, newThread: Boolean(reply?.thread && !thread),
@@ -117,7 +118,7 @@ export async function runHostedTurn({
     return { finalText: answer, toolActions: [], context, timings };
   } catch (err) {
     if (err?.code !== 'CHAT_ABORTED') {
-      log.warn('hosted agent call failed', { agentId, vendor: hosted.vendor, origin, code: err?.code || null, error: err?.message });
+      log.warn('hosted agent call failed', { agentId, vendor: hosted.vendor, origin, code: safeErrorCode(err) });
     }
     throw err;
   } finally {

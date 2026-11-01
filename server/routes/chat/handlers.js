@@ -1,22 +1,14 @@
-import { dbReady } from '../../dbState.js';
 import {
   callModel,
   createModelAccessContext,
   resolveChatModelConfig,
-  workspaceUsageSink,
 } from '../../aiGateway/index.js';
 import pool from '../../db.js';
 import { resolveWorkspaceContext } from '../../workspaces/context.js';
 import { sendPublicModelError } from './httpErrors.js';
 import { ideaExpandModel } from './ideaExpandModel.js';
-import { requireAgentContextRuntime } from '../../agents/familyRuntimeAccess.js';
-import { logGroupChatRound, memberMessages, resolveGroupChatMembers, roundWhy } from './groupChatMembers.js';
-import { createLogger } from '../../logger.js';
-import { safeErrorCode } from '../../security/errorCode.js';
-
-const groupLog = createLogger('group-chat');
-
 export { handleImageGen } from './imageHandler.js';
+export { handleGroupChat } from './groupChat.js';
 
 export async function handleIdeaExpand(req, res) {
   const { ideas = [], title, project, workspaceId } = req.body || {};
@@ -85,86 +77,5 @@ export async function handleIdeaExpand(req, res) {
     });
   } catch (err) {
     sendPublicModelError(res, err, 'IDEA_EXPAND_FAILED');
-  }
-}
-
-export async function handleGroupChat(req, res) {
-  const { messages = [], agentIds, workspaceId } = req.body;
-  if (!agentIds || !agentIds.length) return res.status(400).json({ error: 'No agents provided' });
-
-  let logged = false;
-  const say = (answered, asked, why) => {
-    if (logged) return;
-    logged = true;
-    logGroupChatRound({ answered, asked, why });
-  };
-
-  try {
-    requireAgentContextRuntime(dbReady());
-    const workspace = await resolveWorkspaceContext(pool, {
-      userId: req.session.userId,
-      workspaceId: workspaceId || null,
-    });
-    const accessContext = createModelAccessContext({
-      userId: req.session.userId, workspaceId: workspace.id, source: 'group-chat',
-    });
-    const currentMessages = [...messages];
-    const members = await resolveGroupChatMembers(agentIds, {
-      workspaceId: workspace.id,
-      userId: req.session.userId,
-      userRole: req.session?.userRole || null,
-      lastText: currentMessages[currentMessages.length - 1]?.text,
-      historyInRequest: currentMessages.length > 1,
-    });
-    const names = Object.fromEntries(members.map(member => [member.agentId, member.name]));
-    const replies = [];
-    let quiet = 0;
-    let quietWhy = '';
-
-    for (const member of members) {
-      const { agentId, modelConfig } = member;
-      const body = {
-        model: modelConfig.model,
-        max_tokens: 1024, // keep it brief in group chat
-        messages: memberMessages(member, currentMessages, names),
-      };
-
-      try {
-        const data = await callModel({
-          accessContext,
-          config: modelConfig,
-          body,
-          logContext: { source: 'group-chat', agentId },
-          usageAttribution: {
-            workspaceId: workspace.id,
-            actor: { kind: 'user', id: req.session.userId },
-            source: 'group-chat',
-            agentId,
-          },
-          usageSink: workspaceUsageSink,
-        });
-        const text = data.choices?.[0]?.message?.content;
-        if (text) {
-          replies.push({ agentId, text });
-          currentMessages.push({ from: agentId, text });
-        } else {
-          quiet += 1;
-        }
-      } catch (err) {
-        if (err?.name === 'ModelAccessError' || (err?.code && (err?.statusCode || err?.status))) {
-          say(replies.length, members.length, roundWhy(err, quiet));
-          throw err;
-        }
-        quiet += 1;
-        quietWhy = quietWhy || 'model error';
-        groupLog.warn('member reply failed: model error', { code: safeErrorCode(err) });
-      }
-    }
-
-    say(replies.length, members.length, quietWhy || roundWhy(null, quiet));
-    res.json({ replies });
-  } catch (err) {
-    say(0, Array.isArray(agentIds) ? agentIds.length : 0, roundWhy(err));
-    sendPublicModelError(res, err, 'GROUP_CHAT_FAILED');
   }
 }

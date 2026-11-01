@@ -60,7 +60,8 @@ export function GitDiffWindow({ win = {}, onUpdate }) {
   const file = files.find((f) => f.path === filePath);
 
   let body;
-  if (editing) body = <PasteEditor before={win.diffBefore || ''} after={win.diffAfter || ''} onChange={update} onDone={() => update({ diffEditing: false })} />;
+  // Typing keeps the editor open until Compare; otherwise the first letter in Before would close it.
+  if (editing) body = <PasteEditor before={win.diffBefore || ''} after={win.diffAfter || ''} onChange={(patch) => update({ ...patch, diffEditing: true })} onDone={() => update({ diffEditing: false })} />;
   else if (taskId && !changes.loaded) body = <p className="gdv-note">Reading changes…</p>;
   else if (taskId && error) body = <p className="gdv-note" data-tone="danger">{error}</p>;
   else if (taskId && !files.length) body = <p className="gdv-note">This agent has not changed any files yet.</p>;

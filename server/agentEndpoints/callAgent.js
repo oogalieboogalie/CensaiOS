@@ -7,6 +7,7 @@
 
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { isEndpointTokenShape } from './tokens.js';
 import * as endpointStore from './store.js';
 import { endpointLimiter } from './rateLimit.js';
@@ -74,7 +75,7 @@ export async function performOutsideCall({ row, question, via, request = null, c
   const startedAt = Date.now();
   const record = (status, extra = {}) => deps.store.logCall(deps.db, {
     endpointId: row.id, tokenId: row.token_id, via, status, question, durationMs: Date.now() - startedAt, ...extra,
-  }).catch((error) => log.warn('call not logged', { endpointId: row.id, error: error.message }));
+  }).catch((error) => log.warn('call not logged', { endpointId: row.id, code: safeErrorCode(error) }));
 
   if (!slot.ok) {
     await record('limited', { error: slot.reason });

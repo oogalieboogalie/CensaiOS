@@ -19,6 +19,7 @@
 import * as Y from 'yjs';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { WORKSPACE_STATE_KEY, getWorkspaceState } from '../state/clientStateStore.js';
 import { writeCanvasBackup } from './canvasSnapshot.js';
 import { snapshotToDoc } from './seedFromSnapshot.js';
@@ -39,7 +40,7 @@ let shutdownHookInstalled = false;
 
 export async function flushYjsStores() {
   await Promise.all([...openLogs].map((updateLog) => updateLog.flush().catch((error) => {
-    log.warn('yjs shutdown flush failed', { error: error.message });
+    log.warn('yjs shutdown flush failed', { code: safeErrorCode(error) });
   })));
 }
 
@@ -57,7 +58,7 @@ async function defaultLoadSnapshot(db, workspaceId) {
     if (!state.found || !state.value) return null;
     return { value: state.value, revision: state.revision };
   } catch (error) {
-    log.warn('revision snapshot lookup failed', { workspaceId, error: error.message });
+    log.warn('revision snapshot lookup failed', { workspaceId, code: safeErrorCode(error) });
     return null;
   }
 }
@@ -94,7 +95,7 @@ export function createYjsPersistence(options = {}) {
   const compactSoon = (workspaceId) => {
     storesSinceCompact.set(workspaceId, 0);
     updateLog.compact(workspaceId).catch((error) => {
-      log.warn('yjs log compaction failed', { workspaceId, error: error.message });
+      log.warn('yjs log compaction failed', { workspaceId, code: safeErrorCode(error) });
     });
   };
 
@@ -126,12 +127,12 @@ export function createYjsPersistence(options = {}) {
         return;
       }
     } catch (error) {
-      log.warn('yjs doc load failed; trying snapshot migration', { workspaceId, error: error.message });
+      log.warn('yjs doc load failed; trying snapshot migration', { workspaceId, code: safeErrorCode(error) });
     }
     try {
       await migrateFromSnapshot(document, workspaceId);
     } catch (error) {
-      log.warn('yjs snapshot migration failed; starting empty', { workspaceId, error: error.message });
+      log.warn('yjs snapshot migration failed; starting empty', { workspaceId, code: safeErrorCode(error) });
     }
   }
 
@@ -142,7 +143,7 @@ export function createYjsPersistence(options = {}) {
     try {
       updateLog.append(String(payload.documentName ?? ''), payload.update, { actor: actorForChange(payload) });
     } catch (error) {
-      log.warn('yjs update not logged', { workspaceId: payload.documentName, error: error.message });
+      log.warn('yjs update not logged', { workspaceId: payload.documentName, code: safeErrorCode(error) });
     }
   }
 
@@ -156,7 +157,7 @@ export function createYjsPersistence(options = {}) {
       storesSinceCompact.set(workspaceId, stores);
       if (stores >= COMPACT_EVERY_STORES) compactSoon(workspaceId);
     } catch (error) {
-      log.warn('yjs doc store failed', { workspaceId, error: error.message });
+      log.warn('yjs doc store failed', { workspaceId, code: safeErrorCode(error) });
     }
   }
 

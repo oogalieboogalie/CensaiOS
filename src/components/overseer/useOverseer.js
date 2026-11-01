@@ -1,5 +1,6 @@
 import React from 'react';
 import { useVisibilityAwareInterval } from '../../lib/usePolling.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 export function useOverseer() {
   const [status, setStatus] = React.useState({
@@ -42,7 +43,7 @@ export function useOverseer() {
         }
       }
     } catch (err) {
-      console.error('Failed to fetch Overseer status:', err);
+      logFailure('overseer: could not load status', err, 'overseer', 'error');
     }
   }, [selectedRepo, repos]);
 
@@ -59,7 +60,7 @@ export function useOverseer() {
           }
         }
       } catch (err) {
-        console.warn('Could not load github repos dynamically:', err);
+        logFailure('overseer: could not load GitHub repos', err, 'overseer');
       }
     };
 

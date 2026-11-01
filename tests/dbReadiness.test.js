@@ -82,6 +82,9 @@ jest.unstable_mockModule('../server/hostedAgents/schema.js', () => ({
 jest.unstable_mockModule('../server/auctionWatcher/schema.js', () => ({
   ensureAuctionWatcherSchema: jest.fn(async () => {}),
 }));
+jest.unstable_mockModule('../server/ownCalendar/schema.js', () => ({
+  ensureOwnCalendarSchema: jest.fn(async () => {}),
+}));
 jest.unstable_mockModule('../server/invites/schema.js', () => ({
   ensureBoardInviteSchema: jest.fn(async () => {}),
 }));

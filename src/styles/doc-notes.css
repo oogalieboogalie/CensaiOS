@@ -1,0 +1,15 @@
+/* Doc notes are painted over their words with the browser's highlight
+   layer (useNoteHighlights), so the words stay inside their sentence. */
+:root {
+  --doc-note-comment-bg: oklch(0.95 0.06 75);
+  --doc-note-comment-ink: oklch(0.35 0.10 75);
+  --doc-note-ask-bg: oklch(0.94 0.06 240);
+  --doc-note-ask-ink: oklch(0.32 0.12 240);
+  --doc-note-assign-bg: oklch(0.94 0.06 145);
+  --doc-note-assign-ink: oklch(0.30 0.10 145);
+}
+
+::highlight(hb-doc-note-comment) { background-color: var(--doc-note-comment-bg); color: var(--doc-note-comment-ink); }
+::highlight(hb-doc-note-ask) { background-color: var(--doc-note-ask-bg); color: var(--doc-note-ask-ink); }
+::highlight(hb-doc-note-assign) { background-color: var(--doc-note-assign-bg); color: var(--doc-note-assign-ink); }
+::highlight(hb-doc-note-active) { text-decoration: underline 2px; text-underline-offset: 3px; }

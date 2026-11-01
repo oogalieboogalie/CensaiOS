@@ -23,6 +23,7 @@
 
 import { LRUCache } from 'lru-cache';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 const log = createLogger('registry-hub');
 
@@ -121,7 +122,7 @@ export function publish(cardId, event) {
       entry.sendFn(event);
       delivered += 1;
     } catch (err) {
-      log.warn('subscriber send failed', { cardId, clientId: entry.clientId, error: err.message });
+      log.warn('subscriber send failed', { cardId, clientId: entry.clientId, code: safeErrorCode(err) });
     }
   }
   return delivered;

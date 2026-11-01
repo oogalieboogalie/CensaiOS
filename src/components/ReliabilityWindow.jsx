@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useWorkspaceStore } from '../lib/store.js';
 import { useProjectScan } from './reliability/useProjectScan.js';
+import { logFailure } from '../lib/appLog/browserLog.js';
 
 export function ReliabilityWindow() {
   const [scans, setScans] = useState([]);
@@ -20,7 +21,7 @@ export function ReliabilityWindow() {
         setLoading(false);
       })
       .catch(err => {
-        console.error('Failed to fetch scans:', err);
+        logFailure('reliability: could not load scans', err, 'reliability', 'error');
         setLoading(false);
       });
   };

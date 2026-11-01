@@ -7,6 +7,7 @@ import { BrowserSignInPanel } from './BrowserSignInPanel.jsx';
 import { BrowserEquipButton, BrowserEquipMenu } from './BrowserEquipMenu.jsx';
 import { parseUrl as parseAddress } from '../lib/browserUrl.js';
 import { webOnlyFrameSrc } from '../lib/frameSrc.js';
+import { logFailure } from '../lib/appLog/browserLog.js';
 
 export function GlobeIcon({ size = 14 }) {
   return (
@@ -82,7 +83,7 @@ export function BrowserWindow({ win, onUpdate }) {
         url: activeUrl,
         title: getSubtitle() || 'External Browser',
       }).catch(err => {
-        console.error('Failed to open external Tauri window', err);
+        logFailure('browser: could not open an outside window', err, 'browser', 'error');
       });
     }
   };

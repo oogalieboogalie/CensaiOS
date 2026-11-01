@@ -1,15 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { resolveProjectPathForRuntime } from '../../workspaces/shared.js';
 import { readOpenProjects } from '../projects/shared.js';
+import { FILE_PROBLEMS } from '../../../shared/files/fileProblems.js';
+import { LOCAL_STATE_DIR, OWN_STATE, OWN_STATE_WORDS, refuseOwnState } from './ownState.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// CENSAI_STATE_DIR isolates local-state reads (tests, sandboxes) from the
-// checkout's live .homebase-state without changing default behavior.
-export const LOCAL_STATE_DIR = process.env.CENSAI_STATE_DIR
-  ? path.resolve(process.env.CENSAI_STATE_DIR)
-  : path.resolve(path.join(__dirname, '..', '..', '..', '.homebase-state'));
+export { LOCAL_STATE_DIR, OWN_STATE };
 const CURRENT_PROJECT_FILE = path.join(LOCAL_STATE_DIR, 'current-project.json');
 
 export async function readCurrentProject() {
@@ -19,15 +15,6 @@ export async function readCurrentProject() {
   } catch {
     return null;
   }
-}
-
-export function validatePath(targetPath) {
-  const resolvedTarget = path.resolve(targetPath);
-  const resolvedBase = path.resolve(process.cwd());
-  if (resolvedTarget !== resolvedBase && !resolvedTarget.startsWith(resolvedBase + path.sep)) {
-    throw new Error('Access denied: Path is outside allowed directory');
-  }
-  return resolvedTarget;
 }
 
 export function resolveProjectTargetPath(targetPath, projectPath) {
@@ -41,26 +28,39 @@ export function resolveProjectTargetPath(targetPath, projectPath) {
   return path.resolve(targetPath);
 }
 
+/** `targetPath` as this server sees it inside the project at `root`, or null when it is outside it. */
+function insideProject(targetPath, root) {
+  const base = resolveProjectPathForRuntime(root);
+  const target = resolveProjectTargetPath(targetPath, root);
+  return target === base || target.startsWith(base + path.sep) ? target : null;
+}
+
+/** Where `targetPath` is on this server, when it may open on the board; throws "Access denied" otherwise. */
 export async function validateProjectPath(targetPath) {
+  return refuseOwnState(await allowedTarget(targetPath));
+}
+
+async function allowedTarget(targetPath) {
   const currentProject = await readCurrentProject();
-  if (!currentProject?.path) return validatePath(targetPath);
-  const resolvedBase = resolveProjectPathForRuntime(currentProject.path);
-  const resolvedTarget = resolveProjectTargetPath(targetPath, currentProject.path);
-  if (resolvedTarget === resolvedBase || resolvedTarget.startsWith(resolvedBase + path.sep)) {
-    return resolvedTarget;
-  }
+  const inCurrent = currentProject?.path && insideProject(targetPath, currentProject.path);
+  if (inCurrent) return inCurrent;
   // Multi-project canvas: accept paths inside any previously opened project
   // root, so file trees rooted at other projects keep working after the
-  // global default switches.
-  const openProjects = await readOpenProjects();
-  for (const openPath of openProjects) {
-    const openBase = resolveProjectPathForRuntime(openPath);
-    const openTarget = resolveProjectTargetPath(targetPath, openPath);
-    if (openTarget === openBase || openTarget.startsWith(openBase + path.sep)) {
-      return openTarget;
-    }
+  // global default switches, and a folder opened from Files works before any
+  // project is the default.
+  for (const openPath of await readOpenProjects().catch(() => [])) {
+    const inOpen = insideProject(targetPath, openPath);
+    if (inOpen) return inOpen;
   }
-  throw new Error('Access denied: Path is outside the current project root');
+  if (currentProject?.path) throw new Error('Access denied: Path is outside the current project root');
+  // With no default project yet, the app's own folder is allowed too. On a
+  // server in Docker a Windows path (D:\Notes) reads as a folder inside it,
+  // so one is never taken for it.
+  const appFolder = path.resolve(process.cwd());
+  const target = path.resolve(targetPath);
+  const windowsPathHere = WINDOWS_PATH.test(String(targetPath)) && process.platform !== 'win32';
+  if (!windowsPathHere && (target === appFolder || target.startsWith(appFolder + path.sep))) return target;
+  throw new Error('Access denied: Path is outside allowed directory');
 }
 
 /**
@@ -144,14 +144,37 @@ export function folderErrorMessage(err, requested) {
     return `censaiOS can't see ${requested} yet. It runs in Docker and only sees the folder it was started from and your projects folder. To share more, set CENSAI_PROJECTS_FOLDER_ON_PC to the folder that holds your projects (for example D:\\) in the .env file, then open censaiOS again.`;
   }
   if (err?.code === 'ENOENT') return `This folder doesn't exist: ${requested}`;
+  if (err?.code === OWN_STATE) return OWN_STATE_WORDS;
   if (err?.message?.startsWith('Access denied')) {
     return `${requested} isn't in a project open on this board. Type it in the path bar and press Enter to open it.`;
   }
   return null;
 }
 
+const READ_PROBLEMS = {
+  ENOENT: [404, 'missing'],
+  ENOTDIR: [404, 'missing'],
+  EISDIR: [400, 'folder'],
+  EACCES: [403, 'denied'],
+  EPERM: [403, 'denied'],
+  [OWN_STATE]: [403, 'secret'],
+};
+
+/**
+ * Why a file could not be read, as { status, reason, error } with the plain
+ * words from shared/files/fileProblems.js; never the error's own text, which
+ * names the server's folders.
+ */
+export function fileReadProblem(err) {
+  const [status, reason] = (Object.hasOwn(READ_PROBLEMS, err?.code) && READ_PROBLEMS[err.code])
+    || (err?.message?.startsWith('Access denied') ? [403, 'outside'] : [500, 'unreadable']);
+  return { status, reason, error: FILE_PROBLEMS[reason] };
+}
+
 /** A Windows folder this (Docker) server has no copy of at all. */
 export function isUnseenWindowsFolder(err, requested) {
+  // censaiOS's own state folder gets one answer, whether or not the path is there.
+  if (err?.code === OWN_STATE) return false;
   if (!requested || !WINDOWS_PATH.test(requested) || process.platform === 'win32') return false;
   if (err?.code === 'ENOENT') return true;
   return !!err?.message?.startsWith('Access denied') && !fs.existsSync(resolveProjectPathForRuntime(requested));

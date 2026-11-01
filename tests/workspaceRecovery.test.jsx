@@ -64,11 +64,15 @@ describe('workspace recovery surfaces', () => {
     expect(persistence.download).toHaveBeenCalled();
   });
 
-  test('draft restore bar wires restore, download, and discard', () => {
+  test('draft restore bar says what happened in a whole sentence and wires restore, download, and discard', () => {
     const handlers = { onRestore: jest.fn(), onDownload: jest.fn(), onDiscard: jest.fn() };
     render(<DraftRestoreBar savedAt="Sep 6, 2:33 PM" {...handlers} />);
-    expect(screen.getByText(/newer unsaved draft/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Restore draft' }));
+    const sentence = screen.getByText('Your changes from Sep 6, 2:33 PM did not reach the server. This browser kept a copy.');
+    // Never cut off with "…": on a narrow window the buttons wrap below it.
+    expect(sentence.style.whiteSpace).toBe('');
+    expect(sentence.style.textOverflow).toBe('');
+    expect(screen.getByTestId('draft-restore-bar').style.flexWrap).toBe('wrap');
+    fireEvent.click(screen.getByRole('button', { name: 'Restore them' }));
     fireEvent.click(screen.getByRole('button', { name: 'Download' }));
     fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
     expect(handlers.onRestore).toHaveBeenCalledTimes(1);

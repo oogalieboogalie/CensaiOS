@@ -7,6 +7,7 @@
 import express from 'express';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { handleStripeEvent, stripeConfig, verifyStripeSignature } from '../lessons/stripe.js';
 
 const log = createLogger('lesson-billing');
@@ -19,7 +20,7 @@ lessonBillingRouter.post('/stripe/webhook', express.raw({ type: '*/*', limit: '1
   try {
     event = verifyStripeSignature(req.body, req.get('stripe-signature'), stripeConfig().webhookSecret);
   } catch (error) {
-    log.warn('stripe webhook refused', { error: error.message });
+    log.warn('stripe webhook refused', { code: safeErrorCode(error) });
     return res.status(error.statusCode || 400).json({ error: error.message });
   }
   try {
@@ -27,7 +28,7 @@ lessonBillingRouter.post('/stripe/webhook', express.raw({ type: '*/*', limit: '1
     log.info('stripe webhook handled', { type: event.type, action: result.action });
     return res.json({ received: true, ...result });
   } catch (error) {
-    log.warn('stripe webhook failed', { type: event.type, error: error.message });
+    log.warn('stripe webhook failed', { type: event.type, code: safeErrorCode(error) });
     return res.status(500).json({ error: 'Could not apply this event yet.' });
   }
 });

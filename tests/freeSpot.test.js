@@ -1,8 +1,10 @@
 /** @jest-environment jsdom */
 import {
-  findFreeSpot, nearestFreeSpot, cascadeSpot, visibleCanvasRect, boardObstacles, panToShow, FREE_SPOT_GAP,
+  findFreeSpot, nearestFreeSpot, cascadeSpot, visibleCanvasRect, boardObstacles, panToShow, furnitureOnBoard, FREE_SPOT_GAP,
 } from '../src/lib/freeSpot.js';
+import { setScreenFurniture } from '../src/lib/screenFurniture.js';
 import { useWorkspaceStore } from '../src/lib/store.js';
+import { getDefaultWindowSize } from '../src/lib/windowManifest.js';
 
 const VIEW = { pan: { x: 0, y: 0 }, zoom: 1, width: 1600, height: 900 };
 const STANDARD = { w: 560, h: 448 };
@@ -117,5 +119,52 @@ describe('spawnAt uses the free spot', () => {
     const id = useWorkspaceStore.getState().spawnAt('notes', {}, { x: 7, y: 9 });
     const w = useWorkspaceStore.getState().wins.find(x => x.id === id);
     expect([w.x, w.y]).toEqual([7, 9]);
+  });
+});
+
+describe('new windows open clear of the Board map', () => {
+  // A 1440 by 900 screen with the map where it sits in the bottom-left corner.
+  const SCREEN = { pan: { x: 0, y: 0 }, zoom: 1, width: 1440, height: 900 };
+  const MAP = { x: 14, y: 668, w: 220, h: 180 };
+  // Chat, then To-do list, then Calendar from the Add menu, at their real sizes.
+  const SIZES = ['chat', 'todos', 'calendar'].map(getDefaultWindowSize);
+  const openOnScreen = (view) => {
+    const wins = [];
+    for (const size of SIZES) {
+      const p = findFreeSpot(size, { ...view, wins });
+      expect(p.pan).toBeNull();
+      wins.push({ id: `w${wins.length}`, x: p.x, y: p.y, w: size.w, h: size.h });
+    }
+    return wins.map((w) => ({ x: w.x * view.zoom + view.pan.x, y: w.y * view.zoom + view.pan.y, w: w.w * view.zoom, h: w.h * view.zoom }));
+  };
+  afterEach(() => setScreenFurniture('board-map', null));
+
+  test('without the map counted, the Calendar opens with its corner under it', () => {
+    expect(openOnScreen(SCREEN).some((w) => overlap(w, MAP))).toBe(true);
+  });
+
+  test('with the map counted, no new window opens under it', () => {
+    setScreenFurniture('board-map', MAP);
+    expect(openOnScreen(SCREEN).filter((w) => overlap(w, MAP))).toEqual([]);
+  });
+
+  test('a window too big to open beside the map opens where it would have anyway, without moving the board', () => {
+    const studio = getDefaultWindowSize('imageStudio');
+    const before = findFreeSpot(studio, { ...SCREEN, wins: [] });
+    setScreenFurniture('board-map', MAP);
+    expect(findFreeSpot(studio, { ...SCREEN, wins: [] })).toEqual(before);
+    expect(before.pan).toBeNull();
+    // It sits under the map, which tucks itself away (tests/boardMapTuck.test.jsx).
+    expect(overlap({ ...before, ...studio }, MAP)).toBe(true);
+  });
+
+  test('the map stays in its corner of the screen when the board is panned and zoomed', () => {
+    expect(furnitureOnBoard({ pan: { x: -300, y: 120 }, zoom: 0.5 }, [MAP])).toEqual([{ x: 628, y: 1096, w: 440, h: 360 }]);
+  });
+
+  test('a map that is gone takes no room', () => {
+    setScreenFurniture('board-map', MAP);
+    setScreenFurniture('board-map', null);
+    expect(openOnScreen(SCREEN).some((w) => overlap(w, MAP))).toBe(true);
   });
 });

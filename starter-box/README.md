@@ -4,8 +4,8 @@ Turn a spare computer into a box that is ready to vibecode: Claude Code, Codex, 
 
 ## What you need
 
-- A computer with **Ubuntu 24.04** (or 22.04, or Debian 12) freshly installed. An old ThinkPad or a small mini PC is perfect.
-- **8 GB of memory or more** and about **40 GB of free space**.
+- A computer with **Ubuntu 24.04** (or 22.04), **Debian 12**, **Linux Mint** or **MX Linux** (Fluxbox or Xfce, with or without systemd). An old ThinkPad or a small mini PC is perfect. Step by step for a laptop: [censaiOS on a Linux laptop](../docs/install-linux.md).
+- **8 GB of memory** feels quick; **4 GB** works with smaller limits the setup sets by itself. About **40 GB of free space**.
 - The internet, plugged into **your router** (or Wi-Fi).
 
 **Plug the box into your router, never in between your computer and the router.** Router to box, router to your computer. If your computer's internet cable runs through the box, every website you open has to squeeze through it and everything gets slow.
@@ -19,7 +19,7 @@ git clone https://github.com/oogalieboogalie/CensaiOS.git ~/censaios-kit
 sudo bash ~/censaios-kit/starter-box/setup.sh
 ```
 
-The first time takes about 20 to 40 minutes, mostly downloading and building censaiOS. You can run it again at any time; it skips everything that is already done.
+The first time takes about 10 to 30 minutes, mostly downloading. censaiOS itself comes ready-made (nothing is built on the box); set `CENSAIOS_BUILD=1` to build it from the folder instead. You can run it again at any time; it skips everything that is already done.
 
 When it finishes, sign out and back in once.
 

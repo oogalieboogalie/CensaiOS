@@ -28,6 +28,12 @@ export function useMusic({ win, onUpdate }) {
   const [usbId, setUsbId] = React.useState(null);
   const [view, setView] = React.useState(win.src ? 'player' : 'library');
   const [inputUrl, setInputUrl] = React.useState('');
+  // A song a teammate loads on the shared board opens the player here too.
+  const seenSrc = React.useRef(win.src);
+  React.useEffect(() => {
+    if (win.src && win.src !== seenSrc.current) setView('player');
+    seenSrc.current = win.src;
+  }, [win.src]);
 
   const usb = useUsbTracks();
   const usbIndex = usb.tracks.findIndex(t => t.id === usbId);

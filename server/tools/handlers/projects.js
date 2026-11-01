@@ -23,6 +23,7 @@ import {
   grantManualProjectMembership,
   listWorkspaceAgentProjects,
 } from '../../workspaces/projectMemberships.js';
+import { noteToolFailure } from '../toolsLog.js';
 
 export async function handleProjectsTool(agentId, name, args, context = {}) {
   switch (name) {
@@ -132,7 +133,7 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
           code_snippet: args.content,
           file_path: args.path,
           metadata: { project_id: project.id, project: project.name, branch }
-        }).catch(err => console.error('[Provenance] Failed to record:', err.message));
+        }).catch(err => noteToolFailure('provenance not recorded', { agentId: args.__provenance.agent_id }, err));
       }
 
       await logProjectActivity(project.id, agentId, 'write', args.path);

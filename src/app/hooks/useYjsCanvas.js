@@ -5,8 +5,11 @@ import { useWorkspaceStore } from '../../lib/store.js';
 import { canvasWorkspaceSnapshot } from '../../lib/workspace/canvasWorkspaceSnapshot.js';
 import { notifyRemoteHistory } from '../../lib/workspace/historyMerge.js';
 import { SYNCED_KEYS, isDocEmpty, readDocState, writeStateToDoc } from '../../lib/collaboration/yCanvasSync.js';
+import { createBoardSaves } from '../../lib/collaboration/boardSaves.js';
 import { setListMergeReporter } from '../../lib/collaboration/windowLists.js';
 import { setSheetMergeReporter } from '../../lib/collaboration/windowSheet.js';
+import { collectTextEvents, recordRemoteText } from '../../lib/collaboration/remoteTextEdits.js';
+import { CANVAS_ROOT } from '../../../shared/collab/ySchema.js';
 import { logToApp } from '../../lib/appLog/browserLog.js';
 
 const LOCAL_ORIGIN = 'censai-local-store';
@@ -38,12 +41,19 @@ function pick(state) {
  * Binds the canvas store to the workspace's shared Yjs document, the only
  * source of truth for windows, groups, ink, links and dock. Every member's
  * edits merge in real time (CRDT, last writer wins per field). Returns
- * { status, awareness }: status is 'off' | 'connecting' | 'live', and
- * awareness (presence on the same connection) is set once the doc is live.
+ * { status, awareness, presenceLive, boardSaves }: status is 'off' |
+ * 'connecting' | 'live', awareness (presence on the same connection) is set
+ * once the doc is live, presenceLive is true while the doc has synced on its
+ * current connection (the server sends who is here before the sync
+ * completes, so awareness then lists everyone), and boardSaves
+ * (boardSaves.js) says whether the server has all of this tab's board edits
+ * (null while off).
  */
 export function useYjsCanvas({ enabled, workspaceId, store = useWorkspaceStore, guest = false }) {
   const [status, setStatus] = React.useState('off');
   const [awareness, setAwareness] = React.useState(null);
+  const [presenceLive, setPresenceLive] = React.useState(false);
+  const [saves] = React.useState(createBoardSaves);
 
   React.useEffect(() => {
     if (!enabled || !workspaceId || typeof WebSocket === 'undefined') {
@@ -63,6 +73,8 @@ export function useYjsCanvas({ enabled, workspaceId, store = useWorkspaceStore, 
       const next = readDocState(doc, current);
       const changed = {};
       for (const key of SYNCED_KEYS) if (next[key] !== current[key]) changed[key] = next[key];
+      // Where other people's typing landed, for the editors' carets (remoteTextEdits.js).
+      recordRemoteText(current.wins, next.wins);
       if (!Object.keys(changed).length) return;
       applyingRemote = true;
       try { store.setState(changed); } finally { applyingRemote = false; }
@@ -74,14 +86,18 @@ export function useYjsCanvas({ enabled, workspaceId, store = useWorkspaceStore, 
     };
 
     const onDocUpdate = (_update, origin) => {
-      if (origin !== LOCAL_ORIGIN && synced) applyRemote();
+      if (origin === LOCAL_ORIGIN) saves.edited();
+      else if (synced) applyRemote();
     };
     doc.on('update', onDocUpdate);
+    const onTextEvents = (events, tr) => collectTextEvents(events, tr.origin === LOCAL_ORIGIN);
+    doc.getMap(CANVAS_ROOT).observeDeep(onTextEvents);
 
     const unsubscribe = store.subscribe((state, prev) => {
-      if (!synced || applyingRemote) return;
-      if (!SYNCED_KEYS.some((key) => state[key] !== prev[key])) return;
-      writeStateToDoc(doc, pick(prev), pick(state), LOCAL_ORIGIN);
+      if (applyingRemote || !SYNCED_KEYS.some((key) => state[key] !== prev[key])) return;
+      // Before the first sync, edits wait in the store; the sync replays them.
+      if (synced) writeStateToDoc(doc, pick(prev), pick(state), LOCAL_ORIGIN);
+      else saves.edited();
     });
 
     setStatus('connecting');
@@ -90,6 +106,7 @@ export function useYjsCanvas({ enabled, workspaceId, store = useWorkspaceStore, 
       name: workspaceId,
       document: doc,
       onSynced: () => {
+        setPresenceLive(true);
         if (synced) return;
         // First client into a never-synced doc seeds it from its canvas;
         // everyone else adopts the shared doc.
@@ -100,22 +117,31 @@ export function useYjsCanvas({ enabled, workspaceId, store = useWorkspaceStore, 
           applyRemote();
         }
         synced = true;
+        if (!provider.hasUnsyncedChanges) saves.saved();
         setStatus('live');
         setAwareness(provider.awareness);
       },
-      onDisconnect: () => setStatus((s) => (s === 'off' ? s : 'connecting')),
+      // The server confirms every update it applies; none left waiting means
+      // it has all of this tab's edits, including any made while offline.
+      onUnsyncedChanges: ({ number }) => { if (number === 0 && synced) saves.saved(); },
+      onDisconnect: () => {
+        setStatus((s) => (s === 'off' ? s : 'connecting'));
+        setPresenceLive(false);
+      },
       onConnect: () => { if (synced) setStatus('live'); },
     });
 
     return () => {
       unsubscribe();
       doc.off('update', onDocUpdate);
+      doc.getMap(CANVAS_ROOT).unobserveDeep(onTextEvents);
       provider.destroy();
       doc.destroy();
       setStatus('off');
       setAwareness(null);
+      setPresenceLive(false);
     };
-  }, [enabled, workspaceId, store, guest]);
+  }, [enabled, workspaceId, store, guest, saves]);
 
-  return { status, awareness };
+  return { status, awareness, presenceLive, boardSaves: status === 'off' ? null : saves };
 }

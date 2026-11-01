@@ -17,6 +17,7 @@
 
 import crypto from 'node:crypto';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { openWatchedCanvasDoc } from './liveDoc.js';
 import { CANVAS_ROOT } from './ySchema.js';
 
@@ -205,7 +206,7 @@ export async function beginAgentPresence({ workspaceId, agentId, windowId = null
             publish(room);
           }
         } catch (error) {
-          log.warn('agent cursor event skipped', { error: error.message });
+          log.warn('agent cursor event skipped', { code: safeErrorCode(error) });
         }
         return sendEvent(event);
       },
@@ -228,7 +229,7 @@ export async function beginAgentPresence({ workspaceId, agentId, windowId = null
       },
     };
   } catch (error) {
-    log.warn('agent cursor could not start', { workspaceId, error: error.message });
+    log.warn('agent cursor could not start', { workspaceId, code: safeErrorCode(error) });
     return NOOP;
   }
 }

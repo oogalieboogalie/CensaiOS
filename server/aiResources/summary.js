@@ -8,6 +8,7 @@ import { readKeySharing, isKeySharedWith } from '../security/keySharing.js';
 import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
 import { assertSystemAdmin } from '../security/systemAdmin.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { heldKeys } from './holdings.js';
 import { ledgerKeys, ledgerSince } from './ledger.js';
 import { maskedKey, providerLabel } from './keyIdentity.js';
@@ -87,7 +88,7 @@ async function isOwner(userId, db) {
     return true;
   } catch (err) {
     if (err.statusCode === 403 || err.statusCode === 401) log.info('owner view refused', { account: Number(userId) || null });
-    else log.warn('owner check failed, showing the not-owner view', { error: err.message });
+    else log.warn('owner check failed, showing the not-owner view', { code: safeErrorCode(err) });
     return false;
   }
 }

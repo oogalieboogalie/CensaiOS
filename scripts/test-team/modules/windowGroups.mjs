@@ -4,9 +4,15 @@
 // layout, and Sam sees the same group on the shared board. Then the wrong
 // things: F-keys with no saved group, Escape twice, ungrouping one window.
 // Red team: a group name made of script text.
+// On the normal board (not full screen) the chat keeps its grouped size and
+// place through a click, a header click, typing, a group drag, a reload and
+// Alt+1, F1 and Escape; Sam clicking the chat does not change Pat's screen.
+// Pat also snaps the group to each common layout (side by side, grid, main +
+// sidebar, big on top) and Sam's screen shows each one the same way.
 
-import { readWindow, spawnWindow, updateWindow, windowFrame } from '../../e2e/board.mjs';
+import { openBoard, readWindow, spawnWindow, updateWindow, windowFrame } from '../../e2e/board.mjs';
 import { note } from '../report.mjs';
+import { sideBySide } from '../sideBySide.mjs';
 
 const state = (page) => page.evaluate(() => {
   const s = window.__e2eStore.getState();
@@ -31,6 +37,12 @@ async function waitUntil(page, test, ms = 5_000) {
 const rect = (w) => (w ? `${Math.round(w.x)},${Math.round(w.y)} ${Math.round(w.w)}x${Math.round(w.h)}` : 'gone');
 const sameRect = (a, b) => a && b && ['x', 'y', 'w', 'h'].every((k) => Math.abs(a[k] - b[k]) <= 1);
 const overlap = (a, b) => a.x < b.x + b.w - 1 && b.x < a.x + a.w - 1 && a.y < b.y + b.h - 1 && b.y < a.y + a.h - 1;
+/** A click on the header's own bar (its left edge), not on a header button such as Scout. */
+async function clickHeader(page, frame) {
+  const box = await frame.locator('.hb-win-header').first().boundingBox({ timeout: 8_000 });
+  if (!box) throw new Error('the header is not on screen');
+  await page.mouse.click(box.x + 3, box.y + box.height / 2);
+}
 const sameView = (a, b) => Math.abs(a.zoom - b.zoom) < 0.001 && Math.abs(a.pan.x - b.pan.x) <= 1 && Math.abs(a.pan.y - b.pan.y) <= 1;
 
 /** Keys go to the board itself, not a text box, the way they do after clicking empty canvas. */
@@ -149,6 +161,106 @@ export default {
       }
       await shot(sam.page, 'sam-sees-the-group');
       return 'Sam sees the group and its three windows in the same places';
+    });
+
+    // What each common layout must look like with three windows.
+    const LAYOUTS = [
+      ['Side by side', (r) => new Set(r.map((w) => Math.round(w.y))).size === 1 && new Set(r.map((w) => Math.round(w.h))).size === 1, 'three equal columns in one row'],
+      ['Grid', (r) => { const top = Math.min(...r.map((w) => w.y)); return r.filter((w) => Math.abs(w.y - top) <= 1).length === 2; }, 'two on top, one across the bottom'],
+      ['Main + sidebar', (r) => { const big = r.reduce((m, w) => (w.w * w.h > m.w * m.h ? w : m)); const rest = r.filter((w) => w !== big); return rest.every((w) => w.x > big.x && Math.abs(w.x - rest[0].x) <= 1); }, 'one big on the left, two small stacked on the right'],
+      ['Big on top', (r) => { const big = r.reduce((m, w) => (w.w * w.h > m.w * m.h ? w : m)); const rest = r.filter((w) => w !== big); return rest.every((w) => w.y > big.y && Math.abs(w.y - rest[0].y) <= 1); }, 'one big across the top, two small side by side underneath'],
+    ];
+
+    await check('walk', 'Pat snaps the group to each common layout and Sam sees each one the same', async ({ shot }) => {
+      const done = [];
+      // Side by side again at the end, for the steps below.
+      for (const [name, shape, words] of [...LAYOUTS, LAYOUTS[0]]) {
+        const label = pat.page.locator(`[data-group-id="${gid}"] [data-group-label]`).first();
+        await label.hover();
+        await label.getByRole('button', { name: 'Layout presets' }).click({ timeout: 10_000 });
+        await pat.page.getByRole('button', { name: new RegExp(`^${name.replace(/[+]/g, '\\+')}`) }).first().click({ timeout: 5_000 });
+        await pat.page.waitForTimeout(800);
+        const mine = (await state(pat.page)).wins.filter((w) => Object.values(ids).includes(w.id));
+        const slug = name.toLowerCase().replace(/[^a-z]+/g, '-');
+        if (mine.some((w) => w.groupId !== gid)) throw new Error(`a window left the group with "${name}"`);
+        const pairs = mine.flatMap((a, i) => mine.slice(i + 1).map((b) => [a, b]));
+        if (pairs.some(([a, b]) => overlap(a, b))) throw new Error(`windows overlap with "${name}": ${mine.map(rect).join(' | ')}`);
+        if (!shape(mine)) throw new Error(`"${name}" is not ${words}: ${mine.map(rect).join(' | ')}`);
+        const want = Object.fromEntries(mine.map((w) => [w.id, w]));
+        const synced = await waitUntil(sam.page, (s) => Object.keys(want).every((id) => sameRect(s.wins.find((w) => w.id === id), want[id])), 5_000);
+        if (done.length < LAYOUTS.length) await sideBySide(t, `layout-${slug}`, shot);
+        if (!synced) throw new Error(`Sam's screen does not show "${name}" the way Pat's does`);
+        if (done.length < LAYOUTS.length) done.push(`${name} (${words})`);
+      }
+      grouped = Object.fromEntries((await state(pat.page)).wins.map((w) => [w.id, w]));
+      return `each layout looks right on Pat's screen and the same on Sam's: ${done.join('; ')}`;
+    });
+
+    // The chat's place inside its group: its offset from the group's corner and its size.
+    const inGroup = (s) => {
+      const g = s.groups.find((x) => x.id === gid);
+      const w = s.wins.find((x) => x.id === ids.chat);
+      return g && w && w.groupId === gid ? { x: w.x - g.x, y: w.y - g.y, w: w.w, h: w.h } : null;
+    };
+
+    await check('walk', 'on the normal board the chat keeps its grouped size through click, header, typing, drag, reload and keys', async ({ shot }) => {
+      const want = inGroup(await state(pat.page));
+      if (!want) throw new Error('the chat is not in the group before the steps start');
+      const kept = async (step) => {
+        await pat.page.waitForTimeout(600);
+        const now = inGroup(await state(pat.page));
+        if (!sameRect(now, want)) throw new Error(`after ${step} the chat ${now ? `is at ${rect(now)}` : 'left the group'}; it was ${rect(want)} in the group`);
+      };
+      const frame = windowFrame(pat.page, ids.chat);
+      const doing = async (step, act) => {
+        try { await act(); } catch (err) { throw new Error(`could not do ${step}: ${String(err.message).split('\n')[0]}`, { cause: err }); }
+      };
+      await doing('a click inside the chat', () => frame.click({ position: { x: 40, y: 120 }, timeout: 8_000 }));
+      await kept('a click inside it');
+      await doing('a click on the header', () => clickHeader(pat.page, frame));
+      await kept('a click on its header');
+      await doing('a click in the message box', () => frame.getByPlaceholder(/^Message /).first().click({ timeout: 8_000 }));
+      await pat.page.keyboard.type('Made-up note', { delay: 10 });
+      await kept('typing in it');
+      await shot(pat.page, 'pat-clicks-and-types-in-the-grouped-chat');
+      const label = pat.page.locator(`[data-group-id="${gid}"] [data-group-label]`).first();
+      await label.hover();
+      const r = await label.boundingBox();
+      const from = (await state(pat.page)).groups.find((g) => g.id === gid);
+      await pat.page.mouse.move(r.x + 12, r.y + r.height / 2);
+      await pat.page.mouse.down();
+      await pat.page.mouse.move(r.x + 72, r.y + r.height / 2 + 40, { steps: 6 });
+      await pat.page.mouse.up();
+      const to = (await state(pat.page)).groups.find((g) => g.id === gid);
+      if (Math.abs(to.x - from.x) < 20 && Math.abs(to.y - from.y) < 20) throw new Error('dragging the group label did not move the group');
+      await kept('dragging the whole group');
+      await openBoard(pat.page, t.workspaceId, t.web);
+      await windowFrame(pat.page, ids.chat).waitFor({ state: 'visible', timeout: 15_000 });
+      await kept('a reload');
+      await shot(pat.page, 'pat-grouped-chat-after-reload');
+      await press(pat.page, 'Alt+1');
+      await kept('Alt+1');
+      await press(pat.page, 'F1');
+      await waitUntil(pat.page, (s) => s.focus === gid, 3_000);
+      await kept('F1');
+      await leaveFullScreen(pat.page);
+      await kept('Escape');
+      grouped = Object.fromEntries((await state(pat.page)).wins.map((w) => [w.id, w]));
+      return `the chat stayed ${rect(want)} inside the group after all ten steps`;
+    });
+
+    await check('walk', "Sam clicking the same chat does not change Pat's screen", async ({ shot }) => {
+      const before = await state(pat.page);
+      const want = inGroup(before);
+      await windowFrame(sam.page, ids.chat).waitFor({ state: 'visible', timeout: 10_000 });
+      await windowFrame(sam.page, ids.chat).click({ position: { x: 40, y: 120 } });
+      await clickHeader(sam.page, windowFrame(sam.page, ids.chat));
+      await pat.page.waitForTimeout(1_500);
+      const after = await state(pat.page);
+      await shot(pat.page, 'pat-screen-after-sam-clicks');
+      if (!sameRect(inGroup(after), want)) throw new Error(`Pat's chat changed to ${rect(inGroup(after))} when Sam clicked it`);
+      if (!sameView(before.view, after.view) || after.focus !== before.focus) throw new Error("Sam's click moved Pat's board");
+      return "Pat's chat and board stayed exactly as they were";
     });
 
     await check('hunt', 'a group at the top of the screen keeps its label clickable', async ({ shot }) => {

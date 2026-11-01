@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../Icons.jsx';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 export function RelatedContext({ workspaceId, query, artifactId }) {
   const [related, setRelated] = useState([]);
@@ -16,7 +17,7 @@ export function RelatedContext({ workspaceId, query, artifactId }) {
         const data = await res.json();
         setRelated(data);
       } catch (err) {
-        console.error('Failed to fetch related context', err);
+        logFailure('doc: could not load related context', err, 'doc');
       } finally {
         setLoading(false);
       }

@@ -17,6 +17,7 @@
 import express from 'express';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { isSessionAuthorized } from '../security/authPolicy.js';
 import { getInstallSigner } from '../agentNetwork/installIdentity.js';
 import { createLimiter } from '../agentEndpoints/rateLimit.js';
@@ -94,7 +95,7 @@ export function createApiBarRouter(overrides = {}) {
       await handler(req, res, caller);
     } catch (error) {
       const status = error instanceof Refusal ? error.status : (error.statusCode || 500);
-      if (status >= 500) log.error('api bar failed', { error: error.message });
+      if (status >= 500) log.error('api bar failed', { code: safeErrorCode(error) });
       res.status(status).json({ ok: false, error: status >= 500 ? 'The doorman tripped. Try again.' : error.message });
     }
   };
@@ -104,7 +105,7 @@ export function createApiBarRouter(overrides = {}) {
     const logKnock = (status, error, out = null) => deps.keys.logCall(deps.db, {
       userId: caller.userId, keyId: caller.keyId, branch: branch || '?', action: action || '?', method: req.method, status,
       durationMs: Date.now() - started, noteIn: noteSize(input), noteOut: noteSize(out), error,
-    }).catch((e) => log.warn('knock not logged', { error: e.message }));
+    }).catch((e) => log.warn('knock not logged', { code: safeErrorCode(e) }));
     // Turned away at the door: still logged, so a leaked key shows up.
     const refuse = (status, message) => {
       logKnock(status, message);

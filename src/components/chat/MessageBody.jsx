@@ -4,9 +4,10 @@ import { renderMarkdown, CodeBlock } from '../../lib/renderMarkdown.jsx';
 import { Icon } from '../Icons.jsx';
 import { ArtifactCard } from './ArtifactCard.jsx';
 import { ARTIFACT_LINE_THRESHOLD, isLongReply, lineCount, titleFromText } from '../../lib/chat/artifacts.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 function copyText(text) {
-  navigator.clipboard?.writeText(text).catch(err => console.error('Failed to copy:', err));
+  navigator.clipboard?.writeText(text).catch(err => logFailure('chat: could not copy a message', err, 'chat'));
 }
 
 // Images an agent links to: data URLs and our own paths show inline. Remote

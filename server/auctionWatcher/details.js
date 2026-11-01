@@ -5,6 +5,7 @@
 // "AI pros and cons".
 
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { ebayKeyFor } from './ebayKey.js';
 import { siteFetch } from './fetcher.js';
 import { goodwillApi, goodwillPhoto } from './sites/goodwill.js';
@@ -43,7 +44,7 @@ export async function listingDetail(match, { fetch = siteFetch, loadKey, stopOnR
     return { description: plain(data.description || data.itemDescription || '').slice(0, 4000), photos: goodwillPhotos(data) };
   } catch (err) {
     if (stopOnRefusal && err.refused) throw err;
-    log.info('listing description not available', { matchId: match.id, listingId: match.listing_id, site: match.site, error: err.message });
+    log.info('listing description not available', { matchId: match.id, listingId: match.listing_id, site: match.site, code: safeErrorCode(err) });
     return { description: '', photos: [] };
   }
 }

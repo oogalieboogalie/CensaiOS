@@ -82,3 +82,15 @@ test('toggling Pending only checkbox updates empty state message', async () => {
     screen.getByText('No approval history in this workspace.')
   ).toBeInTheDocument();
 });
+
+test('does not claim Trust mode is on when it could not be read', async () => {
+  const base = global.fetch;
+  global.fetch = jest.fn((url) => (String(url).includes('/api/agent-trust')
+    ? Promise.resolve({ ok: false, status: 500, json: async () => ({ error: 'Trust mode could not be read.' }) })
+    : base(url)));
+  await act(async () => {
+    render(<PolicyDashboardWindow win={{ id: 'w-pol2', kind: 'policy_dashboard' }} isActive={true} />);
+  });
+  expect(await screen.findByText('No agent actions are waiting for approval.')).toBeInTheDocument();
+  expect(screen.queryByText(/Trust mode is on/)).toBeNull();
+});

@@ -12,6 +12,7 @@
 
 import crypto from 'node:crypto';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { buildMemoryBlock, lastQuestion, summarizeEpisode, toolNames } from './recall.js';
 import { chatClock, nowSection } from './recallTurns.js';
 import { loadTurnMemory } from './turnMemory.js';
@@ -61,7 +62,7 @@ export async function loadRunMemory({
       outsideCaller || !question ? [] : store.searchEpisodes(db, { userId, agentId, query: question, limit: 3 }),
       // The real earlier messages, with times (068); an older install skips them.
       outsideCaller ? null : loadTurnMemory(db, { userId, agentId, question, conversationId: chatId, timeZone })
-        .catch((error) => { log.warn('earlier messages unavailable', { agentId, error: error.message }); return null; }),
+        .catch((error) => { log.warn('earlier messages unavailable', { agentId, code: safeErrorCode(error) }); return null; }),
     ]);
     // Real messages replace the old one-line summaries when there are any.
     block = buildMemoryBlock({
@@ -71,7 +72,7 @@ export async function loadRunMemory({
     found = { facts, episodes };
   } catch (error) {
     // Older database without the memory tables, or a passing hiccup.
-    log.warn('memory unavailable for this run', { agentId, error: error.message });
+    log.warn('memory unavailable for this run', { agentId, code: safeErrorCode(error) });
     return NO_MEMORY;
   }
 
@@ -91,7 +92,7 @@ export async function loadRunMemory({
             { speaker: 'person', text: question, at: clock.currentAt || startedAt },
             { speaker: 'agent', text: answer, at: now() },
           ],
-        }).catch((error) => log.warn('messages not recorded', { agentId, error: error.message }));
+        }).catch((error) => log.warn('messages not recorded', { agentId, code: safeErrorCode(error) }));
         return await store.recordEpisode(db, {
           userId, agentId, workspaceId, origin, model,
           question: question.slice(0, 4000),
@@ -100,7 +101,7 @@ export async function loadRunMemory({
           tools,
         });
       } catch (error) {
-        log.warn('episode not recorded', { agentId, error: error.message });
+        log.warn('episode not recorded', { agentId, code: safeErrorCode(error) });
         return null;
       }
     },

@@ -3,19 +3,21 @@
 //
 // Sections, top to bottom: Recent, My modules, every built-in module by
 // category, Ready-made boards, Templates, and always a last row "Make a new
-// module…". When a
-// search matches nothing, "Make a new module: <search>" moves to the top.
+// module…". A search puts rows named exactly what was typed first (Best
+// match). When a search matches nothing, "Make a new module: <search>" moves
+// to the top.
 
 import { DEFAULT_HTML_PREVIEW } from '../../components/canvas/CanvasState.js';
 import { OFFICE_STARTERS } from '../office/officeStarters.js';
 import { CREATIVE_STARTERS } from '../creative/creativeStarters.js';
 import { YORWARE_STARTERS } from '../yorware/yorwareStarters.js';
 import { companyStarter } from '../weewoo/company.js';
+import { NEW_VAULT_PROPS } from '../manifest/notesWindows.js';
 import { BRAND_BY_KIND } from '../brands/index.js';
 import { searchPaletteEntries } from '../search/engines.js';
 
 export const CATEGORIES = Object.freeze([
-  { label: 'Chat and agents', kinds: ['chat', 'groupChat', 'group', 'agentDesigner', 'weewoo', 'rook', 'exoSkeleton', 'modelArena', 'arenaBenchmarks'] },
+  { label: 'Chat and agents', kinds: ['chat', 'agentList', 'groupChat', 'group', 'agentDesigner', 'weewoo', 'rook', 'exoSkeleton', 'modelArena', 'arenaBenchmarks'] },
   // Censai Office: spreadsheets and decks that export to real files.
   { label: 'Censai Office', kinds: ['officeSheets', 'officeSlides'] },
   // Censai Creative: picture, vector and video editors (the Adobe-style set).
@@ -27,7 +29,7 @@ export const CATEGORIES = Object.freeze([
   // One row per engine; each opens the Search window set to that engine
   // (Tavily opens Research). `entries` rows carry their own props.
   { label: 'Search engines', kinds: [], entries: searchPaletteEntries(), claims: ['searchEngine'] },
-  { label: 'Build', kinds: ['terminal', 'code_editor', 'files', 'doc', 'htmlPreview', 'browser', 'vm', 'designBlock', 'hosting'] },
+  { label: 'Build', kinds: ['terminal', 'code_editor', 'files', 'doc', 'vaultNotes', 'finderFiles', 'htmlPreview', 'browser', 'vm', 'designBlock', 'hosting'] },
   { label: 'Create', kinds: ['genImage', 'imageStudio', 'idea', 'analyticsBoard'] },
   { label: 'Teach', kinds: ['classroom'] },
   // Social canvas: follow boards and friends, a feed, your profile.
@@ -47,7 +49,7 @@ const ICON_BY_KIND = {
   chat: 'Chat', groupChat: 'Group', agentDesigner: 'NewAgent', rook: 'Bot', exoSkeleton: 'Bot',
   todos: 'List', workflow: 'NewWorkflow', scheduler: 'Calendar', operationsBoard: 'Tools',
   julesTasks: 'List', calendar: 'Calendar', terminal: 'Terminal', code_editor: 'Code', files: 'Files',
-  doc: 'Files', htmlPreview: 'Eye', browser: 'Search', genImage: 'Picture', imageStudio: 'Picture',
+  doc: 'Files', vaultNotes: 'Files', finderFiles: 'Folder', htmlPreview: 'Eye', browser: 'Search', genImage: 'Picture', imageStudio: 'Picture',
   idea: 'Flask', analyticsBoard: 'Activity', music: 'Music', stream: 'Video', mailcow: 'Mail',
   vex: 'Bot', sovereignTest: 'Shield',
 };
@@ -64,6 +66,7 @@ export const PROPS_BY_KIND = Object.freeze({
   ...CREATIVE_STARTERS,
   ...YORWARE_STARTERS,
   weewoo: { ...companyStarter(), seeded: true },
+  vaultNotes: NEW_VAULT_PROPS,
 });
 
 // Ready-made boards (spec 7): one pick lays out a whole board of windows,
@@ -74,6 +77,7 @@ export const BOARD_TEMPLATE_ITEMS = Object.freeze([
   { id: 'board:creative-studio', label: 'Creative Studio', hint: 'Ready-made board: brief, design, video and a content calendar', icon: 'Group', cover: 'creativeBoard', action: { type: 'boardTemplate', id: 'creative-studio' } },
   { id: 'board:agent-team', label: 'Agent Team', hint: 'Ready-made board: four agents in one team room; the Lead hands out the work', icon: 'Group', cover: 'agentTeamBoard', action: { type: 'boardTemplate', id: 'agent-team' } },
   { id: 'board:small-business', label: 'Small Business', hint: 'Ready-made board: find customers, money sheet and this week', icon: 'Group', cover: 'smallBusinessBoard', action: { type: 'boardTemplate', id: 'small-business' } },
+  { id: 'board:notes-workspace', label: 'Notes Workspace', hint: 'Ready-made board: Obsidian-style vault over a Finder-style Downloads window', icon: 'Files', cover: 'notesWorkspaceBoard', action: { type: 'boardTemplate', id: 'notes-workspace' } },
   { id: 'board:real-estate-team', label: 'Real Estate Team', hint: 'Ready-made board: listings, showings and follow-ups', icon: 'Group', cover: 'realEstateBoard', action: { type: 'boardTemplate', id: 'real-estate-team' } },
 ]);
 
@@ -164,6 +168,15 @@ export function buildAddSections({ query = '', manifests = [], recent = [], save
   for (const group of builtIns) sections.push({ id: `cat:${group.label}`, label: group.label, items: filter(group.items) });
   sections.push({ id: 'boards', label: 'Ready-made boards', items: filter(BOARD_TEMPLATE_ITEMS) });
   sections.push({ id: 'templates', label: 'Templates', items: filter(templateItems) });
+
+  // A row named exactly what was typed comes first, so "Document" + Enter
+  // opens the Document, not the first row that merely mentions documents.
+  const exact = q ? sections.flatMap(sec => sec.items).filter(i => i.label.toLowerCase() === q.toLowerCase()) : [];
+  if (exact.length) {
+    const ids = new Set(exact.map(i => i.id));
+    for (const sec of sections) sec.items = sec.items.filter(i => !ids.has(i.id));
+    sections.unshift({ id: 'best', label: 'Best match', items: exact });
+  }
 
   const anyMatch = sections.some(s => s.items.length > 0);
   if (q && !anyMatch) return [{ id: 'make', label: 'No module does that yet', items: [make] }];

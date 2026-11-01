@@ -1,34 +1,41 @@
-import React from 'react';
 import { localDay } from '../../lib/schedule/plainWords.js';
 
+const SHOWN = 2;
+const dayName = (day) => day.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+const count = (n) => (n === 0 ? 'nothing on' : n === 1 ? '1 event' : `${n} events`);
+
+// The month as a grid of days, shown whether or not anything is on it. Each
+// day is a button that opens it; a day with more events than fit says how
+// many more there are.
 export function CalendarMonthView({ monthDays, groupedEvents, isToday, onSelectDate }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px', background: 'var(--hairline)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-              {monthDays.map((day, i) => {
-                if (!day) return <div key={`pad-${i}`} style={{ background: 'var(--surface-2)', minHeight: 60 }} />;
-                const dayDateStr = localDay(day);
-                const dayEvents = groupedEvents.find(g => g[0] === dayDateStr)?.[1] || [];
-                return (
-                  <div key={dayDateStr} onClick={() => onSelectDate(dayDateStr)} style={{ cursor: 'pointer', background: 'var(--surface)', minHeight: 60, maxHeight: 72, overflow: 'hidden', padding: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span style={{
-                      fontSize: 'var(--text-xs)', fontWeight: isToday(day) ? 700 : 600,
-                      color: isToday(day) ? 'var(--ps-red)' : 'var(--ink-soft)',
-                      marginBottom: 2, paddingLeft: 2
-                    }}>
-                      {day.getDate()}
-                    </span>
-                    {dayEvents.map(ev => (
-                      <a key={ev.id} onClick={(e) => e.preventDefault()} style={{
-                        textDecoration: 'none', background: `${ev.color}22`, borderLeft: `2px solid ${ev.color}`,
-                        padding: '2px 4px', borderRadius: '0 4px 4px 0', fontSize: 'var(--text-xs)', color: 'var(--ink)',
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                      }} title={`${ev.time}\n${ev.title}`}>
-                        {ev.title}
-                      </a>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
+    <div className="hb-cal-month">
+      {monthDays.map((day, i) => {
+        if (!day) return <div key={`pad-${i}`} className="hb-cal-pad" aria-hidden="true" />;
+        const dayDateStr = localDay(day);
+        const dayEvents = groupedEvents.find((g) => g[0] === dayDateStr)?.[1] || [];
+        const more = dayEvents.length - SHOWN;
+        return (
+          <button
+            key={dayDateStr}
+            type="button"
+            className="hb-cal-day-cell"
+            data-day={dayDateStr}
+            data-today={isToday(day) ? 'true' : undefined}
+            aria-current={isToday(day) ? 'date' : undefined}
+            aria-label={`${dayName(day)}, ${count(dayEvents.length)}`}
+            onClick={() => onSelectDate(dayDateStr)}
+          >
+            <span className="hb-cal-day-num">{day.getDate()}</span>
+            {dayEvents.slice(0, SHOWN).map((ev) => (
+              <span key={ev.key} className="hb-cal-chip" data-source={ev.source} data-lines={dayEvents.length === 1 ? 2 : 1} style={{ '--chip': ev.color }} title={`${ev.time}\n${ev.title}`}>
+                {ev.title}
+              </span>
+            ))}
+            {more > 0 && <span className="hb-cal-more">+{more} more</span>}
+          </button>
+        );
+      })}
+    </div>
   );
 }

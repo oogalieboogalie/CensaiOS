@@ -21,7 +21,7 @@ function openNote(name, backlinks, { ok = true } = {}) {
     return { ok: true, status: 200, json: async () => [] };
   });
   render(<DocWindow
-    win={{ id: `doc-${name}`, kind: 'doc', fileName: `${name}.md`, filePath: `/notes/${name}.md`, annotations: [] }}
+    win={{ id: `doc-${name}`, kind: 'doc', fileName: `${name}.md`, filePath: `/notes/${name}.md`, annotations: [], showComments: true }}
     onUpdate={jest.fn()} onSpawn={jest.fn()} onSelect={jest.fn()} wins={[]} onAssign={jest.fn()} workspaceId="workspace-1"
   />);
 }

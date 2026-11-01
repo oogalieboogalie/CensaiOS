@@ -125,6 +125,7 @@
 .hb-market-meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); font-size: var(--text-xs); color: var(--ink-faint); }
 .hb-market-actions { flex: none; display: flex; align-items: center; gap: var(--space-2); }
 .hb-market-price { font-size: var(--text-sm); color: var(--ink-soft); }
+.hb-market-note { margin: 0 0 var(--space-1); padding: var(--space-1) var(--space-2); font-size: var(--text-xs); color: var(--ink-faint); }
 .hb-market-badge { display: inline-flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-1-5); min-height: 18px; border-radius: var(--radius-full); border: 1px solid var(--hairline); font-size: var(--text-xs); color: var(--ink-soft); }
 .hb-market-badge[data-state="verified"] { color: var(--accent-text); border-color: var(--accent-soft); }
 .hb-market-badge[data-state="changed"] { color: var(--danger); }

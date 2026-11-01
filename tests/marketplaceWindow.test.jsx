@@ -17,6 +17,7 @@
  *   6. Selection round-trips through the store.
  */
 import React from 'react';
+import { jest } from '@jest/globals';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MarketplaceWindow } from '../src/components/MarketplaceWindow.jsx';
 import { useWorkspaceStore } from '../src/lib/store.js';
@@ -116,5 +117,40 @@ describe('Brief B2 - MarketplaceWindow panel', () => {
     ];
     expect(filterCatalogBySearch(rows, 'chat')).toHaveLength(1);
     expect(filterCatalogBySearch(rows, '')).toHaveLength(2);
+  });
+});
+describe('Agents tab with no listed agents', () => {
+  test('points to the Agent Registry instead of "No items match."', () => {
+    const spawnAt = jest.fn();
+    act(() => { useWorkspaceStore.setState({ spawnAt }); });
+    render(<MarketplaceWindow win={{ tab: 'agent' }} />);
+    expect(screen.queryByText('No items match.')).toBeNull();
+    const empty = screen.getByTestId('marketplace-agents-empty');
+    fireEvent.click(within(empty).getByRole('button', { name: 'Open Agent Registry' }));
+    expect(spawnAt).toHaveBeenCalledWith('registry');
+  });
+});
+
+describe('the Market says plainly what it does not do yet', () => {
+  test.each(['window', 'integration', 'theme'])('the %s tab says it only switches built-in windows', (tab) => {
+    render(<MarketplaceWindow win={{ tab }} />);
+    expect(screen.getByTestId('marketplace-tab-note').textContent).toMatch(/built-in windows/);
+  });
+
+  test('the Modules tab says paid listings are not on yet, and a teammate reads who may publish', async () => {
+    const realFetch = global.fetch;
+    global.fetch = jest.fn(async (url) => ({
+      ok: true,
+      status: 200,
+      json: async () => (String(url).includes('/seller') ? { canSell: false, owner: false } : { listings: [] }),
+    }));
+    try {
+      render(<MarketplaceWindow win={{ tab: 'module' }} />);
+      expect((await screen.findByTestId('marketplace-not-yet')).textContent).toMatch(/Paid listings are not on yet/);
+      expect((await screen.findByTestId('marketplace-not-seller')).textContent).toMatch(/Only the owner of this censaiOS can publish/);
+      expect(screen.queryByTestId('marketplace-tab-note')).toBeNull();
+    } finally {
+      global.fetch = realFetch;
+    }
   });
 });

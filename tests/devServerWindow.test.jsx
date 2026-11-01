@@ -9,13 +9,14 @@ import { parseUrl } from '../src/components/BrowserWindow.jsx';
 
 const NAME = 'censai-dev-shop-0123456789';
 
-function mockApi({ listError = null, phases = ['installing', 'ready'] } = {}) {
+function mockApi({ listError = null, phases = ['installing', 'ready'], role = 'admin' } = {}) {
   const calls = [];
   let step = 0;
   global.fetch = jest.fn(async (url, opts = {}) => {
     const method = opts.method || 'GET';
     calls.push({ url: String(url), method, body: opts.body ? JSON.parse(opts.body) : null });
     const path = String(url).replace(/\?.*$/, '');
+    if (path === '/api/auth/session') return { ok: true, status: 200, json: async () => ({ user: { id: role === 'admin' ? 1 : 2, role } }) };
     if (path === '/api/dev-servers' && method === 'GET') {
       if (listError) return { ok: false, status: 503, json: async () => listError };
       return { ok: true, status: 200, json: async () => ({ servers: [], defaults: { image: 'node:22-bookworm-slim', port: 3000 } }) };
@@ -95,5 +96,15 @@ describe('Browser address bar', () => {
     expect(parseUrl('127.0.0.1:3000/shop')).toBe('http://127.0.0.1:3000/shop');
     expect(parseUrl('http://localhost:49200')).toBe('http://localhost:49200');
     expect(parseUrl('best pizza')).toMatch(/duckduckgo/);
+  });
+
+  test('a teammate reads that only the owner can start or stop it, and sends no keep-alive', async () => {
+    const calls = mockApi({ role: 'member' });
+    render(<Harness initial={{ id: 'w2', devName: NAME, folder: 'D:\\Sites\\shop' }} onSpawn={jest.fn()} />);
+    await settle();
+    expect(screen.getByTestId('run-dev-owner-only').textContent).toMatch(/Only this computer.s owner can start or stop Run dev/);
+    expect(screen.queryByRole('button', { name: /^Run dev$/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Stop and remove/ })).toBeNull();
+    expect(calls.some((c) => c.url === '/api/dev-servers/heartbeat')).toBe(false);
   });
 });

@@ -11,6 +11,7 @@
  *  - Sibling worker status and the clock are injectable so unit tests stay hermetic.
  */
 import { createWorkspaceEvent } from '../operational-intelligence/factories.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 export const RESTART_SELF_CHECK_EVENT_TYPE = 'agent.runtime.restart_self_check';
 const DEFAULT_WORKSPACE_ID = 'default';
@@ -70,7 +71,7 @@ export async function runRestartSelfCheck(ctx) {
       const { rows } = await db.query('SELECT COUNT(*)::int AS count FROM agents');
       agentsCount = Number(rows[0]?.count ?? 0);
     } catch (err) {
-      log.warn('restart self-check: agents count failed', { error: err.message });
+      log.warn('restart self-check: agents count failed', { code: safeErrorCode(err) });
     }
   }
 

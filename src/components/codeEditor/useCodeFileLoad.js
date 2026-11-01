@@ -17,6 +17,7 @@ export function useCodeFileLoad(win, setCode, onUpdate) {
   const settleRef = React.useRef(gate.settle);
   onUpdateRef.current = onUpdate;
   settleRef.current = gate.settle;
+  const { attempt } = gate;
 
   React.useEffect(() => {
     if (!win.filePath) return undefined;
@@ -35,8 +36,8 @@ export function useCodeFileLoad(win, setCode, onUpdate) {
       const loaded = await readFileLoad(res);
       if (cancelled) return;
       if (!loaded.ok) {
-        settleRef.current('failed', loaded.message);
-        warnFileLoadFailed(KIND, loaded.status);
+        settleRef.current('failed', loaded.message, loaded.reason);
+        warnFileLoadFailed(KIND, loaded.status, loaded.reason);
         return;
       }
       const next = loaded.content || '';
@@ -50,12 +51,14 @@ export function useCodeFileLoad(win, setCode, onUpdate) {
       warnFileLoadFailed(KIND, 0);
     });
     return () => { cancelled = true; };
-    // onUpdate and settle are read through refs so a new identity does not refetch.
-  }, [win.filePath, win.isGithub, win.githubRepo, setCode]);
+    // onUpdate and settle are read through refs so a new identity does not
+    // refetch; `attempt` changes on "Try again", so the file is read once more.
+  }, [win.filePath, win.isGithub, win.githubRepo, setCode, attempt]);
 
   return {
     loading: gate.loading,
     loadError: gate.loadError,
     canSave: gate.canSave && !win.isGithub,
+    retryLoad: gate.retry,
   };
 }

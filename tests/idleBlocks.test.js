@@ -76,12 +76,12 @@ describe('building', () => {
   test('the plot grows and the 3D view opens as the yard digs', () => {
     expect(landSize(0)).toBe(6);
     expect(landSize(300)).toBe(8);
-    expect(landSize(1e6)).toBe(12);
+    expect(landSize(100000)).toBe(12);
     expect(isoUnlocked(ISO_AT - 1)).toBe(false);
     expect(isoUnlocked(ISO_AT)).toBe(true);
     expect(nextMilestone(0).label).toBe('unlocks stone');
     expect(nextMilestone(70).label).toBe('opens the 3D view');
-    expect(nextMilestone(1e7)).toBeNull();
+    expect(nextMilestone(1e8)).toBeNull();
   });
 });
 

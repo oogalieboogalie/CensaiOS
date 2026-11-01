@@ -14,6 +14,7 @@
 
 import * as Y from 'yjs';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { YUPDATE_TABLE, assertWorkspaceId, createYDocStore, decodeDocUpdate } from './yStore.js';
 
 const log = createLogger('yjs-log');
@@ -60,7 +61,7 @@ export function createYUpdateLog(db, options = {}) {
       const result = await db.query(INSERT_SQL, [workspaceId, Buffer.from(update), entry.actor]);
       return Number(result.rows[0]?.seq ?? 0);
     }).catch((error) => {
-      log.error('yjs update append failed', { workspaceId, error: error.message });
+      log.error('yjs update append failed', { workspaceId, code: safeErrorCode(error) });
     });
   }
 

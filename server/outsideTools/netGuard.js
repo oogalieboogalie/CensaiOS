@@ -38,7 +38,7 @@ async function vet(value, { cloud = !privateAddressesAllowed(), resolve = lookup
     url = parseServerUrl(value);
   } catch (error) {
     // The address itself is never logged: it may hold a key.
-    log.warn('address refused: not a usable web address', { reason: error.message });
+    log.warn('address refused: not a usable web address', { reason: 'not-a-web-address' });
     throw error;
   }
   if (!cloud) return { url, addresses: null };

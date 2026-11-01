@@ -1,12 +1,15 @@
 // Where a new window opens. It used to land in the middle of the view with a
 // little random jitter, so opening six modules piled six windows on top of
 // each other. Now it takes the nearest empty spot inside what the person can
-// see, keeping a gap to every window and group so the snap seams stay clean.
+// see, keeping a gap to every window and group so the snap seams stay clean,
+// and clear of what sits fixed on the screen, such as the Board map, when
+// there is room beside it.
 // When the view is full it takes the nearest spot just past the edge and the
 // board glides over to it; when even that is full (or the window is bigger
 // than the screen) it falls back to a tidy diagonal step from the centre.
 
 import { BASE_UNIT } from './layout/constants.js';
+import { screenFurniture } from './screenFurniture.js';
 
 // Room kept clear between the new window and its neighbours, in canvas px.
 export const FREE_SPOT_GAP = BASE_UNIT;
@@ -38,6 +41,12 @@ export function boardObstacles(wins = [], groups = []) {
   }
   for (const g of groups) if (finite(g)) rects.push({ x: g.x, y: g.y, w: g.w, h: g.h });
   return rects;
+}
+
+/** Things fixed on the screen (the Board map) as board rectangles at this pan and zoom. */
+export function furnitureOnBoard({ pan = { x: 0, y: 0 }, zoom = 1 }, rects = screenFurniture()) {
+  const z = zoom > 0 ? zoom : 1;
+  return rects.map((r) => ({ x: (r.x - pan.x) / z, y: (r.y - pan.y) / z, w: r.w / z, h: r.h / z }));
 }
 
 function overlaps(a, b, gap) {
@@ -133,7 +142,11 @@ export function findFreeSpot(size, { wins = [], groups = [], pan = { x: 0, y: 0 
   };
   const view = visibleCanvasRect(screen);
   const obstacles = boardObstacles(wins, groups);
-  const inView = nearestFreeSpot(size, view, obstacles);
+  // Clear of the Board map when there is room beside it. A window too big for
+  // that opens where it would have anyway, and the map tucks itself away.
+  const furniture = furnitureOnBoard(screen);
+  const inView = (furniture.length && nearestFreeSpot(size, view, [...obstacles, ...furniture]))
+    || nearestFreeSpot(size, view, obstacles);
   if (inView) return { ...inView, pan: null };
   // Nothing free on screen: look just past the edges, then a little further,
   // and glide the view over to the spot.

@@ -9,6 +9,7 @@ import { BlueprintList } from './BlueprintList.jsx';
 import { BlueprintDetail } from './BlueprintDetail.jsx';
 import { BlueprintEditor } from './BlueprintEditor.jsx';
 import { BlueprintPhrases } from './BlueprintPhrases.jsx';
+import { missingReadyBlueprints, readyBlueprintDraft } from '../../../lib/blueprints/readyBlueprints.js';
 import { windowMeta } from './meta.js';
 
 export { windowMeta };
@@ -52,6 +53,9 @@ export function BlueprintsWindow({ win = {} }) {
               onSelect={(id) => { bp.setDraft(null); bp.setSelectedId(id); }}
               onNew={() => bp.setDraft({ shelf: bp.shelf || 1 })}
               searching={Boolean(bp.answer)}
+              ready={bp.draft ? [] : missingReadyBlueprints(bp.blueprints)}
+              onAddReady={(b) => bp.save(readyBlueprintDraft(b))}
+              busy={bp.busy === 'save'}
             />
             <div className="hb-bp-main">
               {bp.draft ? (

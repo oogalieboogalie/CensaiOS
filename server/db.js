@@ -1,5 +1,6 @@
 import pg from 'pg';
 import { createLogger } from './logger.js';
+import { safeErrorCode } from './security/errorCode.js';
 
 const log = createLogger('db');
 
@@ -27,7 +28,7 @@ export function createDbPool(connectionString = process.env.DATABASE_URL || 'pos
   log.info('creating Postgres pool', { host, ssl: !isLocal, max: 10 });
 
   pool.on('error', (err) => {
-    log.error('Postgres pool error', { error: err.message });
+    log.error('Postgres pool error', { code: safeErrorCode(err) });
   });
 
   return pool;

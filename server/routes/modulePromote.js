@@ -1,4 +1,5 @@
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { CapabilityDeniedError, requireCapability } from '../capabilities/checkCapability.js';
 import { buildPromotionPlan, writePromotion } from '../window-import/promoteModule.js';
 import { runWindowSync } from '../window-import/windowPackageWriter.js';
@@ -55,7 +56,7 @@ export async function promoteModuleHandler(req, res) {
     log.info('module promoted to a built-in window', { kind: plan.kind, syncOk: syncResult.ok });
     res.json({ ok: true, ...summary, syncOk: syncResult.ok, syncOutput: syncResult.output });
   } catch (err) {
-    log.error('module promotion failed', { error: err.message });
+    log.error('module promotion failed', { code: safeErrorCode(err) });
     res.status(500).json({ ok: false, code: 'PROMOTE_FAILED', error: 'The window files could not be written.' });
   }
 }

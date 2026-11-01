@@ -53,36 +53,3 @@ export function sendDockCast(payload) {
   if (payload?.type !== 'dock.cast') return false;
   try { return Boolean(senders.sendDock?.(payload)); } catch { return false; }
 }
-
-/**
- * Diff two presence snapshots into join/leave notices. Pure — tested.
- * The first snapshot only establishes the baseline (no toasts for people
- * already here when you arrive); the hook guards reconnects the same way.
- * Your own other windows (same signed-in person, `selfId`) are not news, so
- * they never toast as someone joining.
- */
-export function diffPresenceNotices(previous, next, { selfId = null } = {}) {
-  const others = (list) => (list || []).filter((p) => !(selfId && p.actor?.type !== 'guest' && String(p.actor?.id ?? '') === String(selfId)));
-  const before = new Map(others(previous).map((p) => [p.clientId, p]));
-  const after = new Map(others(next).map((p) => [p.clientId, p]));
-  const notices = [];
-  for (const [id, p] of after) {
-    if (!before.has(id)) {
-      notices.push({
-        id: `join-${id}-${Date.now()}`,
-        kind: 'join',
-        text: `${p.actor?.label || 'Someone'} joined the canvas`,
-      });
-    }
-  }
-  for (const [id, p] of before) {
-    if (!after.has(id)) {
-      notices.push({
-        id: `leave-${id}-${Date.now()}`,
-        kind: 'leave',
-        text: `${p.actor?.label || 'Someone'} left`,
-      });
-    }
-  }
-  return notices;
-}

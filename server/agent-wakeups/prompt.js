@@ -24,16 +24,20 @@ export function buildWakePrompt(wake, tasks = [], thread = {}) {
     );
   } else if (wake.message_type === 'agent_report') {
     lines.push(
-      'This is a report from another agent. Do not reply merely to acknowledge it.',
-      'If it enables the next phase, message the appropriate family member or dispatch work. Otherwise finish silently.',
-      'When you do reply in-thread, use reply_to with this thread id. Bare acknowledgements (done/ok/thanks) are stored but never wake anyone — so only reply when you have substance to add.',
-      'Delivery needs no human in the middle and no webhooks: your message enqueues a wakeup and the worker wakes the recipient automatically.'
+      'This is a reply to you, from the family member you wrote to. Take it in now.',
+      'In your answer, say what you will do with it. That answer is you accepting the reply.',
+      'Do not wait for a person to tell you to read your mail.',
+      'Do not send a bare acknowledgement (done/ok/thanks), and do not reply_to only to confirm you saw it. Bare acknowledgements are stored but never wake anyone.',
+      'Message someone or dispatch work only when the reply needs a real next step.',
+      'When a next step belongs in this thread, use reply_to with this thread id.',
+      'Delivery needs no human in the middle and no webhooks: your message enqueues a wakeup and the worker wakes the recipient automatically.',
     );
   } else {
     const roundLine = Number.isFinite(thread.round) && Number.isFinite(thread.maxRounds)
       ? `Thread round ${thread.round} of ${thread.maxRounds}: when the cap is hit, further replies are stored without waking — wrap up or start a fresh thread.`
       : null;
     lines.push(
+      'This wake is how the message reaches you. Take it in now; a person does not have to ask you to read your mail.',
       'Treat this as an actionable request. You may answer directly or delegate to your sub-agents.',
       'When delegating, give concrete acceptance criteria. You will be woken again when all linked tasks finish.',
       'To continue the conversation, use reply_to with this thread id — do not mint a new thread per message.',

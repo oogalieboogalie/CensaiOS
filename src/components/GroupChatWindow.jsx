@@ -28,6 +28,12 @@ function keyCardMessage(data, from) {
   };
 }
 
+/** One reply as a chat line; the tools the agent used show above its answer. */
+export function groupReplyMessage(reply) {
+  const tools = (reply.tools || []).map(t => ({ name: t.tool, summary: t.summary, ms: t.ms, ok: t.ok, resultChars: t.result_chars }));
+  return tools.length ? { from: reply.agentId, text: reply.text, activity: { tools } } : { from: reply.agentId, text: reply.text };
+}
+
 const GROUP_STARTERS = [
   'Each of you: what would you do first on this project?',
   'Disagree with each other about the riskiest part of the plan',
@@ -99,7 +105,7 @@ export function GroupChatWindow({ win, onUpdate }) {
       const res = await fetch('/api/group-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: withUser, agentIds: activeMembers, workspaceId }),
+        body: JSON.stringify({ messages: withUser.map(({ activity, ...m }) => m), agentIds: activeMembers, workspaceId, windowId: win.id }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -109,7 +115,7 @@ export function GroupChatWindow({ win, onUpdate }) {
         landChatReply(setMsgs, withUser, card || { from: 'system', text: data.error || data.message || 'Group chat failed to process.' }, win.id);
         return;
       }
-      const replies = (data.replies || []).map(reply => ({ from: reply.agentId, text: reply.text }));
+      const replies = (data.replies || []).map(groupReplyMessage);
       if (replies.length) {
         logToApp('info', `group chat: ${replies.length} answered`, { where: 'group-chat' });
         landChatReply(setMsgs, withUser, replies, win.id);

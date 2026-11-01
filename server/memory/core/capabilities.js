@@ -1,4 +1,8 @@
 import pool from '../../db.js';
+import { createLogger } from '../../logger.js';
+import { safeErrorCode } from '../../security/errorCode.js';
+
+const log = createLogger('memory');
 
 export async function loadCapabilities(agentId) {
   try {
@@ -54,7 +58,7 @@ export async function loadCapabilities(agentId) {
 
     return block;
   } catch (err) {
-    console.warn('Could not load capabilities:', err.message);
+    log.warn('could not load capabilities', { code: safeErrorCode(err) });
     return null;
   }
 }

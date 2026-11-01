@@ -12,10 +12,12 @@ const withFx = (p, trackId, fn) => (trackId === 'master'
 
 export const edits = {
   set: (p, patch) => normalizeProject({ ...p, ...patch }),
-  addTrack(p, kind) {
+  /** `extra` can name the track and bring its synth sound and first clips (a hummed take, a stem). */
+  addTrack(p, kind, extra = {}) {
     if (p.tracks.length >= MAX_TRACKS) return p;
     const i = p.tracks.length;
-    const t = normalizeTrack({ id: newId('track'), kind, synth: kind === 'synth' ? { preset: 'keys' } : undefined }, i);
+    const clips = (extra.clips || []).map(c => ({ id: newId('clip'), ...c }));
+    const t = normalizeTrack({ synth: kind === 'synth' ? { preset: 'keys' } : undefined, ...extra, id: newId('track'), kind, clips }, i);
     return normalizeProject({ ...p, tracks: [...p.tracks, t] });
   },
   removeTrack: (p, id) => normalizeProject({ ...p, tracks: p.tracks.filter(t => t.id !== id) }),

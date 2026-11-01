@@ -7,6 +7,7 @@ import * as system from './api/system.js';
 import * as providers from './api/providers.js';
 import * as schedules from './api/schedules.js';
 import * as integrations from './api/integrations.js';
+import * as myCalendar from './api/myCalendar.js';
 import * as operationalIntelligence from './api/operationalIntelligence.js';
 import * as capabilities from './api/capabilities.js';
 import * as attributes from './api/attributes.js';
@@ -35,6 +36,7 @@ export const api = {
   ...providers,
   ...schedules,
   ...integrations,
+  ...myCalendar,
   ...operationalIntelligence,
   ...capabilities,
   ...attributes,

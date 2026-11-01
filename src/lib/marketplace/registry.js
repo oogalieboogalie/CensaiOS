@@ -118,7 +118,7 @@ export function getMarketplaceCatalog() {
   for (const id of listPresetIds(SOURCES.MOOD)) {
     rows.push(presetToCatalogRow(id, PRESET_LIBRARY[id]));
   }
-  for (const id of listPresetIds(SOURCES.NEURODIVERGENT)) {
+  for (const id of listPresetIds(SOURCES.CALM)) {
     rows.push(presetToCatalogRow(id, PRESET_LIBRARY[id]));
   }
   for (const id of listPresetIds(SOURCES.BRAND)) {

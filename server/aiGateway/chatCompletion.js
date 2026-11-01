@@ -22,6 +22,7 @@ import {
   requestGeminiNativeChatCompletion,
 } from './geminiNativeChat.js';
 import { prepareCohereToolPayload } from './cohereTools.js';
+import { prepareGeminiToolPayload } from './geminiTools.js';
 import { payloadNeedsGeminiNative } from './multimodal.js';
 import { isResponsesModel, requestResponsesCompletion } from './responsesClient.js';
 import { assertProviderKey, localModelUnreachableError } from './missingKey.js';
@@ -47,7 +48,7 @@ export async function requestChatCompletion({
   const modelPayload = config?.model && !body?.model ? { ...body, model: config.model } : body;
   const payload = config?.provider === 'cohere'
     ? prepareCohereToolPayload(modelPayload)
-    : modelPayload;
+    : config?.provider === 'google' ? prepareGeminiToolPayload(modelPayload) : modelPayload;
   const baseUrl = normalizeBaseUrl(config?.baseUrl || DEFAULT_CHAT_BASE_URL);
   let apiKey = config?.apiKey;
   if (!apiKey && !['cohere', 'openai', 'openrouter', 'moonshot', 'kimi', 'opencode', 'zai', 'anthropic', 'claude'].includes(config?.provider)) {

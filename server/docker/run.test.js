@@ -27,7 +27,7 @@ describe('Run a new container from an image', () => {
     const res = await request(app).post('/api/docker/images/run').send({ image: 'axllent/mailpit:latest', name: 'mail-test', ports: '8025:8025, 1025' });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ ok: true, name: 'mail-test', ports: ['8025:8025', '1025:1025'] });
-    expect(calls.at(-1)).toEqual(['run', '-d', '--name', 'mail-test', '-p', '8025:8025', '-p', '1025:1025', 'axllent/mailpit:latest']);
+    expect(calls.at(-1)).toEqual(['run', '-d', '--name', 'mail-test', '-p', '127.0.0.1:8025:8025', '-p', '127.0.0.1:1025:1025', 'axllent/mailpit:latest']);
     const list = await request(app).get('/api/docker/containers');
     const made = list.body.containers.find((c) => c.name === 'mail-test');
     expect(made).toMatchObject({ state: 'running', image: 'axllent/mailpit:latest' });
@@ -65,7 +65,7 @@ describe('Run a new container from an image', () => {
     });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ settings: 2, shared: true, restart: 'unless-stopped' });
-    expect(calls.at(-1)).toEqual(['run', '-d', '--name', 'notes-db', '-p', '6380:6379',
+    expect(calls.at(-1)).toEqual(['run', '-d', '--name', 'notes-db', '-p', '127.0.0.1:6380:6379',
       '-e', 'REDIS_PASSWORD=fake-pw', '-e', 'APP_MODE=test',
       '--mount', 'type=bind,source=D:\\data\\notes,target=/data', '--restart', 'unless-stopped', 'redis:7']);
     const made = (await request(app).get('/api/docker/containers')).body.containers.find((c) => c.name === 'notes-db');

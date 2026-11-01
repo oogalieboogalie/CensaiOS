@@ -1,5 +1,6 @@
 import React from 'react';
 import { reportError } from '../../lib/selfFix/reporter.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 function describeWindow(win, type) {
   const label = win?.title || win?.kind || type || 'window';
@@ -17,7 +18,7 @@ export class WindowLazyErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('[WindowLazyErrorBoundary] window render failed:', error);
+    logFailure('error-boundary: a window crashed while drawing', error, 'error-boundary', 'error');
     reportError({ kind: 'window-crash', error, windowKind: this.props.win?.kind || this.props.type || null, componentStack: info?.componentStack });
     // Show it in the Inbox window as a board error.
     window.dispatchEvent(new CustomEvent('censai:board-error', {

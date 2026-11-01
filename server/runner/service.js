@@ -6,7 +6,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import { isRunnerRequestAuthorized, requireRunnerSecret } from './auth.js';
-import { dockerOnlyViolation, execTarget, inspectViolation } from './dockerOnly.js';
+import { withRunnerDefaults } from './dockerOnly.js';
+import { cachedStack, gateRefusal } from './dockerStack.js';
 import { createLogger } from '../logger.js';
 
 // Lines carry the program's bare name and outcome only: never arguments,
@@ -19,23 +20,56 @@ const programName = (command) => {
 
 const execFileAsync = promisify(execFile);
 
-// Docker-only mode refuses anything but safe docker calls (dockerOnly.js).
-async function refusal(command, args) {
-  const why = dockerOnlyViolation(command, args);
-  if (why) return why;
-  const target = execTarget(args);
-  if (!target) return null;
+// Docker-only mode refuses anything but safe docker calls (dockerOnly.js,
+// dockerStack.js). The gate's own lookups run docker directly.
+const runDocker = async (args) => (await execFileAsync('docker', args, { maxBuffer: 10 * 1024 * 1024, timeout: 15_000 })).stdout;
+
+// Asked once (at start, or at the first compose call): without the compose
+// plugin a compose call gets a plain sentence instead of Docker's own error.
+export function composeCheck(run) {
+  let found;
+  return () => (found ??= run(['compose', 'version']).then(() => true, () => false).then((ok) => {
+    log.info(ok ? 'compose plugin found' : 'compose plugin missing');
+    return ok;
+  }));
+}
+
+// The caller's options never reach the child process in docker-only mode
+// (an env could point docker at another engine); elsewhere only these do.
+// The run time and output size are capped here, whatever the caller asked.
+const MAX_BUFFER = 50 * 1024 * 1024;
+const MAX_TIMEOUT_MS = 30 * 60_000;
+const DEFAULT_TIMEOUT_MS = 15 * 60_000;
+export function childOptions(options, dockerOnly) {
+  const asked = Number(options?.timeout);
+  const timeout = Number.isFinite(asked) && asked > 0 ? Math.min(Math.max(asked, 1000), MAX_TIMEOUT_MS) : DEFAULT_TIMEOUT_MS;
+  const askedBuffer = Number(options?.maxBuffer);
+  const maxBuffer = Number.isFinite(askedBuffer) && askedBuffer > 0 ? Math.min(askedBuffer, MAX_BUFFER) : MAX_BUFFER;
+  if (dockerOnly) return { timeout, maxBuffer, shell: false, windowsHide: true };
+  const { cwd, windowsHide, encoding } = options || {};
+  // A missing encoding would hand back raw bytes that turn into JSON junk.
+  return { cwd, windowsHide, encoding: encoding || 'utf8', timeout, maxBuffer, shell: process.platform === 'win32' || Boolean(options?.shell) };
+}
+
+// Asked at start: the runner runs as a normal user and reaches Docker only
+// through the socket's group (docker-compose.yml, CENSAI_DOCKER_GID).
+export async function dockerSocketCheck(run, uid = process.getuid?.() ?? null) {
   try {
-    const { stdout } = await execFileAsync('docker', ['inspect', '--type', 'container', target], { maxBuffer: 10 * 1024 * 1024 });
-    return inspectViolation(stdout);
+    await run(['version', '--format', '{{.Server.Version}}']);
+    log.info('docker socket reachable', { uid });
+    return true;
   } catch {
-    return null; // let docker report the missing container itself
+    log.warn('docker socket not reachable as a normal user', { uid });
+    return false;
   }
 }
 
 export function createRunnerApp({
   runnerSecret = process.env.RUNNER_SECRET,
-  dockerOnly = process.env.RUNNER_DOCKER_ONLY === 'true',
+  dockerOnly = process.env.RUNNER_DOCKER_ONLY !== 'false',
+  run = runDocker,
+  stack = cachedStack(run),
+  composeFound = composeCheck(run),
 } = {}) {
   const secret = requireRunnerSecret(runnerSecret);
   const app = express();
@@ -54,23 +88,25 @@ export function createRunnerApp({
   }
 
   app.post('/exec', async (req, res) => {
-  const { command, args, options } = req.body;
+  const { command, options } = req.body;
+  let { args } = req.body;
   if (dockerOnly) {
-    const why = await refusal(command, args);
+    const why = await gateRefusal(command, args, await stack(), run);
     if (why) {
-      log.warn('runner command refused by the Docker gatekeeper', { program: programName(command) });
-      return res.json({ stdout: '', stderr: `Refused by the Docker gatekeeper: ${why}.`, code: 126 });
+      log.warn('runner command refused by the Docker gatekeeper', { program: programName(command), reason: why.code });
+      return res.json({ stdout: '', stderr: `Refused by the Docker gatekeeper: ${why.why}.`, code: 126 });
     }
+    if (args?.[0] === 'compose' && !(await composeFound())) {
+      log.warn('runner command refused by the Docker gatekeeper', { program: programName(command), reason: 'compose-missing' });
+      return res.json({ stdout: '', stderr: 'Compose is not installed in this runner.', code: 126 });
+    }
+    args = withRunnerDefaults(args);
   }
 
   log.info('runner command started', { program: programName(command) });
 
   try {
-    const { stdout, stderr } = await execFileAsync(command, args, {
-      maxBuffer: 50 * 1024 * 1024,
-      ...options,
-      shell: dockerOnly ? false : (process.platform === 'win32' || options?.shell),
-    });
+    const { stdout, stderr } = await execFileAsync(command, args, childOptions(options, dockerOnly));
     res.json({ stdout, stderr, code: 0 });
   } catch (err) {
     log.warn('runner command failed', { program: programName(command), code: err.code ?? err.status ?? 1 });
@@ -158,9 +194,13 @@ export function startRunnerService({
   runnerSecret = resolveRunnerSecret(),
   port = process.env.RUNNER_PORT || 3003,
 } = {}) {
-  const app = createRunnerApp({ runnerSecret });
+  const composeFound = composeCheck(runDocker);
+  composeFound();
+  dockerSocketCheck(runDocker);
+  const dockerOnly = process.env.RUNNER_DOCKER_ONLY !== 'false';
+  const app = createRunnerApp({ runnerSecret, dockerOnly, composeFound });
   return app.listen(port, '0.0.0.0', () => {
-    log.info('runner service started', { port: Number(port) });
+    log.info('runner service started', { port: Number(port), mode: dockerOnly ? 'docker-only' : 'open' });
   });
 }
 

@@ -18,6 +18,7 @@ import { requireSystemAdmin, assertSystemAdmin } from '../security/systemAdmin.j
 import { getSelfFix } from '../selfFix/index.js';
 import { readPatch } from '../selfFix/patches.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 const log = createLogger('self-fix-route');
 export const selfFixRouter = express.Router();
@@ -41,7 +42,7 @@ const wrap = (fn) => async (req, res) => {
     await fn(req, res);
   } catch (error) {
     const status = Number(error?.statusCode) || 500;
-    if (status >= 500) log.warn('self-fix request failed', { error: error?.message });
+    if (status >= 500) log.warn('self-fix request failed', { code: safeErrorCode(error) });
     res.status(status).json({ error: status >= 500 ? 'Self-fix hit a problem.' : error.message });
   }
 };

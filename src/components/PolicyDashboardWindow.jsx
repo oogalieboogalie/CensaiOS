@@ -44,7 +44,7 @@ export function PolicyDashboardWindow({ win, isActive }) {
         {inbox.loading && <div role="status" style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>Loading approvals…</div>}
         {inbox.ready && approvals.length === 0 && <div style={{ border: '1px dashed var(--hairline)',
           borderRadius: 'var(--radius-lg)', padding: 24, textAlign: 'center', color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>
-          {pendingOnly ? (trust.board ? 'Trust mode is on, so agents act without waiting here.' : 'No agent actions are waiting for approval.') : 'No approval history in this workspace.'}
+          {pendingOnly ? (trust.ready && !trust.error && trust.board ? 'Trust mode is on, so agents act without waiting here.' : 'No agent actions are waiting for approval.') : 'No approval history in this workspace.'}
         </div>}
         {approvals.map(approval => <ApprovalCard key={approval.id} approval={approval}
           canDecide={inbox.canDecide} deciding={inbox.decidingId === approval.id} onDecision={inbox.decide} />)}

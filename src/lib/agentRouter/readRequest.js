@@ -39,6 +39,8 @@ const FILLER = new Set([
 const ACTION_BY_WORD = new Map(ROUTER_ACTIONS.flatMap((group) => group.map((word) => [stem(word), group[0]])));
 const THING_BY_WORD = new Map(ROUTER_THINGS.flatMap((thing) => thing.words.map((word) => [stem(word), thing.id])));
 
+const MAX_TOPIC_WORD = 30;
+
 function rawWords(text) {
   return String(text || '').toLowerCase().replace(/micro[\s-]app/g, 'microapp').replace(/[^a-z0-9]+/g, ' ').trim()
     .split(/\s+/).filter(Boolean);
@@ -89,7 +91,8 @@ export function readIntent(part, { previousAction = null } = {}) {
   const action = words.map((w) => ACTION_BY_WORD.get(w)).find(Boolean) || previousAction || 'create';
   const thing = words.map((w) => THING_BY_WORD.get(w)).find(Boolean) || null;
   // Topic words keep their own spelling ("invoices", "dale city"); matching uses the trimmed form.
-  const topicRaw = [...new Set(raw.filter((w, i) => !FILLER.has(w) && !FILLER.has(words[i]) && !ACTION_BY_WORD.has(words[i]) && !THING_BY_WORD.has(words[i])))].slice(0, 3);
+  // A run of letters longer than any real word is not a topic (it would make a page-wide tag).
+  const topicRaw = [...new Set(raw.filter((w, i) => w.length <= MAX_TOPIC_WORD && !FILLER.has(w) && !FILLER.has(words[i]) && !ACTION_BY_WORD.has(words[i]) && !THING_BY_WORD.has(words[i])))].slice(0, 3);
   const topicWords = topicRaw.map(stem);
   const topic = topicRaw.join(' ') || null;
   const slot = slotWord(topicRaw.join('_') || thing || 'general');

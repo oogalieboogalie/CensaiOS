@@ -2,3 +2,6 @@ services:
   homebase:
     image: ghcr.io/oogalieboogalie/censaios:latest
     pull_policy: always
+  runner:
+    image: ghcr.io/oogalieboogalie/censaios:latest
+    pull_policy: always

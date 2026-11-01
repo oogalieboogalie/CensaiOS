@@ -16,12 +16,16 @@ import { resolveWorkspaceContext } from '../../workspaces/context.js';
 import { publishWorkspaceEvent } from '../../collaboration/workspaceHub.js';
 import { persistCollaborationEpisodesSafely } from '../../collaboration/episodeStore.js';
 import { collaborationHumanActor } from '../../collaboration/humanActor.js';
+import { createLogger } from '../../logger.js';
+import { safeErrorCode } from '../../security/errorCode.js';
+
+const log = createLogger('files');
 
 export const clientStateRouter = express.Router();
 
 function logUnexpectedClientStateError(action, error) {
   if (!error.statusCode || error.statusCode >= 500) {
-    console.error(`Failed to ${action} client state:`, error);
+    log.error('client state failed', { action, code: safeErrorCode(error) });
   }
 }
 

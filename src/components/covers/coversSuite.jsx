@@ -24,6 +24,19 @@ export const SUITE_COVERS = {
       <path d="M31 17 V11" stroke={ACCENT} strokeWidth="2" />
     </>
   ),
+  // A shop front under a striped awning, and the same page on a phone.
+  localSites: (
+    <>
+      <path d="M6 9 L8 5 H28 L30 9 Z" {...A} />
+      <path d="M12 5 L11 9 M18 5 V9 M24 5 L25 9" {...A} />
+      <path d="M7 9 V20 H29 V9" {...S} />
+      <rect x="10" y="12" width="7" height="5" rx="0.6" {...F} />
+      <path d="M21 20 V12 H26 V20" {...S} />
+      <rect x="33" y="5" width="7" height="15" rx="1.2" {...S} />
+      <path d="M35 9 H38 M35 11.5 H38" {...F} />
+      <rect x="35" y="15" width="3" height="2" rx="0.6" fill={ACCENT} />
+    </>
+  ),
   // A photo of hills under a sun, crop corners around it.
   creativePhoto: (
     <>

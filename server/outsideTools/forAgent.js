@@ -6,6 +6,7 @@
 // unreachable server never slows a plain chat down. Every call is logged.
 
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { callServerTool } from './connections.js';
 import { readSecret, recordCall, serversForAgent } from './store.js';
 import { toolDefinitions } from './toolNames.js';
@@ -33,7 +34,7 @@ export async function loadOutsideTools({ db, userId, agentId, origin = 'chat' })
     servers = await serversForAgent(db, { userId, agentId });
   } catch (error) {
     // The table may not exist yet on an older database; chat carries on.
-    log.warn('outside tools unavailable', { error: error.message });
+    log.warn('outside tools unavailable', { code: safeErrorCode(error) });
     return EMPTY_OUTSIDE_TOOLS;
   }
   const byName = new Map();
@@ -65,7 +66,7 @@ export async function loadOutsideTools({ db, userId, agentId, origin = 'chat' })
       recordCall(db, {
         serverId: entry.server.id, userId, agentId, tool: entry.realName, origin,
         ok: !error, durationMs: Date.now() - startedAt, resultChars: text.length, error: error?.message,
-      }).catch((err) => log.warn('outside tool call not logged', { error: err.message }));
+      }).catch((err) => log.warn('outside tool call not logged', { code: safeErrorCode(err) }));
       if (error) return `Error: ${entry.server.name} (outside tool) — ${error.message}`;
       return text;
     },

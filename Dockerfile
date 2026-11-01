@@ -57,8 +57,11 @@ COPY src/ ./src/
 # The first-start database step reads which SQL files Postgres already ran.
 COPY docker-compose.yml ./
 COPY --from=build /app/dist ./dist
-# Strip Windows line endings in case a checkout added them.
-RUN sed -i 's/\r$//' docker/entrypoint.sh
+# Strip Windows line endings in case a checkout added them. The runner runs
+# as the image's normal user (node) and writes its secret here; a new
+# runner_secret volume takes this folder's owner.
+RUN sed -i 's/\r$//' docker/entrypoint.sh \
+ && mkdir -p /run/censai-runner && chown node:node /run/censai-runner
 EXPOSE 3001
 ENTRYPOINT ["sh", "/app/docker/entrypoint.sh"]
 CMD ["node", "server.js"]

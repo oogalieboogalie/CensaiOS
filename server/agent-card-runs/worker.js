@@ -1,5 +1,6 @@
 import { dbReady } from '../dbState.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { executeAgentCardRun } from './execution.js';
 import { claimNextAgentCardRun, recoverInProgressAgentCardRuns } from './store.js';
 
@@ -32,13 +33,13 @@ export async function pollAgentCardRuns() {
     }
     state.activeCount += 1;
     executeAgentCardRun(run)
-      .catch((error) => log.error('run crashed', { runId: run.id, error: error.message }))
+      .catch((error) => log.error('run crashed', { runId: run.id, code: safeErrorCode(error) }))
       .finally(() => { state.activeCount -= 1; });
     state.lastPollError = null;
     return run.id;
   } catch (error) {
     state.lastPollError = error.message;
-    log.error('poll failed', { error: error.message });
+    log.error('poll failed', { code: safeErrorCode(error) });
     return null;
   }
 }
@@ -49,7 +50,7 @@ export function startAgentCardRunWorker() {
   log.info('AgentCard run worker enabled', { pollIntervalMs: POLL_INTERVAL_MS, maxConcurrent: MAX_CONCURRENT });
   if (dbReady()) recoverInterruptedRuns().catch((error) => {
     state.lastPollError = error.message;
-    log.error('startup recovery failed', { error: error.message });
+    log.error('startup recovery failed', { code: safeErrorCode(error) });
   });
   const timer = setInterval(pollAgentCardRuns, POLL_INTERVAL_MS);
   if (typeof timer.unref === 'function') timer.unref();

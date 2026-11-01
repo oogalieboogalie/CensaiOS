@@ -18,6 +18,7 @@
 import { randomUUID } from 'crypto';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { runAgentTurn } from '../runEngine/index.js';
 import { FAMILY_AGENT_BY_ID } from '../../src/data/family-agents.js';
 import { placeResultCard, patchWorkflowWindow, readWorkflowWindow } from './board.js';
@@ -89,7 +90,7 @@ export async function publish(run, deps) {
       status: run.status, results: run.results, error: run.error || null, finished: Boolean(run.finishedAt),
     });
   } catch (error) {
-    log.warn('run record not saved', { runId: run.id, error: error.message });
+    log.warn('run record not saved', { runId: run.id, code: safeErrorCode(error) });
   }
 }
 
@@ -169,7 +170,7 @@ export function track(run, deps, startAt) {
   const key = keyOf(run.workspaceId, run.windowId);
   active.set(key, run);
   const done = walk(run, deps, startAt)
-    .catch((error) => log.warn('workflow run crashed', { runId: run.id, error: error.message }))
+    .catch((error) => log.warn('workflow run crashed', { runId: run.id, code: safeErrorCode(error) }))
     .finally(() => { if (active.get(key) === run) active.delete(key); });
   return done;
 }

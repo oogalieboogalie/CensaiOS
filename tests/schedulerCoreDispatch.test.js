@@ -21,7 +21,7 @@ jest.unstable_mockModule('../server/memory/core/agents.js', () => ({ getAgents }
 jest.unstable_mockModule('../server/scheduler/coreRuns.js', () => ({ enqueueCoreScheduleRun }));
 jest.unstable_mockModule('../server/wakeUps/store.js', () => ({ gateAgentWakeUp }));
 jest.unstable_mockModule('../server/memory/schedules_utils.js', () => ({
-  calculateNextRun: jest.fn(() => new Date('2026-07-20T12:00:00Z')),
+  nextRunAfter: jest.fn(() => new Date('2026-07-20T12:00:00Z')),
 }));
 
 const {

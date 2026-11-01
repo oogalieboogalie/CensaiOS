@@ -10,7 +10,7 @@
  *   - `language`       — language-stripe accent: { hue, chroma, lightness }.
  *   - `brand`          — platform / infra / generic accent: same shape as
  *                        language.
- *   - `neurodivergent` — full colorway (mood-shaped, source-tagged separately).
+ *   - `calm` — full colorway (mood-shaped, source-tagged separately).
  *                        Brief A4. Round-trips through MOODS via getMoodsView().
  *
  * Brief A5 — surface overrides: mood entries can OPTIONALLY carry a
@@ -26,17 +26,17 @@
 import { MOOD_ENTRIES } from './presetEntries/moods.js';
 import { BRAND_ENTRIES } from './presetEntries/brands.js';
 import { LANGUAGE_ENTRIES } from './presetEntries/languages.js';
-import { NEURODIVERGENT_MOODS } from './presetEntries/neurodivergent.js';
+import { CALM_MOODS } from './presetEntries/calm.js';
 
 export const SOURCES = Object.freeze({
   MOOD: 'mood',
   LANGUAGE: 'language',
   BRAND: 'brand',
-  NEURODIVERGENT: 'neurodivergent',
+  CALM: 'calm',
 });
 
 const VALID_SOURCES = new Set(Object.values(SOURCES));
-const NEURODIVERGENT_IDS = new Set(Object.keys(NEURODIVERGENT_MOODS));
+const CALM_IDS = new Set(Object.keys(CALM_MOODS));
 
 function buildMoodBlock(body) {
   return Object.freeze({
@@ -49,10 +49,10 @@ function buildMoodBlock(body) {
 function buildPresetLibrary() {
   const lib = {};
   for (const [id, body] of Object.entries(MOOD_ENTRIES)) {
-    // Brief A4 — neurodivergent palettes are full colorways (have vars,
+    // Brief A4 — calm palettes are full colorways (have vars,
     // mode, accent) and source-tagged separately so callers can filter or
     // surface them. Round-trips through MOODS via getMoodsView().
-    const source = NEURODIVERGENT_IDS.has(id) ? SOURCES.NEURODIVERGENT : SOURCES.MOOD;
+    const source = CALM_IDS.has(id) ? SOURCES.CALM : SOURCES.MOOD;
     const entry = {
       id,
       label: body.label,
@@ -108,7 +108,7 @@ export function filterBySource(source) {
 
 /**
  * Derive the historical `MOODS[id] = { mode, accent, vars }` view. Includes
- * source in {'mood', 'neurodivergent'} — the brief A4 neurodivergent palettes
+ * source in {'mood', 'calm'} — the brief A4 calm palettes
  * are full colorways (have vars, mode, accent) so they round-trip through the
  * same MOODS shape that downstream callers depend on. Matches the original
  * Theme.jsx MOODS shape exactly so downstream callers
@@ -119,7 +119,7 @@ export function filterBySource(source) {
 export function getMoodsView() {
   const out = {};
   for (const [id, entry] of Object.entries(PRESET_LIBRARY)) {
-    if (entry.source !== SOURCES.MOOD && entry.source !== SOURCES.NEURODIVERGENT) continue;
+    if (entry.source !== SOURCES.MOOD && entry.source !== SOURCES.CALM) continue;
     out[id] = { mode: entry.mood.mode, accent: { ...entry.mood.accent }, vars: { ...entry.mood.vars } };
   }
   return out;
@@ -170,7 +170,7 @@ function assertInvariants() {
         }
       }
     }
-    if (entry.source === SOURCES.MOOD || entry.source === SOURCES.NEURODIVERGENT) {
+    if (entry.source === SOURCES.MOOD || entry.source === SOURCES.CALM) {
       if (!entry.mood || !entry.mood.vars || !entry.mood.accent) {
         throw new Error(`PRESET_LIBRARY invariant: ${entry.source} "${id}" missing required fields`);
       }

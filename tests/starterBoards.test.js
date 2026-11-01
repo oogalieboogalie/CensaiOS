@@ -85,6 +85,8 @@ test('the Agent Team room has all four agents answering in turn', () => {
   }
 });
 
-test('starter boards come first; the Real Estate Team is still there', () => {
-  expect(BOARD_TEMPLATES.map(t => t.id)).toEqual(['developer', 'code-workspace', 'creative-studio', 'agent-team', 'small-business', 'real-estate-team']);
+test('starter boards come first; Notes Workspace and Real Estate Team follow', () => {
+  expect(BOARD_TEMPLATES.map(t => t.id)).toEqual([
+    'developer', 'code-workspace', 'creative-studio', 'agent-team', 'small-business', 'notes-workspace', 'real-estate-team',
+  ]);
 });

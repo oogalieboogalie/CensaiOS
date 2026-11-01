@@ -7,6 +7,7 @@ import {
   blurActiveEditable, buildBandBox, buildPinchStart, buildRectStroke,
   computePinchZoom, consumeSuppression, isInteractivePanTarget, leaveWindows, shouldStartCanvasPan,
 } from './pointerBuilders.js';
+import { isCanvasBackground } from './canvasSelectionSurface.js';
 
 // Re-exported so existing importers keep working after the builders extraction.
 export { shouldStartCanvasPan };
@@ -45,7 +46,7 @@ export function useCanvasPointer({
   const onPointerDown = (e) => {
     // Spec 9: a palm resting on the screen never pans, pinches or draws.
     if (ink.palm.classify(e, 'down') === 'palm') return;
-    const isCanvasBg = e.target === ref.current || e.target.dataset?.canvasBg;
+    const isCanvasBg = isCanvasBackground(e.target, ref.current);
     const isPen = e.pointerType === 'pen';
     const isTouch = e.pointerType === 'touch';
     const isPenEraser = penMode && isPen && (e.button === 5 || e.buttons === 32);
@@ -89,11 +90,10 @@ export function useCanvasPointer({
       e.preventDefault();
       const rect = ref.current.getBoundingClientRect();
       const canvasPt = screenToCanvas(e.clientX, e.clientY, pan.x, pan.y, zoom, rect);
+      // Keep the current multi-selection until a right-drag actually starts so
+      // context-menu delete can still see selectedIds (see canvasSelectionSurface).
       dragRef.current = { id: e.pointerId, x0: canvasPt.x, y0: canvasPt.y, started: false, mode: 'group' };
       try { ref.current.setPointerCapture(e.pointerId); } catch {}
-      onSelect(null);
-      onSelection?.([]);
-      setRegion(null);
     }
 
     if ((e.button === 0 || isPenEraser) && isCanvasBg) ink.setInkSelection([]);
@@ -171,6 +171,11 @@ export function useCanvasPointer({
     }
 
     if (!d.started && distance(canvasPt.x, canvasPt.y, d.x0, d.y0) < 6 / zoom) return;
+    if (!d.started && d.mode === 'group') {
+      onSelect(null);
+      onSelection?.([]);
+      setRegion(null);
+    }
     d.started = true;
     // Text clicks spawn on pointer-up; dragging with the text tool draws nothing.
     if (d.mode === 'text') return;

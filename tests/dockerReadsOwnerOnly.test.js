@@ -42,7 +42,7 @@ function appAs(userId, mountPath = '/api/docker') {
 }
 
 const READS = ['/status', '/containers', '/stats', '/containers/homebase-app-1',
-  '/containers/homebase-app-1/logs?tail=20', '/images', '/volumes', '/networks', '/compose'];
+  '/containers/homebase-app-1/logs?tail=20', '/images', '/images/history?ref=homebase:latest', '/volumes', '/networks', '/compose'];
 
 describe('Docker reads', () => {
   test.each(READS)('a teammate is refused GET %s with the owner-only reason', async (path) => {
@@ -77,9 +77,18 @@ describe("the 'docker' log line", () => {
     expect(logged.filter(([name]) => name === 'docker')).toEqual([]);
   });
 
+  test("reading an image's layers names the image only, never a step's command", async () => {
+    const res = await request(appAs(PAT)).get('/api/docker/images/history?ref=homebase:latest');
+    expect(res.body.layers.map((l) => l.step)).toContain('ENV MADE_UP_TOKEN=made-up-secret-value');
+    const lines = logged.filter(([name]) => name === 'docker');
+    expect(lines.map(([, , msg]) => msg)).toEqual(["read an image's layers"]);
+    expect(JSON.stringify(logged)).not.toMatch(/made-up-secret-value|MADE_UP_TOKEN|npm ci/);
+  });
+
   test('route labels keep only known words', () => {
     expect(dockerRouteLabel('/containers/my-secret-db/stop')).toBe('/containers/:id/:id');
     expect(dockerRouteLabel('/images?ref=x')).toBe('/images');
+    expect(dockerRouteLabel('/images/history?ref=x')).toBe('/images/history');
   });
 });
 

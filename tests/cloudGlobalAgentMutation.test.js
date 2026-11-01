@@ -115,16 +115,48 @@ test('canonical agents are rejected before cloud role authorization', async () =
   expect(upsertAgent).not.toHaveBeenCalled();
 });
 
-test('private-server mode preserves the existing noncanonical mutation path', async () => {
+test.each(['private_server', 'local_desktop'])(
+  'on a computer install (%s) a teammate cannot add, change or retune shared agents',
+  async (mode) => {
+    process.env.CENSAI_MODE = mode;
+    query.mockResolvedValue({ rows: [{ role: 'user' }] });
+    const tries = [
+      request(app()).post('/api/agents').send({ id: 'private-global', name: 'Private Global' }),
+      request(app()).put('/api/agents/private-global').send({ name: 'Changed' }),
+      request(app()).patch('/api/agents/atlas/config').send({ model_name: 'made-up-model' }),
+    ];
+    for (const response of await Promise.all(tries)) {
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe('GLOBAL_AGENT_OWNER_ONLY');
+      expect(response.body.error).toMatch(/Only this computer's owner/);
+    }
+    expect(upsertAgent).not.toHaveBeenCalled();
+  },
+);
+
+test.each(['private_server', 'local_desktop'])(
+  'on a computer install (%s) the owner still adds and retunes shared agents',
+  async (mode) => {
+    process.env.CENSAI_MODE = mode;
+    query.mockResolvedValue({ rows: [{ role: 'admin' }] });
+    const payload = { id: 'private-global', name: 'Private Global' };
+
+    const made = await request(app()).post('/api/agents').send(payload);
+    const tuned = await request(app()).patch('/api/agents/atlas/config').send({ model_name: 'made-up-model' });
+
+    expect(made.status).toBe(200);
+    expect(made.body).toEqual(payload);
+    expect(tuned.status).toBe(200);
+    expect(upsertAgent).toHaveBeenCalledWith(payload);
+  },
+);
+
+test('on a computer install, nobody signed in gets 401', async () => {
   process.env.CENSAI_MODE = 'private_server';
-  const payload = { id: 'private-global', name: 'Private Global' };
+  const response = await request(app({})).post('/api/agents').send({ id: 'private-global', name: 'x' });
 
-  const response = await request(app()).post('/api/agents').send(payload);
-
-  expect(response.status).toBe(200);
-  expect(response.body).toEqual(payload);
-  expect(query).not.toHaveBeenCalled();
-  expect(upsertAgent).toHaveBeenCalledWith(payload);
+  expect(response.status).toBe(401);
+  expect(upsertAgent).not.toHaveBeenCalled();
 });
 
 test('cloud authorization store failures fail closed before mutation', async () => {
@@ -140,4 +172,25 @@ test('cloud authorization store failures fail closed before mutation', async () 
     code: 'GLOBAL_AGENT_AUTHORIZATION_UNAVAILABLE',
   });
   expect(upsertAgent).not.toHaveBeenCalled();
+});
+
+test('the config route follows the same cloud rule, so a member cannot retune a global agent', async () => {
+  const response = await request(app({ userId: 7, userRole: 'admin' }))
+    .patch('/api/agents/atlas/config')
+    .send({ model_name: 'made-up-model' });
+
+  expect(response.status).toBe(403);
+  expect(response.body.code).toBe('GLOBAL_AGENT_MUTATION_DENIED');
+  expect(upsertAgent).not.toHaveBeenCalled();
+});
+
+test('an operator can still retune a global agent through the config route', async () => {
+  query.mockResolvedValueOnce({ rows: [{ role: 'operator' }] });
+
+  const response = await request(app())
+    .patch('/api/agents/atlas/config')
+    .send({ model_name: 'made-up-model' });
+
+  expect(response.status).toBe(200);
+  expect(upsertAgent).toHaveBeenCalledWith({ model_name: 'made-up-model', id: 'atlas' });
 });

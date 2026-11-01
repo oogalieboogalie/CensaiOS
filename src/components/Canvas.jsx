@@ -1,6 +1,6 @@
 import React from 'react';
 import { CanvasWires } from './canvas/CanvasWires.jsx';
-import { CanvasMarks, EmptyState } from './canvas/CanvasEmptyState.jsx';
+import { CanvasMarks, EmptyState, showsWelcome } from './canvas/CanvasEmptyState.jsx';
 import { CanvasDrawingLayer } from './canvas/CanvasDrawingLayer.jsx';
 import { CanvasWindows } from './canvas/CanvasWindowLayers.jsx';
 import { CanvasGroupsLayer, CanvasGroupCards } from './canvas/CanvasGroupsLayer.jsx';
@@ -23,8 +23,8 @@ import { CanvasSelectionOutline } from './canvas/CanvasSelectionOutline.jsx';
 import { CanvasInkActions } from './canvas/CanvasInkActions.jsx';
 import { useLiveInk } from './canvas/useLiveInk.js';
 import { usePointedWindowGlide } from './canvas/usePointedWindowGlide.js';
-import { getWindowBounds } from '../lib/layoutAlgo.js';
-import { isPointInRect, screenToCanvas } from '../lib/canvasMath.js';
+import { resolveMultiSelectContextDelete } from './canvas/canvasSelectionSurface.js';
+import { screenToCanvas } from '../lib/canvasMath.js';
 
 export function Canvas({ wins, mountedWins, activeId, selectedIds = [], workspaceRevision, onUpdate, onClose, onSelect, onSelection, onDeleteSelected, onSpawn, onRubberBand, onRequestNewAgent, onCreateAgent, onWindowMovePreview, onCursorMove, cursors = {}, agentCursors = {}, dockState, pan, zoom, onPanZoom, onFitView, onJumpNearestCluster, canvasGroups = [], onSpawnGroup, onUpdateGroup, onResizeGroup, onCloseGroup, onMoveGroup, onAutoArrangeGroup, onDockWindow, onUndockWindow, onSetGroupSeam, onShowGroupTab, onSaveGroupPreset, onLoadGroupPreset, onDeleteGroupPreset, onSetDefaultGroupPreset, paths = [], setPaths, links = [], onLinkCreate, onLinkDelete, currentProject = null, activeTool, penColor, penSize, penMode = false, groupHotkeySlotById = {}, inkActions = true, pinnedRailOffset = { top: 24,
 left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules, launchpadChipKinds, worldOverlay = null, minimapHidden = false }) {
@@ -50,17 +50,22 @@ left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules
     ref, pan, zoom, onPanZoom, onSelect, onSpawnGroup, wins, onSelection, activeTool, penMode, penColor, penSize,
     paths, setPaths, setRegion, onSpawn, spaceRef, panMode: theme.canvasPanMode,
   });
-  const handleCanvasContextMenu = React.useCallback((event) => {    if (consumeContextMenuSuppression()) return;
-    const isSelectionSurface = event.target.dataset?.canvasBg || event.target.dataset?.canvasContextSurface;
-    if (!isSelectionSurface || selectedIds.length < 2 || !ref.current) return;
-    const selectedBounds = getWindowBounds(wins.filter((win) => selectedIds.includes(win.id)));
-    if (!selectedBounds) return;
-    const point = screenToCanvas(event.clientX, event.clientY, pan.x, pan.y, zoom, ref.current.getBoundingClientRect());
-    if (isPointInRect(point.x, point.y, selectedBounds.x, selectedBounds.y, selectedBounds.w, selectedBounds.h)) {
-      setRegion(null);
-      onDeleteSelected?.(selectedIds);
-    }
-  }, [consumeContextMenuSuppression, onDeleteSelected, pan.x, pan.y, selectedIds, wins, zoom]);
+  const handleCanvasContextMenu = React.useCallback((event) => {
+    if (consumeContextMenuSuppression()) return;
+    const ids = resolveMultiSelectContextDelete({
+      target: event.target,
+      selectedIds,
+      wins,
+      pan,
+      zoom,
+      canvasRect: ref.current?.getBoundingClientRect(),
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
+    if (!ids) return;
+    setRegion(null);
+    onDeleteSelected?.(ids);
+  }, [consumeContextMenuSuppression, onDeleteSelected, pan, selectedIds, wins, zoom]);
   const handleCapture = useCanvasCapture({ ref, region, setRegion, pan, zoom });
   const handlePointerMove = React.useCallback((event) => {
     onPointerMove(event);
@@ -120,6 +125,8 @@ left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules
           onWireEnd={handleWireEnd}
           groupDrag={groupDrag}
         />
+        {showsWelcome({ wins, groups: canvasGroups, paths, busy: Boolean(band || region), activeTool, suppress: suppressEmptyState }) && <EmptyState
+          onSpawn={onSpawn} onTour={onLaunchpadTour} suggestModules={launchpadSuggestModules} chipKinds={launchpadChipKinds} panMode={theme.canvasPanMode} />}
       </>}
       overlayChildren={<>
         <CanvasGroupsLayer
@@ -181,9 +188,6 @@ left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules
         <CanvasGroupCards groups={canvasGroups} wins={wins} />
         <CanvasSelectionOutline wins={wins} selectedIds={selectedIds} zoom={zoom} />
         <CanvasWires wins={wins} dockState={dockState} pan={pan} zoom={zoom} />
-
-        {wins.length === 0 && !band && !region && !suppressEmptyState && <EmptyState
-onSpawn={onSpawn} onTour={onLaunchpadTour} suggestModules={launchpadSuggestModules} chipKinds={launchpadChipKinds} />}
         <CanvasRubberBand band={band} zoom={zoom} />
     </CanvasShell>
 

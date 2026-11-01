@@ -13,6 +13,7 @@ import {
 import { bestEffortUsageSink } from './usageSink.js';
 import { tagRejectedKey } from './missingKey.js';
 import { scopeServerKey } from '../security/serverKeys.js';
+import { useSavedKey } from './savedKey.js';
 import { meterModelCall } from '../aiResources/meter.js';
 import {
   applyModelAccess,
@@ -25,10 +26,15 @@ export const CHAT_COMPLETION_MODEL_KIND = 'chat.completion';
 export { EMBEDDING_MODEL_KIND };
 export { IMAGE_GENERATION_MODEL_KIND };
 
-// A person's agents and workflows follow the same key rule as their chat: on
-// a local install the server's own keys are the owner's (serverKeys.js).
-function forCaller(config, accessContext) {
-  return accessContext?.userId ? scopeServerKey(config, { userId: accessContext.userId }) : config;
+// A person's agents and workflows follow the same key rule as their chat: the
+// key saved in Settings first (savedKey.js), and on a local install the
+// server's own keys are the owner's (serverKeys.js). The cloud picks the key
+// in resolveModelAccess (modelByokAccess.js), so only ungoverned calls look.
+async function forCaller(config, accessContext, access) {
+  const userId = accessContext?.userId;
+  if (!userId) return config;
+  const keyed = access?.governed ? config : await useSavedKey(config, userId);
+  return scopeServerKey(keyed, { userId });
 }
 
 export async function callModel({
@@ -59,7 +65,7 @@ export async function callModel({
     const resolvedConfig = await forCaller(config || resolveEmbeddingModelConfig({
       modelProvider,
       modelName: modelName || body?.model || null,
-    }), accessContext);
+    }), accessContext, access);
     const prepared = applyModelAccess(access, { config: resolvedConfig, body, retry });
 
     return requestEmbedding({
@@ -76,7 +82,7 @@ export async function callModel({
     const resolvedConfig = await forCaller(config || resolveImageGenerationModelConfig({
       modelProvider,
       modelName: modelName || body?.model || null,
-    }), accessContext);
+    }), accessContext, access);
     const prepared = applyModelAccess(access, { config: resolvedConfig, body, retry });
 
     return requestImageGeneration({
@@ -94,7 +100,7 @@ export async function callModel({
   const resolvedConfig = await forCaller(config || resolveChatModelConfig({
     modelProvider,
     modelName: modelName || body?.model || null,
-  }), accessContext);
+  }), accessContext, access);
   const prepared = applyModelAccess(access, { config: resolvedConfig, body, retry });
 
   let result;

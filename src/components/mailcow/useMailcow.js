@@ -2,6 +2,7 @@ import React from 'react';
 import { useMailcowMutations } from './useMailcowMutations.js';
 import { useVisibilityAwareInterval } from '../../lib/usePolling.js';
 import { mailcowErrorText, readMailcowResult } from './mailcowResult.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 const load = (path) => fetch(path).then((res) => readMailcowResult(res, { path }));
 
@@ -28,7 +29,7 @@ export function useMailcow() {
       if (!res.ok) throw new Error(`Health check returned status ${res.status}`);
       setHealth(await res.json());
     } catch (err) {
-      console.error('Mailcow health fetch failed:', err);
+      logFailure('mailcow: could not load health', err, 'mailcow');
       setHealth({ configured: true, ok: false, error: err.message });
     } finally {
       setHealthLoading(false);

@@ -5,6 +5,7 @@
  */
 
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { busyAgents } from './busy.js';
 import { assertRestartable, requestRestart, updateDir } from './index.js';
 
@@ -60,7 +61,7 @@ export async function restartWhenIdle({
       restart({ dir });
       log.info('agents finished: restarting into the update');
     } catch (error) {
-      log.warn(`restart after agents finished failed: ${error?.message || error}`);
+      log.warn('restart after agents finished failed', { code: safeErrorCode(error) });
     }
   };
   pending.timer = setTimeout(look, every);

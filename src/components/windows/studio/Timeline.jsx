@@ -52,7 +52,7 @@ function Ruler({ project, zoom, beats, onSeek, edit }) {
   );
 }
 
-export function Timeline({ studio, audio, zoom, selection, setSelection, onOpenClip, onDropFiles }) {
+export function Timeline({ studio, audio, zoom, selection, setSelection, onOpenClip, onDropFiles, hum }) {
   const { project, edit } = studio;
   const spb = 60 / project.bpm;
   const beats = Math.max(64, Math.ceil((projectEndBeats(project) + 16) / project.beatsPerBar) * project.beatsPerBar);
@@ -102,6 +102,13 @@ export function Timeline({ studio, audio, zoom, selection, setSelection, onOpenC
       <div className="hb-studio-addrow">
         <button type="button" className="hb-studio-chip" onClick={() => edit('addTrack', 'synth')}>Add synth track</button>
         <button type="button" className="hb-studio-chip" onClick={() => edit('addTrack', 'audio')}>Add audio track</button>
+        {hum && (
+          <button type="button" className="hb-studio-chip" data-rec={hum.phase === 'recording' ? 'true' : undefined} disabled={hum.phase === 'listening'}
+            onClick={hum.phase === 'recording' ? hum.stop : hum.start} data-testid="studio-hum"
+            title="Hum or sing a tune into the microphone. The notes become a new synth track at the playhead.">
+            {hum.phase === 'recording' ? `Stop humming (${Math.floor(hum.elapsed)}s)` : hum.phase === 'listening' ? `Finding notes ${Math.round(hum.progress * 100)}%` : 'Hum a melody'}
+          </button>
+        )}
         <span className="hb-studio-hint">Drop audio files anywhere. Double-click a synth lane for a new clip.</span>
       </div>
       <Playhead ticker={audio.ticker} zoom={zoom} />

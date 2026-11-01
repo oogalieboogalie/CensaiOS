@@ -7,7 +7,7 @@ import { Icon } from '../../Icons.jsx';
 export function RouterSlip({ part, sent, onSend }) {
   const notes = part.memory?.notes || [];
   return (
-    <li className="hb-rt-slip" data-testid="router-slip">
+    <li className="hb-rt-slip hb-panel hb-lift" data-testid="router-slip">
       <div className="hb-rt-slip-head">
         <span className="hb-rt-num">{part.index}</span>
         <span className="hb-rt-ask">{part.text}</span>
@@ -15,7 +15,7 @@ export function RouterSlip({ part, sent, onSend }) {
       <div className="hb-rt-tags" aria-label="Tags">
         {part.tags.map((tag) => <code key={tag} className="hb-rt-tag">[{tag}]</code>)}
       </div>
-      <dl className="hb-rt-rows">
+      <dl className="hb-rt-rows hb-well">
         <dt>Agent</dt>
         <dd><b>{part.agent.name}</b> <span className="hb-rt-why">{part.agent.why}</span></dd>
         <dt>Memory</dt>

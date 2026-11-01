@@ -4,6 +4,7 @@
 // never fails the call, and nothing about the prompt or the key is kept.
 
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { keyIdentity } from './keyIdentity.js';
 import { estimateCost } from './prices.js';
 import { recordSpend } from './ledger.js';
@@ -52,6 +53,6 @@ export function meterModelCall({ config, result, attribution, accessContext, all
       consumer: consumerOf(attribution, accessContext, { allowance }),
     });
   } catch (error) {
-    log.warn('could not meter a model call', { error: error?.message || String(error) });
+    log.warn('could not meter a model call', { code: safeErrorCode(error) });
   }
 }

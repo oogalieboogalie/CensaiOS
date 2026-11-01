@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { readIntent, readRequest, slotWord, splitRequest } from '../src/lib/agentRouter/readRequest.js';
-import { buildRoutePlan, busAddress, pickAgent, pickTemplate, routedMessage } from '../src/lib/agentRouter/routePlan.js';
+import { buildRoutePlan, busAddress, pickAgent, pickTemplate, routedMessage, sharedPlan } from '../src/lib/agentRouter/routePlan.js';
 
 const AGENTS = [
   { id: 'censai', name: 'Censai' },
@@ -84,5 +84,33 @@ describe('routing (diagram 03)', () => {
 
   it('routes nothing for an empty request', () => {
     expect(buildRoutePlan('   ').parts).toEqual([]);
+  });
+});
+
+describe('the board copy of a routed plan', () => {
+  it('keeps the parts but leaves out the reader\'s own agent notes', () => {
+    const plan = buildRoutePlan('made-up: write a tip calculator', {
+      agents: [{ id: 'nexus', name: 'Nexus', role: 'builds apps and code' }],
+      workspaceId: 'ws1',
+      memoryFor: () => ['Made-up private note'],
+    });
+    expect(plan.parts[0].message).toContain('Made-up private note');
+    const shared = sharedPlan(plan, 'made-up-stamp');
+    expect(shared.stamp).toBe('made-up-stamp');
+    expect(shared.parts).toHaveLength(plan.parts.length);
+    expect(JSON.stringify(shared)).not.toContain('Made-up private note');
+    expect(shared.parts[0].agent.id).toBe(plan.parts[0].agent.id);
+  });
+
+  it('is nothing when nothing was routed', () => {
+    expect(sharedPlan(null, 'x')).toBeNull();
+  });
+});
+
+describe('a request that is one endless word', () => {
+  it('routes without turning the word into a page-wide tag', () => {
+    const [intent] = readRequest('x'.repeat(20000));
+    expect(intent.tags.every((tag) => tag.length <= 60)).toBe(true);
+    expect(intent.text.length).toBeLessThanOrEqual(2000);
   });
 });

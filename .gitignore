@@ -41,7 +41,9 @@ dist-site
 docs-site/site/
 .docs-venv/
 /desktop-stack-out/
+.laptop-build/
 desktop-app/
 /censai-projects/
 ai-review-*.json
 dist-demo
+.wrangler/

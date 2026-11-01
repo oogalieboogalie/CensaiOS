@@ -4,6 +4,7 @@
 // check, member display names and the "links changed" nudge.
 
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { publishWorkspaceEvent } from '../collaboration/workspaceHub.js';
 import { memberRolesFor } from '../access/policy.js';
 
@@ -15,7 +16,7 @@ export const ID_PATTERN = /^[a-zA-Z0-9._:-]{1,96}$/;
 
 export function sendError(res, error) {
   const status = error.statusCode || 500;
-  if (status >= 500) log.warn('share link request failed', { error: error.message });
+  if (status >= 500) log.warn('share link request failed', { code: safeErrorCode(error) });
   res.status(status).json({
     error: status >= 500 ? 'Something went wrong. Try again.' : error.message,
     ...(error.code ? { code: error.code } : {}),

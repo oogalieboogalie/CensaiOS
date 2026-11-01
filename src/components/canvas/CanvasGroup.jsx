@@ -7,6 +7,7 @@ import { CanvasGroupResizeHandle } from './CanvasGroupResizeHandle.jsx';
 import { CanvasGroupSeams } from './CanvasGroupSeams.jsx';
 import { CanvasGroupTabs } from './CanvasGroupTabs.jsx';
 import { createLogger } from '../../lib/logger.js';
+import { labelPlace, useLabelInside } from './groupLabelPlace.js';
 
 const log = createLogger('group');
 
@@ -33,6 +34,8 @@ export function CanvasGroup({ group, zoom, allWins, allGroups, visible = true, t
   }, [savingPreset]);
   const presets = group.presets || [];
   const showLabel = visible || isEditing || presetMenuOpen || dragging;
+  const groupRef = React.useRef(null);
+  const place = labelPlace(useLabelInside(groupRef, showLabel || hotkeySlot), zoom);
 
   const onPointerDown = (e) => {
     const hitButton = e.target.closest('button');
@@ -81,6 +84,7 @@ export function CanvasGroup({ group, zoom, allWins, allGroups, visible = true, t
 
   return (
     <div
+      ref={groupRef}
       data-group-id={group.id}
       data-group-tiled={tiled ? 'true' : 'false'}
       style={{
@@ -98,8 +102,7 @@ export function CanvasGroup({ group, zoom, allWins, allGroups, visible = true, t
           data-group-slot-badge
           aria-label={`Control group F${hotkeySlot}`}
           style={{
-            position: 'absolute', left: 0, bottom: '100%',
-            transform: `translateY(-6px) scale(${1 / zoom})`, transformOrigin: 'bottom left',
+            position: 'absolute', left: 0, ...place,
             fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', lineHeight: 1.5,
             padding: '0 5px', color: 'var(--ink-faint)', background: 'var(--surface)',
             border: '1px solid var(--hairline)', borderRadius: 'var(--radius-sm)',
@@ -109,7 +112,7 @@ export function CanvasGroup({ group, zoom, allWins, allGroups, visible = true, t
           F{hotkeySlot}
         </span>
       )}
-      {/* Floating label: sits just above the group's top-left corner. */}
+      {/* Floating label: just above the group's top-left corner, or inside it near the top toolbars. */}
       <div
         data-group-label
         onPointerDown={onPointerDown}
@@ -118,8 +121,7 @@ export function CanvasGroup({ group, zoom, allWins, allGroups, visible = true, t
         onPointerCancel={onPointerUp}
         title="Drag to move the group. Double-click the name to rename."
         style={{
-          position: 'absolute', left: 0, bottom: '100%',
-          transform: `translateY(-6px) scale(${1 / zoom})`, transformOrigin: 'bottom left',
+          position: 'absolute', left: 0, ...place,
           display: 'flex', alignItems: 'center', gap: 6,
           height: 28, padding: '0 4px 0 10px',
           pointerEvents: showLabel ? 'auto' : 'none',

@@ -58,6 +58,8 @@ async function startApp(databaseUrl, stand, logDir, children) {
     ZAI_BASE_URL: `http://127.0.0.1:${stand.model.port}/v1`,
     TAVILY_API_BASE: stand.tavily.url,
     FIGMA_API_BASE: stand.figma.url,
+    // Scheduled runs are checked every 5 seconds, so a test that moves a run's time sees it fire.
+    SCHEDULER_POLL_INTERVAL_MS: '5000',
   };
   await step('start the server', async () => {
     const server = startProcess(process.execPath, ['server.js'], { env, logFile: path.join(logDir, 'server.log') });
@@ -177,7 +179,7 @@ async function main() {
     const first = people[themes[0]];
     const workspaceId = await step('Pat shares the board with Sam', () => shareBoard(first.pat.ctx, SAM, WEB));
     const signedOut = await browser.newContext({ viewport: VIEW });
-    const ctx = { ...first, people, themes, signedOut, workspaceId, outRoot, logDir, model, tavily, figma, browser };
+    const ctx = { ...first, people, themes, signedOut, workspaceId, outRoot, logDir, model, tavily, figma, browser, databaseUrl };
     for (const mod of modules) verdicts.push(await runModule(mod, ctx));
   } catch (error) {
     console.log(`test-team: could not start: ${String(error.message).split('\n')[0]}`);

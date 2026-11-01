@@ -9,6 +9,7 @@ export default [
       "dist-landing/",
       "dist-site/",
       "dist-demo/",
+      ".laptop-build/",
       "docs-site/public/",
       "docs-site/site/",
       "node_modules/",
@@ -21,8 +22,7 @@ export default [
       "tools/scaffolder/templates/",
       "public/playground/vendor/",
       "vendor/three-editor/",
-      "docs/legacy/",
-      "fuzz/legacy-src/"
+      "docs/legacy/"
     ],
   },
   js.configs.recommended,
@@ -71,7 +71,6 @@ export default [
       "src/components/terminal/canvasTerminalTheme.js",
       "src/components/windows/imageStudio/constants.js",
       "src/components/excalidraw/**",
-      "src/components/whiteboard/**",
       "src/components/canvas/CanvasState.js",
       "src/components/landing/**",
       "src/components/Landing.jsx",

@@ -1,3 +1,8 @@
+import { createLogger } from './logger.js';
+import { safeErrorCode } from './security/errorCode.js';
+
+const log = createLogger('memory');
+
 const BASE = () => (process.env.QDRANT_URL || 'http://localhost:6333').replace(/\/+$/, '');
 const COLLECTION = 'memories';
 
@@ -35,7 +40,7 @@ async function ensureCollection(dimension) {
     collectionReady = res.ok;
     return res.ok;
   } catch (err) {
-    console.warn('Qdrant unreachable:', err.message);
+    log.warn('qdrant unreachable', { code: safeErrorCode(err) });
     return false;
   }
 }

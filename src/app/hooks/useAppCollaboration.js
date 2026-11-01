@@ -1,14 +1,15 @@
 import React from 'react';
 import { setLivePresenceSenders } from '../../lib/collaboration/liveText.js';
-import { applyAwarenessPresence, mergeGuestPresence } from '../../lib/collaboration/awarenessPresence.js';
+import { applyAwarenessPresence, mergeGuestPresence, presenceIdentity } from '../../lib/collaboration/awarenessPresence.js';
 import { useAwarenessPresence } from './useAwarenessPresence.js';
 import { useCanvasWorkspacePersistence } from './useCanvasWorkspacePersistence.js';
+import { usePresenceNotices } from './usePresenceNotices.js';
 import { useWorkspaceCollaboration } from './useWorkspaceCollaboration.js';
 import { useYjsCanvas } from './useYjsCanvas.js';
 import { emitBoardEvent } from '../../lib/collaboration/boardEvents.js';
 import { DEMO } from '../../lib/demo/demoMode.js';
 
-export function useAppCollaboration({ enabled: wanted, workspaceId, wins, revision, onRevision, activeId, user, selectedIds }) {
+export function useAppCollaboration({ enabled: wanted, workspaceId, wins, revision, onRevision, activeId, user, selectedIds, holdDraft }) {
   // The try-it board has no server to share with, so it stays local.
   const enabled = wanted && !DEMO;
   // The shared Yjs doc is the only source of truth for windows, groups, ink,
@@ -18,7 +19,7 @@ export function useAppCollaboration({ enabled: wanted, workspaceId, wins, revisi
   const yjs = useYjsCanvas({ enabled, workspaceId });
   const crdtLive = yjs.status === 'live';
   const persistence = useCanvasWorkspacePersistence({
-    enabled, revision, onRevision, canvasSource: 'yjs', canvasLive: crdtLive,
+    enabled, revision, onRevision, canvasSource: 'yjs', canvasLive: crdtLive, boardSaves: yjs.boardSaves, holdDraft,
   });
   // Commits from other writers reach the canvas through the shared doc (the
   // server mirrors whole-snapshot writes into it), so only the revision is
@@ -27,10 +28,15 @@ export function useAppCollaboration({ enabled: wanted, workspaceId, wins, revisi
     persistence.acknowledgeRevision(nextRevision);
     return true;
   }, [persistence.acknowledgeRevision]);
-  const presence = useAwarenessPresence({ awareness: yjs.awareness, user, selectedIds });
+  // Both the shared doc and the socket say who is here; the pop-ups count
+  // each person once across the two.
+  const people = usePresenceNotices(presenceIdentity(user).id);
+  const presence = useAwarenessPresence({
+    awareness: yjs.awareness, live: yjs.presenceLive, user, selectedIds, onPeople: people.seeDoc,
+  });
   const socket = useWorkspaceCollaboration({
     enabled, workspaceId, wins, revision, onAuthoritativeCommit, activeId, crdt: crdtLive,
-    onEvent: emitBoardEvent, awarenessPresence: presence.live,
+    onEvent: emitBoardEvent, onPeople: people.seeSocket,
   });
   // Members' presence comes from awareness; guests and spectators (who may
   // not hold the shared doc) still arrive over the collaboration socket, so
@@ -50,18 +56,23 @@ export function useAppCollaboration({ enabled: wanted, workspaceId, wins, revisi
     presence.previewWindowMove(id, position);
     socketMove(id, position);
   }, [presence.previewWindowMove, socketMove]);
+  // Oldest first, so the pop-ups show the newest whichever list it came from.
+  const notices = React.useMemo(
+    () => [...(socket.notices || []), ...people.notices].sort((a, b) => (a.at || 0) - (b.at || 0)).slice(-5),
+    [socket.notices, people.notices],
+  );
   const collaboration = React.useMemo(() => (merged ? {
     ...socket,
     status: 'live',
     participants: merged.participants,
     cursors: merged.cursors,
     agents: merged.agents,
-    notices: [...(socket.notices || []), ...presence.notices].slice(-5),
+    notices,
     displayWins,
     previewWindowMove,
     sendCursor,
     sendTyping,
-  } : socket), [merged, socket, presence.notices, displayWins, previewWindowMove, sendCursor, sendTyping]);
+  } : { ...socket, notices }), [merged, socket, notices, displayWins, previewWindowMove, sendCursor, sendTyping]);
   React.useEffect(() => {
     setLivePresenceSenders({
       sendCursor: collaboration.sendCursor,

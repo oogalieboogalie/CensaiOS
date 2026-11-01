@@ -1,4 +1,5 @@
-// Censai Office windows: Writer (shown under YorWare Suite), Sheets and Slides. Graduated out of
+// Censai Office windows: Writer (shown under YorWare Suite), Sheets, Slides and
+// Local Sites (websites for a small shop). Graduated out of
 // factoryWindows.js to keep that file under its size budget. Pure data.
 
 export const OFFICE_WINDOW_MANIFESTS = [
@@ -34,5 +35,16 @@ export const OFFICE_WINDOW_MANIFESTS = [
     header: { title: 'Slides', icon: 'Monitor' },
     lab: {"title":"Pitch","props":{"title":"Pitch"}},
     moduleMenu: {"show":true,"status":"ready","order":42,"icon":"Monitor","label":"Slides","hint":"Present, export PowerPoint and PDF"},
+  },
+  {
+    kind: 'localSites',
+    canvasType: 'localSites',
+    label: 'Local Sites',
+    componentName: 'LocalSitesWindow',
+    componentPath: 'src/components/windows/localSites/index.jsx',
+    defaultSize: { w: 1080, h: 700 },
+    header: { title: 'Local Sites', icon: 'ShoppingBag' },
+    lab: {"title":"Local Sites","props":{"site":{"preset":"bakery"}}},
+    moduleMenu: {"show":true,"status":"ready","order":43,"icon":"ShoppingBag","label":"Local Sites","hint":"A ready website for a thrift store, tattoo shop or bakery; download the folder and put it online free"},
   },
 ];

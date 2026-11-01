@@ -3,7 +3,7 @@
 
 let people = [];
 let clientIds = [];
-let self = { label: '', canEdit: true };
+let self = { id: '', label: '', canEdit: true };
 const listeners = new Set();
 
 function namesOf(participants) {
@@ -41,11 +41,12 @@ export function getPresentClientIds() {
 }
 
 /**
- * Who this browser is on the board: the display name the server gave it and
- * whether its link may change things (read-only guests can't).
+ * Who this browser is on the board: the account id and display name the
+ * server gave it and whether its link may change things (read-only guests can't).
  */
 export function publishSelf(actor, { canEdit = true } = {}) {
   self = {
+    id: String(actor?.id || '').slice(0, 64),
     label: String(actor?.label || '').replace(/^Member\s+/, '').trim().slice(0, 40),
     canEdit: Boolean(canEdit),
   };

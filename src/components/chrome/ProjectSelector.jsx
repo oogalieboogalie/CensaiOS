@@ -1,5 +1,6 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 export function ProjectSelector({ currentProject, onOpenLocalProject, onClose }) {
   const [openingProject, setOpeningProject] = React.useState(false);
@@ -24,7 +25,7 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
       }
       setProjectsList([...byPath.values()]);
     }).catch(err => {
-      console.error('Failed to load projects:', err);
+      logFailure('projects: could not load projects', err, 'projects', 'error');
     });
   }, []);
 

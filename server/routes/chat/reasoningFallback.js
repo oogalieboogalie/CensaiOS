@@ -8,6 +8,8 @@
  * generated." Follows the precedent in longcatToolCalls.js.
  */
 
+import { BLOCK_SENTENCES } from '../../aiGateway/providerErrorBody.js';
+
 export function withReasoningContentFallback(message) {
   if (!message || message.tool_calls?.length) return message;
   const text = typeof message.content === 'string' ? message.content.trim() : '';
@@ -49,4 +51,20 @@ export function reportEmptyModelResponse(sendEvent, reqModel, choice, msg) {
       detail: { model: reqModel, shape: describeChoiceShape(choice) },
     });
   } catch { /* diagnostics never break the loop */ }
+}
+
+// A reply the model held back (Gemini answers 200 with no text and a finish
+// reason) says why, instead of "No response generated."
+const HELD_BACK = {
+  ...BLOCK_SENTENCES,
+  content_filter: 'Safety filters blocked the reply',
+  length: 'It hit its length limit before writing anything',
+  MAX_TOKENS: 'It hit its length limit before writing anything',
+  MALFORMED_FUNCTION_CALL: 'It wrote a tool call it could not finish',
+};
+
+export function heldBackReplyText(choice) {
+  const reason = choice?.finish_reason || choice?.finishReason;
+  const sentence = typeof reason === 'string' ? HELD_BACK[reason] : null;
+  return sentence ? `The model held back its reply: ${sentence}.` : '';
 }

@@ -66,7 +66,7 @@ export const DESIGN_SYSTEM_MOODS = {
       '--hairline-strong': 'oklch(0.83 0.004 90)',
       '--ink': 'oklch(0.21 0.005 90)',
       '--ink-soft': 'oklch(0.43 0.005 90)',
-      '--ink-faint': 'oklch(0.58 0.005 90)',
+      '--ink-faint': 'oklch(0.54 0.005 90)',
     },
   },
   studio: {

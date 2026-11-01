@@ -1,12 +1,14 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import { requireLocalFilesystem } from '../../middleware/runtimeMode.js';
+import { localFilesystemAllowed, requireLocalFilesystem } from '../../middleware/runtimeMode.js';
 import { requireSystemAdmin } from '../../security/systemAdmin.js';
 import {
   readCurrentProject, validateProjectPath, getDirectoryTree, projectRootContaining,
-  shownPathFor, shownParentFor, folderErrorMessage, isUnseenWindowsFolder,
+  shownPathFor, shownParentFor, folderErrorMessage, isUnseenWindowsFolder, fileReadProblem,
 } from './pathUtils.js';
+import { FILE_PROBLEMS } from '../../../shared/files/fileProblems.js';
+import { safeErrorCode } from '../../security/errorCode.js';
 import { resolveProjectPathForRuntime } from '../../workspaces/shared.js';
 import { createLogger } from '../../logger.js';
 import { walkFiles, RESULT_LIMIT } from './limitedWalk.js';
@@ -18,6 +20,16 @@ function logIfCapped(what, root, capped, started) {
 }
 
 export const browserRouter = express.Router();
+
+/**
+ * requireLocalFilesystem for a file a window opens: its refusal carries the
+ * reason the Document and Code editor say in their own words. Other routes
+ * keep the plain refusal, since their windows read `reason` their own way.
+ */
+function requireLocalFileRead(req, res, next) {
+  if (!localFilesystemAllowed()) return res.status(403).json({ error: FILE_PROBLEMS.filesOff, reason: 'filesOff' });
+  return requireLocalFilesystem(req, res, next);
+}
 
 const IMAGE_MIME_TYPES = {
   '.png': 'image/png',
@@ -88,7 +100,7 @@ browserRouter.get('/files/backlinks', requireLocalFilesystem, async (req, res) =
   }
 });
 
-browserRouter.get('/files/content', requireLocalFilesystem, async (req, res) => {
+browserRouter.get('/files/content', requireLocalFileRead, async (req, res) => {
   const filePath = req.query.path;
   if (!filePath) return res.status(400).json({ error: 'Missing path query parameter' });
   try {
@@ -96,7 +108,9 @@ browserRouter.get('/files/content', requireLocalFilesystem, async (req, res) => 
     const content = await fs.promises.readFile(resolvedPath, 'utf8');
     res.json({ content, path: filePath });
   } catch (err) {
-    res.status(err.message?.startsWith('Access denied') ? 403 : 500).json({ error: err.message });
+    const { status, reason, error } = fileReadProblem(err);
+    if (status === 500) log.warn(`content: a file could not be read (${safeErrorCode(err) || 'no code'})`);
+    res.status(status).json({ error, reason });
   }
 });
 

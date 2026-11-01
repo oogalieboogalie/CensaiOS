@@ -13,6 +13,7 @@
 // Every stage is a step line on the job, and every item change is saved as it happens.
 
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { publicChatError } from '../chatModel/errors.js';
 import { checkAnswer } from './check.js';
 import { closeChecklist, reopenChecklist, tickCount } from './checklist.js';
@@ -39,7 +40,7 @@ async function quietly(work, what, meta) {
   try {
     return await work();
   } catch (error) {
-    log.warn(`${what} failed`, { ...meta, error: error?.message });
+    log.warn(`${what} failed`, { ...meta, code: safeErrorCode(error) });
     return null;
   }
 }
@@ -106,7 +107,7 @@ export async function runJob({ entry, plan, job, earlier = [], deps, save, censa
       });
     } catch (error) {
       alive();
-      log.warn('agent turn failed', { ...meta, attempt, code: error?.code, error: error?.message });
+      log.warn('agent turn failed', { ...meta, attempt, code: safeErrorCode(error) });
       // Nothing of this try was checked, so no earlier tick stands either.
       reopenChecklist(job);
       closeChecklist(job, `${name} did not finish`);

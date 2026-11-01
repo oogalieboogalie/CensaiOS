@@ -4,6 +4,7 @@ import { sendMessageWithMeta } from '../../lib/chat.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { needsKey } from '../../lib/chat/keyNeeded.js';
 import { handoffsFromTools } from '../../lib/censai/handoffs.js';
+import { useFamilyReplyThreads } from './useFamilyReplyThreads.js';
 
 const STORAGE_KEY = 'homebase.messenger.v1';
 
@@ -39,6 +40,18 @@ export function useMessengerThreads({ initialId = null, onReply = null } = {}) {
   const agents = React.useMemo(() => getAgents(), []);
   const active = agents.find((a) => a.id === activeId) || null;
   const msgs = activeId ? threads[activeId] || [] : [];
+
+  // A family reply lands in that agent's thread even when another chat is open.
+  useFamilyReplyThreads({
+    agentIds: agents.map((agent) => agent.id),
+    workspaceId,
+    threads,
+    onReply: (id, notice) => setThreads((t) => {
+      const thread = t[id] || [];
+      if (thread.some((message) => message.familyReplyWakeId === notice.familyReplyWakeId)) return t;
+      return { ...t, [id]: [...thread, notice] };
+    }),
+  });
 
   React.useEffect(() => {
     try {

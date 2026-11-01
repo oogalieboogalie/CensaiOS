@@ -13,6 +13,7 @@ import { transactCanvasDoc } from '../collab/liveDoc.js';
 import { docToSnapshot, valueFromY, valueToY } from '../collab/seedFromSnapshot.js';
 import { CANVAS_ROOT } from '../collab/ySchema.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 
 const log = createLogger('real-estate');
 const MAX_LIST_ITEMS = 200;
@@ -35,7 +36,7 @@ export async function readBoardWindows(db, workspaceId, { live = transactCanvasD
   try {
     await live(workspaceId, (doc) => { liveWindows = docToSnapshot(doc).wins; });
   } catch (error) {
-    log.warn('live board read failed', { workspaceId, error: error.message });
+    log.warn('live board read failed', { workspaceId, code: safeErrorCode(error) });
   }
   if (Array.isArray(liveWindows) && liveWindows.length) return liveWindows;
   return readSnapshotWindows(db, workspaceId);
@@ -85,7 +86,7 @@ export async function appendToTemplateWindow(db, { workspaceId, role, field, ite
   try {
     await live(workspaceId, (doc) => { liveId = appendInDoc(doc, role, field, item, owner); });
   } catch (error) {
-    log.warn('live board append failed', { workspaceId, role, error: error.message });
+    log.warn('live board append failed', { workspaceId, role, code: safeErrorCode(error) });
   }
 
   const client = await db.connect();

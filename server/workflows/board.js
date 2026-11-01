@@ -8,6 +8,7 @@
 import { randomUUID } from 'crypto';
 import * as Y from 'yjs';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { openCanvasDocReader, transactCanvasDoc } from '../collab/liveDoc.js';
 import { upsertWindowInDoc } from '../collab/serverWriter.js';
 import { valueToY } from '../collab/seedFromSnapshot.js';
@@ -26,7 +27,7 @@ export async function readBoardWindows(workspaceId) {
     reader = await openCanvasDocReader(workspaceId);
     return reader ? readDocWindows(reader.doc) : null;
   } catch (error) {
-    log.warn('board not readable', { workspaceId, error: error.message });
+    log.warn('board not readable', { workspaceId, code: safeErrorCode(error) });
     return null;
   } finally {
     try { await reader?.close(); } catch { /* already closed */ }
@@ -50,7 +51,7 @@ export async function patchWorkflowWindow(workspaceId, windowId, patch) {
     });
     return found;
   } catch (error) {
-    log.warn('workflow window not updated', { workspaceId, windowId, error: error.message });
+    log.warn('workflow window not updated', { workspaceId, windowId, code: safeErrorCode(error) });
     return false;
   }
 }
@@ -102,7 +103,7 @@ export async function placeResultCard(workspaceId, input) {
   try {
     await transactCanvasDoc(workspaceId, (doc) => { card = placeResultCardInDoc(doc, input); });
   } catch (error) {
-    log.warn('result card not placed', { workspaceId, error: error.message });
+    log.warn('result card not placed', { workspaceId, code: safeErrorCode(error) });
   }
   return card;
 }

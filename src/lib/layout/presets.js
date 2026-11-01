@@ -9,10 +9,11 @@ import {
 // menu so a group always offers the same familiar shapes; the count-specific
 // ones below are extras for that exact window count.
 export const COMMON_PRESETS = Object.freeze([
-  Object.freeze({ id: 'COLUMNS', label: 'Side by side', preview: 'columns' }),
-  Object.freeze({ id: 'ROWS', label: 'Stacked', preview: 'rows' }),
-  Object.freeze({ id: 'GRID', label: 'Grid', preview: 'quad' }),
-  Object.freeze({ id: 'MAIN_SIDEBAR', label: 'Main + sidebar', preview: 'rightStack' }),
+  Object.freeze({ id: 'COLUMNS', label: 'Side by side', preview: 'columns', description: 'Equal columns, one per window' }),
+  Object.freeze({ id: 'ROWS', label: 'Stacked', preview: 'rows', description: 'Equal rows, one under the other' }),
+  Object.freeze({ id: 'GRID', label: 'Grid', preview: 'quad', description: 'Rows and columns of equal windows' }),
+  Object.freeze({ id: 'MAIN_SIDEBAR', label: 'Main + sidebar', preview: 'rightStack', description: 'One big window, the rest small on the right' }),
+  Object.freeze({ id: 'MAIN_TOP', label: 'Big on top', preview: 'mainTop', description: 'One big window, the rest small underneath', min: 3 }),
 ]);
 
 // Count-specific extras. Shapes the common set already covers (left/right
@@ -36,7 +37,7 @@ export function getBuiltInPresets(windowsOrCount) {
   const count = Array.isArray(windowsOrCount) ? windowsOrCount.length : windowsOrCount;
   if (!(count >= 2)) return [];
   const extras = count >= 6 ? SIX_PLUS : (COUNT_PRESETS[count] || []);
-  return [SEMANTIC_PRESET, ...COMMON_PRESETS, ...extras];
+  return [SEMANTIC_PRESET, ...COMMON_PRESETS.filter((p) => !(p.min > count)), ...extras];
 }
 
 const leaf = (windowId) => ({ type: 'leaf', windowId });
@@ -62,14 +63,24 @@ function gridLayout(ids) {
   return equalSplitNodes(rows, 'horizontal');
 }
 
-// Biggest window keeps the main slot (it is usually the one you work in);
-// the rest stack down a sidebar on the right.
-function mainSidebarLayout(windows, ids) {
+// Biggest window keeps the main slot (it is usually the one you work in).
+function mainFirst(windows, ids) {
   const area = (w) => (typeof w === 'object' && Number.isFinite(w.w) && Number.isFinite(w.h) ? w.w * w.h : 0);
   const byId = new Map(windows.map((w) => [w.id || w, w]));
   const mainId = ids.reduce((best, id) => (area(byId.get(id)) > area(byId.get(best)) ? id : best), ids[0]);
-  const rest = ids.filter((id) => id !== mainId);
+  return [mainId, ids.filter((id) => id !== mainId)];
+}
+
+// The main window on the left; the rest stack down a sidebar on the right.
+function mainSidebarLayout(windows, ids) {
+  const [mainId, rest] = mainFirst(windows, ids);
   return { type: 'split', axis: 'vertical', ratio: 0.667, first: leaf(mainId), second: equalSplit(rest, 'horizontal') };
+}
+
+// The main window across the top; the rest side by side underneath.
+function mainTopLayout(windows, ids) {
+  const [mainId, rest] = mainFirst(windows, ids);
+  return { type: 'split', axis: 'horizontal', ratio: 0.62, first: leaf(mainId), second: equalSplit(rest, 'vertical') };
 }
 
 export function applyPreset(presetId, windows) {
@@ -86,6 +97,7 @@ export function applyPreset(presetId, windows) {
   if (presetId === 'ROWS') return equalSplit(ids, 'horizontal');
   if (presetId === 'GRID') return gridLayout(ids);
   if (presetId === 'MAIN_SIDEBAR') return mainSidebarLayout(windows, ids);
+  if (presetId === 'MAIN_TOP') return mainTopLayout(windows, ids);
 
   // N=2
   if (presetId === 'SPLIT_LR' && ids.length >= 2) {

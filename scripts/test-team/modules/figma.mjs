@@ -76,13 +76,20 @@ export default {
     await check('walk', 'Pat connects a Figma token', async ({ shot }) => {
       figmaId = await spawnWindow(pat.page, 'figma', { figmaMode: 'import' }, { x: 560, y: 40 }, { w: 620, h: 640 });
       frame = windowFrame(pat.page, figmaId);
-      await frame.getByLabel('Figma personal access token').fill(STANDIN_FIGMA_TOKEN);
-      await frame.getByRole('button', { name: 'Connect Figma' }).click();
-      await frame.getByLabel('Figma file link').waitFor({ timeout: 10_000 });
+      const tokenBox = frame.getByLabel('Figma personal access token');
+      const fileBox = frame.getByLabel('Figma file link');
+      await tokenBox.or(fileBox).first().waitFor({ timeout: 15_000 });
+      // A run in a second theme finds Pat already connected from the first.
+      const already = !(await tokenBox.count());
+      if (!already) {
+        await tokenBox.fill(STANDIN_FIGMA_TOKEN);
+        await frame.getByRole('button', { name: 'Connect Figma' }).click();
+      }
+      await fileBox.waitFor({ timeout: 10_000 });
       await shot(pat.page, 'pat-connects-figma');
       const status = await t.api(pat, 'GET', '/api/design/figma/status');
       if (!status.body?.connected) throw new Error(`Figma does not show as connected (${status.text.slice(0, 80)})`);
-      return `connected as ${status.body.user} with Pat's own token`;
+      return `${already ? 'still ' : ''}connected as ${status.body.user} with Pat's own token`;
     });
 
     await check('walk', 'Pat imports the Hero frame from a Figma file', async ({ shot }) => {

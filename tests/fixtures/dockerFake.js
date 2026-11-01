@@ -48,6 +48,15 @@ const IMAGES = [
   ['7f0a3b6c9d99', '<none>', '<none>', '9 days ago', '1.19GB'],
 ];
 
+// `docker image history`, newest step first. One step sets a made-up token,
+// the kind of thing a layer can hold that must never reach a log.
+const IMAGE_HISTORY = [
+  ['sha256:aa11', '2 hours ago', '/bin/sh -c #(nop)  CMD ["node" "server.js"]', '0B'],
+  ['sha256:bb22', '2 hours ago', '/bin/sh -c npm ci --omit=dev', '412MB'],
+  ['<missing>', '2 hours ago', '/bin/sh -c #(nop)  ENV MADE_UP_TOKEN=made-up-secret-value', '0B'],
+  ['<missing>', '3 weeks ago', '/bin/sh -c #(nop) ADD file:made-up in / ', '7.8MB'],
+];
+
 // Live mode (the CLI wrapper) adds a request line every few seconds up to the
 // real clock, so the window's follow/pause and level filters have new lines
 // to show. Tests stay on the fixed clock above.
@@ -184,6 +193,12 @@ export function createFakeDocker({ daemon = 'up', state, live = false } = {}) {
       }
       case 'images': return ok(lines(st.images.map(([ID, Repository, Tag, CreatedSince, Size]) => ({ ID, Repository, Tag, CreatedSince, Size, CreatedAt: '2026-10-01 10:00:00 +0000 UTC' }))));
       case 'image': {
+        if (rest[0] === 'history' || rest[0] === 'inspect') {
+          const img = st.images.find((i) => `${i[1]}:${i[2]}` === target || i[0] === target || (i[2] === 'latest' && i[1] === target));
+          if (!img) return fail(`Error response from daemon: No such image: ${target}`);
+          if (rest[0] === 'inspect') return ok(JSON.stringify([{ Id: `sha256:${img[0]}`, RepoTags: [`${img[1]}:${img[2]}`], Created: '2026-10-01T10:00:00.000000000Z', Os: 'linux', Architecture: 'amd64', Size: 1_210_000_000 }]));
+          return ok(lines(IMAGE_HISTORY.map(([ID, CreatedSince, CreatedBy, Size]) => ({ ID, CreatedSince, CreatedAt: '2026-10-01T10:00:00Z', CreatedBy, Size, Comment: '' }))));
+        }
         if (rest[0] === 'prune') { st.images = st.images.filter((i) => i[1] !== '<none>'); return ok('Deleted Images:\nsha256:7f0a3b6c9d99\n\nTotal reclaimed space: 1.19GB\n'); }
         const before = st.images.length;
         st.images = st.images.filter((i) => `${i[1]}:${i[2]}` !== target && i[0] !== target);

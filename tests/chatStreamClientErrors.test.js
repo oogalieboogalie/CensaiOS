@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import { sendMessageWithMeta } from '../src/lib/chat.js';
+import { pendingAppLog } from '../src/lib/appLog/browserLog.js';
 
 function ndjsonTextResponse(text) {
   const encoder = new TextEncoder();
@@ -64,14 +65,14 @@ test('rejects a truncated stream without a terminal result or error', async () =
 });
 
 test('rejects a malformed terminal event as an incomplete stream', async () => {
-  const parseLog = jest.spyOn(console, 'error').mockImplementation(() => {});
   global.fetch = jest.fn().mockResolvedValue(ndjsonTextResponse(
     '{"type":"status","status":"thinking"}\n{"type":"result"'
   ));
 
   await expect(sendMessageWithMeta('atlas', [{ from: 'me', text: 'hello' }]))
     .rejects.toMatchObject({ code: 'CHAT_STREAM_INCOMPLETE' });
-  expect(parseLog).toHaveBeenCalledWith(
-    'Failed to parse streaming line:', expect.any(SyntaxError), '{"type":"result"'
-  );
+  // The bad line goes to the app log as one fixed line with the error kind, never the line itself.
+  const line = pendingAppLog().find((e) => e.message === 'chat: could not read a streamed line');
+  expect(line).toMatchObject({ where: 'chat', detail: 'SyntaxError' });
+  expect(JSON.stringify(pendingAppLog())).not.toContain('"type":"result"');
 });

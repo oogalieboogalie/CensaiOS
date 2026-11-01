@@ -8,7 +8,6 @@ import { api } from '../../lib/api.js';
 // Newer browser draft from an unfinished save: offered back via a
 // non-blocking bar, never a fullscreen gate. Applying it re-runs the
 // same allow-list + gating path as boot so the canvas stays consistent.
-// Extracted from AppContent.jsx with no logic changes.
 export function useWorkspaceDraft({
   workspaceLoad,
   windowAllowList,
@@ -30,6 +29,7 @@ export function useWorkspaceDraft({
   const [draftDismissed, setDraftDismissed] = React.useState(false);
   React.useEffect(() => { setDraftDismissed(false); }, [workspaceLoad]);
   const pendingDraft = !draftDismissed && workspaceLoad.status === 'draft_required' ? workspaceLoad.draft : null;
+  const board = workspaceLoad.workspaceId || workspaceLoad.draft?.value?.workspaceId;
 
   const restoreDraft = React.useCallback(() => {
     const value = workspaceLoad.draft?.value;
@@ -37,27 +37,30 @@ export function useWorkspaceDraft({
     const migrated = migrateWorkspace(value || {});
     const { wins: gatedWins, windowAllowList: appliedAllowList } = applyAllowListToInitial(migrated, windowAllowList);
     setWindowAllowList(appliedAllowList);
-    setWins(withoutUnsupportedWindows(gatedWins));
-    setCanvasGroups(migrated.canvasGroups || []);
-    setPaths(migrated.paths || []);
-    setLinks(migrated.links || []);
+    // A draft of settings alone leaves the board as everyone has it now.
+    if (workspaceLoad.draft.board !== false) {
+      setWins(withoutUnsupportedWindows(gatedWins));
+      setCanvasGroups(migrated.canvasGroups || []);
+      setPaths(migrated.paths || []);
+      setLinks(migrated.links || []);
+      setDock(migrated.dock || { visible: false, groupOverrides: {} });
+    }
     if (migrated.penColor) setPenColor(migrated.penColor);
     if (migrated.penSize) setPenSize(migrated.penSize);
     setPenMode(Boolean(migrated.penMode));
     setDockOffset(migrated.dockOffset || 0);
-    setDock(migrated.dock || { visible: false, groupOverrides: {} });
     setGroups(migrated.groups || DEFAULT_GROUPS);
     setFocusMode(migrated.focusMode || false);
     setExtraAgents(migrated.extraAgents || []);
     setSidebarFavorites(migrated.sidebarFavorites || []);
-    clearWorkspaceDraft();
+    clearWorkspaceDraft(board);
     setDraftDismissed(true);
-  }, [workspaceLoad, windowAllowList, setWindowAllowList, setWins, setCanvasGroups, setPaths, setLinks, setPenColor, setPenSize, setPenMode, setDockOffset, setDock, setGroups, setFocusMode, setExtraAgents, setSidebarFavorites]);
+  }, [workspaceLoad, board, windowAllowList, setWindowAllowList, setWins, setCanvasGroups, setPaths, setLinks, setPenColor, setPenSize, setPenMode, setDockOffset, setDock, setGroups, setFocusMode, setExtraAgents, setSidebarFavorites]);
 
   const discardDraft = React.useCallback(() => {
-    clearWorkspaceDraft();
+    clearWorkspaceDraft(board);
     setDraftDismissed(true);
-  }, []);
+  }, [board]);
 
   const downloadDraft = React.useCallback(() => {
     if (pendingDraft?.value) api.downloadWorkspaceSnapshot(pendingDraft.value, 'draft');

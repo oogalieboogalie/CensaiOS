@@ -2,10 +2,11 @@
 import React from 'react';
 import { Icon } from '../../Icons.jsx';
 import { SNAPS } from '../../../lib/studio/project.js';
+import { KEY_NAMES, SCALE_NAMES } from '../../../lib/studio/musicKey.js';
 import { useTick } from './ticker.js';
 
-// Transport bar: play, stop, record, the position readout, tempo, metronome,
-// loop, snap and zoom.
+// Transport bar: play, stop, record, the position readout, tempo, key and
+// scale, metronome, loop, snap and zoom.
 
 export function formatPosition(beat, beatsPerBar) {
   const b = Math.max(0, beat);
@@ -53,6 +54,19 @@ export function Transport({ project, ticker, playing, recording, onPlay, onStop,
       <div className="hb-studio-group">
         <Tempo bpm={project.bpm} onChange={bpm => edit('set', { bpm })} />
         <span className="hb-studio-sig" title="Beats per bar">{project.beatsPerBar}/4</span>
+      </div>
+      <div className="hb-studio-group" title="The song's key. With Key lock on, new and hummed notes land on its scale.">
+        <label className="hb-studio-field">
+          <span>Key</span>
+          <select className="hb-studio-select" value={project.key} onChange={e => edit('set', { key: Number(e.target.value) })} aria-label="Key">
+            {KEY_NAMES.map((k, i) => <option key={k} value={i}>{k}</option>)}
+          </select>
+          <select className="hb-studio-select" value={project.scale} onChange={e => edit('set', { scale: e.target.value })} aria-label="Scale">
+            {SCALE_NAMES.map(s => <option key={s} value={s}>{s === 'major' ? 'Major' : 'Minor'}</option>)}
+          </select>
+        </label>
+        <button type="button" className="hb-studio-chip" aria-pressed={project.scaleLock} onClick={() => edit('set', { scaleLock: !project.scaleLock })}
+          data-testid="studio-key-lock">Key lock</button>
       </div>
       <div className="hb-studio-group">
         <button type="button" className="hb-studio-chip" aria-pressed={project.metronome} onClick={() => edit('set', { metronome: !project.metronome })} title="Metronome (K)">Click</button>

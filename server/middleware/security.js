@@ -8,6 +8,10 @@
 
 import { getRuntimeMode, RUNTIME_MODES } from './runtimeMode.js';
 import { isJestRun } from '../security/testShortcut.js';
+import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
+
+const log = createLogger('security');
 
 const SWEEP_MS = 5 * 60 * 1000;
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -49,7 +53,7 @@ export function createRateLimiter({
 
       let key = null;
       try { key = keyFor(req); } catch (err) {
-        console.warn(`[security:${label}] key generation failed:`, err?.message);
+        log.warn('rate limit key failed', { limiter: label, code: safeErrorCode(err) });
       }
 
       if (key === null || key === undefined || key === '') {
@@ -79,7 +83,7 @@ export function createRateLimiter({
       rec.count += 1;
       return next();
     } catch (err) {
-      console.error(`[security:${label}] unexpected failure:`, err);
+      log.error('rate limiter failed', { limiter: label, code: safeErrorCode(err) });
       if (failClosed) return res.status(503).json({ error: 'Service unavailable. Try again shortly.' });
       return next();
     }

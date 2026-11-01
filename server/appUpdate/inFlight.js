@@ -10,6 +10,7 @@ import path from 'path';
 import { getGitHubClient } from '../routes/github/client.js';
 import { selfRepo } from '../selfFix/patches.js';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { busyAgents } from './busy.js';
 
 const log = createLogger('app-update');
@@ -52,7 +53,7 @@ export async function workInFlight({ slug = repoSlug(), listPulls = openPulls, a
       github = 'ok';
     } catch (error) {
       github = 'unavailable';
-      log.warn(`could not list open changes on ${slug.owner}/${slug.repo}: ${error?.message || error}`);
+      log.warn('could not list open changes', { code: safeErrorCode(error) });
     }
   }
   const working = await agents().catch(() => []);

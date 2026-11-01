@@ -4,7 +4,7 @@ import { WorkspaceSection } from './ThemeWorkspaceSection.jsx';
 import { WorkspaceSharingSection } from './WorkspaceSharingSection.jsx';
 import { VaultSection } from './VaultSection.jsx';
 import { KeySharingSection } from './KeySharingSection.jsx';
-import { OpenAnywhereSection } from './OpenAnywhereSection.jsx';
+import { OpenAnywhereSection } from './openAnywhereLazy.js';
 import { MarketplaceWindow } from '../MarketplaceWindow.jsx';
 import { YorSecurityCard } from '../yorware/YorSecurity.jsx';
 import { TrustModeSection } from './TrustModeSection.jsx';
@@ -80,7 +80,9 @@ export function SettingsTabContent({
   if (tab === 'anywhere') {
     return (
       <div style={scrollStyle}>
-        <OpenAnywhereSection />
+        <React.Suspense fallback={<p style={{ margin: 0, color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>Loading...</p>}>
+          <OpenAnywhereSection />
+        </React.Suspense>
         <YorSecurityCard />
       </div>
     );

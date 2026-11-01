@@ -85,3 +85,16 @@ export function buildRoutePlan(text, { agents = [], blueprints = [], workspaceId
   });
   return { line, request: String(text || '').trim(), agentsOnLine: agents.length, parts };
 }
+
+/**
+ * The board's copy of a routed plan. Memory notes are the router's reader's
+ * own (their agent facts), so teammates get the parts without them.
+ */
+export function sharedPlan(plan, stamp) {
+  if (!plan) return null;
+  const parts = (plan.parts || []).map((part) => {
+    const bare = { ...part, memory: { slot: part.memory?.slot, notes: [] } };
+    return { ...bare, message: routedMessage(bare) };
+  });
+  return { ...plan, parts, stamp };
+}

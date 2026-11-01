@@ -87,14 +87,20 @@ export function OllamaNodeWindow({ win, onUpdate }) {
       />
       <div className="hb-chat" data-chat-root>
         {unreachable ? (
-          <div className="hb-chat-empty" style={{ padding: 'var(--pad-4)' }}>
-            <div className="hb-chat-empty-name">Ollama is not reachable</div>
-            <div className="hb-chat-empty-blurb">
-              Ollama not reachable{baseUrl ? ` at ${baseUrl}` : ''}. Start Ollama
-              (`ollama serve`) and pull a model (`ollama pull llama3`), then retry.
+          <div className="hb-empty">
+            <div className="hb-empty-icon"><Icon.Bot size={22} /></div>
+            <div className="hb-empty-title">Ollama isn&apos;t running yet</div>
+            <p className="hb-empty-text">
+              Ollama runs AI models on this computer, with no cloud key. Open the Ollama app
+              (or run <code className="hb-code">ollama serve</code>), get a model with
+              {' '}<code className="hb-code">ollama pull llama3</code>, then check again.
+            </p>
+            {(baseUrl || loadError.includes(' ')) && (
+              <div className="hb-empty-detail">{[baseUrl && `Looked for Ollama at ${baseUrl}`, loadError.includes(' ') && loadError].filter(Boolean).join(' · ')}</div>
+            )}
+            <div className="hb-empty-actions">
+              <button type="button" className="hb-text-btn hb-press" data-primary="true" onClick={loadModels}>Check again</button>
             </div>
-            {loadError && <div className="hb-chat-empty-model" style={{ color: 'var(--danger)' }}>{loadError}</div>}
-            <div><button type="button" className="hb-text-btn" data-primary="true" onClick={loadModels}>Retry</button></div>
           </div>
         ) : (
           <>

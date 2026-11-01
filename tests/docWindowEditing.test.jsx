@@ -16,7 +16,7 @@ test('View exits document editing without the textarea blur reopening it', async
   render(<DocWindow
     win={{
       id: 'proof-doc', kind: 'doc', fileName: 'Proof.md',
-      text: '# Multiplayer proof', isEditing: true, annotations: [],
+      text: '# Multiplayer proof', isEditing: true, annotations: [], showComments: true,
     }}
     onUpdate={onUpdate}
     onSpawn={jest.fn()}
@@ -45,7 +45,7 @@ test('remote typing locks the editor read-only with an explanation', async () =>
   render(<DocWindow
     win={{
       id: 'proof-doc', kind: 'doc', fileName: 'Proof.md',
-      text: '# Multiplayer proof', isEditing: true, annotations: [],
+      text: '# Multiplayer proof', isEditing: true, annotations: [], showComments: true,
       typingActor: { label: 'Member 8 typing…' },
     }}
     onUpdate={onUpdate}
@@ -70,7 +70,7 @@ test('Source filter shows raw code instead of rendered markdown', async () => {
   }));
   const winProps = {
     id: 'code-doc', kind: 'doc', fileName: 'app.js',
-    text: '# not a heading\nconst a = 1;', annotations: [],
+    text: '# not a heading\nconst a = 1;', annotations: [], showComments: true,
   };
   const { container, rerender } = render(<DocWindow
     win={winProps}

@@ -59,3 +59,30 @@ export function windowAt(point, wins = []) {
   }
   return null;
 }
+
+// Where the full map sits on screen (styles/minimap.css): 14px from the left
+// and 52px up from the bottom, around the picture 8px padding, a 24px head and
+// a 1px border.
+const SCREEN_LEFT = 14;
+const SCREEN_BOTTOM = 52;
+const FRAME_W = 18;
+const FRAME_H = 40;
+
+/** The full map's box on screen, for a map picture `w` by `h`; `shownW` is its measured width, head included. */
+export function mapScreenBox(w, h, screen, shownW = 0) {
+  return { x: SCREEN_LEFT, y: screen.h - SCREEN_BOTTOM - (h + FRAME_H), w: Math.max(w + FRAME_W, shownW), h: h + FRAME_H };
+}
+
+/** A board window's box on screen at this pan and zoom. */
+export function onScreen(rect, pan, zoom) {
+  const z = zoom || 1;
+  return { x: rect.x * z + pan.x, y: rect.y * z + pan.y, w: rect.w * z, h: rect.h * z };
+}
+
+/** True when any of these board windows sits under `box` on screen. */
+export function underBox(box, wins, pan, zoom) {
+  return wins.some((win) => {
+    const r = onScreen(win, pan, zoom);
+    return r.x < box.x + box.w && r.x + r.w > box.x && r.y < box.y + box.h && r.y + r.h > box.y;
+  });
+}

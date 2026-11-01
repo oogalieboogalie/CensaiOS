@@ -27,6 +27,10 @@ export function TrustModeSection() {
         <p style={muted}>
           Still never automatic: sending a message or email to another person, spending money, and signing. Agents never sign.
         </p>
+        <p style={muted} data-testid="trust-mode-files">
+          Trust mode only skips the OK click. It does not give an agent new tools or files. For files, open a project from the top bar
+          (only that project's files can be opened), and for Censai's family agents also equip Project Reader or Project Writer in the ExoSkeleton window.
+        </p>
       </ThemePanelCard>
       <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 8 }}>
         <div style={{ fontWeight: 650 }}>One agent at a time</div>

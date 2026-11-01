@@ -17,11 +17,14 @@ export function useCliTask(taskId) {
   const [error, setError] = React.useState(null);
   const revRef = React.useRef(0);
   const editRevRef = React.useRef(-1);
+  const idRef = React.useRef(taskId);
+  idRef.current = taskId; // replies for a task the view has left are dropped
 
   const loadChanges = React.useCallback(async () => {
     if (!taskId) return;
     try {
       const data = await cliAgentsApi.changes(taskId);
+      if (idRef.current !== taskId) return;
       setChanges({ ...data, loaded: true });
     } catch { /* keep the last good diff */ }
   }, [taskId]);
@@ -30,6 +33,7 @@ export function useCliTask(taskId) {
     if (!taskId) return null;
     try {
       const data = await cliAgentsApi.task(taskId, revRef.current);
+      if (idRef.current !== taskId) return null;
       revRef.current = data.rev;
       setTask(data.task);
       setPermissions(data.permissions || []);
@@ -48,6 +52,7 @@ export function useCliTask(taskId) {
       setError(null);
       return data.task;
     } catch (err) {
+      if (idRef.current !== taskId) return null;
       setError(err.status === 404 ? 'This task no longer exists.' : err.message);
       return null;
     }

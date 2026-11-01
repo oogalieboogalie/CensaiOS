@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { memberMessages, resolveGroupChatMembers, subAgentGroupPrompt } from '../server/routes/chat/groupChatMembers.js';
+import { GROUP_RULES, groupTurnMessages, resolveGroupChatMembers } from '../server/routes/chat/groupChatMembers.js';
 import { buildSubAgentSystemPrompt } from '../server/routes/chat/prompts.js';
 import { pickRoleWindow } from '../server/realEstate/boardWrites.js';
 import { buildAgentTeamBoard, AGENT_TEAM_AGENTS } from '../server/templates/starters/agentTeam.js';
@@ -26,14 +26,16 @@ describe('group chat with a board\'s own agents (Agent Team room)', () => {
       .rejects.toMatchObject({ statusCode: 400 });
   });
 
-  test('each agent sees the others by name, and its own lines as its own', () => {
-    const [lead, critic] = [LEAD, CRITIC].map(sub => ({ agentId: sub.id, name: sub.name, systemPrompt: subAgentGroupPrompt(sub) }));
+  test('each agent sees the others by name, its own lines as its own, and may use its tools', () => {
+    const [lead, critic] = [LEAD, CRITIC].map(sub => ({ agentId: sub.id, name: sub.name }));
     const names = { [LEAD.id]: 'Lead', [CRITIC.id]: 'Critic' };
     const convo = [{ from: 'me', text: 'Plan a launch page' }, { from: LEAD.id, text: 'Researcher, find three competitors.' }];
-    const seen = memberMessages(critic, convo, names);
-    expect(seen[0].role).toBe('system');
-    expect(seen[2]).toEqual({ role: 'user', content: '[Lead]: Researcher, find three competitors.' });
-    expect(memberMessages(lead, convo, names)[2]).toEqual({ role: 'assistant', content: 'Researcher, find three competitors.' });
+    const seen = groupTurnMessages(critic, convo, names);
+    expect(seen[0]).toEqual({ from: 'system', text: GROUP_RULES });
+    expect(GROUP_RULES).not.toMatch(/cannot use tools/);
+    expect(GROUP_RULES).toMatch(/search the web/);
+    expect(seen[2]).toEqual({ from: 'Lead', text: 'Researcher, find three competitors.' });
+    expect(groupTurnMessages(lead, convo, names)[2]).toEqual({ from: LEAD.id, text: 'Researcher, find three competitors.' });
   });
 });
 
@@ -41,6 +43,16 @@ test('one-on-one chat with a starter agent uses the job it was given', async () 
   const prompt = await buildSubAgentSystemPrompt({ ...LEAD, permission: 'worker', parent_id: 'censai' });
   expect(prompt).toContain('Hand the first step to the Researcher.');
   expect(prompt).not.toMatch(/Ask your parent to recreate you/);
+});
+
+test('the team room agents carry the tools their jobs need', () => {
+  const tools = Object.fromEntries(AGENT_TEAM_AGENTS.map(a => [a.key, a.tools]));
+  expect(tools.researcher).toEqual(expect.arrayContaining(['web_search', 'web_extract', 'project_read']));
+  expect(tools.builder).toEqual(expect.arrayContaining(['project_write', 'project_edit', 'canvas_append_window']));
+  for (const key of ['lead', 'critic']) {
+    expect(tools[key]).toEqual(expect.arrayContaining(['project_read', 'canvas_append_window', 'post_team_chat']));
+    expect(tools[key]).not.toContain('project_write');
+  }
 });
 
 test('post_team_chat lands in the agent\'s own Team Chat when two starters share a board', () => {

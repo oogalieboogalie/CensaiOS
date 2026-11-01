@@ -15,6 +15,7 @@
 
 import { randomUUID } from 'crypto';
 import { createLogger } from '../logger.js';
+import { safeErrorCode } from '../security/errorCode.js';
 import { openCanvasDocReader } from '../collab/liveDoc.js';
 import { localFilesystemAllowed } from '../middleware/runtimeMode.js';
 import { assertSystemAdmin } from '../security/systemAdmin.js';
@@ -50,7 +51,7 @@ async function boardWindows(workspaceId) {
     reader = await openCanvasDocReader(workspaceId);
     return reader ? readDocWindows(reader.doc) : [];
   } catch (error) {
-    log.warn('board unavailable', { workspaceId, error: error.message });
+    log.warn('board unavailable', { workspaceId, code: safeErrorCode(error) });
     return [];
   } finally {
     try { await reader?.close(); } catch { /* already closed */ }

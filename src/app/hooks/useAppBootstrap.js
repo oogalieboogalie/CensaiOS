@@ -74,17 +74,10 @@ export function useAppBootstrap() {
         if (cancelled) return;
         setWorkspaceLoad(loaded);
         noteBoardLoad(loaded, { requestedId: requestedWorkspaceId(), user: currentSess.user });
-        if (loaded.status === 'draft_required') {
-          // A newer browser draft exists, but the server copy is intact and
-          // usable: boot straight into it and let the UI offer the draft
-          // back non-blockingly. The canvas never waits on this choice.
-          setWorkspaceRevision(loaded.revision);
-          const migrated = migrateWorkspace(loaded.value || {});
-          setInitial(migrated);
-          setCurrentProject(resolveWorkspaceProject(loaded.value, project));
-          return;
-        }
-        if (loaded.status !== 'ready') return;
+        // With an unsaved browser draft (draft_required) the server copy is
+        // still intact and usable: boot straight into it, the same as any
+        // load, and let the UI offer the draft back non-blockingly.
+        if (loaded.status !== 'ready' && loaded.status !== 'draft_required') return;
         const res = loaded.value;
         setWorkspaceRevision(loaded.revision);
         if (res?.extraAgents?.length) {

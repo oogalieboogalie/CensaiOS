@@ -3,6 +3,7 @@ import { api } from '../../lib/api.js';
 import { getAgentById, updateAgent } from '../../lib/agentStore.js';
 import { AGENT_SYSTEMS } from '../Agents.jsx';
 import { supportedProvider, defaultModelForProvider, defaultToolsForAgent } from './AgentData.js';
+import { logFailure } from '../../lib/appLog/browserLog.js';
 
 export function useAgentWindow(win, onUpdate) {
   const agent = getAgentById(win.agentId);
@@ -69,7 +70,7 @@ export function useAgentWindow(win, onUpdate) {
       setSaveStatus(`${agent.name} saved with ${draftTools.length} tools.`);
       setEditing(false);
     } catch (e) {
-      console.error('Failed to save agent to backend', e);
+      logFailure('agent: could not save the agent', e, 'agent', 'error');
       setSaveStatus(`Save failed: ${e.message}`);
     }
   };

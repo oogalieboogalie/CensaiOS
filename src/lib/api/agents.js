@@ -1,4 +1,5 @@
 import { apiLog } from './storage.js';
+import { logFailure } from '../appLog/browserLog.js';
 
 /**
    * Fetches all available agents from the database.
@@ -10,7 +11,7 @@ export async function getAgents() {
       if (!res.ok) throw new Error('Failed to fetch agents');
       return await res.json();
     } catch (e) {
-      console.error('Failed to get agents from backend', e);
+      logFailure('agents: could not load agents', e, 'agents', 'error');
       return [];
     }
   }

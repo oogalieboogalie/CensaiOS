@@ -13,6 +13,106 @@ and each Sunday that list becomes the next numbered stable release.
 The Releases page of this repository has each release's notes and container
 tags.
 
+## 0.6.0 (2026-11-01)
+
+### New
+
+- Calendar shows the month without Google
+- Vault notes opens on your own empty vault
+- UI team nightly: Image window gets a guiding empty state
+- @grok sign-in: say to check the code x.ai already fills in
+- Empty board: the welcome always sits in full view
+- Tag @grok in GitHub issues and pull requests
+- Team room agents use their tools; starter boards can open project files
+- Document: ready to type, one click edits, comments tucked away
+- Test team: Model Arena for two people
+- Agent Company: seats belong to an account, and a shared upgrade is paid once
+- Window groups: add the "Big on top" layout and prove each layout on two screens
+- Slides: two people typing on one slide keep both people's words
+- Test team: Inbox for two people, each sees only their own
+- Git Diff Viewer keeps its editor open while typing; test team for two
+- Run dev tells a teammate plainly that only the owner can start it; Local Sites test for two
+- Test team: AI resources for two people
+- The Market says plainly what it does not do yet
+- On a computer install, only the computer's owner changes the shared agents
+- Test team: two people in one Chat window; the agent config route follows the cloud rule
+- Test team: Message Router for two, and the routed parts shared on the board
+- Test team: two people write in one Doc; Doc notes carry the writer's name
+- Test team: only the computer's owner can open a Terminal
+- Test team: shared links, with guests trying every door they should not have
+- UI team nightly: Code Editor gets readable line numbers and a status bar
+- Board rows reach agents as quoted notes, not orders
+- Runner runs as a normal user, not root
+- Test team: the Figma check works in a second theme too
+- Write down every way into the runner and test the lock-down
+- Runner says plainly when the compose plugin is missing
+- Agent Console and Action Approvals: no stale task lines or trust claims
+- Runner gate refuses every docker prune verb
+- Agent Registry socket sends a code word, never error text
+- Studio: key and scale, hum into a track, stems, and an ask-your-model box
+- Test team: a grouped chat keeps its size on the normal board too
+- Settings: load the pairing QR code only when Open anywhere opens (Grok trial P3)
+- 3D Viewer: a print check before saving STL (Grok trial P2)
+- Gemini takes Atlas's tool list, and a held-back reply says why
+- Design Block: real depth and buttons that answer the pointer (Grok trial P1)
+- Agent list, a friends list for agents with presence and what each is doing
+- Local Sites window, ready websites for a thrift store, tattoo shop or bakery
+- Every AI call uses the key saved in Settings first
+- Body-parser 2.4.0 and undici 8.12.3 so the public dependency audit passes
+- Retry Claude once when it breaks off mid-reply
+- Sync the PC's Oct 25 local commits to master
+- Bigger lot, 32 high, turning 3D view, sample builds
+- Starter Box: install censaiOS on MX Linux and 4 GB ThinkPads
+- Add Notes Workspace Obsidian+Finder board preset
+- Blueprints: the UI team recipe as a ready-made blueprint
+- Dompurify 3.4.17: clears the critical advisory that fails the public Security check
+- Docker runner gate: close the outside security review's gaps
+- Test team: Sheets for two people
+- Test team: Sketchpad for two, and keep a label typed right after drawing
+- Music Player: a teammate's song opens the player on every board (item 141)
+- UI team nightly: Message Router gets depth and a guiding empty state
+- The last server log lines keep a code, and a guard keeps it that way (item 140)
+- Agent and worker log lines keep an error code, not the error text (item 139)
+- Server route log lines keep an error code, not the error text (item 138)
+- Board-sharing and start-up log lines keep an error code, not the error text (item 137)
+- UI team: mark every module window against a yardstick, shared depth system, Docker/MLOps/Ollama reworked
+- The last browser console lines reach the app log
+- Landing page: demo people always on the board, plus live visitor cursors
+- Raw console lines can only go down
+- The next browser console lines reach the app log
+- The last raw server console lines reach the app log
+- Sign-in, session and security failures reach the app log
+- Tools: agent tool failures go to the app log, without the error text
+- App shell: move board start-up and selection out of AppContent.jsx
+- Chat: move the tool-call round out of chatExecution.js
+- Test team: Docker check covers images, volumes, networks and Compose
+- Docker window: see what an image is made of
+- Test team: two people edit the board at the same moment (item 124)
+- Keep a group's name clear of the top toolbars (item 123)
+- Remove dead copies nothing uses (item 121)
+
+### Fixed
+
+- A file that will not open says why in plain words
+- One "joined" pop-up per person; reloads and drops stay quiet
+- Reloading no longer shows a false "unsaved changes" bar
+- Board map stays out of the way of your windows
+- Document: comments stay on their words when the text around them changes
+- Document follow-up: comments open on click, teammates' new docs stay readable, Add finds Document
+- Step cards: a removed card stays removed; switching cards keeps the open step
+- Research: questions asked at once both stay; saved pages are quoted
+- Doc notes stay inside their sentence and land on the right words
+- Multi-select right-click deletes all selected windows
+- Test team: Scheduler and To-dos for two, and three fixes it found
+- Test team: the Market for two, and two listing slips fixed
+- Marketplace: Agents tab points to the Agent Registry instead of an empty list
+- Two people typing the same words in a note no longer scramble
+- MCP: stop logging launch arguments, server output and tool arguments
+
+### Behind the scenes
+
+- Keep the owner's story and health out of the public copy
+
 ## 0.5.0 (2026-10-25)
 
 ### New

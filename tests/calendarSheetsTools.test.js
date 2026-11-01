@@ -42,7 +42,8 @@ const { default: pool } = await import('../server/db.js');
 const {
   getOAuthClient,
   getCalendarEventsInternal,
-  addCalendarEventInternal
+  addCalendarEventInternal,
+  NOT_CONNECTED,
 } = await import('../server/calendar.js');
 const {
   readSheetsInternal,
@@ -138,7 +139,8 @@ describe('Google Calendar & Sheets backend integrations and tools', () => {
         start: '2026-06-16T10:00:00Z',
         end: '2026-06-16T11:00:00Z',
         link: 'https://calendar.google.com/event1',
-        color: '#33B679' // colorId 2 mapped
+        color: '#33B679', // colorId 2 mapped
+        source: 'google',
       });
     });
   });
@@ -245,18 +247,18 @@ describe('Google Calendar & Sheets backend integrations and tools', () => {
   });
 
   describe('handleCalendarTool', () => {
-    test('read_calendar invokes getCalendarEventsInternal and returns JSON string', async () => {
-      pool.query.mockResolvedValue({
-        rows: [{ access_token: 'tok' }]
-      });
+    test('read_calendar returns your own events and Google ones together, earliest first', async () => {
+      pool.query.mockImplementation(async (sql) => (String(sql).includes('own_calendar_events')
+        ? { rows: [{ id: 4, title: 'Made-up dentist', notes: '', starts_at: '2026-06-16T14:00:00Z', ends_at: '2026-06-16T15:00:00Z' }] }
+        : { rows: [{ access_token: 'tok' }] }));
 
       mockList.mockResolvedValue({
-        data: { items: [] }
+        data: { items: [{ id: 'g-1', summary: 'Made-up stand-up', start: { dateTime: '2026-06-16T09:00:00Z' }, end: { dateTime: '2026-06-16T09:15:00Z' } }] }
       });
 
       const resultStr = await handleCalendarTool('agent-1', 'read_calendar', {}, { userId: 'user-123' });
       const resultObj = JSON.parse(resultStr);
-      expect(Array.isArray(resultObj)).toBe(true);
+      expect(resultObj.map((ev) => [ev.title, ev.source])).toEqual([['Made-up stand-up', 'google'], ['Made-up dentist', 'own']]);
     });
 
     test('add_calendar_event invokes addCalendarEventInternal', async () => {
@@ -277,6 +279,41 @@ describe('Google Calendar & Sheets backend integrations and tools', () => {
       const resultObj = JSON.parse(resultStr);
       expect(resultObj.ok).toBe(true);
       expect(resultObj.eventId).toBe('ev-999');
+    });
+  });
+
+  describe('handleCalendarTool without Google', () => {
+    const own = { id: 12, title: 'Made-up dentist', notes: '', starts_at: '2026-06-16T15:00:00Z', ends_at: '2026-06-16T16:00:00Z' };
+    const dentist = { title: 'Made-up dentist', start: '2026-06-16T15:00:00Z', end: '2026-06-16T16:00:00Z' };
+    // No Google sign-in is saved; the own calendar answers its own queries.
+    const ownOnly = async (sql) => {
+      if (String(sql).startsWith('SELECT COUNT(*)')) return { rows: [{ n: 0 }] };
+      if (String(sql).includes('own_calendar_events')) return { rows: [own] };
+      return { rows: [] };
+    };
+
+    test('add_calendar_event puts the event on your own calendar', async () => {
+      pool.query.mockImplementation(ownOnly);
+      const result = JSON.parse(await handleCalendarTool('agent-1', 'add_calendar_event', dentist, { userId: 'user-123' }));
+      expect(result).toEqual({ ok: true, calendar: 'own', eventId: 12 });
+      expect(mockInsert).not.toHaveBeenCalled();
+      const insert = pool.query.mock.calls.find(([sql]) => String(sql).startsWith('INSERT INTO own_calendar_events'));
+      expect(insert[1].slice(0, 2)).toEqual(['user-123', 'Made-up dentist']);
+    });
+
+    test('read_calendar shows your own events', async () => {
+      pool.query.mockImplementation(ownOnly);
+      const events = JSON.parse(await handleCalendarTool('agent-1', 'read_calendar', {}, { userId: 'user-123' }));
+      expect(events).toEqual([{ id: 12, title: 'Made-up dentist', description: '', start: '2026-06-16T15:00:00.000Z', end: '2026-06-16T16:00:00.000Z', source: 'own' }]);
+      expect(mockList).not.toHaveBeenCalled();
+    });
+
+    test('with no database either, it still says Google is not connected', async () => {
+      setDbReady(false);
+      pool.query.mockImplementation(ownOnly);
+      await expect(handleCalendarTool('agent-1', 'add_calendar_event', dentist, { userId: 'user-123' })).rejects.toThrow(NOT_CONNECTED);
+      await expect(handleCalendarTool('agent-1', 'read_calendar', {}, { userId: 'user-123' })).rejects.toThrow(NOT_CONNECTED);
+      expect(pool.query).not.toHaveBeenCalled();
     });
   });
 

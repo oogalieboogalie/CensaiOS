@@ -1,6 +1,7 @@
 import React from 'react';
 import { GenIcon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
+import { logFailure } from '../lib/appLog/browserLog.js';
 
 export function GenImageWindow({ win, onUpdate }) {
   // A request in flight never survives a reload, so a fresh or restored window
@@ -33,7 +34,7 @@ export function GenImageWindow({ win, onUpdate }) {
       setGeneratedImage(data.image);
       onUpdate({ cooked: true, generatedImage: data.image });
     } catch (err) {
-      console.error(err);
+      logFailure('gen-image: could not make the image', err, 'gen-image', 'error');
       setError(err.message);
       onUpdate({ cooked: true });
     } finally {

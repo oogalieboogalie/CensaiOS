@@ -7,6 +7,7 @@ import { useDevServer } from './devServer/useDevServer.js';
 import { PHASE_COPY, folderName } from './devServer/devServerApi.js';
 import './docker/docker.css';
 import { autoStartIsMine } from '../lib/chat/agentPointer.js';
+import { useComputerOwnerAnswer } from './docker/useComputerOwner.js';
 
 /**
  * Run dev: pick a project folder, press one button, and its dev server runs
@@ -22,7 +23,10 @@ export function DevServerWindow({ win, onUpdate, onSpawn, currentProject }) {
   // The window's project menu (header) can move it to another folder.
   useEffect(() => { if (win.folder) setFolder(win.folder); }, [win.folder]);
   const setName = useCallback((devName) => onUpdate({ devName }), [onUpdate]);
-  const dev = useDevServer({ name: win.devName || null, onName: setName });
+  // Starting and stopping is the computer owner's (the server refuses anyone
+  // else); a teammate watches the same window and reads one plain sentence.
+  const owner = useComputerOwnerAnswer();
+  const dev = useDevServer({ name: win.devName || null, onName: setName, canChange: owner === true });
   const { engine, status } = dev;
   const phase = status?.phase || (win.devName ? 'preparing' : null);
   const copy = phase ? PHASE_COPY[phase] : null;
@@ -38,11 +42,11 @@ export function DevServerWindow({ win, onUpdate, onSpawn, currentProject }) {
 
   // Opened from Project files (or by an agent for this person): start straight away.
   useEffect(() => {
-    if (win.autoStart && autoStartIsMine(win) && engine.checked && !engine.error && !win.devName && folder.trim()) {
+    if (owner === true && win.autoStart && autoStartIsMine(win) && engine.checked && !engine.error && !win.devName && folder.trim()) {
       onUpdate({ autoStart: false });
       run();
     }
-  }, [win.autoStart, engine.checked, engine.error, win.devName, folder, onUpdate, run]);
+  }, [owner, win.autoStart, engine.checked, engine.error, win.devName, folder, onUpdate, run]);
 
   // The first time this run answers, show the site in a Browser window.
   const openBrowser = useCallback(() => {
@@ -57,6 +61,7 @@ export function DevServerWindow({ win, onUpdate, onSpawn, currentProject }) {
   }, [url, win.devName, win.openedFor, onUpdate, openBrowser]);
 
   const title = folderName(win.folder || folder);
+  const ownerOnly = <p className="rd-note" data-testid="run-dev-owner-only">Only this computer&apos;s owner can start or stop Run dev. You can watch it here.</p>;
   const showLogs = win.devName && ['installing', 'ready', 'exited'].includes(phase);
 
   return (
@@ -73,6 +78,7 @@ export function DevServerWindow({ win, onUpdate, onSpawn, currentProject }) {
                 ? 'censaiOS is not allowed to use Docker on this computer yet. That needs a one-time Docker setup change on the PC; once it is made, Run dev works here with no other steps.'
                 : 'Run dev needs Docker Desktop running on this computer. The laptop install has no Docker, so use Run dev on the PC.'}
             </p>
+            {owner === false && ownerOnly}
           </>
         ) : (
           <>
@@ -103,7 +109,7 @@ export function DevServerWindow({ win, onUpdate, onSpawn, currentProject }) {
                 </div>
               </details>
               <div className="rd-actions">
-                {live ? (
+                {owner === false ? ownerOnly : owner === null ? null : live ? (
                   <IconButton icon={<DIcon.Stop size={12} />} label="Stop and remove the container" tone="danger" className="dk-btn--quiet" onClick={dev.stop} busy={dev.busy}>Stop</IconButton>
                 ) : (
                   <button type="submit" className="dk-btn dk-btn--primary rd-run" disabled={dev.busy || !engine.checked}>

@@ -3,7 +3,7 @@
 // network. Every dependency is passed in (Tavily client, embedder, model
 // completer, store), so tests run it against stand-ins.
 
-import { chunkText, citationContext, rankChunks } from './retrieve.js';
+import { chunkText, citationContext, rankChunks, SOURCES_RULE } from './retrieve.js';
 import { safeEmbed } from './embedder.js';
 import { chunkAndTag, fileText, tagText } from './ingest.js';
 
@@ -146,7 +146,7 @@ export async function askResearch(scope, question, deps) {
   const { text, sources } = citationContext(hits);
   try {
     const answer = await deps.complete([
-      { role: 'system', content: 'You answer questions using only the numbered sources given. Cite inline as [1], [2]. Be concise and plain. If the sources do not answer it, say what is missing.' },
+      { role: 'system', content: `You answer questions using only the numbered sources given. Cite inline as [1], [2]. Be concise and plain. If the sources do not answer it, say what is missing. ${SOURCES_RULE}` },
       { role: 'user', content: `Sources:\n\n${text}\n\nQuestion: ${q}` },
     ], { maxTokens: 700, temperature: 0.2 });
     if (answer.trim()) return { answer: answer.trim(), sources, usedWeb };
