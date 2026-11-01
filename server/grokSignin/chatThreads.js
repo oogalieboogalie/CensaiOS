@@ -8,7 +8,9 @@
 //
 // Per chat: the conversation to pick up, and which of the chat's messages it
 // has been handed, as fingerprints (never the words), so a person's next
-// message hands their Grok only what was said meanwhile.
+// message hands their Grok only what was said meanwhile. A teammate's message
+// comes with their name (src/lib/chat/grokSignin.js), so Grok is handed it as
+// theirs, and its fingerprint counts who wrote it.
 
 import fs from 'fs';
 import path from 'path';
@@ -31,10 +33,23 @@ export function chatKey(chat) {
   return name ? hash(`chat\n${name}`).slice(0, 32) : null;
 }
 
-/** Who said a message (the person or Grok) and its words, as a fingerprint. */
+/**
+ * The teammate who wrote a person's message, as one short line, or '' for
+ * the person's own (and for one from before chats kept who wrote what).
+ * A name that reads like the chat's own labels is just "A teammate".
+ */
+export function writerOf(message) {
+  if (message?.from !== 'me' || typeof message.by !== 'string' || !message.by) return '';
+  const name = message.by.replace(/[\p{Cc}\s]+/gu, ' ').trim().slice(0, 40).trim();
+  return !name || /^(me|you|now)$/i.test(name) ? 'A teammate' : name;
+}
+
+/** Who said a message (the person, a teammate by name, or Grok) and its words, as a fingerprint. */
 export function fingerprint(message) {
   const from = message?.from === 'me' ? 'me' : 'agent';
-  return hash(`${from}\n${String(message?.text ?? '').slice(0, TEXT_LIMIT).trim()}`).slice(0, 24);
+  const by = writerOf(message);
+  const text = String(message?.text ?? '').slice(0, TEXT_LIMIT).trim();
+  return hash(by ? `me by\n${by}\n${text}` : `${from}\n${text}`).slice(0, 24);
 }
 
 function fileOf(userId, env) {

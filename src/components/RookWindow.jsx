@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
+import { SHIPPED_DEFAULT_CHAT_MODEL } from '../../shared/models/defaultChatModel.js';
 
 export function RookWindow({ win, onUpdate }) {
   // Authentication belongs to the local OpenClaw gateway, never in source or
@@ -88,7 +89,7 @@ export function RookWindow({ win, onUpdate }) {
             </div>
             <div style={{ background: 'color-mix(in oklab, var(--ink) 2%, transparent)', padding: '10px 12px', borderRadius: 'var(--radius-lg)', border: '1px solid color-mix(in oklab, var(--ink) 4%, transparent)', gridColumn: 'span 2' }}>
               <div style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-faint)', marginBottom: '4px' }}>Primary Model</div>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: '500', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>minimax-m2.5:cloud</div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: '500', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{SHIPPED_DEFAULT_CHAT_MODEL}</div>
             </div>
           </div>
 

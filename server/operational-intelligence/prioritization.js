@@ -1,4 +1,5 @@
 import { fetchChatCompletion } from '../chatModel/completion.js';
+import { resolveChatModelConfig } from '../aiGateway/providers.js';
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 
@@ -29,10 +30,12 @@ Return a JSON array of scores corresponding to the input order.
 Example: [0.9, 0.1, 0.5]
 `;
 
-    const response = await fetchChatCompletion({
+    // The owner's chat model setting (AI_MODEL), never a hard-coded name.
+    const { baseUrl, apiKey, model } = resolveChatModelConfig();
+    const response = await fetchChatCompletion(baseUrl, apiKey, {
       messages: [{ role: 'system', content: prompt }],
       temperature: 0,
-      model: 'minimax-m2.5:cloud'
+      model,
     });
 
     const scores = JSON.parse(response.choices[0].message.content.match(/\[.*\]/s)[0]);

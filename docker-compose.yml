@@ -123,7 +123,7 @@ services:
       # names, so the AI_* lines `npm run dev` reads never leak in here).
       AI_BASE_URL: ${CENSAI_DOCKER_AI_BASE_URL:-http://host.docker.internal:11434/v1}
       AI_API_KEY: ${CENSAI_DOCKER_AI_API_KEY:-ollama}
-      AI_MODEL: ${CENSAI_DOCKER_AI_MODEL:-minimax-m2.5:cloud}
+      AI_MODEL: ${CENSAI_DOCKER_AI_MODEL:-}
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-}
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://host.docker.internal:11434/v1}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}

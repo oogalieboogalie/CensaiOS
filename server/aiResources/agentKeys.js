@@ -33,8 +33,8 @@ export function agentKeyRoute(agent, held, { serverKeysOk, fallback = null, defa
 }
 
 async function defaultModel(userId) {
-  const baseUrl = resolveChatModelConfig().baseUrl;
-  const borrowed = await borrowKeyedModel({ userId, baseUrl }).catch(() => null);
+  const { baseUrl, model } = resolveChatModelConfig();
+  const borrowed = await borrowKeyedModel({ userId, baseUrl, model }).catch(() => null);
   // Only which provider and model; the borrowed key itself is dropped here.
   return { fallback: borrowed ? { provider: borrowed.provider, model: borrowed.model } : null, defaultLocal: isLocalBaseUrl(baseUrl) };
 }

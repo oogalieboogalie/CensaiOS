@@ -23,7 +23,6 @@ export function WindowImporterWindow() {
   const [jsx, setJsx]             = useState('');
   const [css, setCss]             = useState('');
   const [hint, setHint]           = useState('');
-  const [addLauncher, setAddLauncher] = useState(true);
   const [result, setResult]       = useState(null);       // server response
   const [error, setError]         = useState(null);
   const [activeTab, setActiveTab] = useState('jsx');      // 'jsx' | 'css' | 'options'
@@ -36,14 +35,7 @@ export function WindowImporterWindow() {
     setResult(null);
 
     try {
-      const body = {
-        rawJsx: jsx,
-        rawCss: css,
-        hint,
-        ...(addLauncher ? {
-          launcher: { show: true, order: 200, icon: 'Tools', hint: '' },
-        } : {}),
-      };
+      const body = { rawJsx: jsx, rawCss: css, hint };
 
       const res = await fetch('/api/windows/import', {
         method: 'POST',
@@ -81,7 +73,7 @@ export function WindowImporterWindow() {
         <WindowTitle
           icon={<Icon.ImportTray size={14} />}
           label="Window importer"
-          subtitle="Paste AI Studio output and it lands on your canvas"
+          subtitle="Turn AI Studio code into a censaiOS window"
         />
 
         <div className="wi-tabs">
@@ -135,14 +127,9 @@ export function WindowImporterWindow() {
                 id="wi-hint-input"
               />
 
-              <label className="wi-opt-toggle" id="wi-launcher-toggle">
-                <input
-                  type="checkbox"
-                  checked={addLauncher}
-                  onChange={e => setAddLauncher(e.target.checked)}
-                />
-                <span>Add to canvas launcher tiles</span>
-              </label>
+              <p className="wi-opt-note" id="wi-where-it-goes">
+                The new window stays out of Add until someone checks it and publishes it in the code.
+              </p>
             </div>
           )}
         </div>

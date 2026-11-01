@@ -1,3 +1,5 @@
+import { SHIPPED_DEFAULT_CHAT_MODEL } from '../../shared/models/defaultChatModel.js';
+
 // Single source of truth for agent model options.
 // Idea 2026-09-04: AgentData.js and agentDesigner/modelConfig.js both hardcoded
 // MODEL_OPTIONS and drifted. Both editors now import from here.
@@ -14,7 +16,7 @@ export const MODEL_OPTIONS = {
     { value: 'command-r7b-12-2024', label: 'Command R7B' },
   ],
   ollama: [
-    { value: 'minimax-m2.5:cloud', label: 'minimax-m2.5:cloud' },
+    { value: SHIPPED_DEFAULT_CHAT_MODEL, label: SHIPPED_DEFAULT_CHAT_MODEL },
     { value: 'qwen3-coder:latest', label: 'qwen3-coder:latest' },
     { value: 'qwen2.5-coder:latest', label: 'qwen2.5-coder:latest' },
     { value: 'llama3.1:8b', label: 'llama3.1:8b' },

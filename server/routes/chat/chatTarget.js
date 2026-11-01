@@ -56,7 +56,7 @@ export async function resolveChatTarget({ agentId, userId = null, workspaceId = 
 
   // Same as chat: with no local model answering, a keyed model stands in.
   let baseUrl = config.baseUrl;
-  const borrowed = personalKey ? null : await borrowKeyedModel({ userId, baseUrl });
+  const borrowed = personalKey ? null : await borrowKeyedModel({ userId, baseUrl, model });
   if (borrowed) ({ provider, model, baseUrl, apiKey } = borrowed);
   if (borrowed) personalKey = true;
 

@@ -8,7 +8,7 @@ import { buildAgentEnv } from '../cli-agents/env.js';
 import { agentHome } from '../cli-agents/paths.js';
 import { personalHomeDir, personalSignedIn } from '../cli-agents/personalHome.js';
 import { safeErrorCode } from '../security/errorCode.js';
-import { chatKey, fingerprint, readChatThread, saveChatThread } from './chatThreads.js';
+import { chatKey, fingerprint, readChatThread, saveChatThread, writerOf } from './chatThreads.js';
 
 /**
  * The Grok chat on "Use my Grok sign-in": one chat turn through xAI's own
@@ -44,13 +44,15 @@ export function grokChatArgs({ prompt, sessionId = null }) {
 /**
  * The message, with the chat's messages this person's Grok has not been
  * handed yet: the chat so far on their first message (say, from the key or
- * from a teammate), and what was said meanwhile on a later one.
+ * from a teammate), and what was said meanwhile on a later one. The person's
+ * own messages are "Me", a teammate's go by the teammate's name, and Grok's
+ * answers are "You".
  */
 export function grokPrompt(text, history = [], heading = 'Earlier in this chat') {
   const earlier = history
     .filter((m) => m && typeof m.text === 'string' && m.text.trim())
     .slice(-12)
-    .map((m) => `${m.from === 'me' ? 'Me' : 'You'}: ${m.text.trim()}`)
+    .map((m) => `${m.from === 'me' ? writerOf(m) || 'Me' : 'You'}: ${m.text.trim()}`)
     .join('\n\n');
   const prompt = earlier ? `${heading}:\n\n${earlier}\n\nNow:\n${text}` : text;
   return prompt.length > MAX_PROMPT_CHARS ? prompt.slice(-MAX_PROMPT_CHARS) : prompt;
@@ -64,6 +66,19 @@ export function grokReadiness(userId, env = process.env) {
 
 function signInWords(text) {
   return /(not (signed|logged) in|sign in|log ?in|unauthori[sz]ed|\b401\b|auth(entication)? (failed|required)|expired)/i.test(text);
+}
+
+/**
+ * How a failed run ended, for the log. Grok's own words stay out of it: they
+ * can name a folder on this computer or repeat what someone asked, so only
+ * the person's chat shows them.
+ */
+function howItEnded({ startError, signal, timedOut, failed, ended, stderr }) {
+  if (startError) return 'could_not_start';
+  if (signal?.aborted) return 'stopped';
+  if (timedOut) return 'timed_out';
+  if (failed || ended?.stopReason === 'error') return 'grok_said_error';
+  return stderr.trim() ? 'error_output' : 'exited';
 }
 
 /**
@@ -132,7 +147,7 @@ function runOnce({ launch, args, cwd, runEnv, emit, signal, spawn, turnLimitMs }
       }
       const why = startError?.message || failed || stderr.trim().split(/\r?\n/).pop() || `Grok exited with code ${code}.`;
       const code2 = signal?.aborted ? 'CHAT_ABORTED' : signInWords(`${failed || ''} ${stderr}`) ? 'GROK_SIGNIN_REQUIRED' : 'GROK_CHAT_FAILED';
-      resolve({ ok: false, code: code2, exit: code, why, said: Boolean(reply), timedOut });
+      resolve({ ok: false, code: code2, exit: code, why, how: howItEnded({ startError, signal, timedOut, failed, ended, stderr }), startCode: safeErrorCode(startError), said: Boolean(reply), timedOut });
     };
     child.on('error', (err) => finish(null, err));
     child.on('close', (code) => finish(code));
@@ -204,7 +219,7 @@ export function runGrokChat({ userId, text, history = [], chat = null, emit, sig
       ? 'Your Grok sign-in has run out. Sign in to Grok again, then send this once more.'
       : `Grok stopped: ${run.why}`;
     if (!signal?.aborted) emit({ type: 'error', error: { message, code: run.code } });
-    log.warn('grok chat failed', { userId, ms, code: run.code, exit: run.exit, reason: run.why.slice(0, 300) });
+    log.warn('grok chat failed', { userId, ms, code: run.code, how: run.how, exit: run.exit, ...(run.startCode ? { startCode: run.startCode } : {}) });
     return { ok: false, code: run.code };
   })();
 }

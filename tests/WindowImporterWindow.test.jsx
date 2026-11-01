@@ -44,7 +44,7 @@ test('renders WindowImporterWindow and imports JSX snippet', async () => {
 
   // Verify main heading and subtitle text
   expect(screen.getByText('Window importer')).toBeTruthy();
-  expect(screen.getByText('Paste AI Studio output and it lands on your canvas')).toBeTruthy();
+  expect(screen.getByText('Turn AI Studio code into a censaiOS window')).toBeTruthy();
 
   // Find the JSX input textarea
   const jsxInput = document.getElementById('wi-jsx-input');
@@ -74,4 +74,35 @@ test('renders WindowImporterWindow and imports JSX snippet', async () => {
 
   // Verify done screen rendered with imported label
   expect(await screen.findByText('Widget Window imported!')).toBeTruthy();
+});
+
+// The Options tab used to offer "Add to canvas launcher tiles", but no tile
+// ever appeared: the empty board offers only its three starting buttons
+// (src/lib/launchpadStarts.js). It now says where a new window goes.
+test('Options says where a new window goes, with no launcher box, and the import sends no launcher', async () => {
+  await act(async () => {
+    render(<WindowImporterWindow />);
+  });
+  fireEvent.click(screen.getByText('⚙ Options'));
+
+  expect(document.getElementById('wi-hint-input')).toBeTruthy();
+  expect(screen.getByText('The new window stays out of Add until someone checks it and publishes it in the code.')).toBeTruthy();
+  expect(document.querySelector('input[type="checkbox"]')).toBeNull();
+  expect(document.body.textContent).not.toMatch(/launcher/i);
+
+  fireEvent.change(document.getElementById('wi-hint-input'), { target: { value: 'Made-up tip jar for the team' } });
+  fireEvent.click(screen.getByText('⚛ JSX / TSX'));
+  fireEvent.change(document.getElementById('wi-jsx-input'), {
+    target: { value: 'export default function App() { return <div>Made-up tip jar</div>; }' },
+  });
+  await act(async () => {
+    fireEvent.click(document.getElementById('wi-import-btn'));
+  });
+
+  const importCall = fetchCalls.find((c) => c.url.endsWith('/api/windows/import') && c.method === 'POST');
+  expect(JSON.parse(importCall.body)).toEqual({
+    rawJsx: 'export default function App() { return <div>Made-up tip jar</div>; }',
+    rawCss: '',
+    hint: 'Made-up tip jar for the team',
+  });
 });

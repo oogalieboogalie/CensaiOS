@@ -11,7 +11,8 @@ import { listOpenProjectRoots } from './shared.js';
 // does each time it is saved (src/lib/projectPrewarm.js).
 export const NEW_PROJECT_OWNER_ONLY = "Only this computer's owner can give this board's agents a project that is not open on this board. This computer's owner can open it here.";
 
-const folderKey = (folder) => resolveProjectPathForRuntime(folder).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+/** One spelling of a folder, to compare two paths that name it. */
+export const folderKey = (folder) => resolveProjectPathForRuntime(folder).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
 
 async function boardHas(db, workspaceId, projectId) {
   const { rows } = await db.query(

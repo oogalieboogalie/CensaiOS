@@ -5,6 +5,7 @@ import { readChatStream } from '../chat.js';
 import { ChatRequestError, chatResponseError } from '../chatErrors.js';
 import { logToApp } from '../appLog/browserLog.js';
 import { normalizeCapabilityProvider } from './modelCapabilities.js';
+import { teammateName } from './writer.js';
 
 const BASE = '/api/cli-agents/grok-signin';
 
@@ -53,10 +54,12 @@ export async function sendGrokSigninMessage(messages, { conversationId = null, w
     throw new ChatRequestError('On your Grok sign-in this chat takes text only for now. Switch to "xAI key" above the box to send files or pictures.', { code: 'GROK_TEXT_ONLY' });
   }
   if (!last.text) throw new ChatRequestError('Type a message first.', { code: 'GROK_EMPTY' });
-  // Error notes and stopped answers are left out: neither is an answer Grok gave in full.
+  // Error notes and stopped answers are left out: neither is an answer Grok
+  // gave in full. A teammate's message goes with their name, so Grok knows
+  // it is theirs and not this person's.
   const history = messages.slice(0, last.index)
     .filter(m => !m.hidden && m.from !== 'system' && !m.error && !m.stopped && typeof m.text === 'string')
-    .map(m => ({ from: m.from === 'me' ? 'me' : 'agent', text: m.text.slice(0, 8000) }));
+    .map(m => ({ from: m.from === 'me' ? 'me' : 'agent', text: m.text.slice(0, 8000), ...(teammateName(m) ? { by: teammateName(m) } : {}) }));
   try {
     const res = await fetch(`${BASE}/chat`, {
       method: 'POST',
@@ -71,7 +74,9 @@ export async function sendGrokSigninMessage(messages, { conversationId = null, w
     if (!(err instanceof ChatRequestError)) {
       throw new ChatRequestError('censaiOS could not reach Grok. Try again shortly.', { code: 'CHAT_NETWORK_ERROR', details: { cause: err?.message } });
     }
-    if (err.code !== 'CHAT_ABORTED') logToApp('warn', `Grok sign-in chat failed: ${err.code}`, { detail: err.message });
+    // The code and status only: the message is Grok's own words, which the
+    // chat shows the person but which can name a folder on the computer.
+    if (err.code !== 'CHAT_ABORTED') logToApp('warn', `Grok sign-in chat failed: ${err.code}`, { detail: err.status ? `status ${err.status}` : '' });
     throw err;
   }
 }

@@ -17,6 +17,7 @@ tags.
 
 ### New
 
+- Keep chat working when Ollama retires the default model (Oct 31)
 - Starter box: keep Ollama private until the firewall is on (Oct 31)
 - UI team nightly: Image Studio gets a sunken board, raised tool keys and a readable chosen tool (Oct 31)
 - The "GitHub already has" line can be put away once the keys are new (Oct 31)
@@ -108,6 +109,11 @@ tags.
 
 ### Fixed
 
+- The list of every project on this computer is its owner's (Oct 31)
+- The Window Importer says where a new window goes, with no launcher box (Oct 31)
+- With no project open, censaiOS's own folder stays the owner's in Files (Oct 31)
+- Grok in a shared chat knows who said what (Oct 31)
+- A failed Grok chat's lines in the app log keep codes, never Grok's words (Oct 31)
 - A model picked for a board's own agent reaches teammates and survives a reload (Oct 31)
 - Terraform's state and its other values files count as key files (Oct 31)
 - A coding agent's command that names a key file in quotes shows a teammate only its title (Oct 31)

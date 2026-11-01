@@ -3,6 +3,9 @@ import { logToApp } from '../../lib/appLog/browserLog.js';
 import { fetchGrokStatus, grokSignOut, isGrokChat, sendGrokSigninMessage, startGrokSignIn } from '../../lib/chat/grokSignin.js';
 
 const POLL_MS = 3000;
+// What the app log keeps of a failure: its code, never its words, which can
+// be Grok's own and name a folder on the computer or hold the sign-in's code.
+const codeOf = (err) => [err?.code, err?.name].find((value) => /^[A-Za-z0-9_]{1,40}$/.test(String(value ?? ''))) || '';
 
 /**
  * Where a Grok chat's replies come from: the person's own Grok sign-in
@@ -30,7 +33,7 @@ export function useGrokSource({ win, onUpdate, provider }) {
     } catch (err) {
       // Cloud servers have no Grok CLI: the key stays the only way.
       setStatus({ installed: false, signedIn: false, unavailable: true });
-      logToApp('warn', 'Grok sign-in status could not be read', { detail: err?.message });
+      logToApp('warn', 'Grok sign-in status could not be read', { detail: codeOf(err) });
       return null;
     }
   }, []);
@@ -56,17 +59,18 @@ export function useGrokSource({ win, onUpdate, provider }) {
     try {
       const { login: started } = await startGrokSignIn();
       setLogin(started);
-      if (!started?.url) logToApp('warn', 'Grok sign-in printed no link yet', { detail: (started?.lines || []).join(' | ') });
+      // How many lines Grok printed, not the lines: they are its own words.
+      if (!started?.url) logToApp('warn', 'Grok sign-in printed no link yet', { detail: `${(started?.lines || []).length} lines` });
     } catch (err) {
       setError(err?.message || 'Grok sign-in could not start.');
-      logToApp('warn', 'Grok sign-in could not start', { detail: err?.message });
+      logToApp('warn', 'Grok sign-in could not start', { detail: codeOf(err) });
     }
     setBusy(false);
   };
 
   const signOut = async () => {
     setBusy(true);
-    await grokSignOut().catch((err) => logToApp('warn', 'Grok sign-out failed', { detail: err?.message }));
+    await grokSignOut().catch((err) => logToApp('warn', 'Grok sign-out failed', { detail: codeOf(err) }));
     setLogin(null);
     await refresh();
     setBusy(false);

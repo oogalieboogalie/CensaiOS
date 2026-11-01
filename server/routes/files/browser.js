@@ -6,7 +6,7 @@ import { isComputerOwner, requireSystemAdmin } from '../../security/systemAdmin.
 import { isSecretFileName } from '../../security/secretFiles.js';
 import {
   readCurrentProject, validateProjectPath, projectPlace, projectRootContaining,
-  shownPathFor, shownParentFor, folderErrorMessage, isUnseenWindowsFolder, fileReadProblem, fileWriteProblem,
+  shownPathFor, shownParentFor, folderErrorMessage, isUnseenWindowsFolder, fileReadProblem, fileWriteProblem, ownerFolderWords,
 } from './pathUtils.js';
 import { refuseToTeammate } from './teammateFiles.js';
 import { FILE_PROBLEMS, SAVE_PROBLEMS } from '../../../shared/files/fileProblems.js';
@@ -66,13 +66,19 @@ async function placeFor(req, asked, options) {
 }
 
 // Search and backlinks walk the tree the asking window is rooted at (any
-// project open on the board); without one they walk the board default.
+// project open on the board); without one they walk the board default, or,
+// with no project open, censaiOS's own folder (only for this computer's owner).
 async function searchRoot(req, requested) {
   if (requested) return (await placeFor(req, requested, { isFile: false })).target;
   const currentProject = await readCurrentProject();
   return currentProject?.path
     ? resolveProjectPathForRuntime(currentProject.path)
-    : path.resolve(process.cwd());
+    : (await placeFor(req, process.cwd(), { isFile: false })).target;
+}
+
+/** A search or backlinks walk that could not start: a refusal says why, in plain words where there are some. */
+function walkRefused(res, err) {
+  res.status(err.message?.startsWith('Access denied') ? 403 : 500).json({ error: ownerFolderWords(err) || err.message });
 }
 
 browserRouter.get('/files/search', requireLocalFilesystem, async (req, res) => {
@@ -86,7 +92,7 @@ browserRouter.get('/files/search', requireLocalFilesystem, async (req, res) => {
     logIfCapped('search', capped, started);
     res.json({ results, capped, limit: RESULT_LIMIT });
   } catch (err) {
-    res.status(err.message?.startsWith('Access denied') ? 403 : 500).json({ error: err.message });
+    walkRefused(res, err);
   }
 });
 
@@ -106,7 +112,7 @@ browserRouter.get('/files/backlinks', requireLocalFilesystem, async (req, res) =
     logIfCapped('backlinks', capped, started);
     res.json({ results, capped, limit: RESULT_LIMIT });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    walkRefused(res, err);
   }
 });
 
@@ -192,11 +198,12 @@ async function browseFolder(req, res) {
   const dirPath = req.query.path;
   try {
     const currentProject = await readCurrentProject();
+    // With no project open, Files starts in censaiOS's own folder, for this computer's owner only.
     const resolved = dirPath
       ? (await placeFor(req, dirPath, { isFile: false })).target
       : currentProject?.path
         ? resolveProjectPathForRuntime(currentProject.path)
-        : path.resolve(process.cwd());
+        : (await placeFor(req, process.cwd(), { isFile: false })).target;
     const stats = await fs.promises.stat(resolved);
     if (!stats.isDirectory()) return res.status(400).json({ error: 'Not a directory' });
     const entries = await fs.promises.readdir(resolved, { withFileTypes: true });

@@ -1,7 +1,8 @@
 // A chat whose model runs on this computer (Ollama, the default) while
-// nothing answers there borrows a model the person does have a key for, so a
-// key pasted into the chat makes the very next message go through. When
-// Ollama is running, or the person has no key at all, nothing changes.
+// nothing answers there, or while Ollama offers no model chat can use (say
+// the default was retired), borrows a model the person does have a key for,
+// so a key pasted into the chat makes the very next message go through. When
+// Ollama can answer, or the person has no key at all, nothing changes.
 
 import pool from '../../db.js';
 import { dbReady } from '../../dbState.js';
@@ -10,6 +11,7 @@ import { isLocalBaseUrl } from '../../aiGateway/missingKey.js';
 import { getUserApiKeyConfig } from '../../security/userApiKeys.js';
 import { ownerEnvKeyProviders } from '../../security/envKeys.js';
 import { MODEL_OPTIONS } from '../../../src/lib/agentModelOptions.js';
+import { localChatModelUsable } from '../../aiGateway/ollamaModels.js';
 
 // Best first: the providers whose first listed model is a sound default.
 export const FALLBACK_PROVIDERS = ['anthropic', 'openai', 'google', 'openrouter', 'xai', 'moonshot', 'opencode', 'cohere'];
@@ -37,7 +39,7 @@ export function pickFallbackProvider(savedProviders) {
   return FALLBACK_PROVIDERS.find(provider => saved.has(provider)) || null;
 }
 
-export async function borrowKeyedModel({ userId, baseUrl, reachable = localModelReachable }) {
+export async function borrowKeyedModel({ userId, baseUrl, model = null, reachable = localChatModelUsable }) {
   if (!userId || !isLocalBaseUrl(baseUrl) || !dbReady()) return null;
   try {
     const { rows } = await pool.query('SELECT provider FROM user_api_keys WHERE user_id = $1', [userId]);
@@ -45,7 +47,7 @@ export async function borrowKeyedModel({ userId, baseUrl, reachable = localModel
     // keys live in .env never asks for one.
     const envProviders = await ownerEnvKeyProviders(pool, userId);
     const provider = pickFallbackProvider([...rows.map(row => row.provider), ...envProviders]);
-    if (!provider || await reachable(baseUrl)) return null;
+    if (!provider || await reachable(baseUrl, model)) return null;
     const key = await getUserApiKeyConfig(userId, provider);
     if (!key) return null;
     const config = resolveChatModelConfig({

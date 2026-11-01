@@ -1,10 +1,14 @@
 import { listProjects, openProject } from '../../workspaces.js';
+import { OWNER_UNCHECKED_MESSAGE } from '../../security/systemAdmin.js';
 import {
   CORE_PROJECT_OWNERS, readCurrentProject, writeCurrentProject,
   assertDirectory, inferProjectName, registerOpenProject,
   listOpenProjectRoots,
 } from './shared.js';
+import { projectsFor } from './teammateProjects.js';
 
+// The board's default project is open on every board here, so anyone signed
+// in may know it, as Files and a window's project menu already show it.
 export async function getCurrentProject(req, res) {
   try {
     res.json({ project: await readCurrentProject() });
@@ -23,23 +27,31 @@ export async function listOpenProjectsHandler(req, res) {
   }
 }
 
+// Every project on this computer for its owner; anyone else gets the ones
+// open on this computer's boards and the ones their boards give their agents.
 export async function listAllProjects(req, res) {
+  let projects;
   try {
-    const projects = await listProjects(CORE_PROJECT_OWNERS[0]);
-    res.json({
-      projects: projects.map(project => ({
-        id: project.id,
-        name: project.name,
-        path: project.path,
-        repo: project.repo,
-        summary: project.summary,
-        ownerAgentId: project.owner_agent_id,
-        updatedAt: project.updated_at,
-      })),
-    });
+    projects = await listProjects(CORE_PROJECT_OWNERS[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
+  try {
+    projects = await projectsFor(req, projects);
+  } catch {
+    return res.status(503).json({ error: OWNER_UNCHECKED_MESSAGE });
+  }
+  res.json({
+    projects: projects.map(project => ({
+      id: project.id,
+      name: project.name,
+      path: project.path,
+      repo: project.repo,
+      summary: project.summary,
+      ownerAgentId: project.owner_agent_id,
+      updatedAt: project.updated_at,
+    })),
+  });
 }
 
 export async function updateCurrentProject(req, res) {

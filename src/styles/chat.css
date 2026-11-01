@@ -69,6 +69,8 @@
   color: var(--agent-ink);
 }
 .hb-msg-author-meta { font-weight: 400; color: var(--ink-faint); }
+/* A teammate's name on their message in a shared chat. */
+.hb-msg-writer { font-size: var(--text-sm); font-weight: 600; color: var(--ink-soft); }
 
 .hb-msg-body {
   max-width: 72ch;

@@ -12,7 +12,7 @@ Infinite-canvas workspace for human + AI agent collaboration. Agents are a **fam
 - **Vector DB**: Qdrant (optional -- semantic search, graceful degradation if unavailable)
 - **Embeddings**: Ollama `nomic-embed-text` (optional)
 - **AI Provider**: Any OpenAI-compatible endpoint (Ollama, OpenRouter, Google, Moonshot)
-- **Current model**: `minimax-m2.5:cloud` via Ollama -- supports full function calling
+- **Default model**: `gpt-oss:120b-cloud` via Ollama, named once in `shared/models/defaultChatModel.js` (AI_MODEL overrides it). When Ollama no longer offers the model, `server/aiGateway/ollamaModels.js` sends to one it does offer.
 
 ## How Agent Tool Calling Works
 

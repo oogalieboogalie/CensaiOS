@@ -12,6 +12,7 @@ import {
 } from './imageGeneration.js';
 import { bestEffortUsageSink } from './usageSink.js';
 import { tagRejectedKey } from './missingKey.js';
+import { sendWithOfferedModel } from './ollamaModels.js';
 import { scopeServerKey } from '../security/serverKeys.js';
 import { useSavedKey } from './savedKey.js';
 import { meterModelCall } from '../aiResources/meter.js';
@@ -102,19 +103,19 @@ export async function callModel({
     modelName: modelName || body?.model || null,
   }), accessContext, access);
   const prepared = applyModelAccess(access, { config: resolvedConfig, body, retry });
-
   let result;
   try {
-    result = await requestChatCompletion({
-      config: prepared.config,
-      body: prepared.body,
+    // A model Ollama no longer offers (a retired default) gets one it does.
+    result = await sendWithOfferedModel(prepared, call => requestChatCompletion({
+      config: call.config,
+      body: call.body,
       timeoutMs,
       logContext,
-      retry: prepared.retry,
+      retry: call.retry,
       usageAttribution: effectiveAttribution,
       usageSink: safeUsageSink,
       onDelta,
-    });
+    }));
   } catch (error) {
     return settleModelAccessFailure(access, tagRejectedKey(error, prepared.config?.provider));
   }

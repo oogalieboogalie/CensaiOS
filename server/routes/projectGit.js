@@ -2,7 +2,8 @@ import express from 'express';
 import fs from 'fs';
 import pool from '../db.js';
 import { resolveGithubToken } from '../github/mergeDesk.js';
-import { validateProjectPath } from './files/pathUtils.js';
+import { projectPlace } from './files/pathUtils.js';
+import { refuseAppFolderToTeammate } from './files/teammateFiles.js';
 import { OWN_STATE, OWN_STATE_WORDS } from './files/ownState.js';
 import { projectStatus, saveVersion, startVersions } from '../projectGit/git.js';
 import { sendToGithub } from '../projectGit/publish.js';
@@ -39,12 +40,19 @@ async function author(req) {
   return { name, email };
 }
 
-async function folderFor(raw) {
+/**
+ * The project folder a request names, once it is open on this board. With
+ * `req` (a request teammates may make), censaiOS's own folder, open while no
+ * project is, stays this computer's owner's, as it does in Files.
+ */
+async function folderFor(raw, req = null) {
   const asked = String(raw || '').trim();
   if (!asked) throw Object.assign(new Error('Open a project folder first.'), { status: 400 });
   let cwd;
   try {
-    cwd = await validateProjectPath(asked);
+    const place = await projectPlace(asked);
+    if (req) await refuseAppFolderToTeammate(req, place);
+    cwd = place.target;
   } catch (err) {
     throw Object.assign(new Error(err.code === OWN_STATE ? OWN_STATE_WORDS : `${asked} isn't a project open on this board.`), { status: 403 });
   }
@@ -64,7 +72,7 @@ const handle = (fn) => async (req, res) => {
 };
 
 projectGitRouter.post('/new', handle(async (req) => createNewProject({ name: req.body?.name, author: await author(req) })));
-projectGitRouter.get('/status', handle(async (req) => projectStatus(await folderFor(req.query.path))));
+projectGitRouter.get('/status', handle(async (req) => projectStatus(await folderFor(req.query.path, req))));
 projectGitRouter.post('/start', handle(async (req) => startVersions(await folderFor(req.body?.path), { author: await author(req) })));
 projectGitRouter.post('/save', handle(async (req) => saveVersion(await folderFor(req.body?.path), {
   message: req.body?.message, author: await author(req),

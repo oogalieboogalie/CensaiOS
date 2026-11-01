@@ -50,8 +50,11 @@ import agentHiddenWords from './agentHiddenWords.mjs';
 import toolsGiven from './toolsGiven.mjs';
 import githubReview from './githubReview.mjs';
 import githubFixRequest from './githubFixRequest.mjs';
+import appFolderFiles from './appFolderFiles.mjs';
+import windowImporter from './windowImporter.mjs';
+import projectList from './projectList.mjs';
 
-export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone, secretFiles, versions, grokSignIn, finderFiles, addNames, filesCatchUp, notSaved, githubReads, logsNameNoFiles, agentHiddenWords, toolsGiven, githubReview, githubFixRequest];
+export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone, secretFiles, versions, grokSignIn, finderFiles, addNames, filesCatchUp, notSaved, githubReads, logsNameNoFiles, agentHiddenWords, toolsGiven, githubReview, githubFixRequest, appFolderFiles, windowImporter, projectList];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

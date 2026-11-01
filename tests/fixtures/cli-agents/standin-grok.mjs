@@ -13,8 +13,9 @@
  *                              refuses without auth.json, or to pick up a
  *                              conversation its folder does not have;
  *                              otherwise streams thought / tool_call / text /
- *                              end lines, naming the conversation and how
- *                              many earlier messages the prompt handed it
+ *                              end lines, naming the conversation, how many
+ *                              earlier messages the prompt handed it and who
+ *                              they came from
  *   grok --prompt-file <path> ...   the same, with the prompt in a file
  *
  * STANDIN_GROK_EDIT=<file> makes a task write that file under --cwd, the way
@@ -22,6 +23,8 @@
  * before it says a word (or after its answer's words, with
  * STANDIN_GROK_FAIL_LATE=1). STANDIN_GROK_FORGETS=1 makes it start a new
  * conversation, without a word, when asked to pick up one it does not have.
+ * A message with "[stand-in fails this turn]" in it fails that turn, with an
+ * error naming a file in its own Grok folder.
  */
 import fs from 'fs';
 import os from 'os';
@@ -102,10 +105,13 @@ fs.writeFileSync(path.join(conversations, sessionId), '');
 const ask = prompt.split('\n').pop().trim();
 out({ type: 'thought', data: 'Reading the question.' });
 await sleep(delay);
-const fail = () => {
-  out({ type: 'error', message: process.env.STANDIN_GROK_FAIL });
+const fail = (message = process.env.STANDIN_GROK_FAIL) => {
+  out({ type: 'error', message });
   process.exit(1);
 };
+// A message that asks for it fails its turn, naming a file in this Grok's own
+// folder the way a real error can, so a walk can fail one turn in a running app.
+if (ask.includes('[stand-in fails this turn]')) fail(`Made-up trouble reading ${path.join(home, 'made-up-notes.txt')}`);
 if (process.env.STANDIN_GROK_FAIL && !process.env.STANDIN_GROK_FAIL_LATE) fail();
 if (process.env.STANDIN_GROK_EDIT) {
   const cwdAt = argv.indexOf('--cwd');
@@ -120,13 +126,21 @@ if (/news|search|today|latest/i.test(ask)) {
   await sleep(delay);
   out({ type: 'tool_call_update', toolCallId: 'call_1', status: 'completed', rawOutput: { results: 3 } });
 }
-// What the chat handed over before the message (server/grokSignin/chatRun.js, grokPrompt).
+// What the chat handed over before the message (server/grokSignin/chatRun.js,
+// grokPrompt), and who said it: "Me" is the person asking, "You" is Grok, and
+// a teammate goes by their name.
 const handedKind = /^Earlier in this chat:/.test(prompt) ? 'earlier' : /^Meanwhile in this chat:/.test(prompt) ? 'meanwhile' : null;
-const handed = handedKind ? (prompt.slice(0, prompt.lastIndexOf('\n\nNow:\n')).match(/^(Me|You): /gm) || []).length : 0;
+const writers = handedKind
+  ? prompt.slice(prompt.indexOf('\n\n') + 2, prompt.lastIndexOf('\n\nNow:\n')).split('\n\n').map((said) => said.match(/^([^:\n]{1,40}): /)?.[1]).filter(Boolean)
+  : [];
+const handed = writers.length;
+const named = [...new Set(writers.map((who) => ({ Me: 'you', You: 'Grok' }[who] || who)))];
+const fromWhom = named.length > 1 ? `${named.slice(0, -1).join(', ')} and ${named.at(-1)}` : named[0];
 const lines = [
   picked ? `Picking up our conversation (${resumed.slice(0, 8)}). ` : `Starting a conversation (${sessionId.slice(0, 8)}). `,
   handedKind === 'earlier' ? `I was handed the chat so far (${handed} messages). ` : '',
   handedKind === 'meanwhile' ? `I was handed ${handed} messages said meanwhile. ` : '',
+  handed ? `They came from ${fromWhom}. ` : '',
   `Grok here, on ${auth ? `the Grok sign-in of ${auth.account}` : 'an API key'}. `,
   `You said: "${ask.slice(0, 200)}". `,
   `Tools allowed: \`${tools}\`. API key in my environment: ${process.env.XAI_API_KEY ? 'yes' : 'none'}.`,

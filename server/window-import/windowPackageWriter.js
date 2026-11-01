@@ -38,21 +38,26 @@ export function rewriteCssImport({ jsx, componentName }) {
   );
 }
 
-export function buildMetaSource({ kind, label, componentName, size, launcher }) {
-  const launcherBlock = launcher
-    ? `,\n  launcher: ${JSON.stringify(launcher)}`
-    : '';
+// Every imported window's header shows the Tools icon: a manifest `launcher`
+// block's icon is the header's fallback (scripts/window-sdk.mjs). It is not a
+// starting button, since the empty board offers only the windows in
+// LAUNCHPAD_STARTS (src/lib/launchpadStarts.js), and `moduleMenu.show: false`
+// keeps the window out of Add until someone publishes it.
+export const IMPORTED_WINDOW_LAUNCHER = Object.freeze({ show: false, icon: 'Tools' });
+
+export function buildMetaSource({ kind, label, componentName, size }) {
   return `export const windowMeta = {
   kind: ${JSON.stringify(kind)},
   label: ${JSON.stringify(label)},
   componentName: ${JSON.stringify(componentName)},
   componentPath: ${JSON.stringify(`src/components/windows/${kind}/index.jsx`)},
   defaultSize: { w: ${size.w}, h: ${size.h} },
-  moduleMenu: { show: false, status: 'prototype' }${launcherBlock},
+  moduleMenu: { show: false, status: 'prototype' },
+  launcher: ${JSON.stringify(IMPORTED_WINDOW_LAUNCHER)},
 };\n`;
 }
 
-export function buildWindowFilePlan({ kind, label, size, jsx, css, launcher }) {
+export function buildWindowFilePlan({ kind, label, size, jsx, css }) {
   const normalizedKind = normalizeWindowKind(kind);
   const componentName = deriveComponentName(normalizedKind);
   const cssFilename = deriveCssFilename(componentName);
@@ -65,7 +70,6 @@ export function buildWindowFilePlan({ kind, label, size, jsx, css, launcher }) {
       label,
       componentName,
       size,
-      launcher,
     }) },
   ];
 

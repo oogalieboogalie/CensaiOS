@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import fs from 'fs';
@@ -16,12 +17,16 @@ fs.mkdirSync(stateDir, { recursive: true });
 fs.mkdirSync(path.dirname(note), { recursive: true });
 fs.writeFileSync(note, 'Made-up note');
 process.env.CENSAI_STATE_DIR = stateDir;
+// This computer's owner (account 1) is the one asking: with no project open,
+// censaiOS's own folder opens only for them (filesAppFolderTeammate.test.js).
+jest.unstable_mockModule('../server/db.js', () => ({ default: { query: jest.fn(async () => ({ rows: [{ role: 'admin' }] })) } }));
 
 const { filesRouter } = await import('../server/routes/files/index.js');
 const { fileReadProblem, OWN_STATE } = await import('../server/routes/files/pathUtils.js');
 const { FILE_PROBLEMS } = await import('../shared/files/fileProblems.js');
 
 const app = express();
+app.use((req, _res, next) => { req.session = { userId: 1 }; next(); });
 app.use('/api', filesRouter);
 const read = (p) => request(app).get('/api/files/content').query({ path: p });
 
@@ -100,7 +105,7 @@ describe('a folder opened from Files before any project is the default', () => {
     expect((await read(path.join(tempRoot, 'made-up-elsewhere.md')).expect(403)).body.reason).toBe('outside');
   });
 
-  test('with nothing opened, only the app\'s own folder opens, except its folder of keys and logins', async () => {
+  test('with nothing opened, only the app\'s own folder opens (for this computer\'s owner), except its folder of keys and logins', async () => {
     setProjects([], null);
     await read(path.join(process.cwd(), 'package.json')).expect(200);
     expect((await read(note).expect(403)).body.reason).toBe('outside');

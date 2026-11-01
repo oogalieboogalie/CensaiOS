@@ -7,6 +7,7 @@ import { checkQdrantHealth } from './qdrant.js';
 import { getSecret } from './secrets.js';
 import { setDbReady } from './dbState.js';
 import { getFreeTierReadiness } from './aiGateway/freeTierRuntime.js';
+import { SHIPPED_DEFAULT_CHAT_MODEL } from '../shared/models/defaultChatModel.js';
 import { getHealthOwnershipStatus } from './healthOwnership.js';
 
 const DB_UNAVAILABLE_DEGRADED_STATE = 'database_unavailable';
@@ -37,7 +38,7 @@ export async function getSystemStatus() {
   const freeAiAccess = getFreeTierReadiness();
 
   const aiBaseUrl = (process.env.AI_BASE_URL || 'http://localhost:11434/v1').replace(/\/+$/, '');
-  const aiModel = process.env.AI_MODEL || 'minimax-m2.5:cloud';
+  const aiModel = process.env.AI_MODEL || SHIPPED_DEFAULT_CHAT_MODEL;
   const aiApiKey = getSecret('AI_API_KEY') || process.env.AI_API_KEY || 'ollama';
 
   const degradedState = [

@@ -97,7 +97,7 @@ export async function applySavedChatKey({
   }
 
   // No Ollama answering here: use a model the person has a key for.
-  const borrowed = await borrowKeyedModel({ userId, baseUrl: nextBaseUrl });
+  const borrowed = await borrowKeyedModel({ userId, baseUrl: nextBaseUrl, model: nextModel });
   if (borrowed) {
     nextProvider = borrowed.provider;
     nextModel = borrowed.model;

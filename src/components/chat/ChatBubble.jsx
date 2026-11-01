@@ -14,6 +14,7 @@ import { ReceiptChip } from './ReceiptChip.jsx';
 import { formatMs } from './toolActivity.js';
 import { fileArtifacts, titleFromText } from '../../lib/chat/artifacts.js';
 import { agentHueStyle } from '../../lib/chat/persona.js';
+import { teammateName } from '../../lib/chat/writer.js';
 import { needsKey } from '../../lib/chat/keyNeeded.js';
 import { KeyNeededCard } from './KeyNeededCard.jsx';
 
@@ -72,9 +73,12 @@ export function ChatBubble({
   }
 
   if (m.from === 'me') {
+    // A teammate's message in a shared chat says whose it is.
+    const writer = teammateName(m);
     return (
       <div className="hb-msg" data-from="me" title={sentAt(m)}>
         <div className="hb-msg-bubble">
+          {writer && <div className="hb-msg-writer" data-testid="chat-message-writer">{writer}</div>}
           {m.image && <img src={m.image} alt="attached" style={{ width: '100%', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)' }} />}
           <MessageAttachments attachments={m.attachments} />
           {text && <div style={{ minWidth: 0 }}>{text}</div>}

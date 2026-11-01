@@ -5,6 +5,7 @@ import { scriptedReply, replyDelayMs } from '../../data/landing-chat-script.js';
 import { useVisibilityAwareInterval } from '../../lib/usePolling.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { messagesForSend, persistableMessage } from '../../lib/chat/attachments.js';
+import { writtenBy } from '../../lib/chat/writer.js';
 import { withGroupContext } from '../../lib/chat/groupContext.js';
 import { withBoardKnowledge } from '../../lib/research/chatKnowledge.js';
 import { copyToClipboard } from '../../lib/chat/clipboard.js';
@@ -111,7 +112,8 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
     if (sending) return;
     if (!isAuto && !text && !win.imageAttachment && attachments.length === 0) return;
 
-    const userMsg = isAuto ? null : { from: 'me', text, at: new Date().toISOString(), image: win.imageAttachment, ...(attachments.length ? { attachments } : {}) };
+    // It keeps who wrote it, so teammates' copies and their Grok can tell whose it is.
+    const userMsg = isAuto ? null : { from: 'me', text, at: new Date().toISOString(), ...writtenBy(), image: win.imageAttachment, ...(attachments.length ? { attachments } : {}) };
     const displayMsgs = isAuto ? autoSendMessages : [...msgs, userMsg];
     // Stored state keeps large attachments as name-only stubs; the request still carries their data.
     const storedMsgs = isAuto ? displayMsgs : [...msgs, persistableMessage(userMsg)];

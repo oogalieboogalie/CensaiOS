@@ -8,8 +8,10 @@ import {
 import { ANTHROPIC_DEFAULT_BASE_URL } from './anthropicChat.js';
 import { anthropicModelFor } from './anthropicRequest.js';
 import { isSubscriptionToken } from '../security/envKeys.js';
+import { SHIPPED_DEFAULT_CHAT_MODEL } from '../../shared/models/defaultChatModel.js';
 
-export const DEFAULT_CHAT_MODEL = process.env.AI_MODEL || 'minimax-m2.5:cloud';
+// The owner's AI_MODEL setting, else the shipped default (shared/models/defaultChatModel.js).
+export const DEFAULT_CHAT_MODEL = process.env.AI_MODEL || SHIPPED_DEFAULT_CHAT_MODEL;
 export const DEFAULT_CHAT_BASE_URL = normalizeBaseUrl(process.env.AI_BASE_URL || 'http://localhost:11434/v1');
 export const OLLAMA_CHAT_MODEL_ALIASES = new Map([
   ['gemma4:35b', 'gemma4:31b-cloud'],
