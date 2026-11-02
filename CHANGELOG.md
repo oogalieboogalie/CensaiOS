@@ -17,6 +17,7 @@ tags.
 
 ### New
 
+- Add owner project access and arena compare (Nov 1)
 - Keep chat working when Ollama retires the default model (Oct 31)
 - Starter box: keep Ollama private until the firewall is on (Oct 31)
 - UI team nightly: Image Studio gets a sunken board, raised tool keys and a readable chosen tool (Oct 31)
@@ -33,82 +34,14 @@ tags.
 - Files catches up with files changed outside censaiOS (Oct 30)
 - Find windows in Add by every name the board shows (Oct 30)
 - A project's secret files open only for this computer's owner (Oct 29)
-- Calendar shows the month without Google (Oct 29)
-- Vault notes opens on your own empty vault (Oct 29)
-- UI team nightly: Image window gets a guiding empty state (Oct 29)
-- @grok sign-in: say to check the code x.ai already fills in (Oct 29)
-- Empty board: the welcome always sits in full view (Oct 29)
-- Tag @grok in GitHub issues and pull requests (Oct 29)
-- Team room agents use their tools; starter boards can open project files (Oct 29)
-- Document: ready to type, one click edits, comments tucked away (Oct 29)
-- Test team: Model Arena for two people (Oct 29)
-- Agent Company: seats belong to an account, and a shared upgrade is paid once (Oct 29)
-- Window groups: add the "Big on top" layout and prove each layout on two screens (Oct 29)
-- Slides: two people typing on one slide keep both people's words (Oct 29)
-- Test team: Inbox for two people, each sees only their own (Oct 28)
-- Git Diff Viewer keeps its editor open while typing; test team for two (Oct 28)
-- Run dev tells a teammate plainly that only the owner can start it; Local Sites test for two (Oct 28)
-- Test team: AI resources for two people (Oct 28)
-- The Market says plainly what it does not do yet (Oct 28)
-- On a computer install, only the computer's owner changes the shared agents (Oct 28)
-- Test team: two people in one Chat window; the agent config route follows the cloud rule (Oct 28)
-- Test team: Message Router for two, and the routed parts shared on the board (Oct 28)
-- Test team: two people write in one Doc; Doc notes carry the writer's name (Oct 28)
-- Test team: only the computer's owner can open a Terminal (Oct 28)
-- Test team: shared links, with guests trying every door they should not have (Oct 28)
-- UI team nightly: Code Editor gets readable line numbers and a status bar (Oct 28)
-- Board rows reach agents as quoted notes, not orders (Oct 28)
-- Runner runs as a normal user, not root (Oct 28)
-- Test team: the Figma check works in a second theme too (Oct 28)
-- Write down every way into the runner and test the lock-down (Oct 28)
-- Runner says plainly when the compose plugin is missing (Oct 28)
-- Agent Console and Action Approvals: no stale task lines or trust claims (Oct 28)
-- Runner gate refuses every docker prune verb (Oct 28)
-- Agent Registry socket sends a code word, never error text (Oct 28)
-- Studio: key and scale, hum into a track, stems, and an ask-your-model box (Oct 28)
-- Test team: a grouped chat keeps its size on the normal board too (Oct 28)
-- Settings: load the pairing QR code only when Open anywhere opens (Grok trial P3) (Oct 28)
-- 3D Viewer: a print check before saving STL (Grok trial P2) (Oct 28)
-- Gemini takes Atlas's tool list, and a held-back reply says why (Oct 28)
-- Design Block: real depth and buttons that answer the pointer (Grok trial P1) (Oct 28)
-- Agent list, a friends list for agents with presence and what each is doing (Oct 28)
-- Local Sites window, ready websites for a thrift store, tattoo shop or bakery (Oct 28)
-- Every AI call uses the key saved in Settings first (Oct 28)
-- Body-parser 2.4.0 and undici 8.12.3 so the public dependency audit passes (Oct 28)
-- Retry Claude once when it breaks off mid-reply (Oct 28)
-- Sync the PC's Oct 25 local commits to master (Oct 26)
-- Bigger lot, 32 high, turning 3D view, sample builds (Oct 26)
-- Starter Box: install censaiOS on MX Linux and 4 GB ThinkPads (Oct 26)
-- Add Notes Workspace Obsidian+Finder board preset (Oct 26)
-- Blueprints: the UI team recipe as a ready-made blueprint (Oct 23)
-- Dompurify 3.4.17: clears the critical advisory that fails the public Security check (Oct 23)
-- Docker runner gate: close the outside security review's gaps (Oct 23)
-- Test team: Sheets for two people (Oct 23)
-- Test team: Sketchpad for two, and keep a label typed right after drawing (Oct 23)
-- Music Player: a teammate's song opens the player on every board (item 141) (Oct 23)
-- UI team nightly: Message Router gets depth and a guiding empty state (Oct 23)
-- The last server log lines keep a code, and a guard keeps it that way (item 140) (Oct 23)
-- Agent and worker log lines keep an error code, not the error text (item 139) (Oct 23)
-- Server route log lines keep an error code, not the error text (item 138) (Oct 23)
-- Board-sharing and start-up log lines keep an error code, not the error text (item 137) (Oct 23)
-- UI team: mark every module window against a yardstick, shared depth system, Docker/MLOps/Ollama reworked (Oct 23)
-- The last browser console lines reach the app log (Oct 23)
-- Landing page: demo people always on the board, plus live visitor cursors (Oct 23)
-- Raw console lines can only go down (Oct 23)
-- The next browser console lines reach the app log (Oct 23)
-- The last raw server console lines reach the app log (Oct 23)
-- Sign-in, session and security failures reach the app log (Oct 23)
-- Tools: agent tool failures go to the app log, without the error text (Oct 23)
-- App shell: move board start-up and selection out of AppContent.jsx (Oct 22)
-- Chat: move the tool-call round out of chatExecution.js (Oct 22)
-- Test team: Docker check covers images, volumes, networks and Compose (Oct 22)
-- Docker window: see what an image is made of (Oct 22)
-- Test team: two people edit the board at the same moment (item 124) (Oct 22)
-- Keep a group's name clear of the top toolbars (item 123) (Oct 22)
-- Remove dead copies nothing uses (item 121) (Oct 22)
 
 ### Fixed
 
+- Release the dev-server test folder on Windows (Nov 1)
+- Finish the Windows gate on the dev-server checks (Nov 1)
+- Make Windows paths usable in the gate (Nov 1)
+- Let the Windows gate run without symlink privilege (Nov 1)
+- Keep the Windows gate on this tree (Nov 1)
 - The list of every project on this computer is its owner's (Oct 31)
 - The Window Importer says where a new window goes, with no launcher box (Oct 31)
 - With no project open, censaiOS's own folder stays the owner's in Files (Oct 31)
@@ -140,26 +73,110 @@ tags.
 - Show the open project's real files in the Finder (Oct 30)
 - Ask to check the Grok sign-in code the link already holds (Oct 29)
 - Keep files that hold keys out of saved versions and off GitHub (Oct 29)
-- A file that will not open says why in plain words (Oct 29)
-- One "joined" pop-up per person; reloads and drops stay quiet (Oct 29)
-- Reloading no longer shows a false "unsaved changes" bar (Oct 29)
-- Board map stays out of the way of your windows (Oct 29)
-- Document: comments stay on their words when the text around them changes (Oct 29)
-- Document follow-up: comments open on click, teammates' new docs stay readable, Add finds Document (Oct 29)
-- Step cards: a removed card stays removed; switching cards keeps the open step (Oct 28)
-- Research: questions asked at once both stay; saved pages are quoted (Oct 28)
-- Doc notes stay inside their sentence and land on the right words (Oct 28)
-- Multi-select right-click deletes all selected windows (Oct 26)
-- Test team: Scheduler and To-dos for two, and three fixes it found (Oct 23)
-- Test team: the Market for two, and two listing slips fixed (Oct 23)
-- Marketplace: Agents tab points to the Agent Registry instead of an empty list (Oct 23)
-- Two people typing the same words in a note no longer scramble (Oct 23)
-- MCP: stop logging launch arguments, server output and tool arguments (Oct 22)
 
 ### Behind the scenes
 
 - The crew's guide says what the empty board draws; unused tile names go (Oct 30)
-- Keep the owner's story and health out of the public copy (Oct 26)
+
+## 0.6.0 (2026-11-01)
+
+### New
+
+- Calendar shows the month without Google
+- Vault notes opens on your own empty vault
+- UI team nightly: Image window gets a guiding empty state
+- @grok sign-in: say to check the code x.ai already fills in
+- Empty board: the welcome always sits in full view
+- Tag @grok in GitHub issues and pull requests
+- Team room agents use their tools; starter boards can open project files
+- Document: ready to type, one click edits, comments tucked away
+- Test team: Model Arena for two people
+- Agent Company: seats belong to an account, and a shared upgrade is paid once
+- Window groups: add the "Big on top" layout and prove each layout on two screens
+- Slides: two people typing on one slide keep both people's words
+- Test team: Inbox for two people, each sees only their own
+- Git Diff Viewer keeps its editor open while typing; test team for two
+- Run dev tells a teammate plainly that only the owner can start it; Local Sites test for two
+- Test team: AI resources for two people
+- The Market says plainly what it does not do yet
+- On a computer install, only the computer's owner changes the shared agents
+- Test team: two people in one Chat window; the agent config route follows the cloud rule
+- Test team: Message Router for two, and the routed parts shared on the board
+- Test team: two people write in one Doc; Doc notes carry the writer's name
+- Test team: only the computer's owner can open a Terminal
+- Test team: shared links, with guests trying every door they should not have
+- UI team nightly: Code Editor gets readable line numbers and a status bar
+- Board rows reach agents as quoted notes, not orders
+- Runner runs as a normal user, not root
+- Test team: the Figma check works in a second theme too
+- Write down every way into the runner and test the lock-down
+- Runner says plainly when the compose plugin is missing
+- Agent Console and Action Approvals: no stale task lines or trust claims
+- Runner gate refuses every docker prune verb
+- Agent Registry socket sends a code word, never error text
+- Studio: key and scale, hum into a track, stems, and an ask-your-model box
+- Test team: a grouped chat keeps its size on the normal board too
+- Settings: load the pairing QR code only when Open anywhere opens (Grok trial P3)
+- 3D Viewer: a print check before saving STL (Grok trial P2)
+- Gemini takes Atlas's tool list, and a held-back reply says why
+- Design Block: real depth and buttons that answer the pointer (Grok trial P1)
+- Agent list, a friends list for agents with presence and what each is doing
+- Local Sites window, ready websites for a thrift store, tattoo shop or bakery
+- Every AI call uses the key saved in Settings first
+- Body-parser 2.4.0 and undici 8.12.3 so the public dependency audit passes
+- Retry Claude once when it breaks off mid-reply
+- Sync the PC's Oct 25 local commits to master
+- Bigger lot, 32 high, turning 3D view, sample builds
+- Starter Box: install censaiOS on MX Linux and 4 GB ThinkPads
+- Add Notes Workspace Obsidian+Finder board preset
+- Blueprints: the UI team recipe as a ready-made blueprint
+- Dompurify 3.4.17: clears the critical advisory that fails the public Security check
+- Docker runner gate: close the outside security review's gaps
+- Test team: Sheets for two people
+- Test team: Sketchpad for two, and keep a label typed right after drawing
+- Music Player: a teammate's song opens the player on every board (item 141)
+- UI team nightly: Message Router gets depth and a guiding empty state
+- The last server log lines keep a code, and a guard keeps it that way (item 140)
+- Agent and worker log lines keep an error code, not the error text (item 139)
+- Server route log lines keep an error code, not the error text (item 138)
+- Board-sharing and start-up log lines keep an error code, not the error text (item 137)
+- UI team: mark every module window against a yardstick, shared depth system, Docker/MLOps/Ollama reworked
+- The last browser console lines reach the app log
+- Landing page: demo people always on the board, plus live visitor cursors
+- Raw console lines can only go down
+- The next browser console lines reach the app log
+- The last raw server console lines reach the app log
+- Sign-in, session and security failures reach the app log
+- Tools: agent tool failures go to the app log, without the error text
+- App shell: move board start-up and selection out of AppContent.jsx
+- Chat: move the tool-call round out of chatExecution.js
+- Test team: Docker check covers images, volumes, networks and Compose
+- Docker window: see what an image is made of
+- Test team: two people edit the board at the same moment (item 124)
+- Keep a group's name clear of the top toolbars (item 123)
+- Remove dead copies nothing uses (item 121)
+
+### Fixed
+
+- A file that will not open says why in plain words
+- One "joined" pop-up per person; reloads and drops stay quiet
+- Reloading no longer shows a false "unsaved changes" bar
+- Board map stays out of the way of your windows
+- Document: comments stay on their words when the text around them changes
+- Document follow-up: comments open on click, teammates' new docs stay readable, Add finds Document
+- Step cards: a removed card stays removed; switching cards keeps the open step
+- Research: questions asked at once both stay; saved pages are quoted
+- Doc notes stay inside their sentence and land on the right words
+- Multi-select right-click deletes all selected windows
+- Test team: Scheduler and To-dos for two, and three fixes it found
+- Test team: the Market for two, and two listing slips fixed
+- Marketplace: Agents tab points to the Agent Registry instead of an empty list
+- Two people typing the same words in a note no longer scramble
+- MCP: stop logging launch arguments, server output and tool arguments
+
+### Behind the scenes
+
+- Keep the owner's story and health out of the public copy
 
 ## 0.5.0 (2026-10-25)
 

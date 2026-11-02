@@ -2,6 +2,7 @@
 import React from 'react';
 import { Icon } from '../../Icons.jsx';
 import { WindowTitle } from '../WindowTitle.jsx';
+import { ArenaCompare, hasFinishedLane } from './ArenaCompare.jsx';
 import { ArenaLane, ModelPicker } from './ArenaLane.jsx';
 import { useArena } from './useArena.js';
 import { useArenaRecord } from './useArenaRecord.js';
@@ -38,11 +39,13 @@ export function ModelArenaWindow({ win = {}, onUpdate }) {
   const send = (e) => { e?.preventDefault?.(); arena.run(); };
   const subtitle = lanes.map((l) => l.model).join(' vs ');
   const labelOf = (lane) => models.find((m) => m.id === `${lane.provider}:${lane.model}`)?.label || lane.model;
+  const showCompare = !running && hasFinishedLane(results);
+  const columns = lanes.length + (lanes.length < MAX_LANES ? 1 : 0) + (showCompare ? 1 : 0);
 
   return (
     <>
       <WindowTitle icon={<Icon.Activity size={12} />} label={win.title || windowMeta.label} subtitle={subtitle} />
-      <div className="hb-arena" style={{ '--arena-cols': lanes.length + (lanes.length < MAX_LANES ? 1 : 0) }}>
+      <div className="hb-arena" style={{ '--arena-cols': columns }}>
         <form className="hb-arena-composer" onSubmit={send}>
           <textarea className="hb-arena-input" rows={3} value={arena.prompt} aria-label="Request to send to every model"
             placeholder="One request, sent to every model at once. Try a benchmark task below."
@@ -80,6 +83,7 @@ export function ModelArenaWindow({ win = {}, onUpdate }) {
               <LaneMarks index={index} rec={rec} done={results[index]?.status === 'done'} cutOff={CUT_OFF_REASONS.has(results[index]?.finishReason)} />
             </ArenaLane>
           ))}
+          {showCompare && <ArenaCompare lanes={lanes} results={results} labelOf={labelOf} />}
           {lanes.length < MAX_LANES && (
             <section className="hb-arena-lane hb-arena-add" aria-label="Add a model">
               <p className="hb-arena-hint">Race up to {MAX_LANES} models. Pick one to add:</p>

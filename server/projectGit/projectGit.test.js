@@ -2,6 +2,7 @@ import { execFileSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
 import { parsePorcelain, projectStatus, redactRemote, repoFromRemote, runGit, saveVersion, startVersions } from './git.js';
 import { authArgs, sendToGithub, slugify } from './publish.js';
 import { createNewProject, shownProjectPath } from './newProject.js';
@@ -91,7 +92,8 @@ describe('project versions', () => {
     expect(second).toMatchObject({ kind: 'pull-request', number: 7 });
     expect(second.branch).toMatch(/^censai\/add-a-phone-field-[0-9a-f]{7}$/);
     expect(gh.calls.at(-1)).toEqual(['pr', second.branch, 'main', 'Add a phone field']);
-    const remote = fs.readdirSync(path.dirname(new URL(git(dir, 'remote', 'get-url', 'origin')).pathname))[0];
+    const origin = git(dir, 'remote', 'get-url', 'origin');
+    const remote = path.basename(origin.startsWith('file:') ? fileURLToPath(origin) : origin);
     expect(remote).toBe('lead-form.git');
   });
 

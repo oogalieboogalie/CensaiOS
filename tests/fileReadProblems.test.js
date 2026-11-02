@@ -139,15 +139,19 @@ describe("censaiOS's own folder of keys, logins and lists never opens on the boa
     const copy = path.join(project, '.Homebase-State');
     fs.mkdirSync(copy, { recursive: true });
     fs.writeFileSync(path.join(copy, 'generated-secrets.env'), 'MADE_UP_SECRET=not-a-real-one');
-    fs.symlinkSync(secrets, path.join(project, 'made-up-link.env'));
-    fs.symlinkSync(stateDir, path.join(project, 'made-up-state-link'));
-    for (const asked of [
+    const asked = [
       path.join(copy, 'generated-secrets.env'),
       path.join(project, '.homebase-state.', 'made-up.json'),
-      path.join(project, 'made-up-link.env'),
-      path.join(project, 'made-up-state-link', 'made-up', 'deeper.json'),
-    ]) {
-      const res = await read(asked).expect(403);
+    ];
+    try {
+      fs.symlinkSync(secrets, path.join(project, 'made-up-link.env'));
+      fs.symlinkSync(stateDir, path.join(project, 'made-up-state-link'));
+      asked.push(path.join(project, 'made-up-link.env'), path.join(project, 'made-up-state-link', 'made-up', 'deeper.json'));
+    } catch (err) {
+      if (err?.code !== 'EPERM' && err?.code !== 'EACCES') throw err;
+    }
+    for (const one of asked) {
+      const res = await read(one).expect(403);
       expect(res.body.reason).toBe('secret');
       expect(res.text).not.toContain('MADE_UP_SECRET');
     }

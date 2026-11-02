@@ -29,7 +29,12 @@ fs.mkdirSync(path.join(projectsRoot, '$RECYCLE.BIN'), { recursive: true });
 fs.mkdirSync(path.join(projectsRoot, 'System Volume Information'), { recursive: true });
 fs.writeFileSync(path.join(projectsRoot, 'notes.txt'), 'not a folder');
 // A link in the open project that leads out of it, to the projects folder.
-fs.symlinkSync(projectsRoot, path.join(appRoot, 'linked-out'), 'dir');
+// The cases below are Linux-only. Windows without a symlink privilege still loads the file.
+try {
+  fs.symlinkSync(projectsRoot, path.join(appRoot, 'linked-out'), 'dir');
+} catch (err) {
+  if (process.platform !== 'win32' || (err?.code !== 'EPERM' && err?.code !== 'EACCES')) throw err;
+}
 process.env.CENSAI_STATE_DIR = stateDir;
 
 const ENV_KEYS = ['HOMEBASE_CONTAINER_PROJECT_ROOT', 'HOMEBASE_HOST_PROJECT_ROOT', 'CENSAI_PROJECTS_FOLDER', 'CENSAI_PROJECTS_FOLDER_ON_PC', 'CENSAI_LEGION_DIR'];

@@ -2,12 +2,13 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { execFileSync } from 'child_process';
+import { pathToFileURL } from 'url';
 
 // The real file write is skipped under NODE_ENV=test, so run a small server
 // process the way the app does and look at what landed on disk.
 test('logger lines and plain console lines land in one scrubbed file', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'applog-file-'));
-  const at = (file) => JSON.stringify(path.resolve('server', file));
+  const at = (file) => JSON.stringify(pathToFileURL(path.resolve('server', file)).href);
   const script = `
     const { createLogger } = await import(${at('logger.js')});
     const { installConsoleCapture } = await import(${at('appLog/consoleCapture.js')});

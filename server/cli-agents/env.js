@@ -47,8 +47,12 @@ export function buildAgentEnv({ source = process.env, key = null, keyEnv = null,
   }
   if (home) {
     // A private, lasting home (Docker, see paths.js): the CLI keeps its login
-    // there and never reads the server's own dotfiles.
+    // there and never reads the server's own dotfiles. Windows Node reads
+    // USERPROFILE for os.homedir(), so HOME alone leaves the real profile in place.
     env.HOME = home;
+    env.USERPROFILE = home;
+    delete env.HOMEDRIVE;
+    delete env.HOMEPATH;
     for (const name of ['XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME']) delete env[name];
   }
   if (!env.HOME && !env.USERPROFILE) env.HOME = os.homedir();

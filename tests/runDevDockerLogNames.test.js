@@ -7,11 +7,21 @@ import request from 'supertest';
 // containers, volumes and networks carry their folder's name. None of their
 // log lines or logged addresses may name a folder; Run dev keeps the hash.
 // Made-up folders for Pat Example.
-const FOLDER = '/home/pat-example/Made-up Garden Plans';
-const LEFT_OPEN = '/home/pat-example/made-up-recipes';
-const STUCK = '/home/pat-example/made-up-taxes';
+// Made-up folders. On Windows the dev server only accepts a drive path.
+const hostPath = (folder) => (process.platform === 'win32' ? `D:${folder.replace(/\//g, '\\')}` : folder);
+const FOLDER = hostPath('/home/pat-example/Made-up Garden Plans');
+const LEFT_OPEN = hostPath('/home/pat-example/made-up-recipes');
+const STUCK = hostPath('/home/pat-example/made-up-taxes');
 const STACK = 'made-up-bakery';
 const NAMED = /made-up|garden|recipes|taxes|bakery|pat-example/i;
+
+// prepareArgs quotes any Windows argument that contains a space. The fake
+// sits where the runner is, so it has to read the value Docker would see.
+function asDockerArg(arg) {
+  const s = String(arg);
+  if (process.platform === 'win32' && s.length >= 2 && s.startsWith('"') && s.endsWith('"')) return s.slice(1, -1);
+  return s;
+}
 
 // A tiny engine: Run dev's containers, and one compose stack Docker named
 // after its folder, as `docker compose up` does by default.
@@ -25,6 +35,7 @@ function createEngine() {
   const find = (ref) => [...rows.values()].find((r) => r.ID === ref || r.Names === ref);
   const engine = { failRemove: null };
   engine.exec = (cmd, args) => {
+    args = args.map(asDockerArg);
     const [verb, ...rest] = args;
     const target = rest[rest.length - 1];
     switch (verb) {

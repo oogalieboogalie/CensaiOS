@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { canvasAgentAllowed } from '../server/workspaces/canvasAgentAccess.js';
 import {
   ProjectMembershipError,
   assertAgentProjectAccess,
@@ -75,6 +76,76 @@ describe('workspace agent project memberships', () => {
     expect(client.query).toHaveBeenCalledWith('COMMIT');
   });
 
+  test('an owner save authorizes a custom agent already on the board', async () => {
+    const { db, client } = createDatabase(async (sql) => {
+      if (sql.includes('SELECT id FROM projects')) return { rows: [{ id: 'project-1' }] };
+      if (sql.includes('SELECT role FROM workspace_members')) return { rows: [{ role: 'owner' }] };
+      if (sql.includes('SELECT * FROM agents')) return { rows: [{ id: 'argon', name: 'Argon' }] };
+      return { rows: [] };
+    });
+
+    await replaceCanvasProjectMemberships(db, {
+      workspaceId: 'workspace-1',
+      projectId: 'project-1',
+      memberships: [{ agentId: 'argon', permission: 'work' }],
+      userId: 2,
+    });
+
+    const inserts = client.query.mock.calls.filter(([sql]) => String(sql).includes('INSERT INTO workspace_agent_projects'));
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0][1][2]).toBe('argon');
+    expect(inserts[0][1][3]).toBe('work');
+  });
+
+  test('a member save still rejects a custom agent before deleting memberships', async () => {
+    const { db, client } = createDatabase(async (sql) => {
+      if (sql.includes('SELECT id FROM projects')) return { rows: [{ id: 'project-1' }] };
+      if (sql.includes('SELECT role FROM workspace_members')) return { rows: [{ role: 'member' }] };
+      if (sql.includes('SELECT * FROM agents')) return { rows: [{ id: 'argon', name: 'Argon' }] };
+      return { rows: [] };
+    });
+
+    await expect(replaceCanvasProjectMemberships(db, {
+      workspaceId: 'workspace-1',
+      projectId: 'project-1',
+      memberships: [{ agentId: 'argon', permission: 'work' }],
+      userId: 318,
+    })).rejects.toThrow('Unknown or non-canonical agent IDs: argon');
+
+    expect(client.query.mock.calls.some(([sql]) => String(sql).includes('DELETE FROM workspace_agent_projects'))).toBe(false);
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+  });
+
+  test('an owner save still rejects unknown, duplicate, and development agents', async () => {
+    const refused = [
+      { requested: 'atlas-1', agent: { id: 'atlas-1', name: 'Atlas' } },
+      { requested: 'test_argon', agent: { id: 'test_argon', name: 'Argon' } },
+      { requested: 'missing', agent: null },
+    ];
+    for (const { requested, agent } of refused) {
+      const { db, client } = createDatabase(async (sql) => {
+        if (sql.includes('SELECT id FROM projects')) return { rows: [{ id: 'project-1' }] };
+        if (sql.includes('SELECT role FROM workspace_members')) return { rows: [{ role: 'owner' }] };
+        if (sql.includes('SELECT * FROM agents')) return { rows: agent ? [agent] : [] };
+        return { rows: [] };
+      });
+      await expect(replaceCanvasProjectMemberships(db, {
+        workspaceId: 'workspace-1',
+        projectId: 'project-1',
+        memberships: [{ agentId: requested, permission: 'work' }],
+        userId: 2,
+      })).rejects.toThrow(`Unknown or non-canonical agent IDs: ${requested}`);
+      expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    }
+  });
+
+  test('custom access is owner-only and family access stays open', () => {
+    expect(canvasAgentAllowed({ id: 'argon', name: 'Argon' }, { allowCustom: true })).toBe(true);
+    expect(canvasAgentAllowed({ id: 'argon', name: 'Argon' })).toBe(false);
+    expect(canvasAgentAllowed({ id: 'atlas', name: 'Atlas' })).toBe(true);
+    expect(canvasAgentAllowed({ id: 'atlas-1', name: 'Atlas' }, { allowCustom: true })).toBe(false);
+  });
+
   test('rolls back before deletion when any agent is non-canonical', async () => {
     const { db, client } = createDatabase(async (sql) => {
       if (sql.includes('SELECT id FROM projects')) return { rows: [{ id: 'project-1' }] };
@@ -143,6 +214,7 @@ describe('workspace agent project memberships', () => {
     })).resolves.toMatchObject({ id: 'authorized-censaihub' });
 
     expect(db.query.mock.calls[0][0]).toContain('JOIN projects p ON p.id = wap.project_id');
+    expect(db.query.mock.calls[0][0]).toContain("regexp_replace(p.path, '^.*[/\\\\]', '')");
     expect(db.query.mock.calls[0][1]).toEqual(['workspace-1', 'architect', 'CensaiHub']);
   });
 

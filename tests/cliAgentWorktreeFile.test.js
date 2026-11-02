@@ -21,11 +21,18 @@ fs.mkdirSync(worktree);
 fs.writeFileSync(path.join(worktree, 'notes.md'), 'Made-up note');
 fs.writeFileSync(path.join(worktree, '.env'), 'MADE_UP_KEY=not-a-real-made-up-key');
 fs.writeFileSync(path.join(root, 'outside.md'), 'Made-up words outside');
-fs.symlinkSync(path.join(worktree, '.env'), path.join(worktree, 'made-up-link.md'));
-fs.symlinkSync(path.join(root, 'outside.md'), path.join(worktree, 'made-up-outside.md'));
 fs.mkdirSync(path.join(worktree, '.made-up'));
 fs.writeFileSync(path.join(worktree, '.made-up', 'notes.md'), 'Made-up hidden note');
-fs.symlinkSync(path.join(worktree, '.made-up', 'notes.md'), path.join(worktree, 'made-up-hidden-link.md'));
+let linksReady = true;
+try {
+  fs.symlinkSync(path.join(worktree, '.env'), path.join(worktree, 'made-up-link.md'));
+  fs.symlinkSync(path.join(root, 'outside.md'), path.join(worktree, 'made-up-outside.md'));
+  fs.symlinkSync(path.join(worktree, '.made-up', 'notes.md'), path.join(worktree, 'made-up-hidden-link.md'));
+} catch (err) {
+  if (err?.code !== 'EPERM' && err?.code !== 'EACCES') throw err;
+  linksReady = false;
+}
+const describeWithLinks = linksReady ? describe : describe.skip;
 fs.mkdirSync(path.join(worktree, '.github'));
 fs.writeFileSync(path.join(worktree, '.github', 'made-up.yml'), 'name: Made-up check');
 
@@ -72,7 +79,7 @@ function refusal(read) {
   }
 }
 
-describe('a file in a coding agent\'s worktree', () => {
+describeWithLinks('a file in a coding agent\'s worktree', () => {
   test('an ordinary file opens for anyone', () => {
     expect(readWorktreeFile(worktree, 'notes.md')).toEqual({ content: 'Made-up note', secret: false });
   });
@@ -102,7 +109,7 @@ describe('a file in a coding agent\'s worktree', () => {
   });
 });
 
-describe("a coding agent's changes", () => {
+describeWithLinks("a coding agent's changes", () => {
   test('show what changed in an ordinary file, and only that a file that holds keys changed', async () => {
     const { patch } = await changes({ dir: repo, baseSha });
     // A hand-off still applies the whole diff, keys and all, in the next task's worktree.
@@ -152,7 +159,7 @@ describe("a coding agent's changes", () => {
   });
 });
 
-describe('GET /api/cli-agents/tasks/:id/file and /changes', () => {
+describeWithLinks('GET /api/cli-agents/tasks/:id/file and /changes', () => {
   const tasks = {
     'made-up-task': { id: 'made-up-task', worktree: { dir: worktree } },
     'made-up-repo-task': { id: 'made-up-repo-task', worktree: { dir: repo }, baseSha },

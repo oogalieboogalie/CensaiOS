@@ -58,7 +58,8 @@ export function useArena(win = {}, onUpdate) {
       latest.current = latest.current.map((r) => (r.status === 'done' || r.status === 'error' ? r : { ...r, status: 'stopped' }));
       setResults(latest.current);
       const saved = latest.current.map((r) => ({ ...r, text: String(r.text || '').slice(0, SAVED_TEXT_LIMIT) }));
-      onUpdate?.({ prompt, system, racing: null, lastRun: { at: new Date().toISOString(), lanes, results: saved } });
+      // needsAuto: the record hook picks a best once, and only for this finish.
+      onUpdate?.({ prompt, system, racing: null, lastRun: { at: new Date().toISOString(), lanes, results: saved, needsAuto: true } });
     }
   }, [running, prompt, system, lanes, onUpdate]);
 

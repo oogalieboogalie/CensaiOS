@@ -97,9 +97,17 @@ describe('a Save that fails leaves the file as it was', () => {
 });
 
 describe('the file keeps what it had', () => {
+  // Windows has a read-only bit, not a Unix mode, and Save never calls chown there.
+  const unix = process.platform === 'win32' ? test.skip : test;
+
   test('a link keeps leading where it did, and the file it leads to takes the words', async () => {
     const link = path.join(notes, 'made-up-link.md');
-    fs.symlinkSync('made-up-plan.md', link);
+    try {
+      fs.symlinkSync('made-up-plan.md', link);
+    } catch (err) {
+      if (err?.code === 'EPERM' || err?.code === 'EACCES') return;
+      throw err;
+    }
     await save(link).expect(200);
     expect(fs.lstatSync(link).isSymbolicLink()).toBe(true);
     expect(fs.readlinkSync(link)).toBe('made-up-plan.md');
@@ -107,7 +115,7 @@ describe('the file keeps what it had', () => {
     expect(inNotes()).toEqual(['made-up-link.md', 'made-up-plan.md']);
   });
 
-  test('the file keeps its permissions', async () => {
+  unix('the file keeps its permissions', async () => {
     fs.chmodSync(note, 0o640);
     await save(note).expect(200);
     expect(fs.statSync(note).mode & 0o7777).toBe(0o640);
@@ -122,7 +130,7 @@ describe('the file keeps what it had', () => {
     expect(fs.readFileSync(note, 'utf8')).toBe('Made-up words saved');
   });
 
-  test('when the copy cannot take the owner, the Save writes in place as before, so the owner stays', async () => {
+  unix('when the copy cannot take the owner, the Save writes in place as before, so the owner stays', async () => {
     const before = fs.statSync(note);
     jest.spyOn(fs.promises, 'chown').mockRejectedValueOnce(refusal('EPERM'));
     await save(note).expect(200);

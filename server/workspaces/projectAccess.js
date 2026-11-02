@@ -23,7 +23,9 @@ export async function resolveAuthorizedWorkspaceProject(db, {
       WHERE wap.workspace_id = $1 AND wap.agent_id = $2
         AND ($3::text IS NULL OR p.id = $3 OR lower(p.name) = lower($3)
           OR p.path = $3 OR p.repo = $3
-          OR ($3 NOT LIKE '%/%' AND p.repo LIKE ('%/' || $3)))
+          OR ($3 NOT LIKE '%/%' AND p.repo LIKE ('%/' || $3))
+          -- A folder name such as CRM_Vision matches a project stored in that directory.
+          OR lower(regexp_replace(p.path, '^.*[/\\\\]', '')) = lower($3))
       ORDER BY
         CASE WHEN p.id = $3 THEN 0 WHEN p.path = $3 OR p.repo = $3 THEN 1 ELSE 2 END,
         CASE wap.permission WHEN 'work' THEN 0 ELSE 1 END, wap.updated_at DESC

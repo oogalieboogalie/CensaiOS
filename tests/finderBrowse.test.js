@@ -36,7 +36,14 @@ write(inProject('Made-up Notes', 'made-up-list.md'), 'Made-up list: rope, lemons
 write(inProject('.made-up-hidden'), 'hidden');
 write(inProject('node_modules', 'made-up-package', 'index.js'), 'module.exports = 1;\n');
 write(path.join(elsewhere, 'made-up-big.txt'), 'x'.repeat(5000));
-fs.symlinkSync(path.join(elsewhere, 'made-up-big.txt'), inProject('made-up-link.txt'));
+let linksReady = true;
+try {
+  fs.symlinkSync(path.join(elsewhere, 'made-up-big.txt'), inProject('made-up-link.txt'));
+} catch (err) {
+  if (err?.code !== 'EPERM' && err?.code !== 'EACCES') throw err;
+  linksReady = false;
+}
+const describeWithLinks = linksReady ? describe : describe.skip;
 write(path.join(stateDir, 'open-projects.json'), JSON.stringify([project]));
 process.env.CENSAI_STATE_DIR = stateDir;
 
@@ -68,7 +75,7 @@ afterAll(() => {
   fs.rmSync(tempRoot, { recursive: true, force: true });
 });
 
-describe("the Finder's list of a project folder", () => {
+describeWithLinks("the Finder's list of a project folder", () => {
   test('is the folder on disk: folders first, each file with its size, each entry with when it changed', async () => {
     const res = await browse(PAT, project).expect(200);
     expect(res.body.children).toEqual(onDisk(project));

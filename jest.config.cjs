@@ -11,6 +11,14 @@ module.exports = {
     '/dist-landing/',
     '/dist-demo/',
     '/tools/db-tools/',
+    '/.laptop-build/',
+    '/.os-site-deploy/',
+  ],
+  // Haste still indexes package.json under those copies. testPathIgnorePatterns
+  // does not keep them out, and a second "qs" package fails the suite at load.
+  modulePathIgnorePatterns: [
+    '[/\\\\]\\.laptop-build[/\\\\]',
+    '[/\\\\]\\.os-site-deploy[/\\\\]',
   ],
   transform: {
     '^.+\\.[jt]sx?$': ['babel-jest', { configFile: './babel.config.cjs' }],

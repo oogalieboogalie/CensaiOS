@@ -72,6 +72,63 @@ test('no marks or record button while nothing has finished', () => {
   render(<Board Window={ModelArenaWindow} initial={{ id: 'arena-2', lanes }} />);
   expect(screen.queryByRole('button', { name: /Record this run/ })).toBeNull();
   expect(screen.queryByRole('group', { name: /Marks for model/ })).toBeNull();
+  expect(screen.queryByRole('region', { name: 'How the models compare' })).toBeNull();
+});
+
+const loginPrompt = 'can you make me a form that says Username: and Password please';
+const loginResults = [
+  { status: 'done', text: 'A titled page with a background and a blue button. Username and Password.', firstTokenMs: 5900, totalMs: 9600, usage: { input: 20, output: 80 } },
+  { status: 'done', text: 'username and PASSWORD fields, then a submit button.', firstTokenMs: 673, totalMs: 1500, usage: { input: 20, output: 30 } },
+];
+
+test('a finished race picks the complete fast answer and shows the compare card', () => {
+  render(<Board Window={ModelArenaWindow} initial={{
+    id: 'arena-auto', lanes, prompt: loginPrompt,
+    lastRun: { at: '2026-10-24T12:00:00Z', lanes, results: loginResults, needsAuto: true },
+  }} />);
+  const reason = 'Picked automatically: it includes Username and Password, and it finished first. Looks are not part of this.';
+  expect(screen.getByText(reason)).toBeTruthy();
+  const haiku = screen.getByRole('group', { name: 'Marks for model 2' });
+  expect(within(haiku).getByText('Auto')).toBeTruthy();
+  expect(within(haiku).getByRole('button', { name: 'Best answer' }).getAttribute('aria-pressed')).toBe('true');
+
+  const card = screen.getByRole('region', { name: 'How the models compare' });
+  expect(card.closest('.hb-arena-lanes')).toBeTruthy();
+  expect(document.querySelector('.hb-arena').style.getPropertyValue('--arena-cols')).toBe('4');
+  expect(within(card).getByText(/First word/)).toBeTruthy();
+  expect(within(card).getByText(/Finished/)).toBeTruthy();
+  expect(within(card).getByText(/Speed/)).toBeTruthy();
+  expect(within(card).getByText(/Cost/)).toBeTruthy();
+  expect(within(card).getAllByText('lower is better')).toHaveLength(3);
+  expect(within(card).getByText('higher is better')).toBeTruthy();
+  expect(within(card).getByText('673 ms')).toBeTruthy();
+  expect(within(card).getByText('1.5 s')).toBeTruthy();
+  expect(within(card).getByText('5.9 s')).toBeTruthy();
+  expect(within(card).getByText('9.6 s')).toBeTruthy();
+  expect(within(card).getByText('36 tok/s')).toBeTruthy();
+  expect(within(card).getByText('22 tok/s')).toBeTruthy();
+  const painted = [...card.querySelectorAll('.hb-arena-compare-bar')].map((el) => el.getAttribute('data-lane'));
+  expect(painted).toContain('0');
+  expect(painted).toContain('1');
+
+  fireEvent.click(within(screen.getByRole('group', { name: 'Marks for model 1' })).getByRole('button', { name: 'Best answer' }));
+  expect(screen.queryByText('Auto')).toBeNull();
+  expect(screen.queryByText(reason)).toBeNull();
+  expect(within(screen.getByRole('group', { name: 'Marks for model 1' })).getByRole('button', { name: 'Best answer' }).getAttribute('aria-pressed')).toBe('true');
+  expect(within(screen.getByRole('group', { name: 'Marks for model 2' })).getByRole('button', { name: 'Best answer' }).getAttribute('aria-pressed')).toBe('false');
+
+  fireEvent.click(screen.getByRole('button', { name: /Record this run/ }));
+  expect(benchmarks().runs[0].marks).toMatchObject({ best: 0, auto: { best: 1, overridden: true, reason } });
+});
+
+test('a best someone already marked is not replaced', () => {
+  render(<Board Window={ModelArenaWindow} initial={{
+    id: 'arena-kept', lanes, prompt: loginPrompt,
+    lastRun: { at: '2026-10-24T12:00:00Z', lanes, results: loginResults, needsAuto: true, marks: { best: 0, lanes: {} } },
+  }} />);
+  expect(within(screen.getByRole('group', { name: 'Marks for model 1' })).getByRole('button', { name: 'Best answer' }).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.queryByText('Auto')).toBeNull();
+  expect(screen.queryByText(/Picked automatically/)).toBeNull();
 });
 
 test('the Benchmarks window shows the model table and lets anyone re-mark a run', () => {

@@ -116,6 +116,7 @@ describe('where the Agent Console keeps things', () => {
       home: '/state/home',
     });
     expect(env.HOME).toBe('/state/home');
+    expect(env.USERPROFILE).toBe('/state/home');
     expect(env.XDG_CONFIG_HOME).toBeUndefined();
     expect(env.USE_BUILTIN_RIPGREP).toBe('0');
   });

@@ -32,8 +32,16 @@ write(inProject('.env'), `MADE_UP_KEY=${KEY_WORDS}\n`);
 write(inProject('made-up-server.key'), `MADE-UP PRIVATE KEY ${KEY_WORDS}`);
 write(inProject('.git', 'config'), `url = https://${KEY_WORDS}@example.invalid/made-up.git\n`);
 write(path.join(elsewhere, 'outside-note.md'), 'Made-up words outside the project');
-fs.symlinkSync(inProject('.env'), inProject('made-up-link.md'));
-fs.symlinkSync(elsewhere, inProject('made-up-elsewhere'));
+let linksReady = true;
+try {
+  fs.symlinkSync(inProject('.env'), inProject('made-up-link.md'));
+  fs.symlinkSync(elsewhere, inProject('made-up-elsewhere'));
+} catch (err) {
+  if (err?.code !== 'EPERM' && err?.code !== 'EACCES') throw err;
+  linksReady = false;
+}
+const testWithLinks = linksReady ? test : test.skip;
+const describeWithLinks = linksReady ? describe : describe.skip;
 
 const agentProject = { id: 'made-up', name: 'made-up', path: project };
 // GitHub is made up here: every file read answers with the address it was asked for.
@@ -55,12 +63,12 @@ const askAgent = (who, rel, tool = 'project_read') => handleProjectsTool('made-u
 
 afterAll(() => fs.rmSync(tempRoot, { recursive: true, force: true }));
 
-describe("Sam's agent", () => {
-  test('reads an ordinary file in the project', async () => {
+describeWithLinks("Sam's agent", () => {
+  testWithLinks('reads an ordinary file in the project', async () => {
     expect(await askAgent(SAM, 'notes.md')).toBe('Made-up note');
   });
 
-  test('gets plain words, never the words, for a file only the owner opens', async () => {
+  testWithLinks('gets plain words, never the words, for a file only the owner opens', async () => {
     for (const rel of ['.env', 'made-up-server.key', path.join('.git', 'config'), 'made-up-link.md']) {
       for (const tool of ['project_read', 'project_file_outline']) {
         const said = await askAgent(SAM, rel, tool);
@@ -69,51 +77,51 @@ describe("Sam's agent", () => {
     }
   });
 
-  test('reads nothing a link leads to outside the project', async () => {
+  testWithLinks('reads nothing a link leads to outside the project', async () => {
     expect(await askAgent(SAM, path.join('made-up-elsewhere', 'outside-note.md'))).toBe(`Error: ${FILE_PROBLEMS.outside}`);
   });
 });
 
-test("Pat's agent reads them all", async () => {
+testWithLinks("Pat's agent reads them all", async () => {
   expect(await askAgent(PAT, '.env')).toContain(KEY_WORDS);
   expect(await askAgent(PAT, path.join('.git', 'config'))).toContain(KEY_WORDS);
   expect(await askAgent(PAT, path.join('made-up-elsewhere', 'outside-note.md'))).toBe('Made-up words outside the project');
 });
 
-describe('in a GitHub project', () => {
+describeWithLinks('in a GitHub project', () => {
   const repoProject = { repo: 'made-up/made-up', path: project };
   const ask = (who, rel) => ownerOnlyProjectRead({ userId: who }, repoProject, rel, { tool: 'project_read' });
 
-  test("Sam's agent gets plain words for a file that holds keys by its name, however it is spelled", async () => {
+  testWithLinks("Sam's agent gets plain words for a file that holds keys by its name, however it is spelled", async () => {
     for (const rel of ['.env', 'config/made-up-server.key', 'docs/../.env', '.env/.', '.env?x=.md', 'notes.md#.env']) {
       expect(await ask(SAM, rel)).toBe(FILE_PROBLEMS.ownerOnly);
     }
   });
 
-  test("Sam's agent reads an ordinary or example file there, and Pat's agent reads them all", async () => {
+  testWithLinks("Sam's agent reads an ordinary or example file there, and Pat's agent reads them all", async () => {
     expect(await ask(SAM, 'notes.md')).toBeNull();
     expect(await ask(SAM, '.env.example')).toBeNull();
     expect(await ask(PAT, '.env')).toBeNull();
   });
 });
 
-describe('github_read_file, with this computer\'s GitHub key', () => {
+describeWithLinks('github_read_file, with this computer\'s GitHub key', () => {
   const readAs = (who, args) => githubReadFile({ repo: 'made-up/repo', ...args }, { userId: who });
   beforeEach(() => fetchGithub.mockClear());
 
-  test("Sam's agent gets plain words for a file that holds keys, and GitHub is never asked", async () => {
+  testWithLinks("Sam's agent gets plain words for a file that holds keys, and GitHub is never asked", async () => {
     for (const path of ['.env', 'made-up/id_ed25519', '.env?ref=made-up', 'notes.md#.env']) {
       expect(await readAs(SAM, { path })).toBe(`Error: ${FILE_PROBLEMS.ownerOnly}`);
     }
     expect(fetchGithub).not.toHaveBeenCalled();
   });
 
-  test("Sam's agent reads an ordinary file, and Pat's agent reads the .env", async () => {
+  testWithLinks("Sam's agent reads an ordinary file, and Pat's agent reads the .env", async () => {
     expect(await readAs(SAM, { path: 'notes.md' })).toBe('Made-up words of /repos/made-up/repo/contents/notes.md');
     expect(await readAs(PAT, { path: '.env' })).toBe('Made-up words of /repos/made-up/repo/contents/.env');
   });
 
-  test('neither the repo nor the path can reach past the repo\'s files', async () => {
+  testWithLinks('neither the repo nor the path can reach past the repo\'s files', async () => {
     for (const args of [{ repo: 'made-up/repo/contents/.env?', path: 'x' }, { repo: '../user', path: 'x' }, { repo: 'made-up/..', path: 'x' }, { path: '../../../../user' }, { path: 'docs/../.env' }]) {
       expect(await readAs(PAT, args)).toMatch(/^Error: repo must be owner\/name/);
     }
@@ -122,18 +130,18 @@ describe('github_read_file, with this computer\'s GitHub key', () => {
   });
 });
 
-test("the desktop app's own work, with no one signed in, is the owner's; on a server it is no one's", async () => {
+testWithLinks("the desktop app's own work, with no one signed in, is the owner's; on a server it is no one's", async () => {
   const ask = (mode) => ownerOnlyProjectRead({}, agentProject, '.env', { tool: 'project_read', mode });
   expect(await ask(RUNTIME_MODES.LOCAL_DESKTOP)).toBeNull();
   expect(await ask(RUNTIME_MODES.PRIVATE_SERVER)).toBe(FILE_PROBLEMS.ownerOnly);
 });
 
-test('a teammate is refused when who is asking cannot be checked', async () => {
+testWithLinks('a teammate is refused when who is asking cannot be checked', async () => {
   pool.query.mockRejectedValueOnce(new Error('made-up database down'));
   expect(await askAgent(SAM, '.env')).toBe(`Error: ${FILE_PROBLEMS.ownerOnly}`);
 });
 
-test("Sam's agent gets plain words for key files a service, a framework or Terraform names, and reads their example", async () => {
+testWithLinks("Sam's agent gets plain words for key files a service, a framework or Terraform names, and reads their example", async () => {
   write(inProject('config', 'secrets.yml'), `made_up_key: ${KEY_WORDS}\n`);
   write(inProject('serviceAccountKey.json'), `{"made_up_key":"${KEY_WORDS}"}\n`);
   write(inProject('config', 'secrets.example.json'), '{"made_up_key":""}\n');

@@ -29,8 +29,16 @@ write(path.join(project, '.made-up', 'style.css'), `h1::after{content:"${KEY}"}`
 write(path.join(project, 'style.css'), 'h1{font-weight:600}');
 write(path.join(project, 'index.html'), '<link rel="stylesheet" href="style.css"><link rel="stylesheet" href=".made-up/style.css"><script src=".env"></script><h1>Made-up page</h1>');
 write(path.join(elsewhere, 'outside.md'), `# Made-up words outside ${KEY}`);
-fs.symlinkSync(path.join(project, '.env'), path.join(project, 'made-up-link.md'));
-fs.symlinkSync(path.join(elsewhere, 'outside.md'), path.join(project, 'made-up-outside.md'));
+let linksReady = true;
+try {
+  fs.symlinkSync(path.join(project, '.env'), path.join(project, 'made-up-link.md'));
+  fs.symlinkSync(path.join(elsewhere, 'outside.md'), path.join(project, 'made-up-outside.md'));
+} catch (err) {
+  if (err?.code !== 'EPERM' && err?.code !== 'EACCES') throw err;
+  linksReady = false;
+}
+const testWithLinks = linksReady ? test : test.skip;
+const describeWithLinks = linksReady ? describe : describe.skip;
 
 const localProject = { id: 'made-up', name: 'made-up', path: project };
 const githubProject = { id: 'made-up-gh', name: 'made-up-gh', repo: 'made-up/repo' };
@@ -53,7 +61,7 @@ afterAll(() => fs.rmSync(tempRoot, { recursive: true, force: true }));
 
 const refusal = (promise) => promise.then(() => null, (err) => err.code);
 
-test("the preview's reader reads an ordinary file and refuses one only the owner opens", async () => {
+testWithLinks("the preview's reader reads an ordinary file and refuses one only the owner opens", async () => {
   const read = projectFileReader(localProject);
   expect(await read('notes.md')).toBe('# Made-up note');
   for (const rel of ['.env', '.made-up/page.html', 'made-up-link.md', 'made-up-outside.md']) {
@@ -61,14 +69,14 @@ test("the preview's reader reads an ordinary file and refuses one only the owner
   }
 });
 
-test("a GitHub project's file that holds keys is never asked of GitHub for the preview", async () => {
+testWithLinks("a GitHub project's file that holds keys is never asked of GitHub for the preview", async () => {
   const read = projectFileReader(githubProject, 'main');
   for (const rel of ['.env', '.env?x=.md', 'docs/../made-up.pem']) expect(await refusal(read(rel))).toBe(OWNER_ONLY_FILE);
   expect(ghGetFile).not.toHaveBeenCalled();
   expect(await read('notes.md')).toBe('Made-up words of notes.md');
 });
 
-test('a page in the preview leaves out what it would pull in from a file only the owner opens', async () => {
+testWithLinks('a page in the preview leaves out what it would pull in from a file only the owner opens', async () => {
   const doc = new Y.Doc();
   upsertWindowInDoc(doc, { id: 'chat-1', kind: 'chat', agentId: 'made-up-agent', x: 100, y: 80, w: 420, h: 560 });
   const transact = async (_id, mutate) => { doc.transact(() => mutate(doc)); return true; };
@@ -82,10 +90,10 @@ test('a page in the preview leaves out what it would pull in from a file only th
   expect(JSON.stringify(readDocWindows(doc))).not.toContain(KEY);
 });
 
-describe('show_file', () => {
+describeWithLinks('show_file', () => {
   const show = (rel) => handleProjectWindowTool('made-up-agent', 'project_window', { action: 'show_file', path: rel }, { workspaceId: 'made-up-board', windowId: 'chat-1', userId: 1 });
 
-  test('gives plain words for a file only the owner opens, and shows nothing', async () => {
+  testWithLinks('gives plain words for a file only the owner opens, and shows nothing', async () => {
     current = localProject;
     for (const rel of ['.made-up/page.html', 'made-up-link.md', 'made-up-outside.md']) {
       const said = await show(rel);

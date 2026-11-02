@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { onLogRecord } from '../server/logger.js';
 import { chatLog, noteFailure } from '../server/routes/chat/chatLog.js';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 test('a failed chat side step logs a fixed line with the agent id and a short code, never the error text', () => {
   const records = [];

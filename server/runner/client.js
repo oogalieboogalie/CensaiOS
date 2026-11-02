@@ -122,7 +122,8 @@ export class RunnerClient {
       const { stdout, stderr } = await execFileAsync(command, args, {
         maxBuffer: 50 * 1024 * 1024,
         ...options,
-        shell: process.platform === 'win32' || options.shell,
+        // cmd.exe splits on spaces, so a .exe path with a space is spawned directly.
+        shell: !/\.exe$/i.test(String(command)) && (process.platform === 'win32' || Boolean(options.shell)),
       });
       return { stdout, stderr, code: 0 };
     } catch (err) {

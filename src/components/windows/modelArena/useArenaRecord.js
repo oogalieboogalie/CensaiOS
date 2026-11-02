@@ -1,6 +1,7 @@
 import React from 'react';
 import { useWorkspaceStore } from '../../../lib/store.js';
 import { benchmarkTaskFor } from '../../../lib/modelArena/benchmarkTasks.js';
+import { applyAutoPick, autoPickArena } from '../../../lib/modelArena/autoPick.js';
 import { addRecord, cleanMarks, emptyMarks, makeRecord, updateRecordMarks } from '../../../lib/modelArena/benchmarks.js';
 import { judgeRequest, parseJudgeReply } from '../../../lib/modelArena/arenaJudge.js';
 import { runArena } from '../../../lib/modelArena/runArena.js';
@@ -42,7 +43,26 @@ export function useArenaRecord(win = {}, onUpdate, { running }) {
     if (lastRun.recordId) writeBenchmarks((runs) => updateRecordMarks(runs, lastRun.recordId, next));
   }, [lastRun, onUpdate]);
 
-  const pickBest = (index) => saveMarks({ ...marks, best: marks.best === index ? null : index });
+  const pickBest = (index) => {
+    const best = marks.best === index ? null : index;
+    const auto = marks.auto ? { ...marks.auto, overridden: true } : null;
+    saveMarks(auto ? { ...marks, best, auto } : { ...marks, best });
+  };
+
+  // Once, when this finish is still unmarked. A later click is left alone.
+  React.useEffect(() => {
+    if (running) return;
+    const live = win.id ? useWorkspaceStore.getState().wins?.find((w) => w.id === win.id) : null;
+    const run = live ? live.lastRun : lastRun;
+    if (!run?.needsAuto) return;
+    const prompt = (live ? live.prompt : win.prompt) || '';
+    const current = cleanMarks(run.marks, run.lanes?.length || 0);
+    const stamped = run.recordId ? null : applyAutoPick(current, autoPickArena({ prompt, lanes: run.lanes, results: run.results }));
+    const nextRun = { ...run, marks: stamped || current };
+    delete nextRun.needsAuto;
+    onUpdate?.({ lastRun: nextRun });
+  }, [running, lastRun, win.id, win.prompt, onUpdate]);
+
   const markLane = (index, value) => {
     const lanes = { ...marks.lanes };
     if (lanes[index] === value) delete lanes[index];

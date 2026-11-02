@@ -2,6 +2,7 @@
 // retirement dates live in shared/models/defaultChatModel.js and Ollama is faked.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { jest } from '@jest/globals';
 
 const completions = [];
@@ -26,7 +27,7 @@ const { prioritizeArtifacts } = await import('../server/operational-intelligence
 
 const DAY = 24 * 60 * 60 * 1000;
 const LOCAL = 'http://localhost:11434/v1';
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function fakeOllama(models) {
   const calls = [];

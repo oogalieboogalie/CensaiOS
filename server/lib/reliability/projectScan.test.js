@@ -31,7 +31,14 @@ test('lists code files only, skipping packages, hidden folders and tests', () =>
 test('never follows a link out of the project', () => {
   const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'reliability-outside-'));
   fs.writeFileSync(path.join(outside, 'secret.js'), 'export const s = 1;\n');
-  fs.symlinkSync(outside, path.join(root, 'linked'));
+  try {
+    fs.symlinkSync(outside, path.join(root, 'linked'));
+  } catch (err) {
+    fs.rmSync(outside, { recursive: true, force: true });
+    // Windows refuses the fixture without a symlink privilege. Linux CI still runs the scan check.
+    if (err?.code === 'EPERM' || err?.code === 'EACCES') return;
+    throw err;
+  }
   expect(listCodeFiles(root)).not.toContain('linked/secret.js');
   fs.rmSync(outside, { recursive: true, force: true });
 });

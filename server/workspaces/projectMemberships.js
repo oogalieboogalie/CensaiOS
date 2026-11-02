@@ -1,4 +1,7 @@
-import { classifyAgentIdentity } from '../agents/identity.js';
+import {
+  invalidCanvasAgentIds,
+  ownerMayAuthorizeCustomAgents,
+} from './canvasAgentAccess.js';
 
 const PERMISSIONS = new Set(['read', 'work']);
 const MAX_MEMBERSHIPS = 64;
@@ -97,10 +100,11 @@ export async function replaceCanvasProjectMemberships(db, {
     if (rows.length > 0) {
       rows = await boardAgentsAsParents(client, cleanWorkspaceId, rows);
       const agents = await client.query('SELECT * FROM agents WHERE id = ANY($1)', [rows.map((row) => row.agentId)]);
-      const canonical = new Set(agents.rows
-        .filter((agent) => classifyAgentIdentity(agent).betaVisible)
-        .map((agent) => agent.id));
-      const invalid = rows.map((row) => row.agentId).filter((id) => !canonical.has(id));
+      const allowCustom = await ownerMayAuthorizeCustomAgents(client, {
+        workspaceId: cleanWorkspaceId,
+        userId,
+      });
+      const invalid = invalidCanvasAgentIds(rows.map((row) => row.agentId), agents.rows, { allowCustom });
       if (invalid.length > 0) {
         throw new ProjectMembershipError(`Unknown or non-canonical agent IDs: ${invalid.join(', ')}`);
       }

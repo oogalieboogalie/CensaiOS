@@ -1,6 +1,16 @@
 // No dotenv here: tests run against the same empty environment CI uses, so a
 // developer's real .env (keys, CENSAI_MODE, DATABASE_URL) cannot change results.
+import os from 'os';
+import path from 'path';
 import { TextEncoder, TextDecoder } from 'util';
+
+// A checkout above the temp directory would own every throwaway folder.
+// Stop git from walking past temp, the same way a nested repo is fenced off.
+const tempCeiling = path.resolve(os.tmpdir());
+const ceiling = process.env.GIT_CEILING_DIRECTORIES;
+process.env.GIT_CEILING_DIRECTORIES = ceiling
+  ? `${tempCeiling}${path.delimiter}${ceiling}`
+  : tempCeiling;
 
 // Mock canvas getContext which isn't present/functional in jsdom
 // We do this BEFORE other imports to catch top-level calls

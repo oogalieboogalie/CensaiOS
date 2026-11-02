@@ -35,10 +35,17 @@ write(inProject('made-up-server.key'), `MADE-UP PRIVATE KEY ${KEY_WORDS}`);
 write(inProject('.git', 'config'), `[remote "origin"]\n  url = https://${TOKEN}@example.invalid/made-up.git\n`);
 write(path.join(elsewhere, 'outside-note.md'), 'Made-up words outside the project');
 write(path.join(elsewhere, 'picture.png'), PNG);
-fs.symlinkSync(inProject('.env'), inProject('made-up-link.md'));
-fs.symlinkSync(inProject('.git'), inProject('made-up-git'));
-fs.symlinkSync(elsewhere, inProject('made-up-elsewhere'));
-fs.symlinkSync(path.join(elsewhere, 'outside-note.md'), inProject('made-up-outside-link.md'));
+let linksReady = true;
+try {
+  fs.symlinkSync(inProject('.env'), inProject('made-up-link.md'));
+  fs.symlinkSync(inProject('.git'), inProject('made-up-git'));
+  fs.symlinkSync(elsewhere, inProject('made-up-elsewhere'));
+  fs.symlinkSync(path.join(elsewhere, 'outside-note.md'), inProject('made-up-outside-link.md'));
+} catch (err) {
+  if (err?.code !== 'EPERM' && err?.code !== 'EACCES') throw err;
+  linksReady = false;
+}
+const describeWithLinks = linksReady ? describe : describe.skip;
 write(path.join(stateDir, 'open-projects.json'), JSON.stringify([project]));
 process.env.CENSAI_STATE_DIR = stateDir;
 
@@ -67,7 +74,7 @@ afterAll(() => {
   fs.rmSync(tempRoot, { recursive: true, force: true });
 });
 
-describe("a project's files that hold keys", () => {
+describeWithLinks("a project's files that hold keys", () => {
   const secrets = ['.env', 'made-up-server.key', path.join('.git', 'config'), 'made-up-link.md', path.join('made-up-git', 'config')];
 
   test('open for Sam in plain words only, never their words', async () => {
@@ -101,7 +108,7 @@ describe("a project's files that hold keys", () => {
   });
 });
 
-describe('a link that leads out of the project', () => {
+describeWithLinks('a link that leads out of the project', () => {
   test('is outside it for Sam, there or not, and Pat still opens it', async () => {
     const asked = [inProject('made-up-outside-link.md'), inProject('made-up-elsewhere', 'outside-note.md')];
     for (const p of asked) expect((await read(SAM, p).expect(403)).body).toEqual(OUTSIDE);
@@ -118,7 +125,7 @@ describe('a link that leads out of the project', () => {
   });
 });
 
-describe('Files and search', () => {
+describeWithLinks('Files and search', () => {
   test("do not list a hidden folder or a folder outside the project for Sam, and do for Pat", async () => {
     const hidden = await browse(SAM, inProject('.git')).expect(403);
     expect(hidden.body.error).toBe("Only this computer's owner can open this folder.");

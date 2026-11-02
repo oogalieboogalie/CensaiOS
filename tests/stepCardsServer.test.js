@@ -12,6 +12,17 @@ import { checkFile, checkRun, verifyStep } from '../server/stepCards/verify.js';
 import { cleanChecks, createStepCardsRouter, whereToCheck } from '../server/routes/stepCards.js';
 import { HIDDEN_MARK } from '../shared/files/fileProblems.js';
 
+// Windows refuses a link fixture without a symlink privilege. Linux CI still runs it.
+function linkOrSkip(target, linkPath) {
+  try {
+    fs.symlinkSync(target, linkPath);
+    return true;
+  } catch (err) {
+    if (err?.code === 'EPERM' || err?.code === 'EACCES') return false;
+    throw err;
+  }
+}
+
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'step-cards-'));
 fs.mkdirSync(path.join(tmp, 'src'));
 fs.writeFileSync(path.join(tmp, 'src', 'badge.js'), 'export const badge = () => new Date().toLocaleDateString();\n');
@@ -51,17 +62,18 @@ describe('checks', () => {
   test('a link that points out of the project is never followed', async () => {
     const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'step-cards-outside-'));
     fs.writeFileSync(path.join(outside, 'secret.txt'), 'BEGIN SECRET');
-    fs.symlinkSync(path.join(outside, 'secret.txt'), path.join(tmp, 'leak'));
+    if (!linkOrSkip(path.join(outside, 'secret.txt'), path.join(tmp, 'leak'))) return;
     expect(await checkFile(tmp, { path: 'leak', says: 'BEGIN' })).toMatchObject({ ok: null });
     expect(await checkFile(tmp, { path: 'leak' })).toMatchObject({ ok: null });
   });
 
   test('a file that holds keys is found but never read, even through a link or for the owner', async () => {
     fs.writeFileSync(path.join(tmp, '.env'), 'MADE_UP_KEY=not-a-real-made-up-key\n');
-    fs.symlinkSync(path.join(tmp, '.env'), path.join(tmp, 'made-up-link.md'));
     const isOwner = async () => true;
     expect(await checkFile(tmp, { path: '.env' })).toEqual({ ok: true, line: 'Found .env.' });
-    for (const p of ['.env', 'made-up-link.md']) {
+    const paths = ['.env'];
+    if (linkOrSkip(path.join(tmp, '.env'), path.join(tmp, 'made-up-link.md'))) paths.push('made-up-link.md');
+    for (const p of paths) {
       expect(await checkFile(tmp, { path: p, says: 'MADE_UP_KEY=n' }, { isOwner })).toEqual({ ok: null, line: `${p} can hold keys or passwords, so I do not read it.` });
     }
   });
@@ -69,17 +81,20 @@ describe('checks', () => {
   test('a file in a hidden folder is read only for the owner, asked for there or through a link', async () => {
     fs.mkdirSync(path.join(tmp, '.git'));
     fs.writeFileSync(path.join(tmp, '.git', 'config'), 'url = https://made-up-token@example.invalid/made-up.git\n');
-    fs.symlinkSync(path.join(tmp, '.git', 'config'), path.join(tmp, 'made-up-config.md'));
+    const linked = linkOrSkip(path.join(tmp, '.git', 'config'), path.join(tmp, 'made-up-config.md'));
     const isOwner = jest.fn(async () => false);
-    for (const p of [path.join('.git', 'config'), 'made-up-config.md']) {
+    const hiddenPaths = [path.join('.git', 'config')];
+    if (linked) hiddenPaths.push('made-up-config.md');
+    for (const p of hiddenPaths) {
       expect(await checkFile(tmp, { path: p, says: 'made-up-token' }, { isOwner })).toEqual({ ok: null, line: `${p} is in a hidden folder, so only this computer's owner can have me read it.` });
       expect(await checkFile(tmp, { path: p, says: 'made-up-token' }, { isOwner: async () => true })).toMatchObject({ ok: true });
     }
     expect(await checkFile(tmp, { path: path.join('.git', 'config') })).toMatchObject({ ok: true });
-    const checks = [{ id: 'a', kind: 'file', path: '.git/config', says: 'url' }, { id: 'b', kind: 'file', path: 'made-up-config.md', says: 'url' }];
+    const checks = [{ id: 'a', kind: 'file', path: '.git/config', says: 'url' }];
+    if (linked) checks.push({ id: 'b', kind: 'file', path: 'made-up-config.md', says: 'url' });
     const results = await verifyStep({ step: { title: 's' }, checks, ctx: { cwd: tmp, isOwner } });
-    expect(results.map((r) => r.ok)).toEqual([null, null]);
-    expect(isOwner).toHaveBeenCalledTimes(3);
+    expect(results.map((r) => r.ok)).toEqual(linked ? [null, null] : [null]);
+    expect(isOwner).toHaveBeenCalledTimes(linked ? 3 : 2);
   });
 
   test('picking a hidden folder itself as the folder to check hides nothing', async () => {

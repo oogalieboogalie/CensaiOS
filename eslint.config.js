@@ -10,6 +10,7 @@ export default [
       "dist-site/",
       "dist-demo/",
       ".laptop-build/",
+      ".os-site-deploy/",
       "docs-site/public/",
       "docs-site/site/",
       "node_modules/",

@@ -183,7 +183,9 @@ describe('making the versions GitHub does not have yet again without files that 
   test('names with spaces, quotes and letters that are not ASCII are taken out too; a message that reads like a file line stays', async () => {
     const gh = fakeGithub(tmp());
     const dir = tmp();
-    const odd = ['made up keys/made up.pem', 'quote"d.key', 'clé-made-up.pem', 'back\\slash.key'];
+    // A quote is a legal file name on Linux and not on Windows.
+    const odd = ['made up keys/made up.pem', 'quote"d.key', 'clé-made-up.pem', 'back\\slash.key']
+      .filter((name) => process.platform !== 'win32' || !/[<>:"|?*]/.test(name));
     for (const file of ['index.html', ...odd]) write(dir, file);
     git(dir, 'init', '-q', '-b', 'main');
     saveWithPlainGit(dir, 'Made-up first version\n\nM 100644 0123456789abcdef0123456789abcdef01234567 index.html\ndata 3');
