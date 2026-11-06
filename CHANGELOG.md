@@ -17,6 +17,22 @@ tags.
 
 ### New
 
+- Image Generator: two people can type in one prompt at once (crew realtime) (Nov 6)
+- Legion: two people can type in one goal at once (crew realtime) (Nov 6)
+- Model Arena: two people can type in one request at once (crew realtime) (Nov 6)
+- Git Diff: two people can type in one Before or After box at once (crew realtime) (Nov 6)
+- Photo and Video: two people can type in one text layer or title at once (crew realtime) (Nov 6)
+- UI team nightly: Lead Queue gets a filter bar, a sunken queue, raised lead cards and a real empty state (Nov 6)
+- Window names: two people can rename one window at once (crew realtime) (Nov 6)
+- Layout: two people can type in one text frame at once (crew realtime) (Nov 6)
+- Listing Writer: two people can fill in one listing at once (crew realtime) (Nov 6)
+- Nightly sweep 2026-11-06: board search/to-dos, GitHub file cache, agent journals (Nov 6)
+- CAD: two people can change one recipe at once (crew realtime) (Nov 6)
+- Writer: two people can type in one paragraph at once (crew realtime) (Nov 6)
+- Slides: two people can type in one slide text box at once (crew realtime) (Nov 6)
+- Slides: two people can type in one slide's speaker notes at once (crew realtime) (Nov 6)
+- Teleprompter: two people can type in one script at once (crew realtime) (Nov 6)
+- Prove a chat in a group keeps its grouped size through click, type, drag, reload, Alt+1, F1 and Escape (crew 157) (Nov 6)
 - Add owner project access and arena compare (Nov 1)
 - Keep chat working when Ollama retires the default model (Oct 31)
 - Starter box: keep Ollama private until the firewall is on (Oct 31)
@@ -76,6 +92,7 @@ tags.
 
 ### Behind the scenes
 
+- Prove workflows, Scheduler, the MCP door and Idea Pad use the key saved in Settings (crew 159) (Nov 6)
 - The crew's guide says what the empty board draws; unused tile names go (Oct 30)
 
 ## 0.6.0 (2026-11-01)

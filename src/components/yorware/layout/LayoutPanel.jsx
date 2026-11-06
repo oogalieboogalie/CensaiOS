@@ -7,6 +7,7 @@ import { ToolIcon } from '../../creative/toolIcons.jsx';
 import { MASTER, PAGE_SIZES } from '../../../lib/yorware/layoutModel.js';
 import { FONTS } from '../../../lib/yorware/layoutFlow.js';
 import { LayoutIcon } from '../layoutIcons.jsx';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 
 const NAMES = { text: 'Text frame', image: 'Picture frame', rect: 'Rectangle', ellipse: 'Ellipse', line: 'Line' };
 const inch = (pt) => Math.round((pt / 72) * 100) / 100;
@@ -45,6 +46,8 @@ function PageSettings({ p }) {
 function TextSettings({ p, textRef }) {
   const { story: s, one } = p;
   const info = p.flow[p.selected[0]];
+  // A teammate's letters landing in this story keep your cursor where it was.
+  useSharedCaret(textRef, s.text || '');
   return (
     <Section title="Text" aside={info?.count > 1 ? <span className="hb-cr-num">frame {info.index + 1} of {info.count}</span> : null}>
       <textarea ref={textRef} className="hb-cr-input hb-cr-textarea hb-yl-story" aria-label="Text" value={s.text}

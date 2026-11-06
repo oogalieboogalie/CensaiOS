@@ -28,7 +28,7 @@ export function SavedOutreach({ lead }) {
   return (
     <div>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
-        style={{ ...small, color: 'var(--ps-teal)', marginTop: 6 }}>
+        style={{ ...small, color: 'var(--accent-ink)', marginTop: 6 }}>
         {open ? '▾' : '▸'} Saved drafts: {label}
       </button>
       {open && sequence.map((step) => {

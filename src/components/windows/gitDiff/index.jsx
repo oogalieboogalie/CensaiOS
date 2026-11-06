@@ -7,6 +7,7 @@ import { rowsFromHunks, rowsFromTexts, countRows } from '../../diffViewer/sideBy
 import { windowMeta } from './meta.js';
 import { useGitDiff } from './useGitDiff.js';
 import { SECRET_CHANGES } from '../../../../shared/files/fileProblems.js';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 
 export { windowMeta };
 
@@ -20,18 +21,23 @@ function Wordmark() {
   );
 }
 
-function PasteEditor({ before, after, onChange, onDone }) {
+function PasteEditor({ id, before, after, onChange, onDone }) {
+  // A teammate's letters landing in either box keep your cursor where it was.
+  const beforeRef = React.useRef(null);
+  const afterRef = React.useRef(null);
+  useSharedCaret(beforeRef, before, React.useMemo(() => ({ id, field: 'diffBefore' }), [id]));
+  useSharedCaret(afterRef, after, React.useMemo(() => ({ id, field: 'diffAfter' }), [id]));
   return (
     <div className="gdv-split gdv-split--edit">
       <label className="gdv-pane gdv-pane--left">
         <span className="gdv-pane-label">Before: paste the old version</span>
-        <textarea className="gdv-input" spellCheck={false} value={before} data-testid="gdv-before"
+        <textarea ref={beforeRef} className="gdv-input" spellCheck={false} value={before} data-testid="gdv-before"
           onChange={(e) => onChange({ diffBefore: e.target.value })} />
       </label>
       <div className="gdv-divider" aria-hidden="true" />
       <label className="gdv-pane gdv-pane--right">
         <span className="gdv-pane-label">After: paste the new version</span>
-        <textarea className="gdv-input" spellCheck={false} value={after} data-testid="gdv-after"
+        <textarea ref={afterRef} className="gdv-input" spellCheck={false} value={after} data-testid="gdv-after"
           onChange={(e) => onChange({ diffAfter: e.target.value })} />
       </label>
       <button type="button" className="gdv-btn gdv-btn--go" onClick={onDone} disabled={!before && !after} data-testid="gdv-compare">Compare</button>
@@ -62,7 +68,7 @@ export function GitDiffWindow({ win = {}, onUpdate }) {
 
   let body;
   // Typing keeps the editor open until Compare; otherwise the first letter in Before would close it.
-  if (editing) body = <PasteEditor before={win.diffBefore || ''} after={win.diffAfter || ''} onChange={(patch) => update({ ...patch, diffEditing: true })} onDone={() => update({ diffEditing: false })} />;
+  if (editing) body = <PasteEditor id={win.id} before={win.diffBefore || ''} after={win.diffAfter || ''} onChange={(patch) => update({ ...patch, diffEditing: true })} onDone={() => update({ diffEditing: false })} />;
   else if (taskId && !changes.loaded) body = <p className="gdv-note">Reading changes…</p>;
   else if (taskId && error) body = <p className="gdv-note" data-tone="danger">{error}</p>;
   else if (taskId && !files.length) body = <p className="gdv-note">This agent has not changed any files yet.</p>;

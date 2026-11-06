@@ -80,6 +80,7 @@
 @import './styles/minimap.css';
 @import './styles/glass.css';
 @import './styles/depth.css';
+@import './styles/leads.css';
 @import './styles/design-block.css';
 @import './styles/native-controls.css';
 @import './styles/demo.css';

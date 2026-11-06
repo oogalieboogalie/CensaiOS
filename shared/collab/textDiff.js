@@ -4,8 +4,16 @@
 // to keep a local caret in place when someone else's edit lands. Pure; shared
 // by the browser binding and the server-side agent writer.
 
-/** Window fields stored as Y.Text so concurrent typing merges. */
-export const WINDOW_TEXT_FIELDS = new Set(['text', 'code']);
+/**
+ * Window fields stored as Y.Text so concurrent typing merges (cadCode: a CAD
+ * window's recipe; title: a window's name, like a Writer document's title;
+ * diffBefore and diffAfter: the two versions pasted into a Git Diff Viewer;
+ * prompt and system: a request and its instructions, like Model Arena's;
+ * legionGoal and legionSpecYaml: what a Legion should build, and its spec).
+ */
+export const WINDOW_TEXT_FIELDS = new Set([
+  'text', 'code', 'cadCode', 'title', 'diffBefore', 'diffAfter', 'prompt', 'system', 'legionGoal', 'legionSpecYaml',
+]);
 
 /** Vault notes keep each note's words in a field of its own, `vt.<noteId>`. */
 export const NOTE_TEXT_PREFIX = 'vt.';

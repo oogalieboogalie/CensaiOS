@@ -96,3 +96,25 @@ test('Chrome and Edge get an always-on-top picture-in-picture window', async () 
   await expect(openPrompterPopOut({ win: { documentPictureInPicture: { requestWindow } }, url: 'http://x/?teleprompter=1' })).resolves.toBe('picture-in-picture');
   expect(doc.querySelector('iframe').getAttribute('src')).toBe('http://x/?teleprompter=1');
 });
+
+test('a teammate typing earlier in the script keeps your caret where you were typing', () => {
+  const win = { id: 'w1', kind: 'teleprompter', text: 'Made-up line one. Made-up line two.' };
+  const { rerender } = render(<TeleprompterWindow win={win} onUpdate={jest.fn()} />);
+  fireEvent.click(screen.getByText('Edit script'));
+  const box = screen.getByLabelText('Script');
+  box.focus();
+  const at = win.text.indexOf('two') + 3;
+  box.setSelectionRange(at, at);
+  // Sam Example adds words at the very start; Pat's caret must still sit after "two".
+  rerender(<TeleprompterWindow win={{ ...win, text: `Hello from Sam. ${win.text}` }} onUpdate={jest.fn()} />);
+  const moved = screen.getByLabelText('Script');
+  expect(moved.value.slice(0, moved.selectionStart)).toMatch(/line two$/);
+});
+
+test("a teammate's change reaches this person's pop-out reader", () => {
+  const win = { id: 'w1', kind: 'teleprompter', text: 'Made-up first words' };
+  const { rerender } = render(<TeleprompterWindow win={win} onUpdate={jest.fn()} />);
+  expect(readShared().text).toBe('Made-up first words');
+  rerender(<TeleprompterWindow win={{ ...win, text: 'Made-up first words, and a line from Sam', speed: 6 }} onUpdate={jest.fn()} />);
+  expect(readShared()).toMatchObject({ text: 'Made-up first words, and a line from Sam', speed: 6 });
+});

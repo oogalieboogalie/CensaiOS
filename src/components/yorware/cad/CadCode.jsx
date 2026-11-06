@@ -1,11 +1,15 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { CAD_RECIPES } from '../../../lib/yorware/cadRecipes.js';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 
 /** The recipe: the code that makes the part, with line numbers. */
 export function CadCode({ cad }) {
   const { code, dirty, canEdit } = cad;
   const gutterRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+  // A teammate's Run landing in my unsaved copy keeps my caret in place.
+  useSharedCaret(inputRef, code);
   const lines = code.split('\n').length;
 
   const onKeyDown = (e) => {
@@ -16,7 +20,7 @@ export function CadCode({ cad }) {
       const el = e.currentTarget;
       const { selectionStart: a, selectionEnd: b } = el;
       const next = `${code.slice(0, a)}  ${code.slice(b)}`;
-      cad.setDraft(next);
+      cad.setDraft(next, a + 2);
       requestAnimationFrame(() => { el.selectionStart = a + 2; el.selectionEnd = a + 2; });
     }
   };
@@ -33,8 +37,8 @@ export function CadCode({ cad }) {
       </div>
       <div className="hb-yc-editor">
         <pre className="hb-yc-gutter" ref={gutterRef} aria-hidden="true">{Array.from({ length: lines }, (_, i) => i + 1).join('\n')}</pre>
-        <textarea className="hb-yc-textarea" value={code} spellCheck={false} readOnly={!canEdit} aria-label="Recipe code"
-          onChange={(e) => cad.setDraft(e.target.value)} onKeyDown={onKeyDown}
+        <textarea ref={inputRef} className="hb-yc-textarea" value={code} spellCheck={false} readOnly={!canEdit} aria-label="Recipe code"
+          onChange={(e) => cad.setDraft(e.target.value, e.target.selectionStart)} onKeyDown={onKeyDown}
           onScroll={(e) => { if (gutterRef.current) gutterRef.current.scrollTop = e.currentTarget.scrollTop; }} />
       </div>
       <p className="hb-cr-hint">

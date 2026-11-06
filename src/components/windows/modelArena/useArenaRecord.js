@@ -35,7 +35,9 @@ export function useArenaRecord(win = {}, onUpdate, { running }) {
   const [judging, setJudging] = React.useState(false);
   const [judgeError, setJudgeError] = React.useState('');
   // Only a premade task is ranked; a typed-in request is kept as a note.
-  const task = lastRun ? benchmarkTaskFor(win.prompt, win.system) : null;
+  // The request the race ran (an older board kept it on the window only).
+  const ran = { prompt: lastRun?.prompt ?? win.prompt, system: lastRun?.system ?? win.system };
+  const task = lastRun ? benchmarkTaskFor(ran.prompt, ran.system) : null;
 
   const saveMarks = React.useCallback((next) => {
     if (!lastRun) return;
@@ -55,7 +57,7 @@ export function useArenaRecord(win = {}, onUpdate, { running }) {
     const live = win.id ? useWorkspaceStore.getState().wins?.find((w) => w.id === win.id) : null;
     const run = live ? live.lastRun : lastRun;
     if (!run?.needsAuto) return;
-    const prompt = (live ? live.prompt : win.prompt) || '';
+    const prompt = run.prompt ?? (live ? live.prompt : win.prompt) ?? '';
     const current = cleanMarks(run.marks, run.lanes?.length || 0);
     const stamped = run.recordId ? null : applyAutoPick(current, autoPickArena({ prompt, lanes: run.lanes, results: run.results }));
     const nextRun = { ...run, marks: stamped || current };
@@ -73,17 +75,17 @@ export function useArenaRecord(win = {}, onUpdate, { running }) {
   const record = React.useCallback(() => {
     if (!finished || lastRun.recordId) return;
     const entry = makeRecord({
-      prompt: win.prompt, system: win.system, lanes: lastRun.lanes, results: lastRun.results, marks, task: task?.id || null,
+      prompt: ran.prompt, system: ran.system, lanes: lastRun.lanes, results: lastRun.results, marks, task: task?.id || null,
     });
     writeBenchmarks((runs) => addRecord(runs, entry));
     onUpdate?.({ lastRun: { ...lastRun, recordId: entry.id } });
-  }, [finished, lastRun, marks, task, win.prompt, win.system, onUpdate]);
+  }, [finished, lastRun, marks, task, ran.prompt, ran.system, onUpdate]);
 
   const setJudge = (id) => onUpdate?.({ judge: id || '' });
 
   const askJudge = React.useCallback(async () => {
     if (!win.judge || !finished || judging) return;
-    const request = judgeRequest({ prompt: win.prompt, system: win.system, results: lastRun.results, check: task?.check });
+    const request = judgeRequest({ prompt: ran.prompt, system: ran.system, results: lastRun.results, check: task?.check });
     if (request.answerCount < 2) { setJudgeError('The judge needs at least two finished answers.'); return; }
     setJudging(true);
     setJudgeError('');
@@ -104,7 +106,7 @@ export function useArenaRecord(win = {}, onUpdate, { running }) {
     const verdict = failure ? null : parseJudgeReply(text, laneCount);
     if (!verdict) { setJudgeError(failure || 'The judge answered, but not with a pick. Try another judge model.'); return; }
     saveMarks({ ...marks, judge: { model: win.judge, ...verdict } });
-  }, [win.judge, win.prompt, win.system, finished, judging, lastRun, laneCount, marks, task, saveMarks]);
+  }, [win.judge, ran.prompt, ran.system, finished, judging, lastRun, laneCount, marks, task, saveMarks]);
 
   return {
     marks: lastRun ? marks : emptyMarks(),

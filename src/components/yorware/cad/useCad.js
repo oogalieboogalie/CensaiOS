@@ -5,6 +5,7 @@ import { codePatch, paramPatch, readCad, recipeHash, resetPatch, runPatch } from
 import { CAD_RECIPES, recipeById } from '../../../lib/yorware/cadRecipes.js';
 import { getSelf } from '../../../lib/modules/presenceRoster.js';
 import { cadAvailable, cadJob } from './cadClient.js';
+import { useCadDraft } from './useCadDraft.js';
 
 export const UNTITLED = 'Untitled part';
 const SETTLE_MS = 120;
@@ -12,12 +13,13 @@ const SETTLE_MS = 120;
 export function useCad(win, onUpdate) {
   const board = React.useMemo(() => readCad(win), [win]);
   const canEdit = getSelf().canEdit !== false;
-  const [draft, setDraft] = React.useState(null);
   const [part, setPart] = React.useState(null);
   const [status, setStatus] = React.useState('idle');
   const [notice, setNotice] = React.useState(null);
   const update = React.useRef(onUpdate);
   update.current = onUpdate;
+  // My unsaved recipe edits; a teammate's Run merges into them.
+  const { draft, setDraft, clear: clearDraft } = useCadDraft(board.code, win?.id);
   const boardRef = React.useRef(board);
   boardRef.current = board;
 
@@ -68,7 +70,7 @@ export function useCad(win, onUpdate) {
     if (draft === null) return;
     try {
       save(codePatch(draft));
-      setDraft(null);
+      clearDraft();
     } catch (err) {
       setNotice(err.message);
     }
@@ -92,7 +94,7 @@ export function useCad(win, onUpdate) {
   return {
     board, canEdit, part, status, notice, setNotice,
     code: draft ?? board.code, dirty: draft !== null && draft !== board.code,
-    setDraft, discardDraft: () => setDraft(null), runDraft,
+    setDraft, discardDraft: clearDraft, runDraft,
     setValue, resetValues, startFrom, exportAs,
   };
 }

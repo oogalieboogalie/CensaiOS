@@ -54,7 +54,9 @@ function keysOf(list) {
 // Erasing or editing items touches only those ids, so an item someone else
 // adds at the same moment survives the merge. False when the lists aren't
 // keyed by unique ids or were reordered (the caller replaces the list).
-export function syncById(arr, prev, next) {
+// `edit` and `toY` let a list choose how an item is edited or written new
+// (slide boxes keep their words as merging text).
+export function syncById(arr, prev, next, { edit = editInPlace, toY = valueToY } = {}) {
   const prevIds = keysOf(prev);
   const nextIds = keysOf(next);
   if (prevIds.includes(null) || nextIds.includes(null)) return false;
@@ -79,15 +81,15 @@ export function syncById(arr, prev, next) {
     if (prevById.has(id) && (!target || !same(prevById.get(id), nextById.get(target)))) {
       const live = arr.get(i);
       if (target === id && live instanceof Y.Map && isRecord(prevById.get(id)) && isRecord(nextById.get(id))) {
-        editInPlace(live, prevById.get(id), nextById.get(id));
+        edit(live, prevById.get(id), nextById.get(id));
         continue;
       }
       arr.delete(i, 1);
-      if (target) { arr.insert(i, [valueToY(nextById.get(target))]); placed.add(target); }
+      if (target) { arr.insert(i, [toY(nextById.get(target))]); placed.add(target); }
     }
   }
   const added = next.filter((item, i) => !prevById.has(nextIds[i]) && !placed.has(nextIds[i]));
-  if (added.length) arr.push(added.map((item) => valueToY(item)));
+  if (added.length) arr.push(added.map((item) => toY(item)));
   return true;
 }
 

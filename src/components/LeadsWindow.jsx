@@ -8,7 +8,7 @@ import { SavedOutreach } from './leads/SavedOutreach.jsx';
 import { noteLeadList, queueCountsFromPayload, shiftQueueCount } from './leads/queueCounts.js';
 import { webLink } from './leads/leadLinks.js';
 
-const STATUS_DOT = { new: 'var(--ps-green)', contacted: 'var(--accent)', qualified: 'var(--ps-teal)', dead: 'var(--ink-faint)' };
+const STATUS_DOT = { new: 'var(--ps-green)', contacted: 'var(--accent)', qualified: 'var(--ps-blue)', dead: 'var(--ink-faint)' };
 
 export function LeadsWindow({ win = {}, onUpdate }) {
   const workspaceId = useWorkspaceStore((s) => s.workspaceId);
@@ -108,6 +108,7 @@ export function LeadsWindow({ win = {}, onUpdate }) {
     }
   }, [workspaceId]);
 
+  const filtered = filter !== 'all';
   return (
     <>
       <WindowTitle
@@ -116,43 +117,48 @@ export function LeadsWindow({ win = {}, onUpdate }) {
         label="Lead Queue"
         subtitle={`${counts.new} new · ${counts.all} total`}
       >
-        <button
-          onClick={refresh}
-          title="Refresh queue"
-          style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-md)', color: 'var(--ink-faint)', padding: '0 2px' }}
-        >
-          ↻
+        <button type="button" className="hb-lq-head-btn" onClick={refresh} title="Refresh queue" aria-label="Refresh queue">
+          <Icon.Refresh size={13} />
         </button>
         <button
+          type="button"
+          className="hb-lq-head-btn hb-lq-scout"
           onClick={() => setScoutOpen((o) => !o)}
           title="Run a scout pass"
-          style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 700, color: scoutOpen ? 'white' : 'var(--accent-ink)', background: scoutOpen ? 'var(--accent)' : 'var(--accent-soft)', borderRadius: 'var(--radius-md)', padding: '3px 10px' }}
+          aria-pressed={scoutOpen}
         >
           ⌖ Scout
         </button>
       </WindowTitle>
       {scoutOpen && <ScoutPanel workspaceId={workspaceId} onScouted={load} settings={settings} onSettings={saveSettings} />}
-      <div style={{ display: 'flex', gap: 4, padding: '8px 10px 0', flexWrap: 'wrap' }}>
+      <div className="hb-bar hb-lq-filters">
         {['all', 'new', 'contacted', 'qualified', 'dead'].map((s) => (
           <button
             key={s}
+            type="button"
+            className="hb-lq-chip"
+            aria-pressed={filter === s}
             onClick={() => { setFilter(s); setLoading(true); }}
-            style={{
-              all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', padding: '3px 10px', borderRadius: 'var(--radius-full)',
-              background: filter === s ? 'var(--accent-soft)' : 'var(--surface-2)',
-              color: filter === s ? 'var(--accent-ink)' : 'var(--ink-soft)', fontWeight: filter === s ? 700 : 400,
-            }}
           >
             {s} ({counts[s] || 0})
           </button>
         ))}
       </div>
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {loading && <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', padding: 8 }}>Loading leads…</div>}
-        {!loading && error && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)', padding: 8 }}>{error}</div>}
+      <div className="hb-well hb-lq-list">
+        {loading && <div className="hb-lq-note">Loading leads…</div>}
+        {!loading && error && <div className="hb-lq-error">{error}</div>}
         {!loading && !error && leads.length === 0 && (
-          <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', padding: 8, fontStyle: 'italic' }}>
-            No leads here yet. Run a scout and they land in this queue.
+          <div className="hb-empty">
+            <div className="hb-empty-icon"><Icon.Group size={20} /></div>
+            <div className="hb-empty-title">{filtered ? `No ${filter} leads` : 'No leads yet'}</div>
+            <div className="hb-empty-text">
+              {filtered ? 'Nothing in this list right now. Try another filter above.' : 'Tell a scout what you sell and where to look. The people it finds land in this queue.'}
+            </div>
+            {!filtered && !scoutOpen && (
+              <div className="hb-empty-actions">
+                <button type="button" className="hb-lq-go" onClick={() => setScoutOpen(true)}>Start a scout</button>
+              </div>
+            )}
           </div>
         )}
         {leads.map((lead) => {
@@ -160,71 +166,58 @@ export function LeadsWindow({ win = {}, onUpdate }) {
             ['fb', webLink(lead.facebook)], ['ig', webLink(lead.instagram)], ['li', webLink(lead.linkedin)],
           ].filter(([, url]) => url);
           const site = webLink(lead.website);
+          const draft = drafts[lead.id];
           return (
-            <div key={lead.id} style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '8px 10px', background: 'var(--surface)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: STATUS_DOT[lead.status] || 'var(--ink-faint)' }} />
-                <strong style={{ flex: 1, fontSize: 'var(--text-md)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {lead.name}
-                </strong>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--accent-ink)', background: 'var(--accent-soft)', borderRadius: 'var(--radius-md)', padding: '1px 7px' }}>
-                  {(Number(lead.icp_score) || 0).toFixed(2)}
-                </span>
+            <div key={lead.id} className="hb-panel hb-lift hb-lq-card">
+              <div className="hb-lq-top">
+                <span className="hb-lq-dot" style={{ background: STATUS_DOT[lead.status] || 'var(--ink-faint)' }} />
+                <strong className="hb-lq-name">{lead.name}</strong>
+                <span className="hb-lq-score">{(Number(lead.icp_score) || 0).toFixed(2)}</span>
               </div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', marginTop: 3 }}>
+              <div className="hb-lq-meta">
                 {[lead.team, lead.brokerage, lead.city].filter(Boolean).join(' · ') || '—'}
               </div>
-              <div style={{ fontSize: 'var(--text-xs)', marginTop: 3, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {lead.phone && <a href={`tel:${lead.phone}`} style={{ color: 'var(--accent-ink)', textDecoration: 'none' }}>{lead.phone}</a>}
-                {lead.email && <a href={`mailto:${lead.email}`} style={{ color: 'var(--accent-ink)', textDecoration: 'none' }}>{lead.email}</a>}
-                {site && <a href={site} target="_blank" rel="noreferrer" style={{ color: 'var(--ink-faint)', textDecoration: 'none' }}>site ↗</a>}
+              <div className="hb-lq-links">
+                {lead.phone && <a className="hb-lq-contact" href={`tel:${lead.phone}`}>{lead.phone}</a>}
+                {lead.email && <a className="hb-lq-contact" href={`mailto:${lead.email}`}>{lead.email}</a>}
+                {site && <a href={site} target="_blank" rel="noreferrer">site ↗</a>}
                 {socials.map(([label, url]) => (
-                  <a key={label} href={url} target="_blank" rel="noreferrer" title={url} style={{ color: 'var(--ink-faint)', textDecoration: 'none' }}>{label} ↗</a>
+                  <a key={label} href={url} target="_blank" rel="noreferrer" title={url}>{label} ↗</a>
                 ))}
               </div>
               {Array.isArray(lead.buying_signals) && lead.buying_signals.length > 0 && (
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginTop: 3, fontFamily: 'var(--font-mono)' }}>
-                  ⚡ {lead.buying_signals.join(' · ')}
-                </div>
+                <div className="hb-lq-signals">⚡ {lead.buying_signals.join(' · ')}</div>
               )}
-              <div style={{ display: 'flex', gap: 4, marginTop: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="hb-lq-actions">
                 {['new', 'contacted', 'qualified', 'dead'].map((s) => (
                   <button
                     key={s}
+                    type="button"
+                    className="hb-lq-chip hb-lq-chip-sm"
+                    aria-pressed={s === lead.status}
                     onClick={() => setStatus(lead, s)}
                     title={s === lead.status ? 'Current status' : `Mark as ${s}`}
-                    style={{
-                      all: 'unset', cursor: s === lead.status ? 'default' : 'pointer',
-                      fontSize: 'var(--text-xs)', fontWeight: s === lead.status ? 700 : 400,
-                      color: s === lead.status ? 'var(--accent-ink)' : 'var(--ink-faint)',
-                      background: s === lead.status ? 'var(--accent-soft)' : 'transparent',
-                      border: '1px solid var(--hairline)', borderRadius: 'var(--radius-full)', padding: '2px 9px',
-                    }}
                   >
                     {s}
                   </button>
                 ))}
                 <button
+                  type="button"
+                  className="hb-lq-chip hb-lq-chip-sm hb-lq-draft"
                   onClick={() => draftEmail(lead)}
-                  disabled={drafts[lead.id]?.loading}
+                  disabled={draft?.loading}
                   title="Draft an outreach email for this lead"
-                  style={{ all: 'unset', cursor: drafts[lead.id]?.loading ? 'not-allowed' : 'pointer', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--ps-teal)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-full)', padding: '2px 9px', marginLeft: 'auto' }}
                 >
-                  {drafts[lead.id]?.loading ? '✎…' : drafts[lead.id]?.body ? '↻ Redraft' : '✎ Draft'}
+                  {draft?.loading ? '✎…' : draft?.body ? '↻ Redraft' : '✎ Draft'}
                 </button>
               </div>
               <SavedOutreach lead={lead} />
-              {drafts[lead.id]?.error && (
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ps-red)', marginTop: 6 }}>{drafts[lead.id].error}</div>
-              )}
-              {drafts[lead.id]?.body && (
-                <div style={{ marginTop: 6, border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '7px 9px', background: 'var(--surface-2)' }}>
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>{drafts[lead.id].subject}</div>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', whiteSpace: 'pre-wrap', marginTop: 4 }}>{drafts[lead.id].body}</div>
-                  <button
-                    onClick={() => copyDraft(lead)}
-                    style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--accent-ink)', marginTop: 6 }}
-                  >
+              {draft?.error && <div className="hb-lq-draft-error">{draft.error}</div>}
+              {draft?.body && (
+                <div className="hb-well hb-lq-draft-box">
+                  <div className="hb-lq-draft-subject">{draft.subject}</div>
+                  <div className="hb-lq-draft-body">{draft.body}</div>
+                  <button type="button" className="hb-lq-copy" onClick={() => copyDraft(lead)}>
                     {copiedId === lead.id ? '✓ Copied' : '⧉ Copy'}
                   </button>
                 </div>

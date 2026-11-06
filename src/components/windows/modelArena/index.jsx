@@ -10,6 +10,7 @@ import { CostEstimate, LaneMarks, RecordBar } from './ArenaMarks.jsx';
 import { ADD_SUGGESTIONS, arenaModels, CUT_OFF_REASONS, laneBadges, MAX_LANES } from '../../../lib/modelArena/arenaCatalog.js';
 import { BENCHMARK_TASKS } from '../../../lib/modelArena/benchmarkTasks.js';
 import { windowMeta } from './meta.js';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 
 export { windowMeta };
 
@@ -29,6 +30,14 @@ export function ModelArenaWindow({ win = {}, onUpdate }) {
   const rec = useArenaRecord(win, onUpdate, { running: arena.running });
   const models = React.useMemo(() => arenaModels(), []);
   const [showSystem, setShowSystem] = React.useState(Boolean(arena.system));
+  // A teammate's instructions are sent with your race too, so show them when they appear.
+  const hasSystem = Boolean(arena.system);
+  React.useEffect(() => { if (hasSystem) setShowSystem(true); }, [hasSystem]);
+  // A teammate's letters landing in the request or instructions keep your cursor where it was.
+  const promptRef = React.useRef(null);
+  const systemRef = React.useRef(null);
+  useSharedCaret(promptRef, arena.prompt, React.useMemo(() => ({ id: win.id, field: 'prompt' }), [win.id]));
+  useSharedCaret(systemRef, arena.system, React.useMemo(() => ({ id: win.id, field: 'system' }), [win.id]));
   const { lanes, results, running } = arena;
   const badges = laneBadges(lanes, results);
   const pick = (index, id) => arena.setLanes(lanes.map((lane, i) => (i === index ? toLane(id) : lane)));
@@ -47,12 +56,12 @@ export function ModelArenaWindow({ win = {}, onUpdate }) {
       <WindowTitle icon={<Icon.Activity size={12} />} label={win.title || windowMeta.label} subtitle={subtitle} />
       <div className="hb-arena" style={{ '--arena-cols': columns }}>
         <form className="hb-arena-composer" onSubmit={send}>
-          <textarea className="hb-arena-input" rows={3} value={arena.prompt} aria-label="Request to send to every model"
+          <textarea ref={promptRef} className="hb-arena-input" rows={3} value={arena.prompt} aria-label="Request to send to every model"
             placeholder="One request, sent to every model at once. Try a benchmark task below."
             onChange={(e) => arena.setPrompt(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send(e); }} />
           {showSystem && (
-            <textarea className="hb-arena-input" rows={2} value={arena.system} aria-label="Instructions for every model"
+            <textarea ref={systemRef} className="hb-arena-input" rows={2} value={arena.system} aria-label="Instructions for every model"
               placeholder="Instructions every model gets first (optional)" onChange={(e) => arena.setSystem(e.target.value)} />
           )}
           <div className="hb-arena-row">

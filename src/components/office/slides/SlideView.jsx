@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
+import { SlideBoxText } from './SlideBoxText.jsx';
 import { ACCENT_BAR, SLIDE_W_PT, THEMES, blockColor, clampBox, textLines } from '../../../lib/office/slideModel.js';
 
 const pct = (n) => `${n}%`;
@@ -82,11 +83,10 @@ export function SlideView({ slide, theme, width, edit, label }) {
             onDoubleClick={edit && block.type === 'text' ? () => edit.onEdit(block.id) : undefined}>
             {block.type === 'image' ? <img src={block.src} alt={block.alt || ''} draggable={false} />
               : editing ? (
-                <textarea className="hb-of-slidetext" autoFocus defaultValue={block.text || ''} aria-label="Slide text"
+                <SlideBoxText text={block.text || ''}
                   style={{ fontSize: (block.size || 18) * scale, fontWeight: block.bold ? 700 : 400, textAlign: block.align || 'left', color: hex(blockColor(block, theme)) }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onBlur={(e) => edit.onText(block.id, e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Escape') e.currentTarget.blur(); e.stopPropagation(); }} />
+                  onType={(text) => (edit.onTyping || edit.onText)(block.id, text)}
+                  onDone={(text) => edit.onText(block.id, text)} />
               ) : empty ? <div className="hb-of-sblock-hint">{block.role === 'title' ? 'Double-click to add a title' : 'Double-click to add text'}</div>
                 : <TextBody block={block} theme={theme} scale={scale} />}
             {selected && !editing && (

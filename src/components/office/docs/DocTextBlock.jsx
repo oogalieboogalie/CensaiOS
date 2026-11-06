@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { parseInline } from '../../../lib/office/docModel.js';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 
 const PLACEHOLDER = {
   p: 'Write, or type # for a heading, - for a list', h1: 'Heading 1', h2: 'Heading 2', h3: 'Heading 3',
@@ -29,13 +30,15 @@ function fit(el) {
  */
 export function DocTextBlock({ id, block, number, focused, editor, readOnly }) {
   const ref = React.useRef(null);
+  const text = block.text || '';
+  // A teammate's words landing in this paragraph keep your caret in place.
+  useSharedCaret(ref, text);
   React.useLayoutEffect(() => {
     if (!focused) return;
     fit(ref.current);
     editor.bindFocused(id, ref.current);
   });
   const marker = block.type === 'bullet' ? '•' : block.type === 'number' ? `${number}.` : null;
-  const text = block.text || '';
   return (
     <div className="hb-of-block" data-type={block.type}>
       {marker && <span className="hb-of-marker" aria-hidden="true">{marker}</span>}

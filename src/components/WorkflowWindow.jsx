@@ -7,6 +7,7 @@ import { useWorkflow } from './workflow/useWorkflow.js';
 import { WorkflowCanvas } from './workflow/WorkflowCanvas.jsx';
 import { NodeInspector } from './workflow/NodeInspector.jsx';
 import { NODE_LOOK } from './workflow/nodeLook.js';
+import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
 
 const ADDABLE = ['agent', 'tool', 'branch', 'review', 'output'];
 
@@ -29,6 +30,9 @@ export function WorkflowWindow({ win, onUpdate }) {
   const agents = getAgents();
   const { graph, run } = flow;
   const title = win.title || 'Workflow';
+  // A teammate renaming at the same time keeps your cursor where it was.
+  const titleRef = React.useRef(null);
+  useSharedCaret(titleRef, title, React.useMemo(() => ({ id: win.id, field: 'title' }), [win.id]));
   const node = graph.nodes.find((n) => n.id === selected) || null;
   const agentName = (id) => (id ? getAgentById(id)?.name || id : null);
 
@@ -54,7 +58,7 @@ export function WorkflowWindow({ win, onUpdate }) {
       </WindowTitle>
       <div className="hb-wf">
         {editingTitle && (
-          <input aria-label="Workflow name" className="hb-wf-input hb-wf-name" value={title} onChange={(e) => onUpdate?.({ title: e.target.value })} />
+          <input ref={titleRef} aria-label="Workflow name" className="hb-wf-input hb-wf-name" value={title} onChange={(e) => onUpdate?.({ title: e.target.value })} />
         )}
         <div className="hb-wf-toolbar" role="toolbar" aria-label="Add a step">
           {ADDABLE.map((type) => {

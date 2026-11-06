@@ -6,6 +6,7 @@ import { useWorkspaceStore } from '../lib/store.js';
 import { getAgentById } from '../lib/agentStore.js';
 import { checkFairHousing } from '../lib/realEstate/fairHousing.js';
 import { FairHousingFlags, FairHousingText } from './realEstate/FairHousingText.jsx';
+import { ListingBox } from './realEstate/ListingBox.jsx';
 
 // Spec 7: the Listing Writer. A short form becomes a description, a social
 // post and an email blast, written by the board's Listing Writer agent and
@@ -98,14 +99,14 @@ export function ListingWriterWindow({ win = {}, onUpdate, request = requestListi
       <WindowTitle icon={<Icon.Edit size={12} />} label={win.title || 'Listing Writer'} subtitle={agent?.name ? `${agent.name}${agent.model_provider === 'ollama' ? ' · local model' : ''}` : 'Real Estate Team'} />
       <form className="re-win" onSubmit={write} data-testid="listing-writer">
         <div className="re-grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
-          <Field label="Address" span={3}><input className="re-input" value={listing.address} onChange={set('address')} placeholder="14 Alder Way" /></Field>
-          <Field label="Price"><input className="re-input" value={listing.price} onChange={set('price')} placeholder="465,000" inputMode="numeric" /></Field>
-          <Field label="City" span={1}><input className="re-input" value={listing.city} onChange={set('city')} /></Field>
-          <Field label="Beds"><input className="re-input" value={listing.beds} onChange={set('beds')} inputMode="numeric" /></Field>
-          <Field label="Baths"><input className="re-input" value={listing.baths} onChange={set('baths')} inputMode="decimal" /></Field>
-          <Field label="Sq ft"><input className="re-input" value={listing.sqft} onChange={set('sqft')} inputMode="numeric" /></Field>
+          <Field label="Address" span={3}><ListingBox value={listing.address} onChange={set('address')} placeholder="14 Alder Way" /></Field>
+          <Field label="Price"><ListingBox value={listing.price} onChange={set('price')} placeholder="465,000" inputMode="numeric" /></Field>
+          <Field label="City" span={1}><ListingBox value={listing.city} onChange={set('city')} /></Field>
+          <Field label="Beds"><ListingBox value={listing.beds} onChange={set('beds')} inputMode="numeric" /></Field>
+          <Field label="Baths"><ListingBox value={listing.baths} onChange={set('baths')} inputMode="decimal" /></Field>
+          <Field label="Sq ft"><ListingBox value={listing.sqft} onChange={set('sqft')} inputMode="numeric" /></Field>
           <Field label="Features" span={4}>
-            <textarea className="re-input" rows={4} value={listing.features} onChange={set('features')} placeholder="Updated kitchen, fenced yard, new roof…" />
+            <ListingBox multiline rows={4} value={listing.features} onChange={set('features')} placeholder="Updated kitchen, fenced yard, new roof…" />
           </Field>
         </div>
         {featureCheck.flags.length > 0 && <div className="re-card"><FairHousingFlags flags={featureCheck.flags} /></div>}

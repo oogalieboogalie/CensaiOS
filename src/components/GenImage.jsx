@@ -2,16 +2,24 @@ import React from 'react';
 import { GenIcon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { logFailure } from '../lib/appLog/browserLog.js';
+import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
 
+// The prompt is saved on the window as you type, so two people on one board
+// write it together, letter by letter, and each sees the other's words live.
 export function GenImageWindow({ win, onUpdate }) {
   // A request in flight never survives a reload, so a fresh or restored window
   // starts idle; only submit() flips this on.
   const [loading, setLoading] = React.useState(false);
-  const [prompt, setPrompt] = React.useState(win.prompt || '');
+  const prompt = typeof win.prompt === 'string' ? win.prompt : '';
+  const setPrompt = (next) => onUpdate({ prompt: String(next ?? '') });
   const [editing, setEditing] = React.useState(!win.prompt);
-  const [generatedImage, setGeneratedImage] = React.useState(win.generatedImage || null);
+  // A teammate's finished picture shows here too, not only on their screen.
+  const [madeHere, setGeneratedImage] = React.useState(null);
+  const generatedImage = win.generatedImage || madeHere;
   const [error, setError] = React.useState(null);
   const inputRef = React.useRef(null);
+  // A teammate's letters landing in the prompt keep your cursor where it was.
+  useSharedCaret(inputRef, prompt, React.useMemo(() => ({ id: win.id, field: 'prompt' }), [win.id]));
 
   React.useEffect(() => { if (editing) setTimeout(() => inputRef.current?.focus(), 30); }, [editing]);
 
@@ -20,7 +28,8 @@ export function GenImageWindow({ win, onUpdate }) {
     setEditing(false); 
     setLoading(true);
     setError(null);
-    onUpdate({ prompt: prompt.trim(), cooked: false, generatedImage: null }); 
+    setGeneratedImage(null);
+    onUpdate({ prompt: prompt.trim(), cooked: false, generatedImage: null });
 
     try {
       const res = await fetch('/api/image', {
@@ -82,8 +91,8 @@ export function GenImageWindow({ win, onUpdate }) {
         </div>
         <div style={{ padding: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
           {editing ? <>
-            <input ref={inputRef} value={prompt} onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') { setEditing(false); setPrompt(win.prompt || ''); } }}
+            <input ref={inputRef} value={prompt} aria-label="Image prompt" onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') setEditing(false); }}
               placeholder="a watercolor of a small town newspaper office at dawn…"
               style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '8px 12px', font: '13px/1.4 var(--font-sans)', color: 'var(--ink)', outline: 'none' }} />
             <button onClick={submit} style={{ all: 'unset', cursor: 'pointer', padding: '7px 14px', borderRadius: 'var(--radius-full)', background: 'var(--accent)', color: 'var(--accent-contrast)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>Cook</button>

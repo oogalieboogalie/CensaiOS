@@ -15,7 +15,9 @@
 // list's `items` merge one to-do at a time (windowLists.js), a Sheet's
 // cells one cell at a time (windowSheet.js), a Sketchpad's shapes one
 // shape at a time (windowSketch.js), and a slide's boxes one box at a time
-// (windowSlides.js). Fields in
+// (windowSlides.js); a Writer paragraph's words merge letter by letter
+// (windowDocBlocks.js), and a form's boxes (the Listing Writer's) one box
+// at a time, letter by letter (windowFormText.js). Fields in
 // LOCAL_WINDOW_FIELDS (like whether *I* have the editor open) never sync.
 import * as Y from 'yjs';
 import { applyOp, applyTextDiff, diffText, isWindowTextField } from '../../../shared/collab/textDiff.js';
@@ -26,6 +28,8 @@ import { WINDOW_LIST_FIELDS, syncById, writeWindowList } from './windowLists.js'
 import { writeWindowSheet } from './windowSheet.js';
 import { writeWindowSketch } from './windowSketch.js';
 import { isSlideField, writeWindowSlide } from './windowSlides.js';
+import { isDocBlockField, writeWindowDocBlock } from './windowDocBlocks.js';
+import { isFormField, writeWindowForm } from './windowFormText.js';
 
 export const SYNCED_KEYS = ['wins', 'canvasGroups', 'paths', 'links', 'dock'];
 export const LOCAL_WINDOW_FIELDS = new Set(['isEditing', 'showComments']);
@@ -81,6 +85,8 @@ function writeFields(target, prevEntry, nextEntry, isWindow = false, id = null) 
     else if (isWindow && field === 'sheet' && writeWindowSheet(target, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'state' && writeWindowSketch(target, prevEntry?.[field], value)) continue;
     else if (isWindow && isSlideField(field) && writeWindowSlide(target, field, prevEntry?.[field], value)) continue;
+    else if (isWindow && isDocBlockField(field) && writeWindowDocBlock(target, field, prevEntry?.[field], value)) continue;
+    else if (isWindow && isFormField(field) && writeWindowForm(target, field, prevEntry?.[field], value)) continue;
     else target.set(field, valueToY(value));
   }
   for (const field of Object.keys(prevEntry || {})) {

@@ -12,6 +12,7 @@ import { BLOCK_LABELS, TEXT_TYPES, docPatchFromBlocks, listNumbers, makeBlock, m
 import { docToMarkdown, markdownToBlocks } from '../../../lib/office/docMarkdown.js';
 import { pickFile } from '../../../lib/office/officeFiles.js';
 import { readImageFile } from '../../../lib/office/officeImages.js';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 
 const encode = (text) => new TextEncoder().encode(text);
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -23,6 +24,9 @@ const DOCX = `.docx,${DOCX_MIME}`;
 // block syncs on its own, so teammates can write side by side.
 export function OfficeDocsWindow({ win = {}, onUpdate }) {
   const editor = useDocEditor(win, onUpdate);
+  // A teammate's letters landing in the title keep your cursor where it was.
+  const titleRef = React.useRef(null);
+  useSharedCaret(titleRef, win.title ?? '', React.useMemo(() => ({ id: win.id, field: 'title' }), [win.id]));
   const { doc, focusedId } = editor;
   const title = win.title || 'Untitled document';
   const size = pageSizeOf(win);
@@ -100,7 +104,7 @@ export function OfficeDocsWindow({ win = {}, onUpdate }) {
         </OfficeBar>
         <DocPaper size={size} label={title} onBackgroundDown={() => editor.setFocusedId(null)} onPages={setPages}
           head={(
-            <input className="hb-of-doc-title" value={win.title ?? ''} placeholder="Untitled document" aria-label="Document title"
+            <input ref={titleRef} className="hb-of-doc-title" value={win.title ?? ''} placeholder="Untitled document" aria-label="Document title"
               onChange={(e) => onUpdate?.({ title: e.target.value })}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); doc.order[0] ? editor.focus(doc.order[0], 0) : editor.insertAfter(null, [makeBlock('p')]); } }} />
           )}

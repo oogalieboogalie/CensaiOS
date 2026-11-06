@@ -1,5 +1,5 @@
 import path from 'path';
-import { getGithubDefaultBranch, githubFileCache, GITHUB_FILE_CACHE_TTL } from './shared.js';
+import { getGithubDefaultBranch, githubFileCache, githubKeyTag, GITHUB_FILE_CACHE_TTL } from './shared.js';
 import { secretRepoPath } from '../../security/secretFiles.js';
 import { isRepoName } from '../../github.js';
 import { isComputerOwner } from '../../security/systemAdmin.js';
@@ -38,7 +38,7 @@ export async function readFile(req, res) {
     }
   }
 
-  const cacheKey = `${repo}:${branch}:${filePath}`;
+  const cacheKey = `${githubKeyTag(token)}:${repo}:${branch}:${filePath}`;
   const cached = githubFileCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < GITHUB_FILE_CACHE_TTL) {
     return res.json({ content: cached.content, path: asked, repo, branch, cached: true, ...mark });

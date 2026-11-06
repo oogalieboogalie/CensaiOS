@@ -8,7 +8,8 @@ import { fileURLToPath } from 'url';
 // savedModelKey.test.js proves the callModel road with made-up keys;
 // chatKeyScope, groupChatSavedKeys, modelArena, cliServerKeyScope,
 // hostedAgentsRunTurn, aiGatewayImageGeneration and leadHoundRoute prove the
-// others.
+// others; savedKeyEveryDoor drives Workflows, Scheduler runs, the MCP door and
+// Idea Pad end to end.
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');

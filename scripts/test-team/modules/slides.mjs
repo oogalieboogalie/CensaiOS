@@ -1,7 +1,9 @@
 // Slides for two people. Pat Example makes a made-up two-slide deck; Sam
 // Example sees the same two slides. Then both type on slide 2 at the same
 // moment, Pat in the title and Sam in the body, and both screens must keep
-// both people's words. Hunt: words with a script tag show as words, both
+// both people's words; then both type in slide 2's speaker notes at once,
+// Pat at the start and Sam at the end, and both keep their words; then both
+// type inside slide 2's title box at once, and both keep their words. Hunt: words with a script tag show as words, both
 // add a slide at the same moment (both stay, same order on both screens),
 // and Pat removes slide 2 while Sam is still typing on it (it stays gone).
 // The log keeps no slide words. All words are made up.
@@ -47,7 +49,33 @@ async function typeAndKeep(page, id, n, words) {
   await (await typeInto(page, id, n, words)).press('Escape');
 }
 
+/** Slide `n`'s speaker notes as this person's board holds them. */
+async function notesOn(page, id, n) {
+  const slideId = (await deckOn(page, id))[n - 1]?.id;
+  const win = (await readWindow(page, id)) || {};
+  return String(win[`os.${slideId}`]?.notes ?? '');
+}
+
+async function waitNotes(t, id, n, want, ms = 15_000) {
+  const until = Date.now() + ms;
+  for (;;) {
+    const seen = await Promise.all([t.pat, t.sam].map((p) => notesOn(p.page, id, n)));
+    if (seen.every((s) => s === want) || Date.now() > until) return seen;
+    await t.pat.page.waitForTimeout(250);
+  }
+}
+
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+/** Waits until both screens hold `want` in box `box` of slide `n`. */
+async function waitBoxWords(t, id, n, box, want, ms = 15_000) {
+  const until = Date.now() + ms;
+  for (;;) {
+    const seen = await Promise.all([t.pat, t.sam].map(async (p) => (await deckOn(p.page, id))[n - 1]?.words[box] ?? ''));
+    if (seen.every((s) => s === want) || Date.now() > until) return seen;
+    await t.pat.page.waitForTimeout(250);
+  }
+}
 
 export default {
   id: 'slides',
@@ -57,7 +85,8 @@ export default {
     const run = Date.now().toString(36).slice(-4);
     const W = {
       cover: `Made-up bakery pitch ${run}`, title2: `Made-up plan ${run}`, body2: `- Made-up oven\n- Made-up van ${run}`,
-      patTitle: `Made-up plan from Pat ${run}`, samBody: `- Made-up words from Sam ${run}`, late: `Made-up late words ${run}`,
+      patTitle: `Made-up plan from Pat ${run}`, patBox: 'Pat: ', samBox: ' (Sam)', samBody: `- Made-up words from Sam ${run}`, late: `Made-up late words ${run}`,
+      notes: `Made-up notes ${run}.`, patNote: 'Pat: smile. ', samNote: ' Sam: slow down.',
     };
     t.typed.push(...Object.values(W));
     let win;
@@ -107,6 +136,53 @@ export default {
       return 'both screens show Pat\'s new title and Sam\'s new body on slide 2';
     });
 
+    await check('walk', "Pat and Sam type in slide 2's speaker notes at once; both keep their words", async ({ shot }) => {
+      const notes = (page) => windowFrame(page, win).getByLabel('Speaker notes');
+      await notes(pat.page).fill(W.notes);
+      const [, samFirst] = await waitNotes(t, win, 2, W.notes);
+      if (samFirst !== W.notes) throw new Error(`Sam's notes read "${samFirst}"`);
+      await notes(pat.page).click();
+      await notes(pat.page).evaluate((el) => el.setSelectionRange(0, 0));
+      await notes(sam.page).click();
+      await sam.page.keyboard.press('Control+End');
+      await Promise.all([
+        notes(pat.page).pressSequentially(W.patNote, { delay: 60 }),
+        notes(sam.page).pressSequentially(W.samNote, { delay: 15 }),
+      ]);
+      const want = `${W.patNote}${W.notes}${W.samNote}`;
+      const [patSaw, samSaw] = await waitNotes(t, win, 2, want);
+      await sideBySide(t, 'both-typed-in-the-notes', shot);
+      if (patSaw !== samSaw) throw new Error(`the screens disagree: Pat "${patSaw}", Sam "${samSaw}"`);
+      if (patSaw !== want) throw new Error(`the notes read "${patSaw}"`);
+      const caret = await notes(pat.page).evaluate((el) => el.value.slice(0, el.selectionStart));
+      if (caret !== W.patNote) throw new Error(`Pat's caret moved: it sits after "${caret.slice(-24)}"`);
+      return "both screens read the same notes with Pat's and Sam's words whole; Pat's caret stayed after Pat's words";
+    });
+
+    await check('walk', "Pat and Sam type inside slide 2's title box at once; both keep their words", async ({ shot }) => {
+      const open = async (page) => {
+        await stage(page, win).locator('.hb-of-sblock[data-type="text"]').nth(0).dblclick({ timeout: 10_000 });
+        return stage(page, win).getByRole('textbox', { name: 'Slide text' });
+      };
+      const [patBox, samBox] = [await open(pat.page), await open(sam.page)];
+      await patBox.evaluate((el) => el.setSelectionRange(0, 0));
+      await samBox.click();
+      await sam.page.keyboard.press('Control+End');
+      await Promise.all([
+        patBox.pressSequentially(W.patBox, { delay: 60 }),
+        samBox.pressSequentially(W.samBox, { delay: 15 }),
+      ]);
+      const want = `${W.patBox}${W.patTitle}${W.samBox}`;
+      const [patSaw, samSaw] = await waitBoxWords(t, win, 2, 0, want);
+      await sideBySide(t, 'both-typed-in-one-box', shot);
+      const caret = await patBox.evaluate((el) => el.value.slice(0, el.selectionStart));
+      await Promise.all([patBox.press('Escape'), samBox.press('Escape')]);
+      if (patSaw !== samSaw) throw new Error(`the screens disagree: Pat "${patSaw}", Sam "${samSaw}"`);
+      if (patSaw !== want) throw new Error(`the box reads "${patSaw}"`);
+      if (caret !== W.patBox) throw new Error(`Pat's caret moved: it sits after "${caret.slice(-24)}"`);
+      return "both screens read the same title with Pat's and Sam's words whole; Pat's caret stayed after Pat's words";
+    });
+
     await check('hunt', 'words with a script tag show as words and run nowhere', async ({ shot }) => {
       await showSlide(pat.page, win, 1);
       await typeAndKeep(pat.page, win, 1, SCRIPT);
@@ -154,7 +230,7 @@ export default {
     });
 
     await check('redteam', 'the log keeps no slide words', async () => {
-      const words = [W.cover, W.patTitle, W.late, 'made-up subtitle', 'Made-up oven', 'Made-up words from Sam'];
+      const words = [W.cover, W.patTitle, W.late, W.notes, 'made-up subtitle', 'Made-up oven', 'Made-up words from Sam'];
       const bad = t.serverLog().split('\n').filter((line) => words.some((w) => line.includes(w)));
       if (bad.length) throw new Error(`${bad.length} log lines carry slide words`);
       return 'no log line carries a slide title or text';
