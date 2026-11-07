@@ -54,6 +54,7 @@ export function IdeaWindow({ win, onUpdate, currentProject }) {
       <div style={{ flex: 1, minHeight: 0, padding: 16, background: 'var(--surface-2)' }}>
         <div style={{ height: '100%', minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(220px, 0.95fr) minmax(260px, 1.05fr)', gap: 12 }}>
           <IdeaBulletsSection
+            winId={win.id}
             ideas={ideas}
             workItem={workItem}
             setWorkItem={setWorkItem}

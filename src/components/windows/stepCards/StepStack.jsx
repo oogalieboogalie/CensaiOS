@@ -1,6 +1,7 @@
 import React from 'react';
 import { cardFinished, stepPosition, stepsLeft, topStep } from '../../../lib/stepCards/stack.js';
 import { assigneeWords } from './AssignChip.jsx';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 
 const LOCKED_SHOWN = 3;
 const LEAVE_MS = 1500;
@@ -36,8 +37,12 @@ function TopTab({ card, step, sc, leaving }) {
   const checking = step.checks.some((c) => c.state === 'checking');
   const green = step.checks.filter((c) => c.state === 'passed').length;
   const who = assigneeWords(card);
-  const [report, setReport] = React.useState(step.report || '');
-  React.useEffect(() => setReport(step.report || ''), [step.id, step.report]);
+  // The helper's answer lives on the window and is saved as you type, so two
+  // people on one board write it together, letter by letter (see
+  // src/lib/collaboration/stepCardText.js), and a teammate's letters keep your cursor put.
+  const report = typeof step.report === 'string' ? step.report : '';
+  const reportRef = React.useRef(null);
+  useSharedCaret(reportRef, report);
   return (
     <section className="hb-sc-tab hb-sc-top" data-leaving={leaving || undefined} aria-label={`${stepPosition(card, step)}, open`}>
       <div className="hb-sc-tab-head">
@@ -55,8 +60,8 @@ function TopTab({ card, step, sc, leaving }) {
           {step.checks.some((c) => c.kind === 'ask') && (
             <label className="hb-sc-report">
               <span>What the helper said they did (Censai reads it against the checks)</span>
-              <textarea rows={3} value={report} placeholder={card.cliTaskId ? 'Left empty, Censai reads what the coding agent said.' : 'Paste their answer here.'}
-                onChange={(e) => setReport(e.target.value)} onBlur={() => report !== (step.report || '') && sc.setReport(card.id, step.id, report)} />
+              <textarea ref={reportRef} rows={3} value={report} placeholder={card.cliTaskId ? 'Left empty, Censai reads what the coding agent said.' : 'Paste their answer here.'}
+                onChange={(e) => sc.setReport(card.id, step.id, e.target.value)} />
             </label>
           )}
           <div className="hb-sc-actions">
@@ -65,7 +70,7 @@ function TopTab({ card, step, sc, leaving }) {
               {sc.busy === 'sending' ? 'Sending…' : who ? `Send to ${who}` : 'Send to…'}
             </button>
             <button type="button" className="hb-sc-btn" data-primary="true" disabled={checking}
-              onClick={() => { if (report !== (step.report || '')) sc.setReport(card.id, step.id, report); sc.check(card, { ...step, report }); }}>
+              onClick={() => sc.check(card, { ...step, report })}>
               {checking ? 'Checking…' : 'Check this step'}
             </button>
           </div>

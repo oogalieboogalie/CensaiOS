@@ -1,19 +1,23 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { ModelIcon } from '../modelIcons.jsx';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 import { measureLength, niceNumber } from '../../../lib/yorware/modelMeasure.js';
 
-/** A note's text box: types locally, saves to the board when you leave it or press Enter. */
+/**
+ * A note's text box. It saves to the board as you type, so two people writing
+ * in one note merge letter by letter (see windowFormText.js), and a
+ * teammate's letters landing in it keep your cursor where it was.
+ */
 function NoteEditor({ m, id, maxLength }) {
-  const note = m.scene.notes[id];
-  const [draft, setDraft] = React.useState(note.text);
-  React.useEffect(() => setDraft(note.text), [note.text]);
-  const save = () => { if (draft !== note.text) m.editNote(id, draft); };
+  const text = String(m.scene.notes[id]?.text ?? '');
+  const ref = React.useRef(null);
+  useSharedCaret(ref, text);
   return (
-    <textarea className="hb-cr-input hb-cr-textarea" autoFocus value={draft} maxLength={maxLength}
+    <textarea ref={ref} className="hb-cr-input hb-cr-textarea" autoFocus value={text} maxLength={maxLength}
       placeholder="What should people know about this spot?" aria-label="Note text"
-      onChange={(e) => setDraft(e.target.value)} onBlur={save}
-      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); m.setOpenNote(null); } }} />
+      onChange={(e) => { if (e.target.value !== text) m.editNote(id, e.target.value); }}
+      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); m.setOpenNote(null); } }} />
   );
 }
 

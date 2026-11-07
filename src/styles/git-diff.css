@@ -36,6 +36,7 @@
 /* Paste mode */
 .gdv-split--edit { grid-template-rows: 1fr auto; overflow: hidden; align-items: stretch; }
 .gdv-split--edit .gdv-pane { display: flex; flex-direction: column; overflow: hidden; }
+.gdv-box { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .gdv-input { flex: 1; min-height: 0; resize: none; border: 0; outline: 0; padding: 8px 12px; background: transparent; color: var(--ink); font: inherit; white-space: pre; }
 .gdv-btn { padding: 5px 14px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
 .gdv-btn--go { grid-column: 3; justify-self: end; margin-top: 10px; background: var(--success); border-color: var(--success); color: var(--on-fill); font-family: var(--font-sans); font-weight: 600; }

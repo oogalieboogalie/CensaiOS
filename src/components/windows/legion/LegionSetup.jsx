@@ -5,6 +5,8 @@ import { ModelPicker } from '../modelArena/ArenaLane.jsx';
 import { arenaModels } from '../../../lib/modelArena/arenaCatalog.js';
 import { LEGION_ROLES, legionApi } from '../../../lib/legion/legionState.js';
 import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
 
 const DEFAULT_MODEL = 'anthropic:claude-sonnet-5-5';
 const toSpec = (id) => ({ provider: id.slice(0, id.indexOf(':')), model: id.slice(id.indexOf(':') + 1) });
@@ -76,6 +78,11 @@ export function LegionSetup({ win = {}, onUpdate, onStart, error, onOpen }) {
   const specRef = React.useRef(null);
   useSharedCaret(goalRef, goal, React.useMemo(() => ({ id: win.id, field: 'legionGoal' }), [win.id]));
   useSharedCaret(specRef, specYaml, React.useMemo(() => ({ id: win.id, field: 'legionSpecYaml' }), [win.id]));
+  // Teammates' cursors in the goal and the spec, with their names, and ours for them.
+  useCaretReporter(goalRef, win.id, 'legionGoal');
+  useCaretReporter(specRef, win.id, 'legionSpecYaml', showSpec);
+  const goalCarets = useTeammateCarets(win.id, 'legionGoal');
+  const specCarets = useTeammateCarets(win.id, 'legionSpecYaml', showSpec);
   const everyone = win.legionModel || DEFAULT_MODEL;
   const picks = win.legionModels || {};
   const save = (patch) => onUpdate?.(patch);
@@ -93,9 +100,12 @@ export function LegionSetup({ win = {}, onUpdate, onStart, error, onOpen }) {
   return (
     <form className="hb-legion-setup" onSubmit={submit}>
       <p className="hb-legion-lede">Not swarms. Legions. Say what to build and the team keeps working until Echo says OK: plan, build in order, check in a browser, fix, commit.</p>
-      <textarea ref={goalRef} className="hb-legion-input" rows={4} value={goal} aria-label="What should the Legion build?"
-        placeholder="What should the Legion build?" onChange={(e) => setGoal(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(e); }} />
+      <div className="hb-legion-box">
+        <textarea ref={goalRef} className="hb-legion-input" rows={4} value={goal} aria-label="What should the Legion build?"
+          placeholder="What should the Legion build?" onChange={(e) => setGoal(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(e); }} />
+        <TeammateCarets boxRef={goalRef} carets={goalCarets} text={goal} />
+      </div>
       <div className="hb-legion-row">
         <span className="hb-legion-label">Try</span>
         {SAMPLES.map((s) => <button key={s} type="button" className="hb-legion-chip" onClick={() => setGoal(s)}>{s.split(':')[0]}</button>)}
@@ -119,9 +129,12 @@ export function LegionSetup({ win = {}, onUpdate, onStart, error, onOpen }) {
             <span className="hb-legion-spacer" />
             <button type="button" className="hb-btn" data-variant="ghost" onClick={() => setSpecYaml(SPEC_EXAMPLE)}>Insert an example</button>
           </div>
-          <textarea ref={specRef} className="hb-legion-input hb-legion-yaml" rows={10} value={specYaml} spellCheck={false} aria-label="YAML spec"
-            placeholder={'goal: ...\njobs:\n  - id: J-001\n    owner: genesis\n    task: ...\nchecks:\n  - job: J-001\n    page_contains: ...'}
-            onChange={(e) => setSpecYaml(e.target.value)} />
+          <div className="hb-legion-box">
+            <textarea ref={specRef} className="hb-legion-input hb-legion-yaml" rows={10} value={specYaml} spellCheck={false} aria-label="YAML spec"
+              placeholder={'goal: ...\njobs:\n  - id: J-001\n    owner: genesis\n    task: ...\nchecks:\n  - job: J-001\n    page_contains: ...'}
+              onChange={(e) => setSpecYaml(e.target.value)} />
+            <TeammateCarets boxRef={specRef} carets={specCarets} text={specYaml} />
+          </div>
         </div>
       )}
       {perRole && (

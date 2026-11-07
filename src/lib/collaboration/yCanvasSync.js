@@ -30,6 +30,11 @@ import { writeWindowSketch } from './windowSketch.js';
 import { isSlideField, writeWindowSlide } from './windowSlides.js';
 import { isDocBlockField, writeWindowDocBlock } from './windowDocBlocks.js';
 import { isFormField, writeWindowForm } from './windowFormText.js';
+import { writeWindowGraph } from './windowWorkflowGraph.js';
+import { writeStepCards } from './stepCardText.js';
+import { writeIdeaBullets } from './ideaBulletText.js';
+import { writeLeadHound } from './leadDraftText.js';
+import { writeTodoItems } from './todoItemText.js';
 
 export const SYNCED_KEYS = ['wins', 'canvasGroups', 'paths', 'links', 'dock'];
 export const LOCAL_WINDOW_FIELDS = new Set(['isEditing', 'showComments']);
@@ -81,12 +86,17 @@ function writeFields(target, prevEntry, nextEntry, isWindow = false, id = null) 
     const pair = isWindow ? PAIRED_WINDOW_FIELDS[field] : null;
     if (!changed(field) && !(pair && pair in nextEntry && changed(pair))) continue;
     if (isWindow && isWindowTextField(field) && typeof value === 'string') writeText(target, field, value, id);
+    else if (isWindow && field === 'cards' && writeStepCards(target, prevEntry?.[field], value)) continue;
+    else if (isWindow && field === 'ideas' && writeIdeaBullets(target, prevEntry?.[field], value)) continue;
+    else if (isWindow && field === 'items' && nextEntry.kind === 'todos' && writeTodoItems(target, prevEntry?.[field], value)) continue;
+    else if (isWindow && field === 'leadHound' && writeLeadHound(target, prevEntry?.[field], value)) continue;
     else if (isWindow && WINDOW_LIST_FIELDS.has(field) && writeWindowList(target, field, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'sheet' && writeWindowSheet(target, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'state' && writeWindowSketch(target, prevEntry?.[field], value)) continue;
     else if (isWindow && isSlideField(field) && writeWindowSlide(target, field, prevEntry?.[field], value)) continue;
     else if (isWindow && isDocBlockField(field) && writeWindowDocBlock(target, field, prevEntry?.[field], value)) continue;
     else if (isWindow && isFormField(field) && writeWindowForm(target, field, prevEntry?.[field], value)) continue;
+    else if (isWindow && field === 'graph' && writeWindowGraph(target, prevEntry?.[field], value)) continue;
     else target.set(field, valueToY(value));
   }
   for (const field of Object.keys(prevEntry || {})) {

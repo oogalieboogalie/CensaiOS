@@ -53,8 +53,13 @@ describe('WhatsAppWindow', () => {
 
   test('quick message opens a click-to-chat link with the text filled in', async () => {
     const open = jest.spyOn(window, 'open').mockReturnValue({});
+    // The message is saved on the window as you type, so hold it like the board does.
     const onUpdate = jest.fn();
-    render(<WhatsAppWindow win={{}} onUpdate={onUpdate} />);
+    function Board() {
+      const [win, setWin] = React.useState({ id: 'w1' });
+      return <WhatsAppWindow win={win} onUpdate={(p) => { onUpdate(p); setWin((w) => ({ ...w, ...p })); }} />;
+    }
+    render(<Board />);
     fireEvent.change(screen.getByLabelText('Phone number'), { target: { value: '+1 (555) 123-4567' } });
     fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Hi there & welcome' } });
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Send in WhatsApp' })); });

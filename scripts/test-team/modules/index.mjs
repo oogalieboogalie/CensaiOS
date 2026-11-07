@@ -38,6 +38,21 @@ import gitDiffTyping from './gitDiffTyping.mjs';
 import arenaTyping from './arenaTyping.mjs';
 import legionTyping from './legionTyping.mjs';
 import imagePromptTyping from './imagePromptTyping.mjs';
+import leadBriefTyping from './leadBriefTyping.mjs';
+import ideaTagTyping from './ideaTagTyping.mjs';
+import pdfTextTyping from './pdfTextTyping.mjs';
+import modelNoteTyping from './modelNoteTyping.mjs';
+import workflowStepTyping from './workflowStepTyping.mjs';
+import localSiteTyping from './localSiteTyping.mjs';
+import writerTableTyping from './writerTableTyping.mjs';
+import whatsappTyping from './whatsappTyping.mjs';
+import ideaBulletTyping from './ideaBulletTyping.mjs';
+import todoTextTyping from './todoTextTyping.mjs';
+import docCursors from './docCursors.mjs';
+import leadDraftTyping from './leadDraftTyping.mjs';
+import stepReportTyping from './stepReportTyping.mjs';
+import vectorText from './vectorText.mjs';
+import imageStudioTyping from './imageStudioTyping.mjs';
 import agentCompany from './agentCompany.mjs';
 import modelArena from './modelArena.mjs';
 import boardMap from './boardMap.mjs';
@@ -64,8 +79,15 @@ import appFolderFiles from './appFolderFiles.mjs';
 import windowImporter from './windowImporter.mjs';
 import projectList from './projectList.mjs';
 import teleprompter from './teleprompter.mjs';
+import prompterCursors from './prompterCursors.mjs';
+import arenaCursors from './arenaCursors.mjs';
+import legionCursors from './legionCursors.mjs';
+import diffCursors from './diffCursors.mjs';
+import studioCursors from './studioCursors.mjs';
+import genImageCursors from './genImageCursors.mjs';
+import whatsappCursors from './whatsappCursors.mjs';
 
-export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone, secretFiles, versions, grokSignIn, finderFiles, addNames, filesCatchUp, notSaved, githubReads, logsNameNoFiles, agentHiddenWords, toolsGiven, githubReview, githubFixRequest, appFolderFiles, windowImporter, projectList, teleprompter, writer, cadRecipe, listingWriter, layoutStory, windowTitle, photoText, gitDiffTyping, arenaTyping, legionTyping, imagePromptTyping];
+export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone, secretFiles, versions, grokSignIn, finderFiles, addNames, filesCatchUp, notSaved, githubReads, logsNameNoFiles, agentHiddenWords, toolsGiven, githubReview, githubFixRequest, appFolderFiles, windowImporter, projectList, teleprompter, writer, cadRecipe, listingWriter, layoutStory, windowTitle, photoText, gitDiffTyping, arenaTyping, legionTyping, imagePromptTyping, leadBriefTyping, ideaTagTyping, vectorText, imageStudioTyping, pdfTextTyping, modelNoteTyping, workflowStepTyping, localSiteTyping, writerTableTyping, whatsappTyping, stepReportTyping, ideaBulletTyping, leadDraftTyping, todoTextTyping, docCursors, prompterCursors, arenaCursors, legionCursors, diffCursors, studioCursors, genImageCursors, whatsappCursors];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

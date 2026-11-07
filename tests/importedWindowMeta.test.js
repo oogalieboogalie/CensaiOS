@@ -21,6 +21,9 @@ const real = await import('../server/window-import/windowPackageWriter.js');
 const written = [];
 const callModel = jest.fn();
 jest.unstable_mockModule('../server/aiGateway/callModel.js', () => ({ callModel }));
+jest.unstable_mockModule('../server/window-import/importScope.js', () => ({
+  resolveImportScope: async (req) => ({ userId: req.session.userId, workspaceId: 'ws-pat', role: 'owner' }),
+}));
 jest.unstable_mockModule('../server/window-import/windowPackageWriter.js', () => ({
   ...real,
   writeWindowPackage: (plan) => { written.push(plan); return { dir: plan.windowDir }; },

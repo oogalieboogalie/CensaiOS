@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { DAYS } from '../../../lib/localSites/presets.js';
+import { SiteBox } from './SiteBox.jsx';
 
 function Field({ label, hint, children }) {
   return (
@@ -18,8 +19,8 @@ function Text({ ls, name, label, hint, area, rows = 3, placeholder }) {
   return (
     <Field label={label} hint={hint}>
       {area
-        ? <textarea className="hb-ls-input" rows={rows} value={value} onChange={onChange} placeholder={placeholder} />
-        : <input className="hb-ls-input" value={value} onChange={onChange} placeholder={placeholder} />}
+        ? <SiteBox multiline rows={rows} value={value} onChange={onChange} placeholder={placeholder} />
+        : <SiteBox value={value} onChange={onChange} placeholder={placeholder} />}
     </Field>
   );
 }
@@ -63,7 +64,7 @@ export function SiteForm({ ls }) {
         {DAYS.map((day, i) => (
           <label key={day}>
             <span>{day}</span>
-            <input className="hb-ls-input" value={ls.site.hours[i] || ''} onChange={(e) => ls.setHour(i, e.target.value)} />
+            <SiteBox value={ls.site.hours[i]} onChange={(e) => ls.setHour(i, e.target.value)} />
           </label>
         ))}
       </div>

@@ -11,6 +11,9 @@ const writeWindowPackage = jest.fn();
 const runWindowSync = jest.fn();
 
 jest.unstable_mockModule('../server/aiGateway/callModel.js', () => ({ callModel }));
+jest.unstable_mockModule('../server/window-import/importScope.js', () => ({
+  resolveImportScope: async (req) => ({ userId: req.session.userId, workspaceId: 'ws-pat', role: 'owner' }),
+}));
 jest.unstable_mockModule('../server/window-import/windowPackageWriter.js', () => ({
   buildWindowFilePlan: ({ kind, jsx }) => ({ kind, componentName: 'MadeUpPlannerWindow', jsx, windowDir: `${APP}/src/components/windows/${kind}` }),
   normalizeWindowKind: (kind) => kind,

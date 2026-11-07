@@ -1,6 +1,7 @@
 /* Model arena: one request, up to four models side by side. Tokens only. */
 .hb-arena { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); background: var(--surface); color: var(--ink); font-size: var(--text-sm); }
 .hb-arena-composer { display: flex; flex-direction: column; gap: var(--space-2); }
+.hb-arena-box { position: relative; display: flex; flex-direction: column; }
 .hb-arena-input { box-sizing: border-box; width: 100%; padding: var(--space-2) var(--space-2-5); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-2); color: var(--ink); font: inherit; line-height: 1.5; resize: vertical; }
 .hb-arena-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent-line); }
 .hb-arena-row { display: flex; align-items: center; gap: var(--space-1-5); flex-wrap: wrap; }

@@ -96,14 +96,14 @@ export function syncById(arr, prev, next, { edit = editInPlace, toY = valueToY }
 /**
  * Write a window's list field item by item. Returns false when it can't
  * (no shared list yet, or the items have no ids); the caller then
- * writes the whole value as before.
+ * writes the whole value as before. `how` is syncById's { edit, toY }.
  */
-export function writeWindowList(target, field, prevValue, nextValue) {
+export function writeWindowList(target, field, prevValue, nextValue, how = undefined) {
   const arr = target.get(field);
   if (!(arr instanceof Y.Array) || !Array.isArray(prevValue) || !Array.isArray(nextValue)) return false;
   const known = new Set([...keysOf(prevValue), ...keysOf(nextValue)]);
   const others = keysOf(arr.toArray().map(valueFromY)).filter((id) => !known.has(id)).length;
-  if (!syncById(arr, prevValue, nextValue)) return false;
+  if (!syncById(arr, prevValue, nextValue, how)) return false;
   if (others && reportMerge) reportMerge({ field, kept: others });
   return true;
 }

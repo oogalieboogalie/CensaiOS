@@ -2,6 +2,7 @@
 import React from 'react';
 import { Icon } from '../../Icons.jsx';
 import { OfficeButton } from '../OfficeBar.jsx';
+import { DocCellInput } from './DocCellInput.jsx';
 
 const MAX_TABLE = 20;
 
@@ -24,7 +25,7 @@ export function DocTableBlock({ block, onChange, readOnly }) {
                 const Cell = r === 0 ? 'th' : 'td';
                 return (
                   <Cell key={c}>
-                    <input value={row[c] || ''} readOnly={readOnly} aria-label={`Row ${r + 1} column ${c + 1}`}
+                    <DocCellInput value={row[c]} readOnly={readOnly} aria-label={`Row ${r + 1} column ${c + 1}`}
                       placeholder={r === 0 ? `Column ${c + 1}` : ''} onChange={(e) => set(r, c, e.target.value)} />
                   </Cell>
                 );
@@ -50,7 +51,7 @@ export function DocImageBlock({ block, onChange, readOnly }) {
     <figure className="hb-of-block hb-of-figure" data-type="image">
       {block.src ? <img src={block.src} alt={block.alt || ''} draggable={false} /> : <div className="hb-of-missing">Picture missing</div>}
       <figcaption>
-        <input value={block.alt || ''} readOnly={readOnly} placeholder="Caption" aria-label="Picture caption"
+        <DocCellInput value={block.alt} readOnly={readOnly} placeholder="Caption" aria-label="Picture caption"
           onChange={(e) => onChange({ alt: e.target.value })} />
       </figcaption>
     </figure>

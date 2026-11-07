@@ -6,6 +6,10 @@ const callModel = jest.fn();
 jest.unstable_mockModule('../server/aiGateway/callModel.js', () => ({
   callModel,
 }));
+// The import now asks who is calling (importModelAccess.js); answer without a database.
+jest.unstable_mockModule('../server/window-import/importScope.js', () => ({
+  resolveImportScope: async (req) => ({ userId: req.session.userId, workspaceId: 'ws-sam', role: 'member' }),
+}));
 
 const { default: express } = await import('express');
 const { windowImportRouter } = await import('../server/routes/windowImport.js');
@@ -16,7 +20,7 @@ const {
 
 const envSnapshot = { ...process.env };
 
-function createApp({ session = { userRole: 'user' } } = {}) {
+function createApp({ session = { userId: 'user-sam', userRole: 'user' } } = {}) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -169,7 +173,7 @@ describe('window import security boundary', () => {
       }],
     });
 
-    const response = await request(createApp({ session: { userRole: 'user' } }))
+    const response = await request(createApp({ session: { userId: 'user-sam', userRole: 'user' } }))
       .post('/api/windows/import')
       .send({
         dry_run: true,
@@ -182,7 +186,7 @@ describe('window import security boundary', () => {
   });
 
   test('role=user cannot persist via window.import.write (403)', async () => {
-    const response = await request(createApp({ session: { userRole: 'user' } }))
+    const response = await request(createApp({ session: { userId: 'user-sam', userRole: 'user' } }))
       .post('/api/windows/import')
       .send({
         dry_run: false,

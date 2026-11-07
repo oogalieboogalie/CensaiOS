@@ -17,6 +17,8 @@ import { RelatedContext } from './doc/RelatedContext.jsx';
 import { BacklinksBox } from './doc/BacklinksBox.jsx';
 import { reportTyping, reportTextPreview } from '../lib/collaboration/liveText.js';
 import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from './collaboration/TeammateCarets.jsx';
 import { mergeWithLatest } from '../lib/collaboration/sharedTextEdit.js';
 import { localDay } from '../lib/schedule/plainWords.js';
 import { caretToRaw, pointToRaw } from './doc/docTextMap.js';
@@ -51,6 +53,9 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
   const textareaRef = React.useRef(null);
   useSharedCaret(textareaRef, realContent, React.useMemo(() => ({ id: win.id, field: 'text' }), [win.id]));
   const caretRef = React.useRef(null);
+  // Teammates' cursors in the words, and ours for them (never for a file kept off the board).
+  useCaretReporter(textareaRef, win.id, 'text', isEditing && !offBoard);
+  const teammateCarets = useTeammateCarets(win.id, 'text', isEditing && !offBoard);
   const showComments = !win.maximized && win.showComments === true;
 
   const annotations = React.useMemo(() => win.annotations || [], [win.annotations]);
@@ -166,6 +171,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
                     {win.typingActor.label} — read-only while they type, so your saves never collide.
                   </div>
                 )}
+                <div style={{ position: 'relative', height: '100%' }}>
                 <textarea
                   autoFocus={isActive}
                   placeholder={loadError ? '' : 'Start typing…'}
@@ -191,6 +197,8 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
                 onSelect={onTextareaSelection}
                 style={{ width: '100%', height: '100%', resize: 'none', border: 'none', outline: 'none', background: 'transparent', color: 'inherit', font: 'inherit' }}
               />
+                <TeammateCarets boxRef={textareaRef} carets={teammateCarets} text={realContent} />
+                </div>
               </>
             ) : !text.trim() ? (
               !loadError && <div style={{ color: 'var(--ink-faint)' }}>Click anywhere to start writing</div>

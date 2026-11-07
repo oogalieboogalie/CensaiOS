@@ -9,16 +9,25 @@ import * as Y from 'yjs';
 import { valueFromY, valueToY } from '../../../shared/collab/seedFromSnapshot.js';
 import { applyTextDiff, diffText } from '../../../shared/collab/textDiff.js';
 
-/** Window fields that hold a form of boxes (a Listing Writer's `listing`). */
-export const WINDOW_FORM_FIELDS = new Set(['listing']);
+/**
+ * Window fields that hold a form of boxes (a Listing Writer's `listing`, a
+ * LeadHound brief's `leadBrief`, a Local Sites shop's `site`).
+ */
+export const WINDOW_FORM_FIELDS = new Set(['listing', 'leadBrief', 'site']);
 // Some windows keep one part per field under a prefix; only the words in it
 // merge letter by letter, while its font, colour and place are picked whole:
 // a YorWare Layout story (`lst.<id>`), a Censai Photo layer (`pl.<id>`: its
-// text and name) and a Censai Video clip (`vc.<id>`: a title's text).
+// text and name), a Censai Video clip (`vc.<id>`: a title's text), a
+// Censai Vector shape (`vs.<id>`: a text box's words), a YorWare PDF mark
+// (`pm.<id>`: the words of a text box placed on a page) and a YorWare 3D
+// Viewer note (`m3n.<id>`: the words of a note pinned on a model).
 const PART_TEXT_KEYS = {
   'lst.': new Set(['text']),
   'pl.': new Set(['text', 'name']),
   'vc.': new Set(['text']),
+  'vs.': new Set(['text']),
+  'pm.': new Set(['text']),
+  'm3n.': new Set(['text']),
 };
 const partPrefix = (field) => (typeof field === 'string'
   ? Object.keys(PART_TEXT_KEYS).find((prefix) => field.startsWith(prefix)) : undefined);

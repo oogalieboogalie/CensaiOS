@@ -3,6 +3,7 @@ import React from 'react';
 import { BRANCH_TESTS, WORKFLOW_TOOLS } from '../../lib/workflow/graph.js';
 import { NODE_LOOK, WATCHABLE_KINDS } from './nodeLook.js';
 import { EveryPicker } from '../schedule/EveryPicker.jsx';
+import { StepText } from './StepText.jsx';
 import { NextRuns } from '../schedule/UpcomingList.jsx';
 import { describeEvery, upcomingEvery, whenWords } from '../../lib/schedule/plainWords.js';
 
@@ -57,8 +58,8 @@ function StartSettings({ node, flow }) {
       </button>
       {armed && <p className="hb-wf-hint">Runs on its own as the teammate who turned it on.</p>}
       <Field label="Text the run starts with">
-        <textarea className="hb-wf-input" rows={3} value={node.input || ''} placeholder="Optional. Board starts hand over the new window's text."
-          onChange={(e) => flow.patchNode(node.id, { input: e.target.value })} />
+        <StepText multiline rows={3} value={node.input} placeholder="Optional. Board starts hand over the new window's text."
+          onChange={(input) => flow.patchNode(node.id, { input })} />
       </Field>
     </>
   );
@@ -78,7 +79,7 @@ export function NodeInspector({ node, flow, agents, result }) {
     <aside className="hb-wf-inspector" aria-label={`${NODE_LOOK[node.type]?.label} settings`}>
       <div className="hb-wf-label">{NODE_LOOK[node.type]?.label}</div>
       <Field label="Name">
-        <input className="hb-wf-input" value={node.title || ''} onChange={(e) => patch({ title: e.target.value })} />
+        <StepText value={node.title} onChange={(title) => patch({ title })} />
       </Field>
       {node.type === 'trigger' && <StartSettings node={node} flow={flow} />}
       {node.type === 'agent' && (
@@ -89,7 +90,7 @@ export function NodeInspector({ node, flow, agents, result }) {
             </select>
           </Field>
           <Field label="What should it do?">
-            <textarea className="hb-wf-input" rows={4} value={node.instructions || ''} onChange={(e) => patch({ instructions: e.target.value })} />
+            <StepText multiline rows={4} value={node.instructions} onChange={(instructions) => patch({ instructions })} />
           </Field>
         </>
       )}
@@ -118,7 +119,7 @@ export function NodeInspector({ node, flow, agents, result }) {
             </select>
           </Field>
           <Field label={node.test === 'longer_than' ? 'Characters' : 'Words'}>
-            <input className="hb-wf-input" value={node.value || ''} onChange={(e) => patch({ value: e.target.value })} />
+            <StepText value={node.value} onChange={(value) => patch({ value })} />
           </Field>
           <p className="hb-wf-hint">Yes goes out the top dot, no out the bottom one.</p>
         </>

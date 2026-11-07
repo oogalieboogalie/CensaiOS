@@ -95,6 +95,7 @@
 @import './styles/seven-contexts.css';
 @import './styles/error-note.css';
 @import './styles/agent-marks.css';
+@import './styles/text-carets.css';
 
 @tailwind base;
 @tailwind components;

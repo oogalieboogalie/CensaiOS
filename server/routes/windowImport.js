@@ -29,6 +29,7 @@ import {
 } from '../window-import/windowPackageWriter.js';
 import { CapabilityDeniedError, requireCapability } from '../capabilities/checkCapability.js';
 import { resourceRateLimiter } from '../middleware/standardRateLimits.js';
+import { importCallerOrRefuse } from '../window-import/importModelAccess.js';
 
 const log = createLogger('window-import');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -125,7 +126,10 @@ windowImportRouter.post('/import', async (req, res) => {
     log.info('adapting window code via LLM');
     const prompt = buildAdaptPrompt(rawJsx, rawCss, hint);
 
+    const caller = await importCallerOrRefuse(req, res);
+    if (!caller) return;
     const aiResponse = await callModel({
+      ...caller,
       body: {
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,

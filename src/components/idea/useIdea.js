@@ -1,17 +1,35 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
-import { initialIdeas, cleanIdeaList, ideaSignature, keepUnsavedIdeas } from './ideaUtils.js';
+import { initialIdeas, cleanIdeaList, ideaSignature } from './ideaUtils.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 
 export function useIdea({ win, onUpdate, currentProject }) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
-  const [ideas, setIdeas] = React.useState(() => initialIdeas(win));
+  // The bullets live on the window and are saved as you type, so two people
+  // on one board write them together, letter by letter (see
+  // src/lib/collaboration/ideaBulletText.js).
+  // Your latest change shows at once and gives way as soon as the board's copy arrives.
+  const shared = React.useMemo(() => initialIdeas(win), [win.ideas, win.content]);
+  const [mine, setMine] = React.useState({ shared, ideas: null });
+  if (mine.shared !== shared) setMine({ shared, ideas: null });
+  const ideas = (mine.shared === shared && mine.ideas) || shared;
+  const ideasRef = React.useRef(ideas);
+  ideasRef.current = ideas;
+  const setIdeas = React.useCallback((next) => {
+    const list = typeof next === 'function' ? next(ideasRef.current) : next;
+    ideasRef.current = list;
+    setMine((m) => ({ ...m, ideas: list }));
+    onUpdate({ ideas: list, content: list.map(item => `- ${item}`).join('\n') });
+  }, [onUpdate]);
   const [draft, setDraft] = React.useState('');
   const [expansion, setExpansion] = React.useState(win.expansion || '');
   const [expandedFromIdeas, setExpandedFromIdeas] = React.useState(() => (
     Array.isArray(win.expandedFromIdeas) ? win.expandedFromIdeas : (win.expansion ? initialIdeas(win) : [])
   ));
-  const [workItem, setWorkItem] = React.useState(win.workItem || '');
+  // The save tag lives on the window and is saved as you type, so two people
+  // on one board write it together, letter by letter (see shared/collab/textDiff.js).
+  const workItem = typeof win.workItem === 'string' ? win.workItem : '';
+  const setWorkItem = React.useCallback((next) => onUpdate({ workItem: String(next ?? '') }), [onUpdate]);
   const [status, setStatus] = React.useState('');
   const [error, setError] = React.useState('');
   const [saving, setSaving] = React.useState(false);
@@ -26,20 +44,14 @@ export function useIdea({ win, onUpdate, currentProject }) {
   // Teammates edit the same idea pad: adopt the shared record whenever it
   // changes to something this tab did not write itself.
   const remoteKey = JSON.stringify([
-    win.ideas || [], win.expansion || '', win.expandedFromIdeas || [],
-    win.workItem || '', win.savedIdea || null, win.ideaAssignee || '',
+    win.expansion || '', win.expandedFromIdeas || [], win.savedIdea || null, win.ideaAssignee || '',
   ]);
   const lastWrittenKey = React.useRef(remoteKey);
-  const lastSavedIdeas = React.useRef(win.ideas || []);
   React.useEffect(() => {
     if (remoteKey === lastWrittenKey.current) return;
     lastWrittenKey.current = remoteKey;
-    const shared = initialIdeas(win);
-    setIdeas(keepUnsavedIdeas(shared, ideas, lastSavedIdeas.current));
-    lastSavedIdeas.current = shared;
     setExpansion(win.expansion || '');
     setExpandedFromIdeas(Array.isArray(win.expandedFromIdeas) ? win.expandedFromIdeas : []);
-    setWorkItem(win.workItem || '');
     setSavedIdea(win.savedIdea || null);
     setAssignee(win.ideaAssignee || '');
   }, [remoteKey]);
@@ -54,24 +66,21 @@ export function useIdea({ win, onUpdate, currentProject }) {
         content === (win.content || '') &&
         expansion === (win.expansion || '') &&
         JSON.stringify(expandedFromIdeas) === JSON.stringify(win.expandedFromIdeas || []) &&
-        workItem === (win.workItem || '') &&
         assignee === (win.ideaAssignee || '') &&
         sameSavedIdea
       ) return;
-      lastWrittenKey.current = JSON.stringify([ideas, expansion, expandedFromIdeas, workItem, savedIdea, assignee]);
-      lastSavedIdeas.current = ideas;
+      lastWrittenKey.current = JSON.stringify([expansion, expandedFromIdeas, savedIdea, assignee]);
       onUpdate({
         ideas,
         content,
         expansion,
         expandedFromIdeas,
-        workItem,
         savedIdea,
         ideaAssignee: assignee,
       });
     }, 350);
     return () => clearTimeout(t);
-  }, [ideas, expansion, expandedFromIdeas, workItem, assignee, savedIdea, onUpdate]);
+  }, [ideas, expansion, expandedFromIdeas, assignee, savedIdea, onUpdate]);
 
   const addIdea = () => {
     const next = draft.trim();

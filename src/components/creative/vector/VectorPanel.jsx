@@ -2,6 +2,7 @@
 import React from 'react';
 import { ColorField } from '../ColorField.jsx';
 import { Slider } from '../Slider.jsx';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 
 const NAMES = { rect: 'Rectangle', ellipse: 'Ellipse', line: 'Line', path: 'Path', text: 'Text' };
 
@@ -16,6 +17,9 @@ export function VectorPanel({ v }) {
   const src = selected.length ? doc.shapes[selected[0]] : style;
   const text = one?.type === 'text' ? one : null;
   const top = [...doc.order].reverse();
+  // A teammate's letters landing in this text box keep your cursor where it was.
+  const textRef = React.useRef(null);
+  useSharedCaret(textRef, text?.text || '');
   return (
     <aside className="hb-cr-panel" aria-label="Shape settings">
       <section className="hb-cr-section">
@@ -30,7 +34,7 @@ export function VectorPanel({ v }) {
         {one?.type === 'rect' && <Slider label="Corner radius" min={0} max={Math.round(Math.min(one.w, one.h) / 2)} unit="px" value={one.rx || 0} onChange={(n) => v.setStyleField('rx', n)} />}
         {text && (
           <>
-            <textarea className="hb-cr-input hb-cr-textarea" aria-label="Text" value={text.text} onChange={(e) => v.setStyleField('text', e.target.value)} />
+            <textarea ref={textRef} className="hb-cr-input hb-cr-textarea" aria-label="Text" value={text.text} onChange={(e) => v.setStyleField('text', e.target.value)} />
             <Slider label="Text size" min={6} max={300} unit="px" value={text.size || 48} onChange={(n) => v.setStyleField('size', n)} />
           </>
         )}

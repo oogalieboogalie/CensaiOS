@@ -19,6 +19,8 @@ const {
 function app() {
   const a = express();
   a.use(express.json());
+  // Signed in as user-1 (the routes take the person from the session).
+  a.use((req, _res, next) => { req.session = { userId: 'user-1' }; next(); });
   a.use('/api/oauth', oauthRouter);
   return a;
 }
@@ -124,7 +126,10 @@ describe('GET /api/oauth/:provider/callback', () => {
     expect((await request(a).get(`/api/oauth/${PROVIDER}/callback`).query(good)).status).toBe(200);
     expect((await request(a).get(`/api/oauth/${PROVIDER}/callback`).query(good)).status).toBe(403);
     expect((await request(a).get(`/api/oauth/${PROVIDER}/callback`).query({ code: 'c', state: 'bogus', userId: 'user-1' })).status).toBe(403);
-    expect((await request(a).get(`/api/oauth/${PROVIDER}/callback`).query({ code: 'c', state: await freshState() })).status).toBe(400);
+    // Identity comes from the sign-in now: no session means no OAuth at all.
+    const signedOut = express();
+    signedOut.use('/api/oauth', oauthRouter);
+    expect((await request(signedOut).get(`/api/oauth/${PROVIDER}/callback`).query({ code: 'c', state: await freshState() })).status).toBe(401);
   });
 });
 

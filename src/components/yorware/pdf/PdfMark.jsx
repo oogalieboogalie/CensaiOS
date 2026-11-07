@@ -2,6 +2,7 @@
 import React from 'react';
 import { HIGHLIGHT_OPACITY, PDF_INK } from '../../../lib/yorware/pdfColors.js';
 import { strokesToPath } from '../../../lib/yorware/pdfExport.js';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 
 const LABEL = { text: 'Text', sign: 'Signature', highlight: 'Highlight', redact: 'Blacked out', signHere: 'Sign here' };
 
@@ -10,6 +11,9 @@ const LABEL = { text: 'Text', sign: 'Signature', highlight: 'Highlight', redact:
  * is the live position (it differs from the mark while it's being dragged).
  */
 export function PdfMark({ id, mark, box, scale, selected, editing, onPointerDown, onDoubleClick, onText, onEndEdit, onSign }) {
+  // A teammate's letters landing in this text box keep your cursor where it was.
+  const textRef = React.useRef(null);
+  useSharedCaret(textRef, mark.type === 'text' ? String(mark.text ?? '') : '');
   const style = { left: box.x * scale, top: box.y * scale, width: box.w * scale, height: box.h * scale };
   const common = {
     className: 'hb-yp-mark', 'data-mark': id, 'data-type': mark.type, 'data-selected': selected ? 'true' : undefined,
@@ -19,7 +23,7 @@ export function PdfMark({ id, mark, box, scale, selected, editing, onPointerDown
   if (mark.type === 'text') {
     const font = { fontSize: (Number(mark.size) || 14) * scale, color: mark.color || PDF_INK.text, padding: `${2 * scale}px ${3 * scale}px` };
     body = editing
-      ? <textarea className="hb-yp-text-edit" aria-label="Text on the page" style={font} value={mark.text} autoFocus
+      ? <textarea ref={textRef} className="hb-yp-text-edit" aria-label="Text on the page" style={font} value={mark.text} autoFocus
           onFocus={(e) => e.target.select()} onChange={(e) => onText(e.target.value)} onBlur={onEndEdit}
           onPointerDown={(e) => e.stopPropagation()}
           onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); e.currentTarget.blur(); } }} />

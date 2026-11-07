@@ -6,6 +6,7 @@ import { TodoAssignMenu } from './TodoAssignMenu.jsx';
 import { PersonBadge } from './PersonBadge.jsx';
 import { CliMark } from '../agentConsole/CliMark.jsx';
 import { codingAgentLabel, parseAssignee } from '../../lib/todos/assignees.js';
+import { useSharedCaret } from '../../lib/collaboration/useSharedCaret.js';
 
 const STATUS_CONFIG = {
   needs_contract: { label: 'needs contract', bg: 'var(--ps-orange)', color: 'var(--on-fill)' },
@@ -70,6 +71,8 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
   const contractMissing = Array.isArray(item.contractMissing) ? item.contractMissing.join(', ') : '';
   
   const [expanded, setExpanded] = React.useState(false);
+  const editRef = React.useRef(null);
+  useSharedCaret(editRef, isEditing ? editText : null);
 
   const handleDoubleClick = () => {
     if (!isSent) {
@@ -98,7 +101,9 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
         {isEditing ? (
           <div style={{ display: 'flex', gap: 4 }}>
             <input
+              ref={editRef}
               autoFocus
+              aria-label="To-do words"
               value={editText}
               onChange={(e) => onEditChange(e.target.value)}
               onKeyDown={handleKeyDown}

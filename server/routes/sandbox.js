@@ -65,7 +65,7 @@ sandboxRouter.post('/toolchains', requireSystemAdmin, async (req, res) => {
     const { enabled = [], apiKeys = {} } = req.body;
 
     // Validate — only allow known tool IDs
-    const validEnabled = enabled.filter((id) => TOOLCHAIN_REGISTRY[id]);
+    const validEnabled = (Array.isArray(enabled) ? enabled : []).filter((id) => TOOLCHAIN_IDS.includes(id));
 
     // Merge with existing keys (don't wipe keys the user didn't touch)
     const existing = readToolchainConfig();
@@ -170,7 +170,7 @@ sandboxRouter.post('/toolchains/detect', requireSystemAdmin, async (_req, res) =
  */
 sandboxRouter.post('/toolchains/install', requireSystemAdmin, async (req, res) => {
   const { id } = req.body;
-  const tool = TOOLCHAIN_REGISTRY[id];
+  const tool = TOOLCHAIN_IDS.includes(id) ? TOOLCHAIN_REGISTRY[id] : null;
   if (!tool) return res.status(400).json({ error: `Unknown tool: ${id}` });
 
   try {

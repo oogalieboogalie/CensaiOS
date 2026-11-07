@@ -3,6 +3,8 @@ import { GenIcon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { logFailure } from '../lib/appLog/browserLog.js';
 import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from './collaboration/TeammateCarets.jsx';
 
 // The prompt is saved on the window as you type, so two people on one board
 // write it together, letter by letter, and each sees the other's words live.
@@ -20,6 +22,9 @@ export function GenImageWindow({ win, onUpdate }) {
   const inputRef = React.useRef(null);
   // A teammate's letters landing in the prompt keep your cursor where it was.
   useSharedCaret(inputRef, prompt, React.useMemo(() => ({ id: win.id, field: 'prompt' }), [win.id]));
+  // Teammates' cursors in the prompt, with their names, and ours for them.
+  useCaretReporter(inputRef, win.id, 'prompt', editing);
+  const promptCarets = useTeammateCarets(win.id, 'prompt', editing);
 
   React.useEffect(() => { if (editing) setTimeout(() => inputRef.current?.focus(), 30); }, [editing]);
 
@@ -91,10 +96,13 @@ export function GenImageWindow({ win, onUpdate }) {
         </div>
         <div style={{ padding: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
           {editing ? <>
+            <div style={{ flex: 1, minWidth: 0, position: 'relative', display: 'flex' }}>
             <input ref={inputRef} value={prompt} aria-label="Image prompt" onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') setEditing(false); }}
               placeholder="a watercolor of a small town newspaper office at dawn…"
-              style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '8px 12px', font: '13px/1.4 var(--font-sans)', color: 'var(--ink)', outline: 'none' }} />
+              style={{ flex: 1, minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '8px 12px', font: '13px/1.4 var(--font-sans)', color: 'var(--ink)', outline: 'none' }} />
+              <TeammateCarets boxRef={inputRef} carets={promptCarets} text={prompt} />
+            </div>
             <button onClick={submit} style={{ all: 'unset', cursor: 'pointer', padding: '7px 14px', borderRadius: 'var(--radius-full)', background: 'var(--accent)', color: 'var(--accent-contrast)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>Cook</button>
           </> : <>
             <button onClick={() => setEditing(true)} title="Edit prompt"

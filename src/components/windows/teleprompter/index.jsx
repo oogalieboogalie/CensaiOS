@@ -6,6 +6,8 @@ import { Prompter } from '../../teleprompter/Prompter.jsx';
 import { normalizePrompter, PROMPTER_KEY, readingTime, readShared, writeShared } from '../../../lib/teleprompter/prompterState.js';
 import { openPrompterPopOut, POP_OUT_NOTES } from '../../../lib/teleprompter/popOut.js';
 import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
 import { windowMeta } from './meta.js';
 
 export { windowMeta };
@@ -18,7 +20,8 @@ const same = (a, b) => a.text === b.text && a.speed === b.speed && a.size === b.
  * pop-out's speed and size buttons update this window. On a shared board the
  * script merges as people type (it is the window's `text`); a teammate's
  * change keeps this person's caret where they were typing and reaches their
- * pop-out too.
+ * pop-out too. While the script is open for editing, each teammate's cursor
+ * shows in it as a line in their colour with their name.
  */
 export function TeleprompterWindow({ win = {}, onUpdate }) {
   const state = normalizePrompter(win);
@@ -28,6 +31,9 @@ export function TeleprompterWindow({ win = {}, onUpdate }) {
   latest.current = state;
   const inputRef = React.useRef(null);
   useSharedCaret(inputRef, state.text, React.useMemo(() => ({ id: win.id, field: 'text' }), [win.id]));
+  // Teammates' cursors in the script while it is open for editing, and ours for them.
+  useCaretReporter(inputRef, win.id, 'text', mode === 'edit');
+  const teammateCarets = useTeammateCarets(win.id, 'text', mode === 'edit');
 
   const change = React.useCallback((patch) => {
     const next = normalizePrompter({ ...latest.current, ...patch });
@@ -69,9 +75,12 @@ export function TeleprompterWindow({ win = {}, onUpdate }) {
         {note && <p className="hb-teleprompter-note" role="status">{note}</p>}
         {mode === 'edit' ? (
           <div className="hb-teleprompter-edit">
-            <textarea ref={inputRef} className="hb-teleprompter-input" value={state.text} aria-label="Script"
-              placeholder="Paste or type what you want to say. Leave a blank line between parts."
-              onChange={(e) => change({ text: e.target.value })} />
+            <div className="hb-teleprompter-box">
+              <textarea ref={inputRef} className="hb-teleprompter-input" value={state.text} aria-label="Script"
+                placeholder="Paste or type what you want to say. Leave a blank line between parts."
+                onChange={(e) => change({ text: e.target.value })} />
+              <TeammateCarets boxRef={inputRef} carets={teammateCarets} text={state.text} />
+            </div>
             <div className="hb-teleprompter-row">
               <span className="hb-teleprompter-hint">{time.words} words, about {time.label} at a calm pace.</span>
               <button type="button" className="hb-btn" onClick={() => setMode('read')}><Icon.Play size={12} /> Read it</button>

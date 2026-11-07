@@ -17,6 +17,30 @@ tags.
 
 ### New
 
+- WhatsApp: see a teammate's cursor and name in the quick message (crew realtime) (Nov 7)
+- Image Generator: see a teammate's cursor and name in the prompt (crew realtime) (Nov 7)
+- Image Studio: see a teammate's cursor and name in the prompt and instructions (crew realtime) (Nov 7)
+- Git Diff: see a teammate's cursor and name in the Before and After boxes (crew realtime) (Nov 7)
+- UI team nightly: Blueprints gets bars, sunken inputs, raised cards, readable buttons and a real empty state (Nov 7)
+- Legion: see a teammate's cursor and name in the goal and YAML spec (crew realtime) (Nov 7)
+- Window Importer: a teammate's "check only" import uses their own AI key (Nov 7)
+- Model Arena: see a teammate's cursor and name in the request and instructions (crew realtime) (Nov 7)
+- Nightly sweep 2026-11-07: OAuth logins tied to the signed-in person; sandbox tool names checked properly (Nov 7)
+- Teleprompter: see a teammate's cursor and name in the script (crew realtime) (Nov 7)
+- Document: see a teammate's cursor and name as they type (crew realtime) (Nov 7)
+- To-do list: two people can type in one to-do at once (crew realtime) (Nov 7)
+- LeadHound: two people can rewrite one lead's drafts at once (crew realtime) (Nov 7)
+- Idea Pad: two people can type in one bullet at once (crew realtime) (Nov 7)
+- Step cards: two people can type one step's answer at once (crew realtime) (Nov 7)
+- WhatsApp: two people can type one quick message at once (crew realtime) (Nov 7)
+- Writer: two people can type in one table or picture caption at once (crew realtime) (Nov 7)
+- Local Sites: two people can fill in one shop's website at once (crew realtime) (Nov 6)
+- 3D Viewer: two people can type in one pinned note at once (crew realtime) (Nov 6)
+- YorWare PDF: two people can type in one text box on a page (crew realtime) (Nov 6)
+- Image Studio: two people can type in one prompt at once (crew realtime) (Nov 6)
+- Vector: two people can type in one text box at once (crew realtime) (Nov 6)
+- Idea Pad: two people can type in one save tag at once (crew realtime) (Nov 6)
+- LeadHound: two people can fill in one brief at once (crew realtime) (Nov 6)
 - Image Generator: two people can type in one prompt at once (crew realtime) (Nov 6)
 - Legion: two people can type in one goal at once (crew realtime) (Nov 6)
 - Model Arena: two people can type in one request at once (crew realtime) (Nov 6)
@@ -92,6 +116,7 @@ tags.
 
 ### Behind the scenes
 
+- Workflow: two people can type in one step at once (crew realtime) (Nov 6)
 - Prove workflows, Scheduler, the MCP door and Idea Pad use the key saved in Settings (crew 159) (Nov 6)
 - The crew's guide says what the empty board draws; unused tile names go (Oct 30)
 

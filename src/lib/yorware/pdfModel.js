@@ -38,6 +38,26 @@ export function shownSize(page) {
   return sideways ? { w: page.h, h: page.w } : { w: page.w, h: page.h };
 }
 
+// Two people typing in one text box merge their words letter by letter, but
+// the box size each screen saved fits only that screen's words, and words past
+// the box's edge are cut off. So when the merged words no longer fit, the box
+// grows to fit them (on the page); it never shrinks or moves here.
+function fitText(m, page) {
+  if (m.type !== 'text' || typeof m.text !== 'string') return m;
+  const size = Number(m.size) || 14;
+  const need = textBox(m.text, size);
+  const lines = m.text.split('\n').length;
+  const wide = need.w > m.w;
+  const tall = lines * size * 1.25 > m.h;
+  if (!wide && !tall) return m;
+  const room = shownSize(page);
+  return {
+    ...m,
+    w: wide ? Math.max(m.w, Math.min(need.w, room.w - m.x)) : m.w,
+    h: tall ? Math.max(m.h, Math.min(need.h, room.h - m.y)) : m.h,
+  };
+}
+
 /** Everything the window needs, read from the window record. */
 export function readPdf(win) {
   const files = readParts(win, PDF_PART.file);
@@ -46,7 +66,7 @@ export function readPdf(win) {
   for (const [id, p] of Object.entries(rawPages)) if (files[p.file]) pages[id] = p;
   const order = orderedIds(win?.pdfDoc?.order, pages);
   const marks = {};
-  for (const [id, m] of Object.entries(readParts(win, PDF_PART.mark))) if (pages[m.page]) marks[id] = m;
+  for (const [id, m] of Object.entries(readParts(win, PDF_PART.mark))) if (pages[m.page]) marks[id] = fitText(m, pages[m.page]);
   const marksByPage = {};
   for (const [id, m] of Object.entries(marks).sort((a, b) => (a[1].at || 0) - (b[1].at || 0))) {
     (marksByPage[m.page] ||= []).push(id);

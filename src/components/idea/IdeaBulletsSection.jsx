@@ -2,9 +2,12 @@ import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { AgentAvatar } from '../Agents.jsx';
 import { getAgents, getAgentById } from '../../lib/agentStore.js';
-import { panelStyle, sectionHeaderStyle, bulletInputStyle, addInputStyle, tagInputStyle, assigneeSelectStyle, emptyAssigneeStyle, addButtonStyle, iconButtonStyle } from './ideaBulletsStyles.js';
+import { useSharedCaret } from '../../lib/collaboration/useSharedCaret.js';
+import { IdeaBullet } from './IdeaBullet.jsx';
+import { panelStyle, sectionHeaderStyle, addInputStyle, tagInputStyle, assigneeSelectStyle, emptyAssigneeStyle, addButtonStyle } from './ideaBulletsStyles.js';
 
 export function IdeaBulletsSection({
+  winId,
   ideas,
   workItem,
   setWorkItem,
@@ -22,6 +25,9 @@ export function IdeaBulletsSection({
 }) {
   const agents = getAgents();
   const selectedAgent = assignee ? getAgentById(assignee) : null;
+  // A teammate's letters landing in the save tag keep your cursor where it was.
+  const tagRef = React.useRef(null);
+  useSharedCaret(tagRef, workItem, React.useMemo(() => ({ id: winId, field: 'workItem' }), [winId]));
 
   return (
     <section style={panelStyle}>
@@ -35,6 +41,8 @@ export function IdeaBulletsSection({
           Save tag
         </label>
         <input
+          ref={tagRef}
+          aria-label="Save tag"
           value={workItem}
           onChange={(e) => { setWorkItem(e.target.value); setSavedIdea(null); }}
           placeholder="Website Update"
@@ -73,18 +81,7 @@ export function IdeaBulletsSection({
             Throw messy fragments here. Press Enter or the plus button and they become bullets.
           </div>
         ) : ideas.map((idea, index) => (
-          <div key={index} style={{ display: 'grid', gridTemplateColumns: '18px minmax(0, 1fr) 20px', gap: 6, alignItems: 'start' }}>
-            <div style={{ width: 7, height: 7, borderRadius: 'var(--radius-full)', background: 'var(--accent)', marginTop: 10, justifySelf: 'center' }} />
-            <textarea
-              value={idea}
-              onChange={(e) => updateIdea(index, e.target.value)}
-              rows={1}
-              style={bulletInputStyle}
-            />
-            <button onClick={() => removeIdea(index)} title="Remove idea" style={iconButtonStyle}>
-              <Icon.Close size={10} />
-            </button>
-          </div>
+          <IdeaBullet key={index} idea={idea} index={index} onChange={updateIdea} onRemove={removeIdea} />
         ))}
       </div>
 

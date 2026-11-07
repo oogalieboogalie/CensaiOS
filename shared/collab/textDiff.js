@@ -9,10 +9,13 @@
  * window's recipe; title: a window's name, like a Writer document's title;
  * diffBefore and diffAfter: the two versions pasted into a Git Diff Viewer;
  * prompt and system: a request and its instructions, like Model Arena's;
- * legionGoal and legionSpecYaml: what a Legion should build, and its spec).
+ * legionGoal and legionSpecYaml: what a Legion should build, and its spec;
+ * workItem: an Idea Pad's save tag; imageNotes: an Image Studio's
+ * additional instructions; draft: a WhatsApp window's quick message).
  */
 export const WINDOW_TEXT_FIELDS = new Set([
-  'text', 'code', 'cadCode', 'title', 'diffBefore', 'diffAfter', 'prompt', 'system', 'legionGoal', 'legionSpecYaml',
+  'text', 'code', 'cadCode', 'title', 'diffBefore', 'diffAfter', 'prompt', 'system', 'legionGoal', 'legionSpecYaml', 'workItem',
+  'imageNotes', 'draft',
 ]);
 
 /** Vault notes keep each note's words in a field of its own, `vt.<noteId>`. */

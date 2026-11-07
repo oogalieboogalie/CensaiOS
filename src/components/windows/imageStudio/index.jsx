@@ -47,7 +47,9 @@ export function ImageStudioWindow({ win, onUpdate }) {
             onClear={studio.clearCanvas}
           />
           <ImageStudioPrompt
+            winId={win.id}
             state={studio.state}
+            words={studio.words}
             updateFields={studio.updateFields}
             loading={studio.loading}
             error={studio.error}

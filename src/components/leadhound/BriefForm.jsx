@@ -4,12 +4,17 @@
 
 import React from 'react';
 import { Icon } from '../Icons.jsx';
+import { BriefBox } from './BriefBox.jsx';
 
-export function BriefForm({ initial, running, onSubmit }) {
-  const [business, setBusiness] = React.useState(initial?.business || '');
-  const [market, setMarket] = React.useState(initial?.market || '');
-  const [region, setRegion] = React.useState(initial?.region || '');
-  const [maxLeads, setMaxLeads] = React.useState(initial?.maxLeads || 3);
+// The brief is saved on the window as you type (`brief` and `onChange` come
+// from the window), so two people on one board fill it in together: each box
+// merges letter by letter and each sees the other's words live.
+export function BriefForm({ brief, onChange, running, onSubmit }) {
+  const business = String(brief?.business ?? '');
+  const market = String(brief?.market ?? '');
+  const region = String(brief?.region ?? '');
+  const maxLeads = Number(brief?.maxLeads) || 3;
+  const set = (key) => (e) => onChange({ [key]: e.target.value });
   const ready = business.trim() && market.trim() && !running;
 
   const submit = (event) => {
@@ -30,22 +35,22 @@ export function BriefForm({ initial, running, onSubmit }) {
       <div className="hb-lh-card">
         <label className="hb-lh-field">
           <span className="hb-lh-label">Your service or business</span>
-          <textarea
-            className="hb-lh-input"
+          <BriefBox
+            multiline
             value={business}
-            onChange={(e) => setBusiness(e.target.value)}
+            onChange={set('business')}
             rows={2}
             placeholder="e.g. We build AI receptionists for dental clinics"
           />
         </label>
         <label className="hb-lh-field">
           <span className="hb-lh-label">Target market</span>
-          <input className="hb-lh-input" value={market} onChange={(e) => setMarket(e.target.value)} placeholder="e.g. Independent dental practices with 2 to 6 chairs" />
+          <BriefBox value={market} onChange={set('market')} placeholder="e.g. Independent dental practices with 2 to 6 chairs" />
         </label>
         <div className="hb-lh-bar">
           <Icon.Search size={14} />
-          <input className="hb-lh-input" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="Region (optional), e.g. Austin, TX" aria-label="Region" />
-          <select className="hb-lh-select" aria-label="How many leads" value={maxLeads} onChange={(e) => setMaxLeads(Number(e.target.value))}>
+          <BriefBox value={region} onChange={set('region')} placeholder="Region (optional), e.g. Austin, TX" aria-label="Region" />
+          <select className="hb-lh-select" aria-label="How many leads" value={maxLeads} onChange={(e) => onChange({ maxLeads: Number(e.target.value) })}>
             {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>Top {n}</option>)}
           </select>
           <button type="submit" className="hb-lh-pill" data-primary="true" disabled={!ready}>

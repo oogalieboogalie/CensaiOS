@@ -3,6 +3,9 @@ import React from 'react';
 import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { WHATSAPP_WEB_URL } from './WebviewShellWindow.jsx';
+import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from './collaboration/TeammateCarets.jsx';
 
 // WhatsApp Web refuses to load inside another page, and the desktop app's CSP
 // blocks frames entirely, so an iframe here only ever showed a broken page.
@@ -48,7 +51,16 @@ export function WhatsAppWindow({ win = {}, onUpdate }) {
   const contacts = Array.isArray(win.contacts) ? win.contacts : [];
   const [phone, setPhone] = React.useState(win.lastPhone || '');
   const [name, setName] = React.useState('');
-  const [message, setMessage] = React.useState(win.draft || '');
+  // The message lives on the window and is saved as you type, so two people
+  // on one board write it together, letter by letter (see shared/collab/textDiff.js),
+  // and a teammate's letters landing in it keep your cursor where it was.
+  const message = typeof win.draft === 'string' ? win.draft : '';
+  const setMessage = (next) => onUpdate?.({ draft: String(next ?? '') });
+  const messageRef = React.useRef(null);
+  useSharedCaret(messageRef, message, React.useMemo(() => ({ id: win.id, field: 'draft' }), [win.id]));
+  // Teammates' cursors in the message, with their names, and ours for them.
+  useCaretReporter(messageRef, win.id, 'draft');
+  const messageCarets = useTeammateCarets(win.id, 'draft');
   const [notice, setNotice] = React.useState('');
 
   const report = (result) => setNotice(result === 'blocked'
@@ -60,7 +72,6 @@ export function WhatsAppWindow({ win = {}, onUpdate }) {
     if (!digits) { setNotice('Enter a phone number with its country code, e.g. 15551234567.'); return; }
     onUpdate?.({ lastPhone: digits, draft: '' });
     report(await openWhatsApp(clickToChatUrl(digits, message.trim()), { label: `whatsapp-chat-${digits}` }));
-    setMessage('');
   };
 
   const saveContact = () => {
@@ -85,7 +96,10 @@ export function WhatsAppWindow({ win = {}, onUpdate }) {
         <div style={{ display: 'grid', gap: 8, padding: 12, borderRadius: 'var(--radius-lg)', border: '1px solid var(--hairline)', background: 'var(--surface-2)' }}>
           <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', color: 'var(--ink-faint)' }}>Quick message</div>
           <input aria-label="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone with country code, e.g. 15551234567" style={field} />
-          <textarea aria-label="Message" value={message} onChange={(e) => { setMessage(e.target.value); }} onBlur={() => onUpdate?.({ draft: message })} rows={3} placeholder="Type a message" style={{ ...field, resize: 'vertical' }} />
+          <div style={{ position: 'relative', display: 'grid' }}>
+            <textarea ref={messageRef} aria-label="Message" value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="Type a message" style={{ ...field, resize: 'vertical' }} />
+            <TeammateCarets boxRef={messageRef} carets={messageCarets} text={message} />
+          </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" onClick={send} style={{ ...greenBtn, flex: 1 }}>Send in WhatsApp</button>
             <button type="button" onClick={saveContact} style={btn}>Save contact</button>

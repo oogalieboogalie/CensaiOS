@@ -1,11 +1,13 @@
 // One hunted lead: why it fits, how to reach it, the 7-day introduction
 // sequence as an editable day-by-day timeline, and the Ice Breaker
 // deliverable. Every draft is plain text the user can rewrite in place, copy,
-// or open as a Document window on the canvas.
+// or open as a Document window on the canvas. Teammates rewrite the same
+// drafts together, letter by letter (src/lib/collaboration/leadDraftText.js).
 
 import React from 'react';
 import { renderMarkdown } from '../../lib/renderMarkdown.jsx';
 import { channelLabel, leadToMarkdown, touchText } from './exportLead.js';
+import { BriefBox as DraftBox } from './BriefBox.jsx';
 
 function CopyButton({ text, label = 'Copy' }) {
   const [copied, setCopied] = React.useState(false);
@@ -49,7 +51,7 @@ function Sequence({ sequence = [], onChange }) {
               <CopyButton text={touchText(touch)} />
             </div>
             {(touch.subject || touch.channel === 'email') && (
-              <input
+              <DraftBox
                 className="hb-lh-input hb-lh-subject"
                 value={touch.subject || ''}
                 onChange={(e) => edit(i, { subject: e.target.value })}
@@ -57,7 +59,8 @@ function Sequence({ sequence = [], onChange }) {
                 aria-label={`Day ${touch.day} subject`}
               />
             )}
-            <textarea
+            <DraftBox
+              multiline
               className="hb-lh-input hb-lh-body"
               value={touch.body || ''}
               onChange={(e) => edit(i, { body: e.target.value })}
@@ -78,11 +81,12 @@ function IceBreaker({ iceBreaker, onChange }) {
   return (
     <div className="hb-lh-ice">
       <div className="hb-lh-ice-top">
-        <input className="hb-lh-input" value={iceBreaker.title || ''} onChange={(e) => edit({ title: e.target.value })} aria-label="Ice breaker title" />
+        <DraftBox value={iceBreaker.title || ''} onChange={(e) => edit({ title: e.target.value })} aria-label="Ice breaker title" />
         {iceBreaker.format && <span className="hb-lh-label">{iceBreaker.format}</span>}
       </div>
       {iceBreaker.opening_line !== undefined && (
-        <textarea
+        <DraftBox
+          multiline
           className="hb-lh-input hb-lh-opening"
           value={iceBreaker.opening_line || ''}
           onChange={(e) => edit({ opening_line: e.target.value })}
@@ -90,7 +94,8 @@ function IceBreaker({ iceBreaker, onChange }) {
         />
       )}
       {editing ? (
-        <textarea
+        <DraftBox
+          multiline
           className="hb-lh-input hb-lh-deliverable"
           value={iceBreaker.deliverable || ''}
           onChange={(e) => edit({ deliverable: e.target.value })}
@@ -101,7 +106,7 @@ function IceBreaker({ iceBreaker, onChange }) {
       )}
       <div className="hb-lh-cta">
         <span className="hb-lh-label">Ask</span>
-        <input className="hb-lh-input" value={iceBreaker.cta || ''} onChange={(e) => edit({ cta: e.target.value })} aria-label="Ask" />
+        <DraftBox value={iceBreaker.cta || ''} onChange={(e) => edit({ cta: e.target.value })} aria-label="Ask" />
       </div>
       <div className="hb-lh-tabs">
         <button type="button" className="hb-lh-pill" data-size="sm" onClick={() => setEditing((v) => !v)}>
