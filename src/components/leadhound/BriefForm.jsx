@@ -9,7 +9,7 @@ import { BriefBox } from './BriefBox.jsx';
 // The brief is saved on the window as you type (`brief` and `onChange` come
 // from the window), so two people on one board fill it in together: each box
 // merges letter by letter and each sees the other's words live.
-export function BriefForm({ brief, onChange, running, onSubmit }) {
+export function BriefForm({ brief, onChange, running, onSubmit, windowId }) {
   const business = String(brief?.business ?? '');
   const market = String(brief?.market ?? '');
   const region = String(brief?.region ?? '');
@@ -37,6 +37,9 @@ export function BriefForm({ brief, onChange, running, onSubmit }) {
           <span className="hb-lh-label">Your service or business</span>
           <BriefBox
             multiline
+            windowId={windowId}
+            box="business"
+            aria-label="Your service or business"
             value={business}
             onChange={set('business')}
             rows={2}
@@ -45,11 +48,11 @@ export function BriefForm({ brief, onChange, running, onSubmit }) {
         </label>
         <label className="hb-lh-field">
           <span className="hb-lh-label">Target market</span>
-          <BriefBox value={market} onChange={set('market')} placeholder="e.g. Independent dental practices with 2 to 6 chairs" />
+          <BriefBox windowId={windowId} box="market" aria-label="Target market" value={market} onChange={set('market')} placeholder="e.g. Independent dental practices with 2 to 6 chairs" />
         </label>
         <div className="hb-lh-bar">
           <Icon.Search size={14} />
-          <BriefBox value={region} onChange={set('region')} placeholder="Region (optional), e.g. Austin, TX" aria-label="Region" />
+          <BriefBox windowId={windowId} box="region" value={region} onChange={set('region')} placeholder="Region (optional), e.g. Austin, TX" aria-label="Region" />
           <select className="hb-lh-select" aria-label="How many leads" value={maxLeads} onChange={(e) => onChange({ maxLeads: Number(e.target.value) })}>
             {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>Top {n}</option>)}
           </select>

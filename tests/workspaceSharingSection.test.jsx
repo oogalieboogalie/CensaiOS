@@ -66,6 +66,17 @@ describe('workspace sharing settings', () => {
     expect(screen.getByRole('button', { name: 'Go live' })).toBeTruthy();
   });
 
+  test('inviting someone already on the board says so, not that an invite went to their Inbox', async () => {
+    inviteToBoard.mockResolvedValue({
+      kind: 'account', member: { id: 9, email: 'sam@example.com', name: 'Sam Example' }, alreadyMember: true, notified: false,
+    });
+    render(<WorkspaceSharingSection />);
+    fireEvent.change(await screen.findByLabelText('Their email, if they have an account here'), { target: { value: 'sam@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Invite' }));
+    expect(await screen.findByText('Sam Example already has this board.')).toBeTruthy();
+    expect(screen.queryByText(/The invite is in their Inbox/)).toBeNull();
+  });
+
   test('with no email, makes a one-time join link at the address other devices use', async () => {
     inviteToBoard.mockResolvedValue({ kind: 'link', code: 'c'.repeat(32), expiresAt: '2026-10-25T00:00:00.000Z' });
     render(<WorkspaceSharingSection />);

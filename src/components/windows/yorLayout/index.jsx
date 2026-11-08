@@ -110,10 +110,10 @@ export function YorLayoutWindow({ win = {}, onUpdate }) {
           {count > 0 && <LayoutPageStrip p={p} />}
           <div className="hb-cr-stage hb-yl-stage" ref={wrapRef} data-busy={p.busy ? 'true' : undefined}>
             {count > 0
-              ? <LayoutPage p={p} scale={scale} onEditText={editText} onPickPicture={pickInto} />
+              ? <LayoutPage p={p} scale={scale} onEditText={editText} onPickPicture={pickInto} windowId={win.id} />
               : <LayoutStart onPick={p.applyTemplate} />}
           </div>
-          {count > 0 && <LayoutPanel p={p} textRef={textRef} onPickPicture={pickInto} />}
+          {count > 0 && <LayoutPanel p={p} textRef={textRef} onPickPicture={pickInto} windowId={win.id} />}
         </div>
         {TIPS[tool] && count > 0 && <div className="hb-cr-tip" role="status">{TIPS[tool]}</div>}
       </div>

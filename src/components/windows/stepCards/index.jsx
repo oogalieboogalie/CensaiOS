@@ -89,7 +89,7 @@ export function StepCardsWindow({ win = {}, onUpdate, currentProject }) {
                   </div>
                   <AssignChip card={card} showName onAssign={(value, name) => sc.assign(card.id, value, name)} />
                 </header>
-                <StepStack card={card} sc={sc} />
+                <StepStack card={card} sc={sc} winId={win.id} rawCards={win.cards} />
               </>
             )}
         </main>

@@ -3,7 +3,7 @@ import React from 'react';
 import { BRANCH_TESTS, WORKFLOW_TOOLS } from '../../lib/workflow/graph.js';
 import { NODE_LOOK, WATCHABLE_KINDS } from './nodeLook.js';
 import { EveryPicker } from '../schedule/EveryPicker.jsx';
-import { StepText } from './StepText.jsx';
+import { StepText, stepTextField } from './StepText.jsx';
 import { NextRuns } from '../schedule/UpcomingList.jsx';
 import { describeEvery, upcomingEvery, whenWords } from '../../lib/schedule/plainWords.js';
 
@@ -17,7 +17,7 @@ function Field({ label, children }) {
 }
 
 /** How the workflow starts: when you press Run, on a schedule, or when something lands on the board. */
-function StartSettings({ node, flow }) {
+function StartSettings({ node, flow, words }) {
   const armed = flow.armed?.mode && flow.armed.mode !== 'manual' ? flow.armed : null;
   const [mode, setMode] = React.useState(armed?.mode || 'manual');
   const [every, setEvery] = React.useState(armed?.everyMinutes || node.everyMinutes || 60);
@@ -58,7 +58,7 @@ function StartSettings({ node, flow }) {
       </button>
       {armed && <p className="hb-wf-hint">Runs on its own as the teammate who turned it on.</p>}
       <Field label="Text the run starts with">
-        <StepText multiline rows={3} value={node.input} placeholder="Optional. Board starts hand over the new window's text."
+        <StepText multiline rows={3} value={node.input} {...words('input')} placeholder="Optional. Board starts hand over the new window's text."
           onChange={(input) => flow.patchNode(node.id, { input })} />
       </Field>
     </>
@@ -66,7 +66,7 @@ function StartSettings({ node, flow }) {
 }
 
 /** The side panel for the selected step. */
-export function NodeInspector({ node, flow, agents, result }) {
+export function NodeInspector({ node, flow, agents, result, winId }) {
   if (!node) {
     return (
       <aside className="hb-wf-inspector">
@@ -75,13 +75,16 @@ export function NodeInspector({ node, flow, agents, result }) {
     );
   }
   const patch = (fields) => flow.patchNode(node.id, fields);
+  // Live cursors: each box names its step by its place in the shared list.
+  const at = flow.graph?.nodes?.findIndex((n) => n.id === node.id) ?? -1;
+  const words = (key) => (winId && at >= 0 ? { winId, field: stepTextField(at, key) } : {});
   return (
     <aside className="hb-wf-inspector" aria-label={`${NODE_LOOK[node.type]?.label} settings`}>
       <div className="hb-wf-label">{NODE_LOOK[node.type]?.label}</div>
       <Field label="Name">
-        <StepText value={node.title} onChange={(title) => patch({ title })} />
+        <StepText value={node.title} {...words('title')} onChange={(title) => patch({ title })} />
       </Field>
-      {node.type === 'trigger' && <StartSettings node={node} flow={flow} />}
+      {node.type === 'trigger' && <StartSettings node={node} flow={flow} words={words} />}
       {node.type === 'agent' && (
         <>
           <Field label="Agent">
@@ -90,7 +93,7 @@ export function NodeInspector({ node, flow, agents, result }) {
             </select>
           </Field>
           <Field label="What should it do?">
-            <StepText multiline rows={4} value={node.instructions} onChange={(instructions) => patch({ instructions })} />
+            <StepText multiline rows={4} value={node.instructions} {...words('instructions')} onChange={(instructions) => patch({ instructions })} />
           </Field>
         </>
       )}
@@ -119,7 +122,7 @@ export function NodeInspector({ node, flow, agents, result }) {
             </select>
           </Field>
           <Field label={node.test === 'longer_than' ? 'Characters' : 'Words'}>
-            <StepText value={node.value} onChange={(value) => patch({ value })} />
+            <StepText value={node.value} {...words('value')} onChange={(value) => patch({ value })} />
           </Field>
           <p className="hb-wf-hint">Yes goes out the top dot, no out the bottom one.</p>
         </>

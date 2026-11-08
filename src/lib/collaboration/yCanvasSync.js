@@ -35,6 +35,7 @@ import { writeStepCards } from './stepCardText.js';
 import { writeIdeaBullets } from './ideaBulletText.js';
 import { writeLeadHound } from './leadDraftText.js';
 import { writeTodoItems } from './todoItemText.js';
+import { writeOutboxDrafts } from './outboxDraftText.js';
 
 export const SYNCED_KEYS = ['wins', 'canvasGroups', 'paths', 'links', 'dock'];
 export const LOCAL_WINDOW_FIELDS = new Set(['isEditing', 'showComments']);
@@ -90,6 +91,7 @@ function writeFields(target, prevEntry, nextEntry, isWindow = false, id = null) 
     else if (isWindow && field === 'ideas' && writeIdeaBullets(target, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'items' && nextEntry.kind === 'todos' && writeTodoItems(target, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'leadHound' && writeLeadHound(target, prevEntry?.[field], value)) continue;
+    else if (isWindow && field === 'drafts' && nextEntry.kind === 'outbox' && writeOutboxDrafts(target, prevEntry?.[field], value)) continue;
     else if (isWindow && WINDOW_LIST_FIELDS.has(field) && writeWindowList(target, field, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'sheet' && writeWindowSheet(target, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'state' && writeWindowSketch(target, prevEntry?.[field], value)) continue;

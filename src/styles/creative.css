@@ -25,6 +25,7 @@
 .hb-cr-input { box-sizing: border-box; width: 100%; height: 26px; padding: 0 var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--text-sm); }
 .hb-cr-input:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -1px; }
 .hb-cr-textarea { height: auto; min-height: 64px; padding: var(--space-1-5) var(--space-2); resize: vertical; }
+.hb-cr-textbox { position: relative; display: flex; flex-direction: column; min-width: 0; }
 .hb-cr-hint { margin: 0; font-size: var(--text-xs); color: var(--ink-faint); line-height: 1.5; }
 .hb-cr-num { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 .hb-cr-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }

@@ -24,7 +24,10 @@ export function InviteToBoard({ workspaceId, onMember }) {
       if (result.kind === 'account') {
         onMember?.(result.member);
         const who = result.member.name || result.member.email;
-        setState({ status: 'done', message: result.notified ? `${who} can open this board now. The invite is in their Inbox.` : `${who} already has this board.` });
+        const message = result.alreadyMember || !result.notified
+          ? `${who} already has this board.`
+          : `${who} can open this board now. The invite is in their Inbox.`;
+        setState({ status: 'done', message });
       } else {
         const { address, doorClosed } = await addressForOthers();
         setLink({ url: inviteLink(address, result.code), doorClosed });

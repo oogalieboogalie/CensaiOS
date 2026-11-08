@@ -7,7 +7,7 @@ import { DocCellInput } from './DocCellInput.jsx';
 const MAX_TABLE = 20;
 
 /** An editable table: the first row is the header. */
-export function DocTableBlock({ block, onChange, readOnly }) {
+export function DocTableBlock({ block, onChange, readOnly, windowId, blockId }) {
   const rows = block.rows?.length ? block.rows : [['']];
   const width = Math.max(1, ...rows.map((r) => r.length));
   const set = (r, c, value) => onChange({ rows: rows.map((row, i) => (i !== r ? row : Array.from({ length: width }, (_, j) => (j === c ? value : row[j] || '')))) });
@@ -25,7 +25,7 @@ export function DocTableBlock({ block, onChange, readOnly }) {
                 const Cell = r === 0 ? 'th' : 'td';
                 return (
                   <Cell key={c}>
-                    <DocCellInput value={row[c]} readOnly={readOnly} aria-label={`Row ${r + 1} column ${c + 1}`}
+                    <DocCellInput value={row[c]} readOnly={readOnly} windowId={windowId} field={blockId ? `ob.${blockId}/rows/${r}/${c}` : null} aria-label={`Row ${r + 1} column ${c + 1}`}
                       placeholder={r === 0 ? `Column ${c + 1}` : ''} onChange={(e) => set(r, c, e.target.value)} />
                   </Cell>
                 );
@@ -46,12 +46,12 @@ export function DocTableBlock({ block, onChange, readOnly }) {
   );
 }
 
-export function DocImageBlock({ block, onChange, readOnly }) {
+export function DocImageBlock({ block, onChange, readOnly, windowId, blockId }) {
   return (
     <figure className="hb-of-block hb-of-figure" data-type="image">
       {block.src ? <img src={block.src} alt={block.alt || ''} draggable={false} /> : <div className="hb-of-missing">Picture missing</div>}
       <figcaption>
-        <DocCellInput value={block.alt} readOnly={readOnly} placeholder="Caption" aria-label="Picture caption"
+        <DocCellInput value={block.alt} readOnly={readOnly} windowId={windowId} field={blockId ? `ob.${blockId}/alt` : null} placeholder="Caption" aria-label="Picture caption"
           onChange={(e) => onChange({ alt: e.target.value })} />
       </figcaption>
     </figure>

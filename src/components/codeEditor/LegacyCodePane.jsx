@@ -4,15 +4,21 @@
 
 import React from 'react';
 import { useSharedCaret } from '../../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from '../collaboration/TeammateCarets.jsx';
 import { highlightCode } from '../../lib/codeHighlighter.js';
 
 const lineCount = (value) => Math.max(1, String(value || '').split('\n').length);
 
-export function LegacyCodePane({ code, theme, winOpacity, readOnly, onChange, focusProps }) {
+// caretWindowId: the window whose shared code this is (null: code that stays on this screen).
+export function LegacyCodePane({ code, theme, winOpacity, readOnly, onChange, focusProps, caretWindowId = null }) {
   const preRef = React.useRef(null);
   const lineNumbersRef = React.useRef(null);
   const textareaRef = React.useRef(null);
   useSharedCaret(textareaRef, code);
+  // Teammates' cursors in the code, with their names, and ours for them.
+  useCaretReporter(textareaRef, caretWindowId, 'code', Boolean(caretWindowId));
+  const carets = useTeammateCarets(caretWindowId, 'code', Boolean(caretWindowId));
   const lines = React.useMemo(() => Array.from({ length: lineCount(code) }, (_, i) => i + 1), [code]);
 
   const handleScroll = (e) => {
@@ -35,6 +41,7 @@ export function LegacyCodePane({ code, theme, winOpacity, readOnly, onChange, fo
         <textarea ref={textareaRef} value={code} onChange={(e) => onChange(e.target.value, code)} readOnly={readOnly} {...focusProps} onScroll={handleScroll} spellCheck={false} autoCapitalize="off" autoCorrect="off"
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', resize: 'none', border: 0, outline: 'none', padding: 12, background: 'transparent', color: 'transparent', caretColor: theme.cursor || theme.foreground || 'var(--ink)', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 1.55, tabSize: 2, whiteSpace: 'pre', overflow: 'auto', zIndex: 2 }}
         />
+        <TeammateCarets boxRef={textareaRef} carets={carets} text={code} />
       </div>
     </div>
   );

@@ -6,7 +6,8 @@ import { TodoAssignMenu } from './TodoAssignMenu.jsx';
 import { PersonBadge } from './PersonBadge.jsx';
 import { CliMark } from '../agentConsole/CliMark.jsx';
 import { codingAgentLabel, parseAssignee } from '../../lib/todos/assignees.js';
-import { useSharedCaret } from '../../lib/collaboration/useSharedCaret.js';
+import { TodoWordsBox, useTodoCarets } from './TodoWords.jsx';
+import { TeammatesHere } from '../office/docs/TeammatesHere.jsx';
 
 const STATUS_CONFIG = {
   needs_contract: { label: 'needs contract', bg: 'var(--ps-orange)', color: 'var(--on-fill)' },
@@ -57,7 +58,7 @@ function StatusBadge({ status, prUrl, prNumber, contractMissing, handoffWarning 
   return badge;
 }
 
-export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAssign, onHandoff, onOpenSteps, onStartEdit, onSaveEdit, onCancelEdit, onEditChange }) {
+export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAssign, onHandoff, onOpenSteps, onStartEdit, onSaveEdit, onCancelEdit, onEditChange, windowId, wordsField }) {
   const agents = Array.isArray(getAgents()) ? getAgents() : [];
   const who = parseAssignee(item.assignee);
   const agent = who?.type === 'agent' ? getAgentById(who.id) : null;
@@ -71,8 +72,8 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
   const contractMissing = Array.isArray(item.contractMissing) ? item.contractMissing.join(', ') : '';
   
   const [expanded, setExpanded] = React.useState(false);
-  const editRef = React.useRef(null);
-  useSharedCaret(editRef, isEditing ? editText : null);
+  // Teammates editing this to-do's words: cursors in the box, or name tags on the row.
+  const carets = useTodoCarets(windowId, wordsField);
 
   const handleDoubleClick = () => {
     if (!isSent) {
@@ -100,8 +101,10 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
         {isEditing ? (
           <div style={{ display: 'flex', gap: 4 }}>
-            <input
-              ref={editRef}
+            <TodoWordsBox
+              windowId={windowId}
+              field={wordsField}
+              carets={carets}
               autoFocus
               aria-label="To-do words"
               value={editText}
@@ -113,7 +116,7 @@ export function TodoRow({ item, canHandoff, editingId, editText, onToggle, onAss
             />
           </div>
         ) : (
-          <span title={isSent ? (expanded ? 'Double-click to collapse' : 'Double-click to expand full text') : 'Double-click to edit'} style={{ fontSize: 'var(--text-md)', color: item.done ? 'var(--ink-faint)' : 'var(--ink)', textDecoration: item.done ? 'line-through' : 'none', whiteSpace: expanded ? 'normal' : 'nowrap', overflow: expanded ? 'visible' : 'hidden', textOverflow: expanded ? 'clip' : 'ellipsis', userSelect: 'text', cursor: 'text', overflowWrap: 'anywhere' }}>{item.text}</span>
+          <>{carets.length > 0 && <TeammatesHere carets={carets} />}<span title={isSent ? (expanded ? 'Double-click to collapse' : 'Double-click to expand full text') : 'Double-click to edit'} style={{ fontSize: 'var(--text-md)', color: item.done ? 'var(--ink-faint)' : 'var(--ink)', textDecoration: item.done ? 'line-through' : 'none', whiteSpace: expanded ? 'normal' : 'nowrap', overflow: expanded ? 'visible' : 'hidden', textOverflow: expanded ? 'clip' : 'ellipsis', userSelect: 'text', cursor: 'text', overflowWrap: 'anywhere' }}>{item.text}</span></>
         )}
         {implementationStatus && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, minHeight: 16 }}>

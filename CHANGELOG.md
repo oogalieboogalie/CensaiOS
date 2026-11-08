@@ -17,6 +17,29 @@ tags.
 
 ### New
 
+- Outbox: two people can rewrite a draft at once and see each other's cursor (crew realtime) (Nov 8)
+- Code Editor: see a teammate's cursor and name in the code (crew realtime) (Nov 8)
+- Photo and Video: see a teammate's cursor and name in a text layer, layer name or title (crew realtime) (Nov 8)
+- UI team nightly: n8n's connect screen gets a raised card, a sunken address box and buttons that answer the pointer (Nov 8)
+- Layout: see a teammate's cursor and name in a text frame (crew realtime) (Nov 8)
+- YorWare PDF: see a teammate's cursor and name in a text box on a page (crew realtime) (Nov 8)
+- Invite links: test team checks one-time join links, and inviting someone already on the board says so (Nov 8)
+- Vector: see a teammate's cursor and name in a text box (crew realtime) (Nov 8)
+- CAD: see a teammate's cursor and name in the recipe (crew realtime) (Nov 8)
+- Slides: see a teammate's cursor and name in a slide's text box (crew realtime) (Nov 8)
+- Writer: see a teammate's cursor and name in a table cell or picture caption (crew realtime) (Nov 8)
+- Step cards: see a teammate's cursor and name in a step's answer (crew realtime) (Nov 8)
+- Idea Pad: see a teammate's cursor and name in a bullet (crew realtime) (Nov 8)
+- To-do list: see a teammate's cursor and name in a to-do (crew realtime) (Nov 8)
+- LeadHound: see a teammate's cursor and name in a lead's drafts (crew realtime) (Nov 8)
+- Writer: see a teammate's cursor and name in a paragraph (crew realtime) (Nov 7)
+- 3D Viewer: see a teammate's cursor and name in a note (crew realtime) (Nov 7)
+- Slides: see a teammate's cursor and name in the speaker notes (crew realtime) (Nov 7)
+- Local Sites: see a teammate's cursor and name in the form (crew realtime) (Nov 7)
+- Listing Writer: see a teammate's cursor and name in the form (crew realtime) (Nov 7)
+- LeadHound: see a teammate's cursor and name in the brief (crew realtime) (Nov 7)
+- Vault notes: see a teammate's cursor and name in a note (crew realtime) (Nov 7)
+- Idea Pad: see a teammate's cursor and name in the save tag (crew realtime) (Nov 7)
 - WhatsApp: see a teammate's cursor and name in the quick message (crew realtime) (Nov 7)
 - Image Generator: see a teammate's cursor and name in the prompt (crew realtime) (Nov 7)
 - Image Studio: see a teammate's cursor and name in the prompt and instructions (crew realtime) (Nov 7)
@@ -77,6 +100,9 @@ tags.
 
 ### Fixed
 
+- Racetrack: test team checks it for one and two people, and a broken lap table no longer crashes it (Nov 8)
+- Nightly sweep 2026-11-08: chat crash, GitHub PR number escape, viewer wake-up cancel (Nov 8)
+- Close the Open anywhere pairing gate against capitalized paths (Nov 8)
 - Release the dev-server test folder on Windows (Nov 1)
 - Finish the Windows gate on the dev-server checks (Nov 1)
 - Make Windows paths usable in the gate (Nov 1)
@@ -116,6 +142,8 @@ tags.
 
 ### Behind the scenes
 
+- Workflow: see a teammate's cursor and name in a step (crew realtime) (Nov 8)
+- Window names: see a teammate's cursor in the Writer title and Workflow name (crew realtime) (Nov 7)
 - Workflow: two people can type in one step at once (crew realtime) (Nov 6)
 - Prove workflows, Scheduler, the MCP door and Idea Pad use the key saved in Settings (crew 159) (Nov 6)
 - The crew's guide says what the empty board draws; unused tile names go (Oct 30)

@@ -83,6 +83,7 @@
 .hb-sc-check[data-state="failed"] .hb-sc-check-line { color: var(--danger); }
 .hb-sc-sent { color: var(--ink-soft); font-size: var(--text-xs); background: var(--surface-2); border-radius: var(--radius-md); padding: var(--space-1-5) var(--space-2-5); }
 .hb-sc-report { display: flex; flex-direction: column; gap: var(--space-1); color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-sc-report-box { position: relative; display: grid; min-width: 0; }
 
 @keyframes hb-sc-pulse { 50% { opacity: 0.35; } }
 @keyframes hb-sc-open { from { opacity: 0; transform: translateY(10px) scale(0.98); } }

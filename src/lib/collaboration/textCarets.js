@@ -8,6 +8,7 @@
 import * as Y from 'yjs';
 import { CANVAS_ROOT, isValidId } from '../../../shared/collab/ySchema.js';
 import { presenceColor } from './awarenessPresence.js';
+import { textAtPath } from './textPath.js';
 
 let channel = { doc: null, awareness: null };
 const listeners = new Set();
@@ -30,12 +31,18 @@ export function onCaretChannel(fn) {
   return () => listeners.delete(fn);
 }
 
-/** A window's shared words, or null when that field is not shared text. */
+/**
+ * A window's shared words, or null when that field is not shared text. A
+ * field written with slashes is a path into the window (a LeadHound brief's
+ * `leadBrief/market`, a lead's draft; see textPath.js).
+ */
 export function sharedText(doc, windowId, field) {
   const windows = doc?.getMap(CANVAS_ROOT).get('windows');
   const win = windows instanceof Y.Map ? windows.get(String(windowId)) : null;
-  const text = win instanceof Y.Map ? win.get(field) : null;
-  return text instanceof Y.Text ? text : null;
+  if (!(win instanceof Y.Map) || typeof field !== 'string') return null;
+  const direct = win.get(field);
+  if (direct instanceof Y.Text) return direct;
+  return textAtPath(win, field);
 }
 
 /** What this tab publishes for a cursor at `index`; null when the words are not shared. */

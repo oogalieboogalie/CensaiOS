@@ -5,6 +5,7 @@ import { Icon } from '../../Icons.jsx';
 import { useWorkspaceStore } from '../../../lib/store.js';
 import { pickTrackStroke, sampleTrack } from '../../../lib/games/racetrack/track.js';
 import { formatLap } from '../../../lib/games/racetrack/laps.js';
+import { readBestLaps } from '../../../lib/games/racetrack/bestLapRows.js';
 import { windowMeta } from './meta.js';
 import { useRacetrack } from './useRacetrack.js';
 
@@ -119,7 +120,7 @@ export function RacetrackWindow({ win = {}, onUpdate }) {
               <div className="hb-game-title">{hud.laps > 0 ? 'Pit stop' : 'Ready to drive'}</div>
               {!game.canPlay && <p className="hb-game-body">You can watch the race. Ask for an edit link to drive.</p>}
               {game.canPlay && <button type="button" className="hb-btn" data-primary="true" data-testid="race-drive" onClick={game.capture} autoFocus>{hud.laps > 0 || hud.started ? 'Keep driving' : 'Click to drive'}</button>}
-              <BestLaps rows={Array.isArray(win.bestLaps) ? win.bestLaps : []} selfName={game.selfName} />
+              <BestLaps rows={readBestLaps(win.bestLaps)} selfName={game.selfName} />
               {game.canPlay && <div className="hb-game-foot"><Controls /></div>}
             </div>
           </div>

@@ -34,3 +34,4 @@
 .hb-ls-frame { border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--elevation-2); }
 .hb-ls-frame-phone { width: 390px; max-width: 100%; }
 .hb-ls-frame-wide { width: 100%; }
+.hb-ls-box { position: relative; display: flex; flex-direction: column; min-width: 0; }

@@ -96,7 +96,7 @@ export function useModels(win, onUpdate) {
   const addMeasurePoint = (hit) => setMeasure((m) => (m.length >= 2 ? [hit] : [...m, hit]));
 
   return {
-    scene, history, loaded, tool, setTool, measure, setMeasure, currentId, setCurrent, notice, setNotice, busy,
+    windowId: win?.id, scene, history, loaded, tool, setTool, measure, setMeasure, currentId, setCurrent, notice, setNotice, busy,
     autoTurn, setAutoTurn, openNote, setOpenNote, addFiles, addSamples, remove, setShow, setView,
     addNote, editNote, removeNote, addMeasurePoint,
   };

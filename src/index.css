@@ -64,6 +64,7 @@
 @import './styles/legion.css';
 @import './styles/databox.css';
 @import './styles/blueprints.css';
+@import './styles/n8n.css';
 @import './styles/agent-router.css';
 @import './styles/code-editor.css';
 @import './styles/image-window.css';
@@ -96,6 +97,7 @@
 @import './styles/error-note.css';
 @import './styles/agent-marks.css';
 @import './styles/text-carets.css';
+@import './styles/code-carets.css';
 
 @tailwind base;
 @tailwind components;

@@ -16,11 +16,14 @@ function Field({ label, hint, children }) {
 function Text({ ls, name, label, hint, area, rows = 3, placeholder }) {
   const value = ls.site[name] ?? '';
   const onChange = (e) => ls.set(name, e.target.value);
+  // Teammates' cursors show in the box, found by the window and the box's name;
+  // the box keeps its label as its name, so a teammate's name tag never changes it.
+  const shared = { windowId: ls.windowId, box: name, 'aria-label': label };
   return (
     <Field label={label} hint={hint}>
       {area
-        ? <SiteBox multiline rows={rows} value={value} onChange={onChange} placeholder={placeholder} />
-        : <SiteBox value={value} onChange={onChange} placeholder={placeholder} />}
+        ? <SiteBox multiline rows={rows} value={value} onChange={onChange} placeholder={placeholder} {...shared} />
+        : <SiteBox value={value} onChange={onChange} placeholder={placeholder} {...shared} />}
     </Field>
   );
 }

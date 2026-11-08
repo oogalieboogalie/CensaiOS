@@ -1,0 +1,70 @@
+/* n8n window: the "Connect to n8n" first look and the embedded n8n page.
+   The connect form sits on a raised card, the address box is sunken like a well,
+   the default address is a code chip, and every button answers the pointer.
+   Depth comes from depth.css (.hb-panel, .hb-empty, .hb-code, .hb-well). */
+.hb-n8n { flex: 1; display: flex; flex-direction: column; min-height: 0; background: var(--surface); }
+.hb-n8n-connect { flex: 1; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; }
+.hb-n8n-card { width: 100%; max-width: var(--space-96); box-sizing: border-box; }
+.hb-n8n-card.hb-empty { padding: var(--space-8) var(--space-6) var(--space-6); }
+.hb-n8n-form { display: flex; gap: var(--space-2); width: 100%; margin-top: var(--space-2); }
+.hb-n8n-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--layer-well);
+  box-shadow: var(--well-shadow);
+  color: var(--ink);
+  font: var(--text-md) / 1.4 var(--font-mono);
+  transition: border-color var(--dur-fast) var(--ease-standard);
+}
+.hb-n8n-input:hover { border-color: var(--hairline-strong); }
+.hb-n8n-input:focus { outline: none; border-color: var(--accent-line); }
+.hb-n8n-input:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.hb-n8n-input::placeholder { color: var(--ink-faint); }
+.hb-n8n-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  box-shadow: var(--panel-shadow);
+  color: var(--accent-contrast);
+  font: inherit;
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard);
+}
+.hb-n8n-btn:hover:not(:disabled) { background: color-mix(in oklab, var(--accent) 88%, var(--ink)); box-shadow: var(--panel-shadow-hover); }
+.hb-n8n-btn:active:not(:disabled) { transform: scale(var(--press-scale)); }
+.hb-n8n-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.hb-n8n-hint { margin: var(--space-1) 0 0; color: var(--ink-soft); font-size: var(--text-xs); line-height: 1.5; }
+.hb-n8n-change {
+  margin-left: auto;
+  padding: var(--space-0-5) var(--space-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--layer-panel);
+  box-shadow: var(--panel-shadow);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard);
+}
+.hb-n8n-change:hover { background: var(--layer-panel-hover); border-color: var(--hairline-strong); color: var(--ink); }
+.hb-n8n-change:active { transform: scale(var(--press-scale)); }
+.hb-n8n-btn:focus-visible, .hb-n8n-change:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+.hb-n8n-frame { flex: 1; width: 100%; height: 100%; border: none; background: var(--layer-well); }
+.hb-n8n-card .hb-empty-title, .hb-n8n-card .hb-empty-text { margin: 0; }
+.hb-n8n-hint .hb-code { white-space: nowrap; }

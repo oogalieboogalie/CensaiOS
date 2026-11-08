@@ -74,7 +74,9 @@ export async function inviteToBoard(db, { workspaceId, userId, email, allowJoinL
   if (address) {
     try {
       const result = await inviteRegisteredWorkspaceMember(db, { workspaceId, userId, email: address });
-      const notified = await notifyAccount(db, { workspaceId: result.workspace.id, by: userId, to: result.member.id });
+      // Someone already on the board gets no new Inbox line: there is nothing to join.
+      const notified = result.alreadyMember ? false
+        : await notifyAccount(db, { workspaceId: result.workspace.id, by: userId, to: result.member.id });
       return { kind: 'account', ...result, notified };
     } catch (error) {
       if (error.code !== 'REGISTERED_ACCOUNT_REQUIRED' || !allowJoinLinks) throw error;

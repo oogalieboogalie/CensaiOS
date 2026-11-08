@@ -44,11 +44,15 @@
 .hb-of-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .hb-of-page { max-width: 720px; margin: 0 auto; padding: var(--space-8) var(--space-10) var(--space-16); display: flex; flex-direction: column; user-select: text; }
 .hb-of-doc-title { all: unset; font-size: var(--text-2xl); font-weight: 650; letter-spacing: -0.01em; color: var(--ink); padding: 0 0 var(--space-4); }
+.hb-of-doc-title-box { position: relative; display: grid; }
 .hb-of-doc-title::placeholder { color: var(--ink-faint); }
 .hb-of-row { position: relative; }
 .hb-of-gutter { position: absolute; left: calc(var(--space-10) * -1 + var(--space-1)); top: 2px; display: flex; flex-direction: column; opacity: 0; }
 .hb-of-row:hover .hb-of-gutter, .hb-of-row[data-focused="true"] .hb-of-gutter { opacity: 1; }
 .hb-of-block { position: relative; display: flex; gap: var(--space-2); }
+.hb-of-textbox { position: relative; flex: 1; min-width: 0; }
+.hb-of-here { position: absolute; right: 0; top: calc(var(--space-1) * -1); display: flex; gap: var(--space-1); pointer-events: none; z-index: 2; }
+.hb-of-here-tag { padding: 0 5px; border-radius: var(--radius-xs); background: var(--caret-color, var(--accent)); color: var(--on-fill); font-family: var(--font-sans); font-size: var(--text-xs); line-height: 1.5; white-space: nowrap; }
 .hb-of-text { all: unset; box-sizing: border-box; display: block; flex: 1; min-width: 0; width: 100%; white-space: pre-wrap; word-break: break-word; resize: none; overflow: hidden; font-size: var(--text-base); line-height: 1.65; padding: var(--space-0-5) 0; cursor: text; }
 .hb-of-text[data-empty="true"]::before { content: attr(data-placeholder); color: var(--ink-faint); }
 textarea.hb-of-text::placeholder { color: var(--ink-faint); }
@@ -66,6 +70,7 @@ textarea.hb-of-text::placeholder { color: var(--ink-faint); }
 .hb-of-table { width: 100%; border-collapse: collapse; margin: var(--space-2) 0 var(--space-1); font-size: var(--text-sm); }
 .hb-of-table th, .hb-of-table td { border: 1px solid var(--hairline); padding: 0; }
 .hb-of-table th { background: var(--surface-2); }
+.hb-of-cellbox { position: relative; display: block; }
 .hb-of-table input { all: unset; box-sizing: border-box; width: 100%; padding: var(--space-1-5) var(--space-2); }
 .hb-of-table th input { font-weight: 600; }
 .hb-of-table input:focus { box-shadow: inset 0 0 0 1px var(--accent-line); }
@@ -133,6 +138,7 @@ textarea.hb-of-text::placeholder { color: var(--ink-faint); }
 .hb-of-stage { flex: 1; min-height: 0; display: grid; place-items: center; padding: var(--space-4); overflow: hidden; }
 .hb-of-stage .hb-of-slide { box-shadow: var(--elevation-2); border-radius: var(--radius-xs); }
 .hb-of-notes { all: unset; box-sizing: border-box; height: 64px; padding: var(--space-2) var(--space-3); border-top: 1px solid var(--hairline); font-size: var(--text-sm); color: var(--ink-soft); white-space: pre-wrap; overflow-y: auto; }
+.hb-of-notesbox { position: relative; display: flex; flex-direction: column; min-width: 0; }
 .hb-of-notes::placeholder { color: var(--ink-faint); }
 .hb-of-slide { position: relative; overflow: hidden; flex-shrink: 0; font-family: var(--font-sans); user-select: none; }
 .hb-of-slidebar { position: absolute; border-radius: 1px; }
@@ -141,6 +147,7 @@ textarea.hb-of-text::placeholder { color: var(--ink-faint); }
 .hb-of-group .hb-of-sblock, [role="group"].hb-of-slide .hb-of-sblock:hover { outline: 1px dashed color-mix(in oklab, var(--accent-line) 60%, transparent); }
 .hb-of-sblock img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .hb-of-slidetext { all: unset; box-sizing: border-box; display: block; width: 100%; height: 100%; padding: 4px; line-height: 1.2; overflow: hidden; white-space: pre-wrap; word-break: break-word; resize: none; }
+.hb-of-slidetextbox { position: relative; width: 100%; height: 100%; }
 .hb-of-slidetext p { margin: 0 0 0.25em; position: relative; }
 .hb-of-bullet { position: absolute; }
 .hb-of-sblock-hint { display: grid; place-items: center; width: 100%; height: 100%; font-size: var(--text-sm); color: var(--ink-faint); border: 1px dashed var(--hairline-strong); box-sizing: border-box; }

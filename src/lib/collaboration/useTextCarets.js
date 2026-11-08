@@ -43,10 +43,13 @@ export function useTeammateCarets(windowId, field, enabled = true) {
  * Tell teammates where this tab's cursor is in a text box (`ref`) while it
  * has focus, and take it away when the box loses focus or goes. The spot is
  * read a moment after each key or click, once the typed letter has reached
- * the shared words.
+ * the shared words. `toShared`, when given, turns the box's spot into a spot
+ * in the shared words (a CAD recipe's box holds an unsaved copy).
  */
-export function useCaretReporter(ref, windowId, field, enabled = true) {
+export function useCaretReporter(ref, windowId, field, enabled = true, toShared = null) {
   const { doc, awareness } = useChannel();
+  const mapRef = React.useRef(toShared);
+  mapRef.current = toShared;
   React.useEffect(() => {
     const box = ref.current;
     if (!enabled || !box || !doc || !awareness) return undefined;
@@ -54,7 +57,7 @@ export function useCaretReporter(ref, windowId, field, enabled = true) {
     const send = () => {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        if (document.activeElement === box) reportTextCaret(windowId, field, box.selectionEnd);
+        if (document.activeElement === box) reportTextCaret(windowId, field, mapRef.current ? mapRef.current(box.selectionEnd) : box.selectionEnd);
       }, 0);
     };
     const leave = () => { clearTimeout(timer); clearTextCaret(windowId, field); };

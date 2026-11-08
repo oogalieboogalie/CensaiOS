@@ -2,6 +2,9 @@ import React from 'react';
 import { cardFinished, stepPosition, stepsLeft, topStep } from '../../../lib/stepCards/stack.js';
 import { assigneeWords } from './AssignChip.jsx';
 import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
+import { reportFieldOf } from './reportField.js';
 
 const LOCKED_SHOWN = 3;
 const LEAVE_MS = 1500;
@@ -33,16 +36,22 @@ function CheckRow({ check }) {
   );
 }
 
-function TopTab({ card, step, sc, leaving }) {
+function TopTab({ card, step, sc, leaving, winId, rawCards }) {
   const checking = step.checks.some((c) => c.state === 'checking');
   const green = step.checks.filter((c) => c.state === 'passed').length;
   const who = assigneeWords(card);
   // The helper's answer lives on the window and is saved as you type, so two
   // people on one board write it together, letter by letter (see
   // src/lib/collaboration/stepCardText.js), and a teammate's letters keep your cursor put.
+  // A teammate typing in it shows as a line with their name at the letter,
+  // and your cursor goes out to them (only the spot, never the words).
   const report = typeof step.report === 'string' ? step.report : '';
   const reportRef = React.useRef(null);
+  const field = reportFieldOf(rawCards, card.id, step.id);
+  const live = Boolean(winId && field && !leaving);
   useSharedCaret(reportRef, report);
+  useCaretReporter(reportRef, winId, field, live);
+  const carets = useTeammateCarets(winId, field, live);
   return (
     <section className="hb-sc-tab hb-sc-top" data-leaving={leaving || undefined} aria-label={`${stepPosition(card, step)}, open`}>
       <div className="hb-sc-tab-head">
@@ -60,8 +69,11 @@ function TopTab({ card, step, sc, leaving }) {
           {step.checks.some((c) => c.kind === 'ask') && (
             <label className="hb-sc-report">
               <span>What the helper said they did (Censai reads it against the checks)</span>
-              <textarea ref={reportRef} rows={3} value={report} placeholder={card.cliTaskId ? 'Left empty, Censai reads what the coding agent said.' : 'Paste their answer here.'}
-                onChange={(e) => sc.setReport(card.id, step.id, e.target.value)} />
+              <span className="hb-sc-report-box">
+                <textarea ref={reportRef} rows={3} value={report} placeholder={card.cliTaskId ? 'Left empty, Censai reads what the coding agent said.' : 'Paste their answer here.'}
+                  onChange={(e) => sc.setReport(card.id, step.id, e.target.value)} />
+                <TeammateCarets boxRef={reportRef} carets={carets} text={report} />
+              </span>
             </label>
           )}
           <div className="hb-sc-actions">
@@ -85,7 +97,7 @@ function TopTab({ card, step, sc, leaving }) {
  * locked, finished ones gone. A finished top tab slides away before the next
  * one opens.
  */
-export function StepStack({ card, sc }) {
+export function StepStack({ card, sc, winId, rawCards }) {
   const top = topStep(card);
   const [leaving, setLeaving] = React.useState(null);
   const lastTop = React.useRef(top?.id || null);
@@ -112,7 +124,7 @@ export function StepStack({ card, sc }) {
       </div>
       <div className="hb-sc-stack">
         {leaving && <TopTab card={card} step={leaving} sc={sc} leaving />}
-        {!leaving && top && <TopTab key={top.id} card={card} step={top} sc={sc} />}
+        {!leaving && top && <TopTab key={top.id} card={card} step={top} sc={sc} winId={winId} rawCards={rawCards} />}
         {!leaving && cardFinished(card) && (
           <section className="hb-sc-tab hb-sc-top hb-sc-finished" aria-label="Card finished">
             <h3 className="hb-sc-step-title">Every step is checked off</h3>

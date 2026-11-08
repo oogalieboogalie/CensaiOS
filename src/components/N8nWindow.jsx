@@ -27,18 +27,9 @@ export function N8nWindow({ win, onUpdate }) {
       >
         {configuredUrl && (
           <button
+            type="button"
+            className="hb-n8n-change"
             onClick={(e) => { e.stopPropagation(); clearUrl(); }}
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              padding: '2px 6px',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: 'var(--text-xs)',
-              background: 'var(--surface-2)',
-              color: 'var(--ink-faint)',
-              border: '1px solid var(--hairline)',
-              marginLeft: 'auto'
-            }}
             title="Change URL"
           >
             Change URL
@@ -46,53 +37,41 @@ export function N8nWindow({ win, onUpdate }) {
         )}
       </WindowTitle>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--surface)' }}>
+      <div className="hb-n8n">
         {configuredUrl ? (
           <iframe
             src={webOnlyFrameSrc(configuredUrl) || undefined}
             title="n8n"
-            style={{ flex: 1, width: '100%', height: '100%', border: 'none' }}
+            className="hb-n8n-frame"
           />
         ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 'var(--radius-xl)', background: 'var(--surface-2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--ink-faint)', marginBottom: 16, border: '1px solid var(--hairline)'
-            }}>
-              <Icon.NewWorkflow size={24} />
+          <div className="hb-n8n-connect">
+            <div className="hb-panel hb-empty hb-n8n-card">
+              <div className="hb-empty-icon">
+                <Icon.NewWorkflow size={24} />
+              </div>
+              <h3 className="hb-empty-title">Connect to n8n</h3>
+              <p className="hb-empty-text">
+                Enter the URL of your self-hosted n8n instance to embed it in this window.
+              </p>
+              <form onSubmit={handleSubmit} className="hb-n8n-form">
+                <input
+                  type="text"
+                  className="hb-n8n-input"
+                  aria-label="n8n address"
+                  value={draftUrl}
+                  onChange={(e) => setDraftUrl(e.target.value)}
+                  placeholder="http://localhost:5678"
+                />
+                <button type="submit" className="hb-n8n-btn" disabled={!draftUrl.trim()}>
+                  Load
+                </button>
+              </form>
+              <p className="hb-n8n-hint">
+                Start n8n first, then press Load. On this computer it usually
+                lives at <code className="hb-code">localhost:5678</code>.
+              </p>
             </div>
-
-            <h3 style={{ margin: '0 0 8px', fontSize: 'var(--text-base)', color: 'var(--ink)' }}>Connect to n8n</h3>
-            <p style={{ margin: '0 0 24px', fontSize: 'var(--text-md)', color: 'var(--ink-faint)', maxWidth: 280, lineHeight: 1.5 }}>
-              Enter the URL of your self-hosted n8n instance to embed it in this window.
-            </p>
-
-            <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 320 }}>
-              <input
-                type="text"
-                value={draftUrl}
-                onChange={(e) => setDraftUrl(e.target.value)}
-                placeholder="http://localhost:5678"
-                style={{
-                  flex: 1, minWidth: 0, padding: '8px 12px',
-                  background: 'var(--surface-2)', border: '1px solid var(--hairline)',
-                  borderRadius: 'var(--radius-md)', color: 'var(--ink)', fontSize: 'var(--text-md)', outline: 'none'
-                }}
-              />
-              <button
-                type="submit"
-                disabled={!draftUrl.trim()}
-                style={{
-                  padding: '8px 16px', background: 'var(--ink)', color: 'var(--surface)',
-                  border: 'none', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-md)', fontWeight: 500,
-                  cursor: draftUrl.trim() ? 'pointer' : 'not-allowed',
-                  opacity: draftUrl.trim() ? 1 : 0.5
-                }}
-              >
-                Load
-              </button>
-            </form>
           </div>
         )}
       </div>

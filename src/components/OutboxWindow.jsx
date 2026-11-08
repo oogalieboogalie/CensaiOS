@@ -5,25 +5,27 @@ import { WindowTitle } from './windows/WindowTitle.jsx';
 import { checkFairHousing } from '../lib/realEstate/fairHousing.js';
 import { OUTBOX_SECTIONS, draftsByStatus, patchDraft, sendLink } from '../lib/realEstate/outbox.js';
 import { FairHousingFlags } from './realEstate/FairHousingText.jsx';
+import { OutboxDraftBox } from './realEstate/OutboxDraftBox.jsx';
 
 // Spec 7: every client email or text an agent drafts waits here until a
 // person approves it. Approving opens the message in your own mail or
 // messages app, ready to send; the board never sends on its own.
 
-function DraftCard({ draft, onPatch, open = (url) => window.open(url, '_blank', 'noopener') }) {
+// Rewriting a draft saves to the board as you type, so a teammate sees the
+// words change live, and two people rewriting the same message merge letter
+// by letter (src/lib/collaboration/outboxDraftText.js). `at` is where the
+// draft sits in the window's list, so cursors in it are shared.
+function DraftCard({ draft, onPatch, windowId, at = -1, open = (url) => window.open(url, '_blank', 'noopener') }) {
   const [editing, setEditing] = React.useState(false);
-  const [body, setBody] = React.useState(draft.body || '');
-  const [subject, setSubject] = React.useState(draft.subject || '');
-  React.useEffect(() => { if (!editing) { setBody(draft.body || ''); setSubject(draft.subject || ''); } }, [draft.body, draft.subject, editing]);
-  const check = React.useMemo(() => checkFairHousing(`${subject}\n${body}`), [subject, body]);
+  const check = React.useMemo(() => checkFairHousing(`${draft.subject || ''}\n${draft.body || ''}`), [draft.subject, draft.body]);
   const pending = (draft.status || 'pending') === 'pending';
+  const box = (key) => (windowId && at >= 0 ? { windowId, field: `drafts/${at}/${key}` } : {});
+  const write = (key) => (e) => onPatch({ [key]: e.target.value, editedAt: new Date().toISOString() });
 
-  const save = () => { onPatch({ body, subject, editedAt: new Date().toISOString() }); setEditing(false); };
   const approve = () => {
-    const next = editing ? { body, subject } : {};
-    onPatch({ ...next, status: 'approved', approvedAt: new Date().toISOString() });
+    onPatch({ status: 'approved', approvedAt: new Date().toISOString() });
     setEditing(false);
-    open(sendLink({ ...draft, ...next }));
+    open(sendLink(draft));
   };
 
   return (
@@ -37,8 +39,8 @@ function DraftCard({ draft, onPatch, open = (url) => window.open(url, '_blank', 
       </div>
       {editing ? (
         <>
-          {draft.channel !== 'text' && <input className="re-input" value={subject} onChange={e => setSubject(e.target.value)} aria-label="Subject" />}
-          <textarea className="re-input" rows={6} value={body} onChange={e => setBody(e.target.value)} aria-label="Message" />
+          {draft.channel !== 'text' && <OutboxDraftBox {...box('subject')} value={draft.subject} onChange={write('subject')} aria-label="Subject" />}
+          <OutboxDraftBox multiline {...box('body')} value={draft.body} onChange={write('body')} aria-label="Message" />
         </>
       ) : (
         <>
@@ -56,9 +58,8 @@ function DraftCard({ draft, onPatch, open = (url) => window.open(url, '_blank', 
         <span className="re-row">
           {pending && !editing && <button type="button" className="re-btn ghost danger" onClick={() => onPatch({ status: 'discarded' })}>Discard</button>}
           {pending && !editing && <button type="button" className="re-btn" onClick={() => setEditing(true)}>Edit</button>}
-          {editing && <button type="button" className="re-btn ghost" onClick={() => setEditing(false)}>Cancel</button>}
-          {editing && <button type="button" className="re-btn" onClick={save}>Save</button>}
-          {pending && <button type="button" className="re-btn primary" onClick={approve} disabled={!check.ok && !editing} title={check.ok ? '' : 'Rewrite the flagged words first'}>Approve and send</button>}
+          {editing && <button type="button" className="re-btn" onClick={() => setEditing(false)}>Done</button>}
+          {pending && <button type="button" className="re-btn primary" onClick={approve} disabled={!check.ok} title={check.ok ? '' : 'Rewrite the flagged words first'}>Approve and send</button>}
           {!pending && <button type="button" className="re-btn ghost" onClick={() => onPatch({ status: 'pending' })}>Move back</button>}
         </span>
       </div>
@@ -83,7 +84,7 @@ export function OutboxWindow({ win = {}, onUpdate }) {
             <div className="re-spread"><span className="re-label">{section.label}</span><span className="re-faint">{sections[section.status].length}</span></div>
             {sections[section.status].length === 0
               ? <div className="re-empty">{section.status === 'pending' ? 'No drafts waiting. Ask the Follow-up Assistant for one.' : 'None yet.'}</div>
-              : sections[section.status].map(draft => <DraftCard key={draft.id} draft={draft} onPatch={patch(draft.id)} />)}
+              : sections[section.status].map(draft => <DraftCard key={draft.id} draft={draft} onPatch={patch(draft.id)} windowId={win.id} at={drafts.indexOf(draft)} />)}
           </section>
         ))}
         {(sections.approved.length + sections.discarded.length) > 0 && (

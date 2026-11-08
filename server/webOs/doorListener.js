@@ -31,7 +31,9 @@ let listening = null;
 const CLOSED_MESSAGE = 'This censaiOS is not open to other computers yet. On your main computer, turn on Settings, Open anywhere.';
 const PAIR_MESSAGE = 'On another computer, sign in with a code. On your main computer open Settings, Open anywhere, Add a computer.';
 // Every way to sign in without a code: typed email, one-click, Google, Hub.
-const SIGN_IN_WITHOUT_CODE = /^\/api\/(auth\/(developer|local|google)|hub-auth)(\/|$)/;
+// The router matches these paths in any capitalization (/API and /api are the
+// same request), so the check has to as well.
+const SIGN_IN_WITHOUT_CODE = /^\/api\/(auth\/(developer|local|google)|hub-auth)(\/|$)/i;
 
 export function doorListenerConfig(env = process.env) {
   const fallback = env.CENSAI_IN_CONTAINER === '1' ? '3004' : '';

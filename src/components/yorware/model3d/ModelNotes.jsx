@@ -2,22 +2,34 @@
 import React from 'react';
 import { ModelIcon } from '../modelIcons.jsx';
 import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
 import { measureLength, niceNumber } from '../../../lib/yorware/modelMeasure.js';
 
 /**
  * A note's text box. It saves to the board as you type, so two people writing
  * in one note merge letter by letter (see windowFormText.js), and a
- * teammate's letters landing in it keep your cursor where it was.
+ * teammate's letters landing in it keep your cursor where it was. On a board,
+ * teammates' cursors in the same note show with their names, and yours goes
+ * out to them. Each note is its own words, so a cursor in note 1 never shows
+ * in note 2. Only a spot goes out, never words.
  */
 function NoteEditor({ m, id, maxLength }) {
   const text = String(m.scene.notes[id]?.text ?? '');
   const ref = React.useRef(null);
   useSharedCaret(ref, text);
+  const field = `m3n.${id}/text`;
+  const live = Boolean(m.windowId && id);
+  useCaretReporter(ref, m.windowId, field, live);
+  const carets = useTeammateCarets(m.windowId, field, live);
   return (
-    <textarea ref={ref} className="hb-cr-input hb-cr-textarea" autoFocus value={text} maxLength={maxLength}
-      placeholder="What should people know about this spot?" aria-label="Note text"
-      onChange={(e) => { if (e.target.value !== text) m.editNote(id, e.target.value); }}
-      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); m.setOpenNote(null); } }} />
+    <div className="hb-y3d-notebox">
+      <textarea ref={ref} className="hb-cr-input hb-cr-textarea" autoFocus value={text} maxLength={maxLength}
+        placeholder="What should people know about this spot?" aria-label="Note text"
+        onChange={(e) => { if (e.target.value !== text) m.editNote(id, e.target.value); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); m.setOpenNote(null); } }} />
+      <TeammateCarets boxRef={ref} carets={carets} text={text} />
+    </div>
   );
 }
 

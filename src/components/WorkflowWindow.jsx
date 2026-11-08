@@ -8,6 +8,8 @@ import { WorkflowCanvas } from './workflow/WorkflowCanvas.jsx';
 import { NodeInspector } from './workflow/NodeInspector.jsx';
 import { NODE_LOOK } from './workflow/nodeLook.js';
 import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from './collaboration/TeammateCarets.jsx';
 
 const ADDABLE = ['agent', 'tool', 'branch', 'review', 'output'];
 
@@ -33,6 +35,9 @@ export function WorkflowWindow({ win, onUpdate }) {
   // A teammate renaming at the same time keeps your cursor where it was.
   const titleRef = React.useRef(null);
   useSharedCaret(titleRef, title, React.useMemo(() => ({ id: win.id, field: 'title' }), [win.id]));
+  // Teammates' cursors in the name box, with their names, and ours for them.
+  useCaretReporter(titleRef, win.id, 'title', editingTitle);
+  const titleCarets = useTeammateCarets(win.id, 'title', editingTitle);
   const node = graph.nodes.find((n) => n.id === selected) || null;
   const agentName = (id) => (id ? getAgentById(id)?.name || id : null);
 
@@ -58,7 +63,10 @@ export function WorkflowWindow({ win, onUpdate }) {
       </WindowTitle>
       <div className="hb-wf">
         {editingTitle && (
-          <input ref={titleRef} aria-label="Workflow name" className="hb-wf-input hb-wf-name" value={title} onChange={(e) => onUpdate?.({ title: e.target.value })} />
+          <div style={{ position: 'relative', display: 'grid' }}>
+            <input ref={titleRef} aria-label="Workflow name" className="hb-wf-input hb-wf-name" value={title} onChange={(e) => onUpdate?.({ title: e.target.value })} />
+            <TeammateCarets boxRef={titleRef} carets={titleCarets} text={title} />
+          </div>
         )}
         <div className="hb-wf-toolbar" role="toolbar" aria-label="Add a step">
           {ADDABLE.map((type) => {
@@ -74,7 +82,7 @@ export function WorkflowWindow({ win, onUpdate }) {
         </div>
         <div className="hb-wf-body">
           <WorkflowCanvas flow={flow} selected={selected} onSelect={setSelected} agentName={agentName} armed={flow.armed} fitSignal={fit} />
-          <NodeInspector node={node} flow={flow} agents={agents} result={node ? run?.nodes?.[node.id] : null} />
+          <NodeInspector node={node} flow={flow} agents={agents} result={node ? run?.nodes?.[node.id] : null} winId={win.id} />
         </div>
         {(flow.error || run?.error) && <p className="hb-wf-error" role="alert">{flow.error || run.error}</p>}
         {run?.status === 'complete' && run.finishedAt && !flow.error && (

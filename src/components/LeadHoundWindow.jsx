@@ -66,12 +66,13 @@ export function LeadHoundWindow({ win = {}, onUpdate }) {
         onReset={hound.reset}
         onEditLead={hound.updateLead}
         onOpenDoc={openDoc}
+        windowId={win.id}
       />
     );
   } else {
     body = (
       <>
-        <BriefForm brief={brief} onChange={editBrief} running={running} onSubmit={hunt} />
+        <BriefForm brief={brief} onChange={editBrief} running={running} onSubmit={hunt} windowId={win.id} />
         <div className="hb-lh-brief-foot">
           {needsKey && <TavilyKeyPrompt replacing={keyStatus.configured} onSave={saveKey} />}
           <div className="hb-lh-powered hb-lh-mono">

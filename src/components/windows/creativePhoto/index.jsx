@@ -106,7 +106,7 @@ export function CreativePhotoWindow({ win = {}, onUpdate }) {
             ))}
           </div>
           <PhotoStage p={p} zoom={zoom} alpha={alpha} onNotice={setNotice} />
-          <PhotoPanel p={p} />
+          <PhotoPanel p={p} windowId={win.id} />
         </div>
       </div>
     </>

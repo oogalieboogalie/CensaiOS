@@ -16,7 +16,7 @@ function Fit({ value }) {
   );
 }
 
-export function LeadResults({ result, onBank, onReset, onEditLead, onOpenDoc }) {
+export function LeadResults({ result, onBank, onReset, onEditLead, onOpenDoc, windowId }) {
   const leads = result?.leads || [];
   const [selected, setSelected] = React.useState(0);
   const index = leads[selected] ? selected : 0;
@@ -83,6 +83,8 @@ export function LeadResults({ result, onBank, onReset, onEditLead, onOpenDoc }) 
             onBank={onBank}
             onEdit={(patch) => onEditLead?.(index, patch)}
             onOpenDoc={onOpenDoc}
+            windowId={windowId}
+            leadIndex={index}
           />
         </div>
       )}

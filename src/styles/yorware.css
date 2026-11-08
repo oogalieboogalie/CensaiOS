@@ -32,6 +32,7 @@
 .hb-yp-page:not([data-tool="select"]) .hb-yp-mark { pointer-events: none; }
 .hb-yp-fill { position: absolute; inset: 0; }
 .hb-yp-text, .hb-yp-text-edit { box-sizing: border-box; margin: 0; width: 100%; height: 100%; font-family: Helvetica, Arial, sans-serif; line-height: 1.25; white-space: pre; overflow: hidden; }
+.hb-yp-text-box { position: relative; width: 100%; height: 100%; }
 .hb-yp-text-edit { display: block; border: none; outline: 1.5px solid var(--accent); background: color-mix(in oklab, var(--color-white) 88%, transparent); resize: none; min-width: 60px; overflow: visible; cursor: text; }
 .hb-yp-sign { display: block; width: 100%; height: 100%; overflow: visible; }
 .hb-yp-handle { position: absolute; right: -5px; bottom: -5px; width: 9px; height: 9px; border-radius: var(--radius-xs); background: var(--accent); box-shadow: 0 0 0 1px var(--surface); cursor: nwse-resize; }

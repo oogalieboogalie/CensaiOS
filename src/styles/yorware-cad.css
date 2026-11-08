@@ -29,6 +29,7 @@
 .hb-yc-code-head { display: flex; align-items: center; justify-content: space-between; }
 .hb-yc-editor { flex: 1; min-height: 120px; display: flex; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-sunken); overflow: hidden; }
 .hb-yc-gutter { margin: 0; padding: var(--space-2) var(--space-1-5); min-width: 28px; text-align: right; font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; color: var(--ink-faint); overflow: hidden; user-select: none; border-right: 1px solid var(--hairline); }
+.hb-yc-box { position: relative; flex: 1; min-width: 0; display: flex; }
 .hb-yc-textarea { flex: 1; min-width: 0; margin: 0; padding: var(--space-2); border: 0; resize: none; background: transparent; color: var(--ink); font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; white-space: pre; overflow: auto; tab-size: 2; }
 .hb-yc-textarea:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
 .hb-yc-code code { font-family: var(--font-mono); }

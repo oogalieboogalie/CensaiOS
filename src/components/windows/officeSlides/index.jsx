@@ -106,11 +106,11 @@ export function OfficeSlidesWindow({ win = {}, onUpdate }) {
           </ol>
           <div className="hb-of-stagecol">
             <div className="hb-of-stage" ref={stageRef}>
-              {slide ? <SlideView slide={slide} theme={deck.theme} width={stageW} edit={d.edit} label="Slide editor" />
+              {slide ? <SlideView slide={slide} theme={deck.theme} width={stageW} edit={d.edit} label="Slide editor" windowId={win.id} slideId={d.current} />
                 : <button type="button" className="hb-of-add" onClick={() => d.addSlide('title')}><Icon.Plus size={11} />Add your first slide</button>}
             </div>
             {slide && (
-              <SlideNotes key={d.current} notes={slide.notes || ''} onChange={d.setNotes} />
+              <SlideNotes key={d.current} notes={slide.notes || ''} onChange={d.setNotes} windowId={win.id} slideId={d.current} />
             )}
           </div>
         </div>

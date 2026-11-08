@@ -13,6 +13,8 @@ import { docToMarkdown, markdownToBlocks } from '../../../lib/office/docMarkdown
 import { pickFile } from '../../../lib/office/officeFiles.js';
 import { readImageFile } from '../../../lib/office/officeImages.js';
 import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
 
 const encode = (text) => new TextEncoder().encode(text);
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -27,6 +29,9 @@ export function OfficeDocsWindow({ win = {}, onUpdate }) {
   // A teammate's letters landing in the title keep your cursor where it was.
   const titleRef = React.useRef(null);
   useSharedCaret(titleRef, win.title ?? '', React.useMemo(() => ({ id: win.id, field: 'title' }), [win.id]));
+  // Teammates' cursors in the title, with their names, and ours for them.
+  useCaretReporter(titleRef, win.id, 'title');
+  const titleCarets = useTeammateCarets(win.id, 'title');
   const { doc, focusedId } = editor;
   const title = win.title || 'Untitled document';
   const size = pageSizeOf(win);
@@ -73,10 +78,10 @@ export function OfficeDocsWindow({ win = {}, onUpdate }) {
   const renderBlock = (id) => {
     const block = doc.blocks[id];
     const change = (c) => editor.patchBlock(id, c);
-    if (block.type === 'table') return <DocTableBlock block={block} onChange={change} />;
-    if (block.type === 'image') return <DocImageBlock block={block} onChange={change} />;
+    if (block.type === 'table') return <DocTableBlock block={block} onChange={change} windowId={win.id} blockId={id} />;
+    if (block.type === 'image') return <DocImageBlock block={block} onChange={change} windowId={win.id} blockId={id} />;
     if (block.type === 'divider') return <div className="hb-of-block" data-type="divider"><hr /></div>;
-    return <DocTextBlock id={id} block={block} number={nums[id]} focused={focusedId === id} editor={editor} />;
+    return <DocTextBlock id={id} block={block} number={nums[id]} focused={focusedId === id} editor={editor} windowId={win.id} />;
   };
 
   return (
@@ -104,9 +109,12 @@ export function OfficeDocsWindow({ win = {}, onUpdate }) {
         </OfficeBar>
         <DocPaper size={size} label={title} onBackgroundDown={() => editor.setFocusedId(null)} onPages={setPages}
           head={(
-            <input ref={titleRef} className="hb-of-doc-title" value={win.title ?? ''} placeholder="Untitled document" aria-label="Document title"
-              onChange={(e) => onUpdate?.({ title: e.target.value })}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); doc.order[0] ? editor.focus(doc.order[0], 0) : editor.insertAfter(null, [makeBlock('p')]); } }} />
+            <div className="hb-of-doc-title-box">
+              <input ref={titleRef} className="hb-of-doc-title" value={win.title ?? ''} placeholder="Untitled document" aria-label="Document title"
+                onChange={(e) => onUpdate?.({ title: e.target.value })}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); doc.order[0] ? editor.focus(doc.order[0], 0) : editor.insertAfter(null, [makeBlock('p')]); } }} />
+              <TeammateCarets boxRef={titleRef} carets={titleCarets} text={win.title ?? ''} />
+            </div>
           )}
           rows={doc.order.map((id) => ({
             id,

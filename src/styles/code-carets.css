@@ -1,0 +1,23 @@
+/* Teammates' cursors inside the Code Editor (teammateCodeCarets.js): the
+   same thin line and name tag as text boxes (text-carets.css), drawn inside
+   CodeMirror's own lines so they scroll and move with the code. */
+.hb-code-caret {
+  position: relative; display: inline-block;
+  width: 0; height: 1.2em; vertical-align: text-bottom;
+  border-left: 2px solid var(--caret-color, var(--accent));
+  margin-left: -1px; margin-right: -1px;
+  pointer-events: none;
+}
+
+.hb-code-caret__tag {
+  position: absolute; left: -2px; bottom: 100%; z-index: 3;
+  padding: 0 5px; border-radius: var(--radius-xs) var(--radius-xs) var(--radius-xs) 0;
+  background: var(--caret-color, var(--accent)); color: var(--on-fill);
+  font-family: var(--font-sans); font-size: var(--text-xs); line-height: 1.5;
+  white-space: nowrap;
+}
+/* On the first line the name sits under the cursor, inside the editor. */
+.hb-code-caret[data-tag-below="true"] .hb-code-caret__tag {
+  bottom: auto; top: 100%;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) var(--radius-xs);
+}

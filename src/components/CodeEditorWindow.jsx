@@ -155,9 +155,9 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (canSave) saveFile(); }
       }} style={{ flex: 1, minHeight: 0, display: 'flex', background: win.opacity !== undefined ? 'transparent' : theme.background }}>
         {useLegacyPane ? (
-          <LegacyCodePane code={code} theme={theme} winOpacity={win.opacity} readOnly={readOnly} onChange={updateCode} focusProps={focusProps} />
+          <LegacyCodePane code={code} theme={theme} winOpacity={win.opacity} readOnly={readOnly} onChange={updateCode} focusProps={focusProps} caretWindowId={offBoard ? null : win.id} />
         ) : (
-          <VSCodeLikeEditor ref={editorRef} code={code} language={language} editorTheme={theme} fontSize={theme.fontSize || 13} readOnly={readOnly} onChange={updateCode} />
+          <VSCodeLikeEditor ref={editorRef} code={code} language={language} editorTheme={theme} fontSize={theme.fontSize || 13} readOnly={readOnly} onChange={updateCode} caretWindowId={offBoard ? null : win.id} />
         )}
       </div>
       )}

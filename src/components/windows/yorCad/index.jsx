@@ -72,7 +72,7 @@ export function YorCadWindow({ win = {}, onUpdate }) {
           </div>
         )}
         <div className="hb-cr-body">
-          {started && showCode && <CadCode cad={cad} />}
+          {started && showCode && <CadCode cad={cad} winId={win.id} />}
           <div className="hb-cr-stage hb-yc-stage">
             {started ? (
               <CadViewport part={part} fitKey={part?.code} view={view} viewRef={viewRef}>

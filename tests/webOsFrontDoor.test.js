@@ -146,6 +146,22 @@ describe('with Open anywhere on', () => {
     }
   });
 
+  // The router treats /API and /api as the same path. The gate has to as well,
+  // or an unpaired computer signs up by changing the capitalization.
+  test.each([
+    ['POST', '/API/hub-auth/signup'],
+    ['POST', '/api/Hub-Auth/signup'],
+    ['GET', '/api/AUTH/google'],
+  ])('a different capitalization of %s %s still needs a code', async (method, urlPath) => {
+    const res = await knock(doorPort(), {
+      method,
+      path: urlPath,
+      body: method === 'POST' ? { username: 'x', password: 'y', email: 'alma@home.test' } : undefined,
+    });
+    expect(res.status).toBe(403);
+    expect(res.json).toMatchObject({ pairRequired: true });
+  });
+
   test('the one-time code is let through to be checked', async () => {
     const res = await knock(doorPort(), { method: 'POST', path: '/api/web-os/pair/redeem', body: { code: 'WRONG1' } });
     expect(res.json?.pairRequired).toBeUndefined();

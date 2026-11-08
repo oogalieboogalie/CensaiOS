@@ -95,5 +95,5 @@ export function useLocalSite({ win = {}, onUpdate }) {
     }
   };
 
-  return { site, preset, set, setHour, pickPreset, uploads, pickPhoto, clearPhoto, previewPhotos, preview, downloadSite, openSaved, error, note };
+  return { windowId: win.id, site, preset, set, setHour, pickPreset, uploads, pickPhoto, clearPhoto, previewPhotos, preview, downloadSite, openSaved, error, note };
 }
