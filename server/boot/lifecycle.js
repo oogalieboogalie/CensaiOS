@@ -107,6 +107,10 @@ export async function startServer(app, options = {}) {
         startOutsideListener();
         // Collect calls a relay queued while this computer was off (off unless configured).
         startRelayLink().catch(() => {});
+        // Legions a restart cut off carry on where they were (server/legion/resume.js).
+        import('../legion/resume.js').then(({ resumeLegions }) => resumeLegions())
+          .then((done) => { if (done.length) log.info('picked up Legions from before a restart', { resumed: done.filter((d) => d.resumed).length, ended: done.filter((d) => !d.resumed).length }); })
+          .catch((err) => log.warn('could not pick up Legions from before a restart', { code: safeErrorCode(err) }));
       }
 
       if (shouldStartWatchers) {

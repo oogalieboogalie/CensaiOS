@@ -18,6 +18,7 @@ import { OffBoardNote } from './files/OffBoardNote.jsx';
 import { SaveNote } from './files/SaveNote.jsx';
 import { useFileSave } from './files/useFileSave.js';
 import { CodeStatusBar } from './codeEditor/CodeStatusBar.jsx';
+import { CodeWhoTypedButton, CodeWhoTypedPane } from './codeEditor/CodeWhoTyped.jsx';
 import { HIDDEN_MARK, HIDDEN_WORDS } from '../../shared/files/fileProblems.js';
 
 const DEFAULT_CODE = `// Write code here.
@@ -36,6 +37,7 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
   const [code, setCode] = React.useState(win.code || (win.filePath ? '' : DEFAULT_CODE));
   const [showSettings, setShowSettings] = useState(false);
   const [menu, setMenu] = useState(null);
+  const [writers, setWriters] = useState(false);
   const editorRef = React.useRef(null);
 
   // Follows the board's look unless a theme was picked for this window.
@@ -125,6 +127,7 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
             Format
           </button>
         )}
+        {!isIframeMode && !offBoard && <CodeWhoTypedButton on={writers} onToggle={() => setWriters((v) => !v)} />}
         <button onClick={() => setShowSettings(!showSettings)} onPointerDown={(e) => e.stopPropagation()} title="Editor theme settings"
           style={{ background: showSettings ? 'color-mix(in oklab, var(--accent) 15%, transparent)' : 'transparent', border: 'none', borderRadius: 'var(--radius-sm)', padding: 4, cursor: 'pointer', color: showSettings ? 'var(--accent-line)' : 'var(--ink-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s ease', marginRight: 8 }}>
           <Icon.Gear size={14} />
@@ -154,7 +157,7 @@ export function CodeEditorWindow({ win, onUpdate, onSpawn }) {
       <div onContextMenu={openMenu} onKeyDown={(e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (canSave) saveFile(); }
       }} style={{ flex: 1, minHeight: 0, display: 'flex', background: win.opacity !== undefined ? 'transparent' : theme.background }}>
-        {useLegacyPane ? (
+        {writers && !offBoard ? <CodeWhoTypedPane windowId={win.id} /> : useLegacyPane ? (
           <LegacyCodePane code={code} theme={theme} winOpacity={win.opacity} readOnly={readOnly} onChange={updateCode} focusProps={focusProps} caretWindowId={offBoard ? null : win.id} />
         ) : (
           <VSCodeLikeEditor ref={editorRef} code={code} language={language} editorTheme={theme} fontSize={theme.fontSize || 13} readOnly={readOnly} onChange={updateCode} caretWindowId={offBoard ? null : win.id} />

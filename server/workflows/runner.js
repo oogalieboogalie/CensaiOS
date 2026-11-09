@@ -24,7 +24,7 @@ import { FAMILY_AGENT_BY_ID } from '../../src/data/family-agents.js';
 import { placeResultCard, patchWorkflowWindow, readWorkflowWindow } from './board.js';
 import { insertRun, updateRun } from './store.js';
 import {
-  WORKFLOW_TOOLS, branchWay, clip, graphProblem, nodeInput, nodeReached, runOrder, workflowGraph,
+  WORKFLOW_TOOLS, branchWay, clip, graphHash, graphProblem, nodeInput, nodeReached, runOrder, workflowGraph,
 } from '../../src/lib/workflow/graph.js';
 
 const log = createLogger('workflows');
@@ -194,11 +194,22 @@ async function boardCopy(workspaceId, windowId, expectGraph, deps) {
   return win;
 }
 
-export async function startWorkflowRun({ workspaceId, windowId, userId, trigger = 'manual', startText = null, expectGraph = null }, deps = DEFAULT_DEPS) {
+/** True when the board still shows the graph someone turned this start on for. */
+export async function armedGraphMatches(win, armedGraphHash) {
+  return Boolean(armedGraphHash) && await graphHash(workflowGraph(win)) === armedGraphHash;
+}
+
+export async function startWorkflowRun({
+  workspaceId, windowId, userId, trigger = 'manual', startText = null, expectGraph = null, armedGraphHash,
+}, deps = DEFAULT_DEPS) {
   if (active.has(keyOf(workspaceId, windowId))) throw fail('This workflow is already running.', 409);
   const win = await boardCopy(workspaceId, windowId, expectGraph, deps);
   if (!win) throw fail('That workflow is not on this board.', 404);
   const graph = workflowGraph(win);
+  // A trigger runs the graph someone turned on, not whatever the board says now.
+  if (armedGraphHash !== undefined && await graphHash(graph) !== armedGraphHash) {
+    throw Object.assign(fail('This workflow changed after its start was turned on.', 422), { code: 'graph_changed' });
+  }
   const problem = graphProblem(graph);
   if (problem) throw fail(problem, 400);
   const results = Object.fromEntries(graph.nodes.map((node) => [node.id, { status: 'pending' }]));

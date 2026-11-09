@@ -18,10 +18,12 @@
 // (windowSlides.js); a Writer paragraph's words merge letter by letter
 // (windowDocBlocks.js), and a form's boxes (the Listing Writer's) one box
 // at a time, letter by letter (windowFormText.js). Fields in
-// LOCAL_WINDOW_FIELDS (like whether *I* have the editor open) never sync.
+// LOCAL_WINDOW_FIELDS (whether *I* have the editor open, and a chat only
+// this browser should send) never sync.
 import * as Y from 'yjs';
 import { applyOp, applyTextDiff, diffText, isWindowTextField } from '../../../shared/collab/textDiff.js';
 import { takeLocalEdit } from './remoteTextEdits.js';
+import { myTypedMark } from './signedInName.js';
 import { valueFromY, valueToY } from '../../../shared/collab/seedFromSnapshot.js';
 import { CANVAS_ROOT, SCHEMA_VERSION, isValidId, isValidWindowGeometry } from '../../../shared/collab/ySchema.js';
 import { WINDOW_LIST_FIELDS, syncById, writeWindowList } from './windowLists.js';
@@ -38,7 +40,7 @@ import { writeTodoItems } from './todoItemText.js';
 import { writeOutboxDrafts } from './outboxDraftText.js';
 
 export const SYNCED_KEYS = ['wins', 'canvasGroups', 'paths', 'links', 'dock'];
-export const LOCAL_WINDOW_FIELDS = new Set(['isEditing', 'showComments']);
+export const LOCAL_WINDOW_FIELDS = new Set(['isEditing', 'showComments', 'autoSend', 'autoSendBy']);
 const EMPTY = Object.freeze({ wins: [], canvasGroups: [], paths: [], links: [], dock: {} });
 
 function same(a, b) {
@@ -86,7 +88,7 @@ function writeFields(target, prevEntry, nextEntry, isWindow = false, id = null) 
     if (isWindow && LOCAL_WINDOW_FIELDS.has(field)) continue;
     const pair = isWindow ? PAIRED_WINDOW_FIELDS[field] : null;
     if (!changed(field) && !(pair && pair in nextEntry && changed(pair))) continue;
-    if (isWindow && isWindowTextField(field) && typeof value === 'string') writeText(target, field, value, id);
+    if (isWindow && isWindowTextField(field) && typeof value === 'string') writeText(target, field, value, id, prevEntry);
     else if (isWindow && field === 'cards' && writeStepCards(target, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'ideas' && writeIdeaBullets(target, prevEntry?.[field], value)) continue;
     else if (isWindow && field === 'items' && nextEntry.kind === 'todos' && writeTodoItems(target, prevEntry?.[field], value)) continue;
@@ -108,15 +110,21 @@ function writeFields(target, prevEntry, nextEntry, isWindow = false, id = null) 
 
 // Diff against the shared text itself so only the typed span changes; when
 // this tab just typed it, use the spot the caret was at (repeated letters).
-function writeText(target, field, value, id) {
+// The new letters carry who typed them (shared/collab/typedBy.js).
+// The first letters typed into an empty box (an open window whose box had no
+// shared words yet) are this person's too; words a window opens with are not.
+function writeText(target, field, value, id, prevEntry = null) {
   const current = target.get(field);
   if (current instanceof Y.Text) {
     const text = current.toString();
     const typed = id === null ? null : takeLocalEdit(id, field, value);
-    applyTextDiff(current, typed && applyOp(text, typed) === value ? typed : diffText(text, value));
+    applyTextDiff(current, typed && applyOp(text, typed) === value ? typed : diffText(text, value), myTypedMark());
     return;
   }
-  target.set(field, new Y.Text(value));
+  const typedIntoEmpty = Boolean(prevEntry) && !String(prevEntry[field] ?? '') && !(typeof current === 'string' && current);
+  const text = new Y.Text();
+  if (value) text.insert(0, value, typedIntoEmpty ? myTypedMark() : undefined);
+  target.set(field, text);
 }
 
 function syncKeyed(map, prevList, nextList, keyOf, accept, isWindow = false) {

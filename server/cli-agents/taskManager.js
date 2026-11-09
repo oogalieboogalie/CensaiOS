@@ -64,7 +64,7 @@ export class CliTaskManager extends TaskStore {
   }
 
   // ── starting work ──────────────────────────────────────────────────────
-  async start({ cli, folder, prompt, model = null, user = {}, handoffFrom = null, handoffHidden = null, patch = '', baseOverride = null, title = null, prepare = null, readOnly = false }) {
+  async start({ cli, folder, prompt, model = null, user = {}, handoffFrom = null, handoffHidden = null, patch = '', baseOverride = null, title = null, prepare = null, readOnly = false, approvalGated = false }) {
     const adapter = getAdapter(cli);
     if (!adapter) throw httpError('Pick Claude Code, Codex, Gemini CLI, OpenCode, Copilot CLI or Grok.');
     if (readOnly && adapter.noReadOnly) throw httpError(`${adapter.label} cannot run read-only.`);
@@ -87,7 +87,9 @@ export class CliTaskManager extends TaskStore {
       status: 'starting', createdAt: Date.now(), updatedAt: Date.now(), finishedAt: null,
       createdBy: { userId: user.userId ?? null, name: user.name || 'You' },
       sessionId: null, model: model || null, costUsd: null, usage: null, durationMs: null, turns: 0,
-      summary: null, keySource: null, gate: adapter.gate, gateNote: adapter.gateNote, readOnly: Boolean(readOnly),
+      summary: null, keySource: null, gate: approvalGated ? 'asks' : adapter.gate,
+      gateNote: approvalGated ? 'Approvals stay on. An agent cannot turn approvals off.' : adapter.gateNote,
+      readOnly: Boolean(readOnly), approvalGated: Boolean(approvalGated),
       handoffFrom, handoffHidden, items: [], raw: [], permissions: [], rev: 0, install: null,
     };
     this.tasks.set(id, task);
@@ -95,6 +97,7 @@ export class CliTaskManager extends TaskStore {
       this.addItemTo(task, { id: 'handoff', kind: 'note', text: `Handed off from ${handoffFrom.cliLabel}: "${handoffFrom.title}". Its changes are applied in this worktree.` });
     }
     this.addItemTo(task, { id: 'note-worktree', kind: 'note', text: `Working in its own worktree on branch ${worktree.branch}.` });
+    if (approvalGated) this.addItemTo(task, { id: 'note-approvals', kind: 'note', text: 'Approvals stay on. An agent cannot turn approvals off.' });
     this.touch(task);
     this.runTurn(task, { text, user, resume: false }).catch((err) => this.fail(task, err));
     return this.summary(task);

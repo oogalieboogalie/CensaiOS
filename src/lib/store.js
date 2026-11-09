@@ -13,6 +13,7 @@ import { createGroupActions } from './storeGroupActions.js';
 import { pruneAfterRemoval } from './layout/dock.js';
 import { newId } from './ids/newId.js';
 import { releaseGroupFocusForNewWindow } from './groupFocusSession.js';
+import { noteLocalWindowIntent } from './localRun.js';
 
 const log = createLogger('canvas-actions');
 
@@ -111,6 +112,7 @@ export const useWorkspaceStore = create((set, get) => ({
   // Named Actions for Canvas and Windows (Step 1 Multiplayer Canvas Roadmap)
   spawnAt: (kind, props = {}, pos = null, size = null) => {
     const id = newId();
+    noteLocalWindowIntent(id, props);
     const type = getCanvasObjectType({ type: kind });
     const legacyKind = legacyKindForCanvasType(type);
     // End full screen before measuring a free spot, so the new window lands
@@ -183,6 +185,7 @@ export const useWorkspaceStore = create((set, get) => ({
   },
 
   onUpdate: (id, patch) => {
+    noteLocalWindowIntent(id, patch);
     set(state => ({
       wins: state.wins.map(w => {
         if (w.id !== id) return w;

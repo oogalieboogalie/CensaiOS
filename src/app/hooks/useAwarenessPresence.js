@@ -28,7 +28,7 @@ export function useAwarenessPresence({ awareness, live = false, user, selectedId
   liveRef.current = live;
   const identity = React.useMemo(() => presenceIdentity(user), [user?.id, user?.name, user?.email]);
   React.useEffect(() => { noteSignedInUser(user?.id); }, [user?.id]);
-  React.useEffect(() => { noteSignedInName(user ? identity.name : null); }, [user, identity.name]);
+  React.useEffect(() => { noteSignedInName(user ? identity.name : null, user ? identity.id : null); }, [user, identity.name, identity.id]);
 
   React.useEffect(() => {
     if (!awareness) {

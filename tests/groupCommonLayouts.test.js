@@ -78,8 +78,8 @@ describe('normalized default window sizes', () => {
     const offClass = Object.entries(DEFAULT_WINDOW_SIZES)
       .filter(([, s]) => !classSizes.includes(`${s.w}x${s.h}`))
       .map(([kind]) => kind);
-    // Device-shaped players, and the Calendar's seven day columns.
-    expect(offClass.sort()).toEqual(['calendar', 'music', 'shorts']);
+    // Device-shaped players and the phone-shaped Reddit feed, and the Calendar's seven day columns.
+    expect(offClass.sort()).toEqual(['calendar', 'music', 'reddit', 'shorts']);
     expect(getDefaultWindowSize('chat')).toEqual(WINDOW_SIZE_CLASSES.compact);
     expect(getDefaultWindowSize('terminal')).toEqual(WINDOW_SIZE_CLASSES.wide);
   });

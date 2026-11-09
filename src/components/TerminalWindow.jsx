@@ -10,6 +10,7 @@ import {
 } from './terminal/terminalTabs.js';
 import { useWorkspaceStore } from '../lib/store.js';
 import { newId } from '../lib/ids/newId.js';
+import { armAgentRun } from '../lib/localRun.js';
 
 export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
@@ -59,11 +60,14 @@ export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
           onRun={(task) => {
             setShowAgentBar(false);
             // Same-window run: replaces this session, no window spam.
-            // Transcript stays open when done; toast carries the result.
+            // The prompt starts only because this click asked. A prompt that
+            // arrived on the shared window does not.
+            const agentSessionId = newId();
+            armAgentRun(win.id, { prompt: task, sessionId: agentSessionId });
             onUpdate?.({
               title: `Agent · ${task.slice(0, 40)}`,
               agentRun: { prompt: task },
-              agentSessionId: newId(),
+              agentSessionId,
             });
           }}
         />

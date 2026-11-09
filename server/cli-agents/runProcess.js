@@ -49,7 +49,7 @@ export const processMethods = {
     const env = buildAgentEnv({ source: this.env, key: keyInfo?.key || null, keyEnv: adapter.keyEnv, managedBin: managedBinDir(this.env), home, personal: { adapter, userId: user.userId }, serverKeys: await this.mayUseServerKeys(user.userId) });
     const redact = createRedactor([keyInfo?.key]);
 
-    const run = adapter.buildRun({ task: text, resumeSessionId: resume ? task.sessionId : null, model: task.model, readOnly: Boolean(task.readOnly) });
+    const run = adapter.buildRun({ task: text, resumeSessionId: resume ? task.sessionId : null, model: task.model, readOnly: Boolean(task.readOnly), approvalGated: Boolean(task.approvalGated) });
     const args = [...launch.prefixArgs, ...run.args];
     log.info('starting cli agent', { id: task.id, cli: adapter.id, resume, source: launch.source, keySource: task.keySource });
 

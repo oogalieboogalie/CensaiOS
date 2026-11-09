@@ -8,7 +8,9 @@
 //             handing the new window's name and text to the first step
 //
 // A run always goes as the teammate who turned the trigger on, and only
-// while they are still a member who can edit the board. Result cards that
+// while they are still a member who can edit the board. It runs the graph
+// that was on the board at that moment. An edit does not match, so the
+// start turns off until someone turns it on again. Result cards that
 // any workflow made never start a workflow, so two workflows can't keep
 // waking each other up.
 
@@ -17,8 +19,8 @@ import { dbReady } from '../dbState.js';
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { readBoardWindows } from './board.js';
-import { startWorkflowRun } from './runner.js';
-import { dropTrigger, listArmedTriggers, markScheduleRan, saveSeenWindows } from './store.js';
+import { armedGraphMatches, startWorkflowRun } from './runner.js';
+import { disarmTrigger, dropTrigger, listArmedTriggers, markScheduleRan, saveSeenWindows } from './store.js';
 
 const log = createLogger('workflow-triggers');
 const TICK_MS = 30 * 1000;
@@ -53,9 +55,16 @@ export async function currentWindowIds(workspaceId, windowId, kind, read = readB
 // Returns 'ran', 'busy' (already running: try again next time) or 'skipped'.
 async function start(row, trigger, startText, deps) {
   try {
-    await deps.start({ workspaceId: row.workspace_id, windowId: row.window_id, userId: row.armed_by, trigger, startText });
+    await deps.start({
+      workspaceId: row.workspace_id, windowId: row.window_id, userId: row.armed_by, trigger, startText,
+      armedGraphHash: row.graph_hash ?? null,
+    });
     return 'ran';
   } catch (error) {
+    if (error.code === 'graph_changed') {
+      await disarmTrigger(deps.db, row);
+      return 'skipped';
+    }
     if (error.statusCode === 409) return 'busy';
     if (error.statusCode === 404) await dropTrigger(deps.db, row.workspace_id, row.window_id);
     else log.warn('workflow did not start', { windowId: row.window_id, code: safeErrorCode(error) });
@@ -64,6 +73,15 @@ async function start(row, trigger, startText, deps) {
 }
 
 export async function checkTrigger(row, deps) {
+  // An edit disarms the start on the next look, before any step runs.
+  if (row.graph_hash) {
+    const wins = await deps.read(row.workspace_id);
+    const win = wins?.find((item) => item.id === row.window_id);
+    if (win && !(await armedGraphMatches(win, row.graph_hash))) {
+      await disarmTrigger(deps.db, row);
+      return false;
+    }
+  }
   if (row.mode === 'schedule') {
     await markScheduleRan(deps.db, row);
     return (await start(row, 'schedule', null, deps)) === 'ran';

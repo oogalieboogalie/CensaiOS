@@ -66,8 +66,17 @@ describe('private-beta auth policy', () => {
     expect(isSessionAuthorized({ userId: 7, userEmail: 'BETA@example.com' }, options)).toBe(true);
   });
 
-  test('developer login is local by default, explicit on private servers, and never cloud', () => {
-    expect(isDeveloperLoginAllowed({ runtimeMode: 'local_desktop', env: {} })).toBe(true);
+  test('developer login stays off until the flag is on, and never turns on in cloud', () => {
+    expect(isDeveloperLoginAllowed({ runtimeMode: 'local_desktop', env: {} })).toBe(false);
+    expect(isDeveloperLoginAllowed({
+      runtimeMode: 'local_desktop',
+      env: { CENSAI_ALLOW_DEVELOPER_LOGIN: 'true' },
+    })).toBe(true);
+    expect(isDeveloperLoginAllowed({
+      runtimeMode: 'local_desktop',
+      oauthConfigured: true,
+      env: { CENSAI_ALLOW_DEVELOPER_LOGIN: 'true', NODE_ENV: 'production' },
+    })).toBe(false);
     expect(isDeveloperLoginAllowed({ runtimeMode: 'private_server', env: {} })).toBe(false);
     expect(isDeveloperLoginAllowed({
       runtimeMode: 'private_server',

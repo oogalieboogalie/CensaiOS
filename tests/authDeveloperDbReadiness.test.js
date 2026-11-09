@@ -8,6 +8,7 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
+import rateLimiter from '../server/middleware/rateLimiter.js';
 
 const query = jest.fn();
 let isReady = true;
@@ -57,6 +58,7 @@ function buildApp() {
 describe('/api/auth/developer dbReady guard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    rateLimiter.reset();
     isReady = true;
     delete process.env.CENSAI_MODE;
     delete process.env.HOMEBASE_MODE;
@@ -81,8 +83,60 @@ describe('/api/auth/developer dbReady guard', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  test('refuses passwordless sign-in when the dev flag is off', async () => {
+    isReady = true;
+    // The old default would accept this and make the first account an admin.
+    query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ count: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1, email: 'anyone@x.example', name: 'Anyone', role: 'admin' }] });
+
+    const res = await request(buildApp())
+      .post('/api/auth/developer')
+      .send({ email: 'anyone@x.example', name: 'Anyone' });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/disabled/i);
+    expect(res.body.user).toBeUndefined();
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  test('refuses a LAN host even when the dev flag is on, and still allows localhost', async () => {
+    isReady = true;
+    process.env.CENSAI_ALLOW_DEVELOPER_LOGIN = 'true';
+    const previousOrigin = process.env.APP_ORIGIN;
+    process.env.APP_ORIGIN = 'http://localhost:3002';
+    query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ count: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1, email: 'alma@example.com', name: 'alma', role: 'admin' }] });
+
+    try {
+      const lan = await request(buildApp())
+        .post('/api/auth/developer')
+        .set('Host', '192.168.1.23:3002')
+        .send({ email: 'alma@example.com', name: 'Alma' });
+      expect(lan.status).toBe(403);
+      expect(lan.body.error).toMatch(/disabled/i);
+      expect(lan.body.user).toBeUndefined();
+      expect(query).not.toHaveBeenCalled();
+
+      const local = await request(buildApp())
+        .post('/api/auth/developer')
+        .set('Host', '127.0.0.1:3002')
+        .send({ email: 'alma@example.com', name: 'Alma' });
+      expect(local.status).toBe(200);
+      expect(local.body.ok).toBe(true);
+      expect(local.body.user.role).toBe('admin');
+    } finally {
+      if (previousOrigin === undefined) delete process.env.APP_ORIGIN;
+      else process.env.APP_ORIGIN = previousOrigin;
+    }
+  });
+
   test('proceeds to pool.query when dbReady() is true', async () => {
     isReady = true;
+    process.env.CENSAI_ALLOW_DEVELOPER_LOGIN = 'true';
     // First call: SELECT returns no existing user; second call: count = 0 → admin role;
     // third call: INSERT returns new user.
     query

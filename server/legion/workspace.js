@@ -90,8 +90,26 @@ export async function commitProject(projectDir, message) {
   }
 }
 
+/**
+ * Write JSON whole or not at all: a temp file first, then a rename over the
+ * old one, so a crash mid-write never leaves half a file. `data` may already
+ * be JSON text. Windows can refuse a rename for a moment while something
+ * reads the file, so it tries a few times before writing in place.
+ */
 export async function saveJson(file, data) {
-  await fs.writeFile(file, JSON.stringify(data, null, 2), 'utf8');
+  const text = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  const temp = `${file}.${process.pid}-${Math.random().toString(36).slice(2, 8)}.tmp`;
+  await fs.writeFile(temp, text, 'utf8');
+  for (let tries = 0; ; tries += 1) {
+    try { await fs.rename(temp, file); return; } catch (error) {
+      if (tries >= 3 || !['EPERM', 'EACCES', 'EBUSY'].includes(error.code)) {
+        await fs.rm(temp, { force: true }).catch(() => {});
+        if (tries >= 3) { await fs.writeFile(file, text, 'utf8'); return; }
+        throw error;
+      }
+      await new Promise((resolve) => { setTimeout(resolve, 40 * (tries + 1)); });
+    }
+  }
 }
 
 export async function readJson(file) {

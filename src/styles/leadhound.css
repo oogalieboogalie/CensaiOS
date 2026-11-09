@@ -37,7 +37,7 @@ textarea.hb-lh-input { resize: none; field-sizing: content; min-height: 1lh; }
 .hb-lh-bar { display: flex; align-items: center; gap: var(--space-2-5); padding: var(--space-2-5) var(--space-2-5) var(--space-2-5) var(--space-4); }
 .hb-lh-bar svg { color: var(--ink-faint); flex-shrink: 0; }
 .hb-lh-box { position: relative; display: flex; flex-direction: column; min-width: 0; }
-.hb-lh-bar .hb-lh-box { flex: 1; }
+.hb-lh-bar .hb-lh-box, .hb-lh-ice-top .hb-lh-box, .hb-lh-cta .hb-lh-box { flex: 1; }
 .hb-lh-bar .hb-lh-input { flex: 1; min-width: 0; font-size: var(--text-sm); }
 .hb-lh-select { border: 1px solid var(--hairline); border-radius: var(--radius-full); padding: var(--space-1) var(--space-2); font-size: var(--text-xs); color: var(--ink); background: var(--surface-2); font-family: var(--font-sans); }
 .hb-lh-bar .hb-lh-pill[data-primary="true"] { min-height: 30px; padding: 0 var(--space-4); font-size: var(--text-sm); }

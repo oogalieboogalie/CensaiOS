@@ -1,6 +1,7 @@
 // The Scheduler window's saved rows (server/scheduler/store.js) ⇄ the shared
 // schedule shape in plainWords.js. The server keeps "HH:MM AM/PM", a start
 // date, ticked days as { s, m, t, w, th, f, sat } and weekly or monthly.
+import { zoneDateString } from '../../../shared/schedule/zoneTime.js';
 import { DAY_KEYS, daysFor, describeSchedule, from12h, localDay, to12h, upcomingRuns } from './plainWords.js';
 
 export function specFromRow(row) {
@@ -21,7 +22,9 @@ export function rowFieldsFromSpec(spec, now = new Date()) {
   const ticked = daysFor(spec.repeat, spec.days);
   return {
     scheduled_time: to12h(spec.time),
-    scheduled_date: first ? localDay(first) : spec.date,
+    // Monthly keeps the zone's calendar day. An evening instant is already the
+    // next day on a UTC clock, and localDay would save that day instead of the 31st.
+    scheduled_date: first ? (spec.repeat === 'monthly' ? zoneDateString(first) : localDay(first)) : spec.date,
     repeat_enabled: repeating,
     repeat_days: repeating && spec.repeat !== 'monthly' ? Object.fromEntries(DAY_KEYS.map((key, i) => [key, ticked.includes(i)])) : null,
     repeat_freq: repeating ? (spec.repeat === 'monthly' ? 'monthly' : 'weekly') : null,

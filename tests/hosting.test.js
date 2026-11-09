@@ -60,6 +60,7 @@ describe('places to host (diagram 18)', () => {
     const jupyter = hostRecipe('jupyter');
     expect(fileText(jupyter, 'notebook-command.txt')).toContain('-p 8888:8888');
     expect(fileText(jupyter, 'first-cell.py')).toContain('/api/health');
+    expect(fileText(jupyter, 'first-cell.py')).toContain('["ok"]');
   });
 
   test('secrets are 64 hex characters; names are safe', () => {

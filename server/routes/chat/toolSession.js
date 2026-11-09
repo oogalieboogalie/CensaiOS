@@ -1,4 +1,5 @@
 import { ALWAYS_LOADED_TOOL_NAMES, TOOL_DISCOVERY_NAMES } from '../../tools/definitions/discovery.js';
+import { pinnedToolNamesOf } from './pinnedTools.js';
 
 const DISCOVERY_PROMPT = [
   'Tools are loaded on demand.',
@@ -43,7 +44,9 @@ export function createChatToolSession(toolsForCaller, provider) {
   const discoveryFirst = toolsByName.has('search_tools') && toolsByName.has('get_tool')
     && permittedTools.length > discoveryTools.length
     && useSearchFirst(provider, permittedTools.length - discoveryTools.length);
-  const alwaysLoaded = ALWAYS_LOADED_TOOL_NAMES.map(name => toolsByName.get(name)).filter(Boolean);
+  // Always-loaded tools, plus any the agent's canvas group pins (pinnedTools.js; only tools it was given).
+  const alwaysLoaded = [...ALWAYS_LOADED_TOOL_NAMES, ...pinnedToolNamesOf(toolsForCaller)]
+    .map(name => toolsByName.get(name)).filter(Boolean);
   const activeTools = new Map(
     (discoveryFirst ? [...discoveryTools, ...alwaysLoaded] : permittedTools)
       .map(tool => [tool.function.name, tool])

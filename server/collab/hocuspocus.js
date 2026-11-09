@@ -19,11 +19,13 @@ import pool from '../db.js';
 import { createLogger } from '../logger.js';
 import { requireWorkspaceMember } from '../workspaces/context.js';
 import { defaultAuthenticate, loadSessionFromRequest } from '../ws/agentRegistry.js';
+import { rejectUpgradeUnlessOwnOrigin } from '../ws/upgradeOrigin.js';
 import { resolveGuestSession } from '../shareLinks/guestSession.js';
 import { guestPrincipal, memberPrincipal, syncMode } from '../access/policy.js';
 import { trackGuestSocket } from '../shareLinks/liveGuests.js';
 import { createYjsPersistence } from './yPersistence.js';
 import { registerLiveHocuspocus } from './liveDoc.js';
+import { autoRunGuardExtension } from './autoRunGuard.js';
 
 export const HOCUSPOCUS_PATH = '/hocuspocus';
 
@@ -96,7 +98,7 @@ export function createHocuspocusServer(options = {}) {
   // client opens a document.
   const persistence = options.persistence ?? createYjsPersistence({ db: options.db ?? pool });
   const redis = options.redis === undefined ? redisConfigFromEnv() : options.redis;
-  const extensions = [persistence];
+  const extensions = [autoRunGuardExtension(), persistence];
   if (redis) {
     extensions.push(new Redis(redis));
     log.info('hocuspocus rooms shared through redis', { host: redis.host, port: redis.port });
@@ -156,6 +158,7 @@ export function attachHocuspocusWs(server, options = {}) {
       return;
     }
     if (url.pathname !== HOCUSPOCUS_PATH) return;
+    if (rejectUpgradeUnlessOwnOrigin(request, socket)) return;
     const workspaceId = String(url.searchParams.get('workspaceId') || '').trim();
     if (!ID_PATTERN.test(workspaceId)) return rejectUpgrade(socket, 400, 'Bad Request');
 

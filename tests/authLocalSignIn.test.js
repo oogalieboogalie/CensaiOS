@@ -82,7 +82,10 @@ describe('one-click sign-in on this computer', () => {
   test('the login screen is told it is available on a local install', async () => {
     const res = await request(buildApp()).get('/api/auth/session');
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ authenticated: false, oauthConfigured: false, localSignIn: true });
+    expect(res.body).toMatchObject({ authenticated: false, oauthConfigured: false, localSignIn: true, emailSignIn: false });
+    process.env.CENSAI_ALLOW_DEVELOPER_LOGIN = 'true';
+    const on = await request(buildApp()).get('/api/auth/session');
+    expect(on.body.emailSignIn).toBe(true);
   });
 
   test('first use makes this computer\'s owner, an admin', async () => {

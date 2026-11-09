@@ -1,5 +1,5 @@
 import pool from '../db.js';
-import { resolveSubAgentScope, scopedSubAgentId } from './subagentTenancy.js';
+import { resolveSubAgentScope, newSubAgentId } from './subagentTenancy.js';
 
 // ═══════════════════════════════════════════════════════════════════
 //  SUB-AGENTS
@@ -43,7 +43,7 @@ export async function createSubAgent(parentId, { name, role, specialty, systemPr
   }
 
   const scopes = tool_scopes ?? toolScopes ?? {};
-  const id = scopedSubAgentId(name, parentId, workspaceId);
+  const id = newSubAgentId();
   const { rows } = await pool.query(
     `INSERT INTO sub_agents (id, parent_id, name, role, specialty, system_prompt, hue, permission, project_id, model_provider, model_name, class, review_specialty, system_prompt_inject, tool_scopes, workspace_id, created_by_user_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)

@@ -4,6 +4,7 @@ import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { requireWorkspaceMember } from '../workspaces/context.js';
 import { defaultAuthenticate, loadSessionFromRequest } from './agentRegistry.js';
+import { rejectUpgradeUnlessOwnOrigin } from './upgradeOrigin.js';
 import { collaborationHumanActor } from '../collaboration/humanActor.js';
 import {
   countWorkspaceSpectators,
@@ -145,6 +146,7 @@ export function attachWorkspaceCollaborationWs(server, options = {}) {
   server.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url, 'http://localhost');
     if (url.pathname !== WORKSPACE_COLLABORATION_PATH) return;
+    if (rejectUpgradeUnlessOwnOrigin(request, socket)) return;
     const workspaceId = String(url.searchParams.get('workspaceId') || '').trim();
     const clientId = String(url.searchParams.get('clientId') || '').trim();
     if (!ID_PATTERN.test(workspaceId) || !ID_PATTERN.test(clientId)) {

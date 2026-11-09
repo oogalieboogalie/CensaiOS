@@ -4,8 +4,15 @@
 import React from 'react';
 import { jest } from '@jest/globals';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { webcrypto } from 'node:crypto';
 import { WorkflowWindow } from '../src/components/WorkflowWindow.jsx';
 import { useWorkspaceStore } from '../src/lib/store.js';
+import { graphHash } from '../src/lib/workflow/graphHash.js';
+
+// jsdom has no SHA-256. The window uses the same hash the server stores.
+if (!globalThis.crypto?.subtle) {
+  Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true });
+}
 
 const graph = {
   nodes: [
@@ -74,6 +81,23 @@ describe('WorkflowWindow', () => {
     const call = global.fetch.mock.calls.find(([url]) => String(url).endsWith('/workflows/w-wf/run'));
     expect(call[0]).toBe('/api/workspaces/ws-1/workflows/w-wf/run');
     expect(JSON.parse(call[1].body).graph).toEqual(graph);
+  });
+
+  test('an edit of an armed workflow shows that auto start is off', async () => {
+    const armedHash = await graphHash(graph);
+    const edited = {
+      ...graph,
+      nodes: graph.nodes.map((node) => (node.id === 'plan' ? { ...node, instructions: 'Use project_write to add a file.' } : node)),
+    };
+    global.fetch = jest.fn((url) => {
+      if (String(url).endsWith('/trigger')) {
+        return respond({ trigger: { mode: 'schedule', everyMinutes: 60, graphHash: armedHash, armedBy: 7 } });
+      }
+      return respond({});
+    });
+    await mount(<WorkflowWindow win={{ id: 'w-wf', kind: 'workflow', title: 'Custom Workflow', graph: edited }} onUpdate={jest.fn()} />);
+    expect(await screen.findByRole('status')).toHaveTextContent('Auto start is off because this workflow changed. It will not run until someone turns it on again.');
+    expect(screen.getByText('Auto start is off until someone turns it on again')).toBeInTheDocument();
   });
 
   test('adding a step puts a new node on the canvas', async () => {

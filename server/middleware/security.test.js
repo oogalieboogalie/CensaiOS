@@ -95,8 +95,14 @@ describe('csrf origin guard', () => {
     expect(ok).toBe(true);
   });
 
-  test('missing Origin (native client) passes after host check', () => {
-    let ok = false; guard()(req(), res(), () => { ok = true; });
+  test('missing Origin is refused', () => {
+    const r = res(); guard()(req(), r, () => {});
+    expect(r.statusCode).toBe(403);
+  });
+
+  test('a non-browser client with Authorization and no Origin passes', () => {
+    let ok = false;
+    guard()(req({ extra: { authorization: 'Bearer cak_test' } }), res(), () => { ok = true; });
     expect(ok).toBe(true);
   });
 
@@ -106,10 +112,10 @@ describe('csrf origin guard', () => {
     expect(r.statusCode).toBe(403);
   });
 
-  test('localhost origin allowed in dev… ', () => {
-    let ok = false;
-    guard()(req({ origin: 'http://localhost:9999' }), res(), () => { ok = true; });
-    expect(ok).toBe(true);
+  test('another localhost port is refused in dev', () => {
+    const r = res();
+    guard()(req({ origin: 'http://localhost:9999' }), r, () => {});
+    expect(r.statusCode).toBe(403);
   });
 
   test('…but not in production', () => {

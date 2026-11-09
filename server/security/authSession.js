@@ -11,9 +11,12 @@ export async function establishAuthenticatedSession(req, user) {
 
   await callbackPromise((done) => req.session.regenerate(done));
   req.session.userId = user.id;
-  req.session.userRole = user.role;
   req.session.userEmail = user.email;
   req.session.userName = user.name || null;
+  // A hub account is not a Homebase user. It gets no role (an allowlisted
+  // admin email must not land here as admin), and the API guard refuses this marker.
+  if (user.hubAccount) req.session.hubAccount = true;
+  else req.session.userRole = user.role;
 
   if (typeof req.session.save !== 'function') {
     throw new Error('Authenticated session persistence is unavailable.');

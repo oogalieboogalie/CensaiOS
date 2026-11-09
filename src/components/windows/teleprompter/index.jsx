@@ -8,6 +8,7 @@ import { openPrompterPopOut, POP_OUT_NOTES } from '../../../lib/teleprompter/pop
 import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
 import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
+import { WhoTypedWhat } from '../../doc/WhoTypedWhat.jsx';
 import { windowMeta } from './meta.js';
 
 export { windowMeta };
@@ -21,7 +22,8 @@ const same = (a, b) => a.text === b.text && a.speed === b.speed && a.size === b.
  * script merges as people type (it is the window's `text`); a teammate's
  * change keeps this person's caret where they were typing and reaches their
  * pop-out too. While the script is open for editing, each teammate's cursor
- * shows in it as a line in their colour with their name.
+ * shows in it as a line in their colour with their name. "Who typed what"
+ * shows the script with each person's part tinted in their own colour.
  */
 export function TeleprompterWindow({ win = {}, onUpdate }) {
   const state = normalizePrompter(win);
@@ -65,6 +67,7 @@ export function TeleprompterWindow({ win = {}, onUpdate }) {
   const time = readingTime(state.text);
   const actions = [
     { id: 'mode', label: mode === 'read' ? 'Edit script' : 'Read', icon: <Icon.Edit size={12} />, onSelect: () => setMode(mode === 'read' ? 'edit' : 'read') },
+    { id: 'writers', label: mode === 'writers' ? 'Hide who typed what' : 'Who typed what', icon: <Icon.Group size={12} />, onSelect: () => setMode(mode === 'writers' ? 'read' : 'writers'), title: "Show each person's part of the script in their own colour" },
     { id: 'popout', label: 'Pop out on top', icon: <Icon.OpenWindow size={12} />, onSelect: popOut, title: 'Open the reader in a small window that stays on top, right under your camera' },
   ];
 
@@ -86,6 +89,8 @@ export function TeleprompterWindow({ win = {}, onUpdate }) {
               <button type="button" className="hb-btn" onClick={() => setMode('read')}><Icon.Play size={12} /> Read it</button>
             </div>
           </div>
+        ) : mode === 'writers' ? (
+          <div className="hb-teleprompter-writers"><WhoTypedWhat windowId={win.id} field="text" /></div>
         ) : (
           <Prompter state={state} onChange={change} />
         )}

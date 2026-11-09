@@ -13,6 +13,7 @@ import { windowMeta } from './meta.js';
 import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
 import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
+import { ArenaWhoTypedButton, ArenaWhoTypedPane } from './ArenaWhoTyped.jsx';
 
 export { windowMeta };
 
@@ -41,8 +42,10 @@ export function ModelArenaWindow({ win = {}, onUpdate }) {
   useSharedCaret(promptRef, arena.prompt, React.useMemo(() => ({ id: win.id, field: 'prompt' }), [win.id]));
   useSharedCaret(systemRef, arena.system, React.useMemo(() => ({ id: win.id, field: 'system' }), [win.id]));
   // Teammates' cursors in both boxes, with their names, and ours for them.
-  useCaretReporter(promptRef, win.id, 'prompt');
-  useCaretReporter(systemRef, win.id, 'system', showSystem);
+  // "Who typed what" puts both boxes away; ours goes out again once back.
+  const [writersOn, setWritersOn] = React.useState(false);
+  useCaretReporter(promptRef, win.id, 'prompt', !writersOn);
+  useCaretReporter(systemRef, win.id, 'system', showSystem && !writersOn);
   const promptCarets = useTeammateCarets(win.id, 'prompt');
   const systemCarets = useTeammateCarets(win.id, 'system', showSystem);
   const { lanes, results, running } = arena;
@@ -63,14 +66,16 @@ export function ModelArenaWindow({ win = {}, onUpdate }) {
       <WindowTitle icon={<Icon.Activity size={12} />} label={win.title || windowMeta.label} subtitle={subtitle} />
       <div className="hb-arena" style={{ '--arena-cols': columns }}>
         <form className="hb-arena-composer" onSubmit={send}>
-          <div className="hb-arena-box">
+          {writersOn && <ArenaWhoTypedPane windowId={win.id} field="prompt" label="Request" />}
+          {writersOn && showSystem && <ArenaWhoTypedPane windowId={win.id} field="system" label="Instructions" />}
+          {!writersOn && <div className="hb-arena-box">
             <textarea ref={promptRef} className="hb-arena-input" rows={3} value={arena.prompt} aria-label="Request to send to every model"
               placeholder="One request, sent to every model at once. Try a benchmark task below."
               onChange={(e) => arena.setPrompt(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send(e); }} />
             <TeammateCarets boxRef={promptRef} carets={promptCarets} text={arena.prompt} />
-          </div>
-          {showSystem && (
+          </div>}
+          {showSystem && !writersOn && (
             <div className="hb-arena-box">
               <textarea ref={systemRef} className="hb-arena-input" rows={2} value={arena.system} aria-label="Instructions for every model"
                 placeholder="Instructions every model gets first (optional)" onChange={(e) => arena.setSystem(e.target.value)} />
@@ -83,6 +88,7 @@ export function ModelArenaWindow({ win = {}, onUpdate }) {
               <button key={task.id} type="button" className="hb-arena-chip" disabled={running} onClick={() => { arena.pickSample(task); setShowSystem(true); }}>{task.label}</button>
             ))}
             <span className="hb-arena-spacer" />
+            <ArenaWhoTypedButton on={writersOn} onToggle={() => setWritersOn((v) => !v)} />
             <button type="button" className="hb-btn" data-variant="ghost" onClick={() => setShowSystem((v) => !v)}>
               {showSystem ? 'Hide instructions' : 'Add instructions'}
             </button>

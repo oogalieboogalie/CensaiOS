@@ -28,6 +28,7 @@ import {
 } from '../shareLinks/tokens.js';
 import { log, publishLinkState, sendError } from './shareLinkHttp.js';
 import { safeErrorCode } from '../security/errorCode.js';
+import { registerGuestCommentTranslate } from './commentTranslate.js';
 
 export const guestRouter = express.Router();
 
@@ -233,3 +234,5 @@ guestRouter.post('/comments/:commentId/resolve', async (req, res) => {
     return sendError(res, error);
   }
 });
+
+registerGuestCommentTranslate(guestRouter, guestAccess);

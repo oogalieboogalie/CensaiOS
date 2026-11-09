@@ -6,6 +6,7 @@ import * as Y from 'yjs';
 import { valueToY } from '../../../shared/collab/seedFromSnapshot.js';
 import { applyTextDiff, diffText } from '../../../shared/collab/textDiff.js';
 import { slideBoxToY } from './slideBoxText.js';
+import { myTypedMark } from './signedInName.js';
 
 /** A whole slide as a shared map, its notes and box words ready to merge. */
 export function slideToY(slide) {
@@ -21,13 +22,14 @@ export function slideToY(slide) {
 }
 
 /**
- * Change only the typed span of the notes. Notes saved before this (a plain
- * string) become a Y.Text on their first edit.
+ * Change only the typed span of the notes; the new letters carry who typed
+ * them (shared/collab/typedBy.js). Notes saved before this (a plain string)
+ * become a Y.Text on their first edit.
  */
 export function writeSlideNotes(live, value) {
   const current = live.get('notes');
   if (current instanceof Y.Text) {
-    applyTextDiff(current, diffText(current.toString(), value));
+    applyTextDiff(current, diffText(current.toString(), value), myTypedMark());
     return;
   }
   live.set('notes', new Y.Text(value));

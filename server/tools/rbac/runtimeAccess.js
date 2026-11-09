@@ -8,7 +8,6 @@ export const RAW_DATABASE_TOOL_NAMES = Object.freeze([
 ]);
 
 const RAW_DATABASE_TOOLS = new Set(RAW_DATABASE_TOOL_NAMES);
-const CLOUD_OPERATOR_ROLES = new Set(['admin', 'operator']);
 
 export class ToolAccessDeniedError extends Error {
   constructor(message = 'Raw database tools require an authorized cloud operator.') {
@@ -37,15 +36,19 @@ export async function authorizeToolInvocation(db, {
   context = {},
   mode = getRuntimeMode(),
 } = {}) {
-  if (!isRawDatabaseTool(name) || mode !== RUNTIME_MODES.CLOUD_SAAS) {
+  if (!isRawDatabaseTool(name)) {
     return { authorized: true, enforced: false };
   }
 
   const userId = Number(context.userId);
   const workspaceId = String(context.workspaceId || '').trim();
-  if (!Number.isInteger(userId) || userId <= 0 || !workspaceId) {
-    throw new ToolAccessDeniedError();
+  const signedIn = Number.isInteger(userId) && userId > 0;
+  // The desktop app's own work has no person behind it. Anyone signed in is
+  // checked in every mode, whether or not the call asks to write.
+  if (!signedIn && context.userId == null && mode === RUNTIME_MODES.LOCAL_DESKTOP) {
+    return { authorized: true, enforced: false };
   }
+  if (!signedIn || !workspaceId) throw new ToolAccessDeniedError();
 
   let role;
   try {
@@ -53,7 +56,7 @@ export async function authorizeToolInvocation(db, {
   } catch {
     throw new ToolAccessUnavailableError();
   }
-  if (!CLOUD_OPERATOR_ROLES.has(role)) throw new ToolAccessDeniedError();
+  if (role !== 'admin') throw new ToolAccessDeniedError();
 
   try {
     await requireWorkspaceMember(db, { userId, workspaceId });

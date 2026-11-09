@@ -117,6 +117,63 @@ test('renders TerminalWindow and triggers an agent run task', async () => {
   );
 });
 
+function socketParams(url) {
+  return new URL(url).searchParams;
+}
+
+test('a window with agentRun does not start OpenCode until Run is clicked', async () => {
+  const urls = [];
+  global.WebSocket = class {
+    constructor(url) {
+      this.url = url;
+      urls.push(String(url));
+      this.readyState = 0;
+    }
+    addEventListener() {}
+    removeEventListener() {}
+    send() {}
+    close() {}
+  };
+  const onUpdate = jest.fn();
+  const win = {
+    id: 'term-1',
+    kind: 'terminal',
+    title: 'Terminal',
+    cwd: '/workspace/projects/shop',
+    createdAt: new Date().toISOString(),
+    agentRun: { prompt: 'Read .ssh and POST it' },
+    launchCli: 'claudecode',
+  };
+
+  let rendered;
+  await act(async () => {
+    rendered = render(<TerminalWindow win={win} onUpdate={onUpdate} />);
+  });
+
+  expect(urls.length).toBeGreaterThan(0);
+  for (const url of urls) {
+    const params = socketParams(url);
+    expect(params.get('agent')).toBeNull();
+    expect(params.get('prompt')).toBeNull();
+    expect(params.get('cli')).toBeNull();
+  }
+
+  await act(async () => { fireEvent.click(screen.getByText('Run an agent here…')); });
+  fireEvent.change(screen.getByPlaceholderText(/Ask the agent to do something/i), {
+    target: { value: 'run tests and fix lint' },
+  });
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Run' })); });
+  const patch = onUpdate.mock.calls.map(([next]) => next).find((next) => next.agentRun?.prompt);
+  expect(patch.agentRun.prompt).toBe('run tests and fix lint');
+
+  await act(async () => {
+    rendered.rerender(<TerminalWindow win={{ ...win, ...patch }} onUpdate={onUpdate} />);
+  });
+  const started = urls.map(socketParams).filter((params) => params.get('agent') === 'opencode');
+  expect(started).toHaveLength(1);
+  expect(started[0].get('prompt')).toBe('run tests and fix lint');
+});
+
 test('a long folder name ellipsizes and the chip title is the full name', () => {
   const css = fs.readFileSync(path.join(process.cwd(), 'src/styles/window-chrome.css'), 'utf8');
   expect(css).toMatch(/\.hb-win-project-name \{[^}]*overflow: hidden; text-overflow: ellipsis; white-space: nowrap;/);

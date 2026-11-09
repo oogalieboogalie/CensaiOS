@@ -2,6 +2,10 @@
 // runs next. Every scheduling screen (Scheduler, Workflow start, Calendar,
 // Live Operations) reads from here so they all speak the same language:
 // "Every weekday at 9:00 AM", "Tomorrow at 7:30 AM", "Every 6 hours".
+// Monthly dates use the same zone calendar as a saved repeat
+// (shared/schedule/zoneTime.js): the 31st clamps to the short month and
+// comes back, including an evening time on a UTC machine.
+import { upcomingMonthlyInstants } from '../../../shared/schedule/zoneTime.js';
 
 export const DAY_KEYS = Object.freeze(['s', 'm', 't', 'w', 'th', 'f', 'sat']);
 export const DAY_SHORT = Object.freeze(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
@@ -93,15 +97,10 @@ export function upcomingRuns(spec, from = new Date(), count = 3) {
   if (Number.isNaN(start.getTime())) return [];
   start.setHours(h, m, 0, 0);
   if (spec.repeat === 'once' || !spec.repeat) return start >= from ? [start] : [];
-  const runs = [];
   if (spec.repeat === 'monthly') {
-    const cursor = new Date(start);
-    for (let i = 0; runs.length < count && i < 36; i += 1) {
-      if (cursor >= from) runs.push(new Date(cursor));
-      cursor.setMonth(cursor.getMonth() + 1);
-    }
-    return runs;
+    return upcomingMonthlyInstants({ date: spec.date, hours: h, minutes: m, from, count });
   }
+  const runs = [];
   const days = daysFor(spec.repeat, spec.days);
   if (!days.length) return [];
   const cursor = new Date(Math.max(start.getTime(), new Date(from).setHours(0, 0, 0, 0)));

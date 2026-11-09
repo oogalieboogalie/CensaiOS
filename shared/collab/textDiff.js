@@ -66,10 +66,17 @@ export function applyOp(text, op) {
   return text.slice(0, op.index) + op.insert + text.slice(op.index + op.remove);
 }
 
-/** Apply a diff to a Y.Text (caller wraps it in a transaction). */
-export function applyTextDiff(ytext, op) {
+/**
+ * Apply a diff to a Y.Text (caller wraps it in a transaction). `typedBy`,
+ * when given, marks the new letters with who typed them (typedBy.js).
+ */
+export function applyTextDiff(ytext, op, typedBy = null) {
   if (op.remove) ytext.delete(op.index, op.remove);
-  if (op.insert) ytext.insert(op.index, op.insert);
+  if (op.insert) {
+    // A copy: Yjs writes into the marks it is given (ending other formatting).
+    if (typedBy && typeof typedBy === 'object') ytext.insert(op.index, op.insert, { ...typedBy });
+    else ytext.insert(op.index, op.insert);
+  }
 }
 
 /** Where a caret at `pos` ends up after `op` was applied by someone else. */

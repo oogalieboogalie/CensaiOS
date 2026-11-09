@@ -1,10 +1,13 @@
 import pool from '../../../db.js';
 import fs from 'fs/promises';
 import path from 'path';
+import { classifySql, rejectUnsafeSql, runGuardedQuery } from './sqlGuard.js';
 
 export async function postgresQuery(args) {
   const sql = String(args.sql || '').trim();
   if (!sql) return 'postgres_query requires args.sql.';
+  const blocked = rejectUnsafeSql(sql);
+  if (blocked) return blocked;
   const classification = classifySql(sql);
   const guard = checkSqlGuard(classification, args);
   if (guard) return guard;
@@ -12,7 +15,10 @@ export async function postgresQuery(args) {
   const params = Array.isArray(args.params) ? args.params : [];
   const limit = normalizeLimit(args.limit, 100, 1000);
   try {
-    const result = await runSql(sql, params, { readOnly: classification.readOnly, limit });
+    const result = await runGuardedQuery(() => pool.connect(), sql, params, {
+      readOnly: classification.readOnly,
+      limit,
+    });
     return formatQueryResult(result, classification);
   } catch (err) {
     return `postgres_query error: ${err.message}`;
@@ -42,10 +48,20 @@ export async function postgresExecFile(args) {
       }, null, 2);
     }
 
+    // A read is not limited to the computer's owner, so it gets the same
+    // one-statement guard as postgres_query. allow_write stays on the
+    // existing path.
+    if (!args.allow_write) {
+      const blocked = rejectUnsafeSql(sql);
+      if (blocked) return blocked;
+    }
+
     const guard = checkSqlGuard(classification, args);
     if (guard) return guard;
 
-    const result = await runSql(sql, [], { readOnly: classification.readOnly, limit: 100 });
+    const result = args.allow_write
+      ? await runSql(sql, [], { readOnly: classification.readOnly, limit: 100 })
+      : await runGuardedQuery(() => pool.connect(), sql, [], { readOnly: true, limit: 100 });
     return `Executed ${resolved.display}\n${formatQueryResult(result, classification)}`;
   } catch (err) {
     return `postgres_exec_file error: ${err.message}`;
@@ -56,23 +72,6 @@ function normalizeLimit(value, fallback, max) {
   const n = Number.parseInt(value, 10);
   if (!Number.isFinite(n) || n < 1) return fallback;
   return Math.min(n, max);
-}
-
-function classifySql(sql) {
-  const withoutComments = sql
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/--.*$/gm, ' ')
-    .trim();
-  const first = (withoutComments.match(/^([a-z]+)/i)?.[1] || '').toLowerCase();
-  const lowered = withoutComments.toLowerCase();
-  const readOnly = ['select', 'with', 'show', 'explain'].includes(first);
-  const writes = /\b(insert|update|delete|create|alter|drop|truncate|grant|revoke|comment|vacuum|reindex|cluster|refresh\s+materialized\s+view)\b/i.test(withoutComments);
-  const unsafe = /\b(drop|truncate)\b/i.test(withoutComments)
-    || /\bdelete\s+from\s+[\w".]+(?:\s*;|$)/i.test(withoutComments)
-    || /\balter\s+system\b/i.test(withoutComments)
-    || /\bcreate\s+extension\b/i.test(withoutComments)
-    || lowered.includes('pg_terminate_backend');
-  return { first, readOnly: readOnly && !writes, writes, unsafe };
 }
 
 function checkSqlGuard(classification, args) {

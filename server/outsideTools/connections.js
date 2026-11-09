@@ -9,6 +9,7 @@ import { createHttpClient, OutsideToolError } from './httpClient.js';
 import { createStdioClient, sharedSettingCount } from './stdioClient.js';
 import { reachableFetch } from './netGuard.js';
 import { createLogger } from '../logger.js';
+import { scheduleOutsideRun } from '../tools/rbac/offeredTools.js';
 
 const log = createLogger('outside-tools');
 
@@ -65,7 +66,8 @@ async function connection(server, secret) {
   const client = makeClient(server, secret, pinned, { serverKeys });
   const entry = { client, ready: client.connect(), lastUsed: Date.now(), fingerprint: fingerprint(server) };
   live.set(server.id, entry);
-  if (!sweeper) { sweeper = setInterval(sweep, 60 * 1000); sweeper.unref?.(); }
+  // Outside the run: this sweep outlives the call that first opened a connection.
+  if (!sweeper) scheduleOutsideRun(() => { sweeper = setInterval(sweep, 60 * 1000); sweeper.unref?.(); });
   try {
     await entry.ready;
   } catch (error) {

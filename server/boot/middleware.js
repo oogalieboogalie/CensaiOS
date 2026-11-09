@@ -14,7 +14,7 @@ import {
   isAllowedBrowserOrigin,
 } from '../security/httpBoundary.js';
 import { PostgresSessionStore } from '../security/postgresSessionStore.js';
-import { createCsrfOriginGuard } from '../middleware/csrfOriginGuard.js';
+import { createCsrfOriginGuard } from '../middleware/security.js';
 import { createSessionRoleRefresh } from '../security/sessionRole.js';
 import { doorAllowsOrigin } from '../webOs/door.js';
 import { isPlaygroundRead } from './playgroundAssets.js';

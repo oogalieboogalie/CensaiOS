@@ -39,3 +39,19 @@
 .hb-shorts-row-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hb-shorts-row-hint { font-size: var(--text-xs); color: var(--ink-faint); }
 .hb-shorts-foot { margin: 0; padding-top: var(--space-2-5); border-top: 1px solid var(--hairline); font-size: var(--text-xs); line-height: 1.5; color: var(--ink-faint); }
+
+.hb-shorts-chips { display: flex; gap: var(--space-1); padding: 0 var(--space-2) var(--space-2); overflow-x: auto; scrollbar-width: none; }
+.hb-shorts-chips::-webkit-scrollbar { display: none; }
+.hb-shorts-chip { all: unset; box-sizing: border-box; flex: 0 0 auto; min-height: 26px; padding: 0 var(--space-2-5); border-radius: var(--radius-sm); border: 1px solid var(--hairline); background: var(--surface); font-size: var(--text-xs); color: var(--ink-soft); cursor: pointer; }
+.hb-shorts-chip:hover { color: var(--ink); background: var(--surface-2); }
+.hb-shorts-chip[aria-selected="true"] { color: var(--accent-text); border-color: var(--accent-line); background: var(--accent-soft); }
+.hb-shorts-chip:focus-visible { outline: 2px solid var(--accent-soft); }
+
+.hb-shorts-cats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1); }
+.hb-shorts-cat { all: unset; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; gap: 2px; min-height: 52px; padding: var(--space-2); border-radius: var(--radius-sm); border: 1px solid var(--hairline); background: var(--surface-2); font-size: var(--text-sm); color: var(--ink); cursor: pointer; }
+.hb-shorts-cat svg { color: var(--ink-faint); }
+.hb-shorts-cat:hover, .hb-shorts-cat:focus-visible { border-color: var(--accent-line); }
+.hb-shorts-cat[aria-current="true"] { border-color: var(--accent-line); background: var(--accent-soft); }
+.hb-shorts-cat[aria-current="true"] svg, .hb-shorts-cat[aria-current="true"] .hb-shorts-cat-hint { color: var(--accent-text); }
+.hb-shorts-cat-label { font-weight: 600; }
+.hb-shorts-cat-hint { font-size: var(--text-xs); color: var(--ink-faint); }

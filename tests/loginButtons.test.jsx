@@ -35,6 +35,19 @@ test('without Google set up, only the email form shows', () => {
   expect(screen.getByRole('button', { name: 'Enter Canvas' })).toBeInTheDocument();
 });
 
+test('says email sign-in is turned off, and does not offer the form', () => {
+  render(<Login oauthConfigured={false} emailSignIn={false} onLoginSuccess={() => {}} />);
+  expect(screen.getByText('Email sign-in is turned off on this install.')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Enter Canvas' })).not.toBeInTheDocument();
+});
+
+test('Google stays available when email sign-in is turned off', () => {
+  render(<Login oauthConfigured emailSignIn={false} onLoginSuccess={() => {}} />);
+  expect(screen.getByText('Continue with Google').closest('a')).toHaveAttribute('href', '/api/auth/google');
+  expect(screen.getByText('Email sign-in is turned off on this install.')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Continue with email' })).not.toBeInTheDocument();
+});
+
 test('with Google set up, Google and email are the two ways in', () => {
   render(<Login oauthConfigured onLoginSuccess={() => {}} />);
   expect(screen.getByText('Continue with Google').closest('a')).toHaveAttribute('href', '/api/auth/google');

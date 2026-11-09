@@ -2,6 +2,7 @@
 import React from 'react';
 import { SlideBoxText } from './SlideBoxText.jsx';
 import { SlideBoxCarets, slideBoxField } from './SlideBoxCarets.jsx';
+import { SlideBoxWhoTypedButton, SlideBoxWhoTypedPane } from './SlideBoxWhoTyped.jsx';
 import { ACCENT_BAR, SLIDE_W_PT, THEMES, blockColor, clampBox, textLines } from '../../../lib/office/slideModel.js';
 
 const pct = (n) => `${n}%`;
@@ -48,13 +49,18 @@ function startDrag(e, block, frame, mode, onChange) {
 /**
  * One slide drawn at any width. With `edit` it becomes the editing stage:
  * { selectedId, editingId, onSelect, onEdit, onBox, onText, onRemove }.
- * With `windowId` and `slideId` too, teammates typing in a text box show there.
+ * With `windowId` and `slideId` too, teammates typing in a text box show there,
+ * and a selected text box offers "Who typed what" (SlideBoxWhoTyped.jsx).
  */
 export function SlideView({ slide, theme, width, edit, label, windowId, slideId }) {
   const frame = React.useRef(null);
   const [draft, setDraftState] = React.useState(null); // { id, box } while dragging
   const draftRef = React.useRef(null);
   const setDraft = (d) => { draftRef.current = d; setDraftState(d); };
+  const [whoId, setWhoId] = React.useState(null); // the text box showing who typed what
+  const selectedId = edit?.selectedId;
+  const editingId = edit?.editingId;
+  React.useEffect(() => { setWhoId(null); }, [selectedId, editingId, slideId]);
   const t = THEMES[theme] || THEMES.censai;
   const scale = width / SLIDE_W_PT;
   const blocks = slide?.blocks || [];
@@ -79,6 +85,7 @@ export function SlideView({ slide, theme, width, edit, label, windowId, slideId 
         const empty = block.type === 'text' && !String(block.text || '').trim();
         if (!edit && empty) return null;
         const field = edit && windowId && slideId && block.type === 'text' ? slideBoxField(slideId, index) : null;
+        const who = Boolean(field) && selected && !editing && whoId === block.id;
         return (
           <div key={block.id} className="hb-of-sblock" data-selected={selected ? 'true' : undefined} data-type={block.type}
             style={{ left: pct(box.x), top: pct(box.y), width: pct(box.w), height: pct(box.h) }}
@@ -90,9 +97,13 @@ export function SlideView({ slide, theme, width, edit, label, windowId, slideId 
                   style={{ fontSize: (block.size || 18) * scale, fontWeight: block.bold ? 700 : 400, textAlign: block.align || 'left', color: hex(blockColor(block, theme)) }}
                   onType={(text) => (edit.onTyping || edit.onText)(block.id, text)}
                   onDone={(text) => edit.onText(block.id, text)} />
-              ) : empty ? <div className="hb-of-sblock-hint">{block.role === 'title' ? 'Double-click to add a title' : 'Double-click to add text'}</div>
+              ) : who ? <SlideBoxWhoTypedPane windowId={windowId} field={field} />
+              : empty ? <div className="hb-of-sblock-hint">{block.role === 'title' ? 'Double-click to add a title' : 'Double-click to add text'}</div>
                 : <TextBody block={block} theme={theme} scale={scale} />}
             {field && !editing && <SlideBoxCarets windowId={windowId} field={field} />}
+            {field && selected && !editing && (
+              <SlideBoxWhoTypedButton on={who} onToggle={() => setWhoId(who ? null : block.id)} />
+            )}
             {selected && !editing && (
               <span className="hb-of-handle" onPointerDown={(e) => startDrag(e, block, frame.current, 'size', onBoxChange(block.id))} aria-hidden="true" />
             )}

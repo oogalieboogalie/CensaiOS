@@ -5,9 +5,9 @@
  * Copilot takes the task as an argument (`-p`), so the adapter passes it as
  * one argv element and never through a shell. It prints plain text, not
  * JSON, so every line streams into one assistant message. In headless mode
- * it cannot stop and ask: `--allow-tool write` lets it edit files in the
- * task's worktree, and shell commands stay denied unless the person's own
- * Copilot config allows them.
+ * it cannot stop and ask. A person who starts a task gets `--allow-tool write`
+ * so it can edit files in the worktree. A task an agent starts does not: shell
+ * commands stay denied unless the person's own Copilot config allows them.
  */
 
 const SAFE_ID = /^[A-Za-z0-9._:-]{1,128}$/;
@@ -27,8 +27,8 @@ export const copilot = {
   aliases: {},
   taskInArgs: true,
 
-  buildRun({ task, model, readOnly = false }) {
-    const args = readOnly ? ['-p', task] : ['-p', task, '--allow-tool', 'write'];
+  buildRun({ task, model, readOnly = false, approvalGated = false }) {
+    const args = (readOnly || approvalGated) ? ['-p', task] : ['-p', task, '--allow-tool', 'write'];
     if (model && SAFE_ID.test(model)) args.push('--model', model);
     return { args, stdin: [], keepStdinOpen: false };
   },

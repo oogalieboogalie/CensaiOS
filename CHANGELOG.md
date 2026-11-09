@@ -17,6 +17,31 @@ tags.
 
 ### New
 
+- Keep CAD tools loaded while a CAD window shares the agent's group (Nov 9)
+- Shorts category picker + Reddit canvas scroll window (Nov 9)
+- Slides: see who typed what in slide text boxes (crew realtime) (Nov 9)
+- Legion: see who typed what in the goal and YAML spec (crew realtime) (Nov 9)
+- Model Arena: see who typed what in the request and instructions (crew realtime) (Nov 9)
+- Slides: see who typed what in the speaker notes (crew realtime) (Nov 9)
+- Browser window: let a page ask for the mic and a game controller (Nov 9)
+- Vault notes: see who typed what in a note (crew realtime) (Nov 8)
+- Refuse to mint journal and vault keys when encrypted data already exists (Nov 8)
+- Let an admin choose which email domains can sign up (Nov 8)
+- Code Editor: see who typed what in the code (crew realtime) (Nov 8)
+- Model arena: each model's lane stands as a card on a sunken tray, so the UI team's depth mark goes up (crew arena-depth) (Nov 8)
+- Teleprompter: see who typed what in the script (crew realtime) (Nov 8)
+- ProjectGit test: give the merge a committer (unblocks CensaiOS release) (Nov 8)
+- Give a reply that claims an action one hidden retry (R2) (Nov 8)
+- One-time invite tokens that burn when claimed (R1) (Nov 8)
+- Refuse a foreign page on live sockets and on writes (Nov 8)
+- Stop public health leaks and the hub email fallback key (Nov 8)
+- Keep sub-agent writes and database tools to the owner (Nov 8)
+- Keep postgres tool reads to one guarded statement (Nov 8)
+- Turn off passwordless email sign-in unless a flag is set (Nov 8)
+- Close hub sign-up outside the cloud and keep hub sessions off the board (Nov 8)
+- Translate board comments between English and French (Nov 8)
+- Document: see who typed what, each person's part in their own colour (crew realtime) (Nov 8)
+- Spreadsheet: see which cell a teammate is typing in, with their name (crew realtime) (Nov 8)
 - Outbox: two people can rewrite a draft at once and see each other's cursor (crew realtime) (Nov 8)
 - Code Editor: see a teammate's cursor and name in the code (crew realtime) (Nov 8)
 - Photo and Video: see a teammate's cursor and name in a text layer, layer name or title (crew realtime) (Nov 8)
@@ -100,6 +125,18 @@ tags.
 
 ### Fixed
 
+- Refuse to drop an occupied desktop database (Nov 9)
+- Read schedule times and repeats on the configured clock (Nov 9)
+- LeadHound: full run proven with pictures, and the ice breaker's title and ask show their whole words again (crew leadhound) (Nov 9)
+- Code Robot: test team checks it for one and two people, and a broken class record shows as "Player" (Nov 9)
+- Stop shared boards from auto-starting runs (Nov 9)
+- Asteroids: test team checks it for one and two players, and a broken score table no longer crashes it (Nov 8)
+- One app: the UI team checks each window shows its name once, and three windows stop repeating it (crew one-app-look) (Nov 8)
+- Legion picks a run up after a restart instead of losing it (Nov 8)
+- An MCP server whose path has a space starts on Windows (Nov 8)
+- Keep approvals on when an agent starts a coding CLI (Nov 8)
+- Refuse a tool a run did not offer (Nov 8)
+- Keep monthly schedules on the 29th, 30th and 31st (Nov 8)
 - Racetrack: test team checks it for one and two people, and a broken lap table no longer crashes it (Nov 8)
 - Nightly sweep 2026-11-08: chat crash, GitHub PR number escape, viewer wake-up cancel (Nov 8)
 - Close the Open anywhere pairing gate against capitalized paths (Nov 8)
@@ -142,6 +179,8 @@ tags.
 
 ### Behind the scenes
 
+- Disarm a workflow start when its graph changes (Nov 9)
+- Each run's temp files go in one folder that is deleted at the end (Nov 9)
 - Workflow: see a teammate's cursor and name in a step (crew realtime) (Nov 8)
 - Window names: see a teammate's cursor in the Writer title and Workflow name (crew realtime) (Nov 7)
 - Workflow: two people can type in one step at once (crew realtime) (Nov 6)

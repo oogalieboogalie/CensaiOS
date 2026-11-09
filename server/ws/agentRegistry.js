@@ -26,9 +26,8 @@ import { createAgentCardRun } from '../agent-card-runs/store.js';
 import { agentCardActorChannel } from '../agent-card-runs/events.js';
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
-import {
-  canActorInvokeCard,
-} from '../agent-registry/access.js';
+import { canActorInvokeCard } from '../agent-registry/access.js';
+import { rejectUpgradeUnlessOwnOrigin } from './upgradeOrigin.js';
 import { prepareAgentCardCall } from '../agent-registry/callScope.js';
 import { decodeSessionCookie } from './sessionCookie.js';
 import { isSessionAuthorized } from '../security/authPolicy.js';
@@ -101,6 +100,7 @@ export function attachAgentRegistryWs(server, opts = {}) {
     // handler must leave upgrades it does not own untouched so the matching
     // handler can claim them.
     if (requestUrl.pathname !== WS_PATH) return;
+    if (rejectUpgradeUnlessOwnOrigin(request, socket)) return;
     authenticate(request).then((actor) => {
       if (!actor || !actor.userId) {
         log.info('rejecting unauthenticated upgrade');

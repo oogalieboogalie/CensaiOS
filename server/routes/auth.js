@@ -10,6 +10,7 @@ import {
   findOrCreateAuthorizedUser,
   findOrCreateLocalOwner,
   isDeveloperLoginAllowed,
+  isDeveloperSignInOnThisComputer,
   isLocalSignInAllowed,
   isSessionAuthorized,
 } from '../security/authPolicy.js';
@@ -117,6 +118,12 @@ authRouter.post('/developer', authSecurityRateLimiter, rateLimiter, async (req, 
   if (!isDeveloperLoginAllowed({ oauthConfigured: isOauthConfigured })) {
     return res.status(403).json({ error: 'Developer login is disabled for this deployment.' });
   }
+  // The bind address and the Open anywhere door are not the only gate.
+  // A LAN Host, or a request already marked as another computer, is refused
+  // even when the flag is on.
+  if (!isDeveloperSignInOnThisComputer(req)) {
+    return res.status(403).json({ error: 'Developer login is disabled for this deployment.' });
+  }
 
   const { email, name } = req.body;
   if (!email) {
@@ -171,6 +178,7 @@ authRouter.post('/local', localSignInGate, authSecurityRateLimiter, rateLimiter,
 authRouter.get('/session', async (req, res) => {
   const oauthConfigured = !!(process.env.G_CLIENT_ID && process.env.G_SECRET);
   const localSignIn = isLocalSignInAllowed(req, { oauthConfigured });
+  const emailSignIn = isDeveloperLoginAllowed({ oauthConfigured });
   if (req.session.userId) {
     try {
       const userRes = await pool.query('SELECT id, email, name, role FROM users WHERE id = $1', [req.session.userId]);
@@ -185,6 +193,7 @@ authRouter.get('/session', async (req, res) => {
             authenticated: false,
             oauthConfigured,
             localSignIn,
+            emailSignIn,
             fromAnotherComputer: isFromAnotherComputer(req),
             ...getClientAccessPolicy(null),
           });
@@ -210,6 +219,7 @@ authRouter.get('/session', async (req, res) => {
     authenticated: false,
     oauthConfigured,
     localSignIn,
+    emailSignIn,
     fromAnotherComputer: isFromAnotherComputer(req),
     ...getClientAccessPolicy(null),
   });

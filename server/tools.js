@@ -10,6 +10,7 @@ import { authorizeToolInvocation } from './tools/rbac/runtimeAccess.js';
 import { requestToolApprovalIfRequired } from './approvals/requests.js';
 import { assertApprovedToolExecution } from './approvals/decisions.js';
 import { assertFamilyToolAvailable } from './tools/rbac/executionBoundary.js';
+import { offeredListMissing, unofferedToolResult } from './tools/rbac/offeredTools.js';
 import { assertHostToolAllowed } from './tools/rbac/hostOwnerOnly.js';
 import { offBoardGithubRead } from './tools/rbac/ownerOnlyReads.js';
 import { projectRefusalWords } from './workspaces/projectRefusalWords.js';
@@ -19,6 +20,15 @@ export { TOOL_DEFINITIONS, filterToolsForAgent, listToolCatalog } from './tools/
 export { initializeDynamicTools, initializeMcpTools, shutdownMcpTools };
 
 const log = createLogger('tools');
+let missingListNoted = false;
+
+function noteMissingOfferedList() {
+  // Dev and test only, and only once: a model loop that forgot to store its
+  // list would fail open. Calls that are not model runs stay allowed.
+  if (missingListNoted || process.env.NODE_ENV === 'production' || !offeredListMissing()) return;
+  missingListNoted = true;
+  log.warn('executeTool ran with no offered-tool list; a model loop that forgot to store its list would fail open');
+}
 
 const PROJECT_WORK_TOOLS = new Set([
   'open_project', 'refresh_brief', 'project_write', 'project_edit', 'project_multi_edit',
@@ -93,6 +103,11 @@ async function executeRegisteredTool(agentId, name, args, context) {
 }
 
 export async function executeTool(agentId, name, args, context = {}) {
+  noteMissingOfferedList();
+  // A run remembers the tools it offered. Any other name stops here, before
+  // the family list, the owner check or the handler (server/tools/rbac/offeredTools.js).
+  const unoffered = unofferedToolResult(name);
+  if (unoffered) return unoffered;
   const blocked = securityTripwire(agentId, name, args);
   if (blocked) return blocked;
   try {

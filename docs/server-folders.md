@@ -39,6 +39,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `docker` | The Docker manager window's server side (allowlisted actions). |
 | `github` | GitHub helpers (fixing merge conflicts and more). |
 | `grokSignin` | The Grok chat on the person's own Grok sign-in. |
+| `health` | Health and readiness probes: a public up-or-not, and the full picture for this computer's owner. |
 | `hostedAgents` | Hosted agents: running their turns and the errors they return. |
 | `hubAccounts` | censaiOS accounts: passwords, two-step codes and encryption. |
 | `inbox` | The Inbox: one line per thing waiting for you, from each source. |
@@ -81,6 +82,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `semantic` | Change-impact maps. |
 | `sevenContexts` | The seven contexts lookup and its keywords. |
 | `shareLinks` | Share links: guest access, comments and agent replies. |
+| `signInDomains` | Who can sign up: the email domains an admin lets in from Settings, Sharing. |
 | `skillSets` | Skill sets equipped to agents (driving the Browser window and more). |
 | `social` | The social canvas: profiles, posts, follows and the public feed. |
 | `speakUp` | Speak-up notes that reach the owner's phone. |
@@ -90,6 +92,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `templates` | Ready-made board templates. |
 | `terminal` | The terminal window: sessions, backends and agent output. |
 | `todos` | To-dos assigned to a person. |
+| `tokens` | One-time invite tokens for a friend, a board or a workshop seat. |
 | `tools` | Agent tools: definitions, handlers, the catalog and tool access (RBAC). |
 | `video` | Making and collecting videos for agents and the chat window. |
 | `wakeUps` | Stored wake-up records. |

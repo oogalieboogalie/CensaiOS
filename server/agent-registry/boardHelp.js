@@ -5,8 +5,8 @@
 // comes back in the tool call or, later, in the asking chat.
 //   coding CLI — starts an Agent Console task with the same rules as the
 //                console: desktop installs only, system admins only, open
-//                project folders only. Its approval prompts stay in the
-//                console's Action Approvals; the card shows "Needs approval".
+//                project folders only. An agent cannot turn approvals off;
+//                the card shows "Needs approval" when the CLI asks.
 //   module     — one question to the module's model, like censai.agent.ask.
 //   research   — the Research window: an answer from the board's saved web
 //                research, or a fresh Tavily search, with numbered sources.
@@ -105,7 +105,7 @@ async function startCli(scope, win, prompt, fromLabel) {
   await assertSystemAdmin({ session: { userId: scope.userId } });
   const manager = getCliTaskManager();
   const started = await manager.start({
-    cli: win.cli || 'claudecode', folder: await cliFolder(win), prompt, user: { userId: scope.userId, name: fromLabel },
+    cli: win.cli || 'claudecode', folder: await cliFolder(win), prompt, approvalGated: true, user: { userId: scope.userId, name: fromLabel },
   });
   return started.id;
 }

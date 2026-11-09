@@ -12,6 +12,7 @@ import { personalSignedIn } from './personalHome.js';
 import { cliMayUseServerKeys } from './serverKeyScope.js';
 import { envKeysSwitchedOff } from '../security/envKeys.js';
 import { createLogger } from '../logger.js';
+import { scheduleOutsideRun } from '../tools/rbac/offeredTools.js';
 
 const log = createLogger('cli-agents');
 
@@ -72,11 +73,14 @@ export function getCliTaskManager() {
       mayUseServerKeys: cliMayUseServerKeys,
     });
     // Tidy up on a timer (cleanup.js), and never leave an agent running
-    // after the app itself has gone.
-    const first = setTimeout(() => manager.sweep(), 30_000);
-    first.unref?.();
-    const timer = setInterval(() => manager.sweep(), SWEEP_EVERY_MS);
-    timer.unref?.();
+    // after the app itself has gone. Outside any run: the first CLI call
+    // is often a tool, and these timers must not keep that run's tool list.
+    scheduleOutsideRun(() => {
+      const first = setTimeout(() => manager.sweep(), 30_000);
+      first.unref?.();
+      const timer = setInterval(() => manager.sweep(), SWEEP_EVERY_MS);
+      timer.unref?.();
+    });
     process.once('exit', () => manager.stopAll());
   }
   return manager;

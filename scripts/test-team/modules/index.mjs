@@ -83,6 +83,7 @@ import prompterCursors from './prompterCursors.mjs';
 import cadCursors from './cadCursors.mjs';
 import arenaCursors from './arenaCursors.mjs';
 import legionCursors from './legionCursors.mjs';
+import legionWhoTyped from './legionWhoTyped.mjs';
 import diffCursors from './diffCursors.mjs';
 import studioCursors from './studioCursors.mjs';
 import genImageCursors from './genImageCursors.mjs';
@@ -100,6 +101,7 @@ import stepReportCursors from './stepReportCursors.mjs';
 import writerCellCursors from './writerCellCursors.mjs';
 import slideBoxCursors from './slideBoxCursors.mjs';
 import racetrack from './racetrack.mjs';
+import asteroids from './asteroids.mjs';
 import inviteLinks from './inviteLinks.mjs';
 import listingCursors from './listingCursors.mjs';
 import siteCursors from './siteCursors.mjs';
@@ -111,8 +113,17 @@ import layoutCursors from './layoutCursors.mjs';
 import photoVideoCursors from './photoVideoCursors.mjs';
 import codeCursors from './codeCursors.mjs';
 import writerCursors from './writerCursors.mjs';
+import sheetCellCursors from './sheetCellCursors.mjs';
+import whoTyped from './whoTyped.mjs';
+import prompterWhoTyped from './prompterWhoTyped.mjs';
+import codeWhoTyped from './codeWhoTyped.mjs';
+import vaultWhoTyped from './vaultWhoTyped.mjs';
+import slideNotesWhoTyped from './slideNotesWhoTyped.mjs';
+import codeRobot from './codeRobot.mjs';
+import arenaWhoTyped from './arenaWhoTyped.mjs';
+import slideBoxWhoTyped from './slideBoxWhoTyped.mjs';
 
-export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone, secretFiles, versions, grokSignIn, finderFiles, addNames, filesCatchUp, notSaved, githubReads, logsNameNoFiles, agentHiddenWords, toolsGiven, githubReview, githubFixRequest, appFolderFiles, windowImporter, projectList, teleprompter, writer, cadRecipe, listingWriter, layoutStory, windowTitle, photoText, gitDiffTyping, arenaTyping, legionTyping, imagePromptTyping, leadBriefTyping, ideaTagTyping, vectorText, imageStudioTyping, pdfTextTyping, modelNoteTyping, workflowStepTyping, localSiteTyping, writerTableTyping, whatsappTyping, stepReportTyping, ideaBulletTyping, leadDraftTyping, todoTextTyping, docCursors, prompterCursors, arenaCursors, legionCursors, diffCursors, studioCursors, genImageCursors, whatsappCursors, titleCursors, ideaTagCursors, vaultNoteCursors, leadBriefCursors, listingCursors, siteCursors, notesCursors, modelNoteCursors, writerCursors, leadDraftCursors, todoCursors, ideaBulletCursors, workflowStepCursors, stepReportCursors, writerCellCursors, slideBoxCursors, cadCursors, vectorCursors, pdfCursors, layoutCursors, photoVideoCursors, racetrack, inviteLinks, codeCursors, outboxCursors];
+export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone, secretFiles, versions, grokSignIn, finderFiles, addNames, filesCatchUp, notSaved, githubReads, logsNameNoFiles, agentHiddenWords, toolsGiven, githubReview, githubFixRequest, appFolderFiles, windowImporter, projectList, teleprompter, writer, cadRecipe, listingWriter, layoutStory, windowTitle, photoText, gitDiffTyping, arenaTyping, legionTyping, imagePromptTyping, leadBriefTyping, ideaTagTyping, vectorText, imageStudioTyping, pdfTextTyping, modelNoteTyping, workflowStepTyping, localSiteTyping, writerTableTyping, whatsappTyping, stepReportTyping, ideaBulletTyping, leadDraftTyping, todoTextTyping, docCursors, prompterCursors, arenaCursors, legionCursors, diffCursors, studioCursors, genImageCursors, whatsappCursors, titleCursors, ideaTagCursors, vaultNoteCursors, leadBriefCursors, listingCursors, siteCursors, notesCursors, modelNoteCursors, writerCursors, leadDraftCursors, todoCursors, ideaBulletCursors, workflowStepCursors, stepReportCursors, writerCellCursors, slideBoxCursors, cadCursors, vectorCursors, pdfCursors, layoutCursors, photoVideoCursors, racetrack, inviteLinks, codeCursors, outboxCursors, sheetCellCursors, whoTyped, prompterWhoTyped, asteroids, codeWhoTyped, vaultWhoTyped, slideNotesWhoTyped, codeRobot, arenaWhoTyped, legionWhoTyped, slideBoxWhoTyped];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

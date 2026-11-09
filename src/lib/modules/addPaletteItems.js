@@ -37,7 +37,7 @@ export const CATEGORIES = Object.freeze([
   { label: 'Teach', kinds: ['classroom'] },
   // Social canvas: follow boards and friends, a feed, your profile.
   { label: 'People', kinds: ['social'] },
-  { label: 'Media', kinds: ['shorts', 'music', 'studio', 'humBeat', 'stream', 'teleprompter'] },
+  { label: 'Media', kinds: ['shorts', 'reddit', 'music', 'studio', 'humBeat', 'stream', 'teleprompter'] },
   { label: 'Games', kinds: ['asteroids', 'racetrack', 'agentCompany', 'idleBlocks', 'codeRobot', 'rhythmRun', 'driftholm', 'gamePlayground'] },
   { label: 'System', kinds: ['mailcow', 'vex', 'sovereignTest', 'marketplace'] },
 ]);

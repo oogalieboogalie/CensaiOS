@@ -4,6 +4,7 @@ import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/
 import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
 import { EXAMPLE_NOTES, noteStats } from './data.js';
 import { UNTITLED } from './vault.js';
+import { useVaultWhoTyped, VaultWhoTypedButton, VaultWhoTypedPane } from './VaultWhoTyped.jsx';
 
 // Deleting asks once, in place: the note is gone for everyone on the board.
 // The question takes the keyboard on "Keep it"; Escape keeps the note too,
@@ -40,7 +41,9 @@ export function VaultEditor({ note, source, example, fresh, actions }) {
   useSharedCaret(textRef, note.text, source);
   // Teammates' cursors in the open note, with their names, and ours for them.
   // Example notes are not shared words, so nobody's cursor shows there.
-  useCaretReporter(textRef, source.id, source.field, !example);
+  // While "Who typed what" shows, the text box is put away; it reports again once back.
+  const writers = useVaultWhoTyped(example ? null : note.id);
+  useCaretReporter(textRef, source.id, source.field, !example && !writers.on);
   const carets = useTeammateCarets(source.id, source.field, !example);
   // A note just made here opens with its title selected, ready to be typed
   // over, once: opening it again later leaves the cursor where it is.
@@ -66,7 +69,7 @@ export function VaultEditor({ note, source, example, fresh, actions }) {
         <div className="hb-vault-crumb-actions">
           {example
             ? <button type="button" className="hb-vault-act" onClick={actions.copy}>Copy to my notes</button>
-            : <DeleteNote key={note.id} onDelete={actions.remove} />}
+            : <><VaultWhoTypedButton on={writers.on} onToggle={writers.toggle} /><DeleteNote key={note.id} onDelete={actions.remove} /></>}
         </div>
       </div>
 
@@ -85,6 +88,7 @@ export function VaultEditor({ note, source, example, fresh, actions }) {
         ref={focusFresh}
         onChange={(e) => actions.rename(e.target.value)}
       />
+      {writers.on ? <VaultWhoTypedPane source={source} /> : (
       <div className="hb-vault-editor-wrap">
         <textarea
           key={`text-${note.id}`}
@@ -99,6 +103,7 @@ export function VaultEditor({ note, source, example, fresh, actions }) {
         />
         <TeammateCarets boxRef={textRef} carets={carets} text={note.text} />
       </div>
+      )}
 
       <footer className="hb-vault-status">
         <span>{stats.words.toLocaleString()} words</span>

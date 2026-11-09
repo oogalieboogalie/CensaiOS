@@ -40,6 +40,7 @@ import { getAgent } from '../memory/core/agents.js';
 import { agentTurnStarted } from '../appUpdate/busy.js';
 import { noteAgentWork } from '../social/agentNotes.js';
 import { findHostedAgent } from '../hostedAgents/store.js';
+import { unofferedToolResult } from '../tools/rbac/offeredTools.js';
 
 export const RUN_ORIGINS = Object.freeze(['chat', 'help', 'endpoint', 'workflow']);
 
@@ -71,6 +72,9 @@ export function toolRunner(...extras) {
   const sets = extras.filter((set) => set?.definitions?.length);
   if (!sets.length) return undefined;
   return async (agentId, name, args, context) => {
+    // Outside tools skip executeTool, so the run's list is checked here too.
+    const refused = unofferedToolResult(name);
+    if (refused) return refused;
     const owner = sets.find((set) => set.has(name));
     if (owner) return owner.call(name, args);
     const { executeTool } = await import('../tools.js');

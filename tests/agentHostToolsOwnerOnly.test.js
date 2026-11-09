@@ -82,12 +82,24 @@ describe("a teammate's chat cannot change the computer", () => {
     expect(await executeTool(AGENT, 'vex_run', { task: 'vulnerability_check' }, { userId: MO })).toBe('ran');
   });
 
-  test.each(['postgres_query', 'postgres_exec_file'])('%s may read but not write for a teammate', async (name) => {
+  test.each(['postgres_query', 'postgres_exec_file'])('%s is owner-only for a read and a write', async (name) => {
     expect(await executeTool(AGENT, name, { sql: 'DELETE FROM users', allow_write: true }, { userId: MO }))
       .toBe(REFUSED);
+    expect(await executeTool(AGENT, name, { sql: 'SELECT 1' }, { userId: MO })).toBe(REFUSED);
     expect(ran).not.toHaveBeenCalled();
-    expect(await executeTool(AGENT, name, { sql: 'SELECT 1' }, { userId: MO })).toBe('ran');
   });
+
+  test.each(['postgres_query', 'postgres_exec_file'])(
+    '%s is refused for a teammate in every mode when allow_write is left off',
+    async (name) => {
+      for (const mode of ['local_desktop', 'private_server', 'cloud_saas']) {
+        process.env.CENSAI_MODE = mode;
+        expect(await executeTool(AGENT, name, { sql: 'SELECT 1' }, { userId: MO })).toBe(REFUSED);
+        expect(await executeTool(AGENT, name, { sql: 'SELECT 1', allow_write: false }, { userId: MO })).toBe(REFUSED);
+      }
+      expect(ran).not.toHaveBeenCalled();
+    },
+  );
 
   test('an owner approving a card still runs it; a teammate approving does not', async () => {
     expect(await executeApprovedTool(AGENT, 'terminal_run', { command: 'ls' }, { userId: MO }, 'appr-1'))
@@ -125,6 +137,20 @@ describe('the owner notices nothing', () => {
 
   test("the desktop app's own background work (no person behind it) still runs", async () => {
     expect(await executeTool(AGENT, 'run_tests', {}, {})).toBe('ran');
+  });
+
+  test('the owner can read the database without allow_write in every mode', async () => {
+    pool.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text.includes('FROM users')) return { rows: [{ role: 'admin' }] };
+      if (text.includes('FROM workspaces')) return { rows: [{ id: 'ws', name: 'Board', role: 'owner' }] };
+      return { rows: [] };
+    });
+    for (const mode of ['local_desktop', 'private_server', 'cloud_saas']) {
+      process.env.CENSAI_MODE = mode;
+      expect(await executeTool(AGENT, 'postgres_query', { sql: 'SELECT 1' }, { userId: PAT, workspaceId: 'ws' })).toBe('ran');
+      expect(await executeTool(AGENT, 'postgres_exec_file', { sql: 'SELECT 1', allow_write: false }, { userId: PAT, workspaceId: 'ws' })).toBe('ran');
+    }
   });
 });
 

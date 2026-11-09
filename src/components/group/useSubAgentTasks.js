@@ -1,4 +1,5 @@
 import React from 'react';
+import { healthFlag } from '../../lib/healthFlag.js';
 import { useVisibilityAwareInterval } from '../../lib/usePolling.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 
@@ -76,8 +77,12 @@ export function useSubAgentTasks({ groupName, subAgents, members, newParent, isA
     if (!taskAssignee && subAgents[0]?.id) setTaskAssignee(subAgents[0].id);
   }, [subAgents, taskAssignee]);
 
-  const dbReady = Boolean(taskHealth?.databaseStatus?.ready ?? taskHealth?.database);
-  const workerReady = Boolean(taskHealth?.taskWorker?.ready);
+  const dbReady = healthFlag(taskHealth, (health) => (
+    typeof health.databaseStatus?.ready === 'boolean'
+      ? health.databaseStatus.ready
+      : (typeof health.database === 'boolean' ? health.database : undefined)
+  ));
+  const workerReady = healthFlag(taskHealth, (health) => health.taskWorker?.ready);
   const taskQueueBlocked = !workspaceId || !dbReady || !workerReady;
   const degradedState = taskHealth?.degradedState || taskHealth?.taskWorker?.degradedReason || (taskQueueBlocked ? 'unknown' : null);
   const workerMessage = !workspaceId

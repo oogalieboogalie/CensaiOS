@@ -41,6 +41,7 @@ const callModel = jest.fn(async () => ({ choices: [{ message: { content: 'About 
 jest.unstable_mockModule('../server/aiGateway/index.js', () => ({
   callModel,
   createModelAccessContext: (value) => value,
+  workspaceUsageSink: jest.fn(),
 }));
 jest.unstable_mockModule('../server/shareLinks/store.js', () => ({
   ShareLinkError: class ShareLinkError extends Error {},

@@ -28,12 +28,13 @@
  *     future maintainer cannot split them. tests/windowImportMountContract
  *     pins this shape.
  */
-
 import { sovereignTestRouter } from '../sovereignTest.js';
 import { calendarRouter } from '../calendar.js';
 import { myCalendarRouter } from '../ownCalendar/routes.js';
+import { signInDomainsRouter } from '../signInDomains/routes.js';
 import { sheetsRouter } from '../sheets.js';
 import { youtubeRouter } from '../youtube.js';
+import { redditRouter } from '../reddit.js';
 import { contextRouter } from '../routes/context.js';
 import { filesRouter } from '../routes/files/index.js';
 import { projectsRouter } from '../routes/projects/index.js';
@@ -134,8 +135,10 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api/sovereignTest', router: sovereignTestRouter },
   { method: 'use', path: '/api/calendar', router: calendarRouter },
   { method: 'use', path: '/api/my-calendar', router: myCalendarRouter },
+  { method: 'use', path: '/api/sign-in-domains', router: signInDomainsRouter },
   { method: 'use', path: '/api/sheets', router: sheetsRouter },
   { method: 'use', path: '/api/youtube', router: youtubeRouter },
+  { method: 'use', path: '/api/reddit', router: redditRouter },
   { method: 'use', path: '/api', router: contextRouter },
   { method: 'use', path: '/api/github', router: githubRouter },
   { method: 'use', path: '/api', router: projectsRouter },

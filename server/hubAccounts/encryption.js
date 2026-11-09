@@ -5,14 +5,12 @@ import {
   randomBytes,
   createHash,
 } from 'crypto';
-import { requireProductionSecret, optionalSecret } from '../secrets.js';
+import { requireSecret } from '../secrets.js';
 
 const VERSION = 'v1';
 
 function masterSecret() {
-  return requireProductionSecret('CENSAI_VAULT_SECRET')
-    || optionalSecret('CENSAI_VAULT_SECRET')
-    || 'censai-hub-account-email-encryption-key';
+  return requireSecret('CENSAI_VAULT_SECRET');
 }
 
 function deriveKey() {

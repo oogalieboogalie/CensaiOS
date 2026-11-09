@@ -20,6 +20,7 @@
 @import './styles/dock.css';
 @import './styles/lessons.css';
 @import './styles/shorts.css';
+@import './styles/reddit.css';
 @import './styles/music.css';
 @import './styles/studio.css';
 @import './styles/hum-beat.css';
@@ -97,7 +98,9 @@
 @import './styles/error-note.css';
 @import './styles/agent-marks.css';
 @import './styles/text-carets.css';
+@import './styles/sheet-teammates.css';
 @import './styles/code-carets.css';
+@import './styles/who-typed.css';
 
 @tailwind base;
 @tailwind components;

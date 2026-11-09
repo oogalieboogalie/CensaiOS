@@ -18,6 +18,7 @@ import * as agentActivity from './api/agentActivity.js';
 import * as projectMemberships from './api/projectMemberships.js';
 import * as approvals from './api/approvals.js';
 import * as workspaceMembers from './api/workspaceMembers.js';
+import * as signInDomains from './api/signInDomains.js';
 import * as agentIcons from './api/agentIcons.js';
 import * as shareLinks from './api/shareLinks.js';
 import * as lessons from './api/lessons.js';
@@ -47,6 +48,7 @@ export const api = {
   ...projectMemberships,
   ...approvals,
   ...workspaceMembers,
+  ...signInDomains,
   ...agentIcons,
   ...shareLinks,
   ...lessons,

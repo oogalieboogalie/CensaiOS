@@ -50,6 +50,19 @@ jest.unstable_mockModule('../server/workspaces.js', () => ({
 jest.unstable_mockModule('../server/workspaces/projectAccess.js', () => ({
   resolveAuthorizedWorkspaceProject: mockResolveAuthorizedWorkspaceProject,
 }));
+jest.unstable_mockModule('../server/db.js', () => ({
+  default: {
+    query: jest.fn(async (sql) => {
+      const text = String(sql);
+      if (text.includes('workspace_members') || text.includes('FROM workspaces')) {
+        return { rows: [{ id: 'workspace-1', name: 'Board', role: 'owner', tenant_id: null }] };
+      }
+      return { rows: [{ role: 'admin' }] };
+    }),
+    on: jest.fn(),
+    end: jest.fn(),
+  },
+}));
 
 const { handleLocalTool } = await import('../server/tools/handlers/local.js');
 const { handleSubagentTool } = await import('../server/tools/handlers/subagents.js');

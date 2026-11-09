@@ -159,6 +159,7 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask, project 
           <div className="ac-task-title" title={task.prompt}>{task.title}</div>
           <div className="ac-task-meta">
             <span className="ac-chip" data-testid="task-status"><StatusDot state={task.status} />{task.status === 'installing' ? (task.install?.phase || 'Installing') : stateLabel(task.status)}</span>
+            {task.approvalGated && <span className="ac-chip" data-testid="task-approval-gate">Approvals stay on</span>}
             <span className="ac-mono" title={task.worktree?.dir}><Icon.Branch size={11} />{task.worktree?.branch}</span>
             {cost && <span>{cost}</span>}
             {task.usage?.output != null && <span>{task.usage.output.toLocaleString()} tokens out</span>}

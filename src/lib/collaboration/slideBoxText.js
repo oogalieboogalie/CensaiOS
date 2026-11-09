@@ -5,6 +5,7 @@
 import * as Y from 'yjs';
 import { valueToY } from '../../../shared/collab/seedFromSnapshot.js';
 import { applyTextDiff, diffText } from '../../../shared/collab/textDiff.js';
+import { myTypedMark } from './signedInName.js';
 
 function same(a, b) {
   if (a === b) return true;
@@ -26,7 +27,8 @@ export function slideBoxToY(box) {
 export function writeSlideBoxText(map, value) {
   const current = map.get('text');
   if (current instanceof Y.Text) {
-    applyTextDiff(current, diffText(current.toString(), value));
+    // The new letters carry who typed them, for "Who typed what".
+    applyTextDiff(current, diffText(current.toString(), value), myTypedMark());
     return;
   }
   map.set('text', new Y.Text(value));

@@ -19,11 +19,16 @@ import { resolveModelDefaults } from './subagentModelDefaults.js';
 import { handleDataBoxTool } from './dataBox.js';
 import pool from '../../db.js';
 import { resolveAuthorizedWorkspaceProject } from '../../workspaces/projectAccess.js';
+import { userRole } from '../../security/systemAdmin.js';
+import { assertSubAgentToolScopes } from '../rbac/subagentToolScopes.js';
+import { subAgentWriteRefusal } from '../rbac/subagentWriter.js';
 import { noteToolFailure } from '../toolsLog.js';
 
 export async function handleSubagentTool(agentId, name, args, context = {}) {
   switch (name) {
     case 'create_sub_agent': {
+      const refused = await subAgentWriteRefusal(pool, context);
+      if (refused) return refused;
       let project = null;
       if (args.project) {
         try {
@@ -72,6 +77,21 @@ export async function handleSubagentTool(agentId, name, args, context = {}) {
         parentProjectId = parentSub ? parentSub.project_id : parentAgent?.project_id;
       } catch (err) {
         noteToolFailure('could not load parent scopes for a sub-agent', { agentId }, err);
+      }
+
+      if (Array.isArray(args.tools)) {
+        let systemRole;
+        try {
+          systemRole = context.userId ? await userRole(context.userId, { db: pool }) : null;
+        } catch {
+          return 'Could not check who is creating this sub-agent.';
+        }
+        try {
+          await assertSubAgentToolScopes({ tools: args.tools }, { systemRole });
+        } catch (error) {
+          if (error?.statusCode === 403) return error.message;
+          throw error;
+        }
       }
 
       const tool_scopes = {
@@ -125,6 +145,8 @@ export async function handleSubagentTool(agentId, name, args, context = {}) {
       }).join('\n');
     }
     case 'remove_sub_agent': {
+      const refused = await subAgentWriteRefusal(pool, context);
+      if (refused) return refused;
       const subs = await getSubAgents(agentId, context);
       const match = subs.find(s =>
         s.name.toLowerCase() === args.name.toLowerCase() ||

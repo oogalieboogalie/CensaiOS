@@ -144,6 +144,10 @@ services:
       NODE_ENV: production
       CENSAI_MODE: ${CENSAI_MODE:-}
       HOMEBASE_MODE: ${HOMEBASE_MODE:-local_desktop}
+      # The board port above is 127.0.0.1 only. Inside the container the
+      # browser is not loopback, so the one-click button is not offered and
+      # email sign-in has to stay on unless .env turns it off.
+      CENSAI_ALLOW_DEVELOPER_LOGIN: ${CENSAI_ALLOW_DEVELOPER_LOGIN:-true}
       # Not needed for Open anywhere; kept for older setups. Listing an address
       # here never lets another computer sign in without a code.
       CENSAI_LAN_ORIGINS: ${CENSAI_DOCKER_LAN_ORIGINS:-}

@@ -28,6 +28,7 @@ export const Icon = {
   Maximize: (p) => <I {...p}><path d="M8 4H6a2 2 0 0 0-2 2v2M16 4h2a2 2 0 0 1 2 2v2M8 20H6a2 2 0 0 1-2-2v-2M16 20h2a2 2 0 0 0 2-2v-2"/></I>,
   Restore: (p) => <I {...p}><path d="M8 8V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4M4 8h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/></I>,
   Shorts: (p) => <I {...p}><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 9.5v5l4-2.5z"/></I>,
+  Reddit: (p) => <I {...p}><circle cx="12" cy="13" r="7"/><circle cx="9" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><path d="M9.5 15.2c.7.7 1.6 1 2.5 1s1.8-.3 2.5-1"/><path d="M17.5 8.5l2-3.5"/><circle cx="20" cy="4.5" r="1.4"/></I>,
   Gamepad: (p) => <I {...p}><path d="M7 8h10a4 4 0 0 1 4 4v2.5a2.5 2.5 0 0 1-4.3 1.7L15 14.5H9l-1.7 1.7A2.5 2.5 0 0 1 3 14.5V12a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11.5" r="0.6"/><circle cx="17" cy="13" r="0.6"/></I>,
   Car: (p) => <I {...p}><path d="M5 13l1.6-4.2A2 2 0 0 1 8.5 7.5h7a2 2 0 0 1 1.9 1.3L19 13"/><rect x="3.5" y="13" width="17" height="4.5" rx="1.5"/><path d="M6.5 17.5v1.5M17.5 17.5v1.5"/><circle cx="7.5" cy="15.2" r="0.6"/><circle cx="16.5" cy="15.2" r="0.6"/></I>,
   SpeakerOff: (p) => <I {...p}><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></I>,

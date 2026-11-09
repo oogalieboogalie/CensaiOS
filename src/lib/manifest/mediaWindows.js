@@ -179,4 +179,23 @@ export const MEDIA_WINDOW_MANIFESTS = [
     lab: {"title":"Hum a beat","props":{}},
     moduleMenu: {"show":true,"status":"ready","order":63,"icon":"Music","label":"Hum a beat","hint":"Hum a melody, get the real notes, hear it as a beat"},
   },
+  {
+    kind: 'reddit',
+    canvasType: 'reddit',
+    label: 'Reddit',
+    componentName: 'RedditWindow',
+    componentPath: 'src/components/windows/reddit/index.jsx',
+    defaultSize: { w: 420, h: 720 },
+    sizeClass: 'fixed',
+    embedMode: 'webview',
+    lab: { title: 'Reddit', props: {} },
+    moduleMenu: {
+      show: true,
+      status: 'ready',
+      order: 64,
+      icon: 'Reddit',
+      label: 'Reddit',
+      hint: 'Scroll Reddit on the board — pick a subreddit or your home feed',
+    },
+  },
 ];

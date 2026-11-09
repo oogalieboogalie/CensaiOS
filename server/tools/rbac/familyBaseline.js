@@ -2,6 +2,12 @@ const policy = (name, risk, mode = 'autonomous') => Object.freeze({ name, risk, 
 
 export const FAMILY_INTRINSIC_TOOL_POLICIES = Object.freeze([
   policy('remember', 'write', 'autonomous_internal'),
+  // The capabilities prompt tells every agent to write these too
+  // (server/memory/core/capabilities.js). An outside endpoint still
+  // drops them; a custom scope that leaves one out does not get it back.
+  policy('remember_important', 'write', 'autonomous_internal'),
+  policy('journal', 'write', 'autonomous_internal'),
+  policy('broadcast', 'write', 'autonomous_internal'),
   policy('recall', 'read'),
   policy('deep_memory', 'read'),
   policy('feeling', 'write', 'autonomous_internal'),

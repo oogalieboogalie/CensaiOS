@@ -8,15 +8,6 @@ function normalizedOrigin(value) {
   }
 }
 
-function isLoopbackOrigin(origin) {
-  try {
-    const url = new URL(origin);
-    return ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
-  } catch {
-    return false;
-  }
-}
-
 /**
  * Extra origins the owner listed for a home network, e.g.
  * CENSAI_LAN_ORIGINS=http://officepc:3002 so a laptop can open the PC's copy.
@@ -38,7 +29,11 @@ export function isAllowedBrowserOrigin(origin, {
   if (normalizedOrigin(origin) === normalizedOrigin(appOrigin)) return true;
   if (runtimeMode !== RUNTIME_MODES.LOCAL_DESKTOP) return false;
   if (extraOrigins.includes(normalizedOrigin(origin))) return true;
-  return isLoopbackOrigin(origin) || String(origin).startsWith('tauri://');
+  // The desktop shell (Windows uses http://tauri.localhost; other systems
+  // use tauri://localhost). Any other localhost port is a different page.
+  const desktop = normalizedOrigin(origin);
+  if (desktop === 'http://tauri.localhost' || desktop === 'https://tauri.localhost') return true;
+  return String(origin).startsWith('tauri://');
 }
 
 export function getProxyTrustSetting(env = process.env) {

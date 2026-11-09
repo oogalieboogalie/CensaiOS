@@ -92,7 +92,7 @@ test.each(['postgres_query', 'postgres_exec_file'])(
 
 test('cloud execution fails closed for missing or foreign context before the handler', async () => {
   const missing = await executeTool('nexus', 'postgres_query', { sql: 'SELECT 1' }, {});
-  expect(missing).toMatch(/^Error: TOOL_ACCESS_DENIED:/);
+  expect(missing).toMatch(/^Error: COMPUTER_OWNER_ONLY:/);
   expect(pool.query).not.toHaveBeenCalled();
 
   databaseRole = 'admin';
@@ -132,14 +132,15 @@ test('cloud authorization-store failure is a stable failed result before the han
   warn.mockRestore();
 });
 
-test('local and private runtimes preserve the existing raw-tool path explicitly', async () => {
-  for (const mode of ['local_desktop', 'private_server']) {
-    process.env.CENSAI_MODE = mode;
-    await expect(executeTool('nexus', 'postgres_query', { sql: 'SELECT 1' }))
-      .resolves.toBe('database tool executed');
-  }
-  expect(pool.query).not.toHaveBeenCalled();
-  expect(rawHandler).toHaveBeenCalledTimes(2);
+test('the desktop app itself may read the database; a private server with nobody signed in may not', async () => {
+  process.env.CENSAI_MODE = 'local_desktop';
+  await expect(executeTool('nexus', 'postgres_query', { sql: 'SELECT 1' }))
+    .resolves.toBe('database tool executed');
+
+  process.env.CENSAI_MODE = 'private_server';
+  await expect(executeTool('nexus', 'postgres_query', { sql: 'SELECT 1' }))
+    .resolves.toMatch(/^Error: COMPUTER_OWNER_ONLY:/);
+  expect(rawHandler).toHaveBeenCalledTimes(1);
 });
 
 test('tool filtering removes custom-scoped raw tools for ordinary cloud users', async () => {

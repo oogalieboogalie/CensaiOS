@@ -62,4 +62,20 @@ describe('local dev restart process exclusion', () => {
     expect(content).toContain('($_.ProcessId -ne 0)');
     expect(spawnMock).toHaveBeenCalledTimes(1);
   });
+
+  test('treats the public health answer as healthy from ok alone', () => {
+    delete process.env.LOCAL_DEV_RESTART_EXCLUDE_PID;
+
+    scheduleLocalDevRestart({
+      id: restartId,
+      cwd: process.cwd(),
+      noticeSeconds: 5,
+      port: 3001
+    });
+
+    const content = fs.readFileSync(runnerFile, 'utf8');
+    expect(content).toContain('if ($health.ok) { $healthy = $true; break }');
+    expect(content).not.toContain('$health.database');
+    expect(content).not.toContain('taskWorker.ready');
+  });
 });

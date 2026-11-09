@@ -62,6 +62,9 @@ export function WorkflowWindow({ win, onUpdate }) {
           : <button type="button" className="hb-wf-btn" data-primary="true" onClick={flow.start} disabled={flow.pending}>{run ? 'Run again' : 'Run'}</button>}
       </WindowTitle>
       <div className="hb-wf">
+        {flow.stale && (
+          <p className="hb-wf-error" role="status">Auto start is off because this workflow changed. It will not run until someone turns it on again.</p>
+        )}
         {editingTitle && (
           <div style={{ position: 'relative', display: 'grid' }}>
             <input ref={titleRef} aria-label="Workflow name" className="hb-wf-input hb-wf-name" value={title} onChange={(e) => onUpdate?.({ title: e.target.value })} />

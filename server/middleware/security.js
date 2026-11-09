@@ -10,6 +10,8 @@ import { getRuntimeMode, RUNTIME_MODES } from './runtimeMode.js';
 import { isJestRun } from '../security/testShortcut.js';
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
+import { cameThroughDoor, doorAllowsOrigin } from '../webOs/door.js';
+import { isAllowedBrowserOrigin } from '../security/httpBoundary.js';
 
 const log = createLogger('security');
 
@@ -107,6 +109,29 @@ export function createAuthRateLimiter(options = {}) {
 }
 
 /* ────────────────────────────── CSRF guarding ───────────────────────────── */
+//
+// State-changing requests have to come from this app:
+//   Origin equal to APP_ORIGIN or API_ORIGIN — the page, or a script that sets it
+//   Sec-Fetch-Site: same-origin — this app's own page (another port is same-site)
+//   No Origin, plus Authorization, X-Censai-Agent-Key or X-Api-Bar-Key — MCP,
+//     the API bar, and other non-browser clients. A session cookie alone is refused.
+//   POST /api/billing/stripe/webhook — Stripe signs the body and sends no Origin
+// Jest's own requests are not browsers (isJestRun). NODE_ENV=test alone is not.
+
+const STRIPE_WEBHOOK_PATH = '/api/billing/stripe/webhook';
+const LOCAL_HOST = /^(?:localhost|127\.0\.0\.1)(?::\d+)?$/;
+
+function explicitNonBrowser(req) {
+  if (req.path === STRIPE_WEBHOOK_PATH) return true;
+  if (String(req.get?.('authorization') || '').trim()) return true;
+  if (String(req.get?.('x-censai-agent-key') || '').trim()) return true;
+  if (String(req.get?.('x-api-bar-key') || '').trim()) return true;
+  return false;
+}
+
+function parsedOrigin(value) {
+  try { return new URL(String(value)).origin.toLowerCase(); } catch { return ''; }
+}
 
 export function createCsrfOriginGuard({ appOrigin, apiOrigin } = {}) {
   const front = appOrigin ?? process.env.APP_ORIGIN ?? 'http://localhost:5173';
@@ -125,34 +150,42 @@ export function createCsrfOriginGuard({ appOrigin, apiOrigin } = {}) {
   }
 
   const devLocalAllowed = process.env.NODE_ENV !== 'production';
-  const LOCAL_HOST = /^(?:localhost|127\.0\.0\.1)(?::\d+)?$/;
 
   return function csrfOriginGuard(req, res, next) {
     if (SAFE_METHODS.has(String(req.method || '').toUpperCase())) return next();
 
-    // Rule 4: Host must be someone we serve. Kills DNS rebinding at the door.
     const host = normalize(req.get('host')).replace(/\/$/, '');
-    if (!allowedHosts.has(host) && !(devLocalAllowed && LOCAL_HOST.test(host))) {
+    const originHeader = req.get('origin');
+    const doorOk = Boolean(originHeader) && doorAllowsOrigin(originHeader, host);
+
+    // Rule 4: Host must be someone we serve. Kills DNS rebinding at the door.
+    // Dev still accepts a localhost Host because Vite and the API use different ports.
+    // Open anywhere has its own check (a faked Host still cannot skip the code).
+    if (!allowedHosts.has(host) && !(devLocalAllowed && LOCAL_HOST.test(host)) && !doorOk && !cameThroughDoor(req)) {
       return res.status(403).json({ error: 'Request host is not allowed.' });
     }
 
     const site = normalize(req.get('sec-fetch-site'));
-    if (site === 'same-origin' || site === 'none') return next();
     if (site === 'cross-site') {
       return res.status(403).json({ error: 'Cross-site request rejected.' });
     }
-    // No Sec-Fetch-Site header (older clients) → fall through to Origin checks.
+    // Another localhost port is same-site, not same-origin, and falls through.
+    if (site === 'same-origin') return next();
 
-    const originHeader = req.get('origin');
-    if (!originHeader) return next(); // native apps & server-to-server send no Origin; browsers always do on CORS-risky requests
+    if (!originHeader) {
+      // Jest's supertest calls send no Origin. A browser cannot omit it on a write.
+      if (isJestRun() || explicitNonBrowser(req)) return next();
+      return res.status(403).json({ error: 'Request origin is not allowed.' });
+    }
 
-    let origin = '';
-    try { origin = new URL(String(originHeader)).origin.toLowerCase(); } catch { origin = ''; }
-
-    const originIsLocal = devLocalAllowed && /^https?:\/\//.test(origin)
-      && LOCAL_HOST.test(origin.replace(/^https?:\/\//, ''));
-
-    if (allowedOrigins.has(origin) || originIsLocal) return next();
+    const origin = parsedOrigin(originHeader);
+    // Same list as CORS: this app, origins the owner listed, and the desktop
+    // shell. Another localhost port is not on that list.
+    const browserOk = isAllowedBrowserOrigin(originHeader, { appOrigin: front });
+    if (allowedOrigins.has(origin) || doorOk || browserOk) {
+      if (origin) req.csrfOrigin = origin;
+      return next();
+    }
 
     return res.status(403).json({ error: 'Request origin is not allowed.' });
   };

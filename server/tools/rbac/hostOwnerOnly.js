@@ -52,8 +52,9 @@ export function changesHost(name, args = {}) {
   if (ALWAYS.has(name) || HAND_ADDED_CHANGES.has(name)) return true;
   // A Vex security scan only reads; any other Vex run starts agents on the PC.
   if (name === 'vex_run') return String(args?.task || 'demo') !== 'vulnerability_check';
-  // Reading the app's database is fine; writing to it is not.
-  if (name === 'postgres_query' || name === 'postgres_exec_file') return Boolean(args?.allow_write);
+  // Reading the app's database is owner-only in every mode, even when the
+  // call does not set allow_write. A sub-agent must not skip that check.
+  if (name === 'postgres_query' || name === 'postgres_exec_file') return true;
   return false;
 }
 

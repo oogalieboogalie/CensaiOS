@@ -114,6 +114,17 @@ describe('the class list', () => {
     expect(rows[1].solved).toBe(1);
   });
 
+  test('a seat with a name that is not words shows as Player, never "[object Object]"', () => {
+    const coders = readCoders({
+      coder_obj: { name: { nested: 'object' }, solved: { 'first-steps': { stars: 3 } } },
+      coder_list: { name: ['a', 'list'], solved: 'lots' },
+      coder_blank: { name: '   ', solved: null },
+    });
+    const rows = classProgress(coders);
+    expect(rows.map((r) => r.name)).toEqual(['Player', 'Player', 'Player']);
+    expect(rows.map((r) => r.solved).sort()).toEqual([0, 0, 1]);
+  });
+
   test('two students solving at once both land on the shared board', () => {
     const frame = { id: 'w1', kind: 'codeRobot', x: 0, y: 0, w: 900, h: 580 };
     const a = new Y.Doc();

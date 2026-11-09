@@ -1,8 +1,8 @@
-import fs from 'fs';
 import path from 'path';
 import { WebSocket } from 'ws';
 import { createLogger } from '../logger.js';
 import { resolveProjectPathForRuntime } from '../workspaces/shared.js';
+import { directoryInsideProjectsRoot } from './projectCwd.js';
 
 export const log = createLogger('terminal');
 
@@ -12,15 +12,13 @@ export function safeJsonSend(ws, payload) {
   }
 }
 
-function isDirectory(dir) {
-  try { return fs.statSync(dir).isDirectory(); } catch { return false; }
-}
-
 // Where the shell starts. A folder this server can't reach (D:\Repos on a
 // PC running censaiOS in Docker, when only D:\Repos\CensaiHub is shared
 // with the container) used to become "/app/D:\Repos": the sandbox refused
 // it and the plain shell died at once, so the terminal never opened. Now the
 // shell starts in the app's folder and `unreachable` says which folder failed.
+// A folder outside the projects folder is treated the same way: the board
+// must not choose an arbitrary directory to mount.
 export function resolveTerminalCwd(rawCwd) {
   const fallback = process.cwd();
   if (!rawCwd || typeof rawCwd !== 'string' || !rawCwd.trim()) return { cwd: fallback, unreachable: null };
@@ -32,7 +30,7 @@ export function resolveTerminalCwd(rawCwd) {
   // A drive letter left in a Linux path means the folder never got mapped
   // (and its colon would break Docker's -v folder link).
   const unmappedDrive = process.platform !== 'win32' && /[a-z]:[\\/]/i.test(resolved);
-  if (resolved && !unmappedDrive && isDirectory(resolved)) return { cwd: resolved, unreachable: null };
+  if (resolved && !unmappedDrive && directoryInsideProjectsRoot(resolved)) return { cwd: resolved, unreachable: null };
   return { cwd: fallback, unreachable: rawCwd };
 }
 

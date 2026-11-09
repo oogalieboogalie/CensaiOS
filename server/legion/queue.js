@@ -14,8 +14,10 @@ export const snapshot = (jobs) => jobs.map(({ id, owner, task, status, attempt, 
 
 /**
  * Run every job whose status is 'queued'. `runJob(job)` does the work and
- * returns a short note; it may throw. Calls `onChange(jobs)` on every
- * status change. Resolves when nothing more can run.
+ * returns a short note; it may throw. Calls `onChange(jobs)` once per step
+ * that changed a status: a job finishing and the jobs it frees starting are
+ * one step, so the saved place (server/legion/checkpoint.js) never shows a
+ * freed job still waiting. Resolves when nothing more can run.
  */
 export async function runQueue({ jobs, runJob, onChange = () => {}, concurrency = QUEUE_CONCURRENCY, stopIfAsked = () => {} }) {
   const statusOf = (id) => jobs.find((j) => j.id === id)?.status;
@@ -30,21 +32,32 @@ export async function runQueue({ jobs, runJob, onChange = () => {}, concurrency 
       const dead = job.dependsOn.find((d) => ['failed', 'blocked'].includes(statusOf(d)));
       if (dead) { job.status = 'blocked'; job.note = `Waiting on ${dead}, which did not finish.`; changed = true; }
     }
-    if (changed) onChange(jobs);
+    return changed;
   };
 
   return new Promise((resolve, reject) => {
-    const pump = () => {
-      if (firstError) { if (!running.size) { blockStuck(); reject(firstError); } return; }
-      try { stopIfAsked(); } catch (error) { firstError = error; if (!running.size) reject(error); return; }
-      blockStuck();
+    // `finished`: a job just ended, so its new status still has to be reported.
+    const pump = (finished = false) => {
+      let changed = finished;
+      const report = () => { if (changed) onChange(jobs); };
+      if (firstError) {
+        if (!running.size) { changed = blockStuck() || changed; report(); reject(firstError); } else report();
+        return;
+      }
+      try { stopIfAsked(); } catch (error) {
+        firstError = error;
+        report();
+        if (!running.size) reject(error);
+        return;
+      }
+      changed = blockStuck() || changed;
       for (const job of jobs) {
         if (running.size >= concurrency) break;
         if (!ready(job)) continue;
         job.status = 'working';
         job.attempt = (job.attempt || 0) + 1;
         running.add(job.id);
-        onChange(jobs);
+        changed = true;
         Promise.resolve()
           .then(() => runJob(job))
           .then((note) => { job.status = 'done'; job.note = String(note || '').slice(0, 300); })
@@ -53,16 +66,16 @@ export async function runQueue({ jobs, runJob, onChange = () => {}, concurrency 
             job.status = 'failed';
             job.note = String(error?.message || error).slice(0, 300);
           })
-          .finally(() => { running.delete(job.id); onChange(jobs); pump(); });
+          .finally(() => { running.delete(job.id); pump(true); });
       }
       if (!running.size) {
         // Safety net: anything still queued now can never start.
-        const stuck = firstError ? [] : jobs.filter((j) => j.status === 'queued');
-        for (const job of stuck) { job.status = 'blocked'; job.note = 'Its dependencies can never finish.'; }
-        if (stuck.length) onChange(jobs);
-        if (firstError) reject(firstError);
-        else resolve(jobs);
+        for (const job of jobs.filter((j) => j.status === 'queued')) {
+          job.status = 'blocked'; job.note = 'Its dependencies can never finish.'; changed = true;
+        }
       }
+      report();
+      if (!running.size) resolve(jobs);
     };
     pump();
   });

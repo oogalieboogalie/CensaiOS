@@ -59,6 +59,12 @@ export function resolveBoardComment(workspaceId, commentId, resolved = true) {
   });
 }
 
+export function translateBoardComment(workspaceId, commentId, pair) {
+  return shareRequest(`${ws(workspaceId)}/comments/${encodeURIComponent(commentId)}/translate`, {
+    method: 'POST', body: { pair },
+  });
+}
+
 // ─── guest side ───────────────────────────────────────────────────────
 
 export function previewGuestLink(token) {
@@ -94,5 +100,11 @@ export function postGuestComment(input) {
 export function resolveGuestComment(commentId, resolved = true) {
   return shareRequest(`/api/guest/comments/${encodeURIComponent(commentId)}/resolve`, {
     method: 'POST', body: { resolved },
+  });
+}
+
+export function translateGuestComment(commentId, pair) {
+  return shareRequest(`/api/guest/comments/${encodeURIComponent(commentId)}/translate`, {
+    method: 'POST', body: { pair },
   });
 }

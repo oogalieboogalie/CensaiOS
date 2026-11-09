@@ -16,6 +16,7 @@ import { answerAgentMentions } from '../shareLinks/agentReplies.js';
 import { publicComment } from '../shareLinks/store.js';
 import { COMMENT_ROLES, log, memberActor, requireUser, sendError } from './shareLinkHttp.js';
 import { safeErrorCode } from '../security/errorCode.js';
+import { registerMemberCommentTranslate } from './commentTranslate.js';
 
 export function registerMemberCommentRoutes(commentsRouter) {
   commentsRouter.get('/workspaces/:workspaceId/comments', async (req, res) => {
@@ -68,4 +69,6 @@ export function registerMemberCommentRoutes(commentsRouter) {
       sendError(res, error);
     }
   });
+
+  registerMemberCommentTranslate(commentsRouter);
 }

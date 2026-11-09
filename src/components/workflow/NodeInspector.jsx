@@ -18,11 +18,12 @@ function Field({ label, children }) {
 
 /** How the workflow starts: when you press Run, on a schedule, or when something lands on the board. */
 function StartSettings({ node, flow, words }) {
-  const armed = flow.armed?.mode && flow.armed.mode !== 'manual' ? flow.armed : null;
-  const [mode, setMode] = React.useState(armed?.mode || 'manual');
-  const [every, setEvery] = React.useState(armed?.everyMinutes || node.everyMinutes || 60);
-  const [kind, setKind] = React.useState(armed?.windowKind || node.windowKind || 'doc');
-  React.useEffect(() => { if (armed) setMode(armed.mode); }, [armed?.mode]); // keep in step with a teammate's change
+  const saved = flow.armed?.mode && flow.armed.mode !== 'manual' ? flow.armed : null;
+  const live = Boolean(saved) && !saved.stale;
+  const [mode, setMode] = React.useState(saved?.mode || 'manual');
+  const [every, setEvery] = React.useState(saved?.everyMinutes || node.everyMinutes || 60);
+  const [kind, setKind] = React.useState(saved?.windowKind || node.windowKind || 'doc');
+  React.useEffect(() => { if (saved) setMode(saved.mode); }, [saved?.mode]); // keep in step with a teammate's change
   const save = () => {
     flow.patchNode(node.id, { mode, everyMinutes: Number(every), windowKind: kind });
     flow.saveTrigger(mode === 'schedule' ? { mode, everyMinutes: Number(every) } : mode === 'board' ? { mode, windowKind: kind } : { mode: 'manual' });
@@ -41,9 +42,9 @@ function StartSettings({ node, flow, words }) {
           <EveryPicker value={Number(every)} onChange={setEvery} />
           <NextRuns
             sentence={describeEvery(every)}
-            runs={upcomingEvery(every, armed?.mode === 'schedule' && Number(armed.everyMinutes) === Number(every) ? armed.nextRunAt : null, 3)}
+            runs={upcomingEvery(every, live && saved?.mode === 'schedule' && Number(saved.everyMinutes) === Number(every) ? saved.nextRunAt : null, 3)}
           />
-          {armed?.lastRunAt && <p className="hb-wf-hint">Last ran {whenWords(armed.lastRunAt, new Date(), { capital: false })}.</p>}
+          {saved?.lastRunAt && <p className="hb-wf-hint">Last ran {whenWords(saved.lastRunAt, new Date(), { capital: false })}.</p>}
         </>
       )}
       {mode === 'board' && (
@@ -53,10 +54,10 @@ function StartSettings({ node, flow, words }) {
           </select>
         </Field>
       )}
-      <button type="button" className="hb-wf-btn" data-primary={mode !== (armed?.mode || 'manual') ? 'true' : undefined} onClick={save} disabled={flow.pending}>
-        {mode === 'manual' ? (armed ? 'Turn off auto start' : 'Save') : armed ? 'Update auto start' : 'Turn on auto start'}
+      <button type="button" className="hb-wf-btn" data-primary={mode !== (live ? saved.mode : 'manual') ? 'true' : undefined} onClick={save} disabled={flow.pending}>
+        {mode === 'manual' ? (saved ? 'Turn off auto start' : 'Save') : live ? 'Update auto start' : 'Turn on auto start'}
       </button>
-      {armed && <p className="hb-wf-hint">Runs on its own as the teammate who turned it on.</p>}
+      {live && <p className="hb-wf-hint">Runs on its own as the teammate who turned it on. An edit turns it off until someone turns it on again.</p>}
       <Field label="Text the run starts with">
         <StepText multiline rows={3} value={node.input} {...words('input')} placeholder="Optional. Board starts hand over the new window's text."
           onChange={(input) => flow.patchNode(node.id, { input })} />

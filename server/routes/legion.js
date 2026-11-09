@@ -9,11 +9,9 @@
 // and GET /api/legion-view/:id/:token/*  a file the Legion built (the run's secret link)
 import express from 'express';
 import fs from 'node:fs';
-import pool from '../db.js';
-import { dbReady } from '../dbState.js';
 import { answerRun, listRuns, viewFilePath, parseStart, readRun, runFilePath, runningFor, startRun, stopRun } from '../legion/runs.js';
+import { legionAccount } from '../legion/resume.js';
 import { findBrowser } from '../legion/browser.js';
-import { userRole } from '../security/systemAdmin.js';
 
 export const legionRouter = express.Router();
 // Mounted before the sign-in guard (server/boot/routers.js) at /api/legion-view.
@@ -31,15 +29,6 @@ legionViewRouter.get('/:id/:token/*rest', async (req, res) => {
 });
 
 
-async function roleOf(userId) {
-  if (!dbReady()) return 'user';
-  try {
-    return (await userRole(userId, { db: pool })) || 'user';
-  } catch {
-    return 'user';
-  }
-}
-
 legionRouter.use((req, res, next) => {
   if (!req.session?.userId) return res.status(401).json({ error: 'Unauthorized' });
   return next();
@@ -51,7 +40,7 @@ legionRouter.post('/runs', async (req, res) => {
   if (request.error) return res.status(400).json({ error: request.error });
   if (runningFor(userId)) return res.status(409).json({ error: 'A Legion is already working for you. Stop it or let it finish first.' });
   try {
-    const run = await startRun({ userId, account: { userId, role: await roleOf(userId) }, ...request });
+    const run = await startRun({ userId, account: await legionAccount(userId), ...request });
     return res.status(201).json({ run, browser: Boolean(findBrowser()) });
   } catch (error) {
     return res.status(500).json({ error: `The Legion could not start: ${String(error.message || error).slice(0, 200)}` });

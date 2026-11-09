@@ -1,4 +1,6 @@
 import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
+import { currentSignInDomains, emailDomain } from '../signInDomains/store.js';
+import { isFromAnotherComputer } from '../webOs/door.js';
 
 function parseBoolean(value) {
   return ['1', 'true', 'yes', 'on'].includes(String(value || '').trim().toLowerCase());
@@ -11,14 +13,25 @@ function emailSet(value) {
     .filter(Boolean));
 }
 
-export function getAuthAccessPolicy({ env = process.env, runtimeMode = getRuntimeMode() } = {}) {
+export function getAuthAccessPolicy({
+  env = process.env,
+  runtimeMode = getRuntimeMode(),
+  allowedDomains = currentSignInDomains(),
+} = {}) {
   return {
     runtimeMode,
     local: runtimeMode === RUNTIME_MODES.LOCAL_DESKTOP,
     allowedUsers: emailSet(env.ALLOWED_USERS),
     adminUsers: emailSet(env.CENSAI_ADMIN_EMAILS),
+    // Who can sign up, set by an admin in Settings, Sharing (server/signInDomains).
+    allowedDomains: new Set(allowedDomains),
     publicSignups: parseBoolean(env.CENSAI_PUBLIC_SIGNUPS),
   };
+}
+
+/** Named in ALLOWED_USERS, or at a domain an admin let in. Domains only ever add people. */
+function isAllowedEmail(policy, email) {
+  return policy.allowedUsers.has(email) || policy.allowedDomains.has(emailDomain(email));
 }
 
 export function resolveUserAccess({
@@ -27,22 +40,23 @@ export function resolveUserAccess({
   userCount = 0,
   env = process.env,
   runtimeMode = getRuntimeMode(),
+  allowedDomains,
 } = {}) {
   const normalizedEmail = String(email || '').trim().toLowerCase();
-  const policy = getAuthAccessPolicy({ env, runtimeMode });
+  const policy = getAuthAccessPolicy({ env, runtimeMode, allowedDomains });
   if (!normalizedEmail) return { allowed: false, reason: 'email_required' };
 
   if (policy.local) {
     if (existingUser) return { allowed: true, role: existingUser.role };
     if (Number(userCount) === 0) return { allowed: true, role: 'admin' };
-    if (policy.allowedUsers.size > 0 && !policy.allowedUsers.has(normalizedEmail)) {
+    if (policy.allowedUsers.size > 0 && !isAllowedEmail(policy, normalizedEmail)) {
       return { allowed: false, reason: 'invite_required' };
     }
     return { allowed: true, role: 'user' };
   }
 
   const explicitlyAdmin = policy.adminUsers.has(normalizedEmail);
-  const explicitlyAllowed = policy.allowedUsers.has(normalizedEmail);
+  const explicitlyAllowed = isAllowedEmail(policy, normalizedEmail);
   if (!explicitlyAdmin && !explicitlyAllowed && !policy.publicSignups) {
     return { allowed: false, reason: 'invite_required' };
   }
@@ -54,11 +68,15 @@ export function resolveUserAccess({
 }
 
 export function isSessionAuthorized(session, options = {}) {
-  if (!session?.userId) return false;
+  // Hub sign-in keeps its own id for the hub routes. It is not a Homebase user,
+  // so on this computer it must not pass the API guard the way any userId would.
+  // A session from before that mark was stored still carries a hub account UUID.
+  // users.id is an integer, so a non-integer id is not a Homebase user either.
+  if (!session?.userId || session.hubAccount || !Number.isInteger(Number(session.userId))) return false;
   const policy = getAuthAccessPolicy(options);
   if (policy.local || policy.publicSignups) return true;
   const email = String(session.userEmail || '').trim().toLowerCase();
-  return policy.allowedUsers.has(email) || policy.adminUsers.has(email);
+  return isAllowedEmail(policy, email) || policy.adminUsers.has(email);
 }
 
 export function isDeveloperLoginAllowed({
@@ -66,11 +84,47 @@ export function isDeveloperLoginAllowed({
   runtimeMode = getRuntimeMode(),
   oauthConfigured = false,
 } = {}) {
+  // Passwordless email sign-in is off unless this install opts in.
+  // Cloud never honors the flag. With the flag on, a local install still
+  // refuses once Google sign-in is configured in production.
   if (runtimeMode === RUNTIME_MODES.CLOUD_SAAS) return false;
-  const explicit = parseBoolean(env.CENSAI_ALLOW_DEVELOPER_LOGIN);
-  if (runtimeMode === RUNTIME_MODES.PRIVATE_SERVER) return explicit;
-  if (String(env.CENSAI_ALLOW_DEVELOPER_LOGIN || '').trim().toLowerCase() === 'false') return false;
+  if (!parseBoolean(env.CENSAI_ALLOW_DEVELOPER_LOGIN)) return false;
+  if (runtimeMode === RUNTIME_MODES.PRIVATE_SERVER) return true;
   return !(oauthConfigured && env.NODE_ENV === 'production');
+}
+
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
+
+function hostName(host) {
+  const value = String(host || '').trim().toLowerCase();
+  if (value.startsWith('[')) {
+    const end = value.indexOf(']');
+    return end === -1 ? value : value.slice(0, end + 1);
+  }
+  return value.split(':')[0];
+}
+
+function originHostHeader(origin) {
+  try {
+    const url = new URL(String(origin || ''));
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+    return url.host.toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Passwordless email sign-in is only for this computer: not a request the
+ * door already calls "another computer", and only a localhost Host or the
+ * install's own APP_ORIGIN.
+ */
+export function isDeveloperSignInOnThisComputer(req, { env = process.env } = {}) {
+  if (isFromAnotherComputer(req, { env })) return false;
+  const host = String(req?.get?.('host') ?? req?.headers?.host ?? '').trim().toLowerCase();
+  if (LOOPBACK_HOSTS.has(hostName(host))) return true;
+  const allowed = originHostHeader(env.APP_ORIGIN);
+  return allowed !== '' && host === allowed;
 }
 
 export async function findOrCreateAuthorizedUser({
@@ -114,9 +168,8 @@ function hostnameOf(host) {
 
 /**
  * One-click sign-in for censaiOS on this computer (the laptop install). Only
- * for a local_desktop server, only when developer sign-in isn't switched off,
- * and only for a request made on this same machine to a localhost address, so
- * a copy shared on the network (the PC's Docker stack) keeps its email sign-in.
+ * for a local_desktop server, only when that sign-in isn't switched off on
+ * purpose, and only from this same machine to a localhost address.
  */
 export function isLocalSignInAllowed(req, {
   env = process.env,
@@ -124,7 +177,8 @@ export function isLocalSignInAllowed(req, {
   oauthConfigured = false,
 } = {}) {
   if (runtimeMode !== RUNTIME_MODES.LOCAL_DESKTOP) return false;
-  if (!isDeveloperLoginAllowed({ env, runtimeMode, oauthConfigured })) return false;
+  if (String(env.CENSAI_ALLOW_DEVELOPER_LOGIN || '').trim().toLowerCase() === 'false') return false;
+  if (oauthConfigured && env.NODE_ENV === 'production') return false;
   if (!isLoopbackAddress(req?.socket?.remoteAddress)) return false;
   return LOCAL_HOSTNAMES.has(hostnameOf(req?.get?.('host') ?? req?.headers?.host));
 }

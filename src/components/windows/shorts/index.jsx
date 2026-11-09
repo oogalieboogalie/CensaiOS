@@ -5,6 +5,7 @@ import { Icon } from '../../Icons.jsx';
 import { windowMeta } from './meta.js';
 import { useShorts } from './useShorts.js';
 import { ShortsSources } from './ShortsSources.jsx';
+import { ShortsCategoryChips } from './ShortsCategoryChips.jsx';
 import { watchUrlFor } from '../../../lib/shorts/shortsFeed.js';
 import { webOnlyFrameSrc } from '../../../lib/frameSrc.js';
 
@@ -66,6 +67,7 @@ export function ShortsWindow({ win = {}, onUpdate }) {
             <button type="button" className="hb-shorts-icon-btn" title="Next short" aria-label="Next short" disabled={s.atEnd} onClick={() => s.step(1)}><Icon.Down size={16} /></button>
           </div>
         </div>
+        <ShortsCategoryChips source={s.source} onPick={s.choose} />
         {s.atEnd && s.length > 1 && (
           <div className="hb-shorts-end">End of this feed. <button type="button" className="hb-shorts-link" onClick={() => setSheet(true)}>Find more</button></div>
         )}

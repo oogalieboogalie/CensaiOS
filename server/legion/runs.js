@@ -1,13 +1,15 @@
 // Legion: running and remembering runs. A run lives in memory while it works
-// (the window polls its events) and is saved as run.json in its folder when
-// it ends, so the window can show it again after a restart.
+// (the window polls its events) and is saved as run.json in its folder, so
+// the window can show it again after a restart. Where it is goes in
+// state.json as it works, so a restart picks it up (server/legion/resume.js).
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ROLE_IDS } from './roles.js';
 import { cleanModelSpec } from './modelCall.js';
 import { runLegion } from './loop.js';
-import { parseSpecYaml } from './spec.js';
+import { parseSpecYaml, specToYaml } from './spec.js';
+import { STATE_FILE } from './checkpoint.js';
 import { openMemory } from './memory.js';
 import { legionRoot, makeRunFolders, pastLessons, readJson, runFolder, saveJson } from './workspace.js';
 
@@ -80,16 +82,17 @@ export function runningFor(userId) {
 /** Start a Legion in the background. Returns the run's summary. */
 export async function startRun({
   userId, account, goal, models, askFirst = true, spec = null, selfEducate = true, root = legionRoot(), runner = runLegion,
-  search = (query) => webSearch(userId, query), waitMs = QUESTION_WAIT_MS,
+  search = (query) => webSearch(userId, query), waitMs = QUESTION_WAIT_MS, resume = null,
 }) {
   forgetFinishedRuns();
-  const id = `${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+  // `resume` is a run picked up after a restart (server/legion/resume.js): same id, link and log.
+  const id = resume?.id || `${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
   const dir = runFolder(userId, id, root);
   const controller = new AbortController();
   // In the list before the first await, so a double click cannot start two.
   const run = {
-    id, userId, goal, models, dir, status: 'running', startedAt: new Date().toISOString(), events: [], controller,
-    viewToken: crypto.randomBytes(16).toString('hex'), saving: Promise.resolve(), saved: false,
+    id, userId, goal, models, dir, status: 'running', startedAt: resume?.startedAt || new Date().toISOString(), events: resume?.events || [], controller,
+    viewToken: resume?.viewToken || crypto.randomBytes(16).toString('hex'), saving: Promise.resolve(), saved: false,
   };
   live.set(id, run);
   const save = () => {
@@ -97,6 +100,16 @@ export async function startRun({
       .then(() => saveJson(path.join(dir, 'run.json'), { ...summary(run), reflection: run.outcome?.reflection || null, events: run.events }))
       .catch(() => undefined);
     return run.saving;
+  };
+  // Where the run is (server/legion/checkpoint.js), saved in the same queue as run.json so writes never cross.
+  const state = {
+    ...resume?.state, userId, goal, models, askFirst, selfEducate, personSpecYaml: spec ? specToYaml(spec) : null,
+    resumes: resume ? (Number(resume.state?.resumes) || 0) + 1 : 0,
+  };
+  const checkpoint = (point = {}) => {
+    const text = JSON.stringify(Object.assign(state, point, { savedAt: new Date().toISOString() }));
+    run.saving = run.saving.then(() => saveJson(path.join(dir, STATE_FILE), text)).catch(() => undefined);
+    return save();
   };
   const emit = (event) => {
     if (run.events.length < MAX_EVENTS) run.events.push({ at: Date.now(), ...event });
@@ -109,11 +122,12 @@ export async function startRun({
     live.delete(id);
     throw error;
   }
-  save();
+  checkpoint();
   const lessons = await pastLessons(path.dirname(dir));
   run.done = Promise.resolve()
     .then(() => runner({
       goal, models, account, dir, emit, signal: controller.signal, lessons, search, spec, selfEducate, memory: openMemory(path.dirname(dir)),
+      resume: resume?.state || null, checkpoint,
       askPerson: (questions, signal) => (askFirst ? waitForAnswer(run, signal, waitMs) : ''),
     }))
     .then((outcome) => { run.outcome = outcome; run.status = outcome.status; })

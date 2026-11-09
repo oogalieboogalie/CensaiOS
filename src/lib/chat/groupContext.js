@@ -39,3 +39,19 @@ export function withGroupContext(payloadMsgs, canvasGroups, allWins, agentId) {
     last,
   ];
 }
+
+/**
+ * Kinds of the windows sharing a canvas group with this agent: groups the
+ * agent is attached to, or that hold its chat window. The server pins the
+ * tools for some kinds (a CAD window keeps its CAD tools loaded) but only
+ * tools the agent was already given. Visual context, not authorization.
+ */
+export function groupWindowKinds(canvasGroups, allWins, agentId, chatWinId = null) {
+  const wins = allWins || [];
+  const chatWin = chatWinId ? wins.find(w => w.id === chatWinId) : null;
+  const kinds = new Set();
+  (canvasGroups || [])
+    .filter(g => (g.attachedAgents || []).includes(agentId) || (chatWin && centerInside(chatWin, g)))
+    .forEach(g => wins.filter(w => w.kind && centerInside(w, g)).forEach(w => kinds.add(w.kind)));
+  return [...kinds];
+}

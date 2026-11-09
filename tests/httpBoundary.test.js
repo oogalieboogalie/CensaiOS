@@ -12,12 +12,16 @@ describe('HTTP deployment boundary', () => {
       expect(isAllowedBrowserOrigin('http://localhost:5173', options)).toBe(false);
       expect(isAllowedBrowserOrigin('https://attacker.example', options)).toBe(false);
       expect(isAllowedBrowserOrigin('tauri://localhost', options)).toBe(false);
+      expect(isAllowedBrowserOrigin('http://tauri.localhost', options)).toBe(false);
     }
   });
 
-  test('local desktop keeps loopback and Tauri development origins', () => {
+  test('local desktop accepts Tauri and the configured origin, not every localhost port', () => {
     const options = { appOrigin: 'http://localhost:5173', runtimeMode: 'local_desktop' };
-    expect(isAllowedBrowserOrigin('http://127.0.0.1:3002', options)).toBe(true);
+    expect(isAllowedBrowserOrigin('http://localhost:5173', options)).toBe(true);
+    expect(isAllowedBrowserOrigin('http://127.0.0.1:3002', options)).toBe(false);
+    expect(isAllowedBrowserOrigin('http://localhost:49999', options)).toBe(false);
+    expect(isAllowedBrowserOrigin('http://tauri.localhost', options)).toBe(true);
     expect(isAllowedBrowserOrigin('tauri://localhost', options)).toBe(true);
     expect(isAllowedBrowserOrigin('https://attacker.example', options)).toBe(false);
   });

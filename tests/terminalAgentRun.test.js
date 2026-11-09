@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import http from 'http';
+import os from 'os';
 import { WebSocket } from 'ws';
 import { attachTerminalServer } from '../server/terminal/sessions.js';
 import { sessions } from '../server/terminal/shared.js';
@@ -29,6 +30,10 @@ describe('headless opencode argv', () => {
 describe('agent backend validation', () => {
   test('requires a project folder without touching docker', async () => {
     await expect(startAgentBackend('', 'do things', {})).rejects.toThrow(/project folder/);
+  });
+
+  test('refuses a folder outside the projects folder without touching docker', async () => {
+    await expect(startAgentBackend(os.tmpdir(), 'read the keys', {})).rejects.toThrow(/projects folder/);
   });
 });
 

@@ -3,6 +3,7 @@ import fs from 'fs';
 import * as pty from 'node-pty';
 import { isDockerAvailable, ensureSandbox, sandboxShellArgv, sandboxAgentArgv, OPENCODE_RUN_MAX_PROMPT_CHARS } from '../sandbox/index.js';
 import { log, ptyOptions } from './shared.js';
+import { directoryInsideProjectsRoot } from './projectCwd.js';
 import { folderKind, safeReason } from './logSafe.js';
 
 export { folderKind, safeReason };
@@ -80,8 +81,8 @@ export async function startBackend(cwd, hasProject, size, owner = null) {
  * a plain-English error (shown in the terminal) when unavailable.
  */
 export async function startAgentBackend(cwd, prompt, size) {
-  if (!cwd) {
-    throw new Error('Agent run needs a project folder. Mount this terminal to a project first.');
+  if (!cwd || !directoryInsideProjectsRoot(cwd)) {
+    throw new Error('Agent run needs a project folder inside the projects folder. Mount this terminal to a project first.');
   }
   const task = String(prompt || '').trim();
   if (!task) throw new Error('Agent run requires a non-empty prompt');

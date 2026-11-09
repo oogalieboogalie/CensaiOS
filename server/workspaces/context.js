@@ -86,14 +86,19 @@ export async function resolveWorkspaceContext(db, {
   userId,
   workspaceId,
   createIfMissing = false,
-}) {
+  roles,
+} = {}) {
   if (!workspaceId) return ensureUserDefaultWorkspace(db, userId);
   const existing = await db.query(
     'SELECT id, tenant_id FROM workspaces WHERE id = $1',
     [workspaceId]
   );
   if (existing.rows[0]) {
-    const context = await requireWorkspaceMember(db, { userId, workspaceId });
+    const context = await requireWorkspaceMember(db, {
+      userId,
+      workspaceId,
+      ...(roles ? { roles } : {}),
+    });
     return attachTenantId(context, existing.rows[0].tenant_id);
   }
   if (!createIfMissing) {

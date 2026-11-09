@@ -19,11 +19,16 @@ function cleanEntry(raw) {
   return { stars, lines, code, at: Number(raw?.at) || 0 };
 }
 
+// A seat on the shared board can hold anything a teammate wrote there, so a
+// name that isn't words shows as "Player" and a solved list that isn't a list
+// counts as none.
 export function cleanCoder(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const solved = {};
-  for (const [id, entry] of Object.entries(raw.solved || {})) if (LEVEL_IDS.has(id)) solved[id] = cleanEntry(entry);
-  return { name: String(raw.name || 'Player').slice(0, 40), solved };
+  const levels = raw.solved && typeof raw.solved === 'object' ? raw.solved : {};
+  for (const [id, entry] of Object.entries(levels)) if (LEVEL_IDS.has(id)) solved[id] = cleanEntry(entry);
+  const name = typeof raw.name === 'string' && raw.name.trim() ? raw.name.slice(0, 40) : 'Player';
+  return { name, solved };
 }
 
 export function readCoders(win) {

@@ -19,6 +19,7 @@ import { reportTyping, reportTextPreview } from '../lib/collaboration/liveText.j
 import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
 import { useCaretReporter, useTeammateCarets } from '../lib/collaboration/useTextCarets.js';
 import { TeammateCarets } from './collaboration/TeammateCarets.jsx';
+import { WhoTypedWhat } from './doc/WhoTypedWhat.jsx';
 import { mergeWithLatest } from '../lib/collaboration/sharedTextEdit.js';
 import { localDay } from '../lib/schedule/plainWords.js';
 import { caretToRaw, pointToRaw } from './doc/docTextMap.js';
@@ -57,6 +58,9 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
   useCaretReporter(textareaRef, win.id, 'text', isEditing && !offBoard);
   const teammateCarets = useTeammateCarets(win.id, 'text', isEditing && !offBoard);
   const showComments = !win.maximized && win.showComments === true;
+  // Who typed what: only on this screen, never for a file kept off the board.
+  const [showWriters, setShowWriters] = React.useState(false);
+  const writersOn = showWriters && !offBoard && !win.isGithub;
 
   const annotations = React.useMemo(() => win.annotations || [], [win.annotations]);
   // Rendered/Source filter: code files (or anything misdetected) opened as
@@ -67,7 +71,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
   const copySource = React.useCallback((codeText) => {
     navigator.clipboard?.writeText(codeText)?.catch?.(() => {});
   }, []);
-  useNoteHighlights(win.id, bodyRef, text, placedNotes, activeAnnId, !loading && !isEditing && !sourceView && !showGraph);
+  useNoteHighlights(win.id, bodyRef, text, placedNotes, activeAnnId, !loading && !isEditing && !sourceView && !writersOn && !showGraph);
   // A click opens the editor with the caret where you clicked; it lands at the
   // end when the click missed the words.
   React.useEffect(() => {
@@ -121,6 +125,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
           win.filePath && { id: 'save', label: saving ? 'Saving…' : 'Save', title: canSave ? 'Save file' : 'Save stays off until the file loads', disabled: saving || !canSave, onSelect: () => { if (canSave && !saving) saveFile(); } },
         ]}
         menu={[
+          !win.isGithub && !offBoard && { id: 'writers', label: writersOn ? 'Hide who typed what' : 'Show who typed what', onSelect: () => setShowWriters(!writersOn) },
           !win.isGithub && { id: 'source', label: sourceView ? 'Show rendered markdown' : 'Show raw source', onSelect: () => onUpdate({ sourceView: !sourceView }) },
           { id: 'graph', label: showGraph ? 'Hide note graph' : 'Show note graph', onSelect: () => setShowGraph(!showGraph) },
           { id: 'calendar', label: 'Schedule a review', onSelect: () => {
@@ -202,6 +207,8 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
               </>
             ) : !text.trim() ? (
               !loadError && <div style={{ color: 'var(--ink-faint)' }}>Click anywhere to start writing</div>
+            ) : writersOn ? (
+              <WhoTypedWhat windowId={win.id} />
             ) : sourceView ? (
               <CodeBlock code={text} lang={sourceLang} onCopyCode={copySource} />
             ) : (

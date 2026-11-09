@@ -4,6 +4,9 @@ module.exports = {
   // default 5s when the suite runs as a full gate shard under pre-push load.
   testTimeout: 30_000,
   setupFilesAfterEnv: ['<rootDir>/tests/setupTests.js'],
+  // Each run's temp files go in one folder that is deleted at the end (tests/tmpGlobalSetup.cjs).
+  globalSetup: '<rootDir>/tests/tmpGlobalSetup.cjs',
+  globalTeardown: '<rootDir>/tests/tmpGlobalTeardown.cjs',
   testMatch: ['<rootDir>/**/*.test.js', '<rootDir>/**/*.test.jsx'],
   testPathIgnorePatterns: [
     '/node_modules/',

@@ -81,6 +81,15 @@ export const useCommentStore = create((set, get) => ({
     return result.comment;
   },
 
+  translate: async (commentId, pair) => {
+    const { mode, workspaceId } = get();
+    const result = mode === 'guest'
+      ? await api.translateGuestComment(commentId, pair)
+      : await api.translateBoardComment(workspaceId, commentId, pair);
+    get().upsert(result.comment);
+    return result.comment;
+  },
+
   setTool: (tool) => set({ tool: Boolean(tool), ...(tool ? { panelOpen: true } : {}) }),
   setPanelOpen: (panelOpen) => set({ panelOpen: Boolean(panelOpen), ...(panelOpen ? {} : { tool: false, draft: null }) }),
   openThread: (openThreadId) => set({ openThreadId, panelOpen: true, draft: null }),

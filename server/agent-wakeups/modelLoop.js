@@ -2,7 +2,7 @@ import {
   callModel, createModelAccessContext, resolveChatModelConfig, workspaceUsageSink,
 } from '../aiGateway/index.js';
 import { executeTool, filterToolsForAgent } from '../tools.js';
-import { offeredToolNames, toolNotOfferedResult } from '../tools/rbac/offeredTools.js';
+import { offeredToolNames, runWithOfferedTools, toolNotOfferedResult } from '../tools/rbac/offeredTools.js';
 
 const MAX_ROUNDS = 20;
 
@@ -15,6 +15,14 @@ export async function runWakeModel({ agent, systemPrompt, userPrompt, wakeId, me
   const tools = await filterToolsForAgent(agent.id, { workspaceId, userId });
   // Only the tools offered here run (server/tools/rbac/offeredTools.js).
   const offered = offeredToolNames(tools);
+  return runWithOfferedTools(tools, async () => wakeOffered({
+    agent, tools, offered, accessContext, config, systemPrompt, userPrompt, wakeId, messageId, workspaceId, userId,
+  }));
+}
+
+async function wakeOffered({
+  agent, tools, offered, accessContext, config, systemPrompt, userPrompt, wakeId, messageId, workspaceId, userId,
+}) {
   const messages = [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },

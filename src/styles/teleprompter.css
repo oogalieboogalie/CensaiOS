@@ -7,6 +7,7 @@
 .hb-teleprompter-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent-line); }
 .hb-teleprompter-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .hb-teleprompter-hint { color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-teleprompter-writers { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3); font-size: var(--text-lg); line-height: 1.6; }
 
 .hb-prompter { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); outline: none; }
 .hb-prompter-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; container-type: size; }

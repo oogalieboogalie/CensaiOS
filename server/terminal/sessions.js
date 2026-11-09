@@ -5,16 +5,14 @@ import { startCliBackend, terminalCliAdapter } from './cliBackend.js';
 import { publishWorkspaceEvent } from '../collaboration/workspaceHub.js';
 import { filterAgentChunk, flushAgentCarry, agentTailText } from './agentOutput.js';
 import { defaultAuthenticate } from '../ws/agentRegistry.js';
+import { rejectUpgradeUnlessOwnOrigin } from '../ws/upgradeOrigin.js';
 import {
   authorizeTerminalConnection,
   rejectTerminalUpgrade,
   TERMINAL_WS_PATH,
   terminalSessionKey,
 } from './access.js';
-import { 
-  log, sessions, resolveTerminalCwd, safeJsonSend, broadcast, appendScrollback,
-  AGENT_IDLE_REAP_MS, REAP_GRACE_MS
-} from './shared.js';
+import { log, sessions, resolveTerminalCwd, safeJsonSend, broadcast, appendScrollback, AGENT_IDLE_REAP_MS, REAP_GRACE_MS } from './shared.js';
 
 export function getTerminalSession(sessionId) {
   return sessions.get(sessionId) || null;
@@ -131,6 +129,7 @@ export function attachTerminalServer(server, options = {}) {
     try { requestUrl = new URL(request.url || '/', 'http://localhost'); }
     catch { rejectTerminalUpgrade(socket, { statusCode: 400 }); return; }
     if (requestUrl.pathname !== TERMINAL_WS_PATH) return;
+    if (rejectUpgradeUnlessOwnOrigin(request, socket)) return;
 
     Promise.resolve(authenticate(request))
       .then(actor => {

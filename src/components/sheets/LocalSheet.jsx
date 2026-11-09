@@ -6,6 +6,9 @@ import { hostOf } from '../../lib/research/researchApi.js';
 import { addColumn, addRows, cellValue, colLetter, normalizeSheet, pasteGrid, removeColumn, setCell, toTsv } from './sheetModel.js';
 import { useResearchFill } from './useResearchFill.js';
 import { getCollaborationClientId } from '../../lib/collaboration/clientIdentity.js';
+import { cellKey } from '../../lib/collaboration/cellSpots.js';
+import { useCellSpotReporter, useTeammateCells } from '../../lib/collaboration/useCellSpots.js';
+import { CellTeammates, teammateCellProps } from './CellTeammates.jsx';
 
 function ResearchColumnForm({ columns, onAdd, onCancel }) {
   const [name, setName] = React.useState('');
@@ -39,7 +42,8 @@ function ResearchColumnForm({ columns, onAdd, onCancel }) {
 // Tab right, Shift+Tab left, Enter down, Shift+Enter up.
 const MOVE_KEYS = { Tab: [1, 0], Enter: [0, 1] };
 
-function Cell({ row, column, editing, onEdit, onCommit, onPaste }) {
+// `people`: teammates typing in this cell right now, shown with their names.
+function Cell({ row, column, editing, onEdit, onCommit, onPaste, people }) {
   const cell = row.cells?.[column.id] || {};
   const done = React.useRef(false);
   React.useEffect(() => { if (editing) done.current = false; }, [editing]);
@@ -47,7 +51,8 @@ function Cell({ row, column, editing, onEdit, onCommit, onPaste }) {
   const finish = (value, move) => { if (done.current) return; done.current = true; onCommit(value, move); };
   if (editing) {
     return (
-      <td className="hb-sheet-cell" data-editing="true">
+      <td className="hb-sheet-cell" data-editing="true" {...teammateCellProps(people)}>
+        <CellTeammates people={people} />
         <input autoFocus defaultValue={cell.v || ''} aria-label={`${column.name} cell`}
           onPaste={(e) => {
             const text = e.clipboardData.getData('text');
@@ -66,7 +71,8 @@ function Cell({ row, column, editing, onEdit, onCommit, onPaste }) {
     );
   }
   return (
-    <td className="hb-sheet-cell" data-status={cell.status || undefined} onClick={onEdit} title={cell.srcTitle || undefined}>
+    <td className="hb-sheet-cell" data-status={cell.status || undefined} onClick={onEdit} title={cell.srcTitle || undefined} {...teammateCellProps(people)}>
+      <CellTeammates people={people} />
       <span className="hb-sheet-v">{cell.status === 'working' ? 'Searching…' : cell.v || (cell.status === 'not found' ? 'Not found' : '')}</span>
       {cell.src && (
         <a className="hb-sheet-src" href={cell.src} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
@@ -95,6 +101,9 @@ export function LocalSheet({ win, onUpdate, readOnly = false }) {
   const [editing, setEditing] = React.useState(null); // { rowId, colId }
   const [adding, setAdding] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  // Teammates see which cell you type in, and you see theirs (only the spot goes out).
+  const teammates = useTeammateCells(win.id);
+  useCellSpotReporter(win.id, readOnly ? null : editing);
 
   // A sheet made by a recipe (Compare and price) runs its Research columns
   // once, in the browser of the person who asked; teammates watch it fill.
@@ -167,7 +176,7 @@ export function LocalSheet({ win, onUpdate, readOnly = false }) {
               <tr key={row.id}>
                 <th className="hb-sheet-rownum hb-lh-mono" scope="row">{r + 1}</th>
                 {sheet.columns.map((c) => (
-                  <Cell key={c.id} row={row} column={c}
+                  <Cell key={c.id} row={row} column={c} people={teammates.get(cellKey(row.id, c.id))}
                     editing={!readOnly && editing?.rowId === row.id && editing?.colId === c.id}
                     onEdit={() => !readOnly && setEditing({ rowId: row.id, colId: c.id })}
                     onCommit={(value, move) => commitCell(row.id, c.id, value, move)}

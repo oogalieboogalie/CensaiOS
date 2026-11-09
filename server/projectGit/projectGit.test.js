@@ -376,7 +376,8 @@ describe('files that hold keys stay out of versions and off GitHub', () => {
     git(dir, 'add', '-A');
     git(dir, '-c', 'user.name=Made Up', '-c', 'user.email=made-up@example.com', 'commit', '-qm', 'Made-up side version');
     git(dir, 'checkout', '-q', 'main');
-    git(dir, 'merge', '-q', '--no-ff', '--no-commit', 'side');
+    // A merge needs a committer even with --no-commit; GitHub's runners have none set.
+    git(dir, '-c', 'user.name=Made Up', '-c', 'user.email=made-up@example.com', 'merge', '-q', '--no-ff', '--no-commit', 'side');
     write(dir, 'merge.key');
     git(dir, 'add', 'merge.key');
     git(dir, '-c', 'user.name=Made Up', '-c', 'user.email=made-up@example.com', 'commit', '-qm', 'Made-up merge');

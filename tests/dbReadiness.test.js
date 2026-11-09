@@ -85,8 +85,15 @@ jest.unstable_mockModule('../server/auctionWatcher/schema.js', () => ({
 jest.unstable_mockModule('../server/ownCalendar/schema.js', () => ({
   ensureOwnCalendarSchema: jest.fn(async () => {}),
 }));
+
+jest.unstable_mockModule('../server/signInDomains/schema.js', () => ({
+  ensureSignInDomainSchema: jest.fn(async () => {}),
+}));
 jest.unstable_mockModule('../server/invites/schema.js', () => ({
   ensureBoardInviteSchema: jest.fn(async () => {}),
+}));
+jest.unstable_mockModule('../server/tokens/schema.js', () => ({
+  ensureInviteTokenSchema: jest.fn(async () => {}),
 }));
 jest.unstable_mockModule('../server/research/schema.js', () => ({
   ensureResearchSchema: jest.fn(async () => {}),
