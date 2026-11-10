@@ -3,6 +3,9 @@ import { IMAGE_STUDIO_MODELS } from './constants.js';
 import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
 import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
+import { ImageStudioWhoTypedButton, ImageStudioWhoTypedPane } from './ImageStudioWhoTyped.jsx';
+
+const BUTTONS = { display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' };
 
 export function ImageStudioPrompt({
   winId,
@@ -20,8 +23,10 @@ export function ImageStudioPrompt({
   useSharedCaret(promptRef, words.prompt, React.useMemo(() => ({ id: winId, field: 'prompt' }), [winId]));
   useSharedCaret(notesRef, words.notes, React.useMemo(() => ({ id: winId, field: 'imageNotes' }), [winId]));
   // Teammates' cursors in both boxes, with their names, and ours for them.
-  useCaretReporter(promptRef, winId, 'prompt');
-  useCaretReporter(notesRef, winId, 'imageNotes', expanded);
+  // "Who typed what" puts both boxes away; ours goes out again once back.
+  const [writersOn, setWritersOn] = React.useState(false);
+  useCaretReporter(promptRef, winId, 'prompt', !writersOn);
+  useCaretReporter(notesRef, winId, 'imageNotes', expanded && !writersOn);
   const promptCarets = useTeammateCarets(winId, 'prompt');
   const notesCarets = useTeammateCarets(winId, 'imageNotes', expanded);
 
@@ -30,7 +35,8 @@ export function ImageStudioPrompt({
   return (
     <section className="hb-is-prompt">
       <div className="hb-is-row">
-        <div className="hb-is-box hb-is-box-main">
+        {writersOn && <ImageStudioWhoTypedPane windowId={winId} field="prompt" label="prompt" />}
+        {!writersOn && <div className="hb-is-box hb-is-box-main">
           <input
             ref={promptRef}
             aria-label="Image prompt"
@@ -40,7 +46,7 @@ export function ImageStudioPrompt({
             className="hb-is-input hb-is-input-main"
           />
           <TeammateCarets boxRef={promptRef} carets={promptCarets} text={words.prompt} />
-        </div>
+        </div>}
         <select
           aria-label="Image generation model"
           value={state.model}
@@ -61,15 +67,19 @@ export function ImageStudioPrompt({
           {loading ? 'Generating' : 'Generate'}
         </button>
       </div>
-      <button
-        type="button"
-        aria-expanded={expanded}
-        onClick={() => setExpanded(open => !open)}
-        className="hb-is-more"
-      >
-        Additional Instructions
-      </button>
-      {expanded && (
+      <div style={BUTTONS}>
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded(open => !open)}
+          className="hb-is-more"
+        >
+          Additional Instructions
+        </button>
+        <ImageStudioWhoTypedButton on={writersOn} onToggle={() => setWritersOn(on => !on)} />
+      </div>
+      {expanded && writersOn && <ImageStudioWhoTypedPane windowId={winId} field="imageNotes" label="additional instructions" />}
+      {expanded && !writersOn && (
         <div className="hb-is-box">
           <textarea
             ref={notesRef}

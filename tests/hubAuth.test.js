@@ -66,6 +66,8 @@ describe('Hub Auth Routes', () => {
     app = express();
     app.use(express.json());
     app.use((req, _res, next) => {
+      const forced = req.get('x-test-remote-address');
+      if (forced) Object.defineProperty(req.socket, 'remoteAddress', { value: String(forced) });
       req.session = { regenerate: (cb) => cb(), save: (cb) => cb() };
       next();
     });
@@ -279,6 +281,19 @@ describe('Hub Auth Routes', () => {
       const res = await request(app).post('/api/hub-auth/login').send({});
       expect(res.status).toBe(400);
       expect(res.body.error).toContain('required');
+    });
+
+    test('a LAN socket still reaches the password check', async () => {
+      query.mockResolvedValueOnce({ rows: [] });
+      const res = await request(app)
+        .post('/api/hub-auth/login')
+        .set('Host', 'localhost:3002')
+        .set('X-Forwarded-For', '127.0.0.1')
+        .set('X-Test-Remote-Address', '192.168.1.40')
+        .send({ username: 'nonexist', password: 'ValidPass123!' });
+      expect(res.status).toBe(401);
+      expect(res.body.error || '').not.toMatch(/developer login is disabled/i);
+      expect(query).toHaveBeenCalled();
     });
 
     test('rejects invalid username', async () => {

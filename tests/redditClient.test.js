@@ -27,4 +27,116 @@ describe('redditListing', () => {
       code: 'REDDIT_BAD_SUBREDDIT',
     });
   });
+
+  test('a blocked unsigned response tells the person to use the desktop app', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: false,
+      status: 403,
+      text: async () => '<html>blocked by network security</html>',
+    }));
+    const resolve = async () => [{ address: '1.2.3.4', family: 4 }];
+    await expect(redditListing('pics', 'hot', { fetchImpl, resolve })).rejects.toMatchObject({
+      code: 'REDDIT_BLOCKED',
+      statusCode: 403,
+      message: 'Reddit blocked the public feed from this server. Open the desktop app to view Reddit.',
+    });
+  });
+
+  test('a page that is not a feed is the same clear block, not a parser error', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => '<html>whoa there, pardner</html>',
+    }));
+    const resolve = async () => [{ address: '1.2.3.4', family: 4 }];
+    await expect(redditListing('pics', 'hot', { fetchImpl, resolve })).rejects.toMatchObject({
+      code: 'REDDIT_BLOCKED',
+      message: 'Reddit blocked the public feed from this server. Open the desktop app to view Reddit.',
+    });
+  });
+
+  test('a private subreddit stays a refusal, not a server block', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: false,
+      status: 403,
+      text: async () => JSON.stringify({ reason: 'private', error: 403 }),
+    }));
+    const resolve = async () => [{ address: '1.2.3.4', family: 4 }];
+    await expect(redditListing('pics', 'hot', { fetchImpl, resolve })).rejects.toMatchObject({
+      code: 'REDDIT_REFUSED',
+      message: 'Reddit refused that feed (private, banned or restricted).',
+    });
+  });
+
+  test('a quarantined subreddit is a refusal, not a server block', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: false,
+      status: 403,
+      text: async () => JSON.stringify({ reason: 'quarantined', error: 403 }),
+    }));
+    const resolve = async () => [{ address: '1.2.3.4', family: 4 }];
+    await expect(redditListing('pics', 'hot', { fetchImpl, resolve })).rejects.toMatchObject({
+      code: 'REDDIT_REFUSED',
+      statusCode: 403,
+      message: 'Reddit refused that feed (private, banned or restricted).',
+    });
+  });
+
+  test('a reason-less JSON 403 is a server block', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: false,
+      status: 403,
+      text: async () => JSON.stringify({ error: 403 }),
+    }));
+    const resolve = async () => [{ address: '1.2.3.4', family: 4 }];
+    await expect(redditListing('pics', 'hot', { fetchImpl, resolve })).rejects.toMatchObject({
+      code: 'REDDIT_BLOCKED',
+      statusCode: 403,
+      message: 'Reddit blocked the public feed from this server. Open the desktop app to view Reddit.',
+    });
+  });
+
+  test('a JSON 403 with a blank reason is a server block', async () => {
+    const resolve = async () => [{ address: '1.2.3.4', family: 4 }];
+    for (const reason of ['', '   ']) {
+      const fetchImpl = jest.fn(async () => ({
+        ok: false,
+        status: 403,
+        text: async () => JSON.stringify({ reason, error: 403 }),
+      }));
+      await expect(redditListing('pics', 'hot', { fetchImpl, resolve })).rejects.toMatchObject({
+        code: 'REDDIT_BLOCKED',
+        statusCode: 403,
+        message: 'Reddit blocked the public feed from this server. Open the desktop app to view Reddit.',
+      });
+    }
+  });
+
+  test('an HTML 401 is a server block', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: false,
+      status: 401,
+      text: async () => '<html>blocked</html>',
+    }));
+    const resolve = async () => [{ address: '1.2.3.4', family: 4 }];
+    await expect(redditListing('pics', 'hot', { fetchImpl, resolve })).rejects.toMatchObject({
+      code: 'REDDIT_BLOCKED',
+      statusCode: 401,
+      message: 'Reddit blocked the public feed from this server. Open the desktop app to view Reddit.',
+    });
+  });
+
+  test('a JSON 401 that names a private reason is a refusal', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: false,
+      status: 401,
+      text: async () => JSON.stringify({ reason: 'private', error: 401 }),
+    }));
+    const resolve = async () => [{ address: '1.2.3.4', family: 4 }];
+    await expect(redditListing('pics', 'hot', { fetchImpl, resolve })).rejects.toMatchObject({
+      code: 'REDDIT_REFUSED',
+      statusCode: 401,
+      message: 'Reddit refused that feed (private, banned or restricted).',
+    });
+  });
 });

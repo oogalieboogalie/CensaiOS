@@ -19,7 +19,7 @@ sovereignTestRouter.get('/', async (req, res) => {
       res.json(result.rows);
     } catch (fallbackErr) {
       log.error('could not read agents', { code: safeErrorCode(fallbackErr) });
-      res.status(500).json({ error: fallbackErr.message });
+      res.status(500).json({ error: 'Could not reach the agents table.' });
     }
   }
 });
@@ -48,7 +48,7 @@ sovereignTestRouter.post('/', async (req, res) => {
       res.json(result.rows[0]);
     } catch (fallbackErr) {
       log.error('could not add an agent', { code: safeErrorCode(fallbackErr) });
-      res.status(500).json({ error: fallbackErr.message });
+      res.status(500).json({ error: 'Could not reach the agents table.' });
     }
   }
 });

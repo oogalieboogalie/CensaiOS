@@ -33,6 +33,7 @@ import { ensureSkillSetSchema } from '../skillSets/schema.js';
 import { ensureBlueprintSchema } from '../blueprints/schema.js';
 import { ensureAgentNetworkSchema } from '../agentNetwork/schema.js';
 import { ensureSocialSchema } from '../social/schema.js';
+import { ensureAgentGithubTaskSchema } from '../github/agentTaskSchema.js';
 import { ensureLessonSchema } from '../lessons/schema.js';
 import { ensureHostedAgentSchema } from '../hostedAgents/schema.js';
 import { ensureAuctionWatcherSchema } from '../auctionWatcher/schema.js';
@@ -88,6 +89,7 @@ async function probeDb() {
   await ensureBlueprintSchema(pool);
   await ensureAgentNetworkSchema(pool);
   await ensureSocialSchema(pool);
+  await ensureAgentGithubTaskSchema(pool);
   await ensureLessonSchema(pool);
   await ensureHostedAgentSchema(pool);
   await ensureAuctionWatcherSchema(pool);

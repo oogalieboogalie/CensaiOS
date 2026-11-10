@@ -1,5 +1,4 @@
 /** @jest-environment jsdom */
-import React from 'react';
 import { jest } from '@jest/globals';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
@@ -9,6 +8,7 @@ const getPersonalWorkspace = jest.fn();
 const leaveWorkspace = jest.fn();
 
 const listShareLinks = jest.fn();
+const createShareLink = jest.fn();
 const inviteToBoard = jest.fn();
 const addressForOthers = jest.fn();
 
@@ -19,7 +19,7 @@ jest.unstable_mockModule('../src/lib/invites/index.js', () => ({
 }));
 
 jest.unstable_mockModule('../src/lib/api.js', () => ({
-  api: { getWorkspaceMembers, inviteWorkspaceMember, getPersonalWorkspace, leaveWorkspace, listShareLinks },
+  api: { getWorkspaceMembers, inviteWorkspaceMember, getPersonalWorkspace, leaveWorkspace, listShareLinks, createShareLink },
 }));
 jest.unstable_mockModule('../src/lib/store.js', () => ({
   useWorkspaceStore: (selector) => selector({ workspaceId: 'workspace-a', wins: [], canvasGroups: [] }),
@@ -77,13 +77,27 @@ describe('workspace sharing settings', () => {
     expect(screen.queryByText(/The invite is in their Inbox/)).toBeNull();
   });
 
-  test('with no email, makes a one-time join link at the address other devices use', async () => {
-    inviteToBoard.mockResolvedValue({ kind: 'link', code: 'c'.repeat(32), expiresAt: '2026-10-25T00:00:00.000Z' });
+  test('with no email, makes a one-time look link and copies it', async () => {
+    const token = 'c'.repeat(43);
+    createShareLink.mockResolvedValue({
+      link: { id: 'link-1', role: 'view' },
+      token,
+      url: `https://demo.trycloudflare.com/?join=${token}`,
+    });
     render(<WorkspaceSharingSection />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Make a link' }));
-    await waitFor(() => expect(inviteToBoard).toHaveBeenCalledWith('workspace-a', ''));
-    expect((await screen.findByLabelText('Join link')).value).toBe(`http://192.168.1.50:3004/?invite=${'c'.repeat(32)}`);
+    fireEvent.click(await screen.findByRole('button', { name: 'Make link and copy' }));
+    await waitFor(() => expect(createShareLink).toHaveBeenCalledWith('workspace-a', {
+      oneTime: true,
+      role: 'view',
+      scopeKind: 'board',
+      scopeId: null,
+      agentBudgetTokens: 0,
+      expiresInHours: 7 * 24,
+    }));
+    expect(inviteToBoard).not.toHaveBeenCalled();
+    expect((await screen.findByLabelText('Join link')).value).toBe(`https://demo.trycloudflare.com/?join=${token}`);
     expect(screen.getByText(/It works once, for 7 days/)).toBeTruthy();
+    expect(screen.getByText(/not change the board/)).toBeTruthy();
     expect(screen.queryByText(/Turn on Settings, Open anywhere/)).toBeNull();
   });
 

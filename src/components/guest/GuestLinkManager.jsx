@@ -1,7 +1,7 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
 import { useWorkspaceStore } from '../../lib/store.js';
-import { shareLinkFor as guestLinkUrl } from '../../lib/workspace/shareBase.js';
+import { PUBLIC_LINK_RETRY, publishedJoinUrl, rememberPublishedOrigin } from '../../lib/workspace/publishedLink.js';
 import { useBoardEvent } from '../../lib/collaboration/boardEvents.js';
 
 import {
@@ -66,7 +66,8 @@ export function GuestLinkManager({ workspaceId }) {
         agentBudgetTokens: Number(form.agentBudgetTokens) || 0,
       });
       rememberToken(result.link.id, result.token);
-      setCreated({ link: result.link, url: guestLinkUrl(result.token) });
+      if (!rememberPublishedOrigin(result.url)) throw new Error(PUBLIC_LINK_RETRY);
+      setCreated({ link: result.link, url: publishedJoinUrl(result.token) });
       update({ passcode: '' });
       await load();
     } catch (error) {
@@ -93,7 +94,10 @@ export function GuestLinkManager({ workspaceId }) {
     setMessage('');
     try {
       const result = await api.controlLiveShow(workspaceId, { action, ...extra });
-      if (action === 'start') rememberToken(result.link.id, result.token);
+      if (action === 'start') {
+        rememberToken(result.link.id, result.token);
+        if (!rememberPublishedOrigin(result.url)) throw new Error(PUBLIC_LINK_RETRY);
+      }
       await load();
     } catch (error) {
       setMessage(error.message);
@@ -168,7 +172,7 @@ export function GuestLinkManager({ workspaceId }) {
                   <span>{link.joinCount || 0} joined{link.connected ? ` · ${link.connected} here now` : ''}</span>
                   {link.expiresAt && link.active && <span>· until {new Date(link.expiresAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>}
                   <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                    {link.active && <button type="button" disabled={!token} title={token ? 'Copy link' : 'Made on another device; create a new link to copy it here'} onClick={() => copyText(guestLinkUrl(token)).then((ok) => setMessage(ok ? 'Link copied.' : 'Copy failed.'))} style={{ ...ghostButton, opacity: token ? 1 : 0.5 }}>Copy</button>}
+                    {link.active && <button type="button" disabled={!token} title={token ? 'Copy link' : 'Made on another device; create a new link to copy it here'} onClick={() => { const url = publishedJoinUrl(token); if (!url) { setMessage(PUBLIC_LINK_RETRY); return; } copyText(url).then((ok) => setMessage(ok ? 'Link copied.' : 'Copy failed.')); }} style={{ ...ghostButton, opacity: token ? 1 : 0.5 }}>Copy</button>}
                     <button type="button" onClick={() => setOpenJoins(openJoins === link.id ? null : link.id)} style={ghostButton}>Who joined</button>
                     {link.active && <button type="button" data-testid="share-revoke" onClick={() => revoke(link)} style={{ ...ghostButton, color: 'var(--danger)' }}>Turn off</button>}
                   </span>
@@ -196,7 +200,7 @@ export function GuestLinkManager({ workspaceId }) {
               <span style={{ color: 'var(--ink-soft)' }}>{spectators} watching</span>
               <button type="button" data-testid="go-live-end" onClick={() => live('end')} style={{ ...ghostButton, marginLeft: 'auto' }}>End show</button>
             </div>
-            {tokens[liveLink.id] && <CopyField url={guestLinkUrl(tokens[liveLink.id])} testId="go-live-url" />}
+            {tokens[liveLink.id] && <CopyField url={publishedJoinUrl(tokens[liveLink.id])} testId="go-live-url" />}
             <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 'var(--text-xs)', color: 'var(--ink)' }}>
               <input type="checkbox" data-testid="go-live-stage" checked={liveLink.stage} onChange={(event) => live('stage', { linkId: liveLink.id, stage: event.target.checked })} />
               Stage: only show windows marked public

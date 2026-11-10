@@ -67,6 +67,25 @@ export const gitTools = [
   {
     type: 'function',
     function: {
+      name: 'create_github_issue',
+      description: 'Hand a coding job to the GitHub coding agent on the repository (@grok by default, or @claude). Files an issue with Goal / Steps / Done when that the agent builds into a pull request. You get a message in this chat when that pull request opens and when it merges; then run read_app_log and check the fix.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Short issue title' },
+          goal: { type: 'string', description: 'What should be true when the job is done, in plain words' },
+          steps: { type: 'array', items: { type: 'string' }, description: 'The steps to build it, in order' },
+          acceptance: { type: 'array', items: { type: 'string' }, description: 'Checks that prove it is done' },
+          worker: { type: 'string', enum: ['grok', 'claude'], description: 'Which coding agent builds it (defaults to grok)' },
+          repo: { type: 'string', description: 'Repository in owner/repo format (defaults to CENSAI_AGENT_TASK_REPO)' },
+        },
+        required: ['title', 'goal', 'steps', 'acceptance'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'github_comment_issue',
       description: 'Add a comment to an existing GitHub issue.',
       parameters: {

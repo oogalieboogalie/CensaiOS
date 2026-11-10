@@ -96,4 +96,21 @@ describe('Reddit window', () => {
       redditSource: { type: 'subreddit', subreddit: 'AskReddit', sort: 'hot', name: 'r/AskReddit' },
     });
   });
+
+  test('shows the server block message instead of a blank feed', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({
+        error: 'Reddit blocked the public feed from this server. Open the desktop app to view Reddit.',
+        code: 'REDDIT_BLOCKED',
+      }),
+    }));
+    await act(async () => {
+      render(<RedditWindow win={{ id: 'r5', redditSource: { type: 'subreddit', subreddit: 'pics', sort: 'hot', name: 'r/pics' } }} onUpdate={jest.fn()} />);
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toBe('Reddit blocked the public feed from this server. Open the desktop app to view Reddit.');
+    });
+  });
 });

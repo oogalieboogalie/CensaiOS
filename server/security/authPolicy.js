@@ -1,6 +1,7 @@
+import net from 'node:net';
 import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
 import { currentSignInDomains, emailDomain } from '../signInDomains/store.js';
-import { isFromAnotherComputer } from '../webOs/door.js';
+import { cameThroughLocalProxy } from '../webOs/localProxy.js';
 
 function parseBoolean(value) {
   return ['1', 'true', 'yes', 'on'].includes(String(value || '').trim().toLowerCase());
@@ -93,10 +94,44 @@ export function isDeveloperLoginAllowed({
   return !(oauthConfigured && env.NODE_ENV === 'production');
 }
 
-const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
+function isLoopbackAddress(address) {
+  const value = String(address || '').trim().toLowerCase();
+  if (value === '::1') return true;
+  const v4 = value.startsWith('::ffff:') ? value.slice('::ffff:'.length) : value;
+  if (net.isIP(v4) !== 4) return false;
+  return v4.startsWith('127.');
+}
 
-function hostName(host) {
-  const value = String(host || '').trim().toLowerCase();
+const PROXY_HEADERS = [
+  'x-forwarded-for',
+  'forwarded',
+  'x-real-ip',
+  'x-forwarded-host',
+  'x-forwarded-proto',
+  'cf-connecting-ip',
+  'true-client-ip',
+  'via',
+  'tailscale-user-login',
+];
+
+function headerValue(req, name) {
+  if (typeof req?.get === 'function') {
+    const viaGet = req.get(name);
+    if (viaGet !== undefined && viaGet !== null) return viaGet;
+  }
+  const headers = req?.headers;
+  if (!headers || typeof headers !== 'object') return undefined;
+  const wanted = name.toLowerCase();
+  const key = Object.keys(headers).find((item) => item.toLowerCase() === wanted);
+  return key === undefined ? undefined : headers[key];
+}
+
+function carriesProxyHeader(req) {
+  return PROXY_HEADERS.some((name) => headerValue(req, name) !== undefined);
+}
+
+function hostName(req) {
+  const value = String(headerValue(req, 'host') || '').trim().toLowerCase();
   if (value.startsWith('[')) {
     const end = value.indexOf(']');
     return end === -1 ? value : value.slice(0, end + 1);
@@ -104,27 +139,25 @@ function hostName(host) {
   return value.split(':')[0];
 }
 
-function originHostHeader(origin) {
-  try {
-    const url = new URL(String(origin || ''));
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
-    return url.host.toLowerCase();
-  } catch {
-    return '';
-  }
+function isLoopbackHostName(name) {
+  if (name === 'localhost' || name === '::1' || name === '[::1]') return true;
+  return net.isIP(name) === 4 && name.startsWith('127.');
 }
 
 /**
- * Passwordless email sign-in is only for this computer: not a request the
- * door already calls "another computer", and only a localhost Host or the
- * install's own APP_ORIGIN.
+ * Passwordless email sign-in is only for a connection from this machine.
+ * A tunnel (ssh -R, socat, nginx, Caddy, Tailscale, cloudflared) also
+ * arrives on a loopback socket. Any proxy header, an empty header included,
+ * or a Host that is not localhost / 127.x / [::1], is refused before the
+ * socket is checked. The socket then has to be loopback (127.0.0.0/8, ::1,
+ * or ::ffff:127.x).
  */
-export function isDeveloperSignInOnThisComputer(req, { env = process.env } = {}) {
-  if (isFromAnotherComputer(req, { env })) return false;
-  const host = String(req?.get?.('host') ?? req?.headers?.host ?? '').trim().toLowerCase();
-  if (LOOPBACK_HOSTS.has(hostName(host))) return true;
-  const allowed = originHostHeader(env.APP_ORIGIN);
-  return allowed !== '' && host === allowed;
+export function isDeveloperSignInOnThisComputer(req) {
+  if (carriesProxyHeader(req)) return false;
+  const host = hostName(req);
+  if (!host) return false;
+  if (!isLoopbackHostName(host)) return false;
+  return isLoopbackAddress(req?.socket?.remoteAddress);
 }
 
 export async function findOrCreateAuthorizedUser({
@@ -155,11 +188,6 @@ export async function findOrCreateAuthorizedUser({
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 
-function isLoopbackAddress(address) {
-  const value = String(address || '');
-  return value === '::1' || /^(?:::ffff:)?127\.\d+\.\d+\.\d+$/.test(value);
-}
-
 function hostnameOf(host) {
   const value = String(host || '').trim().toLowerCase();
   if (value.startsWith('[')) return value.slice(0, value.indexOf(']') + 1);
@@ -179,6 +207,9 @@ export function isLocalSignInAllowed(req, {
   if (runtimeMode !== RUNTIME_MODES.LOCAL_DESKTOP) return false;
   if (String(env.CENSAI_ALLOW_DEVELOPER_LOGIN || '').trim().toLowerCase() === 'false') return false;
   if (oauthConfigured && env.NODE_ENV === 'production') return false;
+  // A reverse proxy on this computer connects from 127.0.0.1. That is not
+  // the owner's window, so one-click sign-in stays off the public address.
+  if (cameThroughLocalProxy(req)) return false;
   if (!isLoopbackAddress(req?.socket?.remoteAddress)) return false;
   return LOCAL_HOSTNAMES.has(hostnameOf(req?.get?.('host') ?? req?.headers?.host));
 }

@@ -143,4 +143,22 @@ describe('WebSocket upgrades require this app origin', () => {
       await new Promise((resolve) => server.close(resolve));
     }
   });
+
+  test.each([
+    'http://127.0.0.1:3002',
+    'http://[::1]:3002',
+  ])('terminal accepts loopback twin %s when the server origin is localhost:3002', async (origin) => {
+    process.env.APP_ORIGIN = 'http://localhost:3002';
+    const [, path, setup] = paths[0];
+    const authenticate = jest.fn(async () => ({ userId: '1' }));
+    const { server, port } = await listen((httpServer) => setup(httpServer, authenticate));
+    try {
+      const status = await upgradeResult(port, path, { origin });
+      expect(authenticate).toHaveBeenCalled();
+      expect(status).toBe('open');
+    } finally {
+      clearTerminalSessions();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
 });

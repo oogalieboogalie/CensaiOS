@@ -15,6 +15,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
+import { cameThroughLocalProxy } from './localProxy.js';
 
 const FILE_NAME = 'web-os.json';
 const DEFAULTS = Object.freeze({ open: false, address: '' });
@@ -146,9 +147,11 @@ function isLoopbackAddress(address) {
  *     of whoever connects, so anything but this computer itself counts;
  *  3. a page opened by a home-network name that is not this copy's own
  *     APP_ORIGIN (a second guard for an old compose file).
+ *  4. a reverse proxy on this computer (Tailscale Funnel) connected to
+ *     127.0.0.1. The public address must not get one-click sign-in.
  */
 export function isFromAnotherComputer(req, { env = process.env, runtimeMode = getRuntimeMode() } = {}) {
-  if (cameThroughDoor(req)) return true;
+  if (cameThroughDoor(req) || cameThroughLocalProxy(req)) return true;
   const remote = req?.socket?.remoteAddress;
   if (runtimeMode === RUNTIME_MODES.LOCAL_DESKTOP && env.CENSAI_IN_CONTAINER !== '1'
     && remote && !isLoopbackAddress(remote)) return true;

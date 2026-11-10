@@ -45,6 +45,8 @@ function buildApp() {
   // Minimal session stub mirroring authRateLimiting.test.js — the real session
   // middleware is irrelevant to the dbReady check we're testing here.
   app.use((req, _res, next) => {
+    const forced = req.get('x-test-remote-address');
+    if (forced) Object.defineProperty(req.socket, 'remoteAddress', { value: String(forced) });
     req.session = {
       regenerate: (cb) => cb && cb(),
       save: (cb) => cb && cb(),
@@ -101,33 +103,36 @@ describe('/api/auth/developer dbReady guard', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
-  test('refuses a LAN host even when the dev flag is on, and still allows localhost', async () => {
+  test('a LAN socket is refused on the developer route even when the headers say localhost', async () => {
+    isReady = true;
+    process.env.CENSAI_ALLOW_DEVELOPER_LOGIN = 'true';
+    const res = await request(buildApp())
+      .post('/api/auth/developer')
+      .set('Host', 'localhost:3002')
+      .set('X-Forwarded-For', '127.0.0.1')
+      .set('X-Test-Remote-Address', '192.168.1.40')
+      .send({ email: 'alma@example.com', name: 'Alma' });
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/disabled/i);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  test('a loopback socket with a forwarding header is refused on the developer route', async () => {
     isReady = true;
     process.env.CENSAI_ALLOW_DEVELOPER_LOGIN = 'true';
     const previousOrigin = process.env.APP_ORIGIN;
     process.env.APP_ORIGIN = 'http://localhost:3002';
-    query
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ count: 0 }] })
-      .mockResolvedValueOnce({ rows: [{ id: 1, email: 'alma@example.com', name: 'alma', role: 'admin' }] });
-
     try {
-      const lan = await request(buildApp())
-        .post('/api/auth/developer')
-        .set('Host', '192.168.1.23:3002')
-        .send({ email: 'alma@example.com', name: 'Alma' });
-      expect(lan.status).toBe(403);
-      expect(lan.body.error).toMatch(/disabled/i);
-      expect(lan.body.user).toBeUndefined();
-      expect(query).not.toHaveBeenCalled();
-
+      // supertest connects from the loopback socket. A tunnel does too, and
+      // adds X-Forwarded-For. That must not sign in.
       const local = await request(buildApp())
         .post('/api/auth/developer')
-        .set('Host', '127.0.0.1:3002')
+        .set('Host', 'localhost:3002')
+        .set('X-Forwarded-For', '203.0.113.50')
         .send({ email: 'alma@example.com', name: 'Alma' });
-      expect(local.status).toBe(200);
-      expect(local.body.ok).toBe(true);
-      expect(local.body.user.role).toBe('admin');
+      expect(local.status).toBe(403);
+      expect(local.body.error).toMatch(/disabled/i);
+      expect(query).not.toHaveBeenCalled();
     } finally {
       if (previousOrigin === undefined) delete process.env.APP_ORIGIN;
       else process.env.APP_ORIGIN = previousOrigin;

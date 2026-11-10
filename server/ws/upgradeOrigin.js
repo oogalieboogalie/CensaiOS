@@ -1,5 +1,5 @@
 import { createLogger } from '../logger.js';
-import { isAllowedBrowserOrigin } from '../security/httpBoundary.js';
+import { isAllowedBrowserOrigin, isAllowedRequestHost, originHasUserinfo } from '../security/httpBoundary.js';
 import { isJestRun } from '../security/testShortcut.js';
 import { doorAllowsOrigin } from '../webOs/door.js';
 
@@ -22,9 +22,20 @@ export function upgradeOriginAllowed(request, {
   env = process.env,
 } = {}) {
   const origin = request?.headers?.origin;
+  if (originHasUserinfo(origin)) return false;
+  const host = request?.headers?.host;
+  const originText = Array.isArray(origin) ? '' : origin;
+  const hostText = Array.isArray(host) ? host.join(',') : host;
+  const doorOk = Boolean(originText) && doorAllowsOrigin(originText, hostText);
+  if (!isAllowedRequestHost(host, {
+    appOrigin,
+    apiOrigin: env.API_ORIGIN,
+    nodeEnv: env.NODE_ENV,
+    doorOk,
+  })) return false;
   if (!origin) return isJestRun(env);
-  const host = request.headers.host;
-  if (doorAllowsOrigin(origin, host)) return true;
+  if (Array.isArray(origin)) return false;
+  if (doorOk) return true;
   return isAllowedBrowserOrigin(origin, { appOrigin });
 }
 

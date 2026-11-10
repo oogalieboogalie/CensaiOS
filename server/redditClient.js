@@ -9,9 +9,35 @@ import {
 
 const TIMEOUT_MS = 15000;
 const UA = 'censaiOS:reddit-window:1.0 (public feed; +https://github.com/oogalieboogalie/Homebase)';
+// Cloud hosts usually get a block page, not a listing, because this call is unsigned.
+const BLOCKED_MESSAGE = 'Reddit blocked the public feed from this server. Open the desktop app to view Reddit.';
+const REFUSED_MESSAGE = 'Reddit refused that feed (private, banned or restricted).';
 
 function fail(message, why, statusCode = 502, code = 'REDDIT_REQUEST_FAILED') {
   return Object.assign(new Error(message), { why, statusCode, code });
+}
+
+async function responseBody(res) {
+  if (typeof res.text === 'function') {
+    try { return await res.text(); } catch { return ''; }
+  }
+  if (typeof res.json === 'function') {
+    try { return JSON.stringify(await res.json()); } catch { return ''; }
+  }
+  return '';
+}
+
+function asJson(raw) {
+  try {
+    const value = JSON.parse(raw);
+    return value && typeof value === 'object' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function hasRefusalReason(listing) {
+  return typeof listing?.reason === 'string' && listing.reason.trim() !== '';
 }
 
 function listingUrl(source, limit) {
@@ -58,11 +84,17 @@ export async function redditListing(subreddit, sort = 'hot', { limit = 25, fetch
   }
 
   if (res.status === 404) throw fail(`No subreddit named r/${clean.subreddit || 'reddit'}.`, 'missing', 404, 'REDDIT_NOT_FOUND');
-  if (res.status === 403) throw fail('Reddit refused that feed (private or banned).', 'refused', 403, 'REDDIT_REFUSED');
   if (res.status === 429) throw fail('Reddit asked us to slow down. Try again in a minute.', 'rate limited', 429, 'REDDIT_RATE_LIMIT');
-  if (!res.ok) throw fail('Reddit feed did not load. Try again.', `status ${res.status}`);
 
-  const listing = await res.json();
+  const listing = asJson(await responseBody(res));
+  if (res.status === 401 || res.status === 403) {
+    if (hasRefusalReason(listing)) {
+      throw fail(REFUSED_MESSAGE, 'refused', res.status, 'REDDIT_REFUSED');
+    }
+    throw fail(BLOCKED_MESSAGE, 'blocked', res.status, 'REDDIT_BLOCKED');
+  }
+  if (!res.ok) throw fail('Reddit feed did not load. Try again.', `status ${res.status}`);
+  if (!listing) throw fail(BLOCKED_MESSAGE, 'blocked', 502, 'REDDIT_BLOCKED');
   return {
     source: clean,
     url: feedUrlFor(clean),

@@ -132,7 +132,7 @@ export const sandboxLocalFilesystem = requireLocalFilesystem;
  */
 export const ROUTE_MOUNTS = Object.freeze([
   // ----- data routes (auth-guard is mounted separately in routers.js) -----
-  { method: 'use', path: '/api/sovereignTest', router: sovereignTestRouter },
+  { method: 'use', path: '/api/sovereignTest', middleware: [requireLocalFilesystem, ownerForChanges], router: sovereignTestRouter },
   { method: 'use', path: '/api/calendar', router: calendarRouter },
   { method: 'use', path: '/api/my-calendar', router: myCalendarRouter },
   { method: 'use', path: '/api/sign-in-domains', router: signInDomainsRouter },

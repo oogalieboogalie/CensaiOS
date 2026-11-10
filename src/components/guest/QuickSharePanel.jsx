@@ -2,7 +2,7 @@ import React from 'react';
 import { api } from '../../lib/api.js';
 import { useBoardEvent } from '../../lib/collaboration/boardEvents.js';
 import { NEEDS_OWN_CENSAI, onTryItBoard } from '../../lib/demo/needsOwnCensai.js';
-import { isThisComputerOnly, readShareBase, shareLinkFor, writeShareBase } from '../../lib/workspace/shareBase.js';
+import { PUBLIC_LINK_RETRY, publishedJoinUrl, rememberPublishedOrigin } from '../../lib/workspace/publishedLink.js';
 import { copyText, readTokens, rememberToken } from './GuestLinkParts.jsx';
 
 // The board's Share button panel: pick "Can look" or "Can edit", make a link
@@ -31,27 +31,6 @@ function linkLine(link) {
   return `${ROLE_NAMES[link.role] || link.role} · ${link.scopeKind === 'board' ? 'whole board' : `one ${link.scopeKind}`} · ${people}`;
 }
 
-function AddressNote() {
-  const [editing, setEditing] = React.useState(false);
-  const [value, setValue] = React.useState(() => readShareBase());
-  const saved = readShareBase();
-  if (!isThisComputerOnly() && !saved && !editing) return null;
-  if (!editing) {
-    return (
-      <p className="hb-qs-note" data-testid="quick-share-address-note">
-        {saved ? <>Links start with <b>{saved}</b>. </> : <>This address only opens on this computer. </>}
-        <button type="button" className="hb-qs-link" onClick={() => setEditing(true)}>{saved ? 'Change' : 'Set the address people reach you at'}</button>
-      </p>
-    );
-  }
-  return (
-    <form className="hb-qs-address" onSubmit={(event) => { event.preventDefault(); setValue(writeShareBase(value)); setEditing(false); }}>
-      <input aria-label="Address people reach this censaiOS at" placeholder="https://board.example.com" value={value} onChange={(event) => setValue(event.target.value)} />
-      <button type="submit" className="hb-qs-btn">Save</button>
-    </form>
-  );
-}
-
 export function QuickSharePanel({ workspaceId, onMoreOptions, onClose }) {
   const [role, setRole] = React.useState('view');
   const [links, setLinks] = React.useState([]);
@@ -78,9 +57,11 @@ export function QuickSharePanel({ workspaceId, onMoreOptions, onClose }) {
     try {
       const result = await api.createShareLink(workspaceId, { role, scopeKind: 'board', scopeId: null, agentBudgetTokens: 0 });
       rememberToken(result.link.id, result.token);
-      const url = shareLinkFor(result.token);
+      if (!rememberPublishedOrigin(result.url)) throw new Error(PUBLIC_LINK_RETRY);
+      const url = publishedJoinUrl(result.token);
       const copied = await copyText(url);
       setMade({ id: result.link.id, url, copied });
+      if (result.addressChanged) setMessage('The public address changed. Copy this link again. The old one no longer opens.');
       await load();
     } catch (error) {
       setMessage(shareError(error, false));
@@ -106,7 +87,7 @@ export function QuickSharePanel({ workspaceId, onMoreOptions, onClose }) {
         <b>Share this board</b>
         <button type="button" className="hb-qs-x" aria-label="Close" onClick={onClose}>×</button>
       </header>
-      <p className="hb-qs-note">Anyone with the link joins under a name they pick. No account needed. They never see your keys, vault, memory or other boards.</p>
+      <p className="hb-qs-note">Anyone with the link opens it in a browser, types a name, and gets this board only. No account. They never see your keys, vault, memory or other boards.</p>
       {onTryItBoard() && <p className="hb-qs-note" data-testid="needs-own-censai">{NEEDS_OWN_CENSAI}</p>}
       <div className="hb-qs-choices" role="radiogroup" aria-label="What people with the link can do">
         {CHOICES.map((choice) => (
@@ -128,14 +109,13 @@ export function QuickSharePanel({ workspaceId, onMoreOptions, onClose }) {
           <span className="hb-qs-note">{made.copied ? 'Copied. Paste it to anyone.' : 'Select the link and copy it.'}</span>
         </div>
       )}
-      <AddressNote />
       {links.length > 0 && (
         <div className="hb-qs-list" data-testid="quick-share-links">
           <div className="hb-qs-sub">Links that work now</div>
           {links.map((link) => (
             <div className="hb-qs-row" key={link.id} data-testid="quick-share-link-row">
               <span className="hb-qs-row-text">{linkLine(link)}</span>
-              {tokens[link.id] && <button type="button" className="hb-qs-btn" onClick={() => copyText(shareLinkFor(tokens[link.id])).then((ok) => setMessage(ok ? 'Link copied.' : 'Copy failed.'))}>Copy</button>}
+              {tokens[link.id] && <button type="button" className="hb-qs-btn" onClick={() => { const url = publishedJoinUrl(tokens[link.id]); if (!url) { setMessage(PUBLIC_LINK_RETRY); return; } copyText(url).then((ok) => setMessage(ok ? 'Link copied.' : 'Copy failed.')); }}>Copy</button>}
               <button type="button" className="hb-qs-btn" data-danger onClick={() => switchOff(link)} data-testid="quick-share-off">Switch off</button>
             </div>
           ))}

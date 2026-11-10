@@ -33,8 +33,39 @@ docker compose up -d --build
 
 censaiOS answers only the computer it runs on. `docker-compose.yml` publishes the app as
 `127.0.0.1:3002`, the database as `127.0.0.1:5433` and vector memory as `127.0.0.1:6335` and
-`127.0.0.1:6336`, so nothing on your Wi-Fi can reach them. Email sign-in has no password, so this
-is what keeps someone in the next room from signing in as you.
+`127.0.0.1:6336`, so nothing on your Wi-Fi can reach them.
+
+The email form on that page is passwordless developer sign-in (`POST /api/auth/developer`). It is
+not an email-and-password account. It only succeeds for a loopback connection whose Host is a
+loopback name (localhost, 127.0.0.1, or [::1]) and that carries no forwarding headers. A browser on the
+host arrives through the Docker bridge, and a tunnel arrives on loopback with those headers, so
+both answer 403. From the host, run this once. It signs in inside the container, with Host set to
+localhost, and prints a one-time code. Open `http://localhost:3002/?pair=` plus that code in the
+browser on this computer.
+
+```bash
+docker compose exec -T homebase sh -c 'jar=/tmp/censai-owner.jar; touch "$jar"; chmod 600 "$jar"; origin="${APP_ORIGIN:-http://localhost:3002}"; curl -sS -c "$jar" -b "$jar" -H "Host: localhost:3002" -H "Origin: $origin" -H "Content-Type: application/json" -d "{\"email\":\"owner@this-computer.local\",\"name\":\"Owner\"}" -X POST http://127.0.0.1:3001/api/auth/developer --fail -o /dev/null && curl -sS --fail -c "$jar" -b "$jar" -H "Host: localhost:3002" -H "Origin: $origin" -H "Content-Type: application/json" -d "{}" -X POST http://127.0.0.1:3001/api/web-os/pair; rc=$?; rm -f "$jar"; exit $rc'
+```
+
+This command needs an `http://` `APP_ORIGIN`. The sign-in cookie is Secure when
+`APP_ORIGIN` starts with `https://`, so this curl to `http://127.0.0.1` does not
+keep it. Set `APP_ORIGIN=http://localhost:3002`, restart, sign in, then put the
+https origin back. Open the printed link before that second restart: the code
+lives only in the server's memory, and a restart drops one that has not been
+opened. A home-server install can skip that switch and run
+`bash scripts/home-server.sh code`.
+
+The command sends `Host: localhost`. To open this copy by its LAN IP, set
+`APP_ORIGIN=http://<lan-ip>:3002` and `API_ORIGIN=http://localhost:3002` on the
+server (the second keeps the owner sign-in command working). In Docker, put
+`API_ORIGIN` next to `APP_ORIGIN`. Or use Open anywhere.
+
+The printed JSON has a `code` field. The link works once, for ten minutes.
+
+Anyone exposing the raw app port (a router port-forward, `ssh -R`, an nginx
+default config, or similar) must keep `CENSAI_ALLOW_DEVELOPER_LOGIN` off: a
+forward that sets `Host: localhost` and sends no proxy headers looks exactly
+like the owner's own computer.
 
 Your other computers come in on port `3004`, through **Open anywhere**: on the main computer open
 **Settings > Open anywhere**, turn on **Let my other computers open censaiOS**, press **Add a

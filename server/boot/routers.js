@@ -22,6 +22,7 @@ import { hubAuthRouter } from '../routes/hubAuth.js';
 import { guestRouter } from '../routes/shareLinks.js';
 import { lessonGuestRouter } from '../routes/lessonsGuest.js';
 import { lessonBillingRouter } from '../routes/lessonsBilling.js';
+import { githubAgentWebhookRouter } from '../routes/githubAgentWebhook.js';
 import { mountHealthProbes } from '../health/probes.js';
 import { requireAuthorizedSession } from '../security/sessionGuard.js';
 import { agentEndpointPublicRouter } from '../routes/agentEndpointsPublic.js';
@@ -34,6 +35,7 @@ import { apiBarRouter } from '../routes/apiBar.js';
 import { legionViewRouter } from '../routes/legion.js';
 import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
 import { isJestRun } from '../security/testShortcut.js';
+import { hubConfirmRedirect } from '../hubAccounts/confirmRedirect.js';
 
 export function mountRouters(app) {
   // Pre-guard: /api/auth and /api/hub-auth must come before the guard
@@ -63,6 +65,7 @@ export function mountRouters(app) {
   app.use('/api/guest', guestRouter);
   // Live lessons (spec 12): Stripe's webhook carries its own signature.
   app.use('/api/billing', lessonBillingRouter);
+  app.use('/api/webhooks', githubAgentWebhookRouter); // GitHub's signed call back for agents' coding jobs
   // Agent endpoints: apps outside censaiOS (MCP clients, scripts) call a
   // shared agent with an agent key instead of a sign-in.
   app.use('/api/mcp', agentEndpointPublicRouter);
@@ -75,6 +78,8 @@ export function mountRouters(app) {
   // Legion: what a Legion built, opened by its run's secret link in a sandbox
   // that sends no cookies (server/routes/legion.js).
   app.use('/api/legion-view', requireLocalFilesystem, legionViewRouter);
+  // The hub sign-up email's link (server/hubAccounts/confirmRedirect.js).
+  app.get('/confirm-email', hubConfirmRedirect);
 
   // Authentication guard for all other API endpoints. Express matches in
   // declaration order, so every subsequent `app.use('/api/...')` mount

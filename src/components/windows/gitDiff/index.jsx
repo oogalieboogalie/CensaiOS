@@ -10,6 +10,7 @@ import { SECRET_CHANGES } from '../../../../shared/files/fileProblems.js';
 import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
 import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
 import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
+import { GitDiffWhoTypedButton, GitDiffWhoTypedPane } from './GitDiffWhoTyped.jsx';
 
 export { windowMeta };
 
@@ -30,29 +31,34 @@ function PasteEditor({ id, before, after, onChange, onDone }) {
   useSharedCaret(beforeRef, before, React.useMemo(() => ({ id, field: 'diffBefore' }), [id]));
   useSharedCaret(afterRef, after, React.useMemo(() => ({ id, field: 'diffAfter' }), [id]));
   // Teammates' cursors in either box, with their names, and ours for them.
-  useCaretReporter(beforeRef, id, 'diffBefore');
-  useCaretReporter(afterRef, id, 'diffAfter');
+  // "Who typed what" puts both boxes away; ours goes out again once back.
+  const [writersOn, setWritersOn] = React.useState(false);
+  useCaretReporter(beforeRef, id, 'diffBefore', !writersOn);
+  useCaretReporter(afterRef, id, 'diffAfter', !writersOn);
   const beforeCarets = useTeammateCarets(id, 'diffBefore');
   const afterCarets = useTeammateCarets(id, 'diffAfter');
   return (
     <div className="gdv-split gdv-split--edit">
       <div className="gdv-pane gdv-pane--left">
         <label className="gdv-pane-label" htmlFor={`gdv-before-${id}`}>Before: paste the old version</label>
-        <div className="gdv-box">
+        {writersOn && <GitDiffWhoTypedPane windowId={id} field="diffBefore" label="Before" />}
+        {!writersOn && <div className="gdv-box">
           <textarea ref={beforeRef} id={`gdv-before-${id}`} className="gdv-input" spellCheck={false} value={before} data-testid="gdv-before"
             onChange={(e) => onChange({ diffBefore: e.target.value })} />
           <TeammateCarets boxRef={beforeRef} carets={beforeCarets} text={before} />
-        </div>
+        </div>}
       </div>
       <div className="gdv-divider" aria-hidden="true" />
       <div className="gdv-pane gdv-pane--right">
         <label className="gdv-pane-label" htmlFor={`gdv-after-${id}`}>After: paste the new version</label>
-        <div className="gdv-box">
+        {writersOn && <GitDiffWhoTypedPane windowId={id} field="diffAfter" label="After" />}
+        {!writersOn && <div className="gdv-box">
           <textarea ref={afterRef} id={`gdv-after-${id}`} className="gdv-input" spellCheck={false} value={after} data-testid="gdv-after"
             onChange={(e) => onChange({ diffAfter: e.target.value })} />
           <TeammateCarets boxRef={afterRef} carets={afterCarets} text={after} />
-        </div>
+        </div>}
       </div>
+      <GitDiffWhoTypedButton on={writersOn} onToggle={() => setWritersOn((v) => !v)} />
       <button type="button" className="gdv-btn gdv-btn--go" onClick={onDone} disabled={!before && !after} data-testid="gdv-compare">Compare</button>
     </div>
   );

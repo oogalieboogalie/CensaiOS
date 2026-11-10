@@ -73,6 +73,9 @@ jest.unstable_mockModule('../server/agentNetwork/schema.js', () => ({
 jest.unstable_mockModule('../server/social/schema.js', () => ({
   ensureSocialSchema: jest.fn(async () => {}),
 }));
+jest.unstable_mockModule('../server/github/agentTaskSchema.js', () => ({
+  ensureAgentGithubTaskSchema: jest.fn(async () => {}),
+}));
 jest.unstable_mockModule('../server/lessons/schema.js', () => ({
   ensureLessonSchema: jest.fn(async () => {}),
 }));

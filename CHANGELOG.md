@@ -17,6 +17,12 @@ tags.
 
 ### New
 
+- UI team nightly: Git Diff Viewer gets sunken panes, a tool bar, buttons that answer the pointer and readable green and red (Nov 10)
+- Agents hand coding jobs to the GitHub agent and hear back (Nov 10)
+- Show who typed what in the Image Generator prompt (Nov 10)
+- Show who typed what in Image Studio's prompt and instructions (Nov 9)
+- Rhythm Run: test-team module for one and two people (Nov 9)
+- Git Diff shows who typed what in Before and After (Nov 9)
 - Keep CAD tools loaded while a CAD window shares the agent's group (Nov 9)
 - Shorts category picker + Reddit canvas scroll window (Nov 9)
 - Slides: see who typed what in slide text boxes (crew realtime) (Nov 9)
@@ -125,6 +131,14 @@ tags.
 
 ### Fixed
 
+- Allow the desktop shell origin and keep userinfo out of the origin list (Nov 10)
+- Keep owner sign-in working on a LAN origin and refuse rewritten hosts (Nov 10)
+- Keep the route map inside its line budget (Nov 10)
+- One-time board links, and keep one-click sign-in off the public proxy (Nov 10)
+- Developer sign-in only trusts a loopback socket (Nov 9)
+- Keep board template apply to the owner and editors (Nov 9)
+- Treat loopback names as one origin when scheme and port match (Nov 9)
+- Say when Reddit blocks the public feed (Nov 9)
 - Refuse to drop an occupied desktop database (Nov 9)
 - Read schedule times and repeats on the configured clock (Nov 9)
 - LeadHound: full run proven with pictures, and the ice breaker's title and ask show their whole words again (crew leadhound) (Nov 9)

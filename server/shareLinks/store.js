@@ -5,6 +5,7 @@
 // fake and routes can pass the shared pool.
 
 import { SHARE_ROLES, SHARE_SCOPES } from './access.js';
+import { releaseTunnelIfIdle } from './tunnelLifecycle.js';
 import { createShareToken, hashPasscode, hashShareToken } from './tokens.js';
 
 const MAX_LABEL_LENGTH = 80;
@@ -142,6 +143,7 @@ export async function revokeShareLink(db, { workspaceId, linkId }) {
       RETURNING ${LINK_COLUMNS}`,
     [workspaceId, String(linkId)],
   );
+  if (rows[0]) await releaseTunnelIfIdle(db);
   return rows[0] || null;
 }
 
@@ -152,6 +154,7 @@ export async function revokeLiveLinks(db, { workspaceId }) {
       RETURNING id`,
     [workspaceId],
   );
+  await releaseTunnelIfIdle(db);
   return rows.map((row) => row.id);
 }
 

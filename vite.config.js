@@ -95,6 +95,8 @@ export default defineConfig({
         target: 'ws://127.0.0.1:3001',
         ws: true,
       },
+      // The hub sign-up email's link, when APP_ORIGIN is this dev server.
+      '/confirm-email': 'http://127.0.0.1:3001',
     },
   },
 });

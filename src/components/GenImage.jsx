@@ -5,6 +5,7 @@ import { logFailure } from '../lib/appLog/browserLog.js';
 import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
 import { useCaretReporter, useTeammateCarets } from '../lib/collaboration/useTextCarets.js';
 import { TeammateCarets } from './collaboration/TeammateCarets.jsx';
+import { GenImageWhoTypedButton, GenImageWhoTypedPane } from './GenImageWhoTyped.jsx';
 
 // The prompt is saved on the window as you type, so two people on one board
 // write it together, letter by letter, and each sees the other's words live.
@@ -23,8 +24,11 @@ export function GenImageWindow({ win, onUpdate }) {
   // A teammate's letters landing in the prompt keep your cursor where it was.
   useSharedCaret(inputRef, prompt, React.useMemo(() => ({ id: win.id, field: 'prompt' }), [win.id]));
   // Teammates' cursors in the prompt, with their names, and ours for them.
-  useCaretReporter(inputRef, win.id, 'prompt', editing);
-  const promptCarets = useTeammateCarets(win.id, 'prompt', editing);
+  // "Who typed what" puts the prompt away; ours goes out again once back.
+  const [writersOn, setWritersOn] = React.useState(false);
+  const typing = editing && !writersOn;
+  useCaretReporter(inputRef, win.id, 'prompt', typing);
+  const promptCarets = useTeammateCarets(win.id, 'prompt', typing);
 
   React.useEffect(() => { if (editing) setTimeout(() => inputRef.current?.focus(), 30); }, [editing]);
 
@@ -95,7 +99,7 @@ export function GenImageWindow({ win, onUpdate }) {
           {error && !loading && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 20, textAlign: 'center', color: 'var(--ps-red)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>Error: {error}</div>}
         </div>
         <div style={{ padding: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
-          {editing ? <>
+          {writersOn ? <GenImageWhoTypedPane windowId={win.id} /> : editing ? <>
             <div style={{ flex: 1, minWidth: 0, position: 'relative', display: 'flex' }}>
             <input ref={inputRef} value={prompt} aria-label="Image prompt" onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') setEditing(false); }}
@@ -116,6 +120,7 @@ export function GenImageWindow({ win, onUpdate }) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
           </>}
+          <GenImageWhoTypedButton on={writersOn} onToggle={() => setWritersOn(on => !on)} />
         </div>
       </div>
     </>

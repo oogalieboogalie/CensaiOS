@@ -11,7 +11,13 @@ import { isJestRun } from '../security/testShortcut.js';
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { cameThroughDoor, doorAllowsOrigin } from '../webOs/door.js';
-import { isAllowedBrowserOrigin } from '../security/httpBoundary.js';
+import {
+  configuredBrowserOrigin,
+  isAllowedBrowserOrigin,
+  isAllowedRequestHost,
+  originHasUserinfo,
+  statedBrowserOrigin,
+} from '../security/httpBoundary.js';
 
 const log = createLogger('security');
 
@@ -116,13 +122,15 @@ export function createAuthRateLimiter(options = {}) {
 //   No Origin, plus Authorization, X-Censai-Agent-Key or X-Api-Bar-Key — MCP,
 //     the API bar, and other non-browser clients. A session cookie alone is refused.
 //   POST /api/billing/stripe/webhook — Stripe signs the body and sends no Origin
+//   POST /api/webhooks/github-agent — GitHub signs the body (HMAC) and sends no Origin
 // Jest's own requests are not browsers (isJestRun). NODE_ENV=test alone is not.
 
 const STRIPE_WEBHOOK_PATH = '/api/billing/stripe/webhook';
-const LOCAL_HOST = /^(?:localhost|127\.0\.0\.1)(?::\d+)?$/;
+const GITHUB_AGENT_WEBHOOK_PATH = '/api/webhooks/github-agent';
 
 function explicitNonBrowser(req) {
   if (req.path === STRIPE_WEBHOOK_PATH) return true;
+  if (req.path === GITHUB_AGENT_WEBHOOK_PATH && req.method === 'POST') return true;
   if (String(req.get?.('authorization') || '').trim()) return true;
   if (String(req.get?.('x-censai-agent-key') || '').trim()) return true;
   if (String(req.get?.('x-api-bar-key') || '').trim()) return true;
@@ -130,7 +138,7 @@ function explicitNonBrowser(req) {
 }
 
 function parsedOrigin(value) {
-  try { return new URL(String(value)).origin.toLowerCase(); } catch { return ''; }
+  return statedBrowserOrigin(value);
 }
 
 export function createCsrfOriginGuard({ appOrigin, apiOrigin } = {}) {
@@ -138,36 +146,48 @@ export function createCsrfOriginGuard({ appOrigin, apiOrigin } = {}) {
   const back  = apiOrigin  ?? process.env.API_ORIGIN;   // set in prod if API lives on its own host
 
   const allowedOrigins = new Set();
-  const allowedHosts   = new Set();
   for (const raw of [front, back]) {
     if (!raw) continue;
-    let url;
-    try { url = new URL(String(raw)); } catch {
+    try { new URL(String(raw)); } catch {
       throw new Error(`[security] Origins must be absolute URLs (got "${raw}"). Fix APP_ORIGIN/API_ORIGIN.`); // fail fast at boot, not mid-request
     }
-    allowedOrigins.add(url.origin.toLowerCase());
-    allowedHosts.add(url.host.toLowerCase());
+    // Userinfo is not stripped into a match. An unusable setting adds nothing.
+    const origin = configuredBrowserOrigin(raw);
+    if (origin) allowedOrigins.add(origin);
   }
-
-  const devLocalAllowed = process.env.NODE_ENV !== 'production';
 
   return function csrfOriginGuard(req, res, next) {
     if (SAFE_METHODS.has(String(req.method || '').toUpperCase())) return next();
 
     const host = normalize(req.get('host')).replace(/\/$/, '');
     const originHeader = req.get('origin');
+    if (originHasUserinfo(originHeader)) {
+      return res.status(403).json({ error: 'Request origin is not allowed.' });
+    }
     const doorOk = Boolean(originHeader) && doorAllowsOrigin(originHeader, host);
 
     // Rule 4: Host must be someone we serve. Kills DNS rebinding at the door.
     // Dev still accepts a localhost Host because Vite and the API use different ports.
     // Open anywhere has its own check (a faked Host still cannot skip the code).
-    if (!allowedHosts.has(host) && !(devLocalAllowed && LOCAL_HOST.test(host)) && !doorOk && !cameThroughDoor(req)) {
+    if (!isAllowedRequestHost(host, {
+      appOrigin: front,
+      apiOrigin: back,
+      doorOk: doorOk || cameThroughDoor(req),
+    })) {
       return res.status(403).json({ error: 'Request host is not allowed.' });
     }
 
     const site = normalize(req.get('sec-fetch-site'));
     if (site === 'cross-site') {
       return res.status(403).json({ error: 'Cross-site request rejected.' });
+    }
+    // A rewritten or unreadable http host is not this page, even when the
+    // client claims Sec-Fetch-Site: same-origin. The desktop shell's tauri
+    // origin is not http; it stays on the allow-list and is checked here too,
+    // so that shortcut cannot skip it.
+    if (originHeader && !statedBrowserOrigin(originHeader)
+        && !isAllowedBrowserOrigin(originHeader, { appOrigin: front })) {
+      return res.status(403).json({ error: 'Request origin is not allowed.' });
     }
     // Another localhost port is same-site, not same-origin, and falls through.
     if (site === 'same-origin') return next();
@@ -179,9 +199,10 @@ export function createCsrfOriginGuard({ appOrigin, apiOrigin } = {}) {
     }
 
     const origin = parsedOrigin(originHeader);
-    // Same list as CORS: this app, origins the owner listed, and the desktop
-    // shell. Another localhost port is not on that list.
-    const browserOk = isAllowedBrowserOrigin(originHeader, { appOrigin: front });
+    // Same list as CORS, including the other two names for this machine when
+    // the scheme and port match. Another port is still a different page.
+    const browserOk = [front, back].some((configured) =>
+      configured && isAllowedBrowserOrigin(originHeader, { appOrigin: configured }));
     if (allowedOrigins.has(origin) || doorOk || browserOk) {
       if (origin) req.csrfOrigin = origin;
       return next();

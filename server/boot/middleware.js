@@ -17,6 +17,7 @@ import { PostgresSessionStore } from '../security/postgresSessionStore.js';
 import { createCsrfOriginGuard } from '../middleware/security.js';
 import { createSessionRoleRefresh } from '../security/sessionRole.js';
 import { doorAllowsOrigin } from '../webOs/door.js';
+import { proxyBrowserOriginAllowed } from '../webOs/localProxy.js';
 import { isPlaygroundRead } from './playgroundAssets.js';
 import { requestLogger } from './requestLog.js';
 
@@ -30,7 +31,7 @@ export function setupMiddleware(app) {
     // Open anywhere (server/webOs/door.js): only when the owner turns it on,
     // a computer on the home network may open this copy by its own address.
     // Same-address requests only; public names are refused (DNS rebinding).
-    if (isAllowedBrowserOrigin(origin, { appOrigin: APP_ORIGIN }) || doorAllowsOrigin(origin, req.get('host'))) {
+    if (isAllowedBrowserOrigin(origin, { appOrigin: APP_ORIGIN }) || doorAllowsOrigin(origin, req.get('host')) || proxyBrowserOriginAllowed(req, origin)) {
       callback(null, { origin: true, credentials: true });
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -43,6 +44,7 @@ export function setupMiddleware(app) {
   app.use('/api/chat', express.json({ limit: '32mb' }));
   // Stripe signs the exact bytes it sends, so its webhook keeps a raw body.
   app.use('/api/billing/stripe/webhook', express.raw({ type: '*/*', limit: '1mb' }));
+  app.use('/api/webhooks/github-agent', express.raw({ type: '*/*', limit: '2mb' })); // GitHub signs its bytes too
   app.use(express.json({ limit: '10mb' }));
 
   app.use(requestLogger(log));
