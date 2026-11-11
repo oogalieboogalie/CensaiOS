@@ -53,4 +53,10 @@ if [ "${CENSAI_SELF_SETUP:-}" = "1" ]; then
   node server/boot/freshDatabase.js
 fi
 
+# Revokes live in the state volume. That folder is gitignored and mounted
+# inside /app, so name it here instead of the container's home directory.
+if [ -z "${CENSAI_STATE_DIR:-}" ]; then
+  export CENSAI_STATE_DIR=/app/.homebase-state
+fi
+
 exec "$@"

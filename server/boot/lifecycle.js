@@ -24,6 +24,7 @@ import { initializeDynamicTools, initializeMcpTools, shutdownMcpTools } from '..
 import { startOutsideListener } from '../agentEndpoints/outsideListener.js';
 import { startRelayLink } from '../agentNetwork/relayLink.js';
 import { startDoorListener } from '../webOs/doorListener.js';
+import { startMergeBotWorker } from '../mergeBot/worker.js';
 
 const log = createLogger('server-lifecycle');
 
@@ -102,6 +103,7 @@ export async function startServer(app, options = {}) {
         startWorkflowTriggerWorker();
         startIdeaFoundryWorker();
         startAuctionWatcherWorker();
+        startMergeBotWorker();
         startDevServerReaper();
         // Agent endpoints' own port, the one a tunnel points at.
         startOutsideListener();

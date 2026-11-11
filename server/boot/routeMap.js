@@ -49,6 +49,7 @@ import { windowSdkRouter } from '../routes/windowSdk.js';
 import { julesRouter } from '../routes/jules.js';
 import { schedulesRouter } from '../routes/schedules.js';
 import { overseerRouter } from '../routes/overseer.js';
+import { confirmationsRouter } from '../routes/confirmations.js';
 import { vexRouter } from '../routes/vex/index.js';
 import { containersRouter } from '../routes/containers.js';
 import { dockerRouter } from '../routes/docker.js';
@@ -103,10 +104,8 @@ import { legionRouter } from '../routes/legion.js';
 import { requireFeatureFlag, requireLocalFilesystem } from '../middleware/runtimeMode.js';
 import { requireSystemAdminForChanges } from '../security/systemAdmin.js';
 
-// Routes that change this computer itself (Docker, dev servers and folder
-// mounts, git, Windows tasks, repo files, Legion's host browser) are for the
-// computer's owner only. Teammates can still look (GET), and board content
-// (windows, docs, sheets, chat) is board data with its own role checks.
+// Host changes (Docker, git, files, tasks) are for this computer's owner.
+// Teammates may look. Board content keeps its own role checks.
 const ownerForChanges = requireSystemAdminForChanges;
 
 /**
@@ -170,6 +169,7 @@ export const ROUTE_MOUNTS = Object.freeze([
   { method: 'use', path: '/api', router: windowSdkRouter },
   { method: 'use', path: '/api', router: julesRouter },
   { method: 'use', path: '/api', router: schedulesRouter },
+  { method: 'use', path: '/api', router: confirmationsRouter },
   { method: 'use', path: '/api', router: overseerRouter },
   { method: 'use', path: '/api/vex', middleware: [ownerForChanges], router: vexRouter },
   { method: 'use', path: '/api', router: containersRouter },

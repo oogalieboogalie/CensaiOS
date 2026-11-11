@@ -1,0 +1,99 @@
+.cf {
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: var(--space-5) var(--space-6);
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: var(--text-base);
+  line-height: 1.45;
+}
+
+.cf-lead,
+.cf-status,
+.cf-detail,
+.cf-title {
+  margin: 0;
+  color: var(--ink);
+}
+
+.cf-lead,
+.cf-status {
+  max-width: 38rem;
+}
+
+.cf-list {
+  list-style: none;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.cf-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: var(--border-width-1) solid var(--hairline);
+}
+
+.cf-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.cf-detail {
+  max-width: 38rem;
+  font-size: var(--text-base);
+}
+
+.cf-link {
+  color: var(--ink);
+  text-underline-offset: 3px;
+  padding: var(--space-1) 0;
+}
+
+.cf-btn {
+  min-height: var(--space-11);
+  min-width: var(--space-11);
+  margin-top: var(--space-2);
+  padding: 0 var(--space-4);
+  border: var(--border-width-1) solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font: inherit;
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+
+.cf-btn:hover {
+  background: var(--accent-ink);
+  color: var(--on-fill);
+}
+
+.cf-btn:active {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.cf-btn:focus-visible,
+.cf-link:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+.cf-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-btn {
+    transition: none;
+  }
+}

@@ -17,6 +17,8 @@ tags.
 
 ### New
 
+- Keep a merge-bot revoke, and only merge known-safe files (Nov 11)
+- Add a dry-run merge bot and a Needs you list (Nov 11)
 - UI team nightly: Git Diff Viewer gets sunken panes, a tool bar, buttons that answer the pointer and readable green and red (Nov 10)
 - Agents hand coding jobs to the GitHub agent and hear back (Nov 10)
 - Show who typed what in the Image Generator prompt (Nov 10)

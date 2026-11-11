@@ -46,6 +46,8 @@ describe('route map shadow contract', () => {
       '/jules/queue|/jules/sessions',
       '/schedules|/schedules|/schedules/:id|/schedules/:id',
       '/overseer/status|/overseer/start|/overseer/stop|/overseer/run',
+      // Needs you. Mounted on /api, limited to the signed-in owner.
+      '/confirmations|/confirmations|/confirmations/:id/done',
       '/containers|/containers/:id/logs|/containers/:id/restart|/containers/:id',
       '/kubernetes/status',
       // The sandbox router is no longer broad: it mounts at /api/sandbox

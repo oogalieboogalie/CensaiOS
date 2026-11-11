@@ -32,6 +32,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `collaboration` | What agents see of, and change in, shared windows (CAD and others). |
 | `commands` | Slash-style commands: definitions, registry, context and audit. |
 | `config` | Product identity settings. |
+| `confirmations` | The short list of things only the owner can decide. |
 | `context` | Per-request context (who is acting, for which request). |
 | `credentials` | Stored OAuth sign-ins. |
 | `design` | Figma and remix design steps. |
@@ -54,6 +55,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `local-dev-restarts` | Scheduled restarts of local dev servers. |
 | `marketplace` | The module marketplace: listings and name protection. |
 | `memory` | Agent memory: the core store, family brain, healing, journal and the chat prompt builder. |
+| `mergeBot` | The merge bot: squash-merges a cleared pull request, or leaves a risky one for the owner. |
 | `middleware` | Request middleware: security headers, rate limits, origin checks and runtime mode. |
 | `modelArena` | Model Arena: one prompt to several models side by side. |
 | `modules` | Canvas modules and the module model they ask. |
