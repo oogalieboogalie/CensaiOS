@@ -40,7 +40,7 @@ describe('route map shadow contract', () => {
       '/workspaces/:workspaceId/classes|/workspaces/:workspaceId/classes|/classes/:classId/roster|/classes/:classId/invite-codes|/classes/:classId/students/:enrollmentId/checkpoints/:checkpointId|/classes/:classId/students/:enrollmentId/hand|/classes/:classId/students/:enrollmentId/remove|/classes/:classId/end',
       '/image|/ideas/expand|/chat|/chat/capabilities|/chat/transcribe|/chat/speech|/group-chat',
       // agentsRouter: 23 sub-routers (incl. sub-agent helper +  communication + sales-leads + scout + leadhound + research + board templates + skill sets + blueprints + message router + Censai's plans).
-      'layers:23',
+      'layers:24',
       '/local-dev-restarts/notifications',
       '/window-sdk/scaffold|/window-sdk/new|/window-sdk/validate',
       '/jules/queue|/jules/sessions',

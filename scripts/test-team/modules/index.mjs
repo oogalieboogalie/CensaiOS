@@ -1,6 +1,14 @@
 // The modules the test team knows how to try. The scheduled run takes one a
-// night, in this order, so every module gets its turn; add a new module here
-// and it joins the rotation.
+// night, in this order, so every module gets its turn.
+//
+// A new module needs no line here. Any other file in this folder that exports
+// a module ({ id, label, run }) joins after the ones listed below, in name
+// order. That way two teams can each add a module at the same time without
+// both changing this file.
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import music from './music.mjs';
 import docker from './docker.mjs';
@@ -124,7 +132,33 @@ import arenaWhoTyped from './arenaWhoTyped.mjs';
 import slideBoxWhoTyped from './slideBoxWhoTyped.mjs';
 import rhythmRun from './rhythmRun.mjs';
 
-export const MODULES = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone, secretFiles, versions, grokSignIn, finderFiles, addNames, filesCatchUp, notSaved, githubReads, logsNameNoFiles, agentHiddenWords, toolsGiven, githubReview, githubFixRequest, appFolderFiles, windowImporter, projectList, teleprompter, writer, cadRecipe, listingWriter, layoutStory, windowTitle, photoText, gitDiffTyping, arenaTyping, legionTyping, imagePromptTyping, leadBriefTyping, ideaTagTyping, vectorText, imageStudioTyping, pdfTextTyping, modelNoteTyping, workflowStepTyping, localSiteTyping, writerTableTyping, whatsappTyping, stepReportTyping, ideaBulletTyping, leadDraftTyping, todoTextTyping, docCursors, prompterCursors, arenaCursors, legionCursors, diffCursors, studioCursors, genImageCursors, whatsappCursors, titleCursors, ideaTagCursors, vaultNoteCursors, leadBriefCursors, listingCursors, siteCursors, notesCursors, modelNoteCursors, writerCursors, leadDraftCursors, todoCursors, ideaBulletCursors, workflowStepCursors, stepReportCursors, writerCellCursors, slideBoxCursors, cadCursors, vectorCursors, pdfCursors, layoutCursors, photoVideoCursors, racetrack, inviteLinks, codeCursors, outboxCursors, sheetCellCursors, whoTyped, prompterWhoTyped, asteroids, codeWhoTyped, vaultWhoTyped, slideNotesWhoTyped, codeRobot, arenaWhoTyped, legionWhoTyped, slideBoxWhoTyped, rhythmRun];
+const LISTED = [music, docker, teamChat, framedPages, windowGroups, leadHound, figma, agentRegistry, chatCapabilities, liveBoard, sketchpad, sheets, marketplace, scheduler, sharedLink, terminal, doc, messageRouter, chatTwoPeople, aiResources, localSites, gitDiff, inbox, research, stepCards, slides, agentCompany, modelArena, boardMap, emptyBoard, unsavedChanges, joinNotices, vaultNotes, calendar, fileGone, secretFiles, versions, grokSignIn, finderFiles, addNames, filesCatchUp, notSaved, githubReads, logsNameNoFiles, agentHiddenWords, toolsGiven, githubReview, githubFixRequest, appFolderFiles, windowImporter, projectList, teleprompter, writer, cadRecipe, listingWriter, layoutStory, windowTitle, photoText, gitDiffTyping, arenaTyping, legionTyping, imagePromptTyping, leadBriefTyping, ideaTagTyping, vectorText, imageStudioTyping, pdfTextTyping, modelNoteTyping, workflowStepTyping, localSiteTyping, writerTableTyping, whatsappTyping, stepReportTyping, ideaBulletTyping, leadDraftTyping, todoTextTyping, docCursors, prompterCursors, arenaCursors, legionCursors, diffCursors, studioCursors, genImageCursors, whatsappCursors, titleCursors, ideaTagCursors, vaultNoteCursors, leadBriefCursors, listingCursors, siteCursors, notesCursors, modelNoteCursors, writerCursors, leadDraftCursors, todoCursors, ideaBulletCursors, workflowStepCursors, stepReportCursors, writerCellCursors, slideBoxCursors, cadCursors, vectorCursors, pdfCursors, layoutCursors, photoVideoCursors, racetrack, inviteLinks, codeCursors, outboxCursors, sheetCellCursors, whoTyped, prompterWhoTyped, asteroids, codeWhoTyped, vaultWhoTyped, slideNotesWhoTyped, codeRobot, arenaWhoTyped, legionWhoTyped, slideBoxWhoTyped, rhythmRun];
+
+const isModule = (m) => Boolean(m) && typeof m.id === 'string' && m.id !== '' && typeof m.run === 'function';
+
+/**
+ * The listed modules, then every other module found in the folder, in name
+ * order. Two modules with the same id stop the run: asking for one by name
+ * would only ever find the first.
+ */
+export function joinModules(listed, found) {
+  const all = [...listed];
+  for (const m of found) if (isModule(m) && !all.includes(m)) all.push(m);
+  const seen = new Set();
+  for (const m of all) {
+    if (seen.has(m.id)) throw new Error(`two test-team modules are called "${m.id}"`);
+    seen.add(m.id);
+  }
+  return all;
+}
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const found = [];
+for (const name of fs.readdirSync(HERE).filter((n) => n.endsWith('.mjs') && n !== 'index.mjs').sort()) {
+  found.push((await import(`./${name}`)).default);
+}
+
+export const MODULES = joinModules(LISTED, found);
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

@@ -197,10 +197,10 @@ describe('spec 3 composer model chip', () => {
     expect(chip.querySelector('[data-cap]')).toBeNull();
     fireEvent.click(chip);
     expect(screen.getByRole('menu', { name: 'Switch model' })).toBeInTheDocument();
-    const gpt = screen.getByRole('menuitemradio', { name: /^gpt-4o$/ });
+    const gpt = screen.getByRole('menuitemradio', { name: /^gpt-6\.1-sol$/ });
     expect(gpt.querySelector('[data-cap="image"]')).not.toBeNull();
     fireEvent.click(gpt);
-    expect(onSelect).toHaveBeenCalledWith('openai', 'gpt-4o');
+    expect(onSelect).toHaveBeenCalledWith('openai', 'gpt-6.1-sol');
     expect(screen.queryByRole('menu')).toBeNull();
   });
 });

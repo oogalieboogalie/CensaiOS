@@ -16,3 +16,9 @@ export const ANNOTATION_COLORS = {
   ask: { bg: 'oklch(0.94 0.06 240)', ink: 'oklch(0.32 0.12 240)', ring: 'oklch(0.66 0.15 240)' },
   assign: { bg: 'oklch(0.94 0.06 145)', ink: 'oklch(0.30 0.10 145)', ring: 'oklch(0.62 0.13 145)' },
 };
+
+/** A note kind's colours as CSS variables, for docWindow.css to paint with. */
+export const kindVars = (kind) => {
+  const c = ANNOTATION_COLORS[kind] || ANNOTATION_COLORS.comment;
+  return { '--doc-kind-bg': c.bg, '--doc-kind-ink': c.ink, '--doc-kind-ring': c.ring };
+};

@@ -99,6 +99,7 @@ export async function startServer(app, options = {}) {
         startSchedulerWorker();
         startAgentWakeupWorker();
         startAgentCardRunWorker();
+        import('../kraken/feeder.js').then((kraken) => kraken.feedEveryone()).catch(() => {});
         startOsvMirrorWorker();
         startWorkflowTriggerWorker();
         startIdeaFoundryWorker();

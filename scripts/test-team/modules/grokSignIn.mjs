@@ -32,6 +32,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { PAT, SAM, openBoard, readWindow, windowFrame } from '../../e2e/board.mjs';
 import { addFromMenu } from '../addMenu.mjs';
+import { MODEL_OPTIONS } from '../../../src/lib/agentModelOptions.js';
 
 // What the stand-in prints, as xAI's `grok login --device-auth` (1.0.70) does.
 const CODE = 'WXYZ-4821';
@@ -117,6 +118,10 @@ function checkSteps({ steps, href, target }) {
   return `the box says: ${steps.map(oneLine).join(' / ')}`;
 }
 
+// The Grok model Pat picks from the chip: the first one on the app's own list,
+// so this walk does not go stale when the list of models changes.
+export const GROK_MODEL = MODEL_OPTIONS.xai[0].value;
+
 export default {
   id: 'grokSignIn',
   label: 'Grok chat: sign in with your own Grok account',
@@ -141,14 +146,14 @@ export default {
         agentBefore = before.body;
         const frame = windowFrame(pat.page, chat);
         await frame.getByTestId('chat-capabilities').click({ timeout: 10_000 });
-        await frame.getByRole('menuitemradio', { name: 'grok-4', exact: true }).click({ timeout: 5_000 });
+        await frame.getByRole('menuitemradio', { name: GROK_MODEL, exact: true }).click({ timeout: 5_000 });
         const bar = frame.getByTestId('grok-source');
         await bar.waitFor({ timeout: 15_000 });
         const said = oneLine(await bar.innerText());
         await shot(pat.page, 'a-grok-chat-offers-the-sign-in');
         const missing = ['Grok runs on', 'My Grok sign-in', 'xAI key'].filter((words) => !said.includes(words));
         if (missing.length) throw new Error(`the bar says "${said}", with no "${missing[0]}"`);
-        return `${agentBefore.name}'s chat now answers with grok-4, and its bar says: ${said}`;
+        return `${agentBefore.name}'s chat now answers with ${GROK_MODEL}, and its bar says: ${said}`;
       });
 
       await check('walk', 'Pat picks My Grok sign-in and signs in: the box gives the link and asks Pat to check the code on the page, not to type it in', async ({ shot }) => {
@@ -190,7 +195,7 @@ export default {
         await bar.waitFor({ timeout: 10_000 }).catch(() => {});
         const chip = oneLine(await frame.getByTestId('chat-capabilities').innerText());
         await shot(sam.page, 'sam-sees-the-model-pat-picked');
-        if (!chip.startsWith('grok-4')) throw new Error(`Sam sees Pat's question and answer, but Sam's open copy of the chat still shows "${chip}", not grok-4`);
+        if (!chip.startsWith(GROK_MODEL)) throw new Error(`Sam sees Pat's question and answer, but Sam's open copy of the chat still shows "${chip}", not ${GROK_MODEL}`);
         if (!await bar.count()) throw new Error(`Sam's chat shows ${chip} but no "Grok runs on" bar`);
         return `with no reload, Sam's chat shows ${chip} and its bar says: ${oneLine(await bar.innerText())}`;
       });

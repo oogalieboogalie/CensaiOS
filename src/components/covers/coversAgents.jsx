@@ -190,6 +190,14 @@ export const AGENT_COVERS = {
       <path d="M30 6 L33 4.5 M31 10 H35 M29.5 13.5 L32.5 15.5" {...A} />
     </>
   ),
+  // Kraken Request: one report on the left, an arm out to each of three agents, the first one back in accent.
+  kraken: (
+    <>
+      <rect x="5" y="5" width="11" height="14" rx="1.2" {...S} /><path d="M7.5 9 H13.5 M7.5 12 H13.5 M7.5 15 H11.5" {...F} />
+      <path d="M16 12 Q23 12 29 6 M16 12 H29 M16 12 Q23 12 29 18" {...H} />
+      <rect x="30" y="3.5" width="9" height="5" rx="1" {...A} /><rect x="30" y="9.5" width="9" height="5" rx="1" {...S} /><rect x="30" y="15.5" width="9" height="5" rx="1" {...S} />
+    </>
+  ),
   // AI resources: a key, and the meter counting down what is left on it.
   aiResources: (
     <>

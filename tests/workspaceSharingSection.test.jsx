@@ -15,6 +15,8 @@ const addressForOthers = jest.fn();
 jest.unstable_mockModule('../src/lib/invites/index.js', () => ({
   inviteToBoard,
   addressForOthers,
+  knownPeople: async () => [],
+  invitePerson: jest.fn(),
   inviteLink: (address, code) => `${address}/?invite=${code}`,
 }));
 

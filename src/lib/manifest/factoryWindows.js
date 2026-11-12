@@ -243,5 +243,7 @@ export const FACTORY_WINDOW_MANIFESTS = [
   },
   { kind: 'aiResources', canvasType: 'aiResources', label: 'AI resources', componentName: 'AiResourcesWindow', componentPath: 'src/components/windows/aiResources/index.jsx', defaultSize: { w: 920, h: 660 }, lab: { title: 'AI resources', props: {} },
     moduleMenu: { show: true, status: 'ready', order: 67, icon: 'Activity', label: 'AI resources', hint: 'Every AI key and sign-in you have, what each one runs, what it spent and what is left' } },
+  { kind: 'kraken', canvasType: 'kraken', label: 'Kraken Request', componentName: 'KrakenWindow', componentPath: 'src/components/windows/kraken/index.jsx', defaultSize: { w: 760, h: 680 }, lab: { title: 'Kraken Request', props: {} },
+    moduleMenu: { show: true, status: 'ready', order: 68, icon: 'Branch', label: 'Kraken Request', hint: 'Paste a review or a list of things to fix; each finding goes to the family member who fits, and Censai checks the answers' } },
   // window:sync inserts new windows above this line — do not remove.
 ];

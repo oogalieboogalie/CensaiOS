@@ -58,6 +58,11 @@ function playgroundPlugin() {
   };
 }
 
+// Where the server listens. 3001 unless a run sets its own (the UI team and the
+// test team each start their own copy of the app, and two runs on one machine
+// must not share a server: scripts/e2e/runner.mjs, runPorts).
+const API_PORT = Number(process.env.CENSAI_DEV_API_PORT) || 3001;
+
 export default defineConfig({
   plugins: [react(), playgroundPlugin(), threeEditorPlugin(__dirname)],
   customLogger,
@@ -82,21 +87,21 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3001',
+        target: `http://127.0.0.1:${API_PORT}`,
         changeOrigin: true,
         ws: true,
       },
       '/ws': {
-        target: 'ws://127.0.0.1:3001',
+        target: `ws://127.0.0.1:${API_PORT}`,
         ws: true,
       },
       // Yjs (CRDT) canvas sync, server/collab/hocuspocus.js.
       '/hocuspocus': {
-        target: 'ws://127.0.0.1:3001',
+        target: `ws://127.0.0.1:${API_PORT}`,
         ws: true,
       },
       // The hub sign-up email's link, when APP_ORIGIN is this dev server.
-      '/confirm-email': 'http://127.0.0.1:3001',
+      '/confirm-email': `http://127.0.0.1:${API_PORT}`,
     },
   },
 });

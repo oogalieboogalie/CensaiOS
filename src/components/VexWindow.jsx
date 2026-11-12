@@ -1,7 +1,7 @@
-import React from 'react';
 import { useVex } from './windows/vex/useVex.js';
 import { WindowTitle } from './Windows.jsx';
 import { RegistryTab, RunTab, HistoryTab, ConfigTab } from './windows/vex/VexTabs.jsx';
+import './windows/vex/vex.css';
 
 export function VexWindow({ win }) {
   const {
@@ -24,12 +24,7 @@ export function VexWindow({ win }) {
   const agentsTotal = activeMeta?.agents_dispatched ?? 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface)', overflow: 'hidden' }}>
-      <style>{`
-        @keyframes vex-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
-        @keyframes vex-spin { to{transform:rotate(360deg)} }
-      `}</style>
-
+    <div className="vex">
       <WindowTitle
         icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>}
         label="Vex Orchestrator"
@@ -43,34 +38,36 @@ export function VexWindow({ win }) {
         }]}
       />
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0, padding: '4px 18px 0', borderBottom: '1px solid var(--hairline)' }}>
+      {/* Tabs: a bar across the window. The chosen one is marked for readers too. */}
+      <div className="hb-bar vex-tabs">
         {[
           { id: 'registry', label: 'Registry' },
-          { id: 'run', label: isRunning ? '⟳ Live Run' : activeRunId ? 'Run Log' : 'Run Log' },
+          { id: 'run', label: isRunning ? '⟳ Live Run' : 'Run Log' },
           { id: 'history', label: 'History' },
           { id: 'config', label: 'Config' },
-        ].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            all: 'unset', cursor: 'pointer',
-            padding: '6px 14px', fontSize: 'var(--text-sm)', fontWeight: tab === t.id ? 600 : 400,
-            color: tab === t.id ? 'var(--accent)' : 'var(--ink-soft)',
-            borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
-            marginBottom: -1, transition: 'all 0.15s',
-          }}>{t.label}</button>
+        ].map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className="vex-tab"
+            aria-pressed={tab === t.id}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
         ))}
       </div>
 
       {/* Error banner */}
       {error && (
-        <div style={{ margin: '10px 18px 0', padding: '8px 12px', borderRadius: 'var(--radius-lg)', background: 'color-mix(in oklab, var(--danger) 13%, transparent)', border: '1px solid color-mix(in oklab, var(--danger) 27%, transparent)', fontSize: 'var(--text-sm)', color: 'var(--danger)' }}>
-          ⚠ {error}
-          <button onClick={() => setError(null)} style={{ all: 'unset', cursor: 'pointer', marginLeft: 8, color: 'var(--danger)', fontWeight: 700 }}>✕</button>
+        <div className="vex-error" role="alert">
+          <span className="vex-error-text">⚠ {error}</span>
+          <button type="button" className="vex-error-close" aria-label="Dismiss" onClick={() => setError(null)}>✕</button>
         </div>
       )}
 
       {/* Tab Content */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '12px 6px' }}>
+      <div className="vex-body">
         {tab === 'registry' && <RegistryTab agents={agents} isRunning={isRunning} />}
         {tab === 'run' && (
           <RunTab

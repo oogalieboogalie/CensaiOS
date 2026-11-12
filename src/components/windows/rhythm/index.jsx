@@ -170,15 +170,16 @@ export function RhythmRunWindow({ win = {}, onUpdate }) {
               </div>
             </>
           )}
-          {phase === 'menu' && game.pendingMatch && (
+          {phase === 'results' && game.result && (
+            <Results result={game.result} rows={rows} field={game.field}
+              onAgain={() => game.start()} onMenu={() => game.setPhase('menu')} />
+          )}
+          {/* After the results card, so the invite shows on top of it: someone reading their score is offered Join too. */}
+          {phase !== 'playing' && game.pendingMatch && (
             <div className="hb-rhythm-invite" role="status" data-testid="rhythm-invite">
               <span>{game.pendingMatch.by || 'Someone'} is starting {songById(game.pendingMatch.song)?.title || 'a song'} ({DIFFICULTIES.find((d) => d.id === game.pendingMatch.difficulty)?.label}) for everyone in {game.secondsToMatch}s.</span>
               {game.canPlay && <button type="button" className="hb-btn" data-primary="true" onClick={game.joinMatch} data-testid="rhythm-join">Join</button>}
             </div>
-          )}
-          {phase === 'results' && game.result && (
-            <Results result={game.result} rows={rows} field={game.field}
-              onAgain={() => game.start()} onMenu={() => game.setPhase('menu')} />
           )}
         </div>
         <aside className="hb-rhythm-side">

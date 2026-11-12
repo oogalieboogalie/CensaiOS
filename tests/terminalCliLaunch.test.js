@@ -6,7 +6,7 @@ import http from 'http';
 import { WebSocket } from 'ws';
 import { attachTerminalServer } from '../server/terminal/sessions.js';
 import { sessions } from '../server/terminal/shared.js';
-import { startCliBackend, terminalCliAdapter, interactiveCliEnv, cliCredentialFor, privateHome } from '../server/terminal/cliBackend.js';
+import { startCliBackend, terminalCliAdapter, interactiveCliEnv, cliCredentialFor, privateHome, terminalConversationId, conversationArgs } from '../server/terminal/cliBackend.js';
 import { getAdapter } from '../server/cli-agents/adapters/index.js';
 import { resolveCliKey } from '../server/cli-agents/index.js';
 
@@ -75,6 +75,24 @@ describe('terminal that opens into a coding CLI', () => {
       if (saved === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = saved;
     }
     fs.rmSync(owners, { force: true });
+  });
+
+  test('a Claude Code tab resumes its own conversation after a restart', async () => {
+    const id = terminalConversationId('7:ws-a:w1', dir);
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(terminalConversationId('7:ws-a:w1', dir)).toBe(id);
+    expect(terminalConversationId('7:ws-a:w2', dir)).not.toBe(id);
+    const spawn = jest.fn(() => ({ pid: 1 }));
+    const start = () => startCliBackend({ cli: 'claudecode', cwd: dir, size: { cols: 80, rows: 24 }, userId: '7', sessionKey: '7:ws-a:w1', env, spawn });
+    await start();
+    expect(spawn.mock.calls[0][1]).toEqual([standIn, '--session-id', id]);
+    const saved = path.join(home, '.claude', 'projects', 'some-folder');
+    fs.mkdirSync(saved, { recursive: true });
+    fs.writeFileSync(path.join(saved, `${id}.jsonl`), '{}\n');
+    await start();
+    expect(spawn.mock.calls[1][1]).toEqual([standIn, '--resume', id]);
+    fs.rmSync(path.join(home, '.claude', 'projects'), { recursive: true, force: true });
+    expect(conversationArgs(getAdapter('codex'), { sessionKey: '7:ws-a:w1', cwd: dir, home })).toEqual([]);
   });
 
   test('unknown CLI is refused', async () => {

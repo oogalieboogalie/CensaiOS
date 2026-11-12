@@ -12,3 +12,11 @@ export const OpenAnywhereSection = React.lazy(() => {
       throw err;
     });
 });
+
+// My Tailscale devices sits under Open anywhere and loads the same way.
+export const TailnetSection = React.lazy(() => import('./TailnetSection.jsx')
+  .then((mod) => ({ default: mod.TailnetSection }))
+  .catch((err) => {
+    logFailure('tailscale devices section failed to load', err, 'settings');
+    throw err;
+  }));

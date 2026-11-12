@@ -131,5 +131,5 @@ test('Grok runs through xAI with the vault key slot, tools and image input', () 
   expect(capabilityProviderFor(null, 'https://api.x.ai/v1')).toBe('xai');
   expect(getModelCapabilities('xai', 'grok-4')).toMatchObject({ tools: true, image: true });
   expect(BYOK_PROVIDERS.map(p => p.id)).toEqual(expect.arrayContaining(['xai', 'elevenlabs']));
-  expect(MODEL_OPTIONS.xai[0].value).toBe('grok-4');
+  expect(MODEL_OPTIONS.xai[0].value).toBe('grok-4.7');
 });

@@ -32,21 +32,28 @@ export function lookedSince(status, askedAt) {
 
 /**
  * Which screen the panel shows:
- * checking | docker-off | build-failed | blocked | up-to-date | ready
+ * checking | docker-off | build-failed | blocked | side-branch | up-to-date | ready
  */
 export function panelStage(status, askedAt) {
   if (!lookedSince(status, askedAt)) return 'checking';
   if (status?.ready) return 'ready';
   const result = status?.checked?.result;
-  if (result === 'docker-off' || result === 'build-failed' || result === 'blocked') return result;
+  if (STOPPED.includes(result)) return result;
   return 'up-to-date';
 }
+
+/** What the updater found when no update can come in by itself. */
+const STOPPED = ['docker-off', 'build-failed', 'blocked', 'side-branch'];
+
+/** True while updates cannot reach this PC at all: the app says so without being asked. */
+export const updatesPaused = (status) => !status?.ready && ['blocked', 'side-branch'].includes(status?.checked?.result);
 
 export const STAGE_TEXT = {
   checking: 'Looking for a newer censaiOS…',
   'docker-off': 'Docker is not running, so the update cannot be built. Start Docker Desktop, then try Update again.',
   'build-failed': 'The newest censaiOS did not build, so you stay on this one. The crew can see why in the update log.',
   blocked: 'This PC has its own changes that GitHub does not have, so censaiOS cannot update by itself. Nothing was lost. The crew can see what is in the way in the update log.',
+  'side-branch': 'This PC is on a side copy of censaiOS, not the main one, so it is not getting updates. Nothing was lost. Ask the crew to bring it back onto the main line.',
   'up-to-date': 'censaiOS is up to date.',
 };
 

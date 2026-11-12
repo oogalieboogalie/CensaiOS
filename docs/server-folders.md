@@ -48,6 +48,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `jules` | Jules (Google's coding agent) sessions and sources. |
 | `jules-task-sync` | Keeping Jules tasks and their GitHub pull requests in step. |
 | `leadhound` | LeadHound: lead briefs, Tavily search and scoring. |
+| `kraken` | Kraken Requests: a pasted report split into findings and handed to the family through Censai's plans. |
 | `legion` | Legion: building something with several agents, then checking it in a browser. |
 | `lessons` | Lessons and enrollment (with Stripe payments). |
 | `lib` | Small shared helpers (reliability). |
@@ -90,6 +91,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `speakUp` | Speak-up notes that reach the owner's phone. |
 | `state` | Stored workspace state. |
 | `stepCards` | Step cards and their page checks. |
+| `tailnet` | My Tailscale devices: reading the tailnet, the owner's tick list, letting switched-on devices in without a code, finding other copies. |
 | `task-worker` | The background task worker: claims tasks and runs them (at most 30 rounds). |
 | `templates` | Ready-made board templates. |
 | `terminal` | The terminal window: sessions, backends and agent output. |

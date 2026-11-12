@@ -2,7 +2,7 @@
 import React from 'react';
 import { appUpdateApi, changeCount } from '../lib/appUpdate/api.js';
 import { DEMO } from '../lib/demo/demoMode.js';
-import { TRAY_UPDATE_EVENT } from '../lib/appUpdate/trayFlow.js';
+import { STAGE_TEXT, TRAY_UPDATE_EVENT, updatesPaused } from '../lib/appUpdate/trayFlow.js';
 
 // The tray's Update panel sits next to this note in AppContent.
 export { TrayUpdatePanel } from './TrayUpdatePanel.jsx';
@@ -22,7 +22,9 @@ const button = { all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', fo
 /**
  * "Update ready" note: the PC's updater (scripts/auto-update.ps1) pulled and
  * built a newer censaiOS in the background. Restart swaps it in and the page
- * reloads by itself once the new copy answers. Only the owner sees it.
+ * reloads by itself once the new copy answers. When no update can come in at
+ * all (the PC has its own commits, or sits on a side branch) the same spot
+ * says updates are paused. Only the owner sees it.
  */
 export function AppUpdateNotice() {
   const [status, setStatus] = React.useState(null);
@@ -70,7 +72,21 @@ export function AppUpdateNotice() {
     return () => { stopped = true; clearTimeout(timer); clearTimeout(giveUp); };
   }, [phase, status]);
 
-  if (!status?.ready || phase === 'hidden') return null;
+  if (phase === 'hidden') return null;
+  // Updates cannot reach this PC: say so here, where "Update ready" would have been,
+  // so a stopped updater is never just silence. It comes back each time censaiOS opens.
+  if (updatesPaused(status)) {
+    return (
+      <div role="status" style={box} data-testid="app-update-paused" data-result={status.checked.result}>
+        <strong>Updates are paused on this PC</strong>
+        <span style={{ color: 'var(--ink-soft)' }}>{STAGE_TEXT[status.checked.result]}</span>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="button" style={{ ...button, color: 'var(--ink-soft)' }} onClick={() => setPhase('hidden')}>OK</button>
+        </div>
+      </div>
+    );
+  }
+  if (!status?.ready) return null;
   const count = changeCount(status.ready.changes);
   const restart = () => {
     setError('');

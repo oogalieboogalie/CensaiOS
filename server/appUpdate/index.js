@@ -11,8 +11,9 @@
  *   .homebase-state/update/check-requested    written here: "look for one now"
  *   .homebase-state/update/checked.json       the updater's last look: { at, result }
  *
- * result is up-to-date, ready, build-failed, docker-off or blocked (this PC's
- * master has its own commits or edits, so it cannot fast-forward).
+ * result is up-to-date, ready, build-failed, docker-off, blocked (this PC's
+ * master has its own commits or edits, so it cannot fast-forward) or
+ * side-branch (this PC's folder is not on master, so no update can come in).
  */
 
 import fs from 'fs';
@@ -72,7 +73,7 @@ export function updateStatus({ dir = updateDir(), now = Date.now() } = {}) {
   };
 }
 
-const RESULTS = ['up-to-date', 'ready', 'build-failed', 'docker-off', 'blocked'];
+const RESULTS = ['up-to-date', 'ready', 'build-failed', 'docker-off', 'blocked', 'side-branch'];
 
 function lastCheck(dir) {
   const raw = readJson(dir, 'checked.json');

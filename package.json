@@ -1,6 +1,6 @@
 {
   "name": "censai",
-  "version": "0.7.0-nightly.20261111",
+  "version": "0.7.0-nightly.20261112",
   "private": true,
   "type": "module",
   "scripts": {

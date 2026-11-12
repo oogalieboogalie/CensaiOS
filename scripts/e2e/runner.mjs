@@ -7,6 +7,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import net from 'node:net';
 import { spawn } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -122,4 +123,34 @@ export async function step(name, fn) {
     console.log(`e2e step "${name}": failed (${Date.now() - started} ms)`);
     throw error;
   }
+}
+
+/** A port nothing is listening on right now. */
+export function freePort(netImpl = net) {
+  return new Promise((resolve, reject) => {
+    const probe = netImpl.createServer();
+    probe.unref?.();
+    probe.once('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
+/**
+ * The two ports one run uses for its own copy of the app: the server and the
+ * browser app. Each run asks for its own, so two runs on one machine (two
+ * teams, or a run beside the owner's own running app) never share a server.
+ * Before this, every run used 3001 and 5173: a second run found the first
+ * run's app already answering there and marked that one instead of its own.
+ * E2E_API_PORT and E2E_WEB_PORT pin them when a run needs fixed ones.
+ */
+export async function runPorts({ env = process.env, pick = freePort } = {}) {
+  const fixed = (value) => { const n = Number(value); return Number.isInteger(n) && n > 0 && n < 65536 ? n : 0; };
+  const api = fixed(env.E2E_API_PORT) || await pick();
+  let web = fixed(env.E2E_WEB_PORT) || await pick();
+  for (let tries = 0; web === api && tries < 5; tries += 1) web = await pick();
+  if (web === api) throw new Error('could not find two different free ports for this run');
+  return { api, web };
 }

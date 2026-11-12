@@ -14,6 +14,7 @@ import { STANDIN_ANSWER } from '../standinModel.mjs';
 import { note } from '../report.mjs';
 import { addFromMenu } from '../addMenu.mjs';
 import { sideBySide } from '../sideBySide.mjs';
+import { MODEL_OPTIONS } from '../../../src/lib/agentModelOptions.js';
 
 const QUESTION = 'Made-up question: what should Pat Example bake on Friday?';
 const FOLLOW_UP = 'Made-up follow-up from Sam: and for Saturday?';
@@ -23,7 +24,9 @@ const KEY = 'made-up-openai-key-155QX7J';
 const KEY_END = 'QX7J';
 const HELPER = { id: 'pat-helper-155', name: 'Made-up Helper', model: 'gpt-4.1', changed: 'gpt-4o-mini' };
 // An agent Pat makes in Agent Designer, then switches to Grok from its chat's chip.
-const PLANNER = { name: 'Made-up Planner', model: 'gpt-4.1', picked: 'grok-4' };
+// Both model names come from the app's own list (the one Agent Designer and the
+// chip show), so this walk does not go stale when the list of models changes.
+export const PLANNER = { name: 'Made-up Planner', model: MODEL_OPTIONS.openai[0].value, picked: MODEL_OPTIONS.xai[0].value };
 
 const msgsOf = async (page, id) => (await readWindow(page, id))?.msgs || [];
 

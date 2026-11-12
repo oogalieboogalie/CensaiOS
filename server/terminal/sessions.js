@@ -23,7 +23,7 @@ async function createSession(sessionId, {
 }) {
   let backend;
   if (agentRun) backend = await startAgentBackend(cwd, agentRun.prompt, size);
-  else if (cli) backend = await startCliBackend({ cli, cwd, size, userId: owner?.userId, write });
+  else if (cli) backend = await startCliBackend({ cli, cwd, size, userId: owner?.userId, sessionKey: sessionId, write });
   else backend = await startBackendImpl(cwd, hasProject, size, owner);
   const session = {
     id: sessionId,

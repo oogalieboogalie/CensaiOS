@@ -5,6 +5,7 @@ import { isDockerAvailable, ensureSandbox, sandboxShellArgv, sandboxAgentArgv, O
 import { log, ptyOptions } from './shared.js';
 import { directoryInsideProjectsRoot } from './projectCwd.js';
 import { folderKind, safeReason } from './logSafe.js';
+import { githubGitEnv } from './githubLogin.js';
 
 export { folderKind, safeReason };
 
@@ -28,9 +29,9 @@ export function resolveHostShell({
   return [env.SHELL, '/bin/bash', '/bin/sh'].filter(Boolean).find(candidate => exists(candidate)) || '/bin/sh';
 }
 
-function spawnHostShell(cwd, size) {
+function spawnHostShell(cwd, size, extraEnv = null) {
   const shell = resolveHostShell();
-  const proc = pty.spawn(shell, [], ptyOptions(size, cwd));
+  const proc = pty.spawn(shell, [], ptyOptions(size, cwd, extraEnv));
   const base = path.basename(shell).toLowerCase();
   const shellFamily = base.includes('powershell') || base.includes('pwsh')
     ? 'powershell'
@@ -72,7 +73,7 @@ export async function startBackend(cwd, hasProject, size, owner = null) {
       log.warn('WSL backend failed, falling back to host shell', { error: safeReason(err) });
     }
   }
-  return spawnHostShell(cwd, size);
+  return spawnHostShell(cwd, size, await githubGitEnv(owner?.userId));
 }
 
 /**

@@ -101,6 +101,9 @@ jest.unstable_mockModule('../server/tokens/schema.js', () => ({
 jest.unstable_mockModule('../server/research/schema.js', () => ({
   ensureResearchSchema: jest.fn(async () => {}),
 }));
+jest.unstable_mockModule('../server/kraken/schema.js', () => ({
+  ensureKrakenSchema: jest.fn(async () => {}),
+}));
 jest.unstable_mockModule('../server/censaiOrchestrator/schema.js', () => ({
   ensureCensaiPlanSchema: jest.fn(async () => {}),
 }));

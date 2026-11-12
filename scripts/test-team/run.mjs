@@ -26,7 +26,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {
-  ROOT, dropScratchDatabase, findChromium, makeScratchDatabase, startProcess, step, waitForUrl, whatIsMissing,
+  ROOT, dropScratchDatabase, findChromium, freePort, makeScratchDatabase, runPorts, startProcess, step, waitForUrl, whatIsMissing,
 } from '../e2e/runner.mjs';
 import { PAT, SAM, callApi, openBoard, shareBoard, signIn } from '../e2e/board.mjs';
 import { createReport, pickThemes, summarize, writeReport } from './report.mjs';
@@ -37,8 +37,9 @@ import { startStandinGithub } from './standinGithub.mjs';
 import { pickModules } from './modules/index.mjs';
 import { commonChecks } from './commonChecks.mjs';
 
-const API_PORT = 3001; // vite.config.js sends /api and the sockets here
-const WEB_PORT = 5173;
+// This run's own two ports, so two runs on one machine never share an app.
+// vite.config.js sends /api and the sockets to CENSAI_DEV_API_PORT.
+const { api: API_PORT, web: WEB_PORT } = await runPorts();
 const WEB = `http://localhost:${WEB_PORT}`;
 const VIEW = { width: 1440, height: 900 };
 
@@ -47,6 +48,7 @@ async function startApp(databaseUrl, stand, logDir, children) {
     ...process.env,
     DATABASE_URL: databaseUrl,
     PORT: String(API_PORT),
+    CENSAI_DEV_API_PORT: String(API_PORT),
     SESSION_SECRET: crypto.randomBytes(24).toString('hex'),
     CENSAI_MODE: 'local_desktop',
     CENSAI_ALLOW_DEVELOPER_LOGIN: 'true',
@@ -201,7 +203,7 @@ async function main() {
   let github;
   const verdicts = [];
   try {
-    model = await startStandinModel(Number(process.env.TEST_TEAM_MODEL_PORT) || 11434);
+    model = await startStandinModel(Number(process.env.TEST_TEAM_MODEL_PORT) || await freePort());
     tavily = await startStandinTavily();
     figma = await startStandinFigma();
     github = await startStandinGithub();

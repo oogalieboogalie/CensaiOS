@@ -29,6 +29,12 @@ export const inviteToBoard = (workspaceId, email = '') => call(
   `/api/workspaces/${encodeURIComponent(workspaceId)}/invites`,
   { method: 'POST', body: { email: String(email || '').trim() } },
 );
+/** One tap: invite someone you already share a board with, by their id. */
+export const invitePerson = (workspaceId, personId) => call(
+  `/api/workspaces/${encodeURIComponent(workspaceId)}/invites`,
+  { method: 'POST', body: { personId } },
+);
+export const knownPeople = () => call('/api/invites/people').then((d) => d.people || []);
 export const myInvites = () => call('/api/invites/mine');
 export const dismissInvite = (id) => call(`/api/invites/${encodeURIComponent(id)}/dismiss`, { method: 'POST', body: {} });
 export const previewInvite = (code) => call(`/api/invites/preview?code=${encodeURIComponent(code)}`);

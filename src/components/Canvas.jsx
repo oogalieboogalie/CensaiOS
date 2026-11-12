@@ -10,6 +10,7 @@ import { CanvasRegionActions } from './canvas/CanvasRegionActions.jsx';
 import { CanvasRubberBand } from './canvas/CanvasRubberBand.jsx';
 import { CanvasShell } from './canvas/CanvasShell.jsx';
 import { useCanvasCapture } from './canvas/useCanvasCapture.js';
+import { useCanvasImageDrop } from './canvas/useCanvasImageDrop.js';
 import { useCanvasPointer } from './canvas/useCanvasPointer.js';
 import { useCanvasViewport } from './canvas/useCanvasViewport.js';
 import { useCanvasWorkspaceHandlers } from './canvas/useCanvasWorkspaceHandlers.js';
@@ -36,6 +37,7 @@ left: 24 }, suppressEmptyState = false, onLaunchpadTour, launchpadSuggestModules
   const { spaceHeld, spaceRef } = useCanvasViewport({ ref, pan, zoom, onPanZoom, panMode: theme.canvasPanMode });
   const liveInk = useLiveInk(paths);
   usePointedWindowGlide({ ref, wins, pan, zoom, onPanZoom });
+  useCanvasImageDrop({ ref, pan, zoom });
   const {
     band,
     setBand,

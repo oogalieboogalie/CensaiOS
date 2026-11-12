@@ -43,6 +43,7 @@ import { ensureBoardInviteSchema } from '../invites/schema.js';
 import { ensureInviteTokenSchema } from '../tokens/schema.js';
 import { ensureResearchSchema } from '../research/schema.js';
 import { ensureCensaiPlanSchema } from '../censaiOrchestrator/schema.js';
+import { ensureKrakenSchema } from '../kraken/schema.js';
 import { ensureSalesLeadSchema } from '../salesLeads/schema.js';
 import { ensureHubAccountSchema } from '../hubAccounts/schema.js';
 import { ensureMemoryTenancySchema } from '../memory/tenancySchema.js';
@@ -99,6 +100,7 @@ async function probeDb() {
   await ensureInviteTokenSchema(pool);
   await ensureResearchSchema(pool);
   await ensureCensaiPlanSchema(pool);
+  await ensureKrakenSchema(pool);
   await ensureCapabilitySchema();
   await ensureAttributeSchema();
   await ensurePolicySchema();

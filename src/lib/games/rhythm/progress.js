@@ -3,10 +3,18 @@
 // scores and, during a run, a live score everyone else can watch. The
 // "play together" countdown is the window's `match` field. Pure.
 import { DIFFICULTIES } from './sequence.js';
+import { songById } from './songs.js';
 
 export const PLAYER_PREFIX = 'player_';
 const DIFF_IDS = new Set(DIFFICULTIES.map((d) => d.id));
 const num = (v, lo, hi) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
+// Words from the shared board, to show on screen. Anyone on the board can
+// write the record, so only real text counts: a list or an object in its place
+// would otherwise show as "[object Object]".
+const words = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
+
+/** The longest a "play together" countdown may run. A match further off than this is not offered. */
+export const MATCH_MAX_WAIT_MS = 5 * 60 * 1000;
 
 export function playerField(name) {
   const slug = String(name || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32);
@@ -27,9 +35,9 @@ export function cleanPlayer(raw) {
     if (DIFF_IDS.has(diff)) best[key] = cleanResult(value);
   }
   const live = raw.live && typeof raw.live === 'object'
-    ? { song: String(raw.live.song || '').slice(0, 80), score: Math.floor(num(raw.live.score, 0, 1e9)), combo: Math.floor(num(raw.live.combo, 0, 1e6)), at: num(raw.live.at, 0, 1e15) }
+    ? { song: words(raw.live.song, 80), score: Math.floor(num(raw.live.score, 0, 1e9)), combo: Math.floor(num(raw.live.combo, 0, 1e6)), at: num(raw.live.at, 0, 1e15) }
     : null;
-  return { name: String(raw.name || 'Player').slice(0, 40), best, live };
+  return { name: words(raw.name, 40) || 'Player', best, live };
 }
 
 export function readPlayers(win) {
@@ -67,10 +75,19 @@ export function livePlayers(players, nowMs, staleMs = 4000) {
     .sort((a, b) => b.score - a.score);
 }
 
-/** A "play together" match: one song, one difficulty, one start time for everyone. */
+/**
+ * A "play together" match: one song, one difficulty, one start time for everyone.
+ * The song has to be one every player has (a built-in one), so nobody is
+ * offered Join for a song their window cannot play.
+ */
 export function cleanMatch(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const startAt = Number(raw.startAt);
-  if (!Number.isFinite(startAt) || !DIFF_IDS.has(raw.difficulty) || typeof raw.song !== 'string') return null;
-  return { song: raw.song.slice(0, 80), difficulty: raw.difficulty, startAt, by: String(raw.by || '').slice(0, 40) };
+  if (!Number.isFinite(startAt) || !DIFF_IDS.has(raw.difficulty) || typeof raw.song !== 'string' || !songById(raw.song)) return null;
+  return { song: raw.song, difficulty: raw.difficulty, startAt, by: words(raw.by, 40) };
+}
+
+/** Is this match still ahead, and close enough to be a real countdown? */
+export function matchIsPending(match, nowMs) {
+  return Boolean(match) && match.startAt > nowMs && match.startAt - nowMs <= MATCH_MAX_WAIT_MS;
 }

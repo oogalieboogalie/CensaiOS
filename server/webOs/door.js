@@ -113,10 +113,19 @@ export function doorAllowsOrigin(origin, hostHeader, {
   settings = readDoorSettings(),
   runtimeMode = getRuntimeMode(),
 } = {}) {
-  if (!settings.open || !doorUsable(runtimeMode) || !origin) return false;
+  if (!doorUsable(runtimeMode) || !origin) return false;
   const host = originHost(origin);
   if (!host || host !== String(hostHeader || '').trim().toLowerCase()) return false;
-  return isHomeNetworkHostname(host);
+  if (settings.open && isHomeNetworkHostname(host)) return true;
+  return ownAddressRule(host) === true;
+}
+
+// "My Tailscale devices" (server/tailnet/visit.js): with that switch on, a
+// page opened at this computer's own Tailscale address may talk to it too.
+let ownAddressRule = () => false;
+
+export function setOwnAddressRule(rule) {
+  ownAddressRule = typeof rule === 'function' ? rule : () => false;
 }
 
 // Every connection that arrives on the Open anywhere port (doorListener.js)

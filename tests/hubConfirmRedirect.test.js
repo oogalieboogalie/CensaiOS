@@ -41,6 +41,9 @@ describe('hub sign-up confirmation link', () => {
   });
 
   test('the dev server forwards the link to the API server', () => {
-    expect(fs.readFileSync('vite.config.js', 'utf8')).toMatch(/'\/confirm-email': 'http:\/\/127\.0\.0\.1:3001'/);
+    // The API server's port is 3001 unless a test run brings its own (CENSAI_DEV_API_PORT).
+    const vite = fs.readFileSync('vite.config.js', 'utf8');
+    expect(vite).toContain("'/confirm-email': `http://127.0.0.1:${API_PORT}`");
+    expect(vite).toContain('const API_PORT = Number(process.env.CENSAI_DEV_API_PORT) || 3001;');
   });
 });

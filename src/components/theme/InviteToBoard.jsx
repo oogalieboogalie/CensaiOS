@@ -1,6 +1,6 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
-import { inviteToBoard } from '../../lib/invites/index.js';
+import { invitePerson, inviteToBoard, knownPeople } from '../../lib/invites/index.js';
 import { logToApp } from '../../lib/appLog/browserLog.js';
 import { PUBLIC_LINK_RETRY, publishedJoinUrl, rememberPublishedOrigin } from '../../lib/workspace/publishedLink.js';
 
@@ -16,6 +16,26 @@ export function InviteToBoard({ workspaceId, onMember }) {
   const [email, setEmail] = React.useState('');
   const [link, setLink] = React.useState(null);
   const [state, setState] = React.useState({ status: 'idle', message: '' });
+  const [people, setPeople] = React.useState([]);
+
+  React.useEffect(() => {
+    let live = true;
+    knownPeople().then((list) => { if (live) setPeople(list); }, () => {});
+    return () => { live = false; };
+  }, []);
+
+  async function tap(person) {
+    setState({ status: 'saving', message: '' });
+    setLink(null);
+    try {
+      const result = await invitePerson(workspaceId, person.id);
+      onMember?.(result.member);
+      setState({ status: 'done', message: result.notified ? `${person.name} got the invite. It pops up in their censaiOS.` : `${person.name} already has this board.` });
+    } catch (error) {
+      logToApp('warn', 'invite by tap failed', { where: 'invites' });
+      setState({ status: 'error', message: error.message });
+    }
+  }
 
   async function publishLink(message) {
     const result = await api.createShareLink(workspaceId, {
@@ -73,6 +93,16 @@ export function InviteToBoard({ workspaceId, onMember }) {
   return (
     <div style={{ display: 'grid', gap: 8 }} data-testid="invite-to-board">
       <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)' }}>Invite to this board</div>
+      {people.length ? (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }} aria-label="People you can invite">
+          {people.map((person) => (
+            <button key={person.id} type="button" onClick={() => tap(person)} disabled={state.status === 'saving'}
+              style={{ ...primary, padding: '6px 10px', fontSize: 'var(--text-sm)' }}>
+              Invite {person.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <form onSubmit={invite} style={{ display: 'flex', gap: 8 }} aria-label="Invite to this board">
         <input aria-label="Their email, if they have an account here" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
           placeholder="Their email, or leave empty for a link" disabled={state.status === 'saving'} style={field} />

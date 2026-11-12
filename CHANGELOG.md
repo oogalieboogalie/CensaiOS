@@ -17,6 +17,12 @@ tags.
 
 ### New
 
+- Document gets a raised page on a sunken desk, comment cards that lift, and readable small words, 70 to 92 (Nov 12)
+- Test team: two people in one chat works; the walk was out of date, not the chat (Nov 12)
+- Let switched-on Tailscale devices open censaiOS with no code (Nov 11)
+- Add the My Tailscale devices card, phone code and one-click pop-up (Nov 11)
+- Kraken Request: paste a report, hand each finding to the family (Nov 11)
+- Paste or drag pictures onto the board (Nov 11)
 - Keep a merge-bot revoke, and only merge known-safe files (Nov 11)
 - Add a dry-run merge bot and a Needs you list (Nov 11)
 - UI team nightly: Git Diff Viewer gets sunken panes, a tool bar, buttons that answer the pointer and readable green and red (Nov 10)
@@ -133,6 +139,10 @@ tags.
 
 ### Fixed
 
+- Rhythm Run shows only real words from the board, and offers Join on the results card (Nov 12)
+- Each UI team and test team run starts its own copy of the app on its own ports (Nov 12)
+- The test team finds its module files by itself, so two teams can add one at the same time (Nov 12)
+- Say updates are paused when this PC is on a side branch (Nov 11)
 - Allow the desktop shell origin and keep userinfo out of the origin list (Nov 10)
 - Keep owner sign-in working on a LAN origin and refuse rewritten hosts (Nov 10)
 - Keep the route map inside its line budget (Nov 10)
@@ -202,6 +212,8 @@ tags.
 - Workflow: two people can type in one step at once (crew realtime) (Nov 6)
 - Prove workflows, Scheduler, the MCP door and Idea Pad use the key saved in Settings (crew 159) (Nov 6)
 - The crew's guide says what the empty board draws; unused tile names go (Oct 30)
+
+_2 more changes are not listed because the description names a part of censaiOS that is not in the public copy._
 
 ## 0.6.0 (2026-11-01)
 

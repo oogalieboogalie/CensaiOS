@@ -92,6 +92,12 @@ describe('check now (the tray Update item)', () => {
     expect(updateStatus({ dir }).checked).toEqual({ at: '2026-10-17T23:00:06Z', result: 'blocked' });
   });
 
+  test('a PC on a side branch reads as side-branch, not as up to date', () => {
+    const dir = makeDir({ 'running.txt': NEW, 'watcher.json': beat() });
+    fs.writeFileSync(path.join(dir, 'checked.json'), JSON.stringify({ at: '2026-11-11T17:55:25Z', result: 'side-branch' }));
+    expect(updateStatus({ dir }).checked).toEqual({ at: '2026-11-11T17:55:25Z', result: 'side-branch' });
+  });
+
   test('an unknown result reads as up to date and a bad time as never looked', () => {
     expect(updateStatus({ dir: makeDir({ 'checked.json': { at: '2026-10-17T23:00:05Z', result: 'rm -rf' } }) }).checked.result).toBe('up-to-date');
     expect(updateStatus({ dir: makeDir({ 'checked.json': { at: 'soon' } }) }).checked).toBeNull();

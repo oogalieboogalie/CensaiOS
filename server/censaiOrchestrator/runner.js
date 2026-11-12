@@ -36,6 +36,14 @@ export const DEFAULT_DEPS = Object.freeze({
 const running = new Map(); // plan id -> { id, plan, controller, stopped, chain, done }
 const waiting = []; // [{ id, deps }]
 
+const settledListeners = new Set(); // each called with the plan id once a plan stops running here
+
+/** Hear about every plan that finishes, gets stuck or is stopped (a Kraken Request hands out its next arm then). */
+export function onPlanSettled(listener) {
+  settledListeners.add(listener);
+  return () => settledListeners.delete(listener);
+}
+
 const withDefaults = (deps = {}) => ({ ...DEFAULT_DEPS, ...deps });
 const isQueued = (id) => running.has(id) || waiting.some((item) => item.id === id);
 
@@ -111,6 +119,7 @@ function pump() {
       .finally(() => {
         running.delete(id);
         pump();
+        for (const listener of settledListeners) listener(id);
       });
   }
 }

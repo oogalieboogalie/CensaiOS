@@ -95,6 +95,10 @@ services:
       # Agent endpoints only (Share agent > Make reachable from outside):
       # the port a tunnel points at. Published on this computer only.
       - "127.0.0.1:3003:3003"
+      # Previews: a dev server started in a CensaiOS terminal on 3010-3019
+      # opens at http://localhost:3010-3019 in this computer's browser.
+      # This computer only, like the board.
+      - "127.0.0.1:3010-3019:3010-3019"
     volumes:
       - homebase_state:/app/.homebase-state
       - .:/workspace/CensaiHub

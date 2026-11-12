@@ -2,7 +2,7 @@ import React from 'react';
 import { SONGS, songById } from '../../../lib/games/rhythm/songs.js';
 import { chartFor, sequence } from '../../../lib/games/rhythm/sequence.js';
 import { createRun, multiplierFor, press, summary, sweep } from '../../../lib/games/rhythm/judge.js';
-import { bestKey, cleanMatch, livePlayers, playerField, readPlayers, recordBest } from '../../../lib/games/rhythm/progress.js';
+import { bestKey, cleanMatch, livePlayers, playerField, readPlayers, recordBest, matchIsPending } from '../../../lib/games/rhythm/progress.js';
 import { claimKeyboard, releaseKeyboard } from '../../../lib/keyboardClaim.js';
 import { getSelf } from '../../../lib/modules/presenceRoster.js';
 import { createBand } from './synth.js';
@@ -233,7 +233,7 @@ export function useRhythm({ win, onUpdate }) {
     const id = setInterval(() => setClock(Date.now()), 500);
     return () => clearInterval(id);
   }, []);
-  const pendingMatch = match && match.startAt > clock && phase !== 'playing' ? match : null;
+  const pendingMatch = matchIsPending(match, clock) && phase !== 'playing' ? match : null;
 
   return {
     containerRef, canvasRef, songId, setSongId, difficulty, setDifficulty, custom, customNote, loadFile,

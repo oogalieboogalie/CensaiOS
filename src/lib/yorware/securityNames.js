@@ -13,7 +13,7 @@ export const YOR_SECURITY = Object.freeze([
   {
     id: 'thangorodrim',
     name: 'Yor-Thangorodrim',
-    line: 'The fortress wall. Only this PC gets in, unless you hand another computer a code.',
+    line: 'The fortress wall. Only this PC gets in, unless you hand another computer a code or switch on one of your own Tailscale devices.',
     piece: 'Open anywhere',
     where: 'Settings > Open anywhere',
   },

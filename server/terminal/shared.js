@@ -50,12 +50,12 @@ export const PTY_ENV = terminalEnv();
 
 export const USE_CONPTY_DLL = process.platform === 'win32';
 
-export function ptyOptions(size, cwd) {
+export function ptyOptions(size, cwd, extraEnv = null) {
   const opts = {
     name: 'xterm-256color',
     cols: size.cols,
     rows: size.rows,
-    env: PTY_ENV,
+    env: extraEnv ? { ...PTY_ENV, ...extraEnv } : PTY_ENV,
     useConptyDll: USE_CONPTY_DLL,
   };
   if (cwd) opts.cwd = cwd;
