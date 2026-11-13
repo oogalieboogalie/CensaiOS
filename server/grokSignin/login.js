@@ -7,6 +7,7 @@ import { resolveCli, managedBinDir } from '../cli-agents/install.js';
 import { buildAgentEnv } from '../cli-agents/env.js';
 import { agentHome } from '../cli-agents/paths.js';
 import { personalHomeDir, personalSignedIn } from '../cli-agents/personalHome.js';
+import { forgetChatThreads } from './chatThreads.js';
 
 /**
  * Signing in to your own Grok account from the Grok chat, with no terminal:
@@ -62,23 +63,33 @@ export function startGrokLogin(userId, { env = process.env, spawn = nodeSpawn, w
 
   let waiter = null;
   const wake = () => { if (waiter) { waiter(publicState(state)); waiter = null; } };
-  const onText = (chunk) => {
-    for (const raw of chunk.toString().replace(ANSI, '').split(/\r?\n/)) {
-      const line = raw.trim();
+  const readLines = (lines) => {
+    for (const raw of lines) {
+      const line = raw.replace(ANSI, '').trim();
       if (!line) continue;
       state.lines.push(line.slice(0, 300));
       if (state.lines.length > 40) state.lines.shift();
       if (!state.url && URL_RE.test(line)) state.url = line.match(URL_RE)[0].replace(/[).,]+$/, '');
       if (!state.code && CODE_RE.test(line)) state.code = line.match(CODE_RE)[0];
     }
-    if (state.url) wake();
   };
-  child.stdout.on('data', onText);
-  child.stderr.on('data', onText);
+  // A line can come in pieces, so each stream is read a whole line at a time:
+  // a link or code cut in two is never taken for the whole of it.
+  const readers = [child.stdout, child.stderr].map((stream) => {
+    let rest = '';
+    stream.on('data', (chunk) => {
+      const lines = `${rest}${chunk}`.split(/\r?\n/);
+      rest = lines.pop().slice(-2000);
+      readLines(lines);
+      if (state.url) wake();
+    });
+    return () => { readLines([rest]); rest = ''; };
+  });
   let settled = false;
   const finish = (code, err) => {
     if (settled) return;
     settled = true;
+    readers.forEach((flush) => flush());
     clearTimeout(state.timer);
     state.running = false;
     state.ok = personalSignedIn(grok, userId, env);
@@ -115,5 +126,7 @@ export async function grokLogout(userId, { env = process.env, spawn = nodeSpawn 
     });
   }
   fs.rmSync(path.join(home, grok.personalHome.loginFile), { force: true });
+  // The next sign-in may be another Grok account, which has none of these conversations.
+  forgetChatThreads(userId, env);
   log.info('grok signed out', { userId });
 }

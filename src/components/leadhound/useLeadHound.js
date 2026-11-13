@@ -63,18 +63,24 @@ export function useLeadHound({ win = {}, onUpdate } = {}) {
   const workspaceId = useWorkspaceStore((s) => s.workspaceId);
   const saved = win.leadHound || {};
   const [keyStatus, setKeyStatus] = React.useState({ loading: true, configured: false, source: null });
-  const [result, setResult] = React.useState(saved.result || null);
+  // The hunt lives on the window, so a teammate's hunt or edit shows at once.
+  // This screen's latest change shows straight away and gives way as soon as
+  // the board's copy arrives, so the next letter is always typed into the
+  // board's words (src/lib/collaboration/leadDraftText.js merges them).
+  const shared = saved.result || null;
+  const [mine, setMine] = React.useState({ shared, result: undefined });
+  if (mine.shared !== shared) setMine({ shared, result: undefined });
+  const result = mine.shared === shared && mine.result !== undefined ? mine.result : shared;
   const [running, setRunning] = React.useState(false);
   const [progress, setProgress] = React.useState({ stepIndex: 0, details: {} });
   const [error, setError] = React.useState('');
   const [errorCode, setErrorCode] = React.useState(null);
   const resultRef = React.useRef(result);
   resultRef.current = result;
-
-  // A teammate's hunt or edit arrives through window state.
-  React.useEffect(() => {
-    if (saved.result !== undefined && saved.result !== resultRef.current) setResult(saved.result || null);
-  }, [saved.result]);
+  const setResult = React.useCallback((next) => {
+    resultRef.current = next;
+    setMine((m) => ({ ...m, result: next }));
+  }, []);
 
   const loadStatus = React.useCallback(async () => {
     try {
@@ -114,17 +120,16 @@ export function useLeadHound({ win = {}, onUpdate } = {}) {
     } finally {
       setRunning(false);
     }
-  }, [running, workspaceId, onUpdate]);
+  }, [running, workspaceId, onUpdate, setResult]);
 
   const updateLead = React.useCallback((index, patch) => {
     const current = resultRef.current;
     if (!current?.leads?.[index]) return;
     const leads = current.leads.map((lead, i) => (i === index ? { ...lead, ...patch } : lead));
     const next = { ...current, leads };
-    resultRef.current = next;
     setResult(next);
     onUpdate?.({ leadHound: { brief: saved.brief || current.brief || null, result: next } });
-  }, [onUpdate, saved.brief]);
+  }, [onUpdate, saved.brief, setResult]);
 
   const saveTavilyKey = React.useCallback(async (apiKey) => {
     await readJson(await fetch('/api/keys', {
@@ -148,11 +153,10 @@ export function useLeadHound({ win = {}, onUpdate } = {}) {
 
   const reset = React.useCallback(() => {
     setResult(null);
-    resultRef.current = null;
     setError('');
     // The wake-up sample hunt's brief is not theirs; start them on a blank form.
     onUpdate?.({ leadHound: { brief: saved.sample ? null : saved.brief || null, result: null } });
-  }, [onUpdate, saved.brief, saved.sample]);
+  }, [onUpdate, saved.brief, saved.sample, setResult]);
 
   return {
     keyStatus, result, running, progress, error, errorCode,

@@ -78,7 +78,7 @@ export function NotePanel({ menu }) {
   return (
     <div className="hb-ab-panel">
       <div className="hb-ab-bar" role="group" aria-label="Branches behind the door">
-        <span className="hb-ab-bar-name">"API BAR"</span>
+        <span className="hb-ab-bar-name">"BEHIND THE DOOR"</span>
         <div className="hb-ab-doors">
           {(menu || []).map((b) => (
             <button key={b.branch} type="button" className="hb-ab-door" aria-pressed={b.branch === branch}

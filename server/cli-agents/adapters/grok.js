@@ -8,12 +8,14 @@ import { agentHome } from '../paths.js';
  *   grok -p <task> --output-format streaming-json --always-approve [-r <session>] [-m <model>]
  *
  * Grok takes the task as an argument, so it is passed as one argv element and
- * never through a shell. Headless Grok cannot stop and ask (approvals need its
- * ACP mode), so --always-approve lets it edit inside the task's worktree; the
- * person's own Grok deny rules still apply. It runs on the person's own Grok
- * sign-in (a SuperGrok or Grok Heavy plan) or XAI_API_KEY. Each censaiOS person
- * has their own GROK_HOME (personalHome.js), so one person's sign-in is never
- * another's.
+ * never through a shell. A person who starts a task gets --always-approve so
+ * headless Grok can edit inside the task's worktree (it cannot stop and ask;
+ * approvals need ACP); their own Grok deny rules still apply. A task an agent
+ * starts never gets that flag. --permission-mode dontAsk wins over a config
+ * file set to always-approve, and headless Grok then refuses anything that
+ * would need a yes. It runs on the person's own Grok sign-in (a SuperGrok or
+ * Grok Heavy plan) or XAI_API_KEY. Each censaiOS person has their own
+ * GROK_HOME (personalHome.js), so one person's sign-in is never another's.
  *
  * streaming-json events (docs.x.ai/build/cli/headless-scripting): text {data},
  * thought {data}, tool_call {toolCallId,title,kind,status,toolName,rawInput},
@@ -67,9 +69,11 @@ export const grok = {
   taskInArgs: true,
 
   // Read-only (reviews): only the read tools from xAI's headless docs, so a
-  // PR's text cannot talk it into running commands or editing files.
-  buildRun({ task, resumeSessionId, model, readOnly = false }) {
-    const args = ['-p', task, '--output-format', 'streaming-json', ...(readOnly ? ['--tools', 'read_file,grep,list_dir'] : ['--always-approve'])];
+  // PR's text cannot talk it into running commands or editing files. An
+  // agent-started task is approval-gated and never passes --always-approve.
+  buildRun({ task, resumeSessionId, model, readOnly = false, approvalGated = false }) {
+    const mode = readOnly ? ['--tools', 'read_file,grep,list_dir'] : (approvalGated ? ['--permission-mode', 'dontAsk'] : ['--always-approve']);
+    const args = ['-p', task, '--output-format', 'streaming-json', ...mode];
     if (resumeSessionId && SAFE_ID.test(resumeSessionId)) args.push('-r', resumeSessionId);
     if (model && SAFE_ID.test(model)) args.push('-m', model);
     return { args, stdin: [], keepStdinOpen: false };

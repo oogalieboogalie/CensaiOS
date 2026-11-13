@@ -1,7 +1,7 @@
 {
   "channel": "stable",
-  "version": "0.6.0",
-  "date": "2026-11-01",
-  "source": "ffdc3b8bcca2c0f62ab517e898f340756c637d33",
-  "nightly": "0.6.0-nightly.20261029"
+  "version": "0.7.0",
+  "date": "2026-11-13",
+  "source": "2ff91c7c464d1bc31a60f6895afb1ad8b8321828",
+  "nightly": "0.7.0-nightly.20261113"
 }

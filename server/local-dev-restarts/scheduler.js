@@ -120,7 +120,7 @@ do {
   foreach ($healthUrl in $healthUrls) {
     try {
       $health = Invoke-RestMethod -Uri $healthUrl -TimeoutSec 2
-      if ($health.ok -and $health.database -and $health.taskWorker.ready) { $healthy = $true; break }
+      if ($health.ok) { $healthy = $true; break }
     } catch {}
   }
 } while ((Get-Date) -lt $deadline)

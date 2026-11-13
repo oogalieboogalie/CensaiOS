@@ -36,16 +36,18 @@ describe('route map shadow contract', () => {
       '/workspaces/:workspaceId/members|/workspaces/:workspaceId/members|/workspaces/personal|/workspaces/:workspaceId/members/me',
       '/workspaces/:workspaceId/history|/workspaces/:workspaceId/history/:seq|/workspaces/:workspaceId/history/:seq/restore',
       '/workspaces/:workspaceId/workflows/:windowId/run|/workspaces/:workspaceId/workflows/:windowId/review|/workspaces/:workspaceId/workflows/:windowId/stop|/workspaces/:workspaceId/workflows/:windowId/trigger|/workspaces/:workspaceId/workflows/:windowId/trigger|/workspaces/:workspaceId/workflows/:windowId/runs',
-      '/workspaces/:workspaceId/share-links|/workspaces/:workspaceId/share-links|/workspaces/:workspaceId/share-links/:linkId|/workspaces/:workspaceId/share-links/:linkId/joins|/workspaces/:workspaceId/live|/workspaces/:workspaceId/windows/:windowId/public|/workspaces/:workspaceId/comments|/workspaces/:workspaceId/comments|/workspaces/:workspaceId/comments/:commentId/resolve',
+      '/workspaces/:workspaceId/share-links|/workspaces/:workspaceId/share-links|/workspaces/:workspaceId/share-links/:linkId|/workspaces/:workspaceId/share-links/:linkId/joins|/workspaces/:workspaceId/live|/workspaces/:workspaceId/windows/:windowId/public|/workspaces/:workspaceId/comments|/workspaces/:workspaceId/comments|/workspaces/:workspaceId/comments/:commentId/resolve|/workspaces/:workspaceId/comments/:commentId/translate',
       '/workspaces/:workspaceId/classes|/workspaces/:workspaceId/classes|/classes/:classId/roster|/classes/:classId/invite-codes|/classes/:classId/students/:enrollmentId/checkpoints/:checkpointId|/classes/:classId/students/:enrollmentId/hand|/classes/:classId/students/:enrollmentId/remove|/classes/:classId/end',
       '/image|/ideas/expand|/chat|/chat/capabilities|/chat/transcribe|/chat/speech|/group-chat',
       // agentsRouter: 23 sub-routers (incl. sub-agent helper +  communication + sales-leads + scout + leadhound + research + board templates + skill sets + blueprints + message router + Censai's plans).
-      'layers:23',
+      'layers:24',
       '/local-dev-restarts/notifications',
       '/window-sdk/scaffold|/window-sdk/new|/window-sdk/validate',
       '/jules/queue|/jules/sessions',
       '/schedules|/schedules|/schedules/:id|/schedules/:id',
       '/overseer/status|/overseer/start|/overseer/stop|/overseer/run',
+      // Needs you. Mounted on /api, limited to the signed-in owner.
+      '/confirmations|/confirmations|/confirmations/:id/done',
       '/containers|/containers/:id/logs|/containers/:id/restart|/containers/:id',
       '/kubernetes/status',
       // The sandbox router is no longer broad: it mounts at /api/sandbox

@@ -8,7 +8,7 @@ export function BlueprintAsk({ onAsk, busy, answer, onClear }) {
   const [question, setQuestion] = React.useState('');
   const submit = (event) => { event.preventDefault(); onAsk(question); };
   return (
-    <form className="hb-bp-ask" onSubmit={submit}>
+    <form className="hb-bp-ask hb-bar" onSubmit={submit}>
       <div className="hb-bp-ask-row">
         <Icon.Search size={13} />
         <input

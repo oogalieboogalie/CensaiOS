@@ -47,3 +47,7 @@ desktop-app/
 ai-review-*.json
 dist-demo
 .wrangler/
+.os-site-deploy/
+
+# Claude Code agent worktrees
+.claude/worktrees/

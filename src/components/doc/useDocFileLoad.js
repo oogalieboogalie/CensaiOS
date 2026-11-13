@@ -43,12 +43,14 @@ export function useDocFileLoad(win, setRealContent) {
           warnFileLoadFailed(KIND, loaded.status, loaded.reason);
           return;
         }
-        fileContentCache.set(url, loaded.content);
+        // A file only this computer's owner may read is not kept for later.
+        if (loaded.ownerOnly) fileContentCache.delete(url);
+        else fileContentCache.set(url, loaded.content);
         // Words typed since the kept copy showed are not replaced, so a Save
         // made then writes them over any newer words the file got, as it
         // would have without the kept copy; this read is the only gap.
         setRealContent((shown) => (kept === undefined || shown === kept ? loaded.content : shown));
-        settleRef.current('ready');
+        settleRef.current('ready', '', loaded.ownerOnly ? 'ownerOnly' : '');
       })
       .catch(() => {
         // With the kept copy showing, a read that did not get through changes nothing.
@@ -63,14 +65,15 @@ export function useDocFileLoad(win, setRealContent) {
 
   // Saved words are what a Document opened again shows first.
   const rememberSaved = React.useCallback((content) => {
-    if (win.filePath && !win.isGithub) fileContentCache.set(fileUrl(win), content);
-  }, [win.filePath, win.isGithub, win.githubRepo]);
+    if (win.filePath && !win.isGithub && !gate.offBoard) fileContentCache.set(fileUrl(win), content);
+  }, [win.filePath, win.isGithub, win.githubRepo, gate.offBoard]);
 
   return {
     loading: gate.loading,
     loadError: gate.loadError,
     canSave: gate.canSave && !win.isGithub,
     retryLoad: gate.retry,
+    offBoard: gate.offBoard,
     rememberSaved,
   };
 }

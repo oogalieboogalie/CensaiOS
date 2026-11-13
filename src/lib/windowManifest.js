@@ -14,6 +14,8 @@ import { WEEWOO_WINDOW_MANIFESTS } from './manifest/weewooWindows.js';
 import { SEARCH_WINDOW_MANIFESTS } from './manifest/searchWindows.js';
 import { VERTICAL_WINDOW_MANIFESTS } from './manifest/verticalWindows.js';
 import { NOTES_WINDOW_MANIFESTS } from './manifest/notesWindows.js';
+import { CONFIRMATIONS_WINDOW_MANIFESTS } from './manifest/confirmationsWindows.js';
+import { COMMS_WINDOW_MANIFESTS } from './manifest/commsWindows.js';
 
 export const WINDOW_MANIFEST_VERSION = 2;
 
@@ -46,6 +48,8 @@ export const WINDOW_MANIFESTS = Object.freeze([
   ...SEARCH_WINDOW_MANIFESTS,
   ...VERTICAL_WINDOW_MANIFESTS,
   ...NOTES_WINDOW_MANIFESTS,
+  ...CONFIRMATIONS_WINDOW_MANIFESTS,
+  ...COMMS_WINDOW_MANIFESTS,
 ]);
 
 export const WINDOW_MANIFEST_BY_KIND = Object.freeze(Object.fromEntries(
@@ -129,9 +133,12 @@ export const MODULE_MANIFESTS_BY_TYPE = Object.freeze(
 );
 
 /**
- * Launcher tiles, declaratively derived from the manifest and sorted by
- * `launcher.order`. The canvas empty-state renders these directly, so adding a
- * window's tile is a manifest `launcher` block — never a hand-edited button.
+ * Windows whose manifest `launcher` block says `show: true`, sorted by
+ * `launcher.order`. Only the empty board reads this list: it draws a starting
+ * button just for the three windows LAUNCHPAD_STARTS names
+ * (src/lib/launchpadStarts.js), with each one's icon and hover hint from here,
+ * and the spawn props of the two that open a window. The window header and
+ * Add (Ctrl+K) read a `launcher` block whether or not the window is listed.
  */
 export const LAUNCHER_MANIFESTS = Object.freeze(
   WINDOW_MANIFESTS

@@ -58,6 +58,24 @@ describe('FilesWindow', () => {
     expect(screen.getByDisplayValue('D:\\Repos\\CensaiHub\\docs')).toBeInTheDocument();
   });
 
+  test('clicking a file that is already open brings its window forward instead of opening it twice, gliding the board to it', async () => {
+    global.fetch = jest.fn(async () => ({ ok: true, json: async () => ({ children: [{ name: 'README.md', isDir: false, path: '/made-up/README.md' }] }) }));
+    const onSpawn = jest.fn();
+    const onSelect = jest.fn();
+    // On the board a window's `wins` prop holds only where windows are; the board's own list has each window's file.
+    // That window sits below the bottom of the screen.
+    useWorkspaceStore.setState({ pan: { x: 0, y: 0 }, zoom: 1, wins: [{ id: 'made-up-doc', kind: 'doc', filePath: '/made-up/README.md', isEditing: true, x: 40, y: 1600, w: 520, h: 250 }] });
+    render(<FilesWindow win={{ id: 'w', kind: 'files', mode: 'local', dirPath: '/made-up' }} onUpdate={jest.fn()} onSpawn={onSpawn}
+      onSelect={onSelect} wins={[{ id: 'made-up-doc', x: 40, y: 1600, w: 520, h: 250 }]} />);
+    const row = await screen.findByText(/README\.md/);
+    fireEvent.pointerDown(row, { clientX: 5, clientY: 5 });
+    fireEvent.pointerUp(window, { clientX: 5, clientY: 5 });
+    expect(onSelect).toHaveBeenCalledWith('made-up-doc');
+    expect(onSpawn).not.toHaveBeenCalled();
+    // Glided up just far enough that the window's bottom edge is on screen.
+    await waitFor(() => expect(useWorkspaceStore.getState().pan.y).toBe(-(1600 + 250 + 48 - window.innerHeight)));
+  });
+
   test('a folder that cannot be listed says why instead of looking empty', async () => {
     global.fetch = jest.fn(async () => ({ ok: false, status: 404, json: async () => ({ error: "censaiOS can't see D:\\Archive." }) }));
     render(<FilesWindow win={{ id: 'w', kind: 'files', mode: 'local', dirPath: 'D:\\Archive' }} onUpdate={jest.fn()} wins={[]} />);

@@ -1,0 +1,23 @@
+/* Teammates' cursors inside shared words (TeammateCarets.jsx): a thin line
+   in the person's colour where they are typing, their name on a small tag. */
+.hb-text-carets { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+
+.hb-text-caret {
+  position: absolute; left: 0; top: 0; width: 2px;
+  background: var(--caret-color, var(--accent));
+  border-radius: var(--radius-xs);
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+
+.hb-text-caret__tag {
+  position: absolute; left: 0; bottom: 100%;
+  padding: 0 5px; border-radius: var(--radius-xs) var(--radius-xs) var(--radius-xs) 0;
+  background: var(--caret-color, var(--accent)); color: var(--on-fill);
+  font-family: var(--font-sans); font-size: var(--text-xs); line-height: 1.5;
+  white-space: nowrap;
+}
+/* On the first line the name sits under the cursor, inside the box. */
+.hb-text-caret[data-tag-below="true"] .hb-text-caret__tag {
+  bottom: auto; top: 100%;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) var(--radius-xs);
+}

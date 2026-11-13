@@ -1,15 +1,28 @@
-import React from 'react';
+import { Icon } from '../../Icons.jsx';
 import { AgentRow, RunLogItem, RunCard } from './VexComponents.jsx';
 
-export function RegistryTab({ agents, isRunning }) {
+// An empty tab, the shared way: an icon tile, a title and one line of help.
+function Empty({ icon, title, children }) {
   return (
-    <div>
-      {agents.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>
-          <div style={{ fontSize: 'var(--text-2xl)', marginBottom: 8 }}>📭</div>
-          No agents found. Check the Vex registry.
-        </div>
-      ) : agents.map(agent => (
+    <div className="hb-empty">
+      <div className="hb-empty-icon">{icon}</div>
+      <div className="hb-empty-title">{title}</div>
+      <div className="hb-empty-text">{children}</div>
+    </div>
+  );
+}
+
+export function RegistryTab({ agents, isRunning }) {
+  if (agents.length === 0) {
+    return (
+      <Empty icon={<Icon.Inbox size={24} />} title="No agents found">
+        Check the Vex registry.
+      </Empty>
+    );
+  }
+  return (
+    <div className="hb-well vex-tray">
+      {agents.map((agent) => (
         <AgentRow key={agent.name} agent={agent} isRunning={isRunning} />
       ))}
     </div>
@@ -27,92 +40,85 @@ export function RunTab({
   activeRunData,
   logEndRef,
 }) {
+  if (!activeRunId && !isRunning) {
+    return (
+      <Empty icon={<Icon.Play size={24} />} title="No active run">
+        Press <strong>Run all agents</strong>, or pick a run from History.
+      </Empty>
+    );
+  }
+  const allGood = agentsSucceeded === agentsTotal;
+  const aggregate = activeRunData?.aggregate;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {!activeRunId && !isRunning ? (
-        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>
-          <div style={{ fontSize: 'var(--text-2xl)', marginBottom: 8 }}>⚡</div>
-          No active run. Hit <strong>Run All Agents</strong> or pick a run from History.
+    <div className="vex-run">
+      <div className="hb-panel vex-run-head">
+        <div className="vex-run-what">
+          <div className="vex-run-id">{activeRunId}</div>
+          {activeMeta && (
+            <div className="vex-run-task">
+              Task: <strong>{activeMeta.task}</strong>
+              {runComplete && ` · ${agentsSucceeded}/${agentsTotal} agents succeeded`}
+            </div>
+          )}
         </div>
-      ) : (
-        <>
-          {/* Run header */}
-          <div style={{ padding: '0 12px 10px', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)' }}>
-                {activeRunId}
-              </div>
-              {activeMeta && (
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', marginTop: 2 }}>
-                  Task: <strong>{activeMeta.task}</strong>
-                  {runComplete && ` · ${agentsSucceeded}/${agentsTotal} agents succeeded`}
-                </div>
-              )}
-            </div>
-            {isRunning && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', color: 'var(--status-purple)' }}>
-                <span style={{ animation: 'vex-spin 0.8s linear infinite', display: 'inline-block' }}>⟳</span>
-                Orchestrating…
-              </div>
-            )}
-            {runComplete && (
-              <div style={{ fontSize: 'var(--text-xs)', color: agentsSucceeded === agentsTotal ? 'var(--success)' : 'var(--warning)', fontWeight: 600 }}>
-                {agentsSucceeded === agentsTotal ? '✓ Complete' : `⚠ ${agentsTotal - agentsSucceeded} failed`}
-              </div>
-            )}
+        {isRunning && (
+          <div className="vex-run-state" data-tone="busy">
+            <span className="vex-spin">⟳</span>
+            Orchestrating…
           </div>
-
-          {/* Per-agent results */}
-          {activeMeta?.agents?.length > 0 && (
-            <div style={{ padding: '0 12px 10px' }}>
-              {activeMeta.agents.map((a, i) => {
-                const color = a.success ? 'var(--success)' : 'var(--danger)';
-                return (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 'var(--text-xs)' }}>
-                    <span style={{ color, fontSize: 'var(--text-base)' }}>{a.success ? '✓' : '✗'}</span>
-                    <span style={{ fontWeight: 600, color: 'var(--ink)', minWidth: 120 }}>{a.agent_name}</span>
-                    <span style={{ color: 'var(--ink-soft)' }}>
-                      {a.success ? `${a.duration_ms}ms${a.validated ? ' · validated' : ''}` : (a.error || `exit ${a.exit_code}`)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Event log */}
-          <div style={{ flex: 1, overflow: 'auto', padding: '8px 12px', background: 'color-mix(in oklab, var(--color-black) 15%, transparent)', borderRadius: 'var(--radius-lg)', margin: '0 6px', fontFamily: 'var(--font-mono)', minHeight: 120 }}>
-            {activeEvents.length === 0 && isRunning && (
-              <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>Waiting for events…</div>
-            )}
-            {activeEvents.map((e, i) => <RunLogItem key={i} event={e} />)}
-            <div ref={logEndRef} />
+        )}
+        {runComplete && (
+          <div className="vex-run-state" data-tone={allGood ? 'good' : 'warn'}>
+            {allGood ? '✓ Complete' : `⚠ ${agentsTotal - agentsSucceeded} failed`}
           </div>
+        )}
+      </div>
 
-          {/* Aggregate result */}
-          {activeRunData?.aggregate && Object.keys(activeRunData.aggregate).length > 0 && (
-            <div style={{ margin: '10px 6px 0', padding: '10px 12px', background: 'color-mix(in oklab, var(--color-black) 12%, transparent)', borderRadius: 'var(--radius-lg)' }}>
-              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-soft)', marginBottom: 6 }}>Aggregated Result</div>
-              <pre style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--ink-faint)', overflow: 'auto', maxHeight: 160, margin: 0 }}>
-                {JSON.stringify(activeRunData.aggregate, null, 2).slice(0, 2000)}
-              </pre>
+      {activeMeta?.agents?.length > 0 && (
+        <div className="vex-results">
+          {activeMeta.agents.map((a, i) => (
+            <div key={i} className="vex-result">
+              <span className="vex-result-mark" data-ok={a.success ? 'true' : 'false'}>{a.success ? '✓' : '✗'}</span>
+              <span className="vex-result-name">{a.agent_name}</span>
+              <span className="vex-result-text">
+                {a.success ? `${a.duration_ms}ms${a.validated ? ' · validated' : ''}` : (a.error || `exit ${a.exit_code}`)}
+              </span>
             </div>
-          )}
-        </>
+          ))}
+        </div>
+      )}
+
+      <div className="hb-well vex-log">
+        {activeEvents.length === 0 && isRunning && (
+          <div className="vex-log-wait">Waiting for events…</div>
+        )}
+        {activeEvents.map((e, i) => <RunLogItem key={i} event={e} />)}
+        <div ref={logEndRef} />
+      </div>
+
+      {aggregate && Object.keys(aggregate).length > 0 && (
+        <div className="hb-well vex-aggregate">
+          <div className="vex-aggregate-title">Aggregated Result</div>
+          <pre className="vex-aggregate-text">
+            {JSON.stringify(aggregate, null, 2).slice(0, 2000)}
+          </pre>
+        </div>
       )}
     </div>
   );
 }
 
 export function HistoryTab({ runs, activeRunId, loadRun }) {
+  if (runs.length === 0) {
+    return (
+      <Empty icon={<Icon.History size={24} />} title="No runs yet">
+        Runs you start show up here.
+      </Empty>
+    );
+  }
   return (
-    <div style={{ padding: '0 6px' }}>
-      {runs.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>
-          <div style={{ fontSize: 'var(--text-2xl)', marginBottom: 8 }}>🗂</div>
-          No runs yet.
-        </div>
-      ) : runs.map(run => (
+    <div className="hb-well vex-tray">
+      {runs.map((run) => (
         <RunCard
           key={run.run_id}
           run={run}
@@ -130,60 +136,42 @@ export function ConfigTab({
   payloadInput, setPayloadInput,
 }) {
   return (
-    <div style={{ padding: '0 12px' }}>
-      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', fontWeight: 600, marginBottom: 8, marginTop: 4 }}>Run Configuration</div>
+    <div className="vex-config">
+      <div className="vex-config-title">Run Configuration</div>
 
-      <label style={{ display: 'block', marginBottom: 12 }}>
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginBottom: 4 }}>Task name</div>
+      <label className="vex-field">
+        <span className="vex-field-label">Task name</span>
         <input
+          className="vex-input"
           value={taskInput}
-          onChange={e => setTaskInput(e.target.value)}
+          onChange={(e) => setTaskInput(e.target.value)}
           placeholder="demo"
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            padding: '8px 10px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--hairline)',
-            background: 'var(--surface-raised)',
-            color: 'var(--ink)', fontSize: 'var(--text-sm)', fontFamily: 'inherit',
-            outline: 'none',
-          }}
         />
       </label>
 
-      <label style={{ display: 'block', marginBottom: 12 }}>
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginBottom: 4 }}>Filter (capability or tag)</div>
+      <label className="vex-field">
+        <span className="vex-field-label">Filter (capability or tag)</span>
         <input
+          className="vex-input"
           value={filterInput}
-          onChange={e => setFilterInput(e.target.value)}
+          onChange={(e) => setFilterInput(e.target.value)}
           placeholder="Leave blank to run all agents"
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            padding: '8px 10px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--hairline)',
-            background: 'var(--surface-raised)',
-            color: 'var(--ink)', fontSize: 'var(--text-sm)', fontFamily: 'inherit',
-            outline: 'none',
-          }}
         />
       </label>
 
-      <label style={{ display: 'block', marginBottom: 12 }}>
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', marginBottom: 4 }}>Payload (JSON)</div>
+      <label className="vex-field">
+        <span className="vex-field-label">Payload (JSON)</span>
         <textarea
+          className="vex-input vex-input--code"
           value={payloadInput}
-          onChange={e => setPayloadInput(e.target.value)}
+          onChange={(e) => setPayloadInput(e.target.value)}
           rows={4}
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            padding: '8px 10px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--hairline)',
-            background: 'var(--surface-raised)',
-            color: 'var(--ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)',
-            outline: 'none', resize: 'vertical',
-          }}
         />
       </label>
 
-      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', lineHeight: 1.6 }}>
-        <strong>Tip:</strong> Agents receive <code>{"{ task, payload }"}</code> as input.
-        <br />Set <code>payload.repo_path</code> for repo_mapper, <code>payload.file_path</code> for code_reviewer.
+      <div className="vex-tip">
+        <strong>Tip:</strong> Agents receive <code className="hb-code">{'{ task, payload }'}</code> as input.
+        <br />Set <code className="hb-code">payload.repo_path</code> for repo_mapper, <code className="hb-code">payload.file_path</code> for code_reviewer.
       </div>
     </div>
   );

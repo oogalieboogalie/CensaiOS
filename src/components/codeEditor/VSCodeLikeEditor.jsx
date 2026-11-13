@@ -7,6 +7,7 @@ import CodeMirror, { EditorView, ExternalChange } from '@uiw/react-codemirror';
 import { diffText } from '../../../shared/collab/textDiff.js';
 import { extensionsForLanguage } from './editorExtensions.js';
 import { buildEditorTheme } from './codeMirrorTheme.js';
+import { useCodeCarets } from './useCodeCarets.js';
 
 function selectionFromState(state) {
   const main = state.selection.main;
@@ -18,10 +19,11 @@ function selectionFromState(state) {
 }
 
 export const VSCodeLikeEditor = React.forwardRef(function VSCodeLikeEditor(
-  { code, language, editorTheme, fontSize, readOnly, onChange, onSelection },
+  { code, language, editorTheme, fontSize, readOnly, onChange, onSelection, caretWindowId = null },
   ref,
 ) {
   const viewRef = React.useRef(null);
+  const [view, setView] = React.useState(null);
   const onSelectionRef = React.useRef(onSelection);
   onSelectionRef.current = onSelection;
 
@@ -38,6 +40,8 @@ export const VSCodeLikeEditor = React.forwardRef(function VSCodeLikeEditor(
     () => [EditorView.editable.of(!readOnly)],
     [readOnly],
   );
+  // Teammates' cursors in this window's shared code, and ours for them.
+  const caretExtensions = useCodeCarets(view, caretWindowId);
 
   // CodeMirror stays uncontrolled after mount: the wrapper's own value sync
   // defers updates while you type and later replays a stale copy, which
@@ -75,12 +79,12 @@ export const VSCodeLikeEditor = React.forwardRef(function VSCodeLikeEditor(
         height="100%"
         width="100%"
         theme={themeExtension}
-        extensions={[...languageExtensions, ...baseExtensions]}
+        extensions={[...languageExtensions, ...baseExtensions, ...caretExtensions]}
         readOnly={Boolean(readOnly)}
         indentWithTab={false}
         basicSetup={{ autocompletion: true, bracketMatching: true, closeBrackets: true }}
         onChange={(value, viewUpdate) => onChange?.(value, viewUpdate.startState.doc.toString())}
-        onCreateEditor={(view) => { viewRef.current = view; }}
+        onCreateEditor={(created) => { viewRef.current = created; setView(created); }}
         onUpdate={(viewUpdate) => {
           if (viewUpdate.selectionSet) reportSelection(viewUpdate.state);
         }}

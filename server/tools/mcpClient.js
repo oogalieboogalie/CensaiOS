@@ -7,6 +7,7 @@ import { safeErrorCode } from '../security/errorCode.js';
 import { TOOL_DEFINITIONS } from './definitions.js';
 import { TOOL_REGISTRY } from './handlers/index.js';
 import { registerHandAddedTool } from './rbac/hostOwnerOnly.js';
+import { spawnParts } from './mcpSpawnArgs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,7 +30,7 @@ class McpServerConnection {
     // Arguments often carry an API key or token: log only the program's name and how many there are.
     log.info(`Connecting to MCP server: ${this.name}`, { program: path.basename(String(command || '')), argCount: args.length });
 
-    this.process = spawn(command, args, {
+    this.process = spawn(...spawnParts(command, args), {
       env: { ...process.env, ...env },
       shell: process.platform === 'win32'
     });

@@ -2,6 +2,7 @@ import express from 'express';
 import { requireDb } from './shared.js';
 import { agentRouteError } from './scope.js';
 import { resolveSubAgentRouteScope } from './subagentScope.js';
+import { resolveSubAgentWrite } from './subagentWrites.js';
 import pool from '../../db.js';
 import { resolveAuthorizedWorkspaceProject } from '../../workspaces/projectAccess.js';
 import {
@@ -41,7 +42,7 @@ subagentsRouter.get('/sub-agents/:parentId', requireDb, async (req, res) => {
 
 subagentsRouter.post('/sub-agents', requireDb, async (req, res) => {
   try {
-    const scope = await resolveSubAgentRouteScope(req);
+    const scope = await resolveSubAgentWrite(req);
     const { parentId, name, role, specialty, systemPrompt, hue, permission, projectId, modelProvider, modelName, model_provider, model_name, toolScopes, tool_scopes } = req.body;
     if (!parentId || !name) return res.status(400).json({ error: 'parentId and name required' });
     const authorizedProject = projectId ? await resolveAuthorizedWorkspaceProject(pool, {
@@ -71,7 +72,7 @@ subagentsRouter.post('/sub-agents', requireDb, async (req, res) => {
 
 subagentsRouter.put('/sub-agents/:id', requireDb, async (req, res) => {
   try {
-    const scope = await resolveSubAgentRouteScope(req);
+    const scope = await resolveSubAgentWrite(req);
     const current = await getSubAgentById(req.params.id, scope);
     if (!current) return res.status(404).json({ error: 'Sub-agent not found' });
     const requestedProjectId = req.body?.projectId || req.body?.project_id || null;
@@ -94,7 +95,7 @@ subagentsRouter.put('/sub-agents/:id', requireDb, async (req, res) => {
 
 subagentsRouter.delete('/sub-agents/:id', requireDb, async (req, res) => {
   try {
-    const scope = await resolveSubAgentRouteScope(req);
+    const scope = await resolveSubAgentWrite(req);
     const deleted = await deleteSubAgent(req.params.id, scope);
     if (!deleted) return res.status(404).json({ error: 'Sub-agent not found' });
     res.json({ ok: true });

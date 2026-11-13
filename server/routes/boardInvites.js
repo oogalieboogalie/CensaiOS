@@ -24,6 +24,7 @@ import { establishAuthenticatedSession } from '../security/authSession.js';
 import {
   inviteToBoard, listMyInvites, markInvite, previewJoinCode, redeemJoinCode,
 } from '../invites/store.js';
+import { emailOfKnownPerson, listKnownPeople } from '../invites/people.js';
 
 const log = createLogger('invites');
 const ID_PATTERN = /^[a-zA-Z0-9._:-]{1,96}$/;
@@ -51,8 +52,14 @@ boardInvitesRouter.post('/workspaces/:workspaceId/invites', async (req, res) => 
   if (!signedIn(req, res)) return;
   const { workspaceId } = req.params;
   try {
+    // A tapped name (personId) is someone you already share a board with.
+    let email = req.body?.email;
+    if (req.body?.personId != null) {
+      email = await emailOfKnownPerson(pool, req.session.userId, req.body.personId);
+      if (!email) return res.status(404).json({ error: 'That person is not on any of your boards.' });
+    }
     const result = await inviteToBoard(pool, {
-      workspaceId, userId: req.session.userId, email: req.body?.email, allowJoinLinks: joinLinksAllowed(),
+      workspaceId, userId: req.session.userId, email, allowJoinLinks: joinLinksAllowed() && req.body?.personId == null,
     });
     if (result.kind === 'account') {
       log.info('invite: sent to an account', { workspaceId, by: req.session.userId, to: result.member.id, notified: result.notified });
@@ -69,6 +76,15 @@ boardInvitesRouter.post('/workspaces/:workspaceId/invites', async (req, res) => 
   } catch (error) {
     log.info('invite: refused', { workspaceId, by: req.session.userId, reason: safeErrorCode(error) || 'refused' });
     sendError(res, error, 'invite');
+  }
+});
+
+boardInvitesRouter.get('/invites/people', async (req, res) => {
+  if (!signedIn(req, res)) return;
+  try {
+    res.json({ people: await listKnownPeople(pool, req.session.userId) });
+  } catch (error) {
+    sendError(res, error, 'listing people');
   }
 });
 

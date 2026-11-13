@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -11,6 +12,7 @@ import { claimCliLogin } from '../cli-agents/loginOwner.js';
 import { personalSignedIn } from '../cli-agents/personalHome.js';
 import { cliMayUseServerKeys } from '../cli-agents/serverKeyScope.js';
 import { USE_CONPTY_DLL } from './shared.js';
+import { githubGitEnv } from './githubLogin.js';
 
 /**
  * A terminal that opens straight into a coding CLI (Claude Code, Codex,
@@ -89,12 +91,35 @@ export async function cliCredentialFor(adapter, userId, env = process.env, resol
   return { key: null, home: agentHome(env) };
 }
 
+/**
+ * Claude Code in a terminal tab picks its conversation back up after
+ * censaiOS restarts or the desktop app updates. Each tab and folder maps to
+ * one fixed conversation id: the first launch starts it with --session-id,
+ * and once its transcript is saved, later launches --resume it.
+ */
+export function terminalConversationId(sessionKey, cwd) {
+  const hex = crypto.createHash('sha256').update(`${sessionKey}\0${cwd}`).digest('hex');
+  const variant = ((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+export function conversationArgs(adapter, { sessionKey, cwd, home }) {
+  if (adapter.id !== 'claudecode' || !sessionKey) return [];
+  const id = terminalConversationId(sessionKey, cwd);
+  const projects = path.join(home, '.claude', 'projects');
+  let saved = false;
+  try {
+    saved = fs.readdirSync(projects).some((dir) => fs.existsSync(path.join(projects, dir, `${id}.jsonl`)));
+  } catch { /* no conversations saved yet */ }
+  return saved ? ['--resume', id] : ['--session-id', id];
+}
+
 export function privateHome(userId, env = process.env) {
   const safe = String(userId ?? 'anon').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 64) || 'anon';
   return path.join(cliDataRoot(env), 'user-homes', safe);
 }
 
-export async function startCliBackend({ cli, cwd, size, userId, write = () => {}, env = process.env, spawn = pty.spawn, mayUse = cliMayUseServerKeys }) {
+export async function startCliBackend({ cli, cwd, size, userId, sessionKey = null, write = () => {}, env = process.env, spawn = pty.spawn, mayUse = cliMayUseServerKeys, gitLogin = githubGitEnv }) {
   const adapter = terminalCliAdapter(cli);
   if (!adapter) throw new Error('Unknown coding CLI.');
   await ensureCliInstalled(adapter, write, env);
@@ -106,16 +131,17 @@ export async function startCliBackend({ cli, cwd, size, userId, write = () => {}
     cols: size.cols,
     rows: size.rows,
     cwd,
-    env: interactiveCliEnv({ adapter, key, env, home, userId, serverKeys: await mayUse(userId) }),
+    env: { ...interactiveCliEnv({ adapter, key, env, home, userId, serverKeys: await mayUse(userId) }), ...await gitLogin(userId) },
     useConptyDll: USE_CONPTY_DLL,
   };
   // Not signed in to their own Grok yet: start with its code sign-in.
   const signIn = Boolean(adapter.personalHome && adapter.loginArgs && !personalSignedIn(adapter, userId, env));
-  const args = signIn ? adapter.loginArgs : [];
+  const args = signIn ? adapter.loginArgs : conversationArgs(adapter, { sessionKey, cwd, home: home || env.HOME || os.homedir() });
   // A Windows .cmd shim needs cmd.exe to run it.
   const proc = launch.shell
     ? spawn(env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', launch.command, ...args], options)
     : spawn(launch.command, [...launch.prefixArgs, ...args], options);
-  const note = signIn ? `Sign in to your own ${adapter.label} account: open the link below and enter the code. When it says you are signed in, press Enter to start ${adapter.label}.` : undefined;
+  // xAI's link has the code in it already and its page only asks to confirm it.
+  const note = signIn ? `Sign in to your own ${adapter.label} account: open the link below and check that the page shows the code below (enter it if the page asks for it). When it says you are signed in, press Enter to start ${adapter.label}.` : undefined;
   return { proc, label: adapter.label, isSandbox: false, shell: 'bash', cli: adapter.id, note };
 }

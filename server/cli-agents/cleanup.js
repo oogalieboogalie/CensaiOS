@@ -133,7 +133,7 @@ export const cleanupMethods = {
         await this.archiveChanges(`orphan-${path.basename(repoDir)}-${path.basename(dir)}`, dir).catch(() => null);
         if (repoRoot) await this.wt.removeWorktree({ repoRoot, dir, branch });
         fs.rmSync(dir, { recursive: true, force: true });
-        log.info('removed leftover cli agent worktree', { dir });
+        log.info('removed leftover cli agent worktree');
       }
       if (listDirs(repoDir).length === 0) fs.rmSync(repoDir, { recursive: true, force: true });
     }

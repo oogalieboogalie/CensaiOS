@@ -17,6 +17,10 @@
 //   5. Pass: the project is committed with git.
 //   6. Reflection: two positives and one negative per agent, and what was
 //      learned, which the next Legion's Architect reads.
+//
+// Its place is saved at every phase and queue change (`checkpoint`), so a
+// run picked up after a restart (`resume`, server/legion/checkpoint.js)
+// skips planning and carries on from there.
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { BUILD_ORDER, PROMPTS, ROLES, contextBlock } from './roles.js';
@@ -31,6 +35,7 @@ import { failedJobs, runChecks } from './validate.js';
 import { selfEducate } from './educate.js';
 import { memoryInMemory } from './memory.js';
 import { combineFrontAndBack, needsCombine } from './combine.js';
+import { checkpointOf, resumePoint } from './checkpoint.js';
 
 export const MAX_FIX_ROUNDS = 3;
 const str = (value, max = 4000) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
@@ -43,6 +48,7 @@ export async function runLegion({
   goal, models, account, dir, emit, signal, lessons = [], maxFixRounds = MAX_FIX_ROUNDS, spec: personSpec = null,
   ask = callModel, look = lookAtProject, commit = commitProject,
   askPerson = async () => '', search = async () => [], concurrency, selfEducate: educateFirst = true, memory = memoryInMemory(),
+  resume = null, checkpoint = () => {},
 }) {
   const projectDir = path.join(dir, 'project');
   const modelFor = (role) => models[role] || models.architect;
@@ -112,39 +118,61 @@ export async function runLegion({
     return written.length ? `Wrote ${written.join(', ')}` : 'Wrote no files';
   }
 
-  // 1. Spec.
-  emit({ type: 'phase', phase: 'plan' });
-  let spec = personSpec;
-  if (spec) {
-    plan = { summary: spec.goal, answers: '', gameplan: {}, specs: {} };
-    say('architect', `Working from your YAML spec: ${spec.jobs.length} job${spec.jobs.length === 1 ? '' : 's'} and ${spec.checks.length} check${spec.checks.length === 1 ? '' : 's'}.`);
+  // 1. Spec. A run picked up after a restart has its spec saved, so planning and the questions are skipped.
+  const back = resume ? resumePoint(resume, maxFixRounds) : null;
+  let spec = back?.spec || personSpec;
+  let jobs = back?.jobs || [];
+  let verdict = back?.verdict || null;
+  let committed = back?.committed || null;
+  const where = { phase: 'plan', round: 0 };
+  const save = () => checkpoint(checkpointOf({ ...where, plan, spec, jobs, chat, verdict, committed }));
+  const enter = (phase, extra = {}) => { Object.assign(where, { phase }, extra); emit({ type: 'phase', phase, ...extra }); save(); };
+  if (back) {
+    plan = back.plan;
+    chat.push(...back.chat);
+    emit({ type: 'note', text: 'Picked up where it left off after a restart.' });
   } else {
-    const team = { turn, say, emit, setPlan: (next) => { plan = next; } };
-    ({ plan, spec } = await planProject({ goal, team, lessons, askPerson: (q) => { stopIfAsked(); return askPerson(q, signal); }, search }));
+    if (resume) emit({ type: 'note', text: 'Picked up after a restart. The plan was not finished, so the Architect starts it again.' });
+    enter('plan');
+    if (spec) {
+      plan = { summary: spec.goal, answers: '', gameplan: {}, specs: {} };
+      say('architect', `Working from your YAML spec: ${spec.jobs.length} job${spec.jobs.length === 1 ? '' : 's'} and ${spec.checks.length} check${spec.checks.length === 1 ? '' : 's'}.`);
+    } else {
+      const team = { turn, say, emit, setPlan: (next) => { plan = next; } };
+      ({ plan, spec } = await planProject({ goal, team, lessons, askPerson: (q) => { stopIfAsked(); return askPerson(q, signal); }, search }));
+    }
+    await fs.writeFile(path.join(projectDir, 'legion.yaml'), specToYaml(spec), 'utf8');
+    emit({ type: 'spec', yaml: specToYaml(spec), from: personSpec ? 'person' : 'orchestrator' });
+    jobs = withBuildOrder(spec.jobs).map((job) => ({ ...job, status: 'queued', attempt: 0 }));
+    for (const role of BUILD_ORDER) {
+      if (!jobs.some((j) => j.owner === role)) emit({ type: 'role', role, status: 'skipped', note: 'No jobs for this builder.' });
+    }
   }
   const yamlText = specToYaml(spec);
-  await fs.writeFile(path.join(projectDir, 'legion.yaml'), yamlText, 'utf8');
-  emit({ type: 'spec', yaml: yamlText, from: personSpec ? 'person' : 'orchestrator' });
-  const jobs = withBuildOrder(spec.jobs).map((job) => ({ ...job, status: 'queued', attempt: 0 }));
-  for (const role of BUILD_ORDER) {
-    if (!jobs.some((j) => j.owner === role)) emit({ type: 'role', role, status: 'skipped', note: 'No jobs for this builder.' });
-  }
-  const queueChanged = () => emit({ type: 'queue', jobs: snapshot(jobs) });
+  const queueChanged = () => { emit({ type: 'queue', jobs: snapshot(jobs) }); save(); };
+  const step = back?.step || 'build';
 
   // 2. Work Queue.
-  emit({ type: 'phase', phase: 'build' });
-  queueChanged();
-  await runQueue({ jobs, runJob, onChange: queueChanged, concurrency, stopIfAsked });
-  if (needsCombine(jobs)) {
-    const joined = await combineFrontAndBack({ projectDir, turn, emit, buildPrompt: PROMPTS.build });
-    chat.push({ role: 'architect', text: `Synthesis joined front and back: ${joined.files.join(', ') || 'they already fit'}${joined.notes ? `. ${joined.notes}` : ''}` });
-  }
+  if (step === 'build') {
+    enter('build');
+    queueChanged();
+    await runQueue({ jobs, runJob, onChange: queueChanged, concurrency, stopIfAsked });
+    if (needsCombine(jobs)) {
+      const joined = await combineFrontAndBack({ projectDir, turn, emit, buildPrompt: PROMPTS.build });
+      chat.push({ role: 'architect', text: `Synthesis joined front and back: ${joined.files.join(', ') || 'they already fit'}${joined.notes ? `. ${joined.notes}` : ''}` });
+    }
+  } else queueChanged();
 
   // 3 + 4. Validation Engine, and fixes by job UID until it passes.
-  let verdict = null;
-  for (let round = 0; round <= maxFixRounds; round += 1) {
+  for (let round = back?.round || 0; step !== 'end' && round <= maxFixRounds; round += 1) {
+    // Jobs sent back last round (or cut off by a restart) go through the queue first.
+    const fixing = jobs.filter((j) => j.status === 'queued').map((j) => j.id);
+    if (fixing.length) {
+      await runQueue({ jobs, runJob, onChange: queueChanged, concurrency, stopIfAsked });
+      say('architect', `FIX GENERATED for ${fixing.join(', ')}. Back to the Validation Engine.`);
+    }
     stopIfAsked();
-    emit({ type: 'phase', phase: 'check', round });
+    enter('check', { round });
     const files = await listFiles(projectDir);
     const shotName = `round-${round}.png`;
     const seen = await look({ projectDir, files, shotPath: path.join(dir, 'shots', shotName), signal });
@@ -169,32 +197,30 @@ export async function runLegion({
     chat.push({ role: 'echo', text: `${verdict.verdict}: ${verdict.summary}` });
     if (pass || round === maxFixRounds) break;
 
-    emit({ type: 'phase', phase: 'fix', round: round + 1 });
-    const back = failedJobs({ results, verdict: echo.verdict === 'OK' ? null : echo, jobs });
-    if (!back.size) for (const job of jobs.slice(-1)) back.set(job.id, [verdict.summary]);
-    const todo = [...back].map(([id, problems]) => `- ${id} (${ROLES[jobs.find((j) => j.id === id).owner].name}): ${problems.join(' / ')}`).join('\n');
+    enter('fix', { round: round + 1 });
+    const sent = failedJobs({ results, verdict: echo.verdict === 'OK' ? null : echo, jobs });
+    if (!sent.size) for (const job of jobs.slice(-1)) sent.set(job.id, [verdict.summary]);
+    const todo = [...sent].map(([id, problems]) => `- ${id} (${ROLES[jobs.find((j) => j.id === id).owner].name}): ${problems.join(' / ')}`).join('\n');
     const fixes = parseJsonReply(await turn('architect', `${PROMPTS.fix}\n\nFailed jobs:\n${todo}`))?.fixes || {};
-    for (const [id, problems] of back) {
+    for (const [id, problems] of sent) {
       const job = jobs.find((j) => j.id === id);
       job.fix = `${str(fixes[id]) || 'Fix what failed.'}\nWhat failed: ${problems.join(' / ')}`;
       job.status = 'queued';
     }
-    emit({ type: 'fixes', round: round + 1, fixes: Object.fromEntries([...back.keys()].map((id) => [id, str(fixes[id]) || 'Fix what failed.'])) });
-    await runQueue({ jobs, runJob, onChange: queueChanged, concurrency, stopIfAsked });
-    say('architect', `FIX GENERATED for ${[...back.keys()].join(', ')}. Back to the Validation Engine.`);
+    emit({ type: 'fixes', round: round + 1, fixes: Object.fromEntries([...sent.keys()].map((id) => [id, str(fixes[id]) || 'Fix what failed.'])) });
+    save();
   }
 
-  // 5. Commit when Echo said OK.
-  let committed = null;
-  if (verdict?.verdict === 'OK') {
-    emit({ type: 'phase', phase: 'commit' });
+  // 5. Commit when Echo said OK (once, even when a restart came after it).
+  if (verdict?.verdict === 'OK' && !committed) {
+    enter('commit');
     await fs.writeFile(path.join(projectDir, 'legion.yaml'), yamlText, 'utf8'); // the spec as agreed, even if a builder touched it
     committed = await commit(projectDir, `Legion: ${plan.summary || goal}`);
     emit({ type: 'commit', ...committed });
   }
 
   // 6. Reflection.
-  emit({ type: 'phase', phase: 'reflect' });
+  enter('reflect');
   let reflection = null;
   try {
     const story = `Outcome: Echo said ${verdict?.verdict || 'nothing'}${verdict?.summary ? ` (${verdict.summary})` : ''}. Agents: ${Object.values(ROLES).map((r) => r.name).join(', ')}.`;

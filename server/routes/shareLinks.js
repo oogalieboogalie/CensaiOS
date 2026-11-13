@@ -28,6 +28,20 @@ import {
 } from '../shareLinks/store.js';
 import { registerMemberCommentRoutes } from './shareLinkComments.js';
 import { ID_PATTERN, MANAGE_ROLES, publishLinkState, requireUser, sendError } from './shareLinkHttp.js';
+import { publicJoinUrl, takeAddressChanged } from '../shareLinks/boardTunnel.js';
+import { inviteLinkInput } from '../shareLinks/oneTimeInvite.js';
+
+async function joinUrl(req, res, token) {
+  try {
+    return await publicJoinUrl(req, token);
+  } catch (error) {
+    if (error?.code === 'PUBLIC_LINK_UNAVAILABLE') {
+      res.status(503).json({ error: error.message });
+      return '';
+    }
+    throw error;
+  }
+}
 
 // Fallback board source when the live Yjs server isn't running (tests,
 // scripts): the last saved snapshot.
@@ -71,11 +85,13 @@ shareLinksRouter.post('/workspaces/:workspaceId/share-links', async (req, res) =
       workspaceId: req.params.workspaceId, userId: req.session.userId, roles: MANAGE_ROLES,
     });
     const { link, token } = await createShareLink(pool, {
-      workspaceId: workspace.id, userId: req.session.userId, input: req.body || {},
+      workspaceId: workspace.id, userId: req.session.userId, input: inviteLinkInput(req.body || {}),
     });
     publishLinkState(workspace.id);
     // The raw token exists only in this response; the server keeps a hash.
-    res.status(201).json({ link: publicShareLink(link), token });
+    const url = await joinUrl(req, res, token);
+    if (!url) return undefined;
+    res.status(201).json({ link: publicShareLink(link), token, url, addressChanged: takeAddressChanged() });
   } catch (error) {
     sendError(res, error);
   }
@@ -145,7 +161,9 @@ shareLinksRouter.post('/workspaces/:workspaceId/live', async (req, res) => {
       input: { role: 'view', mode: 'live', stage: req.body?.stage !== false, label: 'Live show', expiresInHours: 12 },
     });
     publishLinkState(workspace.id);
-    return res.status(201).json({ link: publicShareLink(link), token });
+    const url = await joinUrl(req, res, token);
+    if (!url) return undefined;
+    return res.status(201).json({ link: publicShareLink(link), token, url, addressChanged: takeAddressChanged() });
   } catch (error) {
     return sendError(res, error);
   }

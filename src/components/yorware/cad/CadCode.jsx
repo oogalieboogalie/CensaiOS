@@ -1,11 +1,25 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { CAD_RECIPES } from '../../../lib/yorware/cadRecipes.js';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
+import { boardToCopy, copyToBoard } from '../../../lib/collaboration/draftCarets.js';
+import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
+import { CAD_CODE_FIELD } from './useCadDraft.js';
 
 /** The recipe: the code that makes the part, with line numbers. */
-export function CadCode({ cad }) {
-  const { code, dirty, canEdit } = cad;
+export function CadCode({ cad, winId }) {
+  const { code, dirty, canEdit, board } = cad;
   const gutterRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+  // A teammate's Run landing in my unsaved copy keeps my caret in place.
+  useSharedCaret(inputRef, code);
+  // Teammates' cursors in the recipe, and mine for them. Spots travel in the
+  // board's words, so my unsaved copy's spots are matched up both ways.
+  const boardCode = board.code;
+  useCaretReporter(inputRef, winId, CAD_CODE_FIELD, Boolean(winId), (at) => copyToBoard(at, code, boardCode));
+  const shared = useTeammateCarets(winId, CAD_CODE_FIELD, Boolean(winId));
+  const carets = React.useMemo(() => shared.map((c) => ({ ...c, index: boardToCopy(c.index, boardCode, code) })), [shared, boardCode, code]);
   const lines = code.split('\n').length;
 
   const onKeyDown = (e) => {
@@ -16,7 +30,7 @@ export function CadCode({ cad }) {
       const el = e.currentTarget;
       const { selectionStart: a, selectionEnd: b } = el;
       const next = `${code.slice(0, a)}  ${code.slice(b)}`;
-      cad.setDraft(next);
+      cad.setDraft(next, a + 2);
       requestAnimationFrame(() => { el.selectionStart = a + 2; el.selectionEnd = a + 2; });
     }
   };
@@ -33,9 +47,12 @@ export function CadCode({ cad }) {
       </div>
       <div className="hb-yc-editor">
         <pre className="hb-yc-gutter" ref={gutterRef} aria-hidden="true">{Array.from({ length: lines }, (_, i) => i + 1).join('\n')}</pre>
-        <textarea className="hb-yc-textarea" value={code} spellCheck={false} readOnly={!canEdit} aria-label="Recipe code"
-          onChange={(e) => cad.setDraft(e.target.value)} onKeyDown={onKeyDown}
-          onScroll={(e) => { if (gutterRef.current) gutterRef.current.scrollTop = e.currentTarget.scrollTop; }} />
+        <div className="hb-yc-box">
+          <textarea ref={inputRef} className="hb-yc-textarea" value={code} spellCheck={false} readOnly={!canEdit} aria-label="Recipe code"
+            onChange={(e) => cad.setDraft(e.target.value, e.target.selectionStart)} onKeyDown={onKeyDown}
+            onScroll={(e) => { if (gutterRef.current) gutterRef.current.scrollTop = e.currentTarget.scrollTop; }} />
+          <TeammateCarets boxRef={inputRef} carets={carets} text={code} />
+        </div>
       </div>
       <p className="hb-cr-hint">
         JavaScript on <a href="https://replicad.xyz/docs" target="_blank" rel="noreferrer">replicad</a>: a <code>params</code> list

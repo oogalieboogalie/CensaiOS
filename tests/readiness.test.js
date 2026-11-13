@@ -17,6 +17,9 @@ jest.unstable_mockModule('../server/secrets.js', () => ({
   }),
   optionalSecret: jest.fn((_key, fallback = null) => fallback),
   requireProductionSecret: jest.fn(() => null),
+  requireSecret: jest.fn((name) => {
+    throw new Error(`Missing required secret: ${name}`);
+  }),
 }));
 
 jest.unstable_mockModule('../server/memory/tenancyStatus.js', () => ({
@@ -115,16 +118,11 @@ describe('Readiness and Health API', () => {
     querySpy.mockRestore();
   });
 
-  it('GET /api/health returns 200 and legacy format', async () => {
+  it('GET /api/health returns 200 and only whether the app is up', async () => {
     expect(app.get('sessionStore').cleanupTimer).toBeNull();
     const res = await request(app).get('/api/health');
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('ok', true);
-    expect(res.body).toHaveProperty('database', true);
-    expect(res.body).toHaveProperty('modelProvider');
-    expect(res.body.modelProvider).toHaveProperty('ready', true);
-    expect(res.body).toHaveProperty('agentCardWorker');
-    expect(res.body).toHaveProperty('agentWakeupWorker');
+    expect(res.body).toEqual({ ok: true });
   });
 
   it('GET /api/ready returns 200 when all critical systems are up', async () => {
@@ -138,7 +136,8 @@ describe('Readiness and Health API', () => {
     const res = await request(app).get('/api/ready');
     expect(res.status).toBe(503);
     expect(res.body.ready).toBe(false);
-    expect(res.body.database.connected).toBe(false);
+    expect(res.body.database).toEqual({ connected: false, ready: false });
+    expect(JSON.stringify(res.body)).not.toContain('DB Down');
   });
 
   it('GET /api/ready fails closed when enabled free AI configuration is invalid', async () => {
@@ -150,11 +149,8 @@ describe('Readiness and Health API', () => {
     const res = await request(app).get('/api/ready');
     expect(res.status).toBe(503);
     expect(res.body.ready).toBe(false);
-    expect(res.body.freeAiAccess).toEqual({
-      ready: false,
-      enabled: true,
-      error: 'free_ai_configuration_invalid',
-    });
+    expect(res.body.freeAiAccess).toEqual({ ready: false });
+    expect(JSON.stringify(res.body.freeAiAccess)).not.toContain('enabled');
   });
 
   it('GET /api/ready fails closed when family boundary is not ready', async () => {
@@ -167,11 +163,8 @@ describe('Readiness and Health API', () => {
     expect(res.status).toBe(503);
     expect(res.body.ready).toBe(false);
     expect(res.body.degradedState).toBe('family_healing_untrusted');
-    expect(res.body.familyBoundary.healing).toEqual({
-      ready: false,
-      enabled: true,
-      state: 'blocked',
-    });
+    expect(res.body.familyBoundary).toEqual({ ready: false });
+    expect(JSON.stringify(res.body)).not.toContain('blocked');
   });
 
   it('GET /api/ready stays ready when family healing is enabled', async () => {
@@ -184,11 +177,9 @@ describe('Readiness and Health API', () => {
     const res = await request(app).get('/api/ready');
     expect(res.status).toBe(200);
     expect(res.body.ready).toBe(true);
-    expect(res.body.familyBoundary.healing).toEqual({
-      ready: true,
-      enabled: true,
-      state: 'enabled',
-    });
+    expect(res.body.familyBoundary).toEqual({ ready: true });
+    expect(JSON.stringify(res.body)).not.toContain('a'.repeat(64));
+    expect(JSON.stringify(res.body)).not.toContain('healing');
   });
 
   it('GET /api/ready fails closed when capability tenancy is unavailable', async () => {
@@ -197,7 +188,8 @@ describe('Readiness and Health API', () => {
     expect(res.status).toBe(503);
     expect(res.body.ready).toBe(false);
     expect(res.body.degradedState).toBe('agent_capability_ownership_unavailable');
-    expect(res.body.capabilityOwnership).toEqual({ ready: false, schema: { present: false } });
+    expect(res.body.capabilityOwnership).toEqual({ ready: false });
+    expect(JSON.stringify(res.body.capabilityOwnership)).not.toContain('schema');
   });
 
   it('GET /api/ready fails closed when tool approval tenancy is unavailable', async () => {
@@ -206,7 +198,8 @@ describe('Readiness and Health API', () => {
     expect(res.status).toBe(503);
     expect(res.body.ready).toBe(false);
     expect(res.body.degradedState).toBe('tool_approval_ownership_unavailable');
-    expect(res.body.toolApprovalOwnership).toEqual({ ready: false, schema: { present: false } });
+    expect(res.body.toolApprovalOwnership).toEqual({ ready: false });
+    expect(JSON.stringify(res.body.toolApprovalOwnership)).not.toContain('pendingCount');
   });
 
   it('GET /api/ready fails closed when reviewed tool package ownership is unavailable', async () => {
@@ -217,9 +210,8 @@ describe('Readiness and Health API', () => {
     expect(res.status).toBe(503);
     expect(res.body.ready).toBe(false);
     expect(res.body.degradedState).toBe('tool_package_ownership_unavailable');
-    expect(res.body.toolPackageOwnership).toEqual({
-      ready: false, invalidCount: 1, orphanCapabilityCount: 0,
-    });
+    expect(res.body.toolPackageOwnership).toEqual({ ready: false });
+    expect(JSON.stringify(res.body.toolPackageOwnership)).not.toContain('invalidCount');
   });
 
   it('GET /api/ready fails closed when AgentCard install tenancy is unavailable', async () => {
@@ -228,7 +220,8 @@ describe('Readiness and Health API', () => {
     expect(res.status).toBe(503);
     expect(res.body.ready).toBe(false);
     expect(res.body.degradedState).toBe('agent_card_install_ownership_unavailable');
-    expect(res.body.agentCardInstallOwnership).toEqual({ ready: false, schema: { present: false } });
+    expect(res.body.agentCardInstallOwnership).toEqual({ ready: false });
+    expect(JSON.stringify(res.body.agentCardInstallOwnership)).not.toContain('schema');
   });
 
   it('GET /api/ready returns 200 even if Qdrant is down (optional)', async () => {
@@ -237,7 +230,8 @@ describe('Readiness and Health API', () => {
 
     const res = await request(app).get('/api/ready');
     expect(res.status).toBe(200); // Still 200 because Qdrant is optional
-    expect(res.body.qdrant.ready).toBe(false);
+    expect(res.body.qdrant).toEqual({ ready: false, connected: false });
     expect(res.body.ready).toBe(true); // App is still "ready" for core tasks
+    expect(JSON.stringify(res.body)).not.toContain('Connection refused');
   });
 });

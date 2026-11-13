@@ -4,11 +4,14 @@
 //  the rest of the codebase doesn't deal with PATs, base64, or SHAs.
 // ═══════════════════════════════════════════════════════════════════
 
+import { LINKED_SECRET, OWNER_ONLY_FILE, linkedSecret } from './security/secretFiles.js';
+import { githubApiUrl } from './github/apiUrl.js';
+
 async function fetchGithub(endpoint, options = {}) {
   const token = process.env.GITHUB_TOKEN;
   if (!token) throw new Error('GITHUB_TOKEN not configured in .env');
   const needsContentType = options.method && ['POST', 'PUT', 'PATCH'].includes(options.method.toUpperCase());
-  const res = await fetch(`https://api.github.com${endpoint}`, {
+  const res = await fetch(`${githubApiUrl()}${endpoint}`, {
     ...options,
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -24,6 +27,12 @@ async function fetchGithub(endpoint, options = {}) {
   }
   if (res.status === 204) return null;
   return res.json();
+}
+
+/** True for "owner/name": one of each, never "." or "..", so it cannot carry a path of its own. */
+export function isRepoName(repo) {
+  const parts = String(repo || '').split('/');
+  return parts.length === 2 && parts.every((part) => /^[\w.-]+$/.test(part) && part !== '.' && part !== '..');
 }
 
 export async function getRepoInfo(repo) {
@@ -46,6 +55,7 @@ export async function getFile(repo, filePath, ref) {
   const url = `/repos/${repo}/contents/${encodeURI(filePath)}${ref ? `?ref=${encodeURIComponent(ref)}` : ''}`;
   const res = await fetchGithub(url);
   if (res.type === 'file' && typeof res.content === 'string') {
+    if (linkedSecret(filePath, res.path)) throw Object.assign(new Error(LINKED_SECRET), { code: OWNER_ONLY_FILE });
     return Buffer.from(res.content, 'base64').toString('utf8');
   }
   throw new Error(`Not a file: ${filePath}`);

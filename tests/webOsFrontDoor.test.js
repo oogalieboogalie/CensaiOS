@@ -33,7 +33,7 @@ function listening(server) {
   });
 }
 
-function knock(port, { method = 'GET', path: urlPath = '/', body, host = 'localhost:3002' } = {}) {
+function knock(port, { method = 'GET', path: urlPath = '/', body, host = 'localhost:3002', origin } = {}) {
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : undefined;
     const req = http.request({
@@ -41,14 +41,18 @@ function knock(port, { method = 'GET', path: urlPath = '/', body, host = 'localh
       port,
       method,
       path: urlPath,
-      headers: { host, ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}) },
+      headers: {
+        host,
+        ...(origin ? { origin } : {}),
+        ...(data ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) } : {}),
+      },
     }, (res) => {
       let text = '';
       res.on('data', (chunk) => { text += chunk; });
       res.on('end', () => {
         let json = null;
         try { json = JSON.parse(text); } catch { /* html */ }
-        resolve({ status: res.statusCode, text, json });
+        resolve({ status: res.statusCode, text, json, cookie: res.headers['set-cookie'] });
       });
     });
     req.on('error', reject);
@@ -138,12 +142,28 @@ describe('with Open anywhere on', () => {
   });
 
   test('no other sign-in without a code either', async () => {
-    for (const urlPath of ['/api/auth/local', '/api/auth/google', '/api/hub-auth/login']) {
-      const method = urlPath.endsWith('google') ? 'GET' : 'POST';
+    for (const urlPath of ['/api/auth/local', '/api/auth/google', '/api/hub-auth/login', '/api/hub-auth/signup', '/api/hub-auth/confirm-email']) {
+      const method = urlPath.endsWith('google') || urlPath.endsWith('confirm-email') ? 'GET' : 'POST';
       const res = await knock(doorPort(), { method, path: urlPath, body: method === 'POST' ? { username: 'x', password: 'y' } : undefined });
       expect(res.status).toBe(403);
       expect(res.json).toMatchObject({ pairRequired: true });
     }
+  });
+
+  // The router treats /API and /api as the same path. The gate has to as well,
+  // or an unpaired computer signs up by changing the capitalization.
+  test.each([
+    ['POST', '/API/hub-auth/signup'],
+    ['POST', '/api/Hub-Auth/signup'],
+    ['GET', '/api/AUTH/google'],
+  ])('a different capitalization of %s %s still needs a code', async (method, urlPath) => {
+    const res = await knock(doorPort(), {
+      method,
+      path: urlPath,
+      body: method === 'POST' ? { username: 'x', password: 'y', email: 'alma@home.test' } : undefined,
+    });
+    expect(res.status).toBe(403);
+    expect(res.json).toMatchObject({ pairRequired: true });
   });
 
   test('the one-time code is let through to be checked', async () => {
@@ -159,6 +179,43 @@ describe('with Open anywhere on', () => {
 
   test('the board\'s live sync is handed on, marked as another computer', async () => {
     expect(await upgrade(doorPort())).toBe('HTTP/1.1 418 Through the door');
+  });
+
+  test('hub sign-up on the main port still needs a pairing code from another computer', async () => {
+    // A browser on another computer sends the address it opened as Origin.
+    // With Open anywhere on, that passes the write check and meets the code check.
+    for (const [method, urlPath] of [['POST', '/api/hub-auth/signup'], ['POST', '/api/hub-auth/login'], ['GET', '/api/hub-auth/confirm-email']]) {
+      const res = await knock(mainPort(), {
+        method,
+        path: urlPath,
+        host: '192.168.1.23:3002',
+        origin: 'http://192.168.1.23:3002',
+        body: method === 'POST' ? { username: 'x' } : undefined,
+      });
+      expect(res.status).toBe(403);
+      expect(res.json).toMatchObject({ pairRequired: true });
+      expect(res.cookie).toBeUndefined();
+    }
+    // A write with no Origin under another computer's address is no page of
+    // this app: the Host check refuses it before sign-up code runs at all.
+    for (const urlPath of ['/api/hub-auth/signup', '/api/hub-auth/login']) {
+      const res = await knock(mainPort(), {
+        method: 'POST',
+        path: urlPath,
+        host: '192.168.1.23:3002',
+        body: { username: 'x', password: 'y', email: 'alma@home.test' },
+      });
+      expect(res.status).toBe(403);
+      expect(res.json).toEqual({ error: 'Request host is not allowed.' });
+      expect(res.cookie).toBeUndefined();
+    }
+    const local = await knock(mainPort(), {
+      method: 'POST',
+      path: '/api/hub-auth/login',
+      host: 'localhost:3002',
+      body: { username: 'x', password: 'y' },
+    });
+    expect(local.json?.pairRequired).toBeUndefined();
   });
 
   test('sign-in on this computer itself is untouched', async () => {
@@ -178,6 +235,7 @@ describe('where censaiOS listens', () => {
     expect(defaultListenHost({ CENSAI_IN_CONTAINER: '1' }, 'local_desktop')).toBeUndefined();
     const compose = fs.readFileSync(path.join(process.cwd(), 'docker-compose.yml'), 'utf8');
     expect(compose).toContain('- "127.0.0.1:3002:3001"');
+    expect(compose).toContain('CENSAI_ALLOW_DEVELOPER_LOGIN: ${CENSAI_ALLOW_DEVELOPER_LOGIN:-true}');
     expect(compose).toContain('- "127.0.0.1:5433:5432"');
     expect(compose).toContain('- "127.0.0.1:6335:6333"');
     expect(compose).toContain('- "${CENSAI_OTHER_COMPUTERS_PORT:-3004}:3004"');

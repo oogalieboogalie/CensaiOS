@@ -5,6 +5,7 @@ import {
   listWorkspaceAgentProjects,
   replaceCanvasProjectMemberships,
 } from '../../workspaces/projectMemberships.js';
+import { refuseNewProjectToTeammate } from './newProjectOwnerOnly.js';
 
 export const projectMembershipsRouter = express.Router();
 
@@ -48,6 +49,12 @@ projectMembershipsRouter.put('/workspaces/:workspaceId/agent-projects/:projectId
       workspaceId: req.params.workspaceId,
       roles: ['owner', 'admin', 'member'],
     });
+    const refused = await refuseNewProjectToTeammate(req, {
+      workspaceId: req.params.workspaceId,
+      projectId: req.params.projectId,
+      memberships: req.body?.memberships,
+    });
+    if (refused) return res.status(refused.status).json(refused.body);
     const rows = await replaceCanvasProjectMemberships(pool, {
       workspaceId: req.params.workspaceId,
       projectId: req.params.projectId,

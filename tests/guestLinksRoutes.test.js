@@ -10,6 +10,7 @@ const sha = (value) => crypto.createHash('sha256').update(String(value)).digest(
 
 const pool = {
   query: jest.fn(async (sql, params = []) => {
+    if (/FROM share_link_joins WHERE link_id/.test(sql)) return { rows: joins.length ? [1] : [] };
     if (/FROM users/.test(sql)) return { rows: [{ id: params[0], name: 'Alma', email: 'alma@example.com' }] };
     if (/SELECT id, name FROM agents/.test(sql)) return { rows: [{ id: 'censai', name: 'Censai' }, { id: 'architect', name: 'The Architect' }] };
     if (/FROM agents WHERE id/.test(sql)) return { rows: [{ id: params[0], name: 'Censai', role: 'researcher' }] };
@@ -41,6 +42,7 @@ const callModel = jest.fn(async () => ({ choices: [{ message: { content: 'About 
 jest.unstable_mockModule('../server/aiGateway/index.js', () => ({
   callModel,
   createModelAccessContext: (value) => value,
+  workspaceUsageSink: jest.fn(),
 }));
 jest.unstable_mockModule('../server/shareLinks/store.js', () => ({
   ShareLinkError: class ShareLinkError extends Error {},
@@ -50,8 +52,11 @@ jest.unstable_mockModule('../server/shareLinks/store.js', () => ({
     const link = {
       id: `link-${links.size + 1}`, workspace_id: workspaceId, workspace_name: 'Rivera kitchen', token_hash: sha(token),
       role: input.role, mode: input.mode || 'link', scope_kind: input.scopeKind || 'board', scope_id: input.scopeId || null,
-      stage: Boolean(input.stage), passcode_hash: input.passcode ? realTokens.hashPasscode(input.passcode) : null,
-      has_passcode: Boolean(input.passcode), expires_at: null, agent_budget_tokens: input.agentBudgetTokens || 0,
+      stage: Boolean(input.stage), label: input.label || null,
+      passcode_hash: input.passcode ? realTokens.hashPasscode(input.passcode) : null,
+      has_passcode: Boolean(input.passcode),
+      expires_at: input.expiresInHours ? new Date(Date.now() + Number(input.expiresInHours) * 3600_000).toISOString() : null,
+      agent_budget_tokens: input.agentBudgetTokens || 0,
       agent_tokens_used: 0, created_by_user_id: userId, revoked_at: null,
     };
     links.set(link.id, link);
@@ -124,6 +129,21 @@ beforeEach(() => {
   comments.length = 0;
   callModel.mockClear();
   __resetGuestJoinLimitForTests();
+});
+
+test('a no-account invite is look-only, lasts 7 days, and works once', async () => {
+  const session = {};
+  const { token, link } = await makeLink({ oneTime: true, role: 'edit', expiresInHours: 1, agentBudgetTokens: 99 });
+  expect(link.role).toBe('view');
+  expect(link.label).toBe('One-time look');
+  expect(link.agent_budget_tokens).toBe(0);
+  expect(new Date(link.expires_at).getTime()).toBeGreaterThan(Date.now() + 6 * 24 * 3600_000);
+  const joined = await request(appWith(session)).post(`/api/guest/links/${token}/join`).send({ name: 'Maria' });
+  expect(joined.status).toBe(201);
+  expect(session.userId).toBeUndefined();
+  const again = await request(appWith({})).post(`/api/guest/links/${token}/join`).send({ name: 'Sam' });
+  expect(again.status).toBe(410);
+  expect(again.body.code).toBe('SHARE_LINK_USED');
 });
 
 test('only owners and admins manage links; the raw token is returned once', async () => {

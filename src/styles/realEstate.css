@@ -36,3 +36,4 @@ textarea.re-input { resize: vertical; line-height: 1.45; }
 .re-section { display: flex; flex-direction: column; gap: var(--space-2); }
 .re-empty { color: var(--ink-faint); padding: var(--space-4) 0; text-align: center; }
 .re-photos { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+.re-box { position: relative; display: flex; flex-direction: column; min-width: 0; }

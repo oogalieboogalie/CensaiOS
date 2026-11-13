@@ -5,9 +5,9 @@
 
 import { parseAgentFile, AgentImportError, MAX_IMPORT_BYTES } from '../../src/lib/agentImport/index.js';
 import { AccountImportError } from './elevenlabs.js';
+import { githubApiUrl } from '../github/apiUrl.js';
 
 export const MAX_REPO_AGENT_FILES = 30;
-const API = 'https://api.github.com';
 const REPO_RE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._-]{1,100}$/;
 
 /** "owner/repo" or a github.com link → "owner/repo", or null. */
@@ -44,9 +44,9 @@ async function ask(fetchImpl, url, token, accept) {
  * @returns {Promise<{repo:string, branch:string, agents:object[], skipped:{file:string, why:string}[], capped:boolean}>}
  */
 export async function listRepoAgents(repo, { token = null, fetchImpl = fetch, max = MAX_REPO_AGENT_FILES } = {}) {
-  const info = await ask(fetchImpl, `${API}/repos/${repo}`, token);
+  const info = await ask(fetchImpl, `${githubApiUrl()}/repos/${repo}`, token);
   const branch = info.default_branch || 'main';
-  const tree = await ask(fetchImpl, `${API}/repos/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`, token);
+  const tree = await ask(fetchImpl, `${githubApiUrl()}/repos/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`, token);
   const files = (tree.tree || [])
     .filter(item => item.type === 'blob' && agentFileHint(item.path))
     .sort((a, b) => a.path.localeCompare(b.path));
@@ -56,7 +56,7 @@ export async function listRepoAgents(repo, { token = null, fetchImpl = fetch, ma
     if (item.size > MAX_IMPORT_BYTES) { skipped.push({ file: item.path, why: 'too big to be an agent (over 512 KB)' }); continue; }
     const hint = agentFileHint(item.path);
     const encoded = item.path.split('/').map(encodeURIComponent).join('/');
-    const text = await ask(fetchImpl, `${API}/repos/${repo}/contents/${encoded}?ref=${encodeURIComponent(branch)}`, token, 'application/vnd.github.raw');
+    const text = await ask(fetchImpl, `${githubApiUrl()}/repos/${repo}/contents/${encoded}?ref=${encodeURIComponent(branch)}`, token, 'application/vnd.github.raw');
     try {
       const parsed = parseAgentFile(text, { platform: hint === 'detect' ? null : hint, fileName: item.path.split('/').pop() });
       for (const agent of parsed.agents) agents.push({ ...agent, sourceFile: item.path });

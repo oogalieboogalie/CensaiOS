@@ -4,7 +4,8 @@
  * POST /api/windows/import
  *   Accepts raw JSX + CSS (e.g. from AI Studio), adapts it via LLM to
  *   match Censai window conventions, writes the folder, and runs
- *   window:sync so it appears on the canvas immediately.
+ *   window:sync so the app knows it. It stays out of Add until someone
+ *   publishes it.
  *
  * POST /api/windows/sync
  *   Just runs window:sync and returns the result (used by UI to refresh).
@@ -28,6 +29,7 @@ import {
 } from '../window-import/windowPackageWriter.js';
 import { CapabilityDeniedError, requireCapability } from '../capabilities/checkCapability.js';
 import { resourceRateLimiter } from '../middleware/standardRateLimits.js';
+import { importCallerOrRefuse } from '../window-import/importModelAccess.js';
 
 const log = createLogger('window-import');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -82,7 +84,9 @@ Respond with EXACTLY this JSON structure (no markdown, raw JSON only):
 
 /**
  * POST /api/windows/import
- * Body: { rawJsx, rawCss?, hint?, kind?, label?, defaultSize?, launcher? }
+ * Body: { rawJsx, rawCss?, hint?, dry_run? }. The window's kind, label and
+ * size come from the model's answer, and its header icon from the writer
+ * (IMPORTED_WINDOW_LAUNCHER), never from the request.
  *
  * Steps:
  * 1. Call LLM to adapt the raw code
@@ -91,7 +95,7 @@ Respond with EXACTLY this JSON structure (no markdown, raw JSON only):
  * 4. Return { ok, kind, label, syncOutput }
  */
 windowImportRouter.post('/import', async (req, res) => {
-  const { rawJsx, rawCss = '', hint = '', launcher } = req.body;
+  const { rawJsx, rawCss = '', hint = '' } = req.body;
   const dryRun = req.body?.dry_run === true || req.body?.dryRun === true;
 
   if (!rawJsx || rawJsx.trim().length < 20) {
@@ -122,7 +126,10 @@ windowImportRouter.post('/import', async (req, res) => {
     log.info('adapting window code via LLM');
     const prompt = buildAdaptPrompt(rawJsx, rawCss, hint);
 
+    const caller = await importCallerOrRefuse(req, res);
+    if (!caller) return;
     const aiResponse = await callModel({
+      ...caller,
       body: {
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,
@@ -137,7 +144,7 @@ windowImportRouter.post('/import', async (req, res) => {
     try {
       adapted = parseLlmJsonResponse(rawContent);
     } catch {
-      log.error('LLM returned non-JSON', { rawContent: rawContent.slice(0, 500) });
+      log.error('LLM returned non-JSON', { chars: rawContent.length });
       return res.status(502).json({
         error: 'LLM did not return valid JSON. Try again or simplify the input.',
         rawLlmOutput: rawContent.slice(0, 1000),
@@ -160,7 +167,6 @@ windowImportRouter.post('/import', async (req, res) => {
       size,
       jsx,
       css,
-      launcher,
     });
     const validation = validateGeneratedWindow({
       kind: filePlan.kind,
@@ -193,12 +199,13 @@ windowImportRouter.post('/import', async (req, res) => {
     log.info('window files written', {
       kind: filePlan.kind,
       componentName: filePlan.componentName,
-      dir: filePlan.windowDir,
     });
 
     // ── Step 3: window:sync ────────────────────────────────────────────────
+    // Its output (folders, and the error's words when it fails) goes to the
+    // person's screen below, never to the log.
     const syncResult = await runWindowSync();
-    log.info('window:sync result', syncResult);
+    log.info('window:sync result', { ok: syncResult.ok });
 
     res.json({
       ok: true,

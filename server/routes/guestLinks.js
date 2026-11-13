@@ -18,6 +18,7 @@ import {
 import { answerAgentMentions } from '../shareLinks/agentReplies.js';
 import { resolveGuestSession } from '../shareLinks/guestSession.js';
 import { readProjectedBoard } from '../shareLinks/projector.js';
+import { oneTimeLinkUsed } from '../shareLinks/oneTimeInvite.js';
 import { findShareLinkByToken, linkIsActive, publicComment, recordShareLinkJoin } from '../shareLinks/store.js';
 import {
   createGuestId,
@@ -28,6 +29,7 @@ import {
 } from '../shareLinks/tokens.js';
 import { log, publishLinkState, sendError } from './shareLinkHttp.js';
 import { safeErrorCode } from '../security/errorCode.js';
+import { registerGuestCommentTranslate } from './commentTranslate.js';
 
 export const guestRouter = express.Router();
 
@@ -103,6 +105,9 @@ guestRouter.post('/links/:token/join', async (req, res) => {
     if (!link) {
       recordJoinFailure(attemptKey);
       return res.status(404).json({ error: 'This link was turned off, has expired, or never existed.', code: 'SHARE_LINK_INACTIVE' });
+    }
+    if (await oneTimeLinkUsed(pool, link)) {
+      return res.status(410).json({ error: 'This link was used already. Ask for a new one.', code: 'SHARE_LINK_USED' });
     }
     const name = normalizeGuestName(req.body?.name);
     if (!name) return res.status(400).json({ error: 'Type the name people will see.', code: 'GUEST_NAME_REQUIRED' });
@@ -233,3 +238,5 @@ guestRouter.post('/comments/:commentId/resolve', async (req, res) => {
     return sendError(res, error);
   }
 });
+
+registerGuestCommentTranslate(guestRouter, guestAccess);

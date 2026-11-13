@@ -21,7 +21,9 @@ jest.unstable_mockModule('../server/memory.js', async () => {
 
 const callModel = jest.fn();
 const createModelAccessContext = jest.fn(input => ({ verified: input }));
-const filterToolsForAgent = jest.fn(async () => []);
+// The sub-agent was given both tools it calls; only tools it was given run.
+const filterToolsForAgent = jest.fn(async () => ['mailcow_domains', 'web_search']
+  .map((name) => ({ type: 'function', function: { name } })));
 jest.unstable_mockModule('../server/routes/chat/index.js', () => ({
   buildSubAgentSystemPrompt: jest.fn(async () => 'system prompt'),
   getSubAgentModelConfig: jest.fn(() => ({ modelName: 'm', baseUrl: 'http://stub', apiKey: 'k' })),

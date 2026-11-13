@@ -4,45 +4,41 @@ function label(entry) {
   return entry.title || entry.note || entry.brief || 'Untitled Jules task';
 }
 
+// Which colour a task's dot and status pill take (the colours are in jules.css).
 function tone(status) {
-  if (status === 'blocked') return 'var(--ps-red)';
-  if (status === 'needs_split') return 'var(--ps-yellow)';
-  if (status === 'inflight') return 'var(--ps-blue)';
-  if (status === 'merged' || status === 'completed') return 'var(--ps-green)';
-  return 'var(--ps-yellow)';
+  if (status === 'blocked') return 'bad';
+  if (status === 'inflight') return 'run';
+  if (status === 'merged' || status === 'completed') return 'good';
+  return 'warn';
 }
 
 function QueueItem({ entry }) {
   return (
-    <div style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', padding: 9, display: 'grid', gap: 4 }}>
-      <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
-        <span style={{ width: 7, height: 7, flex: '0 0 auto', borderRadius: '50%', background: tone(entry.status) }} />
-        <strong style={{ minWidth: 0, fontSize: 'var(--text-sm)', color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {label(entry)}
-        </strong>
-        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'var(--label-case)' }}>
-          {entry.status}
-        </span>
+    <div className="hb-panel jules-item" data-tone={tone(entry.status)}>
+      <div className="jules-item-head">
+        <span className="jules-dot" />
+        <strong className="jules-item-title">{label(entry)}</strong>
+        <span className="jules-pill">{entry.status}</span>
       </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div className="jules-item-meta">
         {[entry.priority, entry.session, entry.code, entry.brief].filter(Boolean).join(' · ')}
       </div>
       {(entry.detail || entry.note || entry.reason) && (
-        <div style={{ fontSize: 'var(--text-xs)', color: entry.status === 'blocked' ? 'var(--ps-red)' : 'var(--ink-soft)' }}>
+        <div className="jules-item-note" data-tone={entry.status === 'blocked' ? 'bad' : undefined}>
           {entry.detail || entry.note || entry.reason}
         </div>
       )}
       {/* Diagram 01: the review decides the merge. */}
       {entry.reviewNote && (
-        <div data-testid="jules-review-note" style={{ fontSize: 'var(--text-xs)', color: 'var(--ps-yellow)' }}>
+        <div data-testid="jules-review-note" className="jules-item-note" data-tone="warn">
           {entry.reviewNote}
         </div>
       )}
       {!entry.reviewNote && entry.review === 'pass' && (
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ps-green)' }}>Review passed.</div>
+        <div className="jules-item-note" data-tone="good">Review passed.</div>
       )}
       {entry.duplicateBriefs?.length > 0 && (
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
+        <div className="jules-item-note">
           {entry.duplicateBriefs.length} duplicate brief{entry.duplicateBriefs.length === 1 ? '' : 's'} collapsed
         </div>
       )}
@@ -52,13 +48,15 @@ function QueueItem({ entry }) {
 
 function Section({ title, items, empty }) {
   return (
-    <section style={{ display: 'grid', gap: 6 }}>
-      <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', fontWeight: 800, color: 'var(--ink-faint)', textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)' }}>
+    <section className="jules-group">
+      <div className="jules-label">
         {title} · {items.length}
       </div>
-      {items.length > 0
-        ? items.map((entry, index) => <QueueItem key={`${entry.brief || entry.session || title}-${index}`} entry={entry} />)
-        : <div style={{ padding: 9, border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>{empty}</div>}
+      <div className="hb-well jules-tray">
+        {items.length > 0
+          ? items.map((entry, index) => <QueueItem key={`${entry.brief || entry.session || title}-${index}`} entry={entry} />)
+          : <div className="jules-tray-empty">{empty}</div>}
+      </div>
     </section>
   );
 }
@@ -66,10 +64,10 @@ function Section({ title, items, empty }) {
 export function JulesQueuePanel({ queue, includeCompleted }) {
   const counts = queue?.counts || {};
   return (
-    <div style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface)', padding: 10, display: 'grid', gap: 10 }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <strong style={{ fontSize: 'var(--text-sm)', color: 'var(--ink)' }}>Repository Queue</strong>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
+    <div className="jules-section">
+      <div className="jules-head">
+        <strong className="jules-title">Repository Queue</strong>
+        <span className="jules-counts">
           {counts.pending || 0} pending · {counts.inflight || 0} active · {counts.blocked || 0} blocked
         </span>
         {/* The queue file's own setting, used by scheduled queue runs. Overseer
@@ -79,7 +77,8 @@ export function JulesQueuePanel({ queue, includeCompleted }) {
             title={queue.autoMerge
               ? 'Scheduled queue runs merge pull requests that pass their checks. Overseer Watcher merges only when its own box is ticked.'
               : 'Queue runs merge nothing; ready pull requests wait for you.'}
-            style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: queue.autoMerge ? 'var(--ps-yellow)' : 'var(--ps-green)' }}
+            className="jules-pill jules-merge"
+            data-on={queue.autoMerge ? 'true' : 'false'}
           >
             {queue.autoMerge ? 'queue merges ready PRs' : 'queue merges nothing'}
           </span>

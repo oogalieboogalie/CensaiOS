@@ -48,7 +48,7 @@ export function ConnectGithub({ onSave }) {
 }
 
 export function MergeDesk({ desk: model, team }) {
-  const { desk, activity, loading, error, bulk, refresh, merge, mergeAllGreen, fixConflicts, answerApproval, dismiss } = model;
+  const { desk, activity, whole = {}, loading, error, bulk, refresh, merge, mergeAllGreen, fixConflicts, answerApproval, dismiss } = model;
   const prs = desk?.prs || [];
   const green = prs.filter((p) => p.green && !['merging', 'fixing'].includes(activity[p.number]?.state));
   const recent = desk?.recent || [];
@@ -72,7 +72,8 @@ export function MergeDesk({ desk: model, team }) {
         {desk && !prs.length ? <p className="hb-gh-empty">No open pull requests. Nothing to merge.</p> : null}
         <ul className="hb-gh-list">
           {prs.map((pr) => (
-            <PrRow key={pr.number} pr={pr} act={activity[pr.number]} onMerge={merge} onFix={fixConflicts} onApprove={answerApproval} onDismiss={dismiss} team={team} />
+            <PrRow key={pr.number} pr={pr} act={activity[pr.number]} whole={whole[activity[pr.number]?.jobId]}
+              onMerge={merge} onFix={fixConflicts} onApprove={answerApproval} onDismiss={dismiss} team={team} />
           ))}
         </ul>
 

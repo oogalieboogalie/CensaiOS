@@ -1,0 +1,150 @@
+/* One card per command. Hairline on black, one amber filled button,
+   green / amber / red only on the status dot. */
+
+.hb-cmd-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+.hb-cmd-list h2 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.hb-cmd-empty {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.hb-cmd {
+  border: var(--border-width-1) solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: var(--space-3);
+}
+
+.hb-cmd header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.hb-cmd-dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--ink-faint);
+}
+
+.hb-cmd-dot[data-status="ok"] { background: var(--success); }
+.hb-cmd-dot[data-status="bad"] { background: var(--danger); }
+.hb-cmd-dot[data-status="run"] {
+  background: var(--warning);
+  animation: hb-cmd-pulse var(--dur-slow) var(--ease-standard) infinite;
+}
+
+.hb-cmd-you {
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  flex: none;
+  border: var(--border-width-2) solid var(--ink);
+  border-radius: var(--radius-full);
+}
+
+.hb-cmd-who {
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+  flex: none;
+}
+
+.hb-cmd-title {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hb-cmd-took {
+  margin-left: auto;
+  color: var(--ink-faint);
+  font-size: var(--text-xs);
+  flex: none;
+}
+
+.hb-cmd code,
+.hb-cmd pre {
+  display: block;
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.hb-cmd pre {
+  max-height: 12rem;
+  overflow: auto;
+}
+
+.hb-cmd p {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.hb-cmd-wait { color: var(--ink); }
+
+.hb-cmd-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.hb-cmd-acts button {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width-1) solid var(--hairline);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.hb-cmd-acts button.hb-cmd-go {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-fill);
+  font-weight: 600;
+}
+
+.hb-cmd-cover { display: none !important; }
+
+@keyframes hb-cmd-pulse {
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hb-cmd-dot[data-status="run"] { animation: none; }
+}

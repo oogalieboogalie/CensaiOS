@@ -12,6 +12,7 @@ export const TOOL_CATALOG_OVERRIDES = {
   github_list_issues: { label: 'GitHub List Issues', category: 'GitHub', scopeKind: 'github_repo' },
   github_create_issue: { label: 'GitHub Create Issue', category: 'GitHub', scopeKind: 'github_repo', risk: 'write' },
   github_comment_issue: { label: 'GitHub Comment Issue', category: 'GitHub', scopeKind: 'github_repo', risk: 'write' },
+  hand_coding_job_to_github: { label: 'Hand a Coding Job to GitHub', category: 'GitHub', scopeKind: 'github_repo', risk: 'write' },
   project_list: { label: 'Project List', category: 'Project', scopeKind: 'project' },  project_read: { label: 'Project Read', category: 'Project', scopeKind: 'project' },
   project_file_outline: { label: 'Project File Outline', category: 'Project', scopeKind: 'project' },
   scout_map: { label: 'Scout Map', category: 'Project', scopeKind: 'project' },

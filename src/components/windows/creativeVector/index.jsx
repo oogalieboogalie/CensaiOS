@@ -70,7 +70,7 @@ export function CreativeVectorWindow({ win = {}, onUpdate }) {
     if (e.key === ']') { v.reorder(true); return; }
     if (e.key === '[') { v.reorder(false); return; }
     const tool = TOOLS.find((t) => t[2].toLowerCase() === k);
-    if (tool) { pen?.cancelPen(); v.setTool(tool[0]); }
+    if (tool) { pen?.cancelPen(); v.setTool(tool[0]); e.stopPropagation(); }
   };
 
   return (
@@ -114,7 +114,7 @@ export function CreativeVectorWindow({ win = {}, onUpdate }) {
               <VectorStage v={v} scale={scale} penRef={penRef} />
             </div>
           </div>
-          <VectorPanel v={v} />
+          <VectorPanel v={v} windowId={win.id} />
         </div>
         {v.tool === 'pen' && <div className="hb-cr-tip" role="status">Click to add corners, drag to pull curves. Click the first point to close, Enter to finish.</div>}
       </div>

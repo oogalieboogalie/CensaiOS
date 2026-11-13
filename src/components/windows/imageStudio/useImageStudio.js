@@ -8,9 +8,11 @@ import {
 } from './model.js';
 import { logToApp } from '../../../lib/appLog/browserLog.js';
 import { useWorkspaceStore } from '../../../lib/store.js';
+import { useStudioWords } from './useStudioWords.js';
 
 export function useImageStudio(win, onUpdate) {
   const workspaceId = useWorkspaceStore(store => store.workspaceId);
+  const words = useStudioWords(win, onUpdate);
   const initial = normalizeImageStudioState(win.state?.imageStudio || win.canvasState || {});
   const [state, setState] = React.useState(initial);
   const [tool, setTool] = React.useState('path');
@@ -92,7 +94,7 @@ export function useImageStudio(win, onUpdate) {
   }, [onUpdate, state, win.state]);
 
   const generate = React.useCallback(async () => {
-    if (!state.prompt.trim()) return;
+    if (!words.prompt.trim()) return;
     if (!workspaceId) {
       setError('Open a workspace before generating an image.');
       return;
@@ -104,10 +106,10 @@ export function useImageStudio(win, onUpdate) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: state.prompt,
-          additionalInstructions: state.additionalInstructions,
+          prompt: words.prompt,
+          additionalInstructions: words.notes,
           model: state.model,
-          canvasState: state,
+          canvasState: { ...state, prompt: words.prompt, additionalInstructions: words.notes },
           sourceWindowId: win.id,
           workspaceId,
         }),
@@ -121,7 +123,7 @@ export function useImageStudio(win, onUpdate) {
     } finally {
       setLoading(false);
     }
-  }, [state, win.id, workspaceId]);
+  }, [state, words.prompt, words.notes, win.id, workspaceId]);
 
   const deleteGalleryItem = React.useCallback(async (id) => {
     if (!workspaceId) return;
@@ -136,6 +138,7 @@ export function useImageStudio(win, onUpdate) {
 
   return {
     state: state || DEFAULT_IMAGE_STUDIO_STATE,
+    words,
     setCanvasState,
     updateFields,
     tool,

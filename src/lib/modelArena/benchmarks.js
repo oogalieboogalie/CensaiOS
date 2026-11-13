@@ -4,6 +4,7 @@
 // leaves this censaiOS; see docs/specs/15-arena-benchmarks.md for the
 // future opt-in share format. Pure data and math, so it can be tested.
 import { CUT_OFF_REASONS, estimateCost, tokensPerSecond } from './arenaCatalog.js';
+import { cleanAutoMark } from './autoPick.js';
 import { taskById } from './benchmarkTasks.js';
 
 // Every record is synced to everyone on the board, so keep them modest.
@@ -30,6 +31,8 @@ export function cleanMarks(marks, laneCount) {
   if (judge && inRange(judge.best) && typeof judge.model === 'string') {
     base.judge = { model: judge.model.slice(0, 120), best: judge.best, reason: clip(judge.reason, 400) };
   }
+  const auto = cleanAutoMark(marks.auto, laneCount);
+  if (auto) base.auto = auto;
   return base;
 }
 

@@ -2,7 +2,8 @@ import React from 'react';
 import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { YouTubeSearch } from './YouTubeSearch.jsx';
-import { isTwitchPlayer, twitchPlayerUrl, twitchRefusalReason, withTwitchParent } from '../lib/stream/twitchEmbed.js';
+import { isTwitchPlayer, twitchRefusalReason, withTwitchParent } from '../lib/stream/twitchEmbed.js';
+import { parseStreamUrl } from '../lib/stream/streamUrl.js';
 import { logToApp } from '../lib/appLog/browserLog.js';
 import { webOnlyFrameSrc } from '../lib/frameSrc.js';
 
@@ -11,24 +12,6 @@ const PRESETS = [
   { name: 'Twitch: xQc', url: 'https://player.twitch.tv/?channel=xqc' },
   { name: 'YouTube: Lofi Girl', url: 'https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1' }
 ];
-
-function parseStreamUrl(url) {
-  if (!url) return '';
-  // Twitch Channel
-  if (url.includes('twitch.tv/')) {
-    const channel = url.split('twitch.tv/')[1]?.split('?')[0];
-    if (channel) return twitchPlayerUrl(channel);
-  }
-  // YouTube
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    if (url.includes('/embed/')) return url;
-    let videoId = '';
-    if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1]?.split('?')[0];
-    else if (url.includes('v=')) videoId = url.split('v=')[1]?.split('&')[0];
-    if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-  }
-  return url;
-}
 
 // One warning in the app log per stream opened where Twitch may refuse.
 function useTwitchWarning(src) {

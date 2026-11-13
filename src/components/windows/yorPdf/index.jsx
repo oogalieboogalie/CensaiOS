@@ -141,7 +141,7 @@ export function YorPdfWindow({ win = {}, onUpdate }) {
           </div>
           {count > 0 && <PdfPageStrip p={p} />}
           <div className="hb-cr-stage hb-yp-stage" ref={wrapRef}>
-            {page ? <PdfPageView p={p} scale={scale} byFile={byFile} finds={findsOnPage(search, pageId)} /> : (
+            {page ? <PdfPageView p={p} scale={scale} byFile={byFile} finds={findsOnPage(search, pageId)} windowId={win.id} /> : (
               <div className="hb-yp-empty">
                 <PdfIcon.Doc size={28} />
                 <div className="hb-yp-empty-title">{p.busy ? 'Opening…' : 'Drop a PDF here'}</div>

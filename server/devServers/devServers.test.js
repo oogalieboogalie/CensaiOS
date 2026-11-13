@@ -5,6 +5,14 @@ import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// prepareArgs quotes any Windows argument that contains a space. The fake
+// sits where the runner is, so it has to read the value Docker would see.
+function asDockerArg(arg) {
+  const s = String(arg);
+  if (process.platform === 'win32' && s.length >= 2 && s.startsWith('"') && s.endsWith('"')) return s.slice(1, -1);
+  return s;
+}
+
 // A tiny Docker engine: just enough for Run dev's argv.
 function createEngine() {
   const containers = new Map();
@@ -14,6 +22,7 @@ function createEngine() {
   const ok = (stdout = '') => ({ stdout, stderr: '', code: 0 });
   const fail = (stderr) => ({ stdout: '', stderr, code: 1 });
   state.exec = (cmd, args) => {
+    args = args.map(asDockerArg);
     state.calls.push(args);
     const [verb, ...rest] = args;
     if (verb === 'image') return images.has(rest[1]) ? ok('[]') : fail('Error: No such image');
@@ -75,6 +84,9 @@ describe('folder paths', () => {
   });
 });
 
+// Made-up folders. On Windows the dev server only accepts a drive path.
+const hostPath = (folder) => (process.platform === 'win32' ? `D:${folder.replace(/\//g, '\\')}` : folder);
+
 describe('the dev-server container', () => {
   test('one stable container per project folder', () => {
     expect(manager.containerName('D:\\Sites\\Corner Bakery')).toMatch(/^censai-dev-corner-bakery-[0-9a-f]{10}$/);
@@ -93,34 +105,36 @@ describe('the dev-server container', () => {
   });
 
   test('start, wait for the site to answer, stop', async () => {
-    const started = await manager.startDevServer({ folder: '/home/alma/shop' });
-    expect(started).toMatchObject({ folder: '/home/alma/shop', port: 3000, image: 'node:22-bookworm-slim' });
+    const shop = hostPath('/home/alma/shop');
+    const started = await manager.startDevServer({ folder: shop });
+    expect(started).toMatchObject({ folder: shop, port: 3000, image: 'node:22-bookworm-slim' });
     await flush(); await flush(); await flush(); await flush();
     engine.answers = false;
     let s = await manager.devServerStatus(started.name);
     expect(s).toMatchObject({ phase: 'installing', url: 'http://localhost:49200' });
     engine.answers = true;
     s = await manager.devServerStatus(started.name);
-    expect(s).toMatchObject({ phase: 'ready', url: 'http://localhost:49200', folder: '/home/alma/shop' });
+    expect(s).toMatchObject({ phase: 'ready', url: 'http://localhost:49200', folder: shop });
     await manager.stopDevServer(started.name);
     expect((await manager.devServerStatus(started.name)).phase).toBe('stopped');
   });
 
   test('a missing image is downloaded first, and failures are reported, not thrown', async () => {
-    const started = await manager.startDevServer({ folder: '/p/a', image: 'node:20' });
+    const started = await manager.startDevServer({ folder: hostPath('/p/a'), image: 'node:20' });
     for (let i = 0; i < 8; i++) await flush();
     expect(exec.mock.calls.some(([, a]) => a[0] === 'pull' && a[1] === 'node:20')).toBe(true);
     engine.exec = () => ({ stdout: '', stderr: 'Cannot connect to the Docker daemon', code: 1 });
-    const again = await manager.startDevServer({ folder: '/p/b' });
+    const again = await manager.startDevServer({ folder: hostPath('/p/b') });
     for (let i = 0; i < 8; i++) await flush();
     expect(await manager.devServerStatus(again.name)).toMatchObject({ phase: 'error', reason: 'daemon-down' });
     expect(started.name).not.toBe(again.name);
   });
 
   test('bad input is refused before Docker is called', async () => {
-    await expect(manager.startDevServer({ folder: '/p/x', port: '99999' })).rejects.toThrow(/port/);
-    await expect(manager.startDevServer({ folder: '/p/x', image: '--privileged' })).rejects.toThrow(/Invalid image/);
-    await expect(manager.startDevServer({ folder: '/p/x', command: 'a\nb' })).rejects.toThrow(/one line/);
+    const bad = hostPath('/p/x');
+    await expect(manager.startDevServer({ folder: bad, port: '99999' })).rejects.toThrow(/port/);
+    await expect(manager.startDevServer({ folder: bad, image: '--privileged' })).rejects.toThrow(/Invalid image/);
+    await expect(manager.startDevServer({ folder: bad, command: 'a\nb' })).rejects.toThrow(/one line/);
     await expect(manager.stopDevServer('homebase-app-1')).rejects.toThrow(/Only Run dev/);
     expect(exec).not.toHaveBeenCalled();
   });
@@ -128,8 +142,8 @@ describe('the dev-server container', () => {
 
 describe('closing the window removes the container', () => {
   test('containers nobody pinged for two minutes are removed; pinged ones stay', async () => {
-    const a = await manager.startDevServer({ folder: '/p/kept' });
-    const b = await manager.startDevServer({ folder: '/p/closed' });
+    const a = await manager.startDevServer({ folder: hostPath('/p/kept') });
+    const b = await manager.startDevServer({ folder: hostPath('/p/closed') });
     for (let i = 0; i < 12; i++) await flush();
     const later = Date.now() + reaper.IDLE_MS + 1000;
     jest.spyOn(Date, 'now').mockReturnValue(later);
@@ -157,9 +171,24 @@ describe('the launcher inside the container', () => {
     fs.writeFileSync(path.join(dir, 'node_modules/.censai-install-stamp'), inputs);
     // Stand-in dev tools that exit at once. Without them the real Vite from
     // this repo starts, outlives the test and holds ports 3000 and 3001.
-    for (const bin of ['vite', 'next']) fs.writeFileSync(path.join(dir, 'node_modules/.bin', bin), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+    // Windows npm runs the .cmd, so the shell script alone does not stop it.
+    for (const bin of ['vite', 'next']) {
+      const dest = path.join(dir, 'node_modules/.bin', bin);
+      fs.writeFileSync(dest, '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+      if (process.platform === 'win32') fs.writeFileSync(`${dest}.cmd`, '@exit /b 0\r\n');
+    }
     const r = spawnSync(process.execPath, [launcher], { env: { ...process.env, CENSAI_APP_DIR: dir, PORT: '3000', CENSAI_DEV_CMD: '' }, encoding: 'utf8', timeout: 20_000 });
-    fs.rmSync(dir, { recursive: true, force: true });
+    if (process.platform === 'win32' && r.pid) spawnSync('taskkill', ['/F', '/T', '/PID', String(r.pid)], { stdio: 'ignore', windowsHide: true });
+    // The process can exit and still hold the folder for a moment.
+    for (let i = 0; i < 40; i += 1) {
+      try {
+        fs.rmSync(dir, { recursive: true, force: true });
+        break;
+      } catch (err) {
+        if (i === 39 || (err?.code !== 'EBUSY' && err?.code !== 'EPERM')) throw err;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+      }
+    }
     return r;
   };
 
@@ -180,6 +209,7 @@ describe('the launcher inside the container', () => {
     fs.writeFileSync(path.join(dir, 'style.css'), 'h1{}');
     const port = String(41000 + Math.floor(Math.random() * 2000));
     const child = spawn(process.execPath, [launcher], { env: { ...process.env, CENSAI_APP_DIR: dir, PORT: port, CENSAI_DEV_CMD: '' } });
+    let testError = null;
     try {
       await new Promise((resolve, reject) => {
         child.stdout.on('data', (d) => { if (/Serving this folder/.test(String(d))) resolve(); });
@@ -189,10 +219,29 @@ describe('the launcher inside the container', () => {
       expect(await page.text()).toBe('<h1>Lead form</h1>');
       expect((await fetch(`http://127.0.0.1:${port}/style.css`)).headers.get('content-type')).toBe('text/css');
       expect((await fetch(`http://127.0.0.1:${port}/missing.js`)).status).toBe(404);
+    } catch (err) {
+      testError = err;
     } finally {
       child.kill();
-      fs.rmSync(dir, { recursive: true, force: true });
+      await new Promise((resolve) => {
+        if (child.exitCode != null) resolve();
+        else child.once('exit', () => resolve());
+      });
     }
+    // Windows keeps the folder locked for a moment after the process exits.
+    for (let i = 0; i < 20; i += 1) {
+      try {
+        fs.rmSync(dir, { recursive: true, force: true });
+        break;
+      } catch (err) {
+        if (i === 19 || (err?.code !== 'EBUSY' && err?.code !== 'EPERM')) {
+          if (!testError) testError = err;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    }
+    if (testError) throw testError;
   });
 
   test('explains a folder without package.json or without a dev script', () => {

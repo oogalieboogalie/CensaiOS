@@ -63,6 +63,8 @@
   font-family: var(--font-mono);
   font-size: var(--text-base);
   letter-spacing: 0.08em;
+  /* The code stays on one line (it would break at its hyphen), so it reads as the page shows it. */
+  white-space: nowrap;
 }
 .hb-grok-card-lines {
   margin: 0;

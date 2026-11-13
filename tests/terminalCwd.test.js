@@ -1,9 +1,28 @@
+import fs from 'fs';
 import os from 'os';
+import path from 'path';
 import { resolveTerminalCwd } from '../server/terminal/shared.js';
 
 describe('where a terminal shell starts', () => {
-  test('a folder this server can see is used as is', () => {
-    expect(resolveTerminalCwd(os.tmpdir())).toEqual({ cwd: os.tmpdir(), unreachable: null });
+  test('a folder is used only when it stays inside the projects folder', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-projects-'));
+    const project = path.join(root, 'shop');
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-outside-'));
+    fs.mkdirSync(project);
+    const link = path.join(root, 'escape');
+    fs.symlinkSync(outside, link);
+    const prev = process.env.CENSAI_PROJECTS_FOLDER;
+    process.env.CENSAI_PROJECTS_FOLDER = root;
+    try {
+      expect(resolveTerminalCwd(project)).toEqual({ cwd: project, unreachable: null });
+      expect(resolveTerminalCwd(outside)).toEqual({ cwd: process.cwd(), unreachable: outside });
+      expect(resolveTerminalCwd(link)).toEqual({ cwd: process.cwd(), unreachable: link });
+    } finally {
+      if (prev === undefined) delete process.env.CENSAI_PROJECTS_FOLDER;
+      else process.env.CENSAI_PROJECTS_FOLDER = prev;
+      fs.rmSync(root, { recursive: true, force: true });
+      fs.rmSync(outside, { recursive: true, force: true });
+    }
   });
 
   test('no folder: the app folder, nothing to report', () => {

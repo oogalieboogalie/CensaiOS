@@ -2,6 +2,7 @@ import React from 'react';
 import { api } from '../../lib/api.js';
 import { KEYS_CHANGED_EVENT } from '../../lib/api/keys.js';
 import { updateAgent } from '../../lib/agentStore.js';
+import { reportAgentChange } from '../../lib/collaboration/liveText.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { autoPickModel } from '../../lib/modelStrengths/autoPick.js';
 
@@ -51,6 +52,7 @@ export function useAutoPick({ win, onUpdate, agent }) {
       try {
         await api.saveAgent(updated);
         updateAgent(updated);
+        reportAgentChange(agent.id);
       } catch (err) {
         onUpdate({ autoPick: { keep: true, why: `Could not switch to ${result.model}: ${err?.message || 'save failed'}.`, model: current.model, at } });
         return;

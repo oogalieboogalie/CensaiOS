@@ -27,11 +27,17 @@ export function useInkPointer({ ref, pan, zoom, penColor, penSize, paths, setPat
   }, [ref]);
 
   const live = (s, phase = 'move') => sendLive({
-    strokeId: s.id, points: s.points, color: s.color, size: inkSize(penSize, view.current.zoom), sim: s.sim, phase,
+    strokeId: s.id, points: s.points, color: s.color, size: inkSize(s.size || penSize, view.current.zoom), sim: s.sim, phase,
   });
 
-  const startStroke = (e) => {
-    const s = { id: newId(), points: [inkPoint(toCanvas(e), e)], color: penColor, sim: e.pointerType !== 'pen' };
+  const startStroke = (e, override) => {
+    const s = {
+      id: newId(),
+      points: [inkPoint(toCanvas(e), e)],
+      color: override?.color || penColor,
+      size: override?.size || penSize,
+      sim: e.pointerType !== 'pen',
+    };
     strokeRef.current = s;
     setCurrentPath(s.points);
   };
@@ -50,7 +56,7 @@ export function useInkPointer({ ref, pan, zoom, penColor, penSize, paths, setPat
     setCurrentPath(null);
     if (!s) return;
     const stroke = buildInkStroke(s.points, {
-      color: s.color, size: penSize, zoom: view.current.zoom, simulated: s.sim, by: getCollaborationClientId(),
+      color: s.color, size: s.size || penSize, zoom: view.current.zoom, simulated: s.sim, by: getCollaborationClientId(),
     });
     if (stroke) {
       stroke.id = s.id;
@@ -77,7 +83,7 @@ export function useInkPointer({ ref, pan, zoom, penColor, penSize, paths, setPat
     palm,
     currentPath,
     currentStroke: currentPath && strokeRef.current
-      ? { id: strokeRef.current.id, ink: 1, pts: currentPath, color: strokeRef.current.color, size: inkSize(penSize, zoom), sim: strokeRef.current.sim }
+      ? { id: strokeRef.current.id, ink: 1, pts: currentPath, color: strokeRef.current.color, size: inkSize(strokeRef.current.size || penSize, zoom), sim: strokeRef.current.sim }
       : null,
     startStroke,
     extendStroke,

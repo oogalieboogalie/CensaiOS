@@ -12,6 +12,7 @@ let senders = {
   sendInk: null,
   sendGame: null,
   sendDock: null,
+  sendAgent: null,
 };
 
 export function setLivePresenceSenders(next) {
@@ -19,7 +20,7 @@ export function setLivePresenceSenders(next) {
 }
 
 export function resetLivePresenceSenders() {
-  senders = { sendCursor: null, sendTyping: null, sendTextPreview: null, sendInk: null, sendGame: null, sendDock: null };
+  senders = { sendCursor: null, sendTyping: null, sendTextPreview: null, sendInk: null, sendGame: null, sendDock: null, sendAgent: null };
 }
 
 export function reportCursor(x, y) {
@@ -52,4 +53,10 @@ export function sendGameMessage(payload) {
 export function sendDockCast(payload) {
   if (payload?.type !== 'dock.cast') return false;
   try { return Boolean(senders.sendDock?.(payload)); } catch { return false; }
+}
+
+/** A chat's agent saved with another model, so teammates' open copies show it at once. True when it went out. */
+export function reportAgentChange(agentId) {
+  if (!agentId) return false;
+  try { return Boolean(senders.sendAgent?.({ type: 'agent.changed', agentId: String(agentId) })); } catch { return false; }
 }

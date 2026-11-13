@@ -12,9 +12,10 @@ export async function execInSandbox(hostPath, command, options = {}) {
   const { name } = await ensureSandbox(hostPath, options);
   const workdir = containerWorkdir(options.cwd);
   const args = ['exec', '-w', workdir, name, 'bash', '-lc', command];
-  const cmdPreview = command.length > 120 ? `${command.slice(0, 120)}…` : command;
+  // How long the command is, never its words or the folder it ran in.
+  const ran = { name, chars: command.length };
   const done = log.startTimer();
-  log.debug('exec', { name, workdir, command: cmdPreview });
+  log.debug('exec', ran);
   try {
     const { stdout, stderr, code } = await runnerClient.exec('docker', args, {
       windowsHide: true,
@@ -22,10 +23,10 @@ export async function execInSandbox(hostPath, command, options = {}) {
       maxBuffer: options.maxBuffer || DEFAULT_MAX_BUFFER,
     });
     if (code === 0) {
-      log.info('exec ok', { name, command: cmdPreview, code: 0, ms: done() });
+      log.info('exec ok', { ...ran, code: 0, ms: done() });
       return { stdout, stderr, code: 0 };
     }
-    log.info('exec non-zero exit', { name, command: cmdPreview, code: code ?? 1, ms: done() });
+    log.info('exec non-zero exit', { ...ran, code: code ?? 1, ms: done() });
     return {
       stdout: stdout || '',
       stderr: stderr || '',
@@ -33,12 +34,12 @@ export async function execInSandbox(hostPath, command, options = {}) {
     };
   } catch (err) {
     if (err.killed || err.signal === 'SIGTERM' || err.code === 'ETIMEDOUT') {
-      log.warn('exec timed out', { name, command: cmdPreview, ms: done() });
+      log.warn('exec timed out', { ...ran, ms: done() });
       const e = new Error(`Command timed out after ${options.timeoutMs || DEFAULT_EXEC_TIMEOUT}ms`);
       e.timedOut = true;
       throw e;
     }
-    log.info('exec non-zero exit', { name, command: cmdPreview, code: typeof err.code === 'number' ? err.code : 1, ms: done() });
+    log.info('exec non-zero exit', { ...ran, code: typeof err.code === 'number' ? err.code : 1, ms: done() });
     return {
       stdout: err.stdout || '',
       stderr: err.stderr || err.message || '',

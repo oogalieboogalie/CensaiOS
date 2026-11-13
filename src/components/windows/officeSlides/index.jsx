@@ -4,6 +4,7 @@ import { Icon } from '../../Icons.jsx';
 import { WindowTitle } from '../WindowTitle.jsx';
 import { OfficeBar, OfficeButton, OfficeSep } from '../../office/OfficeBar.jsx';
 import { SlideView } from '../../office/slides/SlideView.jsx';
+import { SlideNotes } from '../../office/slides/SlideNotes.jsx';
 import { PresentMode } from '../../office/slides/PresentMode.jsx';
 import { useSlides } from '../../office/slides/useSlides.js';
 import { LAYOUTS, THEMES } from '../../../lib/office/slideModel.js';
@@ -105,12 +106,11 @@ export function OfficeSlidesWindow({ win = {}, onUpdate }) {
           </ol>
           <div className="hb-of-stagecol">
             <div className="hb-of-stage" ref={stageRef}>
-              {slide ? <SlideView slide={slide} theme={deck.theme} width={stageW} edit={d.edit} label="Slide editor" />
+              {slide ? <SlideView slide={slide} theme={deck.theme} width={stageW} edit={d.edit} label="Slide editor" windowId={win.id} slideId={d.current} />
                 : <button type="button" className="hb-of-add" onClick={() => d.addSlide('title')}><Icon.Plus size={11} />Add your first slide</button>}
             </div>
             {slide && (
-              <textarea className="hb-of-notes" value={slide.notes || ''} placeholder="Speaker notes" aria-label="Speaker notes"
-                onChange={(e) => d.setNotes(e.target.value)} />
+              <SlideNotes key={d.current} notes={slide.notes || ''} onChange={d.setNotes} windowId={win.id} slideId={d.current} />
             )}
           </div>
         </div>

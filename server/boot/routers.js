@@ -22,18 +22,20 @@ import { hubAuthRouter } from '../routes/hubAuth.js';
 import { guestRouter } from '../routes/shareLinks.js';
 import { lessonGuestRouter } from '../routes/lessonsGuest.js';
 import { lessonBillingRouter } from '../routes/lessonsBilling.js';
-import { getSystemStatus } from '../health.js';
-import { runnerClient } from '../runner/client.js';
+import { githubAgentWebhookRouter } from '../routes/githubAgentWebhook.js';
+import { mountHealthProbes } from '../health/probes.js';
 import { requireAuthorizedSession } from '../security/sessionGuard.js';
 import { agentEndpointPublicRouter } from '../routes/agentEndpointsPublic.js';
 import { refuseEmailSignInFromAnotherComputer, webOsPublicRouter } from '../routes/webOs.js';
 import { boardInvitesPublicRouter, boardInvitesRouter } from '../routes/boardInvites.js';
+import { tokensPublicRouter, tokensRouter } from '../routes/tokens.js';
 import { doorGuard } from '../webOs/doorListener.js';
 import { socialPublicRouter } from '../routes/socialPublic.js';
 import { apiBarRouter } from '../routes/apiBar.js';
 import { legionViewRouter } from '../routes/legion.js';
 import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
 import { isJestRun } from '../security/testShortcut.js';
+import { hubConfirmRedirect } from '../hubAccounts/confirmRedirect.js';
 
 export function mountRouters(app) {
   // Pre-guard: /api/auth and /api/hub-auth must come before the guard
@@ -41,14 +43,20 @@ export function mountRouters(app) {
   // Open anywhere: requests from other computers arrive on their own port and
   // pass this first (closed page while the switch is off, code-only sign-in).
   app.use(doorGuard);
-  // Another computer signs in with a code, never an email or one click.
+  // Another computer signs in with a code, never an email, a hub password, or one click.
   app.post('/api/auth/developer', refuseEmailSignInFromAnotherComputer);
   app.post('/api/auth/local', refuseEmailSignInFromAnotherComputer);
   app.use('/api/web-os', webOsPublicRouter);
   // Board invites: someone without an account joins one board with a
   // one-time link (server/routes/boardInvites.js).
   app.use('/api/invites', boardInvitesPublicRouter);
+  // One-time invite tokens: anyone may see what a token is for; claiming it
+  // needs a sign-in (server/routes/tokens.js).
+  app.use('/api/tokens', tokensPublicRouter);
   app.use('/api/auth', authRouter);
+  // Same pairing check as email sign-in. A new hub account still cannot mint a
+  // session on this computer until the owner has approved that email.
+  app.use('/api/hub-auth', refuseEmailSignInFromAnotherComputer);
   app.use('/api/hub-auth', hubAuthRouter);
   // Guest links (spec 5): people without an account open a share link and
   // join under a guest pass. Only the guest router serves them; every
@@ -57,6 +65,7 @@ export function mountRouters(app) {
   app.use('/api/guest', guestRouter);
   // Live lessons (spec 12): Stripe's webhook carries its own signature.
   app.use('/api/billing', lessonBillingRouter);
+  app.use('/api/webhooks', githubAgentWebhookRouter); // GitHub's signed call back for agents' coding jobs
   // Agent endpoints: apps outside censaiOS (MCP clients, scripts) call a
   // shared agent with an agent key instead of a sign-in.
   app.use('/api/mcp', agentEndpointPublicRouter);
@@ -69,6 +78,8 @@ export function mountRouters(app) {
   // Legion: what a Legion built, opened by its run's secret link in a sandbox
   // that sends no cookies (server/routes/legion.js).
   app.use('/api/legion-view', requireLocalFilesystem, legionViewRouter);
+  // The hub sign-up email's link (server/hubAccounts/confirmRedirect.js).
+  app.get('/confirm-email', hubConfirmRedirect);
 
   // Authentication guard for all other API endpoints. Express matches in
   // declaration order, so every subsequent `app.use('/api/...')` mount
@@ -89,32 +100,12 @@ export function mountRouters(app) {
 
   // "Invite to this board": invites sent and invites waiting for me.
   app.use('/api', boardInvitesRouter);
+  // One-time invite tokens: make, claim and list my own.
+  app.use('/api/tokens', tokensRouter);
 
   // Data-driven mounts: every other router + the consolidated
   // /api/windows guard chain (see ROUTE_MOUNTS in routeMap.js).
   mountRoutes(app);
 
-  app.get('/api/health', async (_req, res) => {
-    const status = await getSystemStatus();
-    const runnerStatus = await runnerClient.getHealth();
-    res.json({
-      ...status,
-      hasKey: status.modelProvider.hasKey,
-      provider: status.modelProvider.baseUrl,
-      model: status.modelProvider.model,
-      database: status.database.connected,
-      databaseStatus: {
-        ready: status.database.connected,
-        degraded: !status.database.connected,
-        degradedReason: status.degradedState,
-        error: status.database.error,
-      },
-      runner: runnerStatus,
-    });
-  });
-
-  app.get('/api/ready', async (_req, res) => {
-    const status = await getSystemStatus();
-    res.status(status.ready ? 200 : 503).json(status);
-  });
+  mountHealthProbes(app);
 }

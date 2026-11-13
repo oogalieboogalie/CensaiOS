@@ -1,45 +1,66 @@
-/* Git Diff Viewer (diagram 16): wordmark, two panes, a red line between. */
-.gdv { display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; padding: 12px 14px 14px; background: var(--surface-sunken); color: var(--ink); }
-.gdv-mark { align-self: center; padding: 6px 22px; border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); font-family: var(--font-display); font-weight: 900; font-size: var(--text-xl); letter-spacing: 0.04em; line-height: 1.1; }
-.gdv-mark-git { color: var(--success); }
-.gdv-mark-diff { color: var(--danger); }
-.gdv-mark-viewer { color: var(--ink-faint); }
-.gdv-bar { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: var(--text-xs); }
-.gdv-select { flex-shrink: 0; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 4px 8px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; }
-.gdv-files { display: flex; gap: 4px; min-width: 0; overflow-x: auto; }
-.gdv-file { all: unset; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; padding: 3px 8px; border: 1px solid var(--hairline); border-radius: var(--radius-full); white-space: nowrap; font-family: var(--font-mono); }
-.gdv-file--on { border-color: var(--ink-soft); background: var(--surface); }
-.gdv-file-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+/* Git Diff Viewer (diagram 16): wordmark, two panes, a red line between.
+   Depth comes from the shared tokens (docs/ui-yardstick.md): the wordmark is a
+   raised plate, the tool row is a bar, and each pane is a well, sunken like any
+   other place for code. Every button, the picker and both paste boxes answer
+   the pointer. Green and red as text use --success-text and --danger-text,
+   which stay readable on white. */
+.gdv { display: flex; flex-direction: column; gap: var(--space-3); height: 100%; min-height: 0; padding: var(--space-3) var(--space-4) var(--space-4); background: var(--surface); color: var(--ink); }
+.gdv-mark { align-self: center; padding: var(--space-1-5) var(--space-6); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--layer-panel); box-shadow: var(--panel-shadow); font-family: var(--font-display); font-weight: 900; font-size: var(--text-xl); letter-spacing: 0.04em; line-height: 1.1; }
+.gdv-mark-git { color: var(--success-text); }
+.gdv-mark-diff { color: var(--danger-text); }
+.gdv-mark-viewer { color: var(--ink-soft); }
+.gdv-bar { display: flex; align-items: center; gap: var(--space-2); min-width: 0; margin: 0 calc(-1 * var(--space-4)); padding: var(--space-2) var(--space-4); border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); background: var(--layer-bar); font-size: var(--text-xs); }
+.gdv-select { flex-shrink: 0; max-width: var(--space-64); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: var(--space-1) var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--layer-panel); box-shadow: var(--panel-shadow); color: var(--ink); font: inherit; cursor: pointer; transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard); }
+.gdv-select:hover { border-color: var(--hairline-strong); box-shadow: var(--panel-shadow-hover); }
+.gdv-select:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.gdv-files { display: flex; gap: var(--space-1); min-width: 0; overflow-x: auto; }
+.gdv-file { all: unset; cursor: pointer; display: inline-flex; gap: var(--space-1-5); align-items: center; padding: var(--space-0-5) var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-full); white-space: nowrap; font-family: var(--font-mono); transition: border-color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard); }
+.gdv-file:hover { border-color: var(--hairline-strong); background: var(--layer-panel); }
+.gdv-file:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
+.gdv-file--on { border-color: var(--ink-soft); background: var(--layer-panel); box-shadow: var(--panel-shadow); }
+.gdv-file--on:hover { border-color: var(--ink-soft); }
+.gdv-file-name { max-width: var(--space-44); overflow: hidden; text-overflow: ellipsis; }
 .gdv-totals { margin-left: auto; font-family: var(--font-mono); }
-.gdv-add { color: var(--success); font-family: var(--font-mono); }
-.gdv-del { color: var(--danger); font-family: var(--font-mono); }
-.gdv-note { margin: 24px auto; color: var(--ink-soft); font-size: var(--text-sm); }
-.gdv-note[data-tone="danger"] { color: var(--danger); }
+.gdv-add { color: var(--success-text); font-family: var(--font-mono); }
+.gdv-del { color: var(--danger-text); font-family: var(--font-mono); }
+.gdv-note { margin: var(--space-6) auto; color: var(--ink-soft); font-size: var(--text-sm); }
+.gdv-note[data-tone="danger"] { color: var(--danger-text); }
 
 /* The split: one vertical scroller so left and right rows stay level. */
-.gdv-split { position: relative; flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr); gap: 0 14px; overflow-y: auto; align-items: start; font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; }
-.gdv-split--compact { flex: none; max-height: 420px; gap: 0 8px; }
+.gdv-split { position: relative; flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr); gap: 0 var(--space-4); overflow-y: auto; align-items: start; font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; }
+.gdv-split--compact { flex: none; max-height: 420px; gap: 0 var(--space-2); }
 .gdv-divider { align-self: stretch; width: 1px; background: var(--danger); }
-.gdv-pane { min-width: 0; border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--surface); overflow-x: auto; }
-.gdv-pane-label { position: sticky; left: 0; display: block; padding: 6px 12px; color: var(--ink-faint); font-family: var(--font-label); text-transform: var(--label-case); font-size: var(--text-xs); border-bottom: 1px solid var(--hairline); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gdv-pane-body { min-width: max-content; padding: 6px 0 10px; }
-.gdv-cell { display: flex; white-space: pre; padding: 0 12px 0 0; min-height: 1.6em; }
-.gdv-n { width: 40px; flex-shrink: 0; padding-right: 10px; text-align: right; color: var(--ink-faint); opacity: 0.6; user-select: none; }
+.gdv-pane { min-width: 0; border: 1px solid var(--hairline-soft); border-radius: var(--radius-lg); background: var(--layer-well); box-shadow: var(--well-shadow); overflow-x: auto; transition: border-color var(--dur-fast) var(--ease-standard); }
+.gdv-pane:focus-within { border-color: var(--accent-line); }
+.gdv-pane-label { position: sticky; left: 0; display: block; padding: var(--space-1-5) var(--space-3); background: var(--layer-bar); color: var(--ink-soft); font-family: var(--font-label); text-transform: var(--label-case); font-size: var(--text-xs); border-bottom: 1px solid var(--hairline); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gdv-pane-body { min-width: max-content; padding: var(--space-1-5) 0 var(--space-2-5); }
+.gdv-cell { display: flex; white-space: pre; padding: 0 var(--space-3) 0 0; min-height: 1.6em; }
+.gdv-n { width: var(--space-10); flex-shrink: 0; padding-right: var(--space-2-5); text-align: right; color: var(--ink-faint); opacity: 0.6; user-select: none; }
 .gdv-cell--same .gdv-text, .gdv-cell--was .gdv-text { color: var(--ink-soft); }
 .gdv-cell--was { box-shadow: inset 2px 0 0 var(--danger); }
 .gdv-cell--add { background: color-mix(in oklab, var(--success) 12%, transparent); }
-.gdv-cell--add .gdv-text { color: var(--success); font-weight: 600; }
+.gdv-cell--add .gdv-text { color: var(--success-text); font-weight: 600; }
 .gdv-cell--del { background: color-mix(in oklab, var(--danger) 12%, transparent); }
-.gdv-cell--del .gdv-text { color: var(--danger); font-weight: 600; text-decoration: line-through; text-decoration-thickness: 1px; }
-.gdv-gap { min-height: 1.6em; margin: 4px 0; padding: 0 12px; color: var(--ink-faint); background: var(--surface-2); white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.gdv-cell--del .gdv-text { color: var(--danger-text); font-weight: 600; text-decoration: line-through; text-decoration-thickness: 1px; }
+.gdv-gap { min-height: 1.6em; margin: var(--space-1) 0; padding: 0 var(--space-3); color: var(--ink-faint); background: var(--surface-2); white-space: pre; overflow: hidden; text-overflow: ellipsis; }
 
-/* Paste mode */
-.gdv-split--edit { grid-template-rows: 1fr auto; overflow: hidden; align-items: stretch; }
+/* Paste mode: two boxes to type in, and the buttons under them. */
+.gdv-split--edit { grid-template-rows: 1fr auto; overflow: hidden; align-items: stretch; padding: 0 var(--space-0-5) var(--space-1); }
 .gdv-split--edit .gdv-pane { display: flex; flex-direction: column; overflow: hidden; }
-.gdv-input { flex: 1; min-height: 0; resize: none; border: 0; outline: 0; padding: 8px 12px; background: transparent; color: var(--ink); font: inherit; white-space: pre; }
-.gdv-btn { padding: 5px 14px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
-.gdv-btn--go { grid-column: 3; justify-self: end; margin-top: 10px; background: var(--success); border-color: var(--success); color: var(--on-fill); font-family: var(--font-sans); font-weight: 600; }
-.gdv-btn:disabled { opacity: 0.5; cursor: default; }
+.gdv-box { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.gdv-input { flex: 1; min-height: 0; resize: none; border: 0; outline: 0; padding: var(--space-2) var(--space-3); background: transparent; color: var(--ink); font: inherit; white-space: pre; }
+textarea.gdv-input { transition: background var(--dur-fast) var(--ease-standard); }
+textarea.gdv-input:hover { background: color-mix(in oklab, var(--surface) 35%, transparent); }
+textarea.gdv-input:focus { background: color-mix(in oklab, var(--surface) 70%, transparent); }
+.gdv-btn { padding: var(--space-1-5) var(--space-4); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--layer-panel); box-shadow: var(--panel-shadow); color: var(--ink); font: 500 var(--text-sm) / 1.4 var(--font-sans); cursor: pointer; transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.gdv-btn:hover:not(:disabled) { border-color: var(--hairline-strong); background: var(--layer-panel-hover); box-shadow: var(--panel-shadow-hover); }
+.gdv-btn:active:not(:disabled) { transform: scale(var(--press-scale)); }
+.gdv-btn:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.gdv-btn[aria-pressed="true"] { border-color: var(--accent-line); background: var(--accent-soft); }
+.gdv-btn[aria-pressed="true"]:hover:not(:disabled) { border-color: var(--accent-line); background: var(--accent-soft); }
+.gdv-btn--go { grid-column: 3; justify-self: end; margin-top: var(--space-2-5); border-color: transparent; background: var(--accent); color: var(--accent-contrast); font-weight: 600; }
+.gdv-btn--go:hover:not(:disabled) { border-color: transparent; background: color-mix(in oklab, var(--accent) 88%, var(--ink)); }
+.gdv-btn:disabled { border-color: var(--hairline); background: var(--layer-well); box-shadow: none; color: var(--ink-soft); cursor: not-allowed; }
 
 /* Inside the Agent Console's Changes tab */
 .ac-view-toggle { margin-left: auto; display: inline-flex; gap: 4px; }

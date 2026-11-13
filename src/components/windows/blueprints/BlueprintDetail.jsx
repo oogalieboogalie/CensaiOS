@@ -14,13 +14,13 @@ export function BlueprintDetail({ blueprint, onEdit, onDelete, busy }) {
   };
   return (
     <article className="hb-bp-detail">
-      <h3 className="hb-bp-title">"{blueprint.title}"</h3>
+      <h3 className="hb-bp-title hb-panel">"{blueprint.title}"</h3>
       <div className="hb-bp-id-row">
         <span className="hb-bp-id hb-bp-id-big">{blueprint.id}</span>
         <button type="button" className="hb-bp-link" onClick={copy}>{copied ? 'Copied' : 'Copy ID'}</button>
       </div>
       <p className="hb-bp-sub">{describeBlueprintId(blueprint.id)}</p>
-      <pre className="hb-bp-code" aria-label="Blueprint card">
+      <pre className="hb-bp-code hb-well" aria-label="Blueprint card">
         <span>blueprint:</span>{'\n'}
         {'  '}<span className="hb-bp-k-id">ID: "{blueprint.id}",</span>{'\n'}
         {'  '}<span className="hb-bp-k-type">type: "{blueprint.type}",</span>{'\n'}

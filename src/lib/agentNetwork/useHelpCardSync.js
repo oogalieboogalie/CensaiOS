@@ -45,7 +45,8 @@ async function readOnce(win, workspaceId) {
     return networkPatch(await createAgentNetworkClient({ workspaceId }).getHelpRequest(win.helpRequestId));
   }
   if (win.executor === 'cli' && win.cliTaskId) {
-    const data = await cliAgentsApi.task(win.cliTaskId);
+    // The card is on the shared board, so it reads the task alone (no steps) as a teammate sees it, whoever's browser reads it.
+    const data = await cliAgentsApi.task(win.cliTaskId, 1e9, { board: true });
     return cliPatch(data?.task || data);
   }
   return null;

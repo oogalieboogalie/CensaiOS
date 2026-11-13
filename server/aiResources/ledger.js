@@ -10,6 +10,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createLogger } from '../logger.js';
+import { scheduleOutsideRun } from '../tools/rbac/offeredTools.js';
 
 const log = createLogger('ai-resources');
 
@@ -62,11 +63,15 @@ export function flushLedger() {
 
 function scheduleFlush() {
   if (timer) return;
-  timer = setTimeout(() => {
-    timer = null;
-    try { flushLedger(); } catch { /* the next write tries again */ }
-  }, FLUSH_MS);
-  timer.unref?.();
+  // Outside the model run that recorded the spend: the flush is later, and
+  // a timer created in the run would keep that run's offered-tool list.
+  scheduleOutsideRun(() => {
+    timer = setTimeout(() => {
+      timer = null;
+      try { flushLedger(); } catch { /* the next write tries again */ }
+    }, FLUSH_MS);
+    timer.unref?.();
+  });
 }
 
 const emptyTotals = () => ({ calls: 0, tokensIn: 0, tokensOut: 0, costUsd: 0, unpriced: 0 });

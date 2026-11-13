@@ -2,6 +2,7 @@
 import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { parsePatch } from './lineDiff.js';
+import { SECRET_CHANGES } from '../../../shared/files/fileProblems.js';
 import { SideBySideDiff } from '../diffViewer/SideBySideDiff.jsx';
 import { rowsFromHunks } from '../diffViewer/sideBySide.js';
 
@@ -59,8 +60,9 @@ export function ChangesPanel({ changes, onOpenFile, onOpenViewer }) {
                 </button>
               )}
             </header>
-            {open && patch && !patch.binary && view === 'split' && <SideBySideDiff rows={rowsFromHunks(patch.hunks)} compact />}
-            {open && patch && !patch.binary && view !== 'split' && (
+            {open && patch?.secret && <div className="ac-empty" data-testid="changes-secret">{SECRET_CHANGES}</div>}
+            {open && patch && !patch.binary && !patch.secret && view === 'split' && <SideBySideDiff rows={rowsFromHunks(patch.hunks)} compact />}
+            {open && patch && !patch.binary && !patch.secret && view !== 'split' && (
               <div className="ac-diff ac-diff--file">
                 {patch.hunks.map((hunk, h) => (
                   <React.Fragment key={h}>

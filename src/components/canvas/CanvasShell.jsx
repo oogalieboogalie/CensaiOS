@@ -1,4 +1,5 @@
 import React from 'react';
+import { canvasCursor } from './canvasCursor.js';
 
 export const CanvasShell = React.forwardRef(function CanvasShell({
   spaceHeld,
@@ -17,13 +18,7 @@ export const CanvasShell = React.forwardRef(function CanvasShell({
 }, ref) {
   const dotSize = 24 * zoom;
   const dotRadius = Math.max(0.6, Math.min(1.4, 1 * zoom));
-  const cursor = activeTool === 'pen' || activeTool === 'lasso' || penMode
-    ? 'crosshair'
-    : (activeTool === 'rect' ? 'crosshair'
-      : (activeTool === 'text' ? 'text'
-        : (activeTool === 'eraser' ? 'cell'
-          : (activeTool === 'pan' ? (isPanning ? 'grabbing' : 'grab')
-            : (spaceHeld ? 'grab' : (isPanning ? 'grabbing' : 'default'))))));
+  const cursor = canvasCursor({ activeTool, penMode, isPanning, spaceHeld });
 
   return (
     <div

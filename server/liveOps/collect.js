@@ -47,7 +47,7 @@ export async function armedWorkflowTriggers(db, workspaceId) {
   const { rows } = await db.query(
     `SELECT window_id, mode, every_minutes, window_kind, next_run_at, last_run_at
        FROM board_workflow_triggers
-      WHERE workspace_id = $1
+      WHERE workspace_id = $1 AND disarmed_reason IS NULL
       ORDER BY next_run_at ASC NULLS LAST
       LIMIT $2`,
     [workspaceId, MAX_TRIGGERS],

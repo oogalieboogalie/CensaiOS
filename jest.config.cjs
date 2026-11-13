@@ -4,6 +4,9 @@ module.exports = {
   // default 5s when the suite runs as a full gate shard under pre-push load.
   testTimeout: 30_000,
   setupFilesAfterEnv: ['<rootDir>/tests/setupTests.js'],
+  // Each run's temp files go in one folder that is deleted at the end (tests/tmpGlobalSetup.cjs).
+  globalSetup: '<rootDir>/tests/tmpGlobalSetup.cjs',
+  globalTeardown: '<rootDir>/tests/tmpGlobalTeardown.cjs',
   testMatch: ['<rootDir>/**/*.test.js', '<rootDir>/**/*.test.jsx'],
   testPathIgnorePatterns: [
     '/node_modules/',
@@ -11,6 +14,16 @@ module.exports = {
     '/dist-landing/',
     '/dist-demo/',
     '/tools/db-tools/',
+    '/.laptop-build/',
+    '/.os-site-deploy/',
+    '/.claude/worktrees/',
+  ],
+  // Haste still indexes package.json under those copies. testPathIgnorePatterns
+  // does not keep them out, and a second "qs" package fails the suite at load.
+  modulePathIgnorePatterns: [
+    '[/\\\\]\\.laptop-build[/\\\\]',
+    '[/\\\\]\\.os-site-deploy[/\\\\]',
+    '[/\\\\]\\.claude[/\\\\]worktrees[/\\\\]',
   ],
   transform: {
     '^.+\\.[jt]sx?$': ['babel-jest', { configFile: './babel.config.cjs' }],

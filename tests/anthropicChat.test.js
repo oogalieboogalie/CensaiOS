@@ -48,7 +48,7 @@ describe('provider wiring', () => {
     expect(inferUserApiKeyProvider(null, 'https://api.anthropic.com')).toBe('anthropic');
     expect(capabilityProviderFor(null, 'https://api.anthropic.com')).toBe('anthropic');
     expect(BYOK_PROVIDERS.map(p => p.id)).toContain('anthropic');
-    expect(MODEL_OPTIONS.anthropic.map(o => o.value)).toEqual(['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-haiku-5-5']);
+    expect(MODEL_OPTIONS.anthropic.map(o => o.value)).toEqual(['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-haiku-5-5', 'claude-fable-5-1']);
     const caps = getModelCapabilities('anthropic', 'claude-haiku-5-5');
     expect(caps).toMatchObject({ image: true, pdf: true, audioInput: false, video: false, tools: true, voiceInput: null });
     expect(getModelCapabilities('ollama', 'llama3.1:8b').tools).toBe(false);

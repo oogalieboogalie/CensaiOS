@@ -6,14 +6,13 @@ const loadWorkspaceAuthoritatively = jest.fn();
 const getSession = jest.fn();
 const getCurrentProject = jest.fn();
 const setCurrentProject = jest.fn();
-const addAgent = jest.fn();
+const applyBoardAgents = jest.fn().mockResolvedValue([]);
 
 jest.unstable_mockModule('../src/lib/api.js', () => ({
   api: { loadWorkspaceAuthoritatively, getSession, getCurrentProject },
 }));
 jest.unstable_mockModule('../src/lib/agentStore.js', () => ({
-  addAgent, getAgentById: jest.fn(), updateAgent: jest.fn(),
-  initializeAgents: jest.fn().mockResolvedValue(undefined),
+  applyBoardAgents, refreshAgents: jest.fn().mockResolvedValue(undefined),
 }));
 jest.unstable_mockModule('../src/lib/store.js', () => ({
   useWorkspaceStore: selector => selector({ setCurrentProject }),
@@ -60,7 +59,7 @@ describe('app bootstrap workspace recovery', () => {
     await waitFor(() => expect(result.current.dataLoading).toBe(false));
     expect(result.current.initial).toEqual(expect.objectContaining({ extraAgents: [agent] }));
     expect(result.current.workspaceRevision).toBe(4);
-    expect(addAgent).toHaveBeenCalledWith(agent);
+    expect(applyBoardAgents).toHaveBeenCalledWith([agent]);
   });
 
   test('retry performs a new authoritative load without fabricating state between attempts', async () => {

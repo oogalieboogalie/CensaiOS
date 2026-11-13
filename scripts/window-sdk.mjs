@@ -16,6 +16,7 @@ const paths = {
   windows: path.join(repoRoot, 'src', 'components', 'Windows.jsx'),
   windowRegistry: path.join(repoRoot, 'src', 'components', 'windows', 'windowRegistry.js'),
   emptyState: path.join(repoRoot, 'src', 'components', 'canvas', 'CanvasEmptyState.jsx'),
+  launchpad: path.join(repoRoot, 'src', 'components', 'canvas', 'CanvasLaunchpad.jsx'),
 };
 
 const MODULE_TYPE_VALUES = ['window', 'integration', 'agent', 'package'];
@@ -259,6 +260,7 @@ async function validateWindows({ quiet = false } = {}) {
   const appText = readText(path.join(repoRoot, 'src', 'app', 'AppContent.jsx'));
   const objectTypesText = readText(path.join(repoRoot, 'src', 'lib', 'canvasObjectTypes.js'));
   const emptyStateText = readText(paths.emptyState);
+  const launchpadText = readText(paths.launchpad);
   const usesDynamicDiscovery = windowRegistryText.includes('import.meta.glob');
   const iconNames = [...readText(path.join(repoRoot, 'src', 'components', 'Icons.jsx')).matchAll(/^\s{2}([A-Z][A-Za-z0-9]*):/gm)].map((m) => m[1]);
 
@@ -359,7 +361,9 @@ async function validateWindows({ quiet = false } = {}) {
     // to WindowTitle in code; WindowFrame draws the one shared header.
     errors.push(...validateHeaderMeta(item.kind, item.header, { iconNames }));
 
-    // Launcher tile metadata (optional; rendered by CanvasEmptyState).
+    // Launcher block (optional): a fallback icon for the window header and Add,
+    // the hint in Add, and the empty board's starting button for the kinds
+    // LAUNCHPAD_STARTS lists.
     if (Object.prototype.hasOwnProperty.call(item, 'launcher')) {
       const L = item.launcher;
       if (!L || typeof L !== 'object' || Array.isArray(L)) {
@@ -407,13 +411,20 @@ async function validateWindows({ quiet = false } = {}) {
   if (/WINDOW_COMPONENTS\s*\[\s*['"]/.test(windowRegistryText)) {
     errors.push("windows/windowRegistry.js has a manual WINDOW_COMPONENTS['kind'] = ... assignment. Remove it — the manifest loop wires components automatically.");
   }
-  // Contract enforcement: launcher tiles are declared in the manifest `launcher`
-  // block and rendered from LAUNCHER_MANIFESTS, never hardcoded in the empty state.
+  // Contract enforcement: the empty board's starting buttons are the windows
+  // LAUNCHPAD_STARTS lists, drawn by CanvasLaunchpad.jsx from their manifest
+  // `launcher` blocks (LAUNCHER_MANIFESTS, handed over by CanvasEmptyState.jsx),
+  // never hardcoded in either file.
   if (!emptyStateText.includes('LAUNCHER_MANIFESTS')) {
-    errors.push('CanvasEmptyState.jsx must render launcher tiles from LAUNCHER_MANIFESTS (manifest-driven).');
+    errors.push('CanvasEmptyState.jsx must hand LAUNCHER_MANIFESTS to CanvasLaunchpad.jsx (manifest-driven starting buttons).');
   }
-  if (/onSpawn\(\s*['"]/.test(emptyStateText)) {
-    errors.push("CanvasEmptyState.jsx has a hardcoded launcher tile (onSpawn('kind', ...)). Declare the tile via a manifest `launcher` block instead.");
+  if (!launchpadText.includes('LAUNCHPAD_STARTS')) {
+    errors.push('CanvasLaunchpad.jsx must draw its starting buttons from LAUNCHPAD_STARTS (src/lib/launchpadStarts.js).');
+  }
+  for (const [file, text] of [['CanvasEmptyState.jsx', emptyStateText], ['CanvasLaunchpad.jsx', launchpadText]]) {
+    if (/onSpawn\(\s*['"]/.test(text)) {
+      errors.push(`${file} has a hardcoded starting button (onSpawn('kind', ...)). List the window in LAUNCHPAD_STARTS (src/lib/launchpadStarts.js) and give it a manifest \`launcher\` block instead.`);
+    }
   }
   if (!appText.includes('getDefaultWindowSize')) {
     errors.push('AppContent.jsx is not using getDefaultWindowSize for spawn sizing');

@@ -73,6 +73,9 @@ jest.unstable_mockModule('../server/agentNetwork/schema.js', () => ({
 jest.unstable_mockModule('../server/social/schema.js', () => ({
   ensureSocialSchema: jest.fn(async () => {}),
 }));
+jest.unstable_mockModule('../server/github/agentTaskSchema.js', () => ({
+  ensureAgentGithubTaskSchema: jest.fn(async () => {}),
+}));
 jest.unstable_mockModule('../server/lessons/schema.js', () => ({
   ensureLessonSchema: jest.fn(async () => {}),
 }));
@@ -85,11 +88,21 @@ jest.unstable_mockModule('../server/auctionWatcher/schema.js', () => ({
 jest.unstable_mockModule('../server/ownCalendar/schema.js', () => ({
   ensureOwnCalendarSchema: jest.fn(async () => {}),
 }));
+
+jest.unstable_mockModule('../server/signInDomains/schema.js', () => ({
+  ensureSignInDomainSchema: jest.fn(async () => {}),
+}));
 jest.unstable_mockModule('../server/invites/schema.js', () => ({
   ensureBoardInviteSchema: jest.fn(async () => {}),
 }));
+jest.unstable_mockModule('../server/tokens/schema.js', () => ({
+  ensureInviteTokenSchema: jest.fn(async () => {}),
+}));
 jest.unstable_mockModule('../server/research/schema.js', () => ({
   ensureResearchSchema: jest.fn(async () => {}),
+}));
+jest.unstable_mockModule('../server/kraken/schema.js', () => ({
+  ensureKrakenSchema: jest.fn(async () => {}),
 }));
 jest.unstable_mockModule('../server/censaiOrchestrator/schema.js', () => ({
   ensureCensaiPlanSchema: jest.fn(async () => {}),

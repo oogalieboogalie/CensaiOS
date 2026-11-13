@@ -3,7 +3,9 @@ import fs from 'fs';
 import * as pty from 'node-pty';
 import { isDockerAvailable, ensureSandbox, sandboxShellArgv, sandboxAgentArgv, OPENCODE_RUN_MAX_PROMPT_CHARS } from '../sandbox/index.js';
 import { log, ptyOptions } from './shared.js';
+import { directoryInsideProjectsRoot } from './projectCwd.js';
 import { folderKind, safeReason } from './logSafe.js';
+import { githubGitEnv } from './githubLogin.js';
 
 export { folderKind, safeReason };
 
@@ -27,9 +29,9 @@ export function resolveHostShell({
   return [env.SHELL, '/bin/bash', '/bin/sh'].filter(Boolean).find(candidate => exists(candidate)) || '/bin/sh';
 }
 
-function spawnHostShell(cwd, size) {
+function spawnHostShell(cwd, size, extraEnv = null) {
   const shell = resolveHostShell();
-  const proc = pty.spawn(shell, [], ptyOptions(size, cwd));
+  const proc = pty.spawn(shell, [], ptyOptions(size, cwd, extraEnv));
   const base = path.basename(shell).toLowerCase();
   const shellFamily = base.includes('powershell') || base.includes('pwsh')
     ? 'powershell'
@@ -71,7 +73,7 @@ export async function startBackend(cwd, hasProject, size, owner = null) {
       log.warn('WSL backend failed, falling back to host shell', { error: safeReason(err) });
     }
   }
-  return spawnHostShell(cwd, size);
+  return spawnHostShell(cwd, size, await githubGitEnv(owner?.userId));
 }
 
 /**
@@ -80,8 +82,8 @@ export async function startBackend(cwd, hasProject, size, owner = null) {
  * a plain-English error (shown in the terminal) when unavailable.
  */
 export async function startAgentBackend(cwd, prompt, size) {
-  if (!cwd) {
-    throw new Error('Agent run needs a project folder. Mount this terminal to a project first.');
+  if (!cwd || !directoryInsideProjectsRoot(cwd)) {
+    throw new Error('Agent run needs a project folder inside the projects folder. Mount this terminal to a project first.');
   }
   const task = String(prompt || '').trim();
   if (!task) throw new Error('Agent run requires a non-empty prompt');

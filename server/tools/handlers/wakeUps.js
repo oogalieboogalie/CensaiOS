@@ -30,12 +30,12 @@ export async function handleWakeUpTool(agentId, name, args = {}, context = {}, d
         + `${row.agent_id !== id ? `, wakes ${nameOf(row.agent_id)}` : ''}: ${row.agent_reason}`
         + `${row.status === 'inactive' ? ' [paused]' : ''}`).join('\n');
     }
+    // Viewers can look at a board but not set things running on it, or stop them.
+    await requireWorkspaceMember(db, { userId, workspaceId, roles: ['owner', 'admin', 'member'] });
     if (name === 'cancel_wake_up') {
       return (await cancelAgentWakeUp(db, { workspaceId, agentId: id, id: args.id }))
         ? 'Cancelled.' : 'No waiting wake-up of yours has that id.';
     }
-    // Viewers can look at a board but not set things running on it.
-    await requireWorkspaceMember(db, { userId, workspaceId, roles: ['owner', 'admin', 'member'] });
     const row = await createAgentWakeUp(db, {
       workspaceId, userId, agentId: id, wakeAgent: args.wake_agent, reason: args.reason, plan: args.plan,
       inMinutes: args.in_minutes, at: args.at, repeat: args.repeat || 'once',

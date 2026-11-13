@@ -49,6 +49,11 @@
 .hb-yl-addpage { width: 100%; justify-content: center; }
 
 /* Panel */
+.hb-yl-story-box { position: relative; }
+.hb-yl-story-box .hb-yl-story { width: 100%; box-sizing: border-box; }
+.hb-yl-here { pointer-events: none; }
+.hb-yl-here-tag { fill: var(--caret-color, var(--accent)); }
+.hb-yl-here-name { fill: var(--on-fill); font-family: var(--font-sans); }
 .hb-yl-story { min-height: 120px; font-size: var(--text-sm); line-height: 1.5; }
 .hb-yl-check { display: flex; gap: var(--space-2); align-items: flex-start; color: var(--ink-soft); }
 .hb-yl-warn { margin: 0; padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-sm); background: color-mix(in oklab, var(--danger) 12%, var(--surface)); color: var(--ink); font-size: var(--text-xs); line-height: 1.5; }

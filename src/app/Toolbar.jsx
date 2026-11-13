@@ -3,23 +3,34 @@ import { AI_DEF, CHAT_DEF, TOOL_DEFS, broadcastToolChange, isEditingTarget } fro
 import { PenOptions } from './toolbar/PenOptions.jsx';
 import { DockPresence } from './DockPresence.jsx';
 import { DockChat } from './toolbar/DockChat.jsx';
+import { DockDivider } from './toolbar/DockDivider.jsx';
+import { DockToolButton } from './toolbar/DockToolButton.jsx';
+import { loadDockExtras } from './toolbar/dockExtras.js';
+import { DOCK, DOCK_PAD } from './toolbar/dockMetrics.js';
 import { GLASS_HOST, GLOSS_SHEEN, glossContainer } from '../lib/theme/gloss.js';
 import { keyboardClaimed } from '../lib/keyboardClaim.js';
+
+const NAVIGATE = new Set(['select', 'pan']);
+const PEN_TOOLS = new Set(['pen', 'rect']);
 
 // Floating capsule multi-tool dock. Same props contract as the old toolbar
 // so AppContent needs no changes. Engine tools go through onSelectTool +
 // a `canvas:tool-change` CustomEvent. AI Copilot is a momentary action via
 // onAiAgent; Chat lives in DockChat (pick an agent, thread).
 //
-// Idle state is a compact dark "Tools" pill. Hovering pops the full bar
-// out of the top of the pill — the pill stays put as the anchor and the
-// bar unfolds above it via an animated grid row.
+// Idle state is a compact "Tools" pill. Hovering pops the full bar out of
+// the top of the pill — the pill stays put and the bar unfolds above it.
 export function Toolbar({ activeTool, onSelectTool, penColor, setPenColor, penSize, setPenSize, focusMode, onAiAgent, collaboration, onShare, workspaceId }) {
   const [hint, setHint] = React.useState('Select Tool');
   const [hintVisible, setHintVisible] = React.useState(false);
   const [expanded, setExpanded] = React.useState(false);
+  const extras = React.useMemo(() => loadDockExtras(), []);
 
   const activeDef = TOOL_DEFS.find((t) => t.id === activeTool) || TOOL_DEFS[0];
+  const hidden = new Set(extras.flatMap((mod) => mod.claimedTools || []));
+  const penTools = new Set([...PEN_TOOLS, ...extras.flatMap((mod) => mod.penOptionTools || [])]);
+  const navigate = TOOL_DEFS.filter((t) => NAVIGATE.has(t.id) && !hidden.has(t.id));
+  const draw = TOOL_DEFS.filter((t) => !NAVIGATE.has(t.id) && !hidden.has(t.id));
 
   const selectTool = React.useCallback((id) => {
     onSelectTool(id);
@@ -47,66 +58,24 @@ export function Toolbar({ activeTool, onSelectTool, penColor, setPenColor, penSi
     return () => window.removeEventListener('keydown', onKey);
   }, [selectTool, fireAction, onAiAgent]);
 
-  const showPenOptions = activeTool === 'pen' || activeTool === 'rect';
-
-  // Buttons sit straight on the frosted bar: clear at rest, a soft tint on
-  // hover. Active keeps its accent fill.
-  const glossyRest = (base) => ({
-    background: base,
-    border: '1px solid transparent',
-    boxShadow: 'none',
-  });
-
-  const renderToolButton = (t, { accent = false } = {}, onClickOverride) => {
-    const active = activeTool === t.id;
-    return (
-      <button
-        key={t.id}
-        type="button"
-        data-tool={t.id}
-        title={`${t.label} (${t.key})`}
-        tabIndex={expanded ? undefined : -1}
-        onClick={onClickOverride ?? (() => (t.id === 'ai-agent' ? fireAction('ai-agent', onAiAgent) : selectTool(t.id)))}
-        onMouseEnter={(e) => {
-          setHint(`${t.label} (${t.key})`);
-          setHintVisible(true);
-          if (!active) {
-            Object.assign(e.currentTarget.style, glossyRest('var(--glass-hover)'));
-            e.currentTarget.style.color = 'var(--accent-ink)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          setHintVisible(false);
-          if (!active) {
-            Object.assign(e.currentTarget.style, glossyRest('transparent'));
-            e.currentTarget.style.color = accent ? 'var(--accent-ink)' : 'var(--ink-soft)';
-          }
-        }}
-        style={{
-          all: 'unset', cursor: 'pointer', position: 'relative',
-          width: 40, height: 40, borderRadius: '50%',
-          display: 'grid', placeItems: 'center',
-          color: active ? 'var(--accent-ink)' : (accent ? 'var(--accent-ink)' : 'var(--ink-soft)'),
-          ...(active
-            ? {
-                background: 'var(--accent-soft)',
-                border: '1px solid transparent',
-                boxShadow: 'inset 0 1px 0 oklch(1 0 0 / 0.15), 0 1px 2px oklch(0 0 0 / 0.08)',
-              }
-            : glossyRest('transparent')),
-          fontWeight: active ? 600 : undefined,
-          transition: 'background 0.15s, color 0.15s',
-        }}
-      >
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          {t.glyph}
-        </svg>
-        {t.id === 'ai-agent' && (
-          <span style={{ position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: '50%', background: 'var(--ps-green)', boxShadow: '0 0 0 2px var(--surface)' }} />
-        )}
-      </button>
-    );
+  const showHint = (text) => {
+    setHint(text || 'Select Tool');
+    setHintVisible(Boolean(text));
   };
+
+  const renderToolButton = (t, { accent = false } = {}, onClickOverride) => (
+    <DockToolButton
+      key={t.id}
+      tool={t}
+      activeTool={activeTool}
+      expanded={expanded}
+      accent={accent}
+      onHint={showHint}
+      onClick={onClickOverride ?? (() => (t.id === 'ai-agent' ? fireAction('ai-agent', onAiAgent) : selectTool(t.id)))}
+    />
+  );
+
+  const extraProps = { activeTool, expanded, penColor, setPenColor, penSize, setPenSize, renderToolButton, selectTool };
 
   return (
     <div
@@ -150,33 +119,30 @@ export function Toolbar({ activeTool, onSelectTool, penColor, setPenColor, penSi
             transition: 'opacity 0.2s ease, transform 0.28s cubic-bezier(.4,0,.2,1)',
           }}
         >
-          <div className="flex flex-col items-center" style={{ gap: 8, paddingBottom: 8 }}>
-            {showPenOptions && (
+          <div className="flex flex-col items-center" style={{ gap: DOCK.gap, paddingBottom: DOCK.gap }}>
+            {penTools.has(activeTool) && (
               <PenOptions penColor={penColor} setPenColor={setPenColor} penSize={penSize} setPenSize={setPenSize} />
             )}
+            {extras.map((mod, i) => (mod.DockAbove ? <mod.DockAbove key={`above-${i}`} {...extraProps} /> : null))}
 
             <nav
               aria-label="Canvas tools"
               className={`relative flex items-center ${GLASS_HOST}`}
               style={{
-                gap: 6, padding: 6,
+                gap: DOCK.gap, padding: DOCK_PAD,
                 background: `${GLOSS_SHEEN}, var(--glass-bg)`,
                 border: '1px solid var(--glass-line)',
                 borderRadius: 'var(--radius-float)',
                 boxShadow: 'var(--glass-shadow)',
               }}
             >
-              {renderToolButton(TOOL_DEFS[0])}
-              {renderToolButton(TOOL_DEFS[1])}
-              <div style={{ width: 1, height: 20, background: 'var(--hairline)', margin: '0 2px' }} />
-              {renderToolButton(TOOL_DEFS[2])}
-              {renderToolButton(TOOL_DEFS[3])}
-              {renderToolButton(TOOL_DEFS[4])}
-              {renderToolButton(TOOL_DEFS[5])}
-              {renderToolButton(TOOL_DEFS[6])}
-              <div style={{ width: 1, height: 20, background: 'var(--hairline)', margin: '0 2px' }} />
+              {navigate.map((t) => renderToolButton(t))}
+              <DockDivider />
+              {draw.map((t) => renderToolButton(t))}
+              {extras.map((mod, i) => (mod.DockButtons ? <mod.DockButtons key={`buttons-${i}`} {...extraProps} /> : null))}
+              <DockDivider />
               {renderToolButton(AI_DEF, { accent: true })}
-              {<DockChat renderButton={(onClick) => renderToolButton(CHAT_DEF, { accent: true }, onClick)} />}
+              <DockChat renderButton={(onClick) => renderToolButton(CHAT_DEF, { accent: true }, onClick)} />
             </nav>
 
             {collaboration && <DockPresence collaboration={collaboration} onShare={onShare} workspaceId={workspaceId} expanded={expanded} />}
@@ -193,7 +159,8 @@ export function Toolbar({ activeTool, onSelectTool, penColor, setPenColor, penSi
         onFocus={() => setExpanded(true)}
         className={`flex items-center ${GLASS_HOST}`}
         style={glossContainer({
-          gap: 8, padding: '8px 14px',
+          gap: DOCK.gap, padding: `${DOCK.padY}px 12px`,
+          minHeight: DOCK.button, boxSizing: 'border-box',
           color: 'var(--ink-soft)',
           borderRadius: 'var(--radius-float)',
           fontFamily: 'var(--font-sans)',
@@ -201,17 +168,17 @@ export function Toolbar({ activeTool, onSelectTool, penColor, setPenColor, penSi
           cursor: 'pointer',
         })}
       >
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={DOCK.stroke}>
           {activeDef.glyph}
         </svg>
         <span>Tools</span>
         <svg
-          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }}
         >
           <path d="M6 9l6 6 6-6" />
         </svg>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--ps-green)' }} />
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ps-green)' }} />
       </button>
     </div>
   );

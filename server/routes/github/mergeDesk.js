@@ -11,7 +11,7 @@ import {
 import { resolveGithubWriteToken } from '../../github/writeToken.js';
 import { fixApprovals, getFixJob, rawFixJob, startFix } from '../../github/conflictFixer.js';
 import { requireLocalFilesystem } from '../../middleware/runtimeMode.js';
-import { assertSystemAdmin, requireSystemAdmin } from '../../security/systemAdmin.js';
+import { assertSystemAdmin, isComputerOwner, requireSystemAdmin } from '../../security/systemAdmin.js';
 
 /**
  * GitHub window: the merge desk.
@@ -21,7 +21,7 @@ import { assertSystemAdmin, requireSystemAdmin } from '../../security/systemAdmi
  * GET  /api/github/desk/pr?repo=&number=  one PR, refreshed
  * POST /api/github/desk/merge             { repo, number }  ready + merge, one tap
  * POST /api/github/desk/fix               { repo, number }  update branch / agent fix
- * GET  /api/github/desk/fix/:id           fix progress + pending agent approvals
+ * GET  /api/github/desk/fix/:id           fix progress + pending agent approvals (+ `whole` for the owner)
  * POST /api/github/desk/fix/:id/approve   { approvalId, allow }
  *
  * Merge, fix and review posts use the person's own GitHub key, or the
@@ -110,7 +110,12 @@ mergeDeskRouter.post('/desk/fix', wrap(async (req, res) => {
 mergeDeskRouter.get('/desk/fix/:id', wrap(async (req, res) => {
   const job = getFixJob(req.params.id);
   const manager = await managerLoader().catch(() => null);
-  res.json({ job, approvals: manager ? fixApprovals(rawFixJob(job.id), manager) : [] });
+  if (!manager) return res.json({ job, approvals: [] });
+  // `approvals` go on the shared board in a teammate's words; `whole` is for
+  // this computer's owner's own screen, to see a request whole before answering.
+  const owner = await isComputerOwner(req).catch(() => false);
+  const raw = rawFixJob(job.id);
+  res.json({ job, approvals: fixApprovals(raw, manager), ...(owner ? { whole: fixApprovals(raw, manager, { owner: true }) } : {}) });
 }));
 
 mergeDeskRouter.post('/desk/fix/:id/approve', requireLocalFilesystem, requireSystemAdmin, wrap(async (req, res) => {

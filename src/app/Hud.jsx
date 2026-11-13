@@ -1,6 +1,7 @@
 import React from 'react';
 import { PresenceToasts } from '../components/PresenceToasts.jsx';
 import { InviteToasts } from '../components/InviteToasts.jsx';
+import { TailnetToasts } from '../components/TailnetToasts.jsx';
 import { FirstMission } from '../components/onboarding/FirstMission.jsx';
 import { BoardWakeUp } from '../components/onboarding/BoardWakeUp.jsx';
 import { DemoBanner } from '../components/demo/DemoBanner.jsx';
@@ -18,6 +19,7 @@ export function Hud({ focusMode, collaboration }) {
   return (<>
     {!focusMode && <PresenceToasts collaboration={collaboration} />}
     {!focusMode && <InviteToasts />}
+    {!focusMode && <TailnetToasts />}
     <BoardWakeUp />
     {DEMO && <DemoBanner />}
     <FirstMission focusMode={focusMode} />

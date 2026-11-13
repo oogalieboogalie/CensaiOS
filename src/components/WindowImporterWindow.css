@@ -107,14 +107,13 @@
   font-weight: 600;
 }
 .wi-opt-hint { font-size: var(--text-xs); font-weight: 400; color: color-mix(in srgb, var(--ink) 50%, transparent); }
-.wi-opt-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--text-md);
-  cursor: pointer;
+/* Where a new window goes: a plain line, not a setting. */
+.wi-opt-note {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
 }
-.wi-opt-toggle input { accent-color: var(--accent); }
 
 /* ── Footer ── */
 .wi-footer {

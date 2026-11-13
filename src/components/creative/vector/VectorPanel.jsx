@@ -2,6 +2,7 @@
 import React from 'react';
 import { ColorField } from '../ColorField.jsx';
 import { Slider } from '../Slider.jsx';
+import { VectorTextBox } from './VectorTextBox.jsx';
 
 const NAMES = { rect: 'Rectangle', ellipse: 'Ellipse', line: 'Line', path: 'Path', text: 'Text' };
 
@@ -10,8 +11,8 @@ function shapeName(s) {
   return s.name || NAMES[s.type] || 'Shape';
 }
 
-/** Fill, stroke and the selected shape's own settings, then the shape list. */
-export function VectorPanel({ v }) {
+/** Fill, stroke and the selected shape's own settings, then the shape list. With `windowId`, teammates' cursors show in a text box. */
+export function VectorPanel({ v, windowId }) {
   const { doc, one, style, selected } = v;
   const src = selected.length ? doc.shapes[selected[0]] : style;
   const text = one?.type === 'text' ? one : null;
@@ -30,7 +31,7 @@ export function VectorPanel({ v }) {
         {one?.type === 'rect' && <Slider label="Corner radius" min={0} max={Math.round(Math.min(one.w, one.h) / 2)} unit="px" value={one.rx || 0} onChange={(n) => v.setStyleField('rx', n)} />}
         {text && (
           <>
-            <textarea className="hb-cr-input hb-cr-textarea" aria-label="Text" value={text.text} onChange={(e) => v.setStyleField('text', e.target.value)} />
+            <VectorTextBox windowId={windowId} shapeId={selected[0]} text={text.text || ''} onType={(t) => v.setStyleField('text', t)} />
             <Slider label="Text size" min={6} max={300} unit="px" value={text.size || 48} onChange={(n) => v.setStyleField('size', n)} />
           </>
         )}

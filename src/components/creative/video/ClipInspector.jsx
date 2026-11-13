@@ -2,12 +2,13 @@
 import React from 'react';
 import { ColorField } from '../ColorField.jsx';
 import { Slider } from '../Slider.jsx';
+import { CreativeCaretText, videoTitleField } from '../CreativeCaretText.jsx';
 import { TITLE_POSITIONS, clipEnd, formatTime } from '../../../lib/creative/videoModel.js';
 
 const KIND = { video: 'Video clip', audio: 'Audio clip', image: 'Picture' };
 
 /** Settings for the selected clip: title text and style, or volume. */
-export function ClipInspector({ clip, missing, onChange }) {
+export function ClipInspector({ clip, clipId, windowId, missing, onChange }) {
   if (!clip) {
     return (
       <aside className="hb-cr-panel" aria-label="Clip settings">
@@ -28,7 +29,7 @@ export function ClipInspector({ clip, missing, onChange }) {
         {missing && <p className="hb-cr-hint">This file is on the computer that added it, so it plays there. Your edits to it still sync.</p>}
         {clip.track === 't' && (
           <>
-            <textarea className="hb-cr-input hb-cr-textarea" aria-label="Title text" value={clip.text} onChange={(e) => set({ text: e.target.value })} />
+            <CreativeCaretText windowId={windowId} field={videoTitleField(clipId)} label="Title text" value={clip.text || ''} onType={(text) => set({ text })} />
             <label className="hb-cr-field"><span>Place</span>
               <select className="hb-of-select" aria-label="Title position" value={clip.pos || 'center'} onChange={(e) => set({ pos: e.target.value })}>
                 {Object.entries(TITLE_POSITIONS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}

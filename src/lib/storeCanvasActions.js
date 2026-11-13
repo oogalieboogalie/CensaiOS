@@ -10,6 +10,13 @@ const DEFAULT_HTML_PREVIEW = `<!DOCTYPE html><html><head><style>body{font-family
 
 let groupDragCache = null;
 
+// A group drag's log line counts windows and names their kinds: never a
+// window's title (a Document's is its file name) nor the group's name.
+function windowsForLog(list, said) {
+  const kinds = new Set(list.map(w => (/^[a-z][\w-]{0,40}$/i.test(w.kind || '') ? w.kind : 'window')));
+  return `${list.length} window${list.length === 1 ? '' : 's'} ${said} (${[...kinds].join(', ')})`;
+}
+
 export const createCanvasActions = (set, get) => ({
   createLink: (fromId, toId) => {
     set(state => ({
@@ -167,9 +174,8 @@ export const createCanvasActions = (set, get) => ({
       // put (and loses a stale assignment) so the group keeps its layout.
       // Groups without a layout also pick up windows whose center is inside.
       const { carry, leftBehind, pickedUp } = groupDragMembers(g, wins);
-      const name = g.label || g.name || 'Group';
-      for (const w of pickedUp) logToApp('info', `groups: drag of "${name}" picked up ${w.title || w.kind} (not tiled)`, { where: 'canvas' });
-      for (const w of leftBehind) logToApp('info', `groups: drag of "${name}" left ${w.title || w.kind} behind (no tile for it)`, { where: 'canvas' });
+      if (pickedUp.length) logToApp('info', `groups: a group drag picked up ${windowsForLog(pickedUp, 'it does not tile')}`, { where: 'canvas' });
+      if (leftBehind.length) logToApp('info', `groups: a group drag left behind ${windowsForLog(leftBehind, 'with no tile')}`, { where: 'canvas' });
       const stale = new Set(leftBehind.filter(w => w.groupId === id).map(w => w.id));
       if (stale.size) set(state => ({ wins: state.wins.map(w => stale.has(w.id) ? { ...w, groupId: null } : w) }));
       const enclosedWins = carry.map(w => ({ id: w.id, ox: w.x, oy: w.y }));

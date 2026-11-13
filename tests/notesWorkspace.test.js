@@ -17,21 +17,29 @@ const KINDS = new Set(WINDOW_MANIFESTS.map((m) => m.kind));
 const idsFor = (agents) => Object.fromEntries(agents.map((agent) => [agent.key, `${agent.key}-1`]));
 
 describe('notes-workspace board', () => {
-  test('opens Downloads behind Notes, with Library and Team Chat on F3/F4', () => {
+  test('opens the Finder behind Notes, with Library and Team Chat on F3/F4', () => {
     const board = buildNotesWorkspaceBoard({ agents: idsFor(NOTES_WORKSPACE_AGENTS), makeId: () => 't1' });
     expect(board.templateId).toBe('notes-workspace');
-    expect(board.groups.map((g) => g.label)).toEqual(['Downloads', 'Notes', 'Library', 'Team Chat']);
+    expect(board.groups.map((g) => g.label)).toEqual(['Finder', 'Notes', 'Library', 'Team Chat']);
     expect(Object.keys(board.hotkeys)).toEqual(['1', '2', '3', '4']);
 
-    const downloads = board.groups.find((g) => g.label === 'Downloads');
+    const finder = board.groups.find((g) => g.label === 'Finder');
     const notes = board.groups.find((g) => g.label === 'Notes');
-    expect(notes.x).toBeGreaterThan(downloads.x);
-    expect(notes.y).toBeLessThan(downloads.y);
+    expect(notes.x).toBeGreaterThan(finder.x);
+    expect(notes.y).toBeLessThan(finder.y);
 
     expect(board.windows.find((w) => w.kind === 'finderFiles')).toBeTruthy();
     expect(board.windows.find((w) => w.kind === 'vaultNotes')).toBeTruthy();
     for (const win of board.windows) expect(KINDS.has(win.kind)).toBe(true);
     expect(findTemplateWindow(board.windows, 'teamChat').kind).toBe('groupChat');
+  });
+
+  test('its Finder lists the open project\'s files: no made-up Downloads folder', () => {
+    const board = buildNotesWorkspaceBoard({ agents: idsFor(NOTES_WORKSPACE_AGENTS), makeId: () => 't1' });
+    const finder = board.windows.find((w) => w.kind === 'finderFiles');
+    expect(finder.files).toBeUndefined();
+    expect(finder.project).toBeUndefined();
+    expect(JSON.stringify({ board, template: NOTES_WORKSPACE_TEMPLATE, agents: NOTES_WORKSPACE_AGENTS })).not.toMatch(/Downloads|Today at|officepc/);
   });
 
   test('its vault opens on the recipe as an editable note, with no made-up computer path', () => {

@@ -5,7 +5,7 @@ import {
   updateSchedule,
 } from './memory/schedules.js';
 import { getAgents } from './memory/core/agents.js';
-import { nextRunAfter } from './memory/schedules_utils.js';
+import { monthlyAnchorDay, nextRunAfter } from './memory/schedules_utils.js';
 import { createLogger } from './logger.js';
 import { safeErrorCode } from './security/errorCode.js';
 import {
@@ -35,7 +35,21 @@ async function failSchedule(schedule, err) {
 
 async function completeOrRepeatSchedule(schedule) {
   if (schedule.repeat_enabled) {
-    const nextRun = nextRunAfter(schedule.next_run_at || new Date(), schedule.repeat_freq, schedule.repeat_days);
+    // The saved date holds a 29th, 30th or 31st after a short month has
+    // shortened the run. The repeat clock is the configured zone, not a column.
+    const days = schedule.repeat_freq === 'monthly'
+      ? (monthlyAnchorDay(schedule.scheduled_date) ?? schedule.repeat_days)
+      : schedule.repeat_days;
+    // scheduled_time is the clock we return to. A spring-forward hole shifts
+    // one run forward; the next run uses this time again, not the shifted one.
+    const nextRun = nextRunAfter(
+      schedule.next_run_at || new Date(),
+      schedule.repeat_freq,
+      days,
+      new Date(),
+      undefined,
+      schedule.scheduled_time,
+    );
     await updateSchedule(schedule.id, {
       status: 'active',
       next_run_at: nextRun,
@@ -54,10 +68,20 @@ async function completeOrRepeatSchedule(schedule) {
 export async function reconcileCoreScheduleRuns() {
   const schedules = await getRunningScheduleRuns();
   for (const schedule of schedules) {
-    if (schedule.run_status === 'succeeded') {
-      await completeOrRepeatSchedule(schedule);
-    } else if (schedule.run_status === 'failed' || schedule.run_status === 'cancelled') {
-      await failSchedule(schedule, new Error(schedule.run_error || `Run ${schedule.run_status}.`));
+    try {
+      if (schedule.run_status === 'succeeded') {
+        await completeOrRepeatSchedule(schedule);
+      } else if (schedule.run_status === 'failed' || schedule.run_status === 'cancelled') {
+        await failSchedule(schedule, new Error(schedule.run_error || `Run ${schedule.run_status}.`));
+      }
+    } catch (err) {
+      // One row must not stay 'running' and block every later claim.
+      log.error('schedule reconcile failed', { scheduleId: schedule.id, code: safeErrorCode(err) });
+      try {
+        await failSchedule(schedule, err);
+      } catch (failErr) {
+        log.error('schedule reconcile failed', { scheduleId: schedule.id, code: safeErrorCode(failErr) });
+      }
     }
   }
   return schedules.length;

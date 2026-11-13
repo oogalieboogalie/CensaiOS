@@ -2,10 +2,12 @@
 .hb-teleprompter { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); color: var(--ink); }
 .hb-teleprompter-note { margin: 0; padding: var(--space-1-5) var(--space-3); border-bottom: 1px solid var(--hairline); color: var(--ink-soft); font-size: var(--text-xs); }
 .hb-teleprompter-edit { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); }
+.hb-teleprompter-box { position: relative; flex: 1; min-height: 0; display: flex; }
 .hb-teleprompter-input { flex: 1; min-height: 0; box-sizing: border-box; width: 100%; padding: var(--space-3); border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-2); color: var(--ink); font: inherit; font-size: var(--text-lg); line-height: 1.6; resize: none; }
 .hb-teleprompter-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent-line); }
 .hb-teleprompter-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .hb-teleprompter-hint { color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-teleprompter-writers { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3); font-size: var(--text-lg); line-height: 1.6; }
 
 .hb-prompter { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); outline: none; }
 .hb-prompter-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; container-type: size; }

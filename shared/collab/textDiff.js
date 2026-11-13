@@ -4,8 +4,19 @@
 // to keep a local caret in place when someone else's edit lands. Pure; shared
 // by the browser binding and the server-side agent writer.
 
-/** Window fields stored as Y.Text so concurrent typing merges. */
-export const WINDOW_TEXT_FIELDS = new Set(['text', 'code']);
+/**
+ * Window fields stored as Y.Text so concurrent typing merges (cadCode: a CAD
+ * window's recipe; title: a window's name, like a Writer document's title;
+ * diffBefore and diffAfter: the two versions pasted into a Git Diff Viewer;
+ * prompt and system: a request and its instructions, like Model Arena's;
+ * legionGoal and legionSpecYaml: what a Legion should build, and its spec;
+ * workItem: an Idea Pad's save tag; imageNotes: an Image Studio's
+ * additional instructions; draft: a WhatsApp window's quick message).
+ */
+export const WINDOW_TEXT_FIELDS = new Set([
+  'text', 'code', 'cadCode', 'title', 'diffBefore', 'diffAfter', 'prompt', 'system', 'legionGoal', 'legionSpecYaml', 'workItem',
+  'imageNotes', 'draft',
+]);
 
 /** Vault notes keep each note's words in a field of its own, `vt.<noteId>`. */
 export const NOTE_TEXT_PREFIX = 'vt.';
@@ -55,10 +66,17 @@ export function applyOp(text, op) {
   return text.slice(0, op.index) + op.insert + text.slice(op.index + op.remove);
 }
 
-/** Apply a diff to a Y.Text (caller wraps it in a transaction). */
-export function applyTextDiff(ytext, op) {
+/**
+ * Apply a diff to a Y.Text (caller wraps it in a transaction). `typedBy`,
+ * when given, marks the new letters with who typed them (typedBy.js).
+ */
+export function applyTextDiff(ytext, op, typedBy = null) {
   if (op.remove) ytext.delete(op.index, op.remove);
-  if (op.insert) ytext.insert(op.index, op.insert);
+  if (op.insert) {
+    // A copy: Yjs writes into the marks it is given (ending other formatting).
+    if (typedBy && typeof typedBy === 'object') ytext.insert(op.index, op.insert, { ...typedBy });
+    else ytext.insert(op.index, op.insert);
+  }
 }
 
 /** Where a caret at `pos` ends up after `op` was applied by someone else. */

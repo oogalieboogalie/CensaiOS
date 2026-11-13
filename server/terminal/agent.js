@@ -48,7 +48,8 @@ export async function runInTerminalSession(sessionId, command, opts = {}) {
     const note = `\r\n\x1b[31m⤷ ${agentName} ▸ BLOCKED (${why}): ${cmd}\x1b[0m\r\n`;
     broadcast(session, { type: 'output', data: note });
     appendScrollback(session, note);
-    log.warn('tripwire blocked agent command', { sessionId, agentId, why, cmd: cmd.slice(0, 120) });
+    // The command's length, never its words: they can name a file or hold someone's words.
+    log.warn('tripwire blocked agent command', { sessionId, agentId, why, chars: cmd.length });
     return { ok: false, blocked: true, error: `Refused — "${cmd}" matched the catastrophic tripwire (${why}). Not executed.` };
   }
   if (session.busy) return { ok: false, error: 'Terminal is busy with another agent command; retry shortly.' };
@@ -77,7 +78,7 @@ export async function runInTerminalSession(sessionId, command, opts = {}) {
     session.busy = false;
   }
 
-  log.info('agent command', { sessionId, agentId, code, timedOut, ms: done(), cmd: cmd.slice(0, 120) });
+  log.info('agent command', { sessionId, agentId, code, timedOut, ms: done(), chars: cmd.length });
 
   const body = [stdout.trim(), stderr.trim()].filter(Boolean).join('\n');
   const mirror = `${body ? `${body.replace(/\r?\n/g, '\r\n')}\r\n` : ''}\x1b[2m⤷ ${agentName} exit ${timedOut ? 'timeout' : code}\x1b[0m\r\n`;

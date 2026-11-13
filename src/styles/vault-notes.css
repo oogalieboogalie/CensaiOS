@@ -263,6 +263,14 @@
   color: var(--ink-faint);
 }
 
+.hb-vault-editor-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .hb-vault-editor {
   flex: 1;
   min-height: 0;

@@ -2,16 +2,33 @@ import React from 'react';
 import { GenIcon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { logFailure } from '../lib/appLog/browserLog.js';
+import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from './collaboration/TeammateCarets.jsx';
+import { GenImageWhoTypedButton, GenImageWhoTypedPane } from './GenImageWhoTyped.jsx';
 
+// The prompt is saved on the window as you type, so two people on one board
+// write it together, letter by letter, and each sees the other's words live.
 export function GenImageWindow({ win, onUpdate }) {
   // A request in flight never survives a reload, so a fresh or restored window
   // starts idle; only submit() flips this on.
   const [loading, setLoading] = React.useState(false);
-  const [prompt, setPrompt] = React.useState(win.prompt || '');
+  const prompt = typeof win.prompt === 'string' ? win.prompt : '';
+  const setPrompt = (next) => onUpdate({ prompt: String(next ?? '') });
   const [editing, setEditing] = React.useState(!win.prompt);
-  const [generatedImage, setGeneratedImage] = React.useState(win.generatedImage || null);
+  // A teammate's finished picture shows here too, not only on their screen.
+  const [madeHere, setGeneratedImage] = React.useState(null);
+  const generatedImage = win.generatedImage || madeHere;
   const [error, setError] = React.useState(null);
   const inputRef = React.useRef(null);
+  // A teammate's letters landing in the prompt keep your cursor where it was.
+  useSharedCaret(inputRef, prompt, React.useMemo(() => ({ id: win.id, field: 'prompt' }), [win.id]));
+  // Teammates' cursors in the prompt, with their names, and ours for them.
+  // "Who typed what" puts the prompt away; ours goes out again once back.
+  const [writersOn, setWritersOn] = React.useState(false);
+  const typing = editing && !writersOn;
+  useCaretReporter(inputRef, win.id, 'prompt', typing);
+  const promptCarets = useTeammateCarets(win.id, 'prompt', typing);
 
   React.useEffect(() => { if (editing) setTimeout(() => inputRef.current?.focus(), 30); }, [editing]);
 
@@ -20,7 +37,8 @@ export function GenImageWindow({ win, onUpdate }) {
     setEditing(false); 
     setLoading(true);
     setError(null);
-    onUpdate({ prompt: prompt.trim(), cooked: false, generatedImage: null }); 
+    setGeneratedImage(null);
+    onUpdate({ prompt: prompt.trim(), cooked: false, generatedImage: null });
 
     try {
       const res = await fetch('/api/image', {
@@ -72,7 +90,7 @@ export function GenImageWindow({ win, onUpdate }) {
 
   return (
     <>
-      <WindowTitle accent="var(--ps-pink)" icon={<GenIcon size={14}/>} label="Image" subtitle={finalPrompt ? 'nanobanana' : 'awaiting prompt'} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} />
+      <WindowTitle accent="var(--ps-pink)" icon={<GenIcon size={14}/>} label="Image Generator" subtitle={finalPrompt ? 'nanobanana' : 'awaiting prompt'} attachedAgentIds={win.attachedAgents} onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })} />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'var(--surface-sunken)', margin: '6px 8px 0 8px', borderRadius: 'var(--radius-lg)' }}>
           {generatedImage && !loading && <img src={generatedImage} alt={finalPrompt} draggable="true" onDragStart={handleDragStart} onDragEnd={handleDragEnd} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', animation: 'gen-fade 0.5s ease-out both', cursor: dragImage ? 'grabbing' : 'grab' }} />}
@@ -81,11 +99,14 @@ export function GenImageWindow({ win, onUpdate }) {
           {error && !loading && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 20, textAlign: 'center', color: 'var(--ps-red)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>Error: {error}</div>}
         </div>
         <div style={{ padding: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
-          {editing ? <>
-            <input ref={inputRef} value={prompt} onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') { setEditing(false); setPrompt(win.prompt || ''); } }}
+          {writersOn ? <GenImageWhoTypedPane windowId={win.id} /> : editing ? <>
+            <div style={{ flex: 1, minWidth: 0, position: 'relative', display: 'flex' }}>
+            <input ref={inputRef} value={prompt} aria-label="Image prompt" onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') setEditing(false); }}
               placeholder="a watercolor of a small town newspaper office at dawn…"
-              style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '8px 12px', font: '13px/1.4 var(--font-sans)', color: 'var(--ink)', outline: 'none' }} />
+              style={{ flex: 1, minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '8px 12px', font: '13px/1.4 var(--font-sans)', color: 'var(--ink)', outline: 'none' }} />
+              <TeammateCarets boxRef={inputRef} carets={promptCarets} text={prompt} />
+            </div>
             <button onClick={submit} style={{ all: 'unset', cursor: 'pointer', padding: '7px 14px', borderRadius: 'var(--radius-full)', background: 'var(--accent)', color: 'var(--accent-contrast)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>Cook</button>
           </> : <>
             <button onClick={() => setEditing(true)} title="Edit prompt"
@@ -99,6 +120,7 @@ export function GenImageWindow({ win, onUpdate }) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
           </>}
+          <GenImageWhoTypedButton on={writersOn} onToggle={() => setWritersOn(on => !on)} />
         </div>
       </div>
     </>

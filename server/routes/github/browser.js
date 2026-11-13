@@ -1,4 +1,5 @@
 import { getGithubDefaultBranch } from './shared.js';
+import { githubApiUrl } from '../../github/apiUrl.js';
 
 export async function browseDir(req, res) {
   const { repo, path: dirPath } = req.query;
@@ -19,7 +20,7 @@ export async function browseDir(req, res) {
   }
 
   const p = dirPath || '';
-  const url = `https://api.github.com/repos/${repo}/contents/${encodeURI(p)}?ref=${branch}`;
+  const url = `${githubApiUrl()}/repos/${repo}/contents/${encodeURI(p)}?ref=${branch}`;
 
   try {
     const r = await fetch(url, {
@@ -73,7 +74,7 @@ export async function getTree(req, res) {
   }
 
   const fetchTree = async (b) => {
-    const r = await fetch(`https://api.github.com/repos/${repo}/git/trees/${b}?recursive=1`, {
+    const r = await fetch(`${githubApiUrl()}/repos/${repo}/git/trees/${b}?recursive=1`, {
       headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'Homebase-App' }
     });
     if (!r.ok) return null;

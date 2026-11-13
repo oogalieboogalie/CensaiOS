@@ -17,6 +17,24 @@ export async function getAgents() {
   }
 
 /**
+ * Fetches one agent as the server keeps it, with the model its chats answer
+ * with: an agent made on a board, which the list above leaves out.
+ * @returns {Promise<Agent|null>} null when the server has no such agent or cannot say
+ */
+export async function getAgent(id) {
+  try {
+    const res = await fetch(`/api/agents/${encodeURIComponent(id)}`);
+    // Not saved on this computer, or not this person's to read: the board's copy stays.
+    if ([401, 403, 404].includes(res.status)) return null;
+    if (!res.ok) throw new Error('Failed to fetch agent');
+    return await res.json();
+  } catch (e) {
+    logFailure('agents: could not load an agent', e, 'agents');
+    return null;
+  }
+}
+
+/**
    * Fetches the number of private journal entries for an agent.
    * Entry content is never available over HTTP — count only.
    * @returns {Promise<number>}

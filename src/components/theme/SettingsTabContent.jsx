@@ -2,9 +2,10 @@ import React from 'react';
 import { ThemeAppearanceContent } from './ThemeAppearanceContent.jsx';
 import { WorkspaceSection } from './ThemeWorkspaceSection.jsx';
 import { WorkspaceSharingSection } from './WorkspaceSharingSection.jsx';
+import { SignInDomainsSection } from './SignInDomainsSection.jsx';
 import { VaultSection } from './VaultSection.jsx';
 import { KeySharingSection } from './KeySharingSection.jsx';
-import { OpenAnywhereSection } from './openAnywhereLazy.js';
+import { OpenAnywhereSection, TailnetSection } from './openAnywhereLazy.js';
 import { MarketplaceWindow } from '../MarketplaceWindow.jsx';
 import { YorSecurityCard } from '../yorware/YorSecurity.jsx';
 import { TrustModeSection } from './TrustModeSection.jsx';
@@ -72,6 +73,7 @@ export function SettingsTabContent({
     return (
       <div style={scrollStyle}>
         <WorkspaceSharingSection />
+        <SignInDomainsSection />
       </div>
     );
   }
@@ -82,6 +84,7 @@ export function SettingsTabContent({
       <div style={scrollStyle}>
         <React.Suspense fallback={<p style={{ margin: 0, color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>Loading...</p>}>
           <OpenAnywhereSection />
+          <TailnetSection />
         </React.Suspense>
         <YorSecurityCard />
       </div>

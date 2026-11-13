@@ -186,3 +186,22 @@ test('invalid presence payloads are rejected with errors', async () => {
     reason: 'text-preview-too-large',
   });
 });
+
+test("a model picked in a chat reaches the board's other members, never the picker or another board", async () => {
+  const pat = connect('workspace-a', 'client-pat', '7');
+  const sam = connect('workspace-a', 'client-sam', '8');
+  const other = connect('workspace-b', 'client-other', '9');
+  await Promise.all([pat.opened, sam.opened, other.opened]);
+  await Promise.all([pat, sam, other].map((person) => person.next((event) => event.type === 'collaboration.ready')));
+
+  pat.send({ type: 'agent.changed', agentId: 'made-up-agent' });
+  await expect(sam.next((event) => event.type === 'agent.changed')).resolves.toMatchObject({
+    agentId: 'made-up-agent', clientId: 'client-pat', actor: { type: 'human', id: '7' },
+  });
+  await expect(pat.next((event) => event.type === 'agent.changed', 150)).rejects.toThrow(/timeout/);
+  await expect(other.next((event) => event.type === 'agent.changed', 150)).rejects.toThrow(/timeout/);
+
+  pat.send({ type: 'agent.changed', agentId: 'made up/agent' });
+  await expect(pat.next((event) => event.type === 'error')).resolves.toMatchObject({ reason: 'invalid-agent-change' });
+  await expect(sam.next((event) => event.type === 'agent.changed', 150)).rejects.toThrow(/timeout/);
+});

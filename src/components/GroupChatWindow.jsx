@@ -163,7 +163,7 @@ export function GroupChatWindow({ win, onUpdate }) {
       <div className="hb-chat" data-chat-root>
         <div ref={scrollRef} className="hb-chat-scroll">
           {visible.length === 0 && !sending ? (
-            <ChatEmptyState agents={members} title="Group chat" blurb="Everyone here answers in turn, so you get each point of view on the same question."
+            <ChatEmptyState agents={members} title="Ask everyone at once" blurb="Everyone here answers in turn, so you get each point of view on the same question."
               starters={GROUP_STARTERS} onPick={(prompt) => send(null, prompt)} />
           ) : (
             <div className="hb-chat-col">

@@ -36,7 +36,8 @@ export function createAgentImportGithubRouter(deps = {}) {
       let token = (await vault(userId, 'github').catch(() => null))?.apiKey || null;
       if (!token && await mayUseServerKeys({ userId, userRole: req.session?.userRole || null })) token = getSecret('GITHUB_TOKEN') || null;
       const found = await list(repo, { token });
-      log.info(`agent-import: github pull: ${repo}@${found.branch}: found ${found.agents.length} (${platformCounts(found.agents)}), skipped ${found.skipped.length}`);
+      // Counts only: never the repo, its branch or a helper's name.
+      log.info(`agent-import: github pull: found ${found.agents.length} (${platformCounts(found.agents)}), skipped ${found.skipped.length}`);
       return res.json(found);
     } catch (err) {
       const status = err instanceof AccountImportError ? err.status : 500;
@@ -47,9 +48,8 @@ export function createAgentImportGithubRouter(deps = {}) {
 
   router.post('/imported', (req, res) => {
     if (!req.session?.userId) return res.status(401).json({ error: 'Sign in first.' });
-    const repo = parseRepoName(req.body?.repo) || 'unknown repo';
     const names = (Array.isArray(req.body?.names) ? req.body.names : []).map(String).slice(0, 50);
-    log.info(`agent-import: github pull: ${repo}: imported ${names.length} (${names.join(', ')})`);
+    log.info(`agent-import: github pull: imported ${names.length}`);
     return res.json({ ok: true });
   });
 

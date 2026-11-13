@@ -13,7 +13,7 @@ export const SHARE_SCOPES = Object.freeze(['board', 'group', 'window']);
 // They are never sent to a projected guest unless the owner marks the
 // window public; edit guests are trusted collaborators and get the board.
 export const PRIVATE_WINDOW_KINDS = Object.freeze(new Set([
-  'terminal', 'files', 'appearance', 'toolchainSettings', 'windowImporter',
+  'terminal', 'files', 'finderFiles', 'appearance', 'toolchainSettings', 'windowImporter',
   'mailcow', 'whatsapp', 'githubConsole', 'containers', 'kubernetes',
   'sovereignTest', 'vex', 'linear', 'sheets', 'julesTasks', 'leads', 'classroom',
   // Your own feed, follows and profile keys (social canvas).

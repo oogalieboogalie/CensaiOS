@@ -6,6 +6,11 @@ import { SideBySideDiff } from '../../diffViewer/SideBySideDiff.jsx';
 import { rowsFromHunks, rowsFromTexts, countRows } from '../../diffViewer/sideBySide.js';
 import { windowMeta } from './meta.js';
 import { useGitDiff } from './useGitDiff.js';
+import { SECRET_CHANGES } from '../../../../shared/files/fileProblems.js';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
+import { GitDiffWhoTypedButton, GitDiffWhoTypedPane } from './GitDiffWhoTyped.jsx';
 
 export { windowMeta };
 
@@ -19,20 +24,41 @@ function Wordmark() {
   );
 }
 
-function PasteEditor({ before, after, onChange, onDone }) {
+function PasteEditor({ id, before, after, onChange, onDone }) {
+  // A teammate's letters landing in either box keep your cursor where it was.
+  const beforeRef = React.useRef(null);
+  const afterRef = React.useRef(null);
+  useSharedCaret(beforeRef, before, React.useMemo(() => ({ id, field: 'diffBefore' }), [id]));
+  useSharedCaret(afterRef, after, React.useMemo(() => ({ id, field: 'diffAfter' }), [id]));
+  // Teammates' cursors in either box, with their names, and ours for them.
+  // "Who typed what" puts both boxes away; ours goes out again once back.
+  const [writersOn, setWritersOn] = React.useState(false);
+  useCaretReporter(beforeRef, id, 'diffBefore', !writersOn);
+  useCaretReporter(afterRef, id, 'diffAfter', !writersOn);
+  const beforeCarets = useTeammateCarets(id, 'diffBefore');
+  const afterCarets = useTeammateCarets(id, 'diffAfter');
   return (
     <div className="gdv-split gdv-split--edit">
-      <label className="gdv-pane gdv-pane--left">
-        <span className="gdv-pane-label">Before: paste the old version</span>
-        <textarea className="gdv-input" spellCheck={false} value={before} data-testid="gdv-before"
-          onChange={(e) => onChange({ diffBefore: e.target.value })} />
-      </label>
+      <div className="gdv-pane gdv-pane--left">
+        <label className="gdv-pane-label" htmlFor={`gdv-before-${id}`}>Before: paste the old version</label>
+        {writersOn && <GitDiffWhoTypedPane windowId={id} field="diffBefore" label="Before" />}
+        {!writersOn && <div className="gdv-box">
+          <textarea ref={beforeRef} id={`gdv-before-${id}`} className="gdv-input" spellCheck={false} value={before} data-testid="gdv-before"
+            onChange={(e) => onChange({ diffBefore: e.target.value })} />
+          <TeammateCarets boxRef={beforeRef} carets={beforeCarets} text={before} />
+        </div>}
+      </div>
       <div className="gdv-divider" aria-hidden="true" />
-      <label className="gdv-pane gdv-pane--right">
-        <span className="gdv-pane-label">After: paste the new version</span>
-        <textarea className="gdv-input" spellCheck={false} value={after} data-testid="gdv-after"
-          onChange={(e) => onChange({ diffAfter: e.target.value })} />
-      </label>
+      <div className="gdv-pane gdv-pane--right">
+        <label className="gdv-pane-label" htmlFor={`gdv-after-${id}`}>After: paste the new version</label>
+        {writersOn && <GitDiffWhoTypedPane windowId={id} field="diffAfter" label="After" />}
+        {!writersOn && <div className="gdv-box">
+          <textarea ref={afterRef} id={`gdv-after-${id}`} className="gdv-input" spellCheck={false} value={after} data-testid="gdv-after"
+            onChange={(e) => onChange({ diffAfter: e.target.value })} />
+          <TeammateCarets boxRef={afterRef} carets={afterCarets} text={after} />
+        </div>}
+      </div>
+      <GitDiffWhoTypedButton on={writersOn} onToggle={() => setWritersOn((v) => !v)} />
       <button type="button" className="gdv-btn gdv-btn--go" onClick={onDone} disabled={!before && !after} data-testid="gdv-compare">Compare</button>
     </div>
   );
@@ -61,10 +87,11 @@ export function GitDiffWindow({ win = {}, onUpdate }) {
 
   let body;
   // Typing keeps the editor open until Compare; otherwise the first letter in Before would close it.
-  if (editing) body = <PasteEditor before={win.diffBefore || ''} after={win.diffAfter || ''} onChange={(patch) => update({ ...patch, diffEditing: true })} onDone={() => update({ diffEditing: false })} />;
+  if (editing) body = <PasteEditor id={win.id} before={win.diffBefore || ''} after={win.diffAfter || ''} onChange={(patch) => update({ ...patch, diffEditing: true })} onDone={() => update({ diffEditing: false })} />;
   else if (taskId && !changes.loaded) body = <p className="gdv-note">Reading changes…</p>;
   else if (taskId && error) body = <p className="gdv-note" data-tone="danger">{error}</p>;
   else if (taskId && !files.length) body = <p className="gdv-note">This agent has not changed any files yet.</p>;
+  else if (taskId && patches.find((p) => p.path === filePath)?.secret) body = <p className="gdv-note" data-testid="gdv-secret">{SECRET_CHANGES}</p>;
   else if (taskId && !rows.length) body = <p className="gdv-note">{file?.change === 'deleted' ? 'This file was deleted.' : 'Binary file: nothing to show line by line.'}</p>;
   else body = <SideBySideDiff rows={rows} beforeLabel={taskId ? `Before · ${filePath}` : 'Before'} afterLabel={taskId ? `After · ${filePath}` : 'After'} />;
 

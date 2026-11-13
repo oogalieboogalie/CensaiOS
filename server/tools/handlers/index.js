@@ -1,7 +1,7 @@
 import { handleCalendarTool } from './calendar.js';
 import { handleMemoryTool } from './memory.js';
 import { 
-  githubReadFile, githubWriteFile, githubListIssues, githubCreateIssue, githubCommentIssue,
+  githubReadFile, githubWriteFile, githubListIssues, githubCreateIssue, githubCommentIssue, createGithubTaskIssue,
   prStatus, prComments, mergePr,
   localGitStatus, localGitFetch, localGitPullFfOnly, localGitCheckpoint, localGitVerify
 } from './git/index.js';
@@ -78,13 +78,13 @@ export const TOOL_REGISTRY = {
   'read_journal_search': handleMemoryTool,
   'query_knowledge': handleMemoryTool,
   'read_messages': handleMemoryTool,
-
-  // Git / GitHub
-  'github_read_file': (agentId, name, args) => githubReadFile(args),
+  // Git / GitHub (hand_coding_job_to_github hands a coding job to the repo's @grok / @claude workflow)
+  'github_read_file': (agentId, name, args, context) => githubReadFile(args, context),
   'github_write_file': (agentId, name, args) => githubWriteFile(args),
   'github_list_issues': (agentId, name, args) => githubListIssues(args),
   'github_create_issue': (agentId, name, args) => githubCreateIssue(args),
   'github_comment_issue': (agentId, name, args) => githubCommentIssue(args),
+  'hand_coding_job_to_github': (agentId, name, args, context) => createGithubTaskIssue(agentId, args, context),
   'pr_status': (agentId, name, args, context) => prStatus(agentId, args, context),
   'pr_comments': (agentId, name, args, context) => prComments(agentId, args, context),
   'merge_pr': (agentId, name, args, context) => mergePr(agentId, args, context),
@@ -152,7 +152,7 @@ export const TOOL_REGISTRY = {
   'http_test': handleHttpTool,
 
   // Deps
-  'analyze_deps': (agentId, name, args) => handleAnalyzeDeps(agentId, args),
+  'analyze_deps': (agentId, name, args, context) => handleAnalyzeDeps(agentId, args, context),
 
   // Runner
   'run_tests': handleRunnerTool,

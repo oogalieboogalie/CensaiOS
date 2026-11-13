@@ -23,6 +23,8 @@ export async function sendMessageWithMeta(agentId, messages, opts = {}) {
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         workspaceId: opts.workspaceId,
         currentProject: opts.currentProject,
+        // Kinds of the windows in this agent's canvas group (pins their tools, never widens them).
+        ...(Array.isArray(opts.groupWindowKinds) && opts.groupWindowKinds.length ? { groupWindowKinds: opts.groupWindowKinds } : {}),
         stream: true 
       }),
       ...(opts.signal ? { signal: opts.signal } : {}),

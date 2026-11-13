@@ -3,8 +3,10 @@ import request from 'supertest';
 import express from 'express';
 import { createFakeDocker } from '../../tests/fixtures/dockerFake.js';
 
-// Every Docker button leaves one 'docker' log line: what, which target, and
-// whether it worked or why not. Never a typed command or its output.
+// Every Docker button leaves one 'docker' log line: what was done to which
+// kind of thing, and whether it worked or why not. Never a typed command or
+// its output, and never a name: containers, images, volumes, networks and
+// compose projects are often named after a project's folder.
 let fake = createFakeDocker();
 jest.unstable_mockModule('../runner/client.js', () => ({
   runnerClient: { exec: jest.fn((command, args) => Promise.resolve(fake.exec(command, args))) },
@@ -46,43 +48,49 @@ describe('Docker action log lines', () => {
     }
     expect(logged.every(([name]) => name === 'docker')).toBe(true);
     expect(logged.map(([, level, line]) => `${level} ${line}`)).toEqual([
-      'info stop container automation-n8n-1: done',
-      'info start container automation-n8n-1: done',
-      'info restart container automation-n8n-1: done',
-      'info shell command in container automation-n8n-1: done (exit 0)',
-      'info remove container automation-n8n-1: done (forced)',
-      'info pull image redis:7: done',
-      'info remove image redis:7: done',
+      'info stop container: done',
+      'info start container: done',
+      'info restart container: done',
+      'info shell command in container: done (exit 0)',
+      'info remove container: done (forced)',
+      'info pull image: done',
+      'info remove image: done',
       'info clean up unused images: done (freed 1.19GB)',
-      'info remove volume sam_cache: done',
-      'info remove network legacy_backend: done',
-      'info compose down automation: done',
-      'info compose up automation: done',
+      'info remove volume: done',
+      'info remove network: done',
+      'info compose down: done',
+      'info compose up: done',
     ]);
+    expect(JSON.stringify(logged)).not.toMatch(/automation|n8n|redis|sam_cache|legacy_backend/);
   });
 
   test('a failure says why, and a typed command never reaches the log', async () => {
     const inUse = await request(app).delete('/api/docker/volumes/homebase_pgdata');
     expect(inUse.status).toBe(500);
-    expect(logged.at(-1)).toEqual(['docker', 'warn', 'remove volume homebase_pgdata: failed (still in use)']);
+    expect(logged.at(-1)).toEqual(['docker', 'warn', 'remove volume: failed (still in use)']);
     await request(app).post('/api/docker/containers/automation-n8n-1/exec').send({ command: 'exit 3' });
     await request(app).post('/api/docker/containers/automation-n8n-1/exec').send({ command: 'echo TOKEN=jordan-demo-token' });
-    expect(logged.at(-2)).toEqual(['docker', 'info', 'shell command in container automation-n8n-1: done (exit 1)']);
+    expect(logged.at(-2)).toEqual(['docker', 'info', 'shell command in container: done (exit 1)']);
     expect(JSON.stringify(logged)).not.toMatch(/jordan-demo-token|pat-secret-value|TOKEN/);
   });
 
-  test('a container pressed by its id is named in the log, since the log hides ids', async () => {
-    const list = await request(app).get('/api/docker/containers');
-    const id = list.body.containers.find((c) => c.name === 'ollama').id;
-    expect(id).toMatch(/^[0-9a-f]{12,}$/);
-    await request(app).post(`/api/docker/containers/${id}/restart`);
-    await request(app).delete(`/api/docker/containers/${id}?force=1`);
-    expect(logged.slice(-2).map(([, , line]) => line)).toEqual(['restart container ollama: done', 'remove container ollama: done (forced)']);
+  test('a container pressed by its id is not named either; a Run dev container keeps its folder\'s hash', async () => {
+    await request(app).post('/api/docker/images/run').send({ image: 'redis:7', name: 'censai-dev-made-up-shop-0123456789' });
+    const list = (await request(app).get('/api/docker/containers')).body.containers;
+    const [ollama, runDev] = ['ollama', 'censai-dev-made-up-shop-0123456789'].map((name) => list.find((c) => c.name === name).id);
+    expect(ollama).toMatch(/^[0-9a-f]{12,}$/);
+    await request(app).post(`/api/docker/containers/${ollama}/restart`);
+    await request(app).delete(`/api/docker/containers/${ollama}?force=1`);
+    await request(app).post(`/api/docker/containers/${runDev}/stop`);
+    expect(logged.slice(-3).map(([, , line]) => line)).toEqual([
+      'restart container: done', 'remove container: done (forced)', 'stop container censai-dev-[redacted]-0123456789: done',
+    ]);
+    expect(JSON.stringify(logged)).not.toMatch(/ollama|made-up-shop/);
   });
 
   test('an unknown action is refused and logged without echoing it', async () => {
     const res = await request(app).post('/api/docker/containers/automation-n8n-1/explode');
     expect(res.status).toBe(400);
-    expect(logged.at(-1)[2]).toBe('unknown action on container automation-n8n-1: failed (refused before Docker ran)');
+    expect(logged.at(-1)[2]).toBe('unknown action on container: failed (refused before Docker ran)');
   });
 });

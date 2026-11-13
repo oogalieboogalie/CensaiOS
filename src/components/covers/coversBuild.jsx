@@ -172,7 +172,7 @@ export const BUILD_COVERS = {
       <path d="M21 8 H35 M21 11.5 H32 M21 15 H30" {...A} />
     </>
   ),
-  // Finder-like Downloads: sidebar and zebra list.
+  // Finder: a project's folders beside its zebra list of files.
   finderFiles: (
     <>
       <rect x="5" y="4" width="11" height="16" rx="1" {...F} />

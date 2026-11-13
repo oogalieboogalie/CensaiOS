@@ -5,6 +5,7 @@ import { CliMark } from './CliMark.jsx';
 import { InlineDiff } from './Transcript.jsx';
 import { cliAgentsApi } from './cliAgentsApi.js';
 import { refreshCliRoster } from './useCliRoster.js';
+import { HIDDEN_WORDS, OWNER_ONLY_STEP } from '../../../shared/files/fileProblems.js';
 import './agentConsole.css';
 
 // Coding-agent permission requests inside Action Approvals: the same
@@ -60,6 +61,8 @@ export function CliApprovalCards({ active = true }) {
           </header>
           {p.detail && <pre className="ac-block-out" style={{ paddingLeft: 10 }}>{p.detail}</pre>}
           {p.diff && <InlineDiff diff={p.diff} maxLines={12} />}
+          {p.ownerOnly && <div className="ac-empty">{OWNER_ONLY_STEP}</div>}
+          {p.hiddenWords && !p.ownerOnly && <div className="ac-note" data-testid="approval-hidden-words">{HIDDEN_WORDS}</div>}
           <div className="ac-perm">
             <Icon.Shield size={13} />
             <span className="ac-perm-text">Allow this once?</span>

@@ -5,11 +5,13 @@ import pool from '../db.js';
 import { getSubAgentById } from '../memory.js';
 import { getProject, getProjectByName, getProjectByRepoOrPath, listProjects, openProject } from '../workspaces.js';
 import { getSecret } from '../secrets.js';
+import { githubApiUrl } from '../github/apiUrl.js';
 import {
   assertAgentProjectAccess,
 } from '../workspaces/projectMemberships.js';
 import { resolveAuthorizedWorkspaceProject } from '../workspaces/projectAccess.js';
 import { noteToolFailure } from './toolsLog.js';
+import { refuseProjectsOffBoard } from './rbac/ownerOnlyReads.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CURRENT_PROJECT_FILE = path.resolve(path.join(__dirname, '..', '..', '.homebase-state', 'current-project.json'));
@@ -66,6 +68,8 @@ async function authorizedProjectResult(agentId, project, isSubAgent, context) {
 }
 
 // Resolve which project a tool call should operate against.
+// - On a board: a project the board gave the agent.
+// - Off a board: for this computer's owner's agents only (refuseProjectsOffBoard).
 // - Sub-agents: bound project (always).
 // - Head agents: project name from args, or most-recent if omitted.
 // Forgiving lookup: agents often pass "owner/repo" as the project name when the
@@ -73,6 +77,7 @@ async function authorizedProjectResult(agentId, project, isSubAgent, context) {
 // literal name first, then fall back to matching the last `/`-segment OR the
 // `repo` field directly, before giving up.
 export async function resolveProjectForCall(agentId, projectName, context = {}) {
+  await refuseProjectsOffBoard(context);
   const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
   if (context.workspaceId) {
     let projectIdentifier = projectName || null;
@@ -198,7 +203,7 @@ export async function fetchGithub(endpoint, options = {}) {
   const token = getSecret('GITHUB_TOKEN');
   if (!token) throw new Error('GITHUB_TOKEN not configured in .env');
   const needsContentType = options.method && ['POST', 'PUT', 'PATCH'].includes(options.method.toUpperCase());
-  const res = await fetch(`https://api.github.com${endpoint}`, {
+  const res = await fetch(`${githubApiUrl()}${endpoint}`, {
     ...options,
     headers: {
       'Authorization': `Bearer ${token}`,

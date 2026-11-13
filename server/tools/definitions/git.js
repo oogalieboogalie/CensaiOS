@@ -67,6 +67,25 @@ export const gitTools = [
   {
     type: 'function',
     function: {
+      name: 'hand_coding_job_to_github',
+      description: 'Hand a coding job to the GitHub coding agent (@grok by default, or @claude). Not github_create_issue, which files an ordinary issue anywhere the token can write. This one only files in oogalieboogalie/Homebase or oogalieboogalie/censai-coordination, with Goal / Steps / Done when, and the coding agent builds that into a pull request. You get a message in this chat when that pull request opens and when it merges; then run read_app_log and check the fix.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Short issue title' },
+          goal: { type: 'string', description: 'What should be true when the job is done, in plain words' },
+          steps: { type: 'array', items: { type: 'string' }, description: 'The steps to build it, in order' },
+          acceptance: { type: 'array', items: { type: 'string' }, description: 'Checks that prove it is done' },
+          worker: { type: 'string', enum: ['grok', 'claude'], description: 'Which coding agent builds it (defaults to grok)' },
+          repo: { type: 'string', description: 'owner/name. Only oogalieboogalie/Homebase or oogalieboogalie/censai-coordination. Defaults to CENSAI_AGENT_TASK_REPO when that is one of those two.' },
+        },
+        required: ['title', 'goal', 'steps', 'acceptance'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'github_comment_issue',
       description: 'Add a comment to an existing GitHub issue.',
       parameters: {

@@ -9,6 +9,7 @@ import { leadToMarkdown, slugify } from './leadhound/exportLead.js';
 import { useWorkspaceStore } from '../lib/store.js';
 
 const AGENT_HUNT_LIMIT_MS = 5 * 60 * 1000;
+const BLANK_BRIEF = { business: '', market: '', region: '', maxLeads: 3 };
 
 // LeadHound: brief → Tavily web search → AI fit scoring → 7-day intro
 // sequence + Ice Breaker deliverable for the strongest leads.
@@ -19,6 +20,16 @@ export function LeadHoundWindow({ win = {}, onUpdate }) {
   const [changingKey, setChangingKey] = React.useState(false);
   const needsKey = !keyStatus.loading && (!keyStatus.configured || KEY_ERROR_CODES.has(errorCode) || changingKey);
   const [pendingBrief, setPendingBrief] = React.useState(null);
+  // The brief being typed lives on the window (`leadBrief`), so teammates fill
+  // it in together; before anyone types, it starts from the last hunt's brief.
+  // `typed` keeps this screen's own letters until the board hands them back.
+  const [typed, setTyped] = React.useState(null);
+  const brief = win.leadBrief || typed || pendingBrief || hound.initialBrief || {};
+  const editBrief = (patch) => {
+    const next = { ...BLANK_BRIEF, ...brief, ...patch };
+    setTyped(next);
+    onUpdate?.({ leadBrief: next });
+  };
 
   const saveKey = async (apiKey) => {
     await hound.saveTavilyKey(apiKey);
@@ -55,12 +66,13 @@ export function LeadHoundWindow({ win = {}, onUpdate }) {
         onReset={hound.reset}
         onEditLead={hound.updateLead}
         onOpenDoc={openDoc}
+        windowId={win.id}
       />
     );
   } else {
     body = (
       <>
-        <BriefForm initial={pendingBrief || hound.initialBrief} running={running} onSubmit={hunt} />
+        <BriefForm brief={brief} onChange={editBrief} running={running} onSubmit={hunt} windowId={win.id} />
         <div className="hb-lh-brief-foot">
           {needsKey && <TavilyKeyPrompt replacing={keyStatus.configured} onSave={saveKey} />}
           <div className="hb-lh-powered hb-lh-mono">

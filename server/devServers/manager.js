@@ -25,6 +25,7 @@ export function projectKey(folder) {
   return crypto.createHash('sha1').update(folder.replace(/\\/g, '/').toLowerCase()).digest('hex').slice(0, 10);
 }
 
+// Logs and logged addresses keep only the hash at its end (shared/logs/addressNames.js).
 export function containerName(folder) {
   const base = folder.split(/[\\/]/).filter(Boolean).pop() || 'project';
   const slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'project';
@@ -122,7 +123,9 @@ export async function listDevServers() {
 
 // Ask from inside the container: works no matter where Homebase itself runs.
 async function answers(name, port) {
-  const probe = `fetch('http://127.0.0.1:${port}/').then(()=>process.exit(0),()=>process.exit(1))`;
+  // Windows passes this through cmd.exe. An arrow (`=>`) is a redirect, so the
+  // check uses function() and no character cmd.exe would interpret.
+  const probe = `fetch('http://127.0.0.1:${port}/').then(function(){process.exit(0)},function(){process.exit(1)})`;
   try {
     await docker(['exec', name, 'node', '-e', probe], { timeout: 8_000 });
     return true;

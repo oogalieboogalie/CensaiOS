@@ -1,7 +1,8 @@
 // What an image is made of: its layers (`docker image history`, newest step
 // first), when it was made and which containers use it. A step's command can
 // hold a token or password set at build time, so the window shows the steps
-// but the 'docker' log line names only the image.
+// but the 'docker' log line says only how many layers there were: not the
+// steps, nor the image, which Compose names after its project's folder.
 
 import { createLogger } from '../logger.js';
 import { docker, parseJsonLines, assertRef } from './cli.js';
@@ -53,6 +54,6 @@ export async function imageHistory(ref) {
     listContainers().catch(() => []),
   ]);
   const detail = summarizeImage(ref, history.stdout, inspect.stdout, containers);
-  log.info("read an image's layers", { image: ref, layers: detail.layers.length });
+  log.info("read an image's layers", { layers: detail.layers.length });
   return detail;
 }

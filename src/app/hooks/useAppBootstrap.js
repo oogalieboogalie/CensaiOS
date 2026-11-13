@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { addAgent, getAgentById, updateAgent, initializeAgents } from '../../lib/agentStore.js';
+import { applyBoardAgents, refreshAgents } from '../../lib/agentStore.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { api } from '../../lib/api.js';
 import { withTimeout } from '../../lib/appUtils.js';
@@ -62,7 +62,8 @@ export function useAppBootstrap() {
         return;
       }
 
-      initializeAgents().catch((err) => {
+      // Through refreshAgents, so a teammate's agent change said meanwhile is fetched after this, never before.
+      refreshAgents().catch((err) => {
         logFailure('agents not loaded from the database', err, 'startup', 'error');
       });
 
@@ -80,15 +81,8 @@ export function useAppBootstrap() {
         if (loaded.status !== 'ready' && loaded.status !== 'draft_required') return;
         const res = loaded.value;
         setWorkspaceRevision(loaded.revision);
-        if (res?.extraAgents?.length) {
-          res.extraAgents.forEach((a) => {
-            if (!getAgentById(a.id)) {
-              addAgent(a);
-            } else {
-              updateAgent(a);
-            }
-          });
-        }
+        // The board's own agents, then each as the server keeps it: a model picked since is kept there.
+        if (res?.extraAgents?.length) applyBoardAgents(res.extraAgents);
         // Brief B1 — run the window allow-list migration on the loaded
         // workspace so the rendering layer can gate on the resulting
         // windowAllowList field without re-implementing the back-compat

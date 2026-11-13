@@ -11,8 +11,9 @@
  *   .homebase-state/update/check-requested    written here: "look for one now"
  *   .homebase-state/update/checked.json       the updater's last look: { at, result }
  *
- * result is up-to-date, ready, build-failed, docker-off or blocked (this PC's
- * master has its own commits or edits, so it cannot fast-forward).
+ * result is up-to-date, ready, build-failed, docker-off, blocked (this PC's
+ * master has its own commits or edits, so it cannot fast-forward) or
+ * side-branch (this PC's folder is not on master, so no update can come in).
  */
 
 import fs from 'fs';
@@ -20,7 +21,7 @@ import path from 'path';
 import { selfRepo } from '../selfFix/patches.js';
 
 // The updater writes its heartbeat every few seconds; a minute of silence
-// means it is not running (censaiOS was started some other way).
+// means it is not running (censaiOS was opened some way that did not start it).
 const WATCHER_FRESH_MS = 60_000;
 const COMMIT = /^[0-9a-f]{7,40}$/;
 
@@ -72,7 +73,7 @@ export function updateStatus({ dir = updateDir(), now = Date.now() } = {}) {
   };
 }
 
-const RESULTS = ['up-to-date', 'ready', 'build-failed', 'docker-off', 'blocked'];
+const RESULTS = ['up-to-date', 'ready', 'build-failed', 'docker-off', 'blocked', 'side-branch'];
 
 function lastCheck(dir) {
   const raw = readJson(dir, 'checked.json');
@@ -84,7 +85,7 @@ function needWatcher(dir) {
   if (!dir) throw Object.assign(new Error('This copy of censaiOS does not update itself.'), { statusCode: 409 });
   const status = updateStatus({ dir });
   if (!status.watching) {
-    throw Object.assign(new Error('The updater is not running. Close censaiOS and open it again with the censaiOS shortcut.'), { statusCode: 409 });
+    throw Object.assign(new Error('The updater is not running.'), { statusCode: 409, code: 'updater-not-running' });
   }
   return status;
 }

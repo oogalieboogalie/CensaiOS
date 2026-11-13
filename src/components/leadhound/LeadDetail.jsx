@@ -1,11 +1,14 @@
 // One hunted lead: why it fits, how to reach it, the 7-day introduction
 // sequence as an editable day-by-day timeline, and the Ice Breaker
 // deliverable. Every draft is plain text the user can rewrite in place, copy,
-// or open as a Document window on the canvas.
+// or open as a Document window on the canvas. Teammates rewrite the same
+// drafts together, letter by letter (src/lib/collaboration/leadDraftText.js),
+// and see each other's cursors with names in the box being typed in.
 
 import React from 'react';
 import { renderMarkdown } from '../../lib/renderMarkdown.jsx';
 import { channelLabel, leadToMarkdown, touchText } from './exportLead.js';
+import { BriefBox as DraftBox } from './BriefBox.jsx';
 
 function CopyButton({ text, label = 'Copy' }) {
   const [copied, setCopied] = React.useState(false);
@@ -35,7 +38,7 @@ function Contacts({ contacts = {} }) {
   );
 }
 
-function Sequence({ sequence = [], onChange }) {
+function Sequence({ sequence = [], onChange, windowId, at }) {
   if (sequence.length === 0) return <div className="hb-lh-empty">The AI step did not return a sequence for this lead.</div>;
   const edit = (i, patch) => onChange(sequence.map((t, j) => (j === i ? { ...t, ...patch } : t)));
   return (
@@ -49,7 +52,9 @@ function Sequence({ sequence = [], onChange }) {
               <CopyButton text={touchText(touch)} />
             </div>
             {(touch.subject || touch.channel === 'email') && (
-              <input
+              <DraftBox
+                windowId={windowId}
+                field={`${at}/sequence/${i}/subject`}
                 className="hb-lh-input hb-lh-subject"
                 value={touch.subject || ''}
                 onChange={(e) => edit(i, { subject: e.target.value })}
@@ -57,7 +62,10 @@ function Sequence({ sequence = [], onChange }) {
                 aria-label={`Day ${touch.day} subject`}
               />
             )}
-            <textarea
+            <DraftBox
+              multiline
+              windowId={windowId}
+              field={`${at}/sequence/${i}/body`}
               className="hb-lh-input hb-lh-body"
               value={touch.body || ''}
               onChange={(e) => edit(i, { body: e.target.value })}
@@ -71,18 +79,21 @@ function Sequence({ sequence = [], onChange }) {
   );
 }
 
-function IceBreaker({ iceBreaker, onChange }) {
+function IceBreaker({ iceBreaker, onChange, windowId, at }) {
+  const box = (key) => ({ windowId, field: `${at}/iceBreaker/${key}` });
   const [editing, setEditing] = React.useState(false);
   if (!iceBreaker) return <div className="hb-lh-empty">The AI step did not return an ice breaker for this lead.</div>;
   const edit = (patch) => onChange({ ...iceBreaker, ...patch });
   return (
     <div className="hb-lh-ice">
       <div className="hb-lh-ice-top">
-        <input className="hb-lh-input" value={iceBreaker.title || ''} onChange={(e) => edit({ title: e.target.value })} aria-label="Ice breaker title" />
+        <DraftBox {...box('title')} value={iceBreaker.title || ''} onChange={(e) => edit({ title: e.target.value })} aria-label="Ice breaker title" />
         {iceBreaker.format && <span className="hb-lh-label">{iceBreaker.format}</span>}
       </div>
       {iceBreaker.opening_line !== undefined && (
-        <textarea
+        <DraftBox
+          multiline
+          {...box('opening_line')}
           className="hb-lh-input hb-lh-opening"
           value={iceBreaker.opening_line || ''}
           onChange={(e) => edit({ opening_line: e.target.value })}
@@ -90,7 +101,9 @@ function IceBreaker({ iceBreaker, onChange }) {
         />
       )}
       {editing ? (
-        <textarea
+        <DraftBox
+          multiline
+          {...box('deliverable')}
           className="hb-lh-input hb-lh-deliverable"
           value={iceBreaker.deliverable || ''}
           onChange={(e) => edit({ deliverable: e.target.value })}
@@ -101,7 +114,7 @@ function IceBreaker({ iceBreaker, onChange }) {
       )}
       <div className="hb-lh-cta">
         <span className="hb-lh-label">Ask</span>
-        <input className="hb-lh-input" value={iceBreaker.cta || ''} onChange={(e) => edit({ cta: e.target.value })} aria-label="Ask" />
+        <DraftBox {...box('cta')} value={iceBreaker.cta || ''} onChange={(e) => edit({ cta: e.target.value })} aria-label="Ask" />
       </div>
       <div className="hb-lh-tabs">
         <button type="button" className="hb-lh-pill" data-size="sm" onClick={() => setEditing((v) => !v)}>
@@ -113,7 +126,9 @@ function IceBreaker({ iceBreaker, onChange }) {
   );
 }
 
-export function LeadDetail({ lead, brief, onBank, onEdit = () => {}, onOpenDoc }) {
+export function LeadDetail({ lead, brief, onBank, onEdit = () => {}, onOpenDoc, windowId, leadIndex = 0 }) {
+  // Where this lead's drafts sit on the board, so cursors in them are shared.
+  const at = `leadHound/result/leads/${leadIndex}`;
   const [tab, setTab] = React.useState('sequence');
   const [flash, setFlash] = React.useState('');
   React.useEffect(() => { setFlash(''); }, [lead?.url]);
@@ -152,8 +167,8 @@ export function LeadDetail({ lead, brief, onBank, onEdit = () => {}, onOpenDoc }
         <span className="hb-lh-mono">Edits save to the board</span>
       </div>
       {tab === 'sequence'
-        ? <Sequence sequence={lead.sequence} onChange={(sequence) => onEdit({ sequence })} />
-        : <IceBreaker iceBreaker={lead.iceBreaker} onChange={(iceBreaker) => onEdit({ iceBreaker })} />}
+        ? <Sequence sequence={lead.sequence} onChange={(sequence) => onEdit({ sequence })} windowId={windowId} at={at} />
+        : <IceBreaker iceBreaker={lead.iceBreaker} onChange={(iceBreaker) => onEdit({ iceBreaker })} windowId={windowId} at={at} />}
     </div>
   );
 }

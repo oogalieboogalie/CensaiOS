@@ -1,3 +1,5 @@
+import { attachProjectButtons } from './projectButtonsMount.jsx';
+
 function copyToClipboard(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     return navigator.clipboard.writeText(text);
@@ -115,7 +117,10 @@ export function installTerminalInteractionBridge(term, hostEl) {
     }
   });
 
+  const detachButtons = attachProjectButtons(term, hostEl);
+
   return () => {
+    detachButtons();
     restoreScreenRect();
     mouseEvents.forEach((type) => {
       hostEl.removeEventListener(type, onMouseEvent, { capture: true });

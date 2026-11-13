@@ -132,13 +132,13 @@ export function ProviderConnectWindow({ win, onUpdate }) {
       />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 14, background: 'var(--surface)', color: 'var(--ink)', fontFamily: 'var(--font-ui)' }}>
 
-        {/* Provider header */}
+        {/* Provider identity (the shared header carries the name) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-lg)', display: 'grid', placeItems: 'center', background: 'var(--surface-2)', border: '1px solid var(--hairline)', color: dangerTone }}>
             <Icon.Plug size={18} />
           </div>
+          {/* The name already shows in the window header: say what it is here, not its name again. */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 'var(--text-base)', fontWeight: 800, lineHeight: 1.1 }}>{provider.name}</div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
               {provider.id}{provider.category ? ` / ${provider.category}` : ''}
             </div>

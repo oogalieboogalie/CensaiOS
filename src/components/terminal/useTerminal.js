@@ -10,8 +10,13 @@ import {
   installTerminalInteractionBridge,
 } from './terminalInteractions.js';
 import { openTerminalSocket, refusalLogLine, stillSignedIn } from './terminalSocket.js';
+import {
+  dropSessionLog, noteReplay, noteWorkbench, recordExit, recordInput, recordOutput, sessionLog,
+} from './commandLog.js';
+import { mountCommandCards, shouldShowCards } from './mountCommandCards.jsx';
 import { terminalFont, whenGlowFontReady } from './terminalGlow.js';
 import { logToApp } from '../../lib/appLog/browserLog.js';
+import { armedAgentPrompt, armedLaunchCli } from '../../lib/localRun.js';
 
 const log = createLogger('terminal');
 
@@ -20,8 +25,9 @@ const log = createLogger('terminal');
 // the window's CLI or agent run (the others are plain shells).
 export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
   const sessionId = tab.sessionId || win.agentSessionId || win.id;
-  const launchCli = tab.plain ? undefined : win.launchCli;
-  const agentPrompt = tab.plain ? undefined : win.agentRun?.prompt;
+  if (win?.terminalView === 'workbench') noteWorkbench(sessionId);
+  const launchCli = tab.plain ? undefined : armedLaunchCli(win.id, win.launchCli);
+  const agentPrompt = tab.plain ? undefined : armedAgentPrompt(win.id, sessionId);
   const glow = Boolean(win.terminalGlow);
   const termRef = useRef(null);
   const socketRef = useRef(null);
@@ -102,13 +108,16 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
               // printing everything twice.
               if (isReconnect) term.reset();
               replayingScrollbackRef.current = true;
+              noteReplay(sessionId);
               term.write(message.data, () => { replayingScrollbackRef.current = false; });
             } else {
               term.write(message.data);
+              recordOutput(sessionId, message.data);
             }
           }
           if (message.type === 'exit') {
             log.info('shell exited', { code: message.code ?? 0 });
+            recordExit(sessionId, message.code ?? 0);
             term.writeln(`\r\nProcess exited with code ${message.code ?? 0}. Press Enter to start it again.`);
           }
         } catch {
@@ -129,6 +138,7 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
       },
     });
     socketRef.current = link;
+    sessionLog(sessionId).setRun((command) => link.send({ type: 'input', data: `${command}\r` }));
 
     const inputDisposable = term.onData((data) => {
       if (replayingScrollbackRef.current) return;
@@ -137,6 +147,7 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
         return;
       }
       link.send({ type: 'input', data });
+      recordInput(sessionId, data);
     });
 
     const resize = () => {
@@ -158,6 +169,8 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
       cleanupInteractions();
       observer.disconnect();
       inputDisposable.dispose();
+      sessionLog(sessionId).setRun(null);
+      dropSessionLog(sessionId);
       link.close();
       term.dispose(); // also cleans up key handlers, addons, etc.
       termRef.current = null;
@@ -207,6 +220,14 @@ export function useTerminal(hostRef, win, cwd, theme, workspaceId, tab = {}) {
     if (glow) whenGlowFontReady().then(() => apply(true));
     return () => { cancelled = true; };
   }, [win.fontScale, theme.fontSize, glow]);
+
+  const showCards = shouldShowCards(win, sessionId);
+  // The mount follows a new log if this shell drops the old one, and it
+  // unmounts that root only after the current render has finished.
+  React.useEffect(() => {
+    if (!showCards) return undefined;
+    return mountCommandCards({ host: hostRef.current, sessionId });
+  }, [showCards, sessionId]);
 
   return { termRef };
 }

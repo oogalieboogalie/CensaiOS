@@ -14,7 +14,7 @@ jest.unstable_mockModule('../server/tools/definitions.js', () => ({
   TOOL_DEFINITIONS: [], filterToolsForAgent: jest.fn(), listToolCatalog: jest.fn(),
 }));
 jest.unstable_mockModule('../server/db.js', () => ({ default: {} }));
-jest.unstable_mockModule('../server/workspaces/projectMemberships.js', () => ({ assertAgentRepoAccess: jest.fn() }));
+jest.unstable_mockModule('../server/workspaces/projectMemberships.js', () => ({ assertAgentRepoAccess: jest.fn(), listWorkspaceAgentProjects: jest.fn(async () => []) }));
 jest.unstable_mockModule('../server/memory.js', () => ({ getSubAgentById: jest.fn() }));
 jest.unstable_mockModule('../server/tools/rbac/runtimeAccess.js', () => ({ authorizeToolInvocation: jest.fn() }));
 jest.unstable_mockModule('../server/tools/rbac/executionBoundary.js', () => ({ assertFamilyToolAvailable }));

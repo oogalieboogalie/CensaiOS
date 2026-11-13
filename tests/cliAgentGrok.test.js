@@ -15,6 +15,9 @@ describe('Grok CLI adapter', () => {
     const task = 'rm -rf / ; echo "$(whoami)"';
     expect(grok.taskInArgs).toBe(true);
     expect(grok.buildRun({ task }).args).toEqual(['-p', task, '--output-format', 'streaming-json', '--always-approve']);
+    const gated = grok.buildRun({ task, approvalGated: true }).args;
+    expect(gated.join(' ')).not.toMatch(/always-approve|yolo|bypassPermissions/);
+    expect(gated).toEqual(expect.arrayContaining(['--permission-mode', 'dontAsk']));
     expect(grok.buildRun({ task: 't', resumeSessionId: 's-1', model: 'grok-4' }).args.slice(-4)).toEqual(['-r', 's-1', '-m', 'grok-4']);
     expect(grok.buildRun({ task: 't', resumeSessionId: 'bad id; rm' }).args).not.toContain('-r');
   });
@@ -71,5 +74,8 @@ describe('read-only runs for reviews', () => {
     expect(copilot.buildRun({ task: 't', readOnly: true }).args).not.toContain('--allow-tool');
     expect(gemini.buildRun({ task: 't', readOnly: true }).args).toEqual(expect.arrayContaining(['--approval-mode', 'default']));
     expect(opencode.noReadOnly).toBe(true);
+    expect(gemini.buildRun({ task: 't', approvalGated: true }).args).toEqual(expect.arrayContaining(['--approval-mode', 'default']));
+    expect(gemini.buildRun({ task: 't', approvalGated: true }).args).not.toContain('auto_edit');
+    expect(copilot.buildRun({ task: 't', approvalGated: true }).args).not.toContain('--allow-tool');
   });
 });

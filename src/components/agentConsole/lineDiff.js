@@ -1,5 +1,6 @@
 // Small line diff for inline edit cards (before/after strings from the CLI)
 // and a parser for unified patches (git diff) for the Changes tab.
+import { SECRET_CHANGES } from '../../../shared/files/fileProblems.js';
 
 const MAX_LCS_LINES = 400;
 
@@ -37,11 +38,14 @@ export function parsePatch(patch = '') {
   for (const line of String(patch).split('\n')) {
     if (line.startsWith('diff --git ')) {
       const m = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
-      file = { path: m ? m[2] : line.slice(11), hunks: [], binary: false };
+      file = { path: m ? m[2] : line.slice(11), hunks: [], binary: false, secret: false };
       files.push(file);
       hunk = null;
     } else if (!file) {
       continue;
+    } else if (line === SECRET_CHANGES) {
+      // The server left out what changed in a file that holds keys (server/security/secretFiles.js).
+      file.secret = true;
     } else if (line.startsWith('Binary files') || line.startsWith('GIT binary patch')) {
       file.binary = true;
     } else if (line.startsWith('@@')) {

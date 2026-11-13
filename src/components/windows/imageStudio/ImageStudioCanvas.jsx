@@ -97,7 +97,7 @@ export function ImageStudioCanvas({
   const visibleObjects = draft ? [...state.objects, draft] : state.objects;
 
   return (
-    <div style={{ flex: 1, minHeight: 0, border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-sunken)', overflow: 'hidden' }}>
+    <div className="hb-well hb-is-board">
       <svg
         ref={svgRef}
         viewBox="0 0 1000 650"
@@ -107,9 +107,9 @@ export function ImageStudioCanvas({
         onPointerCancel={onPointerUp}
         style={{ width: '100%', height: '100%', display: 'block', touchAction: 'none', cursor: tool === 'select' ? 'default' : 'crosshair' }}
       >
-        <rect x="0" y="0" width="1000" height="650" style={{ fill: 'var(--surface-sunken)' }} />
+        <rect x="0" y="0" width="1000" height="650" className="hb-is-board-fill" />
         {visibleObjects.length === 0 && (
-          <text x="500" y="325" fill="var(--ink-faint)" textAnchor="middle" fontFamily="var(--font-mono)" fontSize="28" letterSpacing="6">
+          <text x="500" y="325" fill="var(--ink-soft)" textAnchor="middle" fontFamily="var(--font-mono)" fontSize="28" letterSpacing="6">
             DRAW HERE
           </text>
         )}

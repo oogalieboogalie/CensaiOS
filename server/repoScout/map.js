@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileLanguage, parseFile } from './parse.js';
+import { isSecretFileName } from '../security/secretFiles.js';
 
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', 'out', 'coverage', '.next', '.cache', '.turbo',
@@ -30,7 +31,7 @@ async function listFiles(root) {
       const rel = dir ? `${dir}/${entry.name}` : entry.name;
       if (entry.isDirectory()) {
         if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.')) stack.push(rel);
-      } else if (entry.isFile() && fileLanguage(rel) && !/\.min\.|lock\.json$|\.map$/.test(entry.name)) {
+      } else if (entry.isFile() && fileLanguage(rel) && !isSecretFileName(entry.name) && !/\.min\.|lock\.json$|\.map$/.test(entry.name)) {
         out.push(rel);
       }
     }

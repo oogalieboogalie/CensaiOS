@@ -22,6 +22,7 @@ import { skillSetsRouter } from './skillSets.js';
 import { blueprintsRouter } from './blueprints.js';
 import { agentRouterRouter } from './agentRouter.js';
 import { censaiPlansRouter } from './censaiPlans.js';
+import { krakenRouter } from './krakenRequests.js';
 
 export const agentsRouter = express.Router();
 
@@ -48,3 +49,4 @@ agentsRouter.use(skillSetsRouter);
 agentsRouter.use(blueprintsRouter);
 agentsRouter.use(agentRouterRouter);
 agentsRouter.use(censaiPlansRouter);
+agentsRouter.use(krakenRouter);

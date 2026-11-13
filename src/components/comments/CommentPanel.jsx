@@ -1,7 +1,6 @@
 import React from 'react';
 import { threadsOf, useCommentStore } from '../../lib/comments/commentStore.js';
-
-const MENTION_SPLIT = /(@[a-zA-Z0-9][a-zA-Z0-9._-]{0,39})/g;
+import { CommentMessage } from './CommentMessage.jsx';
 
 function timeLabel(value) {
   if (!value) return '';
@@ -10,16 +9,6 @@ function timeLabel(value) {
 
 function handleOf(name) {
   return String(name || '').trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z0-9._-]/g, '');
-}
-
-function Body({ text }) {
-  return (
-    <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--ink)', lineHeight: 1.45 }}>
-      {String(text).split(MENTION_SPLIT).map((part, index) => (part.startsWith('@')
-        ? <span key={index} style={{ color: 'var(--accent-ink)', fontWeight: 600 }}>{part}</span>
-        : <React.Fragment key={index}>{part}</React.Fragment>))}
-    </div>
-  );
 }
 
 function Author({ author, at }) {
@@ -198,10 +187,7 @@ export function CommentPanel({ people = [], onJumpTo = null }) {
           </div>
           <div style={{ display: 'grid', gap: 12, overflowY: 'auto', minHeight: 0 }}>
             {[open, ...open.replies].map((comment) => (
-              <article key={comment.id} data-testid="comment-entry" style={{ display: 'grid', gap: 4 }}>
-                <Author author={comment.author} at={comment.createdAt} />
-                <Body text={comment.body} />
-              </article>
+              <CommentMessage key={comment.id} comment={comment} />
             ))}
             {open.resolvedAt && <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>Resolved by {open.resolvedBy || 'someone'}</div>}
           </div>
@@ -220,7 +206,7 @@ export function CommentPanel({ people = [], onJumpTo = null }) {
           <div style={{ display: 'grid', gap: 6, overflowY: 'auto', minHeight: 0, alignContent: 'start' }}>
             {visible.length === 0 && (
               <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', padding: '8px 2px' }}>
-                {showResolved ? 'Nothing resolved yet.' : 'No open comments.'}
+                {showResolved ? 'Nothing resolved yet.' : 'No open comments yet. Post one, then hit Translate.'}
               </div>
             )}
             {visible.map((thread) => (
@@ -233,6 +219,9 @@ export function CommentPanel({ people = [], onJumpTo = null }) {
               >
                 <Author author={thread.author} at={thread.createdAt} />
                 <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--ink-soft)' }}>{thread.body}</div>
+                {thread.translation?.text && (
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--ink-faint)' }}>{thread.translation.text}</div>
+                )}
                 {thread.replies.length > 0 && <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)' }}>{thread.replies.length} {thread.replies.length === 1 ? 'reply' : 'replies'}</div>}
               </button>
             ))}

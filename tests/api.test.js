@@ -11,19 +11,7 @@ describe('CensaiHub API endpoint tests', () => {
     const response = await request(app).get('/api/health');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(expect.objectContaining({
-      provider: expect.any(String),
-      model: expect.any(String),
-      database: expect.any(Boolean),
-      taskWorker: expect.any(Object),
-      schedulerWorker: expect.any(Object),
-      agentCardWorker: expect.any(Object),
-      agentWakeupWorker: expect.any(Object),
-    }));
-    expect(response.body.databaseStatus).toEqual(expect.objectContaining({
-      ready: expect.any(Boolean),
-      degraded: expect.any(Boolean),
-    }));
+    expect(response.body).toEqual({ ok: expect.any(Boolean) });
   });
 
 test('importing server.js does not start background workers in Jest', () => {

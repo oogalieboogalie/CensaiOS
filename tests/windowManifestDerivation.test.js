@@ -1,5 +1,5 @@
 // Single-source registration contract — the manifest is the one declaration and
-// WINDOW_REGISTRY, the module-type grouping, and the launcher tiles are all
+// WINDOW_REGISTRY, the module-type grouping, and the launcher blocks are all
 // DERIVED from it. These tests lock that derivation so a future edit can't
 // silently reintroduce a second hand-authored registry or a hardcoded launcher.
 
@@ -81,7 +81,7 @@ describe('module type discriminator', () => {
   // were removed; if the feature returns, re-add them.
 });
 
-describe('launcher tiles are derived and sorted', () => {
+describe('launcher blocks are derived and sorted', () => {
   test('only launcher.show entries are included', () => {
     expect(LAUNCHER_MANIFESTS.every((m) => m.launcher && m.launcher.show)).toBe(true);
     const hidden = WINDOW_MANIFESTS.filter((m) => !m.launcher || !m.launcher.show);
@@ -93,21 +93,21 @@ describe('launcher tiles are derived and sorted', () => {
     expect(orders).toEqual([...orders].sort((a, b) => a - b));
   });
 
-  test('chat is the first tile and carries its spawn props', () => {
+  test('chat comes first and carries its spawn props', () => {
     expect(LAUNCHER_MANIFESTS[0].kind).toBe('chat');
     expect(LAUNCHER_MANIFESTS[0].launcher.props).toEqual({ agentId: 'censai' });
   });
 
-  test('folder-window meta can declare its own launcher tile (micro-app contract)', () => {
+  test('folder-window meta can declare its own launcher block (micro-app contract)', () => {
     const meta = {
       kind: 'asteroids',
       label: 'Asteroids',
       defaultSize: { w: 480, h: 400 },
-      launcher: { show: true, order: 400, icon: 'Tools', label: 'Asteroids', hint: 'play while agents work' },
+      launcher: { show: true, order: 400, icon: 'Tools', hint: 'play while agents work' },
     };
     expect(normalizeWindowMeta(meta).launcher.show).toBe(true);
     expect(deriveManifestEntry(meta).launcher).toEqual(meta.launcher);
-    // and omitting it stays omitted (no accidental tile)
+    // and omitting it stays omitted (no accidental launcher block)
     expect(deriveManifestEntry({ kind: 'x', label: 'X', defaultSize: { w: 1, h: 1 } }).launcher).toBeUndefined();
   });
 });

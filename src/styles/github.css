@@ -45,7 +45,7 @@
 .hb-gh-activity-text strong { color: var(--ink); font-weight: 500; }
 .hb-gh-activity-sub { display: block; color: var(--ink-faint); margin-top: var(--space-0-5); }
 .hb-gh-approval { display: flex; flex-basis: 100%; align-items: center; gap: var(--space-2); }
-.hb-gh-approval-what { flex: 1; min-width: 0; font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.hb-gh-approval-what { flex: 1; min-width: 0; max-height: 12em; overflow: auto; font-family: var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
 .hb-gh-link { all: unset; cursor: pointer; color: var(--ink-faint); }
 .hb-gh-link:hover { color: var(--ink); }
 

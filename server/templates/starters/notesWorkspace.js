@@ -1,7 +1,7 @@
-// Starter board: Notes Workspace. An Obsidian-like vault overlapping a
-// Finder-like Downloads browser, plus a small library desk and team chat.
-// Visual layout preset inspired by a notes-app + file-browser desktop — not
-// a full Obsidian or Finder clone.
+// Starter board: Notes Workspace. An Obsidian-like vault overlapping the
+// Finder (the files of the board's open project, Finder-style), plus a small
+// library desk and team chat. Visual layout preset inspired by a notes-app +
+// file-browser desktop — not a full Obsidian or Finder clone.
 
 import { defaultId, finishBoard, leaf, split, starterAgent, teamChatWindow } from './shared.js';
 
@@ -15,12 +15,6 @@ const NOTE_TEXT = [
   '- Fold nectarines into the browned butter custard',
   '- Bake until the center just sets, then cool before slicing',
 ].join('\n');
-const FINDER_FILE = {
-  id: 'nectarine',
-  name: `${NOTE_TITLE}.md`,
-  modified: 'Today at 09:55',
-  size: '4 KB',
-};
 
 export const NOTES_WORKSPACE_AGENTS = Object.freeze([
   starterAgent({
@@ -34,7 +28,7 @@ export const NOTES_WORKSPACE_AGENTS = Object.freeze([
     prompt: 'You are the Notes Librarian. Help the person organize notes in the vault: suggest clear titles, short summaries and related links. When asked to write, add text to a document window with canvas_append_window. Prefer short, plain sentences. Do not invent files that are not on the board.',
     starters: [
       'Summarize the open recipe note in three bullets',
-      'Suggest tags for the files in this Downloads folder',
+      'Suggest tags for the notes in the vault',
       'Draft a related note title for brown butter desserts',
     ],
   }),
@@ -47,7 +41,7 @@ const LIBRARY_DOC = [
   '',
   '## Open now',
   '',
-  `- ${NOTE_TITLE}.md in Downloads`,
+  `- ${NOTE_TITLE}, in the vault`,
   '',
 ].join('\n');
 
@@ -66,12 +60,8 @@ export function buildNotesWorkspaceBoard({ agents, makeId = defaultId }) {
     {
       id: ids.finder,
       kind: 'finderFiles',
-      title: 'Downloads',
-      folderName: 'Downloads',
-      selectedNav: 'downloads',
-      selectedFileId: FINDER_FILE.id,
-      files: [FINDER_FILE],
-      templateRole: 'downloads',
+      title: 'Finder',
+      templateRole: 'finder',
     },
     {
       id: ids.vault,
@@ -100,14 +90,14 @@ export function buildNotesWorkspaceBoard({ agents, makeId = defaultId }) {
     },
     teamChatWindow(ids.teamChat, {
       from: agents.notesLibrarian,
-      text: 'Notes Workspace is ready. F1 is Downloads, F2 is the vault. I can summarize or tag what you open.',
+      text: 'Notes Workspace is ready. F1 is the Finder with your project\'s files, F2 is the vault. I can summarize or tag what you open.',
     }),
   ];
 
-  // Downloads sits slightly behind and left of the vault so the board opens
+  // The Finder sits slightly behind and left of the vault so the board opens
   // looking like the overlapping desktop in the reference screenshots.
   const groups = [
-    { key: 'downloads', label: 'Downloads', hotkey: '1', x: 0, y: 90, w: 900, h: 620, root: leaf(ids.finder) },
+    { key: 'finder', label: 'Finder', hotkey: '1', x: 0, y: 90, w: 900, h: 620, root: leaf(ids.finder) },
     { key: 'notes', label: 'Notes', hotkey: '2', x: 150, y: 20, w: 1000, h: 720, root: leaf(ids.vault) },
     { key: 'library', label: 'Library', hotkey: '3', x: 1220, y: 20, w: 860, h: 720, root: split('vertical', 0.52, leaf(ids.library), leaf(ids.librarianChat)) },
     { key: 'team', label: 'Team Chat', hotkey: '4', x: 1220, y: 800, w: 860, h: 480, root: leaf(ids.teamChat) },
@@ -127,10 +117,10 @@ export function buildNotesWorkspaceBoard({ agents, makeId = defaultId }) {
 export const NOTES_WORKSPACE_TEMPLATE = Object.freeze({
   id: NOTES_WORKSPACE_TEMPLATE_ID,
   name: 'Notes Workspace',
-  description: 'Obsidian-style vault notes overlapping a Finder-style Downloads browser, with a library desk and a notes librarian.',
-  groups: ['Downloads', 'Notes', 'Library', 'Team Chat'],
+  description: 'Obsidian-style vault notes overlapping a Finder of the open project\'s files, with a library desk and a notes librarian.',
+  groups: ['Finder', 'Notes', 'Library', 'Team Chat'],
   groupContents: {
-    Downloads: 'Finder-style Downloads list with sidebar and zebra rows',
+    Finder: "The open project's files, Finder-style",
     Notes: 'Vault notes with a recipe note open',
     Library: 'Library desk document, Notes Librarian chat',
     'Team Chat': 'Team chat',

@@ -22,6 +22,10 @@ jest.unstable_mockModule('../server/scheduler/coreRuns.js', () => ({ enqueueCore
 jest.unstable_mockModule('../server/wakeUps/store.js', () => ({ gateAgentWakeUp }));
 jest.unstable_mockModule('../server/memory/schedules_utils.js', () => ({
   nextRunAfter: jest.fn(() => new Date('2026-07-20T12:00:00Z')),
+  // The worker reads the original day from here. These tests never repeat monthly;
+  // the day-of-month behavior lives in scheduleNextRunAfter.test.js and
+  // scheduleZoneRepeat.test.js.
+  monthlyAnchorDay: jest.fn(() => null),
 }));
 
 const {
@@ -29,6 +33,7 @@ const {
   stopSchedulerWorkerForTests,
   tickScheduler,
 } = await import('../server/schedulerWorker.js');
+const { nextRunAfter } = await import('../server/memory/schedules_utils.js');
 
 describe('scheduler core-agent dispatch', () => {
   beforeEach(() => {
@@ -86,6 +91,28 @@ describe('scheduler core-agent dispatch', () => {
     expect(updateSchedule).toHaveBeenCalledWith('schedule-1', {
       status: 'completed', last_error: null,
     });
+  });
+
+  test('a repeat that throws does not stop the next due schedule', async () => {
+    nextRunAfter.mockImplementation(() => {
+      throw new Error('That time does not exist on that date in this time zone.');
+    });
+    getRunningScheduleRuns.mockResolvedValueOnce([{
+      id: 'gap-row', run_status: 'succeeded', repeat_enabled: true, repeat_freq: 'weekly',
+      scheduled_time: '2:30 AM', next_run_at: '2027-03-13T08:30:00.000Z',
+    }]);
+    claimNextDueSchedule.mockResolvedValueOnce({
+      id: 'monday-9', agent_id: 'censai', task_text: 'Morning check', repeat_enabled: false,
+    });
+    getAgents.mockResolvedValueOnce([{ id: 'censai', name: 'Censai' }]);
+    enqueueCoreScheduleRun.mockResolvedValueOnce({ runId: 'run-9' });
+
+    await tickScheduler();
+
+    expect(updateSchedule).toHaveBeenCalledWith('gap-row', expect.objectContaining({ status: 'failed' }));
+    expect(enqueueCoreScheduleRun).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'monday-9' }), 'censai',
+    );
   });
 
   test('keeps linked run failures visible on the schedule', async () => {

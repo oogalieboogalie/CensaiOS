@@ -1,12 +1,18 @@
 import fs from 'fs';
 import path from 'path';
-import { resolveProjectPathForRuntime } from '../../workspaces/shared.js';
+import { mapProjectPathForRuntime, normalizeProjectPathForStorage, resolveProjectPathForRuntime } from '../../workspaces/shared.js';
 import { readOpenProjects } from '../projects/shared.js';
-import { FILE_PROBLEMS } from '../../../shared/files/fileProblems.js';
+import { FILE_PROBLEMS, SAVE_PROBLEMS } from '../../../shared/files/fileProblems.js';
+import { OWNER_ONLY_FILE } from '../../security/secretFiles.js';
 import { LOCAL_STATE_DIR, OWN_STATE, OWN_STATE_WORDS, refuseOwnState } from './ownState.js';
 
 export { LOCAL_STATE_DIR, OWN_STATE };
 const CURRENT_PROJECT_FILE = path.join(LOCAL_STATE_DIR, 'current-project.json');
+
+// A teammate's refusal in censaiOS's own folder, Files' fallback while no
+// project is open (./teammateFiles.js): to them it is not a project open on
+// the board.
+export const APP_FOLDER_ONLY = 'CENSAI_APP_FOLDER_ONLY';
 
 export async function readCurrentProject() {
   try {
@@ -28,19 +34,30 @@ export function resolveProjectTargetPath(targetPath, projectPath) {
   return path.resolve(targetPath);
 }
 
-/** `targetPath` as this server sees it inside the project at `root`, or null when it is outside it. */
+/** `targetPath` as this server sees it inside the project at `root`, with that project's folder, or null when it is outside it. */
 function insideProject(targetPath, root) {
   const base = resolveProjectPathForRuntime(root);
   const target = resolveProjectTargetPath(targetPath, root);
-  return target === base || target.startsWith(base + path.sep) ? target : null;
+  return target === base || target.startsWith(base + path.sep) ? { target, base } : null;
 }
 
 /** Where `targetPath` is on this server, when it may open on the board; throws "Access denied" otherwise. */
 export async function validateProjectPath(targetPath) {
-  return refuseOwnState(await allowedTarget(targetPath));
+  return (await projectPlace(targetPath)).target;
 }
 
-async function allowedTarget(targetPath) {
+/**
+ * As validateProjectPath, with the folder of the project (or the app's own
+ * folder) it is in: { target, base }. appFolder: it is in censaiOS's own
+ * folder, open only while no project is (server/routes/files/teammateFiles.js
+ * keeps that for this computer's owner).
+ */
+export async function projectPlace(targetPath) {
+  const place = await allowedPlace(targetPath);
+  return { target: await refuseOwnState(place.target), base: place.base, ...(place.appFolder ? { appFolder: true } : {}) };
+}
+
+async function allowedPlace(targetPath) {
   const currentProject = await readCurrentProject();
   const inCurrent = currentProject?.path && insideProject(targetPath, currentProject.path);
   if (inCurrent) return inCurrent;
@@ -59,7 +76,7 @@ async function allowedTarget(targetPath) {
   const appFolder = path.resolve(process.cwd());
   const target = path.resolve(targetPath);
   const windowsPathHere = WINDOWS_PATH.test(String(targetPath)) && process.platform !== 'win32';
-  if (!windowsPathHere && (target === appFolder || target.startsWith(appFolder + path.sep))) return target;
+  if (!windowsPathHere && (target === appFolder || target.startsWith(appFolder + path.sep))) return { target, base: appFolder, appFolder: true };
   throw new Error('Access denied: Path is outside allowed directory');
 }
 
@@ -77,32 +94,6 @@ export async function projectRootContaining(targetPath) {
     if (target === base || target.startsWith(base + path.sep)) return base;
   }
   return null;
-}
-
-export async function getDirectoryTree(dirPath) {
-  const stats = await fs.promises.stat(dirPath);
-  const name = path.basename(dirPath);
-  if (!stats.isDirectory()) return { name, path: dirPath };
-
-  const childrenNames = await fs.promises.readdir(dirPath);
-  const children = [];
-  for (const childName of childrenNames) {
-    if (childName === 'node_modules' || childName === '.git' || childName === '.antigravityignore' || childName === 'dist') continue;
-    const childPath = path.join(dirPath, childName);
-    try {
-      children.push(await getDirectoryTree(childPath));
-    } catch {
-      // skip unreadable entries
-    }
-  }
-  children.sort((a, b) => {
-    const aIsDir = !!a.children;
-    const bIsDir = !!b.children;
-    if (aIsDir && !bIsDir) return -1;
-    if (!aIsDir && bIsDir) return 1;
-    return a.name.localeCompare(b.name);
-  });
-  return { name, path: dirPath, children };
 }
 
 const WINDOWS_PATH = /^[a-z]:[\\/]/i;
@@ -145,10 +136,16 @@ export function folderErrorMessage(err, requested) {
   }
   if (err?.code === 'ENOENT') return `This folder doesn't exist: ${requested}`;
   if (err?.code === OWN_STATE) return OWN_STATE_WORDS;
+  if (ownerFolderWords(err)) return ownerFolderWords(err);
   if (err?.message?.startsWith('Access denied')) {
     return `${requested} isn't in a project open on this board. Type it in the path bar and press Enter to open it.`;
   }
   return null;
+}
+
+/** The plain words for a folder only this computer's owner opens (a hidden one in a project, censaiOS's own folder), else null. */
+export function ownerFolderWords(err) {
+  return err?.code === OWNER_ONLY_FILE || err?.code === APP_FOLDER_ONLY ? "Only this computer's owner can open this folder." : null;
 }
 
 const READ_PROBLEMS = {
@@ -158,6 +155,8 @@ const READ_PROBLEMS = {
   EACCES: [403, 'denied'],
   EPERM: [403, 'denied'],
   [OWN_STATE]: [403, 'secret'],
+  [OWNER_ONLY_FILE]: [403, 'ownerOnly'],
+  [APP_FOLDER_ONLY]: [403, 'outside'],
 };
 
 /**
@@ -171,11 +170,41 @@ export function fileReadProblem(err) {
   return { status, reason, error: FILE_PROBLEMS[reason] };
 }
 
+const WRITE_PROBLEMS = {
+  ENOENT: [404, 'gone'],
+  ENOTDIR: [404, 'gone'],
+  EISDIR: [400, 'folder'],
+  EEXIST: [409, 'exists'],
+  EACCES: [403, 'denied'],
+  EPERM: [403, 'denied'],
+  EROFS: [403, 'denied'],
+  EBUSY: [409, 'busy'],
+  ETXTBSY: [409, 'busy'],
+  ENOSPC: [507, 'full'],
+  EDQUOT: [507, 'full'],
+  [OWN_STATE]: [403, 'secret'],
+};
+
+/**
+ * Why a file could not be saved, as { status, reason, error } with the plain
+ * words from shared/files/fileProblems.js; never the error's own text, which
+ * names the server's folders.
+ */
+export function fileWriteProblem(err) {
+  const [status, reason] = (Object.hasOwn(WRITE_PROBLEMS, err?.code) && WRITE_PROBLEMS[err.code])
+    || (err?.message?.startsWith('Access denied') ? [403, 'outside'] : [500, 'unsaved']);
+  // A full disk met while writing in place (saveWhole.js) may have cut the file short.
+  const said = reason === 'full' && err.cutShort === true ? 'fullCutShort' : reason;
+  return { status, reason: said, error: SAVE_PROBLEMS[said] };
+}
+
 /** A Windows folder this (Docker) server has no copy of at all. */
 export function isUnseenWindowsFolder(err, requested) {
-  // censaiOS's own state folder gets one answer, whether or not the path is there.
-  if (err?.code === OWN_STATE) return false;
+  // censaiOS's own state folder, and what only the owner opens, get one answer whether or not the path is there.
+  if (err?.code === OWN_STATE || ownerFolderWords(err)) return false;
   if (!requested || !WINDOWS_PATH.test(requested) || process.platform === 'win32') return false;
-  if (err?.code === 'ENOENT') return true;
+  // Inside a folder shared into Docker (the projects folder, the checkout), a
+  // missing folder is just gone.
+  if (err?.code === 'ENOENT') return WINDOWS_PATH.test(mapProjectPathForRuntime(normalizeProjectPathForStorage(requested)));
   return !!err?.message?.startsWith('Access denied') && !fs.existsSync(resolveProjectPathForRuntime(requested));
 }

@@ -2,9 +2,14 @@ import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { AgentAvatar } from '../Agents.jsx';
 import { getAgents, getAgentById } from '../../lib/agentStore.js';
-import { panelStyle, sectionHeaderStyle, bulletInputStyle, addInputStyle, tagInputStyle, assigneeSelectStyle, emptyAssigneeStyle, addButtonStyle, iconButtonStyle } from './ideaBulletsStyles.js';
+import { useSharedCaret } from '../../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from '../collaboration/TeammateCarets.jsx';
+import { IdeaBullet } from './IdeaBullet.jsx';
+import { panelStyle, sectionHeaderStyle, addInputStyle, tagInputStyle, assigneeSelectStyle, emptyAssigneeStyle, addButtonStyle } from './ideaBulletsStyles.js';
 
 export function IdeaBulletsSection({
+  winId,
   ideas,
   workItem,
   setWorkItem,
@@ -22,6 +27,12 @@ export function IdeaBulletsSection({
 }) {
   const agents = getAgents();
   const selectedAgent = assignee ? getAgentById(assignee) : null;
+  // A teammate's letters landing in the save tag keep your cursor where it was.
+  const tagRef = React.useRef(null);
+  useSharedCaret(tagRef, workItem, React.useMemo(() => ({ id: winId, field: 'workItem' }), [winId]));
+  // Teammates' cursors in the save tag, with their names, and ours for them.
+  useCaretReporter(tagRef, winId, 'workItem');
+  const tagCarets = useTeammateCarets(winId, 'workItem');
 
   return (
     <section style={panelStyle}>
@@ -34,12 +45,17 @@ export function IdeaBulletsSection({
         <label style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', fontWeight: 800, textTransform: 'var(--label-case)', letterSpacing: 'var(--label-tracking)', color: 'var(--ink-faint)' }}>
           Save tag
         </label>
-        <input
-          value={workItem}
-          onChange={(e) => { setWorkItem(e.target.value); setSavedIdea(null); }}
-          placeholder="Website Update"
-          style={tagInputStyle}
-        />
+        <div style={{ position: 'relative', display: 'grid' }}>
+          <input
+            ref={tagRef}
+            aria-label="Save tag"
+            value={workItem}
+            onChange={(e) => { setWorkItem(e.target.value); setSavedIdea(null); }}
+            placeholder="Website Update"
+            style={tagInputStyle}
+          />
+          <TeammateCarets boxRef={tagRef} carets={tagCarets} text={workItem} />
+        </div>
         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', lineHeight: 1.35 }}>
           [{currentProject?.name || 'Project'}] - {workItem.trim() || 'Work item'} - Ideated on today
         </div>
@@ -73,18 +89,7 @@ export function IdeaBulletsSection({
             Throw messy fragments here. Press Enter or the plus button and they become bullets.
           </div>
         ) : ideas.map((idea, index) => (
-          <div key={index} style={{ display: 'grid', gridTemplateColumns: '18px minmax(0, 1fr) 20px', gap: 6, alignItems: 'start' }}>
-            <div style={{ width: 7, height: 7, borderRadius: 'var(--radius-full)', background: 'var(--accent)', marginTop: 10, justifySelf: 'center' }} />
-            <textarea
-              value={idea}
-              onChange={(e) => updateIdea(index, e.target.value)}
-              rows={1}
-              style={bulletInputStyle}
-            />
-            <button onClick={() => removeIdea(index)} title="Remove idea" style={iconButtonStyle}>
-              <Icon.Close size={10} />
-            </button>
-          </div>
+          <IdeaBullet key={index} idea={idea} index={index} onChange={updateIdea} onRemove={removeIdea} winId={winId} />
         ))}
       </div>
 

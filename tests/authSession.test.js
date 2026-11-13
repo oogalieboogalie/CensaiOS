@@ -28,6 +28,24 @@ describe('authenticated session establishment', () => {
     });
   });
 
+  test('a hub sign-in stores no role, even when that email is an admin', async () => {
+    const session = {
+      regenerate(callback) { callback(); },
+      save(callback) { callback(); },
+    };
+
+    await establishAuthenticatedSession({ session }, {
+      id: '11111111-1111-4111-8111-111111111111',
+      role: 'admin',
+      email: 'alma@example.com',
+      hubAccount: true,
+    });
+
+    expect(session.hubAccount).toBe(true);
+    expect(session.userRole).toBeUndefined();
+    expect(session.userEmail).toBe('alma@example.com');
+  });
+
   test('fails closed when regeneration is unavailable', async () => {
     await expect(establishAuthenticatedSession({ session: {} }, {
       id: 9, role: 'user', email: 'beta@example.com',

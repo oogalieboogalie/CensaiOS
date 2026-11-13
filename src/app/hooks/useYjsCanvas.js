@@ -10,6 +10,7 @@ import { setListMergeReporter } from '../../lib/collaboration/windowLists.js';
 import { setSheetMergeReporter } from '../../lib/collaboration/windowSheet.js';
 import { collectTextEvents, recordRemoteText } from '../../lib/collaboration/remoteTextEdits.js';
 import { CANVAS_ROOT } from '../../../shared/collab/ySchema.js';
+import { caretChannelIs, setCaretChannel } from '../../lib/collaboration/textCarets.js';
 import { logToApp } from '../../lib/appLog/browserLog.js';
 
 const LOCAL_ORIGIN = 'censai-local-store';
@@ -120,6 +121,7 @@ export function useYjsCanvas({ enabled, workspaceId, store = useWorkspaceStore, 
         if (!provider.hasUnsyncedChanges) saves.saved();
         setStatus('live');
         setAwareness(provider.awareness);
+        setCaretChannel(doc, provider.awareness);
       },
       // The server confirms every update it applies; none left waiting means
       // it has all of this tab's edits, including any made while offline.
@@ -133,6 +135,7 @@ export function useYjsCanvas({ enabled, workspaceId, store = useWorkspaceStore, 
 
     return () => {
       unsubscribe();
+      if (caretChannelIs(doc)) setCaretChannel(null, null);
       doc.off('update', onDocUpdate);
       doc.getMap(CANVAS_ROOT).unobserveDeep(onTextEvents);
       provider.destroy();

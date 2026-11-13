@@ -8,6 +8,7 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
+import rateLimiter from '../server/middleware/rateLimiter.js';
 
 const query = jest.fn();
 let isReady = true;
@@ -44,6 +45,8 @@ function buildApp() {
   // Minimal session stub mirroring authRateLimiting.test.js — the real session
   // middleware is irrelevant to the dbReady check we're testing here.
   app.use((req, _res, next) => {
+    const forced = req.get('x-test-remote-address');
+    if (forced) Object.defineProperty(req.socket, 'remoteAddress', { value: String(forced) });
     req.session = {
       regenerate: (cb) => cb && cb(),
       save: (cb) => cb && cb(),
@@ -57,6 +60,7 @@ function buildApp() {
 describe('/api/auth/developer dbReady guard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    rateLimiter.reset();
     isReady = true;
     delete process.env.CENSAI_MODE;
     delete process.env.HOMEBASE_MODE;
@@ -81,8 +85,63 @@ describe('/api/auth/developer dbReady guard', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  test('refuses passwordless sign-in when the dev flag is off', async () => {
+    isReady = true;
+    // The old default would accept this and make the first account an admin.
+    query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ count: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1, email: 'anyone@x.example', name: 'Anyone', role: 'admin' }] });
+
+    const res = await request(buildApp())
+      .post('/api/auth/developer')
+      .send({ email: 'anyone@x.example', name: 'Anyone' });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/disabled/i);
+    expect(res.body.user).toBeUndefined();
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  test('a LAN socket is refused on the developer route even when the headers say localhost', async () => {
+    isReady = true;
+    process.env.CENSAI_ALLOW_DEVELOPER_LOGIN = 'true';
+    const res = await request(buildApp())
+      .post('/api/auth/developer')
+      .set('Host', 'localhost:3002')
+      .set('X-Forwarded-For', '127.0.0.1')
+      .set('X-Test-Remote-Address', '192.168.1.40')
+      .send({ email: 'alma@example.com', name: 'Alma' });
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/disabled/i);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  test('a loopback socket with a forwarding header is refused on the developer route', async () => {
+    isReady = true;
+    process.env.CENSAI_ALLOW_DEVELOPER_LOGIN = 'true';
+    const previousOrigin = process.env.APP_ORIGIN;
+    process.env.APP_ORIGIN = 'http://localhost:3002';
+    try {
+      // supertest connects from the loopback socket. A tunnel does too, and
+      // adds X-Forwarded-For. That must not sign in.
+      const local = await request(buildApp())
+        .post('/api/auth/developer')
+        .set('Host', 'localhost:3002')
+        .set('X-Forwarded-For', '203.0.113.50')
+        .send({ email: 'alma@example.com', name: 'Alma' });
+      expect(local.status).toBe(403);
+      expect(local.body.error).toMatch(/disabled/i);
+      expect(query).not.toHaveBeenCalled();
+    } finally {
+      if (previousOrigin === undefined) delete process.env.APP_ORIGIN;
+      else process.env.APP_ORIGIN = previousOrigin;
+    }
+  });
+
   test('proceeds to pool.query when dbReady() is true', async () => {
     isReady = true;
+    process.env.CENSAI_ALLOW_DEVELOPER_LOGIN = 'true';
     // First call: SELECT returns no existing user; second call: count = 0 → admin role;
     // third call: INSERT returns new user.
     query

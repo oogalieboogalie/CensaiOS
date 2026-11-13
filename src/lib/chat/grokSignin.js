@@ -5,6 +5,7 @@ import { readChatStream } from '../chat.js';
 import { ChatRequestError, chatResponseError } from '../chatErrors.js';
 import { logToApp } from '../appLog/browserLog.js';
 import { normalizeCapabilityProvider } from './modelCapabilities.js';
+import { teammateName } from './writer.js';
 
 const BASE = '/api/cli-agents/grok-signin';
 
@@ -42,34 +43,40 @@ function lastUserText(messages) {
 
 /**
  * One chat turn on the person's Grok sign-in. Same shape as
- * sendMessageWithMeta, so useChat can use either. `sessionId` continues
- * Grok's own conversation; the reply carries the next one (grokSessionId).
+ * sendMessageWithMeta, so useChat can use either. `conversationId` and the
+ * board (`workspaceId`) name the chat; the server keeps each person's own
+ * Grok conversation in it and hands their Grok the chat's messages it has
+ * not seen yet.
  */
-export async function sendGrokSigninMessage(messages, { sessionId = null, signal, onDelta, onStatusUpdate } = {}) {
+export async function sendGrokSigninMessage(messages, { conversationId = null, workspaceId = null, signal, onDelta, onStatusUpdate } = {}) {
   const last = lastUserText(messages);
   if (last.hasFiles) {
     throw new ChatRequestError('On your Grok sign-in this chat takes text only for now. Switch to "xAI key" above the box to send files or pictures.', { code: 'GROK_TEXT_ONLY' });
   }
   if (!last.text) throw new ChatRequestError('Type a message first.', { code: 'GROK_EMPTY' });
+  // Error notes and stopped answers are left out: neither is an answer Grok
+  // gave in full. A teammate's message goes with their name, so Grok knows
+  // it is theirs and not this person's.
   const history = messages.slice(0, last.index)
-    .filter(m => !m.hidden && m.from !== 'system' && typeof m.text === 'string')
-    .map(m => ({ from: m.from === 'me' ? 'me' : 'agent', text: m.text.slice(0, 8000) }));
+    .filter(m => !m.hidden && m.from !== 'system' && !m.error && !m.stopped && typeof m.text === 'string')
+    .map(m => ({ from: m.from === 'me' ? 'me' : 'agent', text: m.text.slice(0, 8000), ...(teammateName(m) ? { by: teammateName(m) } : {}) }));
   try {
     const res = await fetch(`${BASE}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' },
-      body: JSON.stringify({ text: last.text, history, sessionId }),
+      body: JSON.stringify({ text: last.text, history, chat: conversationId ? [workspaceId, conversationId].filter(Boolean).join('/') : null }),
       ...(signal ? { signal } : {}),
     });
     if (!res.ok) throw await chatResponseError(res);
-    const reply = await readChatStream(res, { onDelta, onStatusUpdate });
-    return { ...reply, grokSessionId: reply.result?.grokSessionId || null };
+    return await readChatStream(res, { onDelta, onStatusUpdate });
   } catch (err) {
     if (err?.name === 'AbortError') throw new ChatRequestError('Stopped.', { code: 'CHAT_ABORTED' });
     if (!(err instanceof ChatRequestError)) {
       throw new ChatRequestError('censaiOS could not reach Grok. Try again shortly.', { code: 'CHAT_NETWORK_ERROR', details: { cause: err?.message } });
     }
-    if (err.code !== 'CHAT_ABORTED') logToApp('warn', `Grok sign-in chat failed: ${err.code}`, { detail: err.message });
+    // The code and status only: the message is Grok's own words, which the
+    // chat shows the person but which can name a folder on the computer.
+    if (err.code !== 'CHAT_ABORTED') logToApp('warn', `Grok sign-in chat failed: ${err.code}`, { detail: err.status ? `status ${err.status}` : '' });
     throw err;
   }
 }

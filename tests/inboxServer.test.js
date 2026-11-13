@@ -117,6 +117,39 @@ describe('inbox route', () => {
     expect(res.body.items.map((i) => i.kind).sort()).toEqual(['agent', 'error']);
     expect(res.body.dock.repos[0].repo).toBe('acme/web');
   });
+
+  test("a teammate's inbox shows a task's summary without a key file's lines, and the owner's shows it whole", async () => {
+    delete process.env.GITHUB_TOKEN;
+    const KEY = 'not-a-real-made-up-key';
+    const summary = `Made-up summary\n./.env:MADE_UP_KEY=${KEY}`;
+    const loadManager = async () => ({ list: () => [task('a', { status: 'done', running: false, summary, worktree: { dir: '/made-up/.censai/worktrees/a' } })] });
+    const agentFor = async (owner) => {
+      const app = express();
+      app.use((req, _res, next) => { req.session = { userId: 7 }; next(); });
+      app.use('/api/inbox', createInboxRouter({ isOwner: async () => owner, loadManager }));
+      const res = await request(app).get('/api/inbox?repo=o/r').expect(200);
+      return res.body.items.find((i) => i.kind === 'agent');
+    };
+    expect((await agentFor(false)).summary).toBe('Made-up summary\n./.env: …');
+    expect((await agentFor(true)).summary).toBe(summary);
+  });
+
+  test("a teammate's inbox shows [hidden] where a task's summary repeats a key the agent read in .env, and the owner's shows it", async () => {
+    delete process.env.GITHUB_TOKEN;
+    const KEY = 'made-up-key-0123456789';
+    const listed = task('b', { status: 'done', running: false, summary: `Done: config.js holds ${KEY}.`, worktree: { dir: '/made-up/.censai/worktrees/b' } });
+    const read = { id: 'i1', kind: 'read', title: 'Read .env', path: '.env', output: `MADE_UP_KEY=${KEY}`, status: 'done' };
+    const loadManager = async () => ({ list: () => [listed], get: () => ({ ...listed, items: [read], permissions: [] }) });
+    const agentFor = async (owner) => {
+      const app = express();
+      app.use((req, _res, next) => { req.session = { userId: 7 }; next(); });
+      app.use('/api/inbox', createInboxRouter({ isOwner: async () => owner, loadManager }));
+      const res = await request(app).get('/api/inbox?repo=o/r').expect(200);
+      return res.body.items.find((i) => i.kind === 'agent');
+    };
+    expect((await agentFor(false)).summary).toBe('Done: config.js holds [hidden].');
+    expect((await agentFor(true)).summary).toBe(`Done: config.js holds ${KEY}.`);
+  });
 });
 
 describe('fix red checks: the agent commit is checked and pushed', () => {

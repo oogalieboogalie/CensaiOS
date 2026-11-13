@@ -9,8 +9,9 @@ import {
   summarizeBody,
   summarizeChecks,
 } from '../server/github/mergeDesk.js';
-import { finishAndPush, getFixJob, resetFixJobs, runGit, startFix } from '../server/github/conflictFixer.js';
+import { finishAndPush, fixApprovals, getFixJob, resetFixJobs, runGit, startFix, trackFixJob, watchTask } from '../server/github/conflictFixer.js';
 import { createWorktree } from '../server/cli-agents/worktrees.js';
+import { HIDDEN_MARK } from '../shared/files/fileProblems.js';
 
 const ghError = (status, message) => Object.assign(new Error(message), { status, response: { data: { message } } });
 
@@ -159,5 +160,29 @@ describe('fix conflicts: agent merge is checked and pushed', () => {
     sh(['commit', '--no-edit'], dir);
     await expect(finishAndPush({ job: { baseRef: 'master', headRef: 'feature' }, task: { worktree: { dir } }, git: runGit, token: '' }))
       .rejects.toThrow(/Conflict markers/);
+  });
+});
+
+describe('merge desk: a fix job on the shared board', () => {
+  const KEY = 'made-up-key-0123456789';
+  // The agent read a made-up .env, then asks to run a command with its key and repeats it in its summary.
+  const fixTask = (more = {}) => ({
+    id: 'made-up-fix', status: 'needs_approval', rev: 2, summary: `Kept both sides; the key is still ${KEY}.`, worktree: { dir: '/made-up/fixes/wt' },
+    items: [{ id: 'r', kind: 'read', title: 'Read .env', path: '.env', output: `MADE_UP_KEY=${KEY}`, rev: 1 }],
+    permissions: [{ id: 'p1', taskId: 'made-up-fix', status: 'pending', kind: 'command', title: 'Run a command', detail: `echo ${KEY} > made-up.txt`, rev: 2 }],
+    ...more,
+  });
+  afterEach(() => resetFixJobs());
+
+  test("the agent's approvals show a key it read in a file only the owner opens as [hidden]", () => {
+    expect(fixApprovals({ taskId: 'made-up-fix' }, { get: () => fixTask() })).toEqual([{ id: 'p1', title: 'Run a command', detail: `echo ${HIDDEN_MARK} > made-up.txt` }]);
+  });
+
+  test("the agent's summary shows that key as [hidden] too", async () => {
+    const done = fixTask({ status: 'done', permissions: [] });
+    const job = trackFixJob({ id: 'made-up-job', status: 'agent', taskId: 'made-up-fix', token: '' });
+    watchTask(job, { manager: { get: () => done }, git: runGit, finish: async () => 'made-up-sha' });
+    for (let i = 0; i < 40 && getFixJob(job.id).status !== 'done'; i++) await new Promise((r) => setTimeout(r, 100));
+    expect(getFixJob(job.id)).toMatchObject({ status: 'done', sha: 'made-up-sha', agentSummary: `Kept both sides; the key is still ${HIDDEN_MARK}.` });
   });
 });

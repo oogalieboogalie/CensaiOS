@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 export function resolveSubAgentScope(input = {}, { requireUser = false } = {}) {
   const workspaceId = String(input.workspaceId ?? input.workspace_id ?? '').trim();
@@ -14,11 +14,17 @@ export function resolveSubAgentScope(input = {}, { requireUser = false } = {}) {
   return { workspaceId, userId: Number.isInteger(userId) && userId > 0 ? userId : null };
 }
 
+// Ids already stored were chosen from the name. They stay as they are.
+// New rows use newSubAgentId so the next one cannot be computed the same way.
 export function scopedSubAgentId(name, parentId, workspaceId) {
   const slug = String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const parent = String(parentId || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const scopeHash = createHash('sha256').update(String(workspaceId)).digest('hex').slice(0, 12);
   return `${slug || 'agent'}-${parent || 'parent'}-${scopeHash}`;
+}
+
+export function newSubAgentId() {
+  return randomUUID();
 }
 
 export function subAgentScopeError(message) {

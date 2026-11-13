@@ -142,3 +142,28 @@ export function fileWindowProps(node, githubRepo) {
     ...(kind === 'code_editor' ? { language: fileLanguage(node.name) || 'text' } : {}),
   };
 }
+
+/**
+ * Opens a file picked in Files or the Finder in its window (Document, Code
+ * editor, picture), or brings forward the window already showing it, and
+ * `onShow` gets that window so the board can glide to it. `wins` is the
+ * board's own window list (the store's), with each window's file.
+ */
+export function openFileWindow(node, { wins = [], githubRepo = null, onSelect, onShow, onSpawn, onUpdateWindow } = {}) {
+  const kind = fileWindowKind(node.name);
+  const existingWin = (wins || []).find(
+    (w) => w.filePath === node.path && w.kind === kind && (githubRepo ? w.githubRepo === githubRepo : !w.isGithub)
+  );
+  if (existingWin) {
+    onSelect?.(existingWin.id);
+    onShow?.(existingWin);
+    if (existingWin.kind === 'doc' && !existingWin.isEditing) {
+      onUpdateWindow?.(existingWin.id, { isEditing: true });
+    }
+    return;
+  }
+  onSpawn?.(kind, {
+    ...fileWindowProps(node, githubRepo),
+    isEditing: true
+  });
+}

@@ -22,12 +22,13 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {
-  ROOT, dropScratchDatabase, findChromium, makeScratchDatabase, startProcess, step, waitForUrl, whatIsMissing,
+  ROOT, dropScratchDatabase, findChromium, makeScratchDatabase, runPorts, startProcess, step, waitForUrl, whatIsMissing,
 } from './runner.mjs';
 import { PAT, SAM, openBoard, shareBoard, signIn } from './board.mjs';
 
-const API_PORT = 3001; // vite.config.js sends /api and the sockets here
-const WEB_PORT = 5173;
+// This run's own two ports, so two runs on one machine never share an app.
+// vite.config.js sends /api and the sockets to CENSAI_DEV_API_PORT.
+const { api: API_PORT, web: WEB_PORT } = await runPorts();
 const WEB = `http://localhost:${WEB_PORT}`;
 const NOTE = 'made-up note';
 const SEE_WITHIN_MS = 5000;
@@ -70,6 +71,7 @@ async function main() {
       ...process.env,
       DATABASE_URL: databaseUrl,
       PORT: String(API_PORT),
+      CENSAI_DEV_API_PORT: String(API_PORT),
       SESSION_SECRET: crypto.randomBytes(24).toString('hex'),
       CENSAI_MODE: 'local_desktop',
       CENSAI_ALLOW_DEVELOPER_LOGIN: 'true',

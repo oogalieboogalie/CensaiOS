@@ -2,26 +2,11 @@
 import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { BrandMark } from '../brand/BrandMark.jsx';
+import { LAUNCHPAD_BOARDS, LAUNCHPAD_STARTS } from '../../lib/launchpadStarts.js';
 
-// The three still starting points under the welcome line (awe-and-polish
-// friction 3). Labels live here so the row stays short and readable; icons,
-// hints and spawn props still come from each window's manifest.
-export const LAUNCHPAD_STARTS = [
-  { kind: 'chat', label: 'Chat with Censai' },
-  { kind: 'leadHound', label: 'Find leads' },
-  { kind: 'marketplace', label: 'Browse modules' },
-];
-
-// Ready-made boards a newcomer can start from (spec 7); each opens the
-// template dialog on that board.
-export const LAUNCHPAD_BOARDS = [
-  { id: 'developer', label: 'Developer' },
-  { id: 'code-workspace', label: 'Code Workspace' },
-  { id: 'creative-studio', label: 'Creative Studio' },
-  { id: 'agent-team', label: 'Agent Team' },
-  { id: 'small-business', label: 'Small Business' },
-  { id: 'real-estate-team', label: 'Real Estate' },
-];
+// The starting buttons' names live in lib/launchpadStarts.js, where Add
+// (Ctrl+K) reads them too.
+export { LAUNCHPAD_BOARDS, LAUNCHPAD_STARTS };
 
 // How the board moves with each "Canvas pan control" choice in Settings;
 // the default takes Space + drag or a middle-click drag, and scrolling always moves it.

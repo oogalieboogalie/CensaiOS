@@ -11,15 +11,21 @@ import { SelectionBar, AnnotationComposer } from './doc/AnnotationUI.jsx';
 import { NoteGraph } from './doc/NoteGraph.jsx';
 import { useDoc } from './doc/useDoc.js';
 import { FileLoadError } from './files/FileLoadError.jsx';
+import { OffBoardNote } from './files/OffBoardNote.jsx';
+import { SaveNote } from './files/SaveNote.jsx';
 import { RelatedContext } from './doc/RelatedContext.jsx';
 import { BacklinksBox } from './doc/BacklinksBox.jsx';
 import { reportTyping, reportTextPreview } from '../lib/collaboration/liveText.js';
 import { useSharedCaret } from '../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from './collaboration/TeammateCarets.jsx';
+import { WhoTypedWhat } from './doc/WhoTypedWhat.jsx';
 import { mergeWithLatest } from '../lib/collaboration/sharedTextEdit.js';
 import { localDay } from '../lib/schedule/plainWords.js';
 import { caretToRaw, pointToRaw } from './doc/docTextMap.js';
 import { noteAt } from './doc/useNoteHighlights.js';
 import { useWorkspaceStore } from '../lib/store.js';
+import './doc/docWindow.css';
 
 export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, workspaceId }) {
   const bodyRef = React.useRef(null);
@@ -28,7 +34,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
   const isActive = useWorkspaceStore((s) => s.activeId === win.id);
   const {
     realContent, setRealContent,
-    loading, loadError, canSave, saving, retryLoad,
+    loading, loadError, canSave, saving, saveNote, closeSaveNote, retryLoad,
     backlinks,
     backlinksCapped,
     backlinksChecked,
@@ -43,12 +49,19 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
     onMouseUp,
     onTextareaSelection,
     commitAnnotation,
-    saveFile
+    saveFile,
+    offBoard,
   } = useDoc(win, onUpdate, onSpawn, onAssign, bodyRef, isActive);
   const textareaRef = React.useRef(null);
   useSharedCaret(textareaRef, realContent, React.useMemo(() => ({ id: win.id, field: 'text' }), [win.id]));
   const caretRef = React.useRef(null);
+  // Teammates' cursors in the words, and ours for them (never for a file kept off the board).
+  useCaretReporter(textareaRef, win.id, 'text', isEditing && !offBoard);
+  const teammateCarets = useTeammateCarets(win.id, 'text', isEditing && !offBoard);
   const showComments = !win.maximized && win.showComments === true;
+  // Who typed what: only on this screen, never for a file kept off the board.
+  const [showWriters, setShowWriters] = React.useState(false);
+  const writersOn = showWriters && !offBoard && !win.isGithub;
 
   const annotations = React.useMemo(() => win.annotations || [], [win.annotations]);
   // Rendered/Source filter: code files (or anything misdetected) opened as
@@ -59,7 +72,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
   const copySource = React.useCallback((codeText) => {
     navigator.clipboard?.writeText(codeText)?.catch?.(() => {});
   }, []);
-  useNoteHighlights(win.id, bodyRef, text, placedNotes, activeAnnId, !loading && !isEditing && !sourceView && !showGraph);
+  useNoteHighlights(win.id, bodyRef, text, placedNotes, activeAnnId, !loading && !isEditing && !sourceView && !writersOn && !showGraph);
   // A click opens the editor with the caret where you clicked; it lands at the
   // end when the click missed the words.
   React.useEffect(() => {
@@ -92,11 +105,11 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
   };
 
   if (loading) {
-    return <div style={{ flex: 1, display: 'grid', placeItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Loading document...</div>;
+    return <div className="doc-loading">Loading document...</div>;
   }
 
   return (
-    <div data-win-root style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative', userSelect: 'text', WebkitUserSelect: 'text' }}>
+    <div data-win-root className="doc">
       <WindowTitle
         icon={<Icon.Files size={14} />}
         label={win.fileName || 'Untitled'}
@@ -113,6 +126,7 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
           win.filePath && { id: 'save', label: saving ? 'Saving…' : 'Save', title: canSave ? 'Save file' : 'Save stays off until the file loads', disabled: saving || !canSave, onSelect: () => { if (canSave && !saving) saveFile(); } },
         ]}
         menu={[
+          !win.isGithub && !offBoard && { id: 'writers', label: writersOn ? 'Hide who typed what' : 'Show who typed what', onSelect: () => setShowWriters(!writersOn) },
           !win.isGithub && { id: 'source', label: sourceView ? 'Show rendered markdown' : 'Show raw source', onSelect: () => onUpdate({ sourceView: !sourceView }) },
           { id: 'graph', label: showGraph ? 'Hide note graph' : 'Show note graph', onSelect: () => setShowGraph(!showGraph) },
           { id: 'calendar', label: 'Schedule a review', onSelect: () => {
@@ -130,7 +144,9 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
         ]}
       />
       <FileLoadError message={loadError} onRetry={retryLoad} />
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: showComments ? '1fr 200px' : '1fr', overflow: 'hidden' }}>
+      <OffBoardNote show={offBoard && !loadError} />
+      <SaveNote note={saveNote} onClose={closeSaveNote} />
+      <div className="doc-main" data-comments={showComments ? 'true' : undefined}>
         {showGraph ? (
           <NoteGraph
             current={{ name: win.fileName, path: win.filePath }}
@@ -139,28 +155,18 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
             onNodeClick={(node) => onSpawn?.('doc', { fileName: node.name, filePath: node.path, isGithub: win.isGithub, githubRepo: win.githubRepo })}
           />
         ) : (
-          <div ref={bodyRef} onMouseUp={isEditing ? undefined : onBodyMouseUp} data-doc-body
-            style={{
-              overflowY: 'auto',
-              padding: win.maximized ? '40px 10%' : '18px 24px 32px',
-              fontFamily: isEditing ? 'var(--font-mono)' : 'var(--font-sans)',
-              fontSize: win.maximized ? 'var(--text-lg)' : 'var(--text-md)',
-              lineHeight: win.maximized ? 1.8 : 1.62,
-              color: 'var(--ink)',
-              whiteSpace: 'pre-wrap',
-              cursor: isEditing ? 'auto' : 'text',
-              userSelect: 'text',
-              WebkitUserSelect: 'text',
-              maxWidth: win.maximized ? 900 : 'none',
-              margin: win.maximized ? '0 auto' : '0'
-            }}>
+          // The words sit on a raised page, and the page on a sunken desk.
+          // A click on the desk beside the page counts as a click on the page.
+          <div className="hb-well doc-desk" data-wide={win.maximized ? 'true' : undefined} onMouseUp={isEditing ? undefined : onBodyMouseUp}>
+          <div ref={bodyRef} data-doc-body className="hb-panel doc-page" data-editing={isEditing ? 'true' : undefined} data-wide={win.maximized ? 'true' : undefined}>
             {isEditing ? (
               <>
                 {win.typingActor && !win.typingActor.shared && (
-                  <div style={{ marginBottom: 8, padding: '6px 10px', borderRadius: 'var(--radius-lg)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>
+                  <div className="doc-typing">
                     {win.typingActor.label} — read-only while they type, so your saves never collide.
                   </div>
                 )}
+                <div className="doc-edit">
                 <textarea
                   autoFocus={isActive}
                   placeholder={loadError ? '' : 'Start typing…'}
@@ -169,6 +175,8 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
                   value={realContent}
                   readOnly={Boolean(loadError) || Boolean(win.typingActor && !win.typingActor.shared)}
                   onChange={(e) => {
+                    // A file only this computer's owner may read keeps its words on this screen.
+                    if (offBoard) return setRealContent(e.target.value);
                     const next = mergeWithLatest(win.id, 'text', realContent, e.target.value, e.target.selectionEnd);
                     setRealContent(next);
                     onUpdate({ text: next });
@@ -182,11 +190,20 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
                 onMouseUp={onTextareaSelection}
                 onKeyUp={onTextareaSelection}
                 onSelect={onTextareaSelection}
-                style={{ width: '100%', height: '100%', resize: 'none', border: 'none', outline: 'none', background: 'transparent', color: 'inherit', font: 'inherit' }}
+                className="doc-editor"
               />
+                <TeammateCarets boxRef={textareaRef} carets={teammateCarets} text={realContent} />
+                </div>
               </>
             ) : !text.trim() ? (
-              !loadError && <div style={{ color: 'var(--ink-faint)' }}>Click anywhere to start writing</div>
+              !loadError && (
+                <div className="hb-empty doc-blank">
+                  <div className="hb-empty-icon"><Icon.Edit size={20} /></div>
+                  <div className="hb-empty-title">Click anywhere to start writing</div>
+                </div>
+              )
+            ) : writersOn ? (
+              <WhoTypedWhat windowId={win.id} />
             ) : sourceView ? (
               <CodeBlock code={text} lang={sourceLang} onCopyCode={copySource} />
             ) : (
@@ -194,12 +211,18 @@ export function DocWindow({ win, onUpdate, onSpawn, onSelect, wins, onAssign, wo
               renderMarkdown(text)
             )}
           </div>
+          </div>
         )}
         {showComments && (
-          <div data-doc-comments style={{ borderLeft: '1px dashed var(--hairline)', background: 'var(--surface-2)', overflowY: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div data-doc-comments className="hb-bar doc-rail">
             <BacklinksBox win={win} backlinks={backlinks} capped={backlinksCapped} checked={backlinksChecked} onSpawn={onSpawn} />
-            <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', padding: '0 6px 4px' }}>Comments</div>
-            {annotations.length === 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', padding: 6 }}>select words<br/>to add a comment</div>}
+            <div className="doc-label">Comments</div>
+            {annotations.length === 0 && (
+              <div className="hb-empty doc-rail-empty">
+                <div className="hb-empty-icon"><Icon.Chat size={18} /></div>
+                <div className="hb-empty-text">select words<br/>to add a comment</div>
+              </div>
+            )}
             {placedNotes.map(a => <AnnotationCard key={a.id} ann={a} isActive={activeAnnId === a.id} onClick={() => setActiveAnnId(a.id)} onRemove={() => onUpdate({ annotations: annotations.filter(x => x.id !== a.id) })} />)}
             <RelatedContext workspaceId={workspaceId} query={win.fileName} />
           </div>

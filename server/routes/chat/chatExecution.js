@@ -7,14 +7,21 @@ import { heldBackReplyText, withReasoningContentFallback, reportEmptyModelRespon
 import { processAgentMarkers } from './markers.js';
 import { toolCallOk } from './toolOutcome.js';
 import { detectUnexecutedClaims } from './claimTripwire.js';
+import { createClaimRetry } from './decisionGate.js';
 import { runVulnerabilityTripwire, detectVulnerabilities } from './vulnerabilityTripwire.js';
 import { recordTraceRound } from '../../operational-intelligence/traces.js';
 import { createChatToolSession } from './toolSession.js';
 import { noteFailure } from './chatLog.js';
 import { runToolCalls } from './toolRound.js';
 import { callChatModelRound, chatModelAccessContext, forwardDeltas, modelTokens, throwIfChatAborted } from './modelRound.js';
+import { outsideOfferedTools, runWithOfferedTools } from '../../tools/rbac/offeredTools.js';
 
-export async function runChatLoop({
+// The tools this run offered are what executeTool will allow, for every agent.
+export function runChatLoop(opts) {
+  return runWithOfferedTools(opts.toolsForCaller, () => chatLoop(opts));
+}
+
+async function chatLoop({
   agentId,
   windowId,
   workspaceId = 'default', authorizationWorkspaceId = null,
@@ -41,6 +48,8 @@ export async function runChatLoop({
   let modelAccepted = false;
   const acceptModel = () => { if (!modelAccepted) { modelAccepted = true; onModelAccepted?.(); } };
   if (toolSession.prompt) chatMessages.splice(1, 0, { role: 'system', content: toolSession.prompt });
+  // A reply that claims an action with no tool run gets one hidden second try.
+  const claimRetry = createClaimRetry({ chatMessages, sendEvent, agentId, maxRounds: MAX_CHAT_MODEL_ROUNDS });
 
   for (;;) {
     throwIfChatAborted(signal);
@@ -65,7 +74,7 @@ export async function runChatLoop({
     }
 
     const modelStartedAt = Date.now();
-    const data = await callChatModelRound({
+    const data = await claimRetry.guard(callChatModelRound({
       accessContext,
       activeTools,
       chatMessages,
@@ -78,7 +87,7 @@ export async function runChatLoop({
       userId,
       workspaceId, agentId, windowId,
       onDelta: forwardDeltas(round, sendEvent, acceptModel),
-    });
+    }), signal);
     acceptModel();
     const modelMs = Date.now() - modelStartedAt;
     timings.model_ms += modelMs;
@@ -130,8 +139,10 @@ export async function runChatLoop({
       continue;
     }
     if (!finalText) finalText = (toolActions.length ? '' : heldBackReplyText(choice)) || summarizeToolActions(toolActions);
+    if (claimRetry.check({ text: finalText, toolActions, round, toolsOn: !synthesisRequested })) continue;
     break;
   }
+  claimRetry.finish(toolActions);
 
   const markerResult = await processAgentMarkers(agentId, finalText,
     (aId, name, args) => runTool(aId, name, args, toolContext), sendEvent);
@@ -158,7 +169,8 @@ export async function runChatLoop({
   }
 
   // Embedded Validation Pipeline: Real-time vulnerability scanning
-  const tripwireResult = await runVulnerabilityTripwire(agentId, finalText, userId);
+  // The scan is the server's own check, not a tool the model named.
+  const tripwireResult = await outsideOfferedTools(() => runVulnerabilityTripwire(agentId, finalText, userId));
   finalText = tripwireResult.finalText;
   if (tripwireResult.issues.length > 0) {
     sendEvent({ type: 'status', status: 'security_warning', detail: { count: tripwireResult.issues.length } });

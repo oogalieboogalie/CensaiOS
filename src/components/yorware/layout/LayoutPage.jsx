@@ -3,10 +3,21 @@ import React from 'react';
 import { MASTER } from '../../../lib/yorware/layoutModel.js';
 import { flowDocument, pageItems } from '../../../lib/yorware/layoutPlan.js';
 import { LayoutItem } from './LayoutItem.jsx';
+import { LayoutStoryHere } from './LayoutStoryText.jsx';
 import { useLayoutPointer } from './useLayoutPointer.js';
 
 const CORNERS = ['nw', 'ne', 'sw', 'se'];
 const hasFiles = (e) => Array.from(e.dataTransfer?.types || []).includes('Files');
+
+// One name-tag spot per story on this page: its first frame here.
+function firstOfEachStory(items) {
+  const seen = new Set();
+  return items.filter(({ master, frame }) => {
+    if (master || frame.type !== 'text' || !frame.story || seen.has(frame.story)) return false;
+    seen.add(frame.story);
+    return true;
+  });
+}
 
 /**
  * The page you're working on, drawn in page points and scaled to the window:
@@ -14,7 +25,7 @@ const hasFiles = (e) => Array.from(e.dataTransfer?.types || []).includes('Files'
  * page's own frames, and the selection with its corner handles. A red plus
  * marks a text frame whose story doesn't fit yet.
  */
-export function LayoutPage({ p, scale, onEditText, onPickPicture }) {
+export function LayoutPage({ p, scale, onEditText, onPickPicture, windowId }) {
   const svgRef = React.useRef(null);
   const ptr = useLayoutPointer(p, svgRef, scale, { onEditText, onPickPicture });
   const { pageId, selected } = p;
@@ -56,6 +67,9 @@ export function LayoutPage({ p, scale, onEditText, onPickPicture }) {
           <rect x={f.x + f.w - 5 * u} y={f.y + f.h - 5 * u} width={10 * u} height={10 * u} strokeWidth={u} />
           <path d={`M${f.x + f.w - 3 * u} ${f.y + f.h}h${6 * u}M${f.x + f.w} ${f.y + f.h - 3 * u}v${6 * u}`} strokeWidth={1.4 * u} />
         </g>
+      ))}
+      {windowId && firstOfEachStory(items).map(({ id, frame }) => (
+        <LayoutStoryHere key={`h${id}`} windowId={windowId} frame={frame} u={u} />
       ))}
       {ptr.guides.map((g, i) => (g.axis === 'x'
         ? <line key={i} x1={g.at} x2={g.at} y1={0} y2={doc.h} className="hb-yl-snap" strokeWidth={u} />

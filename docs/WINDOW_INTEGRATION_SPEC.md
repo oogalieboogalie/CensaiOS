@@ -150,8 +150,14 @@ the *only* hand-edit needed to add a window. Everything else is derived:
 - **The React component** is auto-wired by `src/components/windows/windowRegistry.js` via
   `import.meta.glob` — name the file `src/components/<Name>Window.jsx` (or a folder window) and the
   manifest loop maps it. Do **not** hand-import components.
-- **The launcher tile** on the empty canvas is rendered from `LAUNCHER_MANIFESTS` (the manifest's
-  `launcher` blocks). Do **not** hardcode tiles in `CanvasEmptyState.jsx`.
+- **The empty board's starting buttons** are the three windows listed in `LAUNCHPAD_STARTS`
+  (`src/lib/launchpadStarts.js`, which also names them). `CanvasLaunchpad.jsx` draws each with the
+  icon and hover hint of its manifest `launcher` block (`show: true`, via `LAUNCHER_MANIFESTS`);
+  Chat with Censai and Find leads open their window with `launcher.props`, and Browse modules opens
+  Add (Ctrl+K). Any other `launcher` block adds no button: its icon stands in when the window header
+  has no `header.icon` and when the window's Add row has no cover picture, and its hint shows in Add
+  when `moduleMenu` has none, once the window is listed there. Do **not** hardcode buttons in
+  `CanvasLaunchpad.jsx` or `CanvasEmptyState.jsx`.
 
 `npm run window:validate` **fails** if any of these are hand-wired, so the contract can't drift.
 
@@ -176,8 +182,8 @@ the *only* hand-edit needed to add a window. Everything else is derived:
   artifactTypes: [],                 // Artifact Graph node types emitted/read by this module
   // Modules dropdown: keep new/incomplete work dark until its real path is proven
   moduleMenu: { show: false, status: 'prototype' },
-  // launcher tile (omit to keep the window out of the empty-state launcher):
-  launcher: { show: true, order: 140, icon: 'Tools', label: 'My Window', hint: 'what it does' },
+  // fallback icon (header, Add), hint in Add, and the starting button if LAUNCHPAD_STARTS lists this kind:
+  launcher: { show: true, order: 140, icon: 'Tools', hint: 'what it does' },
   integration: { /* provider block — see above */ },
   // window header (spec 2): title, icon and mode only. Falls back to label
   // and launcher.icon. mode: 'strip' | 'ghost' | 'bare' (default: theme).
@@ -247,12 +253,12 @@ persisted window.
 2. Create `src/components/<Name>Window.jsx` (scaffolded for you by `window:new`).
 3. Add an `integration` block (and `type: 'integration'`) when the window connects to a provider.
 4. Keep new or incomplete work dark with `moduleMenu: { show: false, status: 'prototype' }`.
-5. Add a `launcher` block only for an intentional empty-canvas starting point.
+5. Add a `launcher` block for a fallback icon (window header, Add rows without a cover) and the hint in Add; list the window in `LAUNCHPAD_STARTS` only if it should be one of the empty board's three starting buttons.
 6. Run `npm run window:validate`.
 7. Add focused behavior coverage and graduate it to the Modules menu only after its acceptance path works.
 
 That is the whole list. There is no second registry to edit, no component import to add, and no
-launcher button to hand-write.
+starting button to hand-write.
 
 ## Architecture Review
 

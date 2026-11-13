@@ -4,10 +4,12 @@
  * GET  /api/cli-agents/grok-signin/status   { installed, version, signedIn, login }
  * POST /api/cli-agents/grok-signin/login    start xAI's code sign-in; { url, code, lines }
  * POST /api/cli-agents/grok-signin/logout
- * POST /api/cli-agents/grok-signin/chat     { text, history?, sessionId? } -> NDJSON chat stream
+ * POST /api/cli-agents/grok-signin/chat     { text, history?, chat? } -> NDJSON chat stream
  *
  * Open to every signed-in person, each on their own Grok account in their own
- * folder: a sign-in is never shared. Mounted inside the Agent Console router,
+ * folder: a sign-in is never shared, and each person's Grok conversation in a
+ * chat is their own too (server/grokSignin/chatThreads.js), so the browser
+ * names the chat, never a conversation. Mounted inside the Agent Console router,
  * which sits behind requireLocalFilesystem, so a cloud server never runs a CLI
  * for anyone.
  * Logs: 'grok-signin' in the app log.
@@ -66,12 +68,12 @@ grokSigninRouter.post('/chat', async (req, res) => {
   const text = String(req.body?.text || '').trim();
   if (!text) return res.status(400).json({ error: 'Type a message first.', code: 'GROK_EMPTY' });
   const history = Array.isArray(req.body?.history) ? req.body.history.slice(-12) : [];
-  const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId : null;
+  const chat = typeof req.body?.chat === 'string' ? req.body.chat : null;
   const controller = new AbortController();
   res.on('close', () => { if (!res.writableFinished) controller.abort(); });
   const emit = (event) => { if (!res.writableEnded) res.write(`${JSON.stringify(event)}\n`); };
   try {
-    const run = runGrokChat({ userId, text, history, sessionId, emit, signal: controller.signal });
+    const run = runGrokChat({ userId, text, history, chat, emit, signal: controller.signal });
     res.setHeader('Content-Type', 'application/x-ndjson');
     res.setHeader('Cache-Control', 'no-cache');
     res.flushHeaders?.();

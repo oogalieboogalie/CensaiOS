@@ -12,12 +12,16 @@ describe('HTTP deployment boundary', () => {
       expect(isAllowedBrowserOrigin('http://localhost:5173', options)).toBe(false);
       expect(isAllowedBrowserOrigin('https://attacker.example', options)).toBe(false);
       expect(isAllowedBrowserOrigin('tauri://localhost', options)).toBe(false);
+      expect(isAllowedBrowserOrigin('http://tauri.localhost', options)).toBe(false);
     }
   });
 
-  test('local desktop keeps loopback and Tauri development origins', () => {
+  test('local desktop accepts Tauri and the configured origin, not every localhost port', () => {
     const options = { appOrigin: 'http://localhost:5173', runtimeMode: 'local_desktop' };
-    expect(isAllowedBrowserOrigin('http://127.0.0.1:3002', options)).toBe(true);
+    expect(isAllowedBrowserOrigin('http://localhost:5173', options)).toBe(true);
+    expect(isAllowedBrowserOrigin('http://127.0.0.1:3002', options)).toBe(false);
+    expect(isAllowedBrowserOrigin('http://localhost:49999', options)).toBe(false);
+    expect(isAllowedBrowserOrigin('http://tauri.localhost', options)).toBe(true);
     expect(isAllowedBrowserOrigin('tauri://localhost', options)).toBe(true);
     expect(isAllowedBrowserOrigin('https://attacker.example', options)).toBe(false);
   });
@@ -40,6 +44,19 @@ describe('HTTP deployment boundary', () => {
     }
   });
 
+  test('an oddly written APP_ORIGIN still allows the origin a browser sends', () => {
+    const appOrigin = 'http://[0:0:0:0:0:0:0:1]:3002';
+    const options = { appOrigin, runtimeMode: 'private_server', extraOrigins: [] };
+    expect(isAllowedBrowserOrigin('http://[::1]:3002', options)).toBe(true);
+    expect(isAllowedBrowserOrigin('http://evil.example', options)).toBe(false);
+    expect(isAllowedBrowserOrigin(appOrigin, options)).toBe(false);
+    expect(isAllowedBrowserOrigin('http://localhost:3002', {
+      appOrigin: 'http://user:pass@localhost:3002',
+      runtimeMode: 'private_server',
+      extraOrigins: [],
+    })).toBe(false);
+  });
+
   test('non-browser requests remain available to native clients and probes', () => {
     expect(isAllowedBrowserOrigin(undefined, {
       appOrigin: 'https://beta.censai.app',
@@ -55,5 +72,12 @@ describe('HTTP deployment boundary', () => {
       .toThrow('integer from 0 to 10');
     expect(() => getProxyTrustSetting({ CENSAI_TRUST_PROXY_HOPS: '11' }))
       .toThrow('integer from 0 to 10');
+  });
+
+  test('Cloud Run trusts its one front-end hop unless the owner says otherwise', () => {
+    expect(getProxyTrustSetting({ K_SERVICE: 'censai' })).toBe(1);
+    expect(getProxyTrustSetting({ K_SERVICE: 'censai', CENSAI_TRUST_PROXY_HOPS: '0' })).toBe(false);
+    expect(getProxyTrustSetting({ K_SERVICE: 'censai', CENSAI_TRUST_PROXY_HOPS: '2' })).toBe(2);
+    expect(getProxyTrustSetting({ K_SERVICE: '' })).toBe(false);
   });
 });

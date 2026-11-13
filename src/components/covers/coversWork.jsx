@@ -217,4 +217,13 @@ export const WORK_COVERS = {
       <path d="M10 16.5 H20 M24 16.5 H34 M24 12 H34" {...F} />
     </>
   ),
+  // A short stack of asks. The one on top is waiting for a decision.
+  confirmations: (
+    <>
+      <rect x="8" y="14.5" width="24" height="5" rx="1" {...F} />
+      <rect x="10" y="9.5" width="24" height="5" rx="1" {...S} />
+      <rect x="12" y="4.5" width="24" height="5.5" rx="1" {...A} />
+      <path d="M15.5 7.3 H28" {...H} />
+    </>
+  ),
 };

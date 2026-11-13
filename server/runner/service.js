@@ -40,15 +40,20 @@ export function composeCheck(run) {
 const MAX_BUFFER = 50 * 1024 * 1024;
 const MAX_TIMEOUT_MS = 30 * 60_000;
 const DEFAULT_TIMEOUT_MS = 15 * 60_000;
-export function childOptions(options, dockerOnly) {
+export function childOptions(options, dockerOnly, command) {
   const asked = Number(options?.timeout);
   const timeout = Number.isFinite(asked) && asked > 0 ? Math.min(Math.max(asked, 1000), MAX_TIMEOUT_MS) : DEFAULT_TIMEOUT_MS;
   const askedBuffer = Number(options?.maxBuffer);
   const maxBuffer = Number.isFinite(askedBuffer) && askedBuffer > 0 ? Math.min(askedBuffer, MAX_BUFFER) : MAX_BUFFER;
   if (dockerOnly) return { timeout, maxBuffer, shell: false, windowsHide: true };
   const { cwd, windowsHide, encoding } = options || {};
+  // cmd.exe splits on spaces, so "C:\Program Files\nodejs\node.exe" never starts.
+  // A .exe is spawned directly. A .cmd still needs the shell.
+  const shell = /\.exe$/i.test(String(command || ''))
+    ? false
+    : process.platform === 'win32' || Boolean(options?.shell);
   // A missing encoding would hand back raw bytes that turn into JSON junk.
-  return { cwd, windowsHide, encoding: encoding || 'utf8', timeout, maxBuffer, shell: process.platform === 'win32' || Boolean(options?.shell) };
+  return { cwd, windowsHide, encoding: encoding || 'utf8', timeout, maxBuffer, shell };
 }
 
 // Asked at start: the runner runs as a normal user and reaches Docker only
@@ -106,7 +111,7 @@ export function createRunnerApp({
   log.info('runner command started', { program: programName(command) });
 
   try {
-    const { stdout, stderr } = await execFileAsync(command, args, childOptions(options, dockerOnly));
+    const { stdout, stderr } = await execFileAsync(command, args, childOptions(options, dockerOnly, command));
     res.json({ stdout, stderr, code: 0 });
   } catch (err) {
     log.warn('runner command failed', { program: programName(command), code: err.code ?? err.status ?? 1 });

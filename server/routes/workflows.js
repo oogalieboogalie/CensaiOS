@@ -10,10 +10,12 @@ import { answerReview, stopWorkflowRun } from '../workflows/control.js';
 import { readWorkflowWindow } from '../workflows/board.js';
 import { currentWindowIds } from '../workflows/triggers.js';
 import { getRun, getTrigger, listRuns, saveTrigger } from '../workflows/store.js';
-import { TRIGGER_MODES } from '../../src/lib/workflow/graph.js';
+import { TRIGGER_MODES, graphCanonical, graphHash, workflowGraph } from '../../src/lib/workflow/graph.js';
 
 const EDITORS = ['owner', 'admin', 'member'];
 const KIND_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+const SYNC_TRIES = 8;
+const SYNC_WAIT_MS = 250;
 
 function bad(message, statusCode = 400) {
   return Object.assign(new Error(message), { statusCode });
@@ -33,6 +35,33 @@ export function triggerInput(body = {}) {
     return { mode, windowKind: kind };
   }
   return { mode };
+}
+
+/** What the window is told about a workflow's own start. */
+export function triggerJson(row) {
+  if (!row) return { mode: 'manual' };
+  return {
+    mode: row.mode,
+    everyMinutes: row.every_minutes,
+    windowKind: row.window_kind,
+    armedBy: row.armed_by,
+    nextRunAt: row.next_run_at,
+    lastRunAt: row.last_run_at,
+    graphHash: row.graph_hash || null,
+    disarmed: Boolean(row.disarmed_reason),
+  };
+}
+
+// The board may still be catching the edit the person just made. Wait, then
+// hash the board's copy — never the copy in the request.
+async function windowForArm(readWindow, workspaceId, windowId, expectGraph) {
+  let win = await readWindow(workspaceId, windowId);
+  const want = expectGraph && typeof expectGraph === 'object' ? graphCanonical(expectGraph) : null;
+  for (let tries = 0; win && want && tries < SYNC_TRIES && graphCanonical(workflowGraph(win)) !== want; tries += 1) {
+    await new Promise((resolve) => { setTimeout(resolve, SYNC_WAIT_MS); });
+    win = await readWindow(workspaceId, windowId);
+  }
+  return win;
 }
 
 export function createWorkflowsRouter({
@@ -77,19 +106,22 @@ export function createWorkflowsRouter({
 
   router.get(`${base}/trigger`, handle(null, async (req, workspace) => {
     const row = await getTrigger(db, workspace.id, req.params.windowId);
-    return { trigger: row ? { mode: row.mode, everyMinutes: row.every_minutes, windowKind: row.window_kind, armedBy: row.armed_by, nextRunAt: row.next_run_at, lastRunAt: row.last_run_at } : { mode: 'manual' } };
+    return { trigger: triggerJson(row) };
   }));
 
   router.put(`${base}/trigger`, handle(EDITORS, async (req, workspace) => {
     const input = triggerInput(req.body);
-    if (input.mode !== 'manual' && !(await readWindow(workspace.id, req.params.windowId))) {
-      throw bad('That workflow is not on this board.', 404);
+    let hash = null;
+    if (input.mode !== 'manual') {
+      const win = await windowForArm(readWindow, workspace.id, req.params.windowId, req.body?.graph);
+      if (!win) throw bad('That workflow is not on this board.', 404);
+      hash = await graphHash(workflowGraph(win));
     }
     const seenWindowIds = input.mode === 'board' ? await seenIds(workspace.id, req.params.windowId, input.windowKind) : [];
     const row = await saveTrigger(db, {
-      workspaceId: workspace.id, windowId: req.params.windowId, armedBy: req.session.userId, seenWindowIds, ...input,
+      workspaceId: workspace.id, windowId: req.params.windowId, armedBy: req.session.userId, seenWindowIds, graphHash: hash, ...input,
     });
-    return { ok: true, trigger: row ? { mode: row.mode, everyMinutes: row.every_minutes, windowKind: row.window_kind, armedBy: row.armed_by, nextRunAt: row.next_run_at } : { mode: 'manual' } };
+    return { ok: true, trigger: triggerJson(row) };
   }));
 
   router.get(`${base}/runs`, handle(null, async (req, workspace) => ({

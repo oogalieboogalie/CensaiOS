@@ -43,6 +43,16 @@ describe('board invites', () => {
     expect(db.query).not.toHaveBeenCalled();
   });
 
+  test('someone already on the board gets no new Inbox invite', async () => {
+    inviteRegisteredWorkspaceMember.mockResolvedValue({
+      workspace: { id: 'board-a' }, member: { id: 9, name: 'Sam Example', email: 'sam@example.com' }, alreadyMember: true,
+    });
+    const db = { query: jest.fn().mockResolvedValue({ rowCount: 1, rows: [] }) };
+    const result = await store.inviteToBoard(db, { workspaceId: 'board-a', userId: 7, email: 'sam@example.com' });
+    expect(result).toMatchObject({ kind: 'account', alreadyMember: true, notified: false });
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
   test('no account yet makes a one-time join link; only its hash is stored', async () => {
     inviteRegisteredWorkspaceMember.mockRejectedValue(notRegistered());
     const db = { query: jest.fn().mockResolvedValue({ rowCount: 1, rows: [] }) };

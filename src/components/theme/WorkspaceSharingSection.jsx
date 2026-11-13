@@ -4,6 +4,7 @@ import { api } from '../../lib/api.js';
 import { navigateToWorkspace } from '../../lib/workspace/shareLink.js';
 import { GuestLinkManager } from '../guest/GuestLinkManager.jsx';
 import { InviteToBoard } from './InviteToBoard.jsx';
+import { OpenOnMyDevices } from './OpenOnMyDevices.jsx';
 import { ThemePanelCard } from './ThemeControls.jsx';
 
 export function WorkspaceSharingSection({ navigate = navigateToWorkspace }) {
@@ -71,6 +72,8 @@ export function WorkspaceSharingSection({ navigate = navigateToWorkspace }) {
           onMember={(member) => setMembers((current) => [...current.filter((m) => m.id !== member.id), { ...member, role: 'member' }])}
         />
       )}
+
+      {canManage && <OpenOnMyDevices workspaceId={workspaceId} />}
 
       {canManage && <GuestLinkManager workspaceId={workspaceId} />}
 

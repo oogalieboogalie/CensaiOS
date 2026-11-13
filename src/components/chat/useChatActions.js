@@ -2,6 +2,7 @@ import React from 'react';
 import { api } from '../../lib/api.js';
 import { updateAgent } from '../../lib/agentStore.js';
 import { branchChat, sendToCanvas } from '../../lib/chat/sendToCanvas.js';
+import { reportAgentChange } from '../../lib/collaboration/liveText.js';
 
 /**
  * The spec 3 message actions for a chat window: retry, branch, send to
@@ -31,6 +32,8 @@ export function useChatActions({ win, agent, msgs, setMsgs, send, sending }) {
     try {
       await api.saveAgent(updated);
       updateAgent(updated);
+      // Everyone else on the board fetches the agent again, so their open copies show the new model.
+      reportAgentChange(agent.id);
       setModelStatus(null);
     } catch (err) {
       setModelStatus(`Could not switch: ${err?.message || 'save failed'}`);

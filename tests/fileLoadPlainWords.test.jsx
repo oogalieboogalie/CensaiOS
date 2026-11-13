@@ -29,6 +29,7 @@ describe('the words for a file that will not open', () => {
     [403, 'outside', FILE_PROBLEMS.outside],
     [403, 'denied', FILE_PROBLEMS.denied],
     [403, 'secret', FILE_PROBLEMS.secret],
+    [403, 'ownerOnly', FILE_PROBLEMS.ownerOnly],
     [403, 'filesOff', FILE_PROBLEMS.filesOff],
     [400, 'folder', FILE_PROBLEMS.folder],
     [403, undefined, 'You may not open this file here.'],
@@ -124,6 +125,7 @@ test('a Document from GitHub whose file is gone says the same', async () => {
 test.each([
   ['a folder opened as a Document', '/made/up/folder', 400, 'folder'],
   ["a file in censaiOS's own folder of keys", '/made/up/.homebase-state/generated-secrets.env', 403, 'secret'],
+  ["a project's file of keys, for a teammate", '/made/up/project/.env', 403, 'ownerOnly'],
 ])('%s says so, with no "Try again" that could never help', async (_what, filePath, status, reason) => {
   madeUpServer({}, { [filePath]: [status, reason] });
   renderDoc({ id: `doc-${reason}`, filePath });
@@ -216,6 +218,16 @@ test('a Code editor whose file is gone says so, takes no typing or Format, and "
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   expect(screen.getByRole('button', { name: 'Format' })).toBeEnabled();
+});
+
+test("a Code editor a teammate opens on a project's file of keys shows only plain words, no code and no Try again", async () => {
+  madeUpServer({}, { '/made/up/project/.env': [403, 'ownerOnly'] });
+  render(<CodeEditorWindow win={{ id: 'code-owner-only', fileName: '.env', filePath: '/made/up/project/.env', language: 'plaintext' }}
+    onUpdate={jest.fn()} />);
+  expect(await screen.findByRole('alert')).toHaveTextContent(FILE_PROBLEMS.ownerOnly);
+  expect(document.querySelector('textarea').value).toBe('');
+  expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 });
 
 test('a Code editor opened on a file that is gone shows no sample code, as if it were the file', async () => {

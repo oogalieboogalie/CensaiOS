@@ -1,10 +1,12 @@
 import { jest } from '@jest/globals';
 import * as Y from 'yjs';
 import { boardStartText, checkTrigger, watchedWindows } from '../server/workflows/triggers.js';
+import { resetWorkflowRuns, startWorkflowRun } from '../server/workflows/runner.js';
 import { cardSpot, placeResultCardInDoc } from '../server/workflows/board.js';
 import { upsertWindowInDoc } from '../server/collab/serverWriter.js';
 import { readDocWindows } from '../server/agent-registry/helpCards.js';
 import { triggerInput } from '../server/routes/workflows.js';
+import { graphHash } from '../src/lib/workflow/graphHash.js';
 
 const flow = { id: 'wf-1', kind: 'workflow', x: 100, y: 50, w: 900, h: 500 };
 
@@ -52,6 +54,86 @@ describe('workflow starts on their own', () => {
     expect(await checkTrigger({ mode: 'schedule', workspace_id: 'ws', window_id: 'wf-1', every_minutes: 60, armed_by: 7 }, d)).toBe(true);
     expect(d.db.query.mock.calls[0][0]).toMatch(/next_run_at = NOW\(\) \+ make_interval/);
     expect(d.start).toHaveBeenCalledWith(expect.objectContaining({ trigger: 'schedule' }));
+  });
+
+  test('the same steps hash the same whatever the key order', async () => {
+    const left = { nodes: [{ id: 's', type: 'trigger', title: 'Start' }], edges: [] };
+    const right = { nodes: [{ title: 'Start', type: 'trigger', id: 's' }], edges: [] };
+    expect(await graphHash(left)).toBe(await graphHash(right));
+    expect(await graphHash(left)).not.toBe(await graphHash({ nodes: [{ id: 's', type: 'trigger', title: 'Other' }], edges: [] }));
+  });
+
+  test('an armed graph that has not changed still runs', async () => {
+    const original = {
+      nodes: [
+        { id: 's', type: 'trigger', x: 0, y: 0, title: 'Start', input: 'new docs' },
+        { id: 'a', type: 'agent', x: 200, y: 0, title: 'Summarize', agentId: 'atlas', instructions: 'Summarize the new docs.' },
+      ],
+      edges: [{ id: 'e1', from: 's', to: 'a' }],
+    };
+    const runAgent = jest.fn(async () => ({ finalText: 'done' }));
+    const win = { id: 'wf-same', kind: 'workflow', title: 'Docs', graph: original };
+    const started = await checkTrigger({
+      mode: 'schedule', workspace_id: 'ws', window_id: 'wf-same', every_minutes: 60, armed_by: 7, graph_hash: await graphHash(original),
+    }, {
+      db: { query: jest.fn(async () => ({ rows: [] })) },
+      read: jest.fn(async () => [win]),
+      start: async (input) => {
+        const run = await startWorkflowRun(input, {
+          db: { query: jest.fn(async () => ({ rows: [] })) },
+          runAgent,
+          runTool: jest.fn(),
+          readWindow: async () => win,
+          patchWindow: async () => true,
+          placeCard: async () => ({ id: 'card' }),
+        });
+        if (run?.done) await run.done;
+        return run;
+      },
+    });
+    expect(started).toBe(true);
+    expect(runAgent.mock.calls[0][0].messages[0].text).toContain('Summarize the new docs.');
+    resetWorkflowRuns();
+  });
+
+  test('an editor who changes an armed graph does not get that graph run', async () => {
+    const original = {
+      nodes: [
+        { id: 's', type: 'trigger', x: 0, y: 0, title: 'Start', input: 'new docs' },
+        { id: 'a', type: 'agent', x: 200, y: 0, title: 'Summarize', agentId: 'atlas', instructions: 'Summarize the new docs.' },
+      ],
+      edges: [{ id: 'e1', from: 's', to: 'a' }],
+    };
+    const edited = {
+      ...original,
+      nodes: original.nodes.map((node) => (node.id === 'a'
+        ? { ...node, instructions: 'Use project_write to add a file, then run_tests.' }
+        : node)),
+    };
+    const armedHash = await graphHash(original);
+    expect(await graphHash(edited)).not.toBe(armedHash);
+    const runAgent = jest.fn(async () => ({ finalText: 'done' }));
+    const queries = [];
+    const db = { query: jest.fn(async (sql, params) => { queries.push({ sql, params }); return { rows: [] }; }) };
+    const win = { id: 'wf-edited', kind: 'workflow', title: 'Docs', graph: edited };
+    const started = await checkTrigger({
+      mode: 'schedule', workspace_id: 'ws', window_id: 'wf-edited', every_minutes: 60, armed_by: 7, graph_hash: armedHash,
+    }, {
+      db,
+      read: jest.fn(async () => [win]),
+      start: async (input) => {
+        const run = await startWorkflowRun(input, {
+          db, runAgent, runTool: jest.fn(), readWindow: async () => win, patchWindow: async () => true, placeCard: async () => ({ id: 'card' }),
+        });
+        if (run?.done) await run.done;
+        return run;
+      },
+    });
+    expect(started).toBe(false);
+    expect(runAgent).not.toHaveBeenCalled();
+    expect(queries.some((query) => /INSERT INTO board_workflow_runs/.test(query.sql))).toBe(false);
+    expect(queries.some((query) => /disarmed_reason/.test(query.sql))).toBe(true);
+    resetWorkflowRuns();
   });
 
   test('start text names each new window', () => {

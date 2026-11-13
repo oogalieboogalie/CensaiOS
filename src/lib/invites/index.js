@@ -1,11 +1,12 @@
 // "Invite to this board": the client side of server/routes/boardInvites.js.
 
-import { addressesFor, getOpenAnywhere } from '../webOs.js';
+import { getOpenAnywhere } from '../webOs.js';
+import { readShareBase } from '../workspace/shareBase.js';
 import { navigateToWorkspace } from '../workspace/shareLink.js';
+import { chooseInviteAddress } from './inviteAddress.js';
 
 const INVITE_PARAM = 'invite';
 const CODE_PATTERN = /^[A-Za-z0-9_-]{32}$/;
-const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 async function call(path, { method = 'GET', body } = {}) {
   const res = await fetch(path, {
@@ -28,6 +29,12 @@ export const inviteToBoard = (workspaceId, email = '') => call(
   `/api/workspaces/${encodeURIComponent(workspaceId)}/invites`,
   { method: 'POST', body: { email: String(email || '').trim() } },
 );
+/** One tap: invite someone you already share a board with, by their id. */
+export const invitePerson = (workspaceId, personId) => call(
+  `/api/workspaces/${encodeURIComponent(workspaceId)}/invites`,
+  { method: 'POST', body: { personId } },
+);
+export const knownPeople = () => call('/api/invites/people').then((d) => d.people || []);
 export const myInvites = () => call('/api/invites/mine');
 export const dismissInvite = (id) => call(`/api/invites/${encodeURIComponent(id)}/dismiss`, { method: 'POST', body: {} });
 export const previewInvite = (code) => call(`/api/invites/preview?code=${encodeURIComponent(code)}`);
@@ -58,18 +65,16 @@ export function inviteLink(address, code) {
 }
 
 /**
- * The address other devices type to reach this censaiOS. A page opened by
- * its network address already is one. On this computer's own localhost it
- * is the Open anywhere address, which only works while that switch is on.
+ * The address other people open this board at. A saved board address
+ * (Share, "Links start with") wins. Otherwise a page that is already public,
+ * or the Open anywhere port when that port is listening. The desktop app's
+ * own name is never used: that port answers this computer only.
  */
-export async function addressForOthers(location = globalThis.location, readDoor = getOpenAnywhere) {
-  if (location?.hostname && !LOOPBACK.has(location.hostname)) return { address: location.origin, doorClosed: false };
-  try {
-    const door = await readDoor();
-    const [address] = addressesFor(door.hosts || [], location, door.port);
-    if (address) return { address, doorClosed: !door.open };
-  } catch {
-    // Fall through to this page's own address.
-  }
-  return { address: location?.origin || '', doorClosed: true };
+export async function addressForOthers(location = globalThis.location, readDoor = getOpenAnywhere, readBase = readShareBase) {
+  const shareBase = readBase();
+  const saved = chooseInviteAddress({ location, shareBase });
+  if (saved.address) return saved;
+  let door;
+  try { door = await readDoor(); } catch { door = null; }
+  return chooseInviteAddress({ location, door, shareBase });
 }

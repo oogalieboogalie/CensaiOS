@@ -1,4 +1,5 @@
 import React from 'react';
+import { HIDDEN_WORDS } from '../../../shared/files/fileProblems.js';
 
 const SEVERITY_LABEL = { high: 'High', medium: 'Medium', low: 'Low' };
 const STEP_TEXT = { starting: 'Starting', reviewing: 'Reading', needs_approval: 'Wants your OK', done: 'Done', failed: 'Stopped' };
@@ -67,6 +68,7 @@ function Progress({ number, state, team }) {
         </span>
       ))}
       {job.findings?.length ? <ol className="hb-gh-findings">{job.findings.map((f) => <Finding key={`${f.path}:${f.line}:${f.title}`} f={f} />)}</ol> : null}
+      {job.hiddenWords ? <p className="hb-gh-review-note" role="note" data-testid="review-hidden-words">{HIDDEN_WORDS} GitHub gets them the same way.</p> : null}
       {job.status === 'done' ? (
         job.posted ? (
           <p className="hb-gh-review-note">Posted to GitHub.{job.posted.url ? <> <a href={job.posted.url} target="_blank" rel="noreferrer">Open it</a></> : null}</p>

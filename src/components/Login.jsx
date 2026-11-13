@@ -4,6 +4,7 @@ import { api } from '../lib/api.js';
 import { changeDesktopServer, getDesktopServer } from '../lib/desktopServer.js';
 import { BrandMark, BrandWordmark } from './brand/BrandMark.jsx';
 import { PairSignIn } from './login/PairSignIn.jsx';
+import { TailnetEntry } from './login/TailnetEntry.jsx';
 import { HelpDialog, PrivacyDialog, TermsDialog } from './login/LoginDialogs.jsx';
 
 // Sign-in screen. Styles live in src/styles/login.css and use only theme
@@ -91,7 +92,7 @@ function DesktopServerNote() {
   );
 }
 
-export function Login({ onLoginSuccess, oauthConfigured, localSignIn = false, fromAnotherComputer = false }) {
+export function Login({ onLoginSuccess, oauthConfigured, localSignIn = false, fromAnotherComputer = false, emailSignIn = true }) {
   const [email, setEmail] = React.useState('');
   const [name, setName] = React.useState('');
   const [error, setError] = React.useState('');
@@ -128,7 +129,9 @@ export function Login({ onLoginSuccess, oauthConfigured, localSignIn = false, fr
         </div>
 
         {fromAnotherComputer ? (
-          <div className="hb-login-card"><PairSignIn onLoginSuccess={onLoginSuccess} /></div>
+          <div className="hb-login-card">
+            <TailnetEntry onLoginSuccess={onLoginSuccess}><PairSignIn onLoginSuccess={onLoginSuccess} /></TailnetEntry>
+          </div>
         ) : localSignIn ? (
           <div className="hb-login-card">
             {oauthConfigured && (
@@ -140,15 +143,15 @@ export function Login({ onLoginSuccess, oauthConfigured, localSignIn = false, fr
         <div className="hb-login-card">
           {/* Only real ways in: Google when this install has it set up, then email. */}
           {oauthConfigured && (
-            <>
-              <a className="hb-login-provider" href="/api/auth/google"><GoogleIcon />Continue with Google</a>
-              <button type="button" className="hb-login-provider" aria-expanded={showDevForm} data-active={showDevForm || undefined} onClick={() => setShowDevForm((v) => !v)}>
-                <MailIcon />Continue with email
-              </button>
-            </>
+            <a className="hb-login-provider" href="/api/auth/google"><GoogleIcon />Continue with Google</a>
+          )}
+          {emailSignIn && oauthConfigured && (
+            <button type="button" className="hb-login-provider" aria-expanded={showDevForm} data-active={showDevForm || undefined} onClick={() => setShowDevForm((v) => !v)}>
+              <MailIcon />Continue with email
+            </button>
           )}
 
-          {showDevForm && (
+          {emailSignIn && showDevForm && (
             <form className="hb-login-form" onSubmit={handleSubmit}>
               {oauthConfigured && <div className="hb-login-divider"><span>Email</span></div>}
               {error && <div className="hb-login-error" role="alert">{error}</div>}
@@ -165,6 +168,9 @@ export function Login({ onLoginSuccess, oauthConfigured, localSignIn = false, fr
               </button>
               <span className="hb-login-note">Signs in to this install of censaiOS.</span>
             </form>
+          )}
+          {!emailSignIn && (
+            <p className="hb-login-note">Email sign-in is turned off on this install.</p>
           )}
         </div>
         )}

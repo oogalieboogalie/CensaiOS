@@ -38,6 +38,10 @@ export default {
       id = await openLeadHound(pat.page, { x: 40, y: 40 });
       frame = windowFrame(pat.page, id);
       await shot(pat.page, 'pat-opens-leadhound');
+      // A second theme run reuses Pat, whose key the first run already saved:
+      // then the window shows "Change Tavily key" instead of the key box.
+      const change = frame.getByRole('button', { name: 'Change Tavily key' });
+      if (await change.isVisible()) await change.click();
       await frame.getByLabel('Tavily API key').fill(PAT_KEY);
       await frame.getByRole('button', { name: 'Save key' }).click();
       await frame.getByRole('button', { name: 'Change Tavily key' }).waitFor({ timeout: 10_000 });
@@ -70,6 +74,11 @@ export default {
       const title = await frame.getByLabel('Ice breaker title').inputValue().catch(() => '');
       await shot(pat.page, 'pat-sees-the-ice-breaker');
       if (!deliverable.trim()) throw new Error('the ice breaker is empty');
+      // The title and the ask are one-line boxes: the whole words must fit.
+      for (const label of ['Ice breaker title', 'Ask']) {
+        const cut = await frame.getByLabel(label, { exact: true }).evaluate((el) => el.scrollWidth > el.clientWidth + 1);
+        if (cut) throw new Error(`the ice breaker's "${label}" box cuts its words off`);
+      }
       return `7 days of outreach and the ice breaker "${title}"`;
     });
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { api } from '../../../lib/api.js';
 import { getAgentById, updateAgent } from '../../../lib/agentStore.js';
+import { reportAgentChange } from '../../../lib/collaboration/liveText.js';
 import { DEFAULT_TOOLS, defaultModelForProvider, uniqueAgentId } from './modelConfig.js';
 import { useWorkspaceStore } from '../../../lib/store.js';
 import { filterToolGroups } from '../../../lib/tools/toolSearch.js';
@@ -128,6 +129,7 @@ export function useAgentDesigner(win, onCreateAgent, onUpdate, agents, groups) {
         };
         saved = await api.updateAgentConfig(editingAgentId, payload);
         updateAgent(saved);
+        reportAgentChange(saved.id);
         onUpdate?.({ updatedAgentId: saved.id, lastUpdatedName: saved.name });
         setStatus(`${saved.name} updated successfully.`);
       } else if (agentType === 'sub') {

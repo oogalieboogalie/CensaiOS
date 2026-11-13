@@ -1,0 +1,13 @@
+/* Board Spreadsheet: a teammate typing in a cell (src/components/sheets/CellTeammates.jsx).
+   The cell gets a border in their colour, their name sits in its top-right corner. */
+.hb-sheet-cell[data-teammate="true"] { position: relative; box-shadow: inset 0 0 0 2px var(--caret-color, var(--accent)); }
+.hb-sheet-teammates {
+  position: absolute; top: 0; right: 0; z-index: 1;
+  display: flex; gap: 2px; pointer-events: none;
+}
+.hb-sheet-teammate {
+  padding: 0 5px; border-radius: 0 0 0 var(--radius-xs);
+  background: var(--caret-color, var(--accent)); color: var(--on-fill);
+  font-family: var(--font-sans); font-size: var(--text-xs); line-height: 1.4;
+  white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis;
+}

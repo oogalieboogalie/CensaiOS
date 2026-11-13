@@ -50,13 +50,16 @@ const IMAGE_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/;
 
 // Inline formatting: **bold**, *italic*, _italic_, `code`, [[wiki-link]],
 // and ![alt](src) images when the caller passes `renderImage` (spec 3 chat).
+// An _ inside a word is part of the word: MADE_UP_KEY, made_up_notes.md and
+// __init__ keep theirs, while _made-up_ on its own is still italic.
 export function renderInline(str, onCopyCode, renderImage = null) {
   if (typeof str !== 'string') return str;
   const pattern = renderImage
-    ? /(!\[[^\]]*\]\([^)\s]+\)|\*\*.*?\*\*|\*.*?\*|_.*?_|`.*?`|\[\[.*?\]\])/g
-    : /(\*\*.*?\*\*|\*.*?\*|_.*?_|`.*?`|\[\[.*?\]\])/g;
+    ? /(!\[[^\]]*\]\([^)\s]+\)|\*\*.*?\*\*|\*.*?\*|(?<![\p{L}\p{N}_])_[^\s_](?:.*?[^\s_])?_(?![\p{L}\p{N}_])|`.*?`|\[\[.*?\]\])/gu
+    : /(\*\*.*?\*\*|\*.*?\*|(?<![\p{L}\p{N}_])_[^\s_](?:.*?[^\s_])?_(?![\p{L}\p{N}_])|`.*?`|\[\[.*?\]\])/gu;
   const parts = str.split(pattern);
   return parts.map((part, j) => {
+    if (j % 2 === 0) return part; // the words between the marks, as written
     const image = renderImage && IMAGE_RE.exec(part);
     if (image) return <React.Fragment key={j}>{renderImage({ alt: image[1], src: image[2] })}</React.Fragment>;
     if (part.startsWith('**') && part.endsWith('**')) return <strong key={j} style={{ fontWeight: 600 }}>{part.slice(2, -2)}</strong>;

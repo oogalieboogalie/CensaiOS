@@ -47,7 +47,7 @@ export const opencode = {
   createParser() {
     let count = 0;
     return function parse(event, raw) {
-      if (raw) return [{ op: 'add', item: { id: `oc-raw-${count++}`, kind: 'message', role: 'assistant', text: raw } }];
+      if (raw) return [{ op: 'add', item: { id: `oc-raw-${count++}`, kind: 'message', role: 'assistant', text: raw, printed: true } }];
       if (!event || typeof event !== 'object') return [];
       const ops = [];
       if (event.sessionID) ops.push({ op: 'meta', patch: { sessionId: event.sessionID } });

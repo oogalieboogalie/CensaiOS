@@ -16,6 +16,13 @@ function imageSrcFor(win) {
   return `/api/files/image?path=${encodeURIComponent(win.filePath)}`;
 }
 
+// Where a picture with its own data came from: pasted or dropped onto the
+// board (issue 1011), or sent from a chat.
+const ORIGIN = {
+  pasted: { subtitle: 'pasted', bar: 'Pasted onto the board' },
+  dropped: { subtitle: 'dropped', bar: 'Dropped onto the board' },
+};
+
 function ImageEmpty({ title, text, tone, children }) {
   return (
     <div className="hb-empty" data-tone={tone}>
@@ -32,6 +39,7 @@ export function ImageWindow({ win, onUpdate, onSpawn }) {
   const [failed, setFailed] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
   const src = imageSrcFor(win);
+  const origin = ORIGIN[win.origin] || { subtitle: 'from chat', bar: 'Image from chat' };
 
   React.useEffect(() => {
     setFailed(false);
@@ -49,13 +57,13 @@ export function ImageWindow({ win, onUpdate, onSpawn }) {
         accent="var(--ps-teal)"
         icon={<ImageIcon size={14} />}
         label={win.fileName || win.title || 'Image'}
-        subtitle={win.src ? 'from chat' : win.isGithub ? 'github image' : 'local image'}
+        subtitle={win.src ? origin.subtitle : win.isGithub ? 'github image' : 'local image'}
         attachedAgentIds={win.attachedAgents}
         onDetach={(id) => onUpdate?.({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
       />
       <div className="hb-img-bar hb-bar">
         <span className="hb-img-path" title={win.filePath}>
-          {win.filePath || (win.src ? 'Image from chat' : 'No file')}
+          {win.filePath || (win.src ? origin.bar : 'No file')}
         </span>
         <button
           type="button"

@@ -5,6 +5,10 @@ import { WindowTitle } from '../WindowTitle.jsx';
 import { Prompter } from '../../teleprompter/Prompter.jsx';
 import { normalizePrompter, PROMPTER_KEY, readingTime, readShared, writeShared } from '../../../lib/teleprompter/prompterState.js';
 import { openPrompterPopOut, POP_OUT_NOTES } from '../../../lib/teleprompter/popOut.js';
+import { useSharedCaret } from '../../../lib/collaboration/useSharedCaret.js';
+import { useCaretReporter, useTeammateCarets } from '../../../lib/collaboration/useTextCarets.js';
+import { TeammateCarets } from '../../collaboration/TeammateCarets.jsx';
+import { WhoTypedWhat } from '../../doc/WhoTypedWhat.jsx';
 import { windowMeta } from './meta.js';
 
 export { windowMeta };
@@ -14,7 +18,12 @@ const same = (a, b) => a.text === b.text && a.speed === b.speed && a.size === b.
 /**
  * Teleprompter window. The script and settings are saved on the window and
  * mirrored to the pop-out, so editing here updates the pop-out live and the
- * pop-out's speed and size buttons update this window.
+ * pop-out's speed and size buttons update this window. On a shared board the
+ * script merges as people type (it is the window's `text`); a teammate's
+ * change keeps this person's caret where they were typing and reaches their
+ * pop-out too. While the script is open for editing, each teammate's cursor
+ * shows in it as a line in their colour with their name. "Who typed what"
+ * shows the script with each person's part tinted in their own colour.
  */
 export function TeleprompterWindow({ win = {}, onUpdate }) {
   const state = normalizePrompter(win);
@@ -22,6 +31,11 @@ export function TeleprompterWindow({ win = {}, onUpdate }) {
   const [note, setNote] = React.useState('');
   const latest = React.useRef(state);
   latest.current = state;
+  const inputRef = React.useRef(null);
+  useSharedCaret(inputRef, state.text, React.useMemo(() => ({ id: win.id, field: 'text' }), [win.id]));
+  // Teammates' cursors in the script while it is open for editing, and ours for them.
+  useCaretReporter(inputRef, win.id, 'text', mode === 'edit');
+  const teammateCarets = useTeammateCarets(win.id, 'text', mode === 'edit');
 
   const change = React.useCallback((patch) => {
     const next = normalizePrompter({ ...latest.current, ...patch });
@@ -29,8 +43,11 @@ export function TeleprompterWindow({ win = {}, onUpdate }) {
     onUpdate?.(patch);
   }, [onUpdate]);
 
-  // Keep the pop-out in step with this window, and take its changes back.
-  React.useEffect(() => { writeShared(latest.current); }, []);
+  // Keep the pop-out in step with this window, a teammate's changes
+  // included, and take its changes back.
+  React.useEffect(() => {
+    if (!same(readShared(), latest.current)) writeShared(latest.current);
+  }, [state.text, state.speed, state.size, state.mirror]);
   React.useEffect(() => {
     const onStorage = (e) => {
       if (e.key !== PROMPTER_KEY) return;
@@ -50,6 +67,7 @@ export function TeleprompterWindow({ win = {}, onUpdate }) {
   const time = readingTime(state.text);
   const actions = [
     { id: 'mode', label: mode === 'read' ? 'Edit script' : 'Read', icon: <Icon.Edit size={12} />, onSelect: () => setMode(mode === 'read' ? 'edit' : 'read') },
+    { id: 'writers', label: mode === 'writers' ? 'Hide who typed what' : 'Who typed what', icon: <Icon.Group size={12} />, onSelect: () => setMode(mode === 'writers' ? 'read' : 'writers'), title: "Show each person's part of the script in their own colour" },
     { id: 'popout', label: 'Pop out on top', icon: <Icon.OpenWindow size={12} />, onSelect: popOut, title: 'Open the reader in a small window that stays on top, right under your camera' },
   ];
 
@@ -60,14 +78,19 @@ export function TeleprompterWindow({ win = {}, onUpdate }) {
         {note && <p className="hb-teleprompter-note" role="status">{note}</p>}
         {mode === 'edit' ? (
           <div className="hb-teleprompter-edit">
-            <textarea className="hb-teleprompter-input" value={state.text} aria-label="Script"
-              placeholder="Paste or type what you want to say. Leave a blank line between parts."
-              onChange={(e) => change({ text: e.target.value })} />
+            <div className="hb-teleprompter-box">
+              <textarea ref={inputRef} className="hb-teleprompter-input" value={state.text} aria-label="Script"
+                placeholder="Paste or type what you want to say. Leave a blank line between parts."
+                onChange={(e) => change({ text: e.target.value })} />
+              <TeammateCarets boxRef={inputRef} carets={teammateCarets} text={state.text} />
+            </div>
             <div className="hb-teleprompter-row">
               <span className="hb-teleprompter-hint">{time.words} words, about {time.label} at a calm pace.</span>
               <button type="button" className="hb-btn" onClick={() => setMode('read')}><Icon.Play size={12} /> Read it</button>
             </div>
           </div>
+        ) : mode === 'writers' ? (
+          <div className="hb-teleprompter-writers"><WhoTypedWhat windowId={win.id} field="text" /></div>
         ) : (
           <Prompter state={state} onChange={change} />
         )}

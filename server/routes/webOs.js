@@ -11,6 +11,7 @@ import {
   writeDoorSettings,
 } from '../webOs/door.js';
 import { createPairCode, redeemPairCode } from '../webOs/pairing.js';
+import { tailnetPublicRouter, tailnetRouter } from './tailnet.js';
 import { doorPublicPort } from '../webOs/doorListener.js';
 import { isJestRun } from '../security/testShortcut.js';
 import { createLogger } from '../logger.js';
@@ -25,6 +26,9 @@ const log = createLogger('web-os');
  */
 export const webOsPublicRouter = express.Router();
 export const webOsRouter = express.Router();
+// My Tailscale devices: switched-on devices get in with no code (./tailnet.js).
+webOsPublicRouter.use('/tailnet', tailnetPublicRouter);
+webOsRouter.use('/tailnet', tailnetRouter);
 
 webOsPublicRouter.post('/pair/redeem', authSecurityRateLimiter, async (req, res) => {
   if (!dbReady()) {

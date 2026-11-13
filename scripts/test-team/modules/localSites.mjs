@@ -4,15 +4,45 @@
 // Pat's. Run dev is the computer owner's: Sam reads one plain sentence
 // instead of a button that fails, the server refuses Sam's start, stop and
 // keep-alive, and the refusal log line names the route and account only.
-// The cloud runner has no Docker, so no real dev server runs here.
+// Where this machine's Docker already has Run dev's Node image, Pat runs a
+// made-up folder for real and the server's log follows it by the folder's
+// hash, never its name; anywhere else those two steps are "skip".
 
+import { execFile } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { promisify } from 'node:util';
 import { spawnWindow, windowFrame } from '../../e2e/board.mjs';
-import { note } from '../report.mjs';
+import { note, skip } from '../report.mjs';
+import { sideBySide } from '../sideBySide.mjs';
 
 const SHOP = 'Made-up Bakery 164';
 const SCRIPT = '<script>window.parent.__madeUpPwned = 164</script><img src=x onerror="window.parent.__madeUpPwned = 164"> made-up shop';
 const OWNER_LINE = /only this computer.s owner can start or stop run dev/i;
 const SECRET = /\b[0-9a-f]{64}\b/g;
+const RUN_DEV_IMAGE = 'node:22-bookworm-slim';
+const run = promisify(execFile);
+
+/** Whether this machine's Docker answers and already has Run dev's Node image (a download would take too long here). */
+async function canRunDev() {
+  try {
+    await run('docker', ['image', 'inspect', RUN_DEV_IMAGE], { timeout: 20_000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const devNameOf = (page, id) => page.evaluate((winId) => window.__e2eStore.getState().wins.find((w) => w.id === winId)?.devName || null, id);
+const hashOf = (devName) => String(devName).slice(-10);
+
+/** Removes a Run dev container and its packages volume, whatever state the walk left them in. */
+async function removeRunDev(devName) {
+  if (!devName) return;
+  await run('docker', ['rm', '-f', devName], { timeout: 60_000 }).catch(() => {});
+  await run('docker', ['volume', 'rm', `censai-dev-packages-${hashOf(devName)}`], { timeout: 60_000 }).catch(() => {});
+}
 
 function listen(page) {
   const bodies = [];
@@ -129,5 +159,52 @@ export default {
       if (lines.some((line) => /Example|example\.com|made-up/.test(line))) throw new Error('a refusal line carries a name or what was sent');
       return `refused (${said}); Pat's keep-alive answered ${pats.status}; ${lines.length} log lines like "${lines[0].replace(/^.*?refused/, 'refused')}"`;
     });
+
+    let folder = null;
+    let devName = null;
+    let logStart = 0;
+    try {
+      await check('walk', 'Pat runs a made-up folder in Run dev, both screens show it running, then Pat stops it', async ({ shot }) => {
+        if (!(await canRunDev())) throw skip(`no Docker engine with ${RUN_DEV_IMAGE} on this machine`);
+        folder = fs.mkdtempSync(path.join(os.tmpdir(), 'made-up-garden-plans-'));
+        fs.writeFileSync(path.join(folder, 'index.html'), '<h1>Made-up garden plans</h1>\n');
+        t.typed.push(folder);
+        logStart = t.serverLog().length;
+        if (!dev) dev = await spawnWindow(pat.page, 'devServer', {}, { x: 200, y: 120 }, { w: 768, h: 528 });
+        const frame = windowFrame(pat.page, dev);
+        await frame.getByLabel('Project folder').fill(folder);
+        await frame.getByRole('button', { name: /^Run dev$/ }).click();
+        await pat.page.waitForFunction((id) => window.__e2eStore.getState().wins.find((w) => w.id === id)?.devName, dev, { timeout: 15_000 });
+        devName = await devNameOf(pat.page, dev);
+        const running = (page) => windowFrame(page, dev).getByText(/^Running at/).first().waitFor({ timeout: 90_000 });
+        await Promise.all([running(pat.page), running(sam.page)]);
+        // The site's Browser window opening moves Pat's view to it; look back at Run dev.
+        await Promise.all([pat, sam].map((p) => p.page.evaluate(() => window.__e2eStore.getState().setPan?.({ x: 0, y: 0 }))));
+        await Promise.all([pat, sam].map((p) => p.page.mouse.move(8, 8)));
+        await pat.page.waitForTimeout(500);
+        await sideBySide(t, 'both-screens-show-run-dev-running', shot);
+        await frame.getByRole('button', { name: 'Stop and remove the container' }).click();
+        await pat.page.waitForFunction((id) => !window.__e2eStore.getState().wins.find((w) => w.id === id)?.devName, dev, { timeout: 30_000 });
+        const left = (await run('docker', ['ps', '-aq', '--filter', `name=^/${devName}$`])).stdout.trim();
+        if (left) throw new Error('Docker still has the container after Stop');
+        return 'the made-up folder ran until Pat pressed Stop, both screens showed it running, and Docker no longer has its container';
+      });
+
+      await check('redteam', "the server's log follows Run dev by the folder's hash and never names the folder", async () => {
+        if (!devName) throw skip('Run dev did not run here');
+        const added = t.serverLog().slice(logStart).split('\n');
+        const followed = added.filter((line) => line.includes('[http]') && line.includes(`censai-dev-[redacted]-${hashOf(devName)}`));
+        const base = path.basename(folder).toLowerCase();
+        const naming = added.filter((line) => line.toLowerCase().includes(base));
+        const problems = [];
+        if (!followed.length) problems.push('no log line follows the Run dev container by its hash');
+        if (naming.length) problems.push(`${naming.length} log lines name the made-up folder, e.g. "${naming[0].replace(/^\S+\s+/, '').slice(0, 140)}"`);
+        if (problems.length) throw new Error(problems.join('; '));
+        return `${followed.length} Run dev requests logged by the folder's hash, none naming the folder, e.g. "${followed.at(-1).replace(/^.*\[http\]\s*/, '').slice(0, 100)}"`;
+      });
+    } finally {
+      await removeRunDev(devName);
+      if (folder) fs.rmSync(folder, { recursive: true, force: true });
+    }
   },
 };

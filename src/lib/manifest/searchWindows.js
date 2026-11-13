@@ -22,7 +22,7 @@ export const SEARCH_WINDOW_MANIFESTS = [
     componentPath: 'src/components/AuctionWatcherWindow.jsx',
     defaultSize: { w: 960, h: 640 },
     moduleMenu: { show: true, order: 48, icon: 'Eye', label: 'Auction Watcher', hint: 'Watch Goodwill and eBay for listings under your price' },
-    launcher: { show: true, order: 48, icon: 'Eye', label: 'Auction Watcher', hint: 'watch Goodwill and eBay listings' },
+    launcher: { show: true, order: 48, icon: 'Eye', hint: 'watch Goodwill and eBay listings' },
     lab: { title: 'Auction Watcher' },
   },
 ];

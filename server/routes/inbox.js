@@ -4,6 +4,7 @@ import { actorName, canRunAgents } from './github/mergeDesk.js';
 import { buildDesk, createOctokit, resolveGithubToken } from '../github/mergeDesk.js';
 import { resolveGithubWriteToken } from '../github/writeToken.js';
 import { buildInbox } from '../inbox/collect.js';
+import { listedForTeammate } from '../cli-agents/taskHiddenWords.js';
 import { fixReport, listReports } from '../inbox/sources.js';
 import { startCiFix } from '../inbox/ciFix.js';
 import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
@@ -76,16 +77,18 @@ export function createInboxRouter({
       }
     }
 
+    // A task's summary may quote a file only this computer's owner opens; a teammate gets the one the console shows them.
+    const owner = await isOwner(req);
     let tasks = [];
     if (localFiles(req)) {
       const manager = await loadManager().catch(() => null);
       if (manager) {
         out.agents.available = true;
-        tasks = manager.list();
+        tasks = owner ? manager.list() : manager.list().map(listedForTeammate(manager));
       }
     }
 
-    const ctx = { userId, isOwner: await isOwner(req), localFiles: localFiles(req) };
+    const ctx = { userId, isOwner: owner, localFiles: localFiles(req) };
     const { reports, sourceErrors } = await listReports(ctx);
     const serverErrors = ctx.isOwner && ctx.localFiles && process.env.CENSAI_SELF_FIX !== 'off';
     res.json({ ...out, ...buildInbox({ desk: deskData, tasks, reports }), sourceErrors, serverErrors });

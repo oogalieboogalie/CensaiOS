@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { DAYS } from '../../../lib/localSites/presets.js';
+import { SiteBox } from './SiteBox.jsx';
 
 function Field({ label, hint, children }) {
   return (
@@ -15,11 +16,14 @@ function Field({ label, hint, children }) {
 function Text({ ls, name, label, hint, area, rows = 3, placeholder }) {
   const value = ls.site[name] ?? '';
   const onChange = (e) => ls.set(name, e.target.value);
+  // Teammates' cursors show in the box, found by the window and the box's name;
+  // the box keeps its label as its name, so a teammate's name tag never changes it.
+  const shared = { windowId: ls.windowId, box: name, 'aria-label': label };
   return (
     <Field label={label} hint={hint}>
       {area
-        ? <textarea className="hb-ls-input" rows={rows} value={value} onChange={onChange} placeholder={placeholder} />
-        : <input className="hb-ls-input" value={value} onChange={onChange} placeholder={placeholder} />}
+        ? <SiteBox multiline rows={rows} value={value} onChange={onChange} placeholder={placeholder} {...shared} />
+        : <SiteBox value={value} onChange={onChange} placeholder={placeholder} {...shared} />}
     </Field>
   );
 }
@@ -63,7 +67,7 @@ export function SiteForm({ ls }) {
         {DAYS.map((day, i) => (
           <label key={day}>
             <span>{day}</span>
-            <input className="hb-ls-input" value={ls.site.hours[i] || ''} onChange={(e) => ls.setHour(i, e.target.value)} />
+            <SiteBox value={ls.site.hours[i]} onChange={(e) => ls.setHour(i, e.target.value)} />
           </label>
         ))}
       </div>

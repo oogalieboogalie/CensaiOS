@@ -20,6 +20,14 @@ describe('toolCallOk', () => {
     expect(toolCallOk('Unknown tool: imaginary')).toBe(false);
   });
 
+  test('flags the local file tools\' refusals, so the card never says "Wrote"', () => {
+    expect(toolCallOk('Failed to write file: this agent has no folders of its own')).toBe(false);
+    expect(toolCallOk('Failed to read file: Access restricted by agent\'s directory scopes.')).toBe(false);
+    expect(toolCallOk('Failed to read directory: ENOENT')).toBe(false);
+    expect(toolCallOk('Failed to access local files: Unable to verify agent directory scopes')).toBe(false);
+    expect(toolCallOk('Failed tests are listed below')).toBe(true);
+  });
+
   test('passes normal string results', () => {
     expect(toolCallOk('File written successfully.')).toBe(true);
     expect(toolCallOk('')).toBe(true);

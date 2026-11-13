@@ -29,6 +29,18 @@ export function useAppKeyboard({ onNewAgent, onNewWindow, redo, undo, setFocusMo
     return () => window.removeEventListener('keydown', onKey);
   }, [onNewAgent, onNewWindow, redo, setFocusMode, undo]);
 
+  // The dock's Undo and Redo buttons. Ctrl+Z still works from the keys above.
+  React.useEffect(() => {
+    const onHistory = (e) => {
+      // A click on the dock button, not a key. Keys already stand down while
+      // a window has claimed the keyboard, before this event is sent.
+      if (e.detail?.action === 'redo') redo();
+      else undo();
+    };
+    window.addEventListener('canvas:history', onHistory);
+    return () => window.removeEventListener('canvas:history', onHistory);
+  }, [redo, undo]);
+
   React.useEffect(() => {
     const handlePaste = (e) => {
       // A paste in a window (a sheet cell, a chat box) or right after a click

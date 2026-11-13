@@ -68,7 +68,7 @@ function openAiModelCaps(model) {
   const m = lower(model);
   if (/audio/.test(m)) return { ...TEXT_ONLY, audioInput: true };
   if (/(transcribe|tts|whisper|embedding|dall-e|gpt-image)/.test(m)) return TEXT_ONLY;
-  if (/^(chatgpt-4o|gpt-4o|gpt-4\.1|gpt-4\.5|gpt-5|gpt-4-turbo|o1(?!-mini)|o3|o4)/.test(m)) {
+  if (/^(chatgpt-4o|gpt-4o|gpt-4\.1|gpt-4\.5|gpt-5|gpt-6|gpt-4-turbo|o1(?!-mini)|o3|o4)/.test(m)) {
     return { ...TEXT_ONLY, image: true, pdf: true };
   }
   return TEXT_ONLY;

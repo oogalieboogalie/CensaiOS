@@ -128,7 +128,7 @@ export function AppContent() {
 
   if (sessionLoad.status === 'unavailable') return <WorkspaceRecovery load={sessionLoad} onRetry={retryWorkspaceLoad} />;
   if (!session.authenticated) {
-    return <Login oauthConfigured={session.oauthConfigured} localSignIn={Boolean(session.localSignIn)} fromAnotherComputer={Boolean(session.fromAnotherComputer)} onLoginSuccess={() => window.location.reload()} />;
+    return <Login oauthConfigured={session.oauthConfigured} localSignIn={Boolean(session.localSignIn)} emailSignIn={session.emailSignIn !== false} fromAnotherComputer={Boolean(session.fromAnotherComputer)} onLoginSuccess={() => window.location.reload()} />;
   }
 
   if (keyGate) return <SovereignAccessGate {...keyGate} />;

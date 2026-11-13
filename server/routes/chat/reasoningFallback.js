@@ -24,10 +24,14 @@ export function withReasoningContentFallback(message) {
   return { ...message, content: reasoningText, reasoning_used_as_content: true };
 }
 
+// Always a plain object: "null" means no arguments; text, numbers or a list
+// throw, so the model is told to fix the call instead of the chat crashing.
 export function normalizeToolCallArguments(rawArgs) {
   if (rawArgs === undefined || rawArgs === null) return {};
-  if (typeof rawArgs === 'object') return rawArgs;
-  return JSON.parse(String(rawArgs) || '{}');
+  const parsed = typeof rawArgs === 'object' ? rawArgs : JSON.parse(String(rawArgs) || '{}');
+  if (parsed === null) return {};
+  if (typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('arguments must be an object');
+  return parsed;
 }
 
 /** Keys + sizes for diagnosing empty responses (no content logged). */

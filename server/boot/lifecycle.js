@@ -24,6 +24,7 @@ import { initializeDynamicTools, initializeMcpTools, shutdownMcpTools } from '..
 import { startOutsideListener } from '../agentEndpoints/outsideListener.js';
 import { startRelayLink } from '../agentNetwork/relayLink.js';
 import { startDoorListener } from '../webOs/doorListener.js';
+import { startMergeBotWorker } from '../mergeBot/worker.js';
 
 const log = createLogger('server-lifecycle');
 
@@ -98,15 +99,21 @@ export async function startServer(app, options = {}) {
         startSchedulerWorker();
         startAgentWakeupWorker();
         startAgentCardRunWorker();
+        import('../kraken/feeder.js').then((kraken) => kraken.feedEveryone()).catch(() => {});
         startOsvMirrorWorker();
         startWorkflowTriggerWorker();
         startIdeaFoundryWorker();
         startAuctionWatcherWorker();
+        startMergeBotWorker();
         startDevServerReaper();
         // Agent endpoints' own port, the one a tunnel points at.
         startOutsideListener();
         // Collect calls a relay queued while this computer was off (off unless configured).
         startRelayLink().catch(() => {});
+        // Legions a restart cut off carry on where they were (server/legion/resume.js).
+        import('../legion/resume.js').then(({ resumeLegions }) => resumeLegions())
+          .then((done) => { if (done.length) log.info('picked up Legions from before a restart', { resumed: done.filter((d) => d.resumed).length, ended: done.filter((d) => !d.resumed).length }); })
+          .catch((err) => log.warn('could not pick up Legions from before a restart', { code: safeErrorCode(err) }));
       }
 
       if (shouldStartWatchers) {

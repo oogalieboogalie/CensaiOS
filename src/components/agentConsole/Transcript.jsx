@@ -3,6 +3,7 @@ import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { renderMarkdown } from '../../lib/renderMarkdown.jsx';
 import { diffLines } from './lineDiff.js';
+import { HIDDEN_WORDS, OWNER_ONLY_STEP } from '../../../shared/files/fileProblems.js';
 
 // The console's transcript: typed step cards instead of raw terminal text.
 // message · thinking · read · search · edit (inline diff) · command (output
@@ -84,7 +85,7 @@ function StepCard({ item, onDecide, canDecide, onOpenFile }) {
         {item.kind === 'read' && item.path && <span className="ac-step-path ac-step-path--plain">{item.path}</span>}
         <StepStatus status={item.status} />
       </header>
-      {item.kind === 'command' && (
+      {item.kind === 'command' && item.command != null && (
         <div className="ac-block">
           <div className="ac-block-cmd"><span className="ac-block-prompt">$</span>{item.command}</div>
           {item.output && (
@@ -111,12 +112,13 @@ function StepCard({ item, onDecide, canDecide, onOpenFile }) {
       {item.kind === 'edit' && item.status === 'error' && item.output && <div className="ac-step-error">{item.output}</div>}
       {item.kind === 'permission' && item.detail && <pre className="ac-block-out">{item.detail}</pre>}
       {item.kind === 'permission' && item.diff && <InlineDiff diff={item.diff} />}
+      {item.ownerOnly && <div className="ac-empty" data-testid="step-owner-only">{OWNER_ONLY_STEP}</div>}
       <PermissionBar item={item} onDecide={onDecide} canDecide={canDecide} />
     </article>
   );
 }
 
-export function TranscriptItem({ item, onDecide, canDecide, onOpenFile }) {
+function ItemBody({ item, onDecide, canDecide, onOpenFile }) {
   if (item.kind === 'prompt') {
     return (
       <div className="ac-prompt">
@@ -138,6 +140,17 @@ export function TranscriptItem({ item, onDecide, canDecide, onOpenFile }) {
   if (item.kind === 'note') return <div className="ac-note">{item.text}</div>;
   if (item.kind === 'error') return <div className="ac-error" role="alert"><Icon.Alert size={13} />{item.text}</div>;
   return <StepCard item={item} onDecide={onDecide} canDecide={canDecide} onOpenFile={onOpenFile} />;
+}
+
+/** One item; for a teammate, where a key from a file only the owner opens came back, a note on why it shows as [hidden]. */
+export function TranscriptItem(props) {
+  if (!props.item.hiddenWords || props.item.ownerOnly) return <ItemBody {...props} />;
+  return (
+    <>
+      <ItemBody {...props} />
+      <div className="ac-note" data-testid="step-hidden-words">{HIDDEN_WORDS}</div>
+    </>
+  );
 }
 
 export function Transcript({ items, onDecide, canDecide = true, onOpenFile, live }) {

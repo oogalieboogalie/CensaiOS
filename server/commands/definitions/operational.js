@@ -1,8 +1,18 @@
 import pool from '../../db.js';
 import { createTodoItem } from '../../operational-intelligence/todos.js';
+import { requireWorkspaceMember } from '../../workspaces/context.js';
 
 function requireWorkspaceContext(context) {
   if (!context.workspaceId) throw new Error('workspaceId is required');
+}
+
+// The board id comes from the request, so the caller must be on that board
+// (and able to edit it, for writes) before anything there is read or changed.
+async function requireBoard(context, roles) {
+  requireWorkspaceContext(context);
+  await requireWorkspaceMember(pool, {
+    userId: context.userId, workspaceId: context.workspaceId, ...(roles ? { roles } : {}),
+  });
 }
 
 export const operationalCommands = [
@@ -28,7 +38,7 @@ export const operationalCommands = [
     requiredCapabilities: ['artifact.read'],
     sideEffects: [],
     async handler({ context, input }) {
-      requireWorkspaceContext(context);
+      await requireBoard(context);
       const queryText = String(input.query || '').trim();
       const type = String(input.type || '').trim() || null;
       const limit = Math.max(1, Math.min(Number(input.limit) || 10, 50));
@@ -74,7 +84,7 @@ export const operationalCommands = [
     requiredCapabilities: ['artifact.write'],
     sideEffects: ['artifact.write', 'event.write'],
     async handler({ context, input }) {
-      requireWorkspaceContext(context);
+      await requireBoard(context, ['owner', 'admin', 'member']);
       return createTodoItem(pool, {
         workspaceId: context.workspaceId,
         actor: context.actor,

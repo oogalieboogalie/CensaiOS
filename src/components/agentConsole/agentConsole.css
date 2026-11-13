@@ -267,3 +267,7 @@
 
 /* Scrolling columns: items keep their natural height instead of squashing. */
 .ac-transcript > *, .ac-changes > *, .ac-settings > *, .ac-recent > * { flex-shrink: 0; }
+
+/* a file only this computer's owner may read, shown on their screen only (PrivateFileView.jsx) */
+.ac-private { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ac-private-head { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-bottom: 1px solid var(--hairline); background: var(--surface-2); flex-wrap: wrap; }

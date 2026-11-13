@@ -29,7 +29,8 @@ jest.unstable_mockModule('../server/aiGateway/index.js', () => ({
 }));
 jest.unstable_mockModule('../server/tools.js', () => ({
   executeTool,
-  filterToolsForAgent: jest.fn(async () => []),
+  // The sub-agent was given project_edit; only tools it was given run.
+  filterToolsForAgent: jest.fn(async () => [{ type: 'function', function: { name: 'project_edit' } }]),
 }));
 jest.unstable_mockModule('../server/task-worker/batch.js', () => ({
   checkBatchCompletion: jest.fn(async () => {}),

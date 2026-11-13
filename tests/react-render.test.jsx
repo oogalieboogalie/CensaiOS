@@ -8,6 +8,7 @@ import { MailcowWindow } from '../src/components/MailcowWindow.jsx';
 import { WindowFrame } from '../src/components/Windows.jsx';
 import { TodosWindow } from '../src/components/TodosWindow.jsx';
 import { ChatWindow } from '../src/components/ChatWindow.jsx';
+import { noteLocalAutoSend } from '../src/lib/localRun.js';
 import { CalendarWindow } from '../src/components/CalendarWindow.jsx';
 import { api } from '../src/lib/api.js';
 
@@ -317,6 +318,7 @@ describe('React Jest harness', () => {
       msgs: [{ from: 'me', text: 'Re: "Hello world"\n\nI need help' }],
       autoSend: true,
     };
+    noteLocalAutoSend(win.id, { autoSend: true });
 
     render(
       React.createElement(ChatWindow, {

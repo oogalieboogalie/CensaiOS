@@ -33,6 +33,7 @@ jest.unstable_mockModule('../server/tools/definitions.js', () => ({
 jest.unstable_mockModule('../server/db.js', () => ({ default: { query: jest.fn() } }));
 jest.unstable_mockModule('../server/workspaces/projectMemberships.js', () => ({
   assertAgentRepoAccess: jest.fn(),
+  listWorkspaceAgentProjects: jest.fn(async () => []),
 }));
 jest.unstable_mockModule('../server/memory.js', () => ({ getAgent: jest.fn(), getSubAgentById: jest.fn() }));
 

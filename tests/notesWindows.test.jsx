@@ -234,13 +234,13 @@ describe('vaultNotes window', () => {
   });
 });
 
+// The Finder lists a real project's files (tests/finderFiles.test.jsx); with
+// none it shows nothing made up.
 describe('finderFiles window', () => {
-  test('shows Downloads zebra list and sidebar sections', () => {
+  test('with no project it says so, with no made-up computer', () => {
     render(<FinderFilesWindow win={{}} onUpdate={() => {}} />);
     expect(screen.getByTestId('finder-files')).toBeTruthy();
-    expect(screen.getByText('Favorites')).toBeTruthy();
-    expect(screen.getByText('Tags')).toBeTruthy();
-    expect(screen.getByText('Brown butter nectarine tart.md')).toBeTruthy();
-    expect(screen.getByLabelText('Downloads files')).toBeTruthy();
+    expect(screen.getByText('No project is open on this board.')).toBeTruthy();
+    expect(screen.queryByText(/Downloads|AirDrop|officepc|Favorites|Tags|nectarine/)).toBeNull();
   });
 });

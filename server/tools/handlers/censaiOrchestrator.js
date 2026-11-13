@@ -102,6 +102,12 @@ async function writerGap(input, scope, member, db) {
   return null;
 }
 
+/** Why this plan could never be checked off for this person here ("Error: ..."), or null when it can. */
+export async function handOffGap(input, scope, member, db, deps = {}) {
+  return await ownerGap(input, scope, db, deps) || await projectGap(input, scope, deps)
+    || await writerGap(input, scope, member, db);
+}
+
 async function handOff(args, scope, db, deps) {
   // Viewers can look at a board but not set work running on it.
   const member = await requireWorkspaceMember(db, { ...scope, roles: ['owner', 'admin', 'member'] });
@@ -112,8 +118,7 @@ async function handOff(args, scope, db, deps) {
     if (error instanceof PlanInputError) return `Error: ${error.message}`;
     throw error;
   }
-  const gap = await ownerGap(input, scope, db, deps) || await projectGap(input, scope, deps)
-    || await writerGap(input, scope, member, db);
+  const gap = await handOffGap(input, scope, member, db, deps);
   if (gap) return gap;
   await recoverOnce(deps);
   if (await countOpenPlans(db, scope) >= MAX_OPEN_PLANS) {

@@ -9,6 +9,7 @@
 
 import { Octokit } from '@octokit/rest';
 import { getSecret } from '../secrets.js';
+import { githubApiUrl } from './apiUrl.js';
 
 const MAX_PRS = 40;
 const DETAIL_CONCURRENCY = 6;
@@ -37,7 +38,7 @@ export function deskError(message, status = 400) {
 
 export function createOctokit(token) {
   if (!token) throw deskError('Connect GitHub first: paste a token in this window.', 401);
-  return new Octokit({ auth: token, userAgent: 'Censai-App' });
+  return new Octokit({ auth: token, userAgent: 'Censai-App', baseUrl: githubApiUrl() });
 }
 
 const FAILED = new Set(['failure', 'timed_out', 'action_required', 'cancelled', 'startup_failure', 'stale']);

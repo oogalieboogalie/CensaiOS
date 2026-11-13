@@ -1,0 +1,94 @@
+/* Document. Depth comes from the shared pieces in src/styles/depth.css
+   (docs/ui-yardstick.md): the words sit on a raised page, the page sits on a
+   sunken desk, the comments are raised cards in a side bar, and the note graph
+   is a well. Every card, button and box answers the pointer and shows a focus
+   ring. Small grey words use --ink-soft so they stay readable in dark and in
+   light. A note kind's own colours arrive as --doc-kind-bg, --doc-kind-ink and
+   --doc-kind-ring (kindVars in DocData.js). Rules that start with a shared
+   class (.hb-well.doc-desk) win over it whichever stylesheet loads first.
+   One rule per line: tests/docLook.test.js reads it that way. */
+.doc { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; user-select: text; -webkit-user-select: text; }
+.doc-loading { flex: 1; display: grid; place-items: center; color: var(--ink-soft); font: var(--text-xs) / 1.5 var(--font-mono); }
+.doc-main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); overflow: hidden; }
+.doc-main[data-comments="true"] { grid-template-columns: minmax(0, 1fr) var(--space-56); }
+
+/* The desk and the page. The page scrolls; the desk stays put around it. */
+.hb-well.doc-desk { display: flex; justify-content: center; min-width: 0; min-height: 0; padding: var(--space-2); border-width: 0; border-radius: 0; }
+.hb-well.doc-desk[data-wide="true"] { padding: var(--space-6) var(--space-4); }
+.hb-panel.doc-page { flex: 1; min-width: 0; overflow-y: auto; padding: var(--space-5) var(--space-6) var(--space-8); color: var(--ink); font: var(--text-md) / 1.62 var(--font-sans); white-space: pre-wrap; cursor: text; user-select: text; -webkit-user-select: text; transition: border-color var(--dur-base) var(--ease-standard); }
+.hb-panel.doc-page[data-wide="true"] { max-width: 900px; padding: var(--space-10) 10%; font-size: var(--text-lg); line-height: 1.8; }
+.hb-panel.doc-page[data-editing="true"] { font-family: var(--font-mono); cursor: auto; }
+.hb-panel.doc-page[data-editing="true"]:focus-within { border-color: var(--hairline-strong); }
+.hb-empty.doc-blank { min-height: 100%; cursor: text; }
+
+/* Typing: the box fills the page and has no edge of its own. */
+.doc-typing { margin-bottom: var(--space-2); padding: var(--space-1-5) var(--space-2-5); border-radius: var(--radius-lg); background: var(--accent-soft); color: var(--accent-ink); font: var(--text-xs) / 1.5 var(--font-sans); }
+.doc-edit { position: relative; height: 100%; }
+.doc-editor { width: 100%; height: 100%; border: 0; outline: none; background: transparent; color: inherit; font: inherit; resize: none; transition: opacity var(--dur-base) var(--ease-standard); }
+.doc-editor::placeholder { color: var(--ink-soft); opacity: 1; }
+.doc-editor[readonly] { opacity: 0.75; }
+
+/* Comments: a side bar of raised cards. */
+.hb-bar.doc-rail { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; overflow-y: auto; padding: var(--space-2-5); border-bottom-width: 0; border-left: 1px solid var(--hairline); }
+.doc-label { padding: 0 var(--space-1-5) var(--space-1); color: var(--ink-soft); font-family: var(--font-label); font-size: var(--text-xs); letter-spacing: var(--label-tracking); text-transform: var(--label-case); }
+.hb-empty.doc-rail-empty { margin: 0; padding: var(--space-4) var(--space-2); }
+.doc-rail-empty .hb-empty-text { font-size: var(--text-sm); }
+.hb-panel.doc-note { display: flex; flex-direction: column; gap: var(--space-1-5); padding: var(--space-2); border-left: 3px solid var(--doc-kind-ring); cursor: pointer; }
+.hb-panel.doc-note[data-active="true"] { border-color: var(--doc-kind-ring); }
+.doc-note-head { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.doc-note-dot { flex-shrink: 0; display: grid; place-items: center; width: var(--space-4); height: var(--space-4); border-radius: var(--radius-full); background: var(--doc-kind-ring); color: var(--on-fill); font: 700 var(--text-xs) / 1 var(--font-mono); }
+.doc-note-author { overflow: hidden; color: var(--ink); font-size: var(--text-xs); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.doc-kind { flex-shrink: 0; padding: var(--space-0-5) var(--space-1-5); border-radius: var(--radius-sm); background: var(--doc-kind-bg); color: var(--doc-kind-ink); font-family: var(--font-label); font-size: var(--text-xs); letter-spacing: var(--label-tracking); line-height: 1.3; text-transform: var(--label-case); }
+.doc-x { appearance: none; flex-shrink: 0; display: grid; place-items: center; width: var(--space-5); height: var(--space-5); margin: 0 0 0 auto; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--ink-soft); cursor: pointer; transition: background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.doc-x:hover { background: var(--glass-hover); color: var(--ink); }
+.doc-x:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.doc-x:active { transform: scale(var(--press-scale)); }
+.doc-quote { max-height: var(--space-10); overflow: hidden; padding-left: var(--space-1-5); border-left: 2px solid var(--doc-kind-ring); color: var(--ink-soft); font-size: var(--text-xs); font-style: italic; }
+.doc-note-body { color: var(--ink); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.doc-note-lost { color: var(--ink-soft); font-size: var(--text-xs); }
+
+/* Backlinks: the notes that link here, each a real button. */
+.doc-hint { margin-bottom: var(--space-3); padding: 0 var(--space-1-5); color: var(--ink-soft); font-size: var(--text-xs); line-height: 1.5; }
+.doc-hint .hb-code { font-size: inherit; }
+.doc-backlinks { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
+.doc-capped { padding: 0 var(--space-1-5) var(--space-1); color: var(--ink-soft); font-size: var(--text-xs); }
+.hb-panel.doc-backlink { appearance: none; display: flex; align-items: center; gap: var(--space-1-5); width: 100%; min-width: 0; margin: 0; padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-md); color: var(--ink-soft); font: inherit; font-size: var(--text-xs); text-align: left; cursor: pointer; }
+.hb-lift.doc-backlink { transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.hb-lift.doc-backlink:hover { border-color: var(--accent-line); color: var(--ink); }
+.hb-lift.doc-backlink:active { transform: scale(var(--press-scale)); }
+.doc-backlink:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.doc-backlink-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The note graph sits in a well; a note's dot answers the pointer. */
+.hb-well.doc-graph { display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 0; margin: var(--space-2); overflow: hidden; }
+.doc-graph-node { cursor: pointer; }
+.doc-graph-node circle { transition: stroke var(--dur-fast) var(--ease-standard); }
+.doc-graph-node:hover circle { stroke: var(--accent); }
+.doc-graph-name { fill: var(--ink-soft); font-family: var(--font-mono); font-size: var(--text-xs); transition: fill var(--dur-fast) var(--ease-standard); }
+.doc-graph-node:hover .doc-graph-name { fill: var(--ink); }
+
+/* Picked words: the small bar above them, then the box to write the note in. */
+.doc-selbar { position: absolute; z-index: 10; display: flex; gap: var(--space-0-5); padding: var(--space-1); border-radius: var(--radius-full); background: var(--ink); box-shadow: var(--shadow-pop); color: var(--surface); transform: translate(-50%, 0); }
+.doc-selbtn { appearance: none; display: flex; align-items: center; gap: var(--space-1); margin: 0; padding: var(--space-1) var(--space-2-5) var(--space-1) var(--space-2); border: 0; border-radius: var(--radius-full); background: transparent; color: inherit; font-family: var(--font-label); font-size: var(--text-xs); letter-spacing: var(--label-tracking); text-transform: var(--label-case); opacity: 0.85; cursor: pointer; transition: background var(--dur-fast) var(--ease-standard), opacity var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.doc-selbtn:hover { background: color-mix(in oklab, var(--surface) 16%, transparent); opacity: 1; }
+.doc-selbtn:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; opacity: 1; }
+.doc-selbtn:active { transform: scale(var(--press-scale)); }
+.doc-composer { position: absolute; z-index: 11; width: var(--space-72); padding: var(--space-2-5); border: 1px solid var(--doc-kind-ring); border-radius: var(--radius-xl); background: var(--surface); box-shadow: var(--shadow-pop); transform: translate(-50%, 0); }
+.doc-composer-head { display: flex; align-items: center; gap: var(--space-1-5); margin-bottom: var(--space-1-5); }
+.doc-composer-quote { max-height: var(--space-12); margin-bottom: var(--space-2); }
+.doc-agents { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-bottom: var(--space-2); }
+.doc-agent { appearance: none; margin: 0; padding: var(--space-px); border: 0; border-radius: var(--radius-full); background: transparent; cursor: pointer; transition: box-shadow var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.doc-agent:hover { box-shadow: 0 0 0 2px var(--hairline-strong); }
+.doc-agent:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+.doc-agent:active { transform: scale(var(--press-scale)); }
+.doc-agent[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--doc-kind-ring); }
+.doc-agent[aria-pressed="true"]:hover { box-shadow: 0 0 0 2px var(--doc-kind-ring); }
+.doc-composer-input { box-sizing: border-box; display: block; width: 100%; min-height: var(--space-12); margin: 0; padding: var(--space-2); border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--layer-well); box-shadow: var(--well-shadow); color: var(--ink); font: var(--text-md) / 1.4 var(--font-sans); resize: none; transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard); }
+.doc-composer-input:hover { border-color: var(--hairline-strong); }
+.doc-composer-input:focus-visible { border-color: var(--accent-line); box-shadow: var(--well-shadow), 0 0 0 2px color-mix(in oklab, var(--accent-line) 30%, transparent); outline: none; }
+.doc-composer-foot { display: flex; align-items: center; justify-content: space-between; margin-top: var(--space-2); }
+.doc-composer-tip { color: var(--ink-soft); font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.05em; }
+.doc-commit { appearance: none; margin: 0; padding: var(--space-1) var(--space-3); border: 1px solid var(--doc-kind-ring); border-radius: var(--radius-full); background: var(--doc-kind-bg); color: var(--doc-kind-ink); font: inherit; font-size: var(--text-xs); font-weight: 600; cursor: pointer; transition: box-shadow var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.doc-commit:hover { box-shadow: 0 0 0 2px color-mix(in oklab, var(--doc-kind-ring) 45%, transparent); }
+.doc-commit:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.doc-commit:active { transform: scale(var(--press-scale)); }

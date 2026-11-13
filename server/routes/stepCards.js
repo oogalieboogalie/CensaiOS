@@ -6,6 +6,7 @@ import { requireLocalFilesystem } from '../middleware/runtimeMode.js';
 import { MAX_CHECKS, checkLine, parseCheck } from '../../src/lib/stepCards/todoFile.js';
 import { translateCard } from '../stepCards/translate.js';
 import { verifyStep } from '../stepCards/verify.js';
+import { teammateSummary } from '../cli-agents/taskHiddenWords.js';
 
 const log = createLogger('step-cards');
 
@@ -31,10 +32,10 @@ async function defaultCompleter(req) {
 }
 
 async function defaultFolders() {
-  const [{ assertAllowedFolder }, { getCliTaskManager }] = await Promise.all([
+  const [{ assertAllowedFolder, rootOf }, { getCliTaskManager }] = await Promise.all([
     import('../cli-agents/folders.js'), import('../cli-agents/index.js'),
   ]);
-  return { assertAllowedFolder, tasks: getCliTaskManager() };
+  return { assertAllowedFolder, rootOf, tasks: getCliTaskManager() };
 }
 
 const NO_FOLDER = 'Open the project this card is about first (project picker in the top bar), then check again.';
@@ -42,21 +43,23 @@ const NO_FOLDER = 'Open the project this card is about first (project picker in 
 /**
  * Where a step's checks look: the coding agent's own worktree when the step went to
  * one (its changes live there until they are merged), otherwise the open project.
- * { cwd, report, noFolder }.
+ * { cwd, root (the worktree or project cwd is in), report, noFolder }.
  */
 export async function whereToCheck({ folder, cliTaskId, folders }) {
-  const { assertAllowedFolder, tasks } = await folders();
+  const { assertAllowedFolder, rootOf, tasks } = await folders();
   if (cliTaskId) {
     try {
       const task = tasks.get(cliTaskId);
       if (task?.worktree?.cwd && !task.worktreeRemoved) {
         const running = ['installing', 'starting', 'running', 'needs_approval'].includes(task.status);
-        return { cwd: task.worktree.cwd, report: running ? '' : String(task.summary || ''), running, trustFrom: task.folder || null, worktree: true };
+        // What the checks find lands on the shared card, so the agent's report is the one a teammate sees.
+        return { cwd: task.worktree.cwd, root: task.worktree.dir || task.worktree.cwd, report: running ? '' : String(teammateSummary(task) || ''), running, trustFrom: task.folder || null, worktree: true };
       }
     } catch { /* the task is gone: fall back to the project */ }
   }
   try {
-    return { cwd: folder ? await assertAllowedFolder(folder) : null, report: '', noFolder: NO_FOLDER };
+    const cwd = folder ? await assertAllowedFolder(folder) : null;
+    return { cwd, root: cwd && rootOf ? (await rootOf(cwd)) || cwd : cwd, report: '', noFolder: NO_FOLDER };
   } catch {
     return { cwd: null, report: '', noFolder: NO_FOLDER };
   }
@@ -109,6 +112,7 @@ export function createStepCardsRouter({ completer = defaultCompleter, folders = 
     if (where.worktree && !where.trustFrom) Object.assign(where, { cwd: null, noFolder: NO_FOLDER });
     const ctx = {
       cwd: where.cwd,
+      root: where.root,
       trustFrom: where.trustFrom,
       skipRuns: Boolean(req.body?.automatic),
       noFolder: where.noFolder,

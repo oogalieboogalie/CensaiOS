@@ -31,3 +31,10 @@ export async function assertAllowedFolder(folder) {
   }
   return target;
 }
+
+/** The open project a folder is in (the innermost, when one is inside another), or null. */
+export async function rootOf(folder) {
+  const target = path.resolve(String(folder || ''));
+  const roots = (await allowedRoots()).filter((r) => target === r.path || target.startsWith(r.path + path.sep));
+  return roots.sort((a, b) => b.path.length - a.path.length)[0]?.path || null;
+}

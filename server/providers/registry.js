@@ -17,6 +17,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { getSecret } from '../secrets.js';
+import { githubApiUrl } from '../github/apiUrl.js';
 import { getOAuthClient } from '../calendar.js';
 
 import { CONNECTION_STATES } from '../../src/lib/windowIntegrationTypes.js';
@@ -42,7 +43,7 @@ const ADAPTERS = {
     async test(ctx) {
       const token = await this.getCredential(ctx);
       if (!token) return { ok: false, detail: 'GITHUB_TOKEN not configured' };
-      const res = await fetch('https://api.github.com/user', {
+      const res = await fetch(`${githubApiUrl()}/user`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'User-Agent': 'Homebase-Agent',

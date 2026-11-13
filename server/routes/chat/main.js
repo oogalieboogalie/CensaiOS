@@ -11,9 +11,10 @@ import { isFromAnotherComputer } from '../../webOs/door.js';
 import { safeTimeZone } from '../../../src/lib/agentMemory/timeWords.js';
 import { chatLog, noteFailure } from './chatLog.js';
 import { safeErrorCode } from '../../security/errorCode.js';
+import { groupPinFilter } from './pinnedTools.js';
 
 export async function handleChat(req, res) {
-  const { messages, agentId, windowId, workspaceId, currentProject, stream, conversationId, timeZone } = req.body;
+  const { messages, agentId, windowId, workspaceId, currentProject, stream, conversationId, timeZone, groupWindowKinds } = req.body;
   const startedAt = Date.now();
   const timings = {
     total_ms: 0,
@@ -95,6 +96,8 @@ export async function handleChat(req, res) {
       windowId,
       conversationId: typeof conversationId === 'string' ? conversationId : null,
       timeZone: safeTimeZone(timeZone),
+      // Card R3: a CAD window in the agent's group keeps its CAD tools loaded.
+      toolFilter: groupPinFilter(groupWindowKinds, { agentId }),
       sendEvent,
       onModelAccepted: beginStream,
       timings,

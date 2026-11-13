@@ -119,10 +119,19 @@ export async function createProjectIdea(req, res) {
           '- Leave a report or update the idea note with decisions, blockers, and verification before marking complete.'
         );
 
+        // agent_tasks.project_id references projects(id); a local folder has no
+        // row there, so only pass an id that exists. The name goes in `project`.
+        const candidateId = chosen.project_id || currentProject.projectId || null;
+        let projectId = null;
+        if (candidateId) {
+          const { rows } = await pool.query('SELECT id FROM projects WHERE id = $1', [candidateId]);
+          projectId = rows[0]?.id || null;
+        }
+
         task = await createAgentTask({
           parentId: cleanAssignee,
           assigneeId: chosen.id,
-          projectId: chosen.project_id || currentProject.projectId || currentProject.name || null,
+          projectId,
           project: currentProject.name || currentProject.path,
           title: `Idea: ${cleanWorkItem}`,
           prompt: promptParts.join('\n'),

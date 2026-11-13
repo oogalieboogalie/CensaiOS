@@ -6,8 +6,9 @@ import { logToApp } from '../../../lib/appLog/browserLog.js';
 import { saveYouTubeKey, youtubeNeedsKey } from '../../../lib/youtube/keyStatus.js';
 import { YouTubeKeyPrompt } from '../../youtube/YouTubeKeyPrompt.jsx';
 import {
-  CURATED_CHANNELS, parseShortsInput, sourceFromSearch, sourceKey, withPastedVideo,
+  parseShortsInput, sourceFromSearch, withPastedVideo,
 } from '../../../lib/shorts/shortsFeed.js';
+import { ShortsCategoryList } from './ShortsCategoryList.jsx';
 
 const KEY_NOTE = 'Search and @handles need a YouTube API key. Paste it here. It stays encrypted in your key vault. Pasted links and channel links work without one.';
 
@@ -39,7 +40,6 @@ export function ShortsSources({ source, onChoose, onClose }) {
   const [note, setNote] = React.useState('');
   const [needsKey, setNeedsKey] = React.useState(false);
   const [tiktok, setTiktok] = React.useState(false);
-  const current = sourceKey(source);
 
   const pick = (next) => { onChoose(next); onClose(); };
 
@@ -111,18 +111,8 @@ export function ShortsSources({ source, onChoose, onClose }) {
         </div>
       )}
 
-      <div className="hb-shorts-label">Channels</div>
-      <ul className="hb-shorts-list">
-        {CURATED_CHANNELS.map((ch) => (
-          <li key={ch.channelId}>
-            <button type="button" className="hb-shorts-row" aria-current={current === sourceKey(ch) ? 'true' : undefined} onClick={() => pick(ch)}>
-              <Icon.Shorts size={14} />
-              <span className="hb-shorts-row-label">{ch.name}</span>
-              {current === sourceKey(ch) && <span className="hb-shorts-row-hint">Playing</span>}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="hb-shorts-label">Categories</div>
+      <ShortsCategoryList source={source} onPick={pick} />
 
       {source?.type === 'list' && (
         <>

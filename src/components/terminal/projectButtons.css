@@ -1,0 +1,92 @@
+.hb-jobs-mount {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(17rem, 42%);
+  overflow: auto;
+  z-index: 4;
+  background: var(--surface);
+  border-left: var(--border-width-1) solid var(--hairline);
+}
+
+.hb-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+.hb-jobs h2 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.hb-jobs p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.hb-job {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-1) solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.hb-job b {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.hb-job span,
+.hb-job-ask code {
+  display: block;
+  margin-top: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+}
+
+.hb-job:hover,
+.hb-job:focus-visible {
+  border-color: var(--accent);
+}
+
+.hb-job-ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.hb-job-ask div { display: flex; gap: var(--space-2); }
+
+.hb-job-ask button {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width-1) solid var(--hairline);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+
+.hb-job-ask button.hb-job-go {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-fill);
+  font-weight: 600;
+}

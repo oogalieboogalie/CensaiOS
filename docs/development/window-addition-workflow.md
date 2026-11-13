@@ -44,8 +44,9 @@ These are mandatory for every new window:
 | `src/lib/manifest/<category>Windows.js` | Add one entry with `kind`, `canvasType`, `label`, `componentName`, `componentPath`, `defaultSize`, and intentional `moduleMenu` discovery state. New generated windows go in `factoryWindows.js`. |
 
 Do not hand-edit `src/lib/windowRegistry.js`, `src/components/windows/windowRegistry.js`,
-`src/components/CanvasEmptyState.jsx`, or `src/lib/canvasObjectTypes.js`. Registry entries, dynamic
-component wiring, launcher starters, aliases, and canvas object types derive from the manifest.
+`src/components/canvas/CanvasEmptyState.jsx`, or `src/lib/canvasObjectTypes.js`. Registry entries,
+dynamic component wiring, the look of the empty board's starting buttons, aliases, and canvas object
+types derive from the manifest.
 
 ## 3. Exposure Points
 
@@ -54,7 +55,7 @@ Pick the exposure points intentionally. A window can be valid without appearing 
 | Surface | File | When to update |
 | --- | --- | --- |
 | Modules dropdown | Manifest `moduleMenu` block | Mature windows with a complete, tested user path. Set `show: false` for prototypes, coming-soon work, and internal diagnostics. |
-| Empty workspace starters | Manifest `launcher` block with `startHere: true` | A small number of core first-run actions only. |
+| Empty board starting buttons | `LAUNCHPAD_STARTS` in `src/lib/launchpadStarts.js` (its name), plus a manifest `launcher` block (its icon, hover hint and spawn props) | Three core first-run actions only; a `launcher` block alone adds no button. |
 | Region picker | `src/components/canvas/CanvasRegionItems.jsx` | Windows that benefit from a user-sized placement area. |
 | New window rotation | `src/lib/storeCanvasActions.js` | Mature windows that should appear from the global new-window command. |
 | Dedicated dock/group affordance | `src/components/Dock.jsx` | Windows directly tied to agent or group workflows. |
@@ -114,7 +115,7 @@ If the window launches but is blank:
 If the window exists but cannot be found by users:
 
 - Confirm its acceptance path is complete, then set `moduleMenu.show: true`.
-- Use `launcher.startHere` only when it belongs in the intentionally small first-run starter set.
+- List it in `LAUNCHPAD_STARTS` only when it belongs among the empty board's three starting buttons.
 
 ## 7. Done Definition
 

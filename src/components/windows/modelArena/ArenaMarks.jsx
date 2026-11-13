@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { Icon } from '../../Icons.jsx';
+import { autoPickStands } from '../../../lib/modelArena/autoPick.js';
 import { formatCost } from '../../../lib/modelArena/arenaCatalog.js';
 import { estimateLaneCost } from '../../../lib/modelArena/benchmarkTasks.js';
 
@@ -30,6 +31,7 @@ export function LaneMarks({ index, rec, done, cutOff = false }) {
       <button type="button" className="hb-arena-chip" data-tone="danger" aria-pressed={mark === 'wrong'} onClick={() => rec.markLane(index, 'wrong')}
         title="This answer is wrong">Wrong</button>
       {judged && <span className="hb-arena-badge" title={rec.marks.judge.reason || ''}>Judge's pick</span>}
+      {autoPickStands(marks, index) && <span className="hb-arena-badge" title={marks.auto.reason || ''}>Auto</span>}
     </div>
   );
 }
@@ -47,6 +49,7 @@ export function RecordBar({ rec, models }) {
         ? <><strong>{rec.task.label}</strong> ({rec.task.kind}). A right answer: {rec.task.check}</>
         : 'Your own request: you can record it as a note, but only the benchmark tasks count in the rankings.'}
     </p>
+    {autoPickStands(rec.marks) && rec.marks.auto.reason && <p className="hb-arena-hint">{rec.marks.auto.reason}</p>}
     <div className="hb-arena-row hb-arena-record">
       <span className="hb-arena-label">Judge</span>
       <select className="hb-arena-select hb-arena-judge" aria-label="Judge model" value={rec.judge} onChange={(e) => rec.setJudge(e.target.value)}>

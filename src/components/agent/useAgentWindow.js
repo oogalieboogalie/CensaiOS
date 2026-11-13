@@ -1,6 +1,7 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
 import { getAgentById, updateAgent } from '../../lib/agentStore.js';
+import { reportAgentChange } from '../../lib/collaboration/liveText.js';
 import { AGENT_SYSTEMS } from '../Agents.jsx';
 import { supportedProvider, defaultModelForProvider, defaultToolsForAgent } from './AgentData.js';
 import { logFailure } from '../../lib/appLog/browserLog.js';
@@ -67,6 +68,7 @@ export function useAgentWindow(win, onUpdate) {
       onUpdate({ customSystem: trimmed });
       AGENT_SYSTEMS[agent.id] = trimmed;
       updateAgent(updatedAgent);
+      reportAgentChange(agent.id);
       setSaveStatus(`${agent.name} saved with ${draftTools.length} tools.`);
       setEditing(false);
     } catch (e) {

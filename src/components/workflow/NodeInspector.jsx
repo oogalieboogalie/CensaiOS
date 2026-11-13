@@ -3,6 +3,7 @@ import React from 'react';
 import { BRANCH_TESTS, WORKFLOW_TOOLS } from '../../lib/workflow/graph.js';
 import { NODE_LOOK, WATCHABLE_KINDS } from './nodeLook.js';
 import { EveryPicker } from '../schedule/EveryPicker.jsx';
+import { StepText, stepTextField } from './StepText.jsx';
 import { NextRuns } from '../schedule/UpcomingList.jsx';
 import { describeEvery, upcomingEvery, whenWords } from '../../lib/schedule/plainWords.js';
 
@@ -16,12 +17,13 @@ function Field({ label, children }) {
 }
 
 /** How the workflow starts: when you press Run, on a schedule, or when something lands on the board. */
-function StartSettings({ node, flow }) {
-  const armed = flow.armed?.mode && flow.armed.mode !== 'manual' ? flow.armed : null;
-  const [mode, setMode] = React.useState(armed?.mode || 'manual');
-  const [every, setEvery] = React.useState(armed?.everyMinutes || node.everyMinutes || 60);
-  const [kind, setKind] = React.useState(armed?.windowKind || node.windowKind || 'doc');
-  React.useEffect(() => { if (armed) setMode(armed.mode); }, [armed?.mode]); // keep in step with a teammate's change
+function StartSettings({ node, flow, words }) {
+  const saved = flow.armed?.mode && flow.armed.mode !== 'manual' ? flow.armed : null;
+  const live = Boolean(saved) && !saved.stale;
+  const [mode, setMode] = React.useState(saved?.mode || 'manual');
+  const [every, setEvery] = React.useState(saved?.everyMinutes || node.everyMinutes || 60);
+  const [kind, setKind] = React.useState(saved?.windowKind || node.windowKind || 'doc');
+  React.useEffect(() => { if (saved) setMode(saved.mode); }, [saved?.mode]); // keep in step with a teammate's change
   const save = () => {
     flow.patchNode(node.id, { mode, everyMinutes: Number(every), windowKind: kind });
     flow.saveTrigger(mode === 'schedule' ? { mode, everyMinutes: Number(every) } : mode === 'board' ? { mode, windowKind: kind } : { mode: 'manual' });
@@ -40,9 +42,9 @@ function StartSettings({ node, flow }) {
           <EveryPicker value={Number(every)} onChange={setEvery} />
           <NextRuns
             sentence={describeEvery(every)}
-            runs={upcomingEvery(every, armed?.mode === 'schedule' && Number(armed.everyMinutes) === Number(every) ? armed.nextRunAt : null, 3)}
+            runs={upcomingEvery(every, live && saved?.mode === 'schedule' && Number(saved.everyMinutes) === Number(every) ? saved.nextRunAt : null, 3)}
           />
-          {armed?.lastRunAt && <p className="hb-wf-hint">Last ran {whenWords(armed.lastRunAt, new Date(), { capital: false })}.</p>}
+          {saved?.lastRunAt && <p className="hb-wf-hint">Last ran {whenWords(saved.lastRunAt, new Date(), { capital: false })}.</p>}
         </>
       )}
       {mode === 'board' && (
@@ -52,20 +54,20 @@ function StartSettings({ node, flow }) {
           </select>
         </Field>
       )}
-      <button type="button" className="hb-wf-btn" data-primary={mode !== (armed?.mode || 'manual') ? 'true' : undefined} onClick={save} disabled={flow.pending}>
-        {mode === 'manual' ? (armed ? 'Turn off auto start' : 'Save') : armed ? 'Update auto start' : 'Turn on auto start'}
+      <button type="button" className="hb-wf-btn" data-primary={mode !== (live ? saved.mode : 'manual') ? 'true' : undefined} onClick={save} disabled={flow.pending}>
+        {mode === 'manual' ? (saved ? 'Turn off auto start' : 'Save') : live ? 'Update auto start' : 'Turn on auto start'}
       </button>
-      {armed && <p className="hb-wf-hint">Runs on its own as the teammate who turned it on.</p>}
+      {live && <p className="hb-wf-hint">Runs on its own as the teammate who turned it on. An edit turns it off until someone turns it on again.</p>}
       <Field label="Text the run starts with">
-        <textarea className="hb-wf-input" rows={3} value={node.input || ''} placeholder="Optional. Board starts hand over the new window's text."
-          onChange={(e) => flow.patchNode(node.id, { input: e.target.value })} />
+        <StepText multiline rows={3} value={node.input} {...words('input')} placeholder="Optional. Board starts hand over the new window's text."
+          onChange={(input) => flow.patchNode(node.id, { input })} />
       </Field>
     </>
   );
 }
 
 /** The side panel for the selected step. */
-export function NodeInspector({ node, flow, agents, result }) {
+export function NodeInspector({ node, flow, agents, result, winId }) {
   if (!node) {
     return (
       <aside className="hb-wf-inspector">
@@ -74,13 +76,16 @@ export function NodeInspector({ node, flow, agents, result }) {
     );
   }
   const patch = (fields) => flow.patchNode(node.id, fields);
+  // Live cursors: each box names its step by its place in the shared list.
+  const at = flow.graph?.nodes?.findIndex((n) => n.id === node.id) ?? -1;
+  const words = (key) => (winId && at >= 0 ? { winId, field: stepTextField(at, key) } : {});
   return (
     <aside className="hb-wf-inspector" aria-label={`${NODE_LOOK[node.type]?.label} settings`}>
       <div className="hb-wf-label">{NODE_LOOK[node.type]?.label}</div>
       <Field label="Name">
-        <input className="hb-wf-input" value={node.title || ''} onChange={(e) => patch({ title: e.target.value })} />
+        <StepText value={node.title} {...words('title')} onChange={(title) => patch({ title })} />
       </Field>
-      {node.type === 'trigger' && <StartSettings node={node} flow={flow} />}
+      {node.type === 'trigger' && <StartSettings node={node} flow={flow} words={words} />}
       {node.type === 'agent' && (
         <>
           <Field label="Agent">
@@ -89,7 +94,7 @@ export function NodeInspector({ node, flow, agents, result }) {
             </select>
           </Field>
           <Field label="What should it do?">
-            <textarea className="hb-wf-input" rows={4} value={node.instructions || ''} onChange={(e) => patch({ instructions: e.target.value })} />
+            <StepText multiline rows={4} value={node.instructions} {...words('instructions')} onChange={(instructions) => patch({ instructions })} />
           </Field>
         </>
       )}
@@ -118,7 +123,7 @@ export function NodeInspector({ node, flow, agents, result }) {
             </select>
           </Field>
           <Field label={node.test === 'longer_than' ? 'Characters' : 'Words'}>
-            <input className="hb-wf-input" value={node.value || ''} onChange={(e) => patch({ value: e.target.value })} />
+            <StepText value={node.value} {...words('value')} onChange={(value) => patch({ value })} />
           </Field>
           <p className="hb-wf-hint">Yes goes out the top dot, no out the bottom one.</p>
         </>

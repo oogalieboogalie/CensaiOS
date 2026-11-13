@@ -106,7 +106,7 @@ export function CreativeVideoWindow({ win = {}, onUpdate }) {
             <canvas ref={canvasRef} width={doc.w} height={doc.h} className="hb-cr-canvas" role="img" aria-label="Video preview"
               style={{ width: doc.w * scale, height: doc.h * scale }} onClick={engine.toggle} />
           </div>
-          <ClipInspector clip={clip} missing={Boolean(clip?.media?.id && engine.missing.includes(clip.media.id))} onChange={(next) => ed.setClip(ed.selectedId, next)} />
+          <ClipInspector clip={clip} clipId={ed.selectedId} windowId={win.id} missing={Boolean(clip?.media?.id && engine.missing.includes(clip.media.id))} onChange={(next) => ed.setClip(ed.selectedId, next)} />
         </div>
         <Timeline doc={doc} time={engine.time} total={total} pps={ed.pps} selectedId={ed.selectedId} missing={engine.missing}
           onSelect={ed.select} onSeek={engine.seek} onChange={ed.setClip} />

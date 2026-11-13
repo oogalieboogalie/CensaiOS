@@ -5,6 +5,7 @@ import {
   countByStatus,
   buildActiveAgents,
 } from './OperationsShared.jsx';
+import { healthFlag } from '../../lib/healthFlag.js';
 import { MetricsView } from './MetricsView.jsx';
 import { RuntimePanel } from './RuntimePanel.jsx';
 import { ActiveAgentsPanel } from './ActiveAgentsPanel.jsx';
@@ -26,11 +27,16 @@ export function UnderTheHood({ state, hasWorkspace, includeCompleted, setInclude
   const activeAgents = buildActiveAgents({ tasks: activeTasks, schedules: activeSchedules, jules: activeJules, subAgents: state.subAgents });
   const taskWorker = state.health?.taskWorker || {};
   const schedulerWorker = state.health?.schedulerWorker || {};
-  const dbReady = Boolean(state.health?.database?.ready ?? state.health?.databaseStatus?.ready ?? state.health?.database);
-  const qdrantReady = Boolean(state.health?.qdrant?.ready);
-  const modelReady = Boolean(state.health?.modelProvider?.ready);
-  const workerReady = Boolean(taskWorker.ready);
-  const schedulerReady = Boolean(schedulerWorker.ready);
+  const dbReady = healthFlag(state.health, (health) => {
+    if (typeof health.databaseStatus?.ready === 'boolean') return health.databaseStatus.ready;
+    if (typeof health.database === 'boolean') return health.database;
+    if (typeof health.database?.ready === 'boolean') return health.database.ready;
+    return undefined;
+  });
+  const qdrantReady = healthFlag(state.health, (health) => health.qdrant?.ready);
+  const modelReady = healthFlag(state.health, (health) => health.modelProvider?.ready);
+  const workerReady = healthFlag(state.health, (health) => health.taskWorker?.ready);
+  const schedulerReady = healthFlag(state.health, (health) => health.schedulerWorker?.ready);
   const errorList = Object.values(state.errors).filter(Boolean);
 
   return (

@@ -9,6 +9,7 @@ import { getCollaborationClientId } from '../../../lib/collaboration/clientIdent
 import { sendGameMessage } from '../../../lib/collaboration/liveText.js';
 import { useBoardEvent } from '../../../lib/collaboration/boardEvents.js';
 import { getPresentClientIds, getSelf } from '../../../lib/modules/presenceRoster.js';
+import { cleanMatch, cleanScoreRows } from '../../../lib/games/cleanGameRecord.js';
 import { drawPicture, readGameColors, sparks } from './render.js';
 
 const KEY_BITS = {
@@ -33,6 +34,7 @@ export function useAsteroids({ win, onUpdate }) {
   const session = React.useMemo(() => createAsteroidsSession({
     windowId: String(win.id), selfId, send: sendGameMessage, update: (patch) => updateRef.current?.(patch),
   }), [win.id, selfId]);
+  if (import.meta.env?.DEV) (globalThis.__hbAsteroids ||= {})[win.id] = session;
   const [view, setView] = React.useState(() => session.view());
   const [captured, setCaptured] = React.useState(false);
   const [sound, setSoundState] = React.useState(loadSoundSettings);
@@ -41,7 +43,7 @@ export function useAsteroids({ win, onUpdate }) {
 
   const me = getSelf();
   React.useEffect(() => {
-    session.sync({ match: win.match || null, highScores: win.highScores || [], canPlay: me.canEdit !== false, selfName: me.label || 'Player', present: getPresentClientIds() });
+    session.sync({ match: cleanMatch(win.match), highScores: cleanScoreRows(win.highScores), canPlay: me.canEdit !== false, selfName: me.label || 'Player', present: getPresentClientIds() });
   }, [session, win.match, win.highScores, me.canEdit, me.label]);
 
   useBoardEvent('game.frame', (message) => session.receiveFrame(message));

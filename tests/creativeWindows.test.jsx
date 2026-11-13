@@ -73,6 +73,25 @@ describe('Censai Vector window', () => {
   });
 });
 
+test('Photo and Vector tool keys stay inside the window', () => {
+  const leaked = [];
+  const hear = (e) => leaked.push(e.key);
+  window.addEventListener('keydown', hear);
+  try {
+    render(<Harness Window={CreativePhotoWindow} initial={CREATIVE_STARTERS.creativePhoto} />);
+    fireEvent.keyDown(document.querySelector('[data-app="photo"]'), { key: 'i' });
+    expect(screen.getByRole('button', { name: 'Color picker (I)' })).toHaveAttribute('aria-pressed', 'true');
+    cleanup();
+
+    render(<Harness Window={CreativeVectorWindow} initial={CREATIVE_STARTERS.creativeVector} />);
+    fireEvent.keyDown(document.querySelector('[data-app="vector"]'), { key: 'o' });
+    expect(screen.getByRole('button', { name: 'Ellipse (O)' })).toHaveAttribute('aria-pressed', 'true');
+    expect(leaked).toEqual([]);
+  } finally {
+    window.removeEventListener('keydown', hear);
+  }
+});
+
 describe('Censai Video window', () => {
   test('titles go on the timeline and split at the playhead', () => {
     render(<Harness Window={CreativeVideoWindow} initial={CREATIVE_STARTERS.creativeVideo} />);

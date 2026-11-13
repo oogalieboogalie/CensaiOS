@@ -6,15 +6,26 @@ import { encryptEmail, decryptEmail, hashEmail } from '../hubAccounts/encryption
 import { validateUsername, validateEmail, validatePassword } from '../hubAccounts/validation.js';
 import { generateToken, hashPassword, verifyPassword } from '../hubAccounts/password.js';
 import { authSecurityRateLimiter } from '../middleware/standardRateLimits.js';
+import { deliverHubConfirmLink, hashConfirmToken } from '../hubAccounts/confirmLink.js';
+import { lookupHubSessionUser } from '../hubAccounts/sessionGate.js';
 import { establishAuthenticatedSession } from '../security/authSession.js';
 import { checkTotp, newTotpSecret, totpUri } from '../hubAccounts/totp.js';
 import { logAuthProblem } from '../security/authLog.js';
+import { getRuntimeMode, RUNTIME_MODES } from '../middleware/runtimeMode.js';
 
 const HUB_LIMITER = rateLimit({ windowMs: 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Too many requests. Please try again shortly.' } });
 
 export const hubAuthRouter = express.Router();
 
 hubAuthRouter.post('/signup', authSecurityRateLimiter, HUB_LIMITER, async (req, res) => {
+  // A private or local Homebase does not let a caller claim an email. Cloud is
+  // the only place a new hub account can be created.
+  if (getRuntimeMode() !== RUNTIME_MODES.CLOUD_SAAS) {
+    return res.status(403).json({
+      error: 'Hub sign-up is turned off on this Homebase.',
+      signupClosed: true,
+    });
+  }
   if (!dbReady()) {
     res.setHeader('Retry-After', '2');
     return res.status(503).json({ error: 'Database initializing, please retry in a moment.' });
@@ -43,25 +54,22 @@ hubAuthRouter.post('/signup', authSecurityRateLimiter, HUB_LIMITER, async (req, 
 
     const { rows } = await pool.query(
       'INSERT INTO hub_accounts (username, email_encrypted, email_hash, password_hash, email_confirm_token, email_confirm_expires) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, username, created_at',
-      [trimmedUsername, emailEncrypted, emailHash, passwordHash, confirmToken, confirmExpires],
+      [trimmedUsername, emailEncrypted, emailHash, passwordHash, hashConfirmToken(confirmToken), confirmExpires],
     );
     const account = rows[0];
-    const confirmUrl = `${process.env.APP_ORIGIN || 'http://localhost:5173'}/confirm-email?token=${confirmToken}`;
+    await deliverHubConfirmLink({
+      accountId: account.id,
+      username: trimmedUsername,
+      emailEncrypted,
+      emailHash,
+      token: confirmToken,
+    });
 
-    const webhook = process.env.N8N_HUB_SIGNUP_WEBHOOK;
-    if (webhook) {
-      try {
-        await fetch(webhook, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event: 'hub_account_signup', username: trimmedUsername, emailCipher: emailEncrypted, emailHash, confirmUrl, timestamp: new Date().toISOString() }),
-        });
-      } catch (err) {
-        logAuthProblem('hub sign-up: n8n webhook failed', err, 'warn');
-      }
-    }
-
-    res.status(201).json({ ok: true, account: { id: account.id, username: account.username }, message: 'Account created. Check your email to confirm.', confirmUrl });
+    res.status(201).json({
+      ok: true,
+      account: { id: account.id, username: account.username },
+      message: 'Account created. It cannot sign in until the owner of this Homebase approves it.',
+    });
   } catch (err) {
     logAuthProblem('hub sign-up failed', err);
     res.status(500).json({ error: 'Failed to create account' });
@@ -88,7 +96,14 @@ hubAuthRouter.post('/login', authSecurityRateLimiter, HUB_LIMITER, async (req, r
     }
     const encRow = await pool.query('SELECT email_encrypted FROM hub_accounts WHERE id = $1', [account.id]);
     const email = decryptEmail(encRow.rows[0]?.email_encrypted);
-    await establishAuthenticatedSession(req, { id: account.id, role: 'user', email });
+    const decision = await lookupHubSessionUser(pool, email);
+    if (!decision.allowed) {
+      return res.status(403).json({
+        error: 'The owner of this Homebase has to approve this account before it can sign in.',
+        approvalRequired: true,
+      });
+    }
+    await establishAuthenticatedSession(req, { id: account.id, email, hubAccount: true });
     res.json({ ok: true, user: { id: account.id, username: account.username } });
   } catch (err) {
     logAuthProblem('hub sign-in failed', err);
@@ -100,7 +115,7 @@ hubAuthRouter.get('/confirm-email', async (req, res) => {
   const { token } = req.query;
   if (!token) return res.status(400).send('Invalid confirmation link');
   try {
-    const { rows } = await pool.query('SELECT id, email_confirm_expires FROM hub_accounts WHERE email_confirm_token = $1', [token]);
+    const { rows } = await pool.query('SELECT id, email_confirm_expires FROM hub_accounts WHERE email_confirm_token = $1', [hashConfirmToken(token)]);
     if (rows.length === 0) return res.status(400).send('Invalid or expired confirmation link');
     if (new Date(rows[0].email_confirm_expires) < new Date()) return res.status(400).send('Confirmation link has expired');
     await pool.query('UPDATE hub_accounts SET email_confirmed = TRUE, email_confirm_token = NULL, email_confirm_expires = NULL, updated_at = NOW() WHERE id = $1', [rows[0].id]);

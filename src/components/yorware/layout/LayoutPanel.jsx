@@ -7,6 +7,7 @@ import { ToolIcon } from '../../creative/toolIcons.jsx';
 import { MASTER, PAGE_SIZES } from '../../../lib/yorware/layoutModel.js';
 import { FONTS } from '../../../lib/yorware/layoutFlow.js';
 import { LayoutIcon } from '../layoutIcons.jsx';
+import { LayoutStoryBox } from './LayoutStoryText.jsx';
 
 const NAMES = { text: 'Text frame', image: 'Picture frame', rect: 'Rectangle', ellipse: 'Ellipse', line: 'Line' };
 const inch = (pt) => Math.round((pt / 72) * 100) / 100;
@@ -42,13 +43,12 @@ function PageSettings({ p }) {
   );
 }
 
-function TextSettings({ p, textRef }) {
+function TextSettings({ p, textRef, windowId }) {
   const { story: s, one } = p;
   const info = p.flow[p.selected[0]];
   return (
     <Section title="Text" aside={info?.count > 1 ? <span className="hb-cr-num">frame {info.index + 1} of {info.count}</span> : null}>
-      <textarea ref={textRef} className="hb-cr-input hb-cr-textarea hb-yl-story" aria-label="Text" value={s.text}
-        placeholder="Type here. Text that doesn't fit flows into the next linked frame." onChange={(e) => p.setStory({ text: e.target.value })} />
+      <LayoutStoryBox textRef={textRef} windowId={windowId} storyId={one.story} text={s.text || ''} onText={(text) => p.setStory({ text })} />
       <div className="hb-cr-row">
         <select className="hb-of-select" aria-label="Font" value={s.font || 'sans'} onChange={(e) => p.setStory({ font: e.target.value })}>
           {Object.entries(FONTS).map(([k, f]) => <option key={k} value={k}>{f.label}</option>)}
@@ -113,12 +113,12 @@ function BoxSettings({ p, onPickPicture }) {
 }
 
 /** The right-hand panel: the page's settings, or what you selected. */
-export function LayoutPanel({ p, textRef, onPickPicture }) {
+export function LayoutPanel({ p, textRef, onPickPicture, windowId }) {
   const { one, selected } = p;
   return (
     <aside className="hb-cr-panel hb-yl-panel" aria-label="Layout settings">
       {!selected.length && <PageSettings p={p} />}
-      {one?.type === 'text' && p.story && <TextSettings p={p} textRef={textRef} />}
+      {one?.type === 'text' && p.story && <TextSettings p={p} textRef={textRef} windowId={windowId} />}
       {one && <BoxSettings p={p} onPickPicture={onPickPicture} />}
       {selected.length > 0 && (
         <Section title={selected.length > 1 ? `${selected.length} selected` : 'Arrange'}>

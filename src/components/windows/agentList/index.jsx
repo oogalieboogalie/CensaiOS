@@ -12,6 +12,7 @@ import { getAgents, subscribe as subscribeAgents } from '../../../lib/agentStore
 import { getPresence, getSelf, subscribePresence } from '../../../lib/modules/presenceRoster.js';
 import { showWindow } from '../../../lib/agentNetwork/askBoardAgent.js';
 import { getCollaborationClientId } from '../../../lib/collaboration/clientIdentity.js';
+import { writtenBy } from '../../../lib/chat/writer.js';
 import { buildAgentList, filterAgentRows } from '../../../lib/agentList/presence.js';
 import { useAgentPresence } from './useAgentPresence.js';
 import { AgentRow, GroupHeader } from './AgentRow.jsx';
@@ -69,7 +70,7 @@ export function AgentListWindow({ win = {}, isActive, initialServer = null }) {
     }
     if (text) {
       const msgs = Array.isArray(target?.msgs) ? target.msgs : [];
-      store.onUpdate?.(id, { msgs: [...msgs, { from: 'me', text, at: new Date().toISOString() }], autoSend: true, autoSendBy: getCollaborationClientId() });
+      store.onUpdate?.(id, { msgs: [...msgs, { from: 'me', text, at: new Date().toISOString(), ...writtenBy() }], autoSend: true, autoSendBy: getCollaborationClientId() });
     }
     return id;
   };

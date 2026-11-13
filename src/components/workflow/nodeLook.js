@@ -21,6 +21,7 @@ export const WATCHABLE_KINDS = Object.freeze([
 ]);
 
 export function triggerLine(node, armed) {
+  if (armed?.stale) return 'Auto start is off until someone turns it on again';
   const mode = armed?.mode && armed.mode !== 'manual' ? armed : null;
   if (mode?.mode === 'schedule') return `${describeEvery(mode.everyMinutes)}, on its own`;
   if (mode?.mode === 'board') {

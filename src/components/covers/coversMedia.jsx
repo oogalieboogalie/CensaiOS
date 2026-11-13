@@ -120,6 +120,13 @@ export const MEDIA_COVERS = {
       <path d="M7 17.5 H25" {...H} /><path d="M7 17.5 H15" {...A} />
     </>
   ),
+  // A feed of posts, each with an up arrow beside it.
+  reddit: (
+    <>
+      <rect x="4" y="3.5" width="24" height="7.5" rx="1.4" {...S} /><rect x="4" y="13" width="24" height="7.5" rx="1.4" {...F} />
+      <path d="M7 9 L8.5 6 L10 9 Z" fill={ACCENT} /><path d="M12 6.5 H25 M12 8.8 H21" {...H} />
+    </>
+  ),
   // Messages going back and forth.
   whatsapp: (
     <>

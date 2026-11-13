@@ -37,7 +37,8 @@ export async function readFileLoad(res) {
       const reason = fileProblemWords(data?.reason) ? data.reason : '';
       return { ok: false, status, reason, message: fileLoadMessage(status, reason) };
     }
-    return { ok: true, status, content: typeof data?.content === 'string' ? data.content : '' };
+    // ownerOnly: only this computer's owner (who is asking) may read these words.
+    return { ok: true, status, content: typeof data?.content === 'string' ? data.content : '', ownerOnly: data?.ownerOnly === true };
   } catch {
     return { ok: false, status, reason: '', message: fileLoadMessage(status) };
   }

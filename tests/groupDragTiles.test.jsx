@@ -45,7 +45,8 @@ test('dragging the group over a Sticky keeps it one tiled group and logs it', ()
   expect(wins.find(w => w.id === 's')).toMatchObject({ x: 300, y: 200, groupId: null });
   expect(wins.find(w => w.id === 'a')).toMatchObject({ x: 120, y: 40 });
   expect(tiledMembers(canvasGroups[0], wins).map(w => w.id)).toEqual(['a', 'b', 'c']);
-  expect(logToApp).toHaveBeenCalledWith('info', expect.stringMatching(/"Launch" left Sticky behind/), expect.anything());
+  // The line counts windows by kind: never a window's title nor the group's name.
+  expect(logToApp).toHaveBeenCalledWith('info', 'groups: a group drag left behind 1 window with no tile (sticky)', expect.anything());
 });
 
 test('a group with no layout still picks up a window inside it, and says so', () => {
@@ -53,7 +54,7 @@ test('a group with no layout still picks up a window inside it, and says so', ()
   const s = store([{ ...sticky }], [loose]);
   s.actions.moveGroup('g2', 5, 5, true);
   expect(s.get().wins[0]).toMatchObject({ x: 305, groupId: 'g2' });
-  expect(logToApp).toHaveBeenCalledWith('info', expect.stringMatching(/"Ideas" picked up Sticky/), expect.anything());
+  expect(logToApp).toHaveBeenCalledWith('info', 'groups: a group drag picked up 1 window it does not tile (sticky)', expect.anything());
 });
 
 test('a Shift-click with a little jitter is not a drag', () => {

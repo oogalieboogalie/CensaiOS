@@ -115,7 +115,7 @@ describe('Outbox', () => {
     expect(screen.getByRole('button', { name: 'Approve and send' }).disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'This one has a big backyard.' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(onUpdate.mock.calls[0][0].drafts[0]).toMatchObject({ body: 'This one has a big backyard.', status: 'pending' });
   });
 });

@@ -2,11 +2,21 @@ import { getSubAgentById } from '../../../memory.js';
 import { logProjectActivity, isGithubProject } from '../../../workspaces.js';
 import { fetchGithub, resolveProjectForCall } from '../../helpers.js';
 
+// A pull request number goes into a GitHub address, so it must be a plain
+// number: "1/../../other/repo" would walk out of the board's own repo.
+const PR_NUMBER_ERROR = 'Error: pr_number must be a whole number, like 12.';
+function prNumberOf(args) {
+  const text = String(args?.pr_number ?? '').trim();
+  return /^[1-9][0-9]{0,9}$/.test(text) ? Number(text) : null;
+}
+
 export async function prStatus(agentId, args, context = {}) {
+  const prNumber = prNumberOf(args);
+  if (!prNumber) return PR_NUMBER_ERROR;
   const { project } = await resolveProjectForCall(agentId, args.project, context);
   if (!isGithubProject(project)) return 'Error: not a GitHub project.';
-  const pr = await fetchGithub(`/repos/${project.repo}/pulls/${args.pr_number}`);
-  const reviews = await fetchGithub(`/repos/${project.repo}/pulls/${args.pr_number}/reviews`);
+  const pr = await fetchGithub(`/repos/${project.repo}/pulls/${prNumber}`);
+  const reviews = await fetchGithub(`/repos/${project.repo}/pulls/${prNumber}/reviews`);
   const checks = await fetchGithub(`/repos/${project.repo}/commits/${pr.head.sha}/check-runs`).catch(() => ({ check_runs: [] }));
   const reviewSummary = Array.isArray(reviews) && reviews.length
     ? reviews.map(r => `  - ${r.user?.login}: ${r.state}`).join('\n')
@@ -28,13 +38,15 @@ export async function prStatus(agentId, args, context = {}) {
 }
 
 export async function prComments(agentId, args, context = {}) {
+  const prNumber = prNumberOf(args);
+  if (!prNumber) return PR_NUMBER_ERROR;
   const { project } = await resolveProjectForCall(agentId, args.project, context);
   if (!isGithubProject(project)) return 'Error: not a GitHub project.';
   const repo = project.repo;
   const [reviewComments, issueComments, reviews] = await Promise.all([
-    fetchGithub(`/repos/${repo}/pulls/${args.pr_number}/comments?per_page=50`).catch(() => []),
-    fetchGithub(`/repos/${repo}/issues/${args.pr_number}/comments?per_page=50`).catch(() => []),
-    fetchGithub(`/repos/${repo}/pulls/${args.pr_number}/reviews?per_page=20`).catch(() => []),
+    fetchGithub(`/repos/${repo}/pulls/${prNumber}/comments?per_page=50`).catch(() => []),
+    fetchGithub(`/repos/${repo}/issues/${prNumber}/comments?per_page=50`).catch(() => []),
+    fetchGithub(`/repos/${repo}/pulls/${prNumber}/reviews?per_page=20`).catch(() => []),
   ]);
   const items = [];
   for (const r of reviews) {
@@ -54,6 +66,8 @@ export async function prComments(agentId, args, context = {}) {
 }
 
 export async function mergePr(agentId, args, context = {}) {
+  const prNumber = prNumberOf(args);
+  if (!prNumber) return PR_NUMBER_ERROR;
   const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
   if (sub && sub.permission !== 'worker') {
     return `Error: ${sub.permission} sub-agents cannot merge PRs.`;
@@ -61,22 +75,22 @@ export async function mergePr(agentId, args, context = {}) {
   const { project } = await resolveProjectForCall(agentId, args.project, context);
   if (!isGithubProject(project)) return 'Error: not a GitHub project.';
 
-  const pr = await fetchGithub(`/repos/${project.repo}/pulls/${args.pr_number}`);
-  if (pr.merged) return `PR #${args.pr_number} is already merged.`;
-  if (pr.state !== 'open') return `PR #${args.pr_number} is ${pr.state}, cannot merge.`;
-  if (pr.draft) return `PR #${args.pr_number} is a draft. Mark ready for review first.`;
-  if (pr.mergeable === false) return `PR #${args.pr_number} has conflicts and cannot be merged.`;
+  const pr = await fetchGithub(`/repos/${project.repo}/pulls/${prNumber}`);
+  if (pr.merged) return `PR #${prNumber} is already merged.`;
+  if (pr.state !== 'open') return `PR #${prNumber} is ${pr.state}, cannot merge.`;
+  if (pr.draft) return `PR #${prNumber} is a draft. Mark ready for review first.`;
+  if (pr.mergeable === false) return `PR #${prNumber} has conflicts and cannot be merged.`;
 
   const body = { merge_method: args.method || 'squash' };
   if (args.commit_title) body.commit_title = args.commit_title;
   if (args.commit_message) body.commit_message = args.commit_message;
 
-  const res = await fetchGithub(`/repos/${project.repo}/pulls/${args.pr_number}/merge`, {
+  const res = await fetchGithub(`/repos/${project.repo}/pulls/${prNumber}/merge`, {
     method: 'PUT',
     body: JSON.stringify(body),
   });
-  await logProjectActivity(project.id, agentId, 'merge_pr', `#${args.pr_number} via ${body.merge_method}`);
+  await logProjectActivity(project.id, agentId, 'merge_pr', `#${prNumber} via ${body.merge_method}`);
   return res?.merged
-    ? `Merged PR #${args.pr_number} (${body.merge_method}). SHA: ${res.sha}`
+    ? `Merged PR #${prNumber} (${body.merge_method}). SHA: ${res.sha}`
     : `Merge attempt result: ${JSON.stringify(res).slice(0, 200)}`;
 }

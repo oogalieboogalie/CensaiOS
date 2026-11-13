@@ -10,23 +10,24 @@ import {
 // OAuth dance endpoints (Phase 2.a contract). Tokens are written ONLY
 // through the hardened oauthStore vault (encrypted at rest, raw columns
 // forced NULL) and are NEVER returned to clients — responses carry ok /
-// scope / expiry metadata. Actor identity is explicit: callers pass
-// userId (local-first v0.1); the auth guard binds it in hosted mode.
+// scope / expiry metadata. Tokens always belong to the signed-in person
+// (the session), never to a userId named in the request, and a sign-in
+// can only be finished by the person who started it.
 export const oauthRouter = express.Router();
 oauthRouter.use(resourceRateLimiter);
 
 const pendingStates = new Map();
 const STATE_TTL_MS = 10 * 60 * 1000;
 
-function rememberState(provider, redirectUri) {
+function rememberState(provider, redirectUri, userId) {
   const state = newStateToken();
-  pendingStates.set(state, { provider, redirectUri, createdAt: Date.now() });
+  pendingStates.set(state, { provider, redirectUri, userId, createdAt: Date.now() });
   return state;
 }
 
-function consumeState(provider, state) {
+function consumeState(provider, state, userId) {
   const pending = pendingStates.get(state);
-  if (!pending || pending.provider !== provider) return null;
+  if (!pending || pending.provider !== provider || pending.userId !== userId) return null;
   pendingStates.delete(state);
   if (Date.now() - pending.createdAt > STATE_TTL_MS) return null;
   return pending;
@@ -39,18 +40,20 @@ setInterval(() => {
   }
 }, STATE_TTL_MS).unref?.();
 
-function requireUserId(req) {
-  const userId = String(req.query.userId || req.body?.userId || '').trim();
-  return userId || null;
+function sessionUserId(req) {
+  const userId = req.session?.userId;
+  return userId === undefined || userId === null || userId === '' ? null : String(userId);
 }
 
 oauthRouter.get('/:provider/authorize', (req, res) => {
   const provider = getOAuthProvider(req.params.provider);
   if (!provider) return res.status(404).json({ error: 'Unknown OAuth provider' });
+  const userId = sessionUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Sign in first.' });
   const redirectUri = String(req.query.redirectUri || '').trim();
   if (!redirectUri) return res.status(400).json({ error: 'redirectUri is required' });
   try {
-    const state = rememberState(provider.id, redirectUri);
+    const state = rememberState(provider.id, redirectUri, userId);
     const authorizationUrl = provider.getAuthorizationUrl({ state, redirectUri });
     res.json({ authorizationUrl, state });
   } catch (err) {
@@ -61,11 +64,11 @@ oauthRouter.get('/:provider/authorize', (req, res) => {
 oauthRouter.get('/:provider/callback', async (req, res) => {
   const provider = getOAuthProvider(req.params.provider);
   if (!provider) return res.status(404).json({ error: 'Unknown OAuth provider' });
-  const userId = requireUserId(req);
-  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  const userId = sessionUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Sign in first.' });
   const { code, state } = req.query;
   if (!code || !state) return res.status(400).json({ error: 'code and state are required' });
-  const pending = consumeState(provider.id, String(state));
+  const pending = consumeState(provider.id, String(state), userId);
   if (!pending) return res.status(403).json({ error: 'Invalid or expired OAuth state' });
   try {
     const tokens = await provider.exchangeCodeForToken({ code: String(code), redirectUri: pending.redirectUri });
@@ -89,8 +92,8 @@ oauthRouter.get('/:provider/callback', async (req, res) => {
 oauthRouter.post('/:provider/refresh', async (req, res) => {
   const provider = getOAuthProvider(req.params.provider);
   if (!provider) return res.status(404).json({ error: 'Unknown OAuth provider' });
-  const userId = requireUserId(req);
-  if (!userId) return res.status(400).json({ error: 'userId is required' });
+  const userId = sessionUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Sign in first.' });
   try {
     const stored = await getOAuthCredential({ userId, provider: provider.id });
     if (!stored?.refresh_token) return res.status(409).json({ error: 'No refresh token stored for this provider' });

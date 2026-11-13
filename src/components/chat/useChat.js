@@ -1,11 +1,12 @@
 import React from 'react';
-import { getAgents, getAgentById, subscribe as subscribeAgents } from '../../lib/agentStore.js';
+import { useChatAgent } from './useChatAgent.js';
 import { sendMessageWithMeta } from '../../lib/chat.js';
 import { scriptedReply, replyDelayMs } from '../../data/landing-chat-script.js';
 import { useVisibilityAwareInterval } from '../../lib/usePolling.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { messagesForSend, persistableMessage } from '../../lib/chat/attachments.js';
-import { withGroupContext } from '../../lib/chat/groupContext.js';
+import { writtenBy } from '../../lib/chat/writer.js';
+import { withGroupContext, groupWindowKinds } from '../../lib/chat/groupContext.js';
 import { withBoardKnowledge } from '../../lib/research/chatKnowledge.js';
 import { copyToClipboard } from '../../lib/chat/clipboard.js';
 import { useModelCapabilities } from './useModelCapabilities.js';
@@ -17,17 +18,11 @@ import { answerMessage, errorMessage, landChatReply, stoppedMessage } from './la
 import { useIncomingFamilyReply } from './useIncomingFamilyReply.js';
 import { runEnded, runStarted, runTool, toolNameFrom } from '../../lib/weewoo/agentRun.js';
 import { getSelf } from '../../lib/modules/presenceRoster.js';
-import { getCollaborationClientId } from '../../lib/collaboration/clientIdentity.js';
-
-function useAgent(agentId) {
-  // Re-render when the agent record changes (e.g. its model is switched).
-  const agent = React.useSyncExternalStore(subscribeAgents, () => getAgentById(agentId), () => getAgentById(agentId));
-  return agent || getAgents()[1];
-}
+import { takeLocalAutoSend } from '../../lib/localRun.js';
 
 export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, isActive, sendVia = null }) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
-  const agent = useAgent(win.agentId);
+  const agent = useChatAgent(win.agentId);
   const defaultMsgs = React.useMemo(() => [], [agent.id]);
   const msgs = win.msgs === undefined ? defaultMsgs : win.msgs;
 
@@ -117,7 +112,8 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
     if (sending) return;
     if (!isAuto && !text && !win.imageAttachment && attachments.length === 0) return;
 
-    const userMsg = isAuto ? null : { from: 'me', text, at: new Date().toISOString(), image: win.imageAttachment, ...(attachments.length ? { attachments } : {}) };
+    // It keeps who wrote it, so teammates' copies and their Grok can tell whose it is.
+    const userMsg = isAuto ? null : { from: 'me', text, at: new Date().toISOString(), ...writtenBy(), image: win.imageAttachment, ...(attachments.length ? { attachments } : {}) };
     const displayMsgs = isAuto ? autoSendMessages : [...msgs, userMsg];
     // Stored state keeps large attachments as name-only stubs; the request still carries their data.
     const storedMsgs = isAuto ? displayMsgs : [...msgs, persistableMessage(userMsg)];
@@ -169,6 +165,7 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
         conversationId: win.chatId || `chat:${win.id}`,
         workspaceId,
         currentProject,
+        groupWindowKinds: groupWindowKinds(canvasGroups, allWins, agent.id, win.id),
         signal: controller.signal,
         onDelta: (chunk, round) => {
           // A new model round starts a fresh answer; earlier text was preamble.
@@ -208,14 +205,12 @@ export function useChat({ win, onUpdate, allWins, canvasGroups, currentProject, 
   const stop = React.useCallback(() => abortRef.current?.abort(), []);
 
   React.useEffect(() => {
-    // autoSendBy names the one browser that sends, so teammates watching the
-    // same window do not send it twice.
-    const mine = !win.autoSendBy || win.autoSendBy === getCollaborationClientId();
-    if (win.autoSend && mine && msgs.length > 0 && msgs[msgs.length - 1].from === 'me' && !sending) {
-      onUpdate({ autoSend: false });
-      send(msgs);
-    }
-  }, [win.autoSend, win.autoSendBy, msgs, sending, onUpdate, send]);
+    // Only a chat this browser just queued. A shared autoSend flag does not send.
+    if (!win.autoSend || sending || msgs.length === 0 || msgs[msgs.length - 1].from !== 'me') return;
+    if (!takeLocalAutoSend(win.id)) return;
+    onUpdate({ autoSend: false });
+    send(msgs);
+  }, [win.autoSend, win.id, msgs, sending, onUpdate, send]);
 
   const actions = useChatActions({ win, agent, msgs, setMsgs, send, sending });
 

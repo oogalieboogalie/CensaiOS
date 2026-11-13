@@ -51,6 +51,18 @@ test('a card follows the server request and hands the answer back to the asking 
   expect(useWorkspaceStore.getState().wins.find((w) => w.id === 'h1').helperLoggedAt).toBeTruthy();
 });
 
+test("a card a coding agent answers reads the agent's task as a teammate sees it, as the card is on the shared board", async () => {
+  useWorkspaceStore.setState((state) => ({ wins: [...state.wins, {
+    id: 'h3', kind: 'agentHelp', executor: 'cli', cliTaskId: 'made-up-task', fromWindowId: 'c1', toWindowId: 'c2',
+    fromLabel: 'Atlas', toLabel: 'Claude Code', task: 'Put the made-up key in config.js', status: 'working', x: 500, y: 400, w: 340, h: 280,
+  }] }));
+  global.fetch.mockResolvedValue({ ok: true, json: async () => ({ task: { id: 'made-up-task', status: 'done', summary: 'config.js holds [hidden].' }, items: [] }) });
+  render(<CardHost id="h3" />);
+  await waitFor(() => expect(screen.getByTestId('agent-help-status').textContent).toBe('Answered'));
+  expect(global.fetch.mock.calls[0][0]).toBe('/api/cli-agents/tasks/made-up-task?since=1000000000&board=1');
+  expect(screen.getByTestId('agent-help-result').textContent).toContain('config.js holds [hidden].');
+});
+
 test('a failed request still shows up in the helper chat, and an agent that already got its answer is not sent it again', async () => {
   useWorkspaceStore.setState((state) => ({ wins: [...state.wins,
     { id: 'h3', kind: 'agentHelp', executor: 'network', fromWindowId: 'c1', toWindowId: 'c2', fromLabel: 'Atlas', toLabel: 'Nexus',

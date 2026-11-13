@@ -1,14 +1,19 @@
-import { classifyAgentIdentity } from '../agents/identity.js';
+import {
+  invalidCanvasAgentIds,
+  ownerMayAuthorizeCustomAgents,
+} from './canvasAgentAccess.js';
 
 const PERMISSIONS = new Set(['read', 'work']);
 const MAX_MEMBERSHIPS = 64;
 
 export class ProjectMembershipError extends Error {
-  constructor(message, { code = 'INVALID_PROJECT_MEMBERSHIP', statusCode = 400 } = {}) {
+  constructor(message, { code = 'INVALID_PROJECT_MEMBERSHIP', statusCode = 400, readOnly = false } = {}) {
     super(message);
     this.name = 'ProjectMembershipError';
     this.code = code;
     this.statusCode = statusCode;
+    // The agent may read the project here but was asked to change it.
+    if (readOnly) this.readOnly = true;
   }
 }
 
@@ -95,10 +100,11 @@ export async function replaceCanvasProjectMemberships(db, {
     if (rows.length > 0) {
       rows = await boardAgentsAsParents(client, cleanWorkspaceId, rows);
       const agents = await client.query('SELECT * FROM agents WHERE id = ANY($1)', [rows.map((row) => row.agentId)]);
-      const canonical = new Set(agents.rows
-        .filter((agent) => classifyAgentIdentity(agent).betaVisible)
-        .map((agent) => agent.id));
-      const invalid = rows.map((row) => row.agentId).filter((id) => !canonical.has(id));
+      const allowCustom = await ownerMayAuthorizeCustomAgents(client, {
+        workspaceId: cleanWorkspaceId,
+        userId,
+      });
+      const invalid = invalidCanvasAgentIds(rows.map((row) => row.agentId), agents.rows, { allowCustom });
       if (invalid.length > 0) {
         throw new ProjectMembershipError(`Unknown or non-canonical agent IDs: ${invalid.join(', ')}`);
       }
@@ -149,11 +155,13 @@ export async function assertAgentProjectAccess(db, {
   const permission = rows[0]?.permission;
   const allowed = permission === 'work' || (permission === 'read' && requiredPermission === 'read');
   if (!allowed) {
+    // Read-only only when the board gave it to read: a project it was not given at all is not read-only.
+    const readOnly = permission === 'read';
     throw new ProjectMembershipError(
-      requiredPermission === 'work'
+      readOnly
         ? 'This agent has read-only project access in the current workspace.'
         : 'This agent is not authorized for that project in the current workspace.',
-      { code: 'PROJECT_ACCESS_DENIED', statusCode: 403 }
+      { code: 'PROJECT_ACCESS_DENIED', statusCode: 403, readOnly }
     );
   }
   return { workspaceId, projectId, agentId, permission };

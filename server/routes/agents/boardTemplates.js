@@ -12,9 +12,11 @@ boardTemplatesRouter.get('/board-templates', (_req, res) => {
 });
 
 // Create the template's agents on this board and return the board to lay out.
+// The owner or an editor (board admin) only. A viewer, a plain member, or a
+// guest gets the same refusal as any other board change they may not make.
 boardTemplatesRouter.post('/board-templates/:id/apply', requireDb, async (req, res) => {
   try {
-    const scope = await resolveAgentRouteScope(req);
+    const scope = await resolveAgentRouteScope(req, { roles: ['owner', 'admin'] });
     const board = await applyBoardTemplate(req.params.id, { scope, input: req.body || {} });
     res.json({ ok: true, board });
   } catch (err) {

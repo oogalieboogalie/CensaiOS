@@ -1,10 +1,11 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { fileWindowKind, fileWindowProps, isImageFile } from './fileRouting.js';
+import { fileWindowKind, fileWindowProps, isImageFile, openFileWindow } from './fileRouting.js';
 import { useWorkspaceStore } from '../../lib/store.js';
-import { listFolder } from './listFolder.js';
+import { revealWindow } from '../../lib/showWindow.js';
+import { listFolder, relistFolder } from './listFolder.js';
 
-export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, githubRepo, mode, rootDirPath, wins = [], onSelect, onSetRoot, reloadTick = 0 }) {
+export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, githubRepo, mode, rootDirPath, wins = [], onSelect, onSetRoot, reloadTick = 0, usedTick = 0 }) {
   const onUpdateWindow = useWorkspaceStore(s => s.onUpdate);
   const [open, setOpen] = React.useState(node.open ?? false);
   const [children, setChildren] = React.useState(node.children || null);
@@ -34,38 +35,46 @@ export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, git
     }
   }, [open, isDir, children, loading, mode, node.path, rootDirPath, githubRepo]);
 
-  // Files written by an agent or a terminal: re-list open folders in place,
-  // keeping what is expanded.
-  const lastTick = React.useRef(reloadTick);
+  // Files changed outside censaiOS (another program, an agent, a terminal):
+  // an open folder is listed again in place, keeping what is expanded, on
+  // each catch-up (reloadTick, useCatchUp.js), and when it is opened again or
+  // its window used again (usedTick). One refused since (gone, or not this
+  // person's to open) waits for that, so it is not asked about every few
+  // seconds; a gone subfolder is still asked, as its folder's list drops it.
+  const seen = React.useRef({ reloadTick, usedTick, open, again: 0 });
+  const asking = React.useRef(false);
+  const askAgain = React.useRef(false);
+  const refused = React.useRef(false);
+  const [again, setAgain] = React.useState(0);
   React.useEffect(() => {
-    if (lastTick.current === reloadTick) return;
-    lastTick.current = reloadTick;
+    const was = seen.current;
+    seen.current = { reloadTick, usedTick, open, again };
+    const used = was.usedTick !== usedTick || was.again !== again || (open && !was.open);
+    if (!used && (was.reloadTick === reloadTick || refused.current)) return;
     if (mode !== 'local' || !open || !isDir || !children) return;
-    fetch(`/api/files/browse?path=${encodeURIComponent(node.path)}`)
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => { if (data?.children) setChildren(data.children); })
-      .catch(() => {});
-  }, [reloadTick, mode, open, isDir, children, node.path]);
+    if (asking.current) { askAgain.current = askAgain.current || used; return; }
+    asking.current = true;
+    relistFolder(node.path).then((answer) => {
+      asking.current = false;
+      refused.current = Boolean(answer && !answer.children) && !(answer.status === 404 && depth > 0);
+      if (answer?.children) {
+        setLoadError('');
+        setChildren(answer.children);
+      } else if (answer?.problem) {
+        setLoadError(answer.problem);
+        setChildren([]);
+      }
+      // Used again while this was asked: ask once more, for the latest.
+      if (askAgain.current) { askAgain.current = false; setAgain((n) => n + 1); }
+    });
+  }, [reloadTick, usedTick, open, again, mode, isDir, children, node.path, depth]);
 
   const onClick = () => {
     if (isDir) {
       setOpen(!open);
     } else {
-      const kind = fileWindowKind(node.name);
-      const existingWin = (wins || []).find(
-        (w) => w.filePath === node.path && w.kind === kind && (githubRepo ? w.githubRepo === githubRepo : !w.isGithub)
-      );
-      if (existingWin) {
-        onSelect?.(existingWin.id);
-        if (existingWin.kind === 'doc' && !existingWin.isEditing) {
-          onUpdateWindow?.(existingWin.id, { isEditing: true });
-        }
-      } else {
-        onSpawn?.(fileWindowKind(node.name), {
-          ...fileWindowProps(node, githubRepo),
-          isEditing: true
-        });
-      }
+      // The board's own list: a window's `wins` prop holds only where windows are.
+      openFileWindow(node, { wins: useWorkspaceStore.getState().wins, githubRepo, onSelect, onShow: revealWindow, onSpawn, onUpdateWindow });
     }
   };
 
@@ -182,7 +191,7 @@ export function Tree({ node, depth, pan = { x: 0, y: 0 }, zoom = 1, onSpawn, git
           {loadError || 'Empty folder'}
         </div>
       )}
-      {isDir && open && children && children.map((c) => <Tree key={c.path || c.name} node={c} depth={depth + 1} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={githubRepo} mode={mode} rootDirPath={rootDirPath} wins={wins} onSelect={onSelect} onSetRoot={onSetRoot} reloadTick={reloadTick} />)}
+      {isDir && open && children && children.map((c) => <Tree key={c.path || c.name} node={c} depth={depth + 1} pan={pan} zoom={zoom} onSpawn={onSpawn} githubRepo={githubRepo} mode={mode} rootDirPath={rootDirPath} wins={wins} onSelect={onSelect} onSetRoot={onSetRoot} reloadTick={reloadTick} usedTick={usedTick} />)}
       {drag && createPortal(
         <div style={{ position: 'fixed', left: drag.x + 8, top: drag.y + 8, zIndex: 1000, pointerEvents: 'none', background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', padding: '6px 10px', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink)', boxShadow: '0 8px 20px oklch(0 0 0 / 0.18)' }}>{node.name}</div>,
         document.body

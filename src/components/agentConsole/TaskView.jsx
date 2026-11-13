@@ -5,8 +5,11 @@ import { renderMarkdown } from '../../lib/renderMarkdown.jsx';
 import { CliMark, StatusDot, stateLabel } from './CliMark.jsx';
 import { Transcript } from './Transcript.jsx';
 import { ChangesPanel } from './ChangesPanel.jsx';
+import { PrivateFileView } from './PrivateFileView.jsx';
 import { cliAgentsApi } from './cliAgentsApi.js';
 import { refreshCliRoster } from './useCliRoster.js';
+import { pathInside, slimProject } from '../../lib/windowProject.js';
+import { HIDDEN_MARK, HIDDEN_WORDS, OWNER_ONLY_RAW } from '../../../shared/files/fileProblems.js';
 
 const CLI_LABEL = { claudecode: 'Claude Code', codex: 'Codex', gemini: 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI', grok: 'Grok' };
 
@@ -17,19 +20,24 @@ function formatCost(usd) {
 
 function RawView({ taskId, live }) {
   const [lines, setLines] = React.useState([]);
+  const [ownerOnly, setOwnerOnly] = React.useState(false);
   React.useEffect(() => {
     let alive = true;
     let timer;
     const load = async () => {
       try {
         const data = await cliAgentsApi.raw(taskId);
-        if (alive) setLines(data.lines || []);
+        if (alive) {
+          setLines(data.lines || []);
+          setOwnerOnly(data.ownerOnly === true);
+        }
       } catch { /* keep last */ }
       if (alive && live) timer = setTimeout(load, 2000);
     };
     load();
     return () => { alive = false; clearTimeout(timer); };
   }, [taskId, live]);
+  if (ownerOnly) return <div className="ac-empty" data-testid="agent-raw-owner-only">{OWNER_ONLY_RAW}</div>;
   return <pre className="ac-raw" data-testid="agent-raw">{lines.length ? lines.join('\n') : 'No output yet.'}</pre>;
 }
 
@@ -74,7 +82,8 @@ function HandoffPanel({ task, onClose, onHandoff }) {
   );
 }
 
-export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
+/** `project`: the project this console's window names in its header, for a console Hand off opens. */
+export function TaskView({ taskId, live: liveState, onSpawn, onNewTask, project = null }) {
   const { task, items, changes, error, poll, loadChanges, live } = liveState;
   const [tab, setTab] = React.useState('transcript');
   const [followUp, setFollowUp] = React.useState('');
@@ -82,6 +91,9 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
   const [actionError, setActionError] = React.useState(null);
   const [handoffOpen, setHandoffOpen] = React.useState(false);
   const [confirmDiscard, setConfirmDiscard] = React.useState(false);
+  const [privateFile, setPrivateFile] = React.useState(null);
+  // Another task's file never stays open over this one.
+  React.useEffect(() => setPrivateFile(null), [taskId]);
 
   const act = async (fn) => {
     setBusy(true);
@@ -100,9 +112,12 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
   const decide = (permissionId, allow) => act(() => cliAgentsApi.decide(taskId, permissionId, allow));
   const openFile = async (filePath) => {
     try {
-      const { content } = await cliAgentsApi.file(taskId, filePath);
+      // A window's words reach everyone on the board, so a file only the owner may read stays here,
+      // and any other comes as a teammate sees it: a key the agent copied into it shows as [hidden].
+      const { content, ownerOnly, hiddenWords } = await cliAgentsApi.file(taskId, filePath, { board: true });
       const name = filePath.split('/').pop();
-      onSpawn?.('code_editor', { title: `${name} · ${task?.cliLabel || 'agent'}`, fileName: name, code: content });
+      if (ownerOnly) setPrivateFile({ path: filePath, content });
+      else onSpawn?.('code_editor', { title: `${name} · ${task?.cliLabel || 'agent'}`, fileName: name, code: content, ...(hiddenWords ? { hiddenWords: true } : {}) });
     } catch (err) {
       setActionError(err.message);
     }
@@ -111,12 +126,13 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
 
   const handoff = async (target, instruction) => {
     if (target === 'chat') {
-      const data = await cliAgentsApi.changes(taskId);
+      // The chat sits on the shared board, so its summary and diff leave out what a teammate's would.
+      const data = await cliAgentsApi.changes(taskId, { board: true });
       const text = [
         instruction,
         '',
         `${task.cliLabel} worked on "${task.title}" (branch ${task.worktree?.branch}).`,
-        task.summary ? `Summary: ${task.summary}` : null,
+        data.summary ? `Summary: ${data.summary}` : null,
         `Files: ${(data.files || []).map((f) => f.path).join(', ') || 'none'}`,
         data.patch ? `\n\`\`\`diff\n${data.patch.slice(0, 12000)}\n\`\`\`` : null,
       ].filter((l) => l != null).join('\n');
@@ -124,7 +140,9 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
       return;
     }
     const { task: next } = await cliAgentsApi.handoff(taskId, target, instruction);
-    onSpawn?.('agentConsole', { taskId: next.id, cli: next.cli, title: next.cliLabel });
+    // The new console works in this one's folder, so it names the same project.
+    const same = next.folder && pathInside(next.folder, project?.path) ? { project: slimProject(project) } : {};
+    onSpawn?.('agentConsole', { taskId: next.id, cli: next.cli, title: next.cliLabel, ...(next.folder ? { folder: next.folder } : {}), ...same });
     refreshCliRoster(true);
   };
 
@@ -141,6 +159,7 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
           <div className="ac-task-title" title={task.prompt}>{task.title}</div>
           <div className="ac-task-meta">
             <span className="ac-chip" data-testid="task-status"><StatusDot state={task.status} />{task.status === 'installing' ? (task.install?.phase || 'Installing') : stateLabel(task.status)}</span>
+            {task.approvalGated && <span className="ac-chip" data-testid="task-approval-gate">Approvals stay on</span>}
             <span className="ac-mono" title={task.worktree?.dir}><Icon.Branch size={11} />{task.worktree?.branch}</span>
             {cost && <span>{cost}</span>}
             {task.usage?.output != null && <span>{task.usage.output.toLocaleString()} tokens out</span>}
@@ -164,9 +183,10 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
         {task.pendingApprovals > 0 && <span className="ac-tab-flag"><Icon.Shield size={11} />{task.pendingApprovals} waiting for you</span>}
       </div>
       <div className="ac-task-body">
-        {tab === 'transcript' && <Transcript items={items} onDecide={decide} onOpenFile={openFile} live={live && task.status !== 'needs_approval'} />}
-        {tab === 'changes' && <ChangesPanel changes={changes} onOpenFile={openFile} onOpenViewer={() => onSpawn?.('gitDiff', { taskId, title: `Diff · ${task.title}` })} />}
-        {tab === 'raw' && <RawView taskId={taskId} live={live} />}
+        {privateFile && <PrivateFileView file={privateFile} onClose={() => setPrivateFile(null)} />}
+        {!privateFile && tab === 'transcript' && <Transcript items={items} onDecide={decide} onOpenFile={openFile} live={live && task.status !== 'needs_approval'} />}
+        {!privateFile && tab === 'changes' && <ChangesPanel changes={changes} onOpenFile={openFile} onOpenViewer={() => onSpawn?.('gitDiff', { taskId, title: `Diff · ${task.title}` })} />}
+        {!privateFile && tab === 'raw' && <RawView taskId={taskId} live={live} />}
       </div>
       {actionError && <div className="ac-error ac-error--bar" role="alert"><Icon.Alert size={13} />{actionError}</div>}
       {!live && (
@@ -175,6 +195,7 @@ export function TaskView({ taskId, live: liveState, onSpawn, onNewTask }) {
             <div className="ac-summary" data-testid="agent-summary">
               <div className="ac-summary-head"><Icon.Check size={12} />Finished · {fileCount} file{fileCount === 1 ? '' : 's'} changed</div>
               <div className="ac-summary-text">{renderMarkdown(task.summary, { compact: true })}</div>
+              {task.hiddenWords && task.summary.includes(HIDDEN_MARK) && <div className="ac-note" data-testid="summary-hidden-words">{HIDDEN_WORDS}</div>}
             </div>
           )}
           {task.worktreeRemoved && (

@@ -28,9 +28,16 @@ jest.unstable_mockModule('../src/components/Agents.jsx', () => ({
 }));
 
 const { useAgentWindow } = await import('../src/components/agent/useAgentWindow.js');
+const { resetLivePresenceSenders, setLivePresenceSenders } = await import('../src/lib/collaboration/liveText.js');
+
+// What this browser tells the board's other members (src/lib/collaboration/agentChanges.js).
+let told;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  told = [];
+  resetLivePresenceSenders();
+  setLivePresenceSenders({ sendAgent: (payload) => { told.push(payload); return true; } });
   systems.atlas = 'Original system';
   getToolCatalog.mockResolvedValue({ tools: [], categories: [] });
 });
@@ -50,6 +57,7 @@ test('a rejected save cannot mutate canvas, prompt defaults, or the local agent 
   expect(updateAgent).not.toHaveBeenCalled();
   expect(systems.atlas).toBe('Original system');
   expect(result.current.saveStatus).toContain('Save failed');
+  expect(told).toEqual([]);
   consoleError.mockRestore();
 });
 
@@ -66,4 +74,6 @@ test('a successful server save commits the same state locally afterward', async 
   expect(onUpdate).toHaveBeenCalledWith({ customSystem: 'Verified prompt' });
   expect(updateAgent).toHaveBeenCalledWith(expect.objectContaining({ system_prompt: 'Verified prompt' }));
   expect(systems.atlas).toBe('Verified prompt');
+  // Teammates' open copies fetch the agent again, so they show what was saved.
+  expect(told).toEqual([{ type: 'agent.changed', agentId: 'atlas' }]);
 });

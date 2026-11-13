@@ -32,6 +32,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `collaboration` | What agents see of, and change in, shared windows (CAD and others). |
 | `commands` | Slash-style commands: definitions, registry, context and audit. |
 | `config` | Product identity settings. |
+| `confirmations` | The short list of things only the owner can decide. |
 | `context` | Per-request context (who is acting, for which request). |
 | `credentials` | Stored OAuth sign-ins. |
 | `design` | Figma and remix design steps. |
@@ -39,6 +40,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `docker` | The Docker manager window's server side (allowlisted actions). |
 | `github` | GitHub helpers (fixing merge conflicts and more). |
 | `grokSignin` | The Grok chat on the person's own Grok sign-in. |
+| `health` | Health and readiness probes: a public up-or-not, and the full picture for this computer's owner. |
 | `hostedAgents` | Hosted agents: running their turns and the errors they return. |
 | `hubAccounts` | censaiOS accounts: passwords, two-step codes and encryption. |
 | `inbox` | The Inbox: one line per thing waiting for you, from each source. |
@@ -46,6 +48,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `jules` | Jules (Google's coding agent) sessions and sources. |
 | `jules-task-sync` | Keeping Jules tasks and their GitHub pull requests in step. |
 | `leadhound` | LeadHound: lead briefs, Tavily search and scoring. |
+| `kraken` | Kraken Requests: a pasted report split into findings and handed to the family through Censai's plans. |
 | `legion` | Legion: building something with several agents, then checking it in a browser. |
 | `lessons` | Lessons and enrollment (with Stripe payments). |
 | `lib` | Small shared helpers (reliability). |
@@ -53,6 +56,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `local-dev-restarts` | Scheduled restarts of local dev servers. |
 | `marketplace` | The module marketplace: listings and name protection. |
 | `memory` | Agent memory: the core store, family brain, healing, journal and the chat prompt builder. |
+| `mergeBot` | The merge bot: squash-merges a cleared pull request, or leaves a risky one for the owner. |
 | `middleware` | Request middleware: security headers, rate limits, origin checks and runtime mode. |
 | `modelArena` | Model Arena: one prompt to several models side by side. |
 | `modules` | Canvas modules and the module model they ask. |
@@ -81,15 +85,18 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `semantic` | Change-impact maps. |
 | `sevenContexts` | The seven contexts lookup and its keywords. |
 | `shareLinks` | Share links: guest access, comments and agent replies. |
+| `signInDomains` | Who can sign up: the email domains an admin lets in from Settings, Sharing. |
 | `skillSets` | Skill sets equipped to agents (driving the Browser window and more). |
 | `social` | The social canvas: profiles, posts, follows and the public feed. |
 | `speakUp` | Speak-up notes that reach the owner's phone. |
 | `state` | Stored workspace state. |
 | `stepCards` | Step cards and their page checks. |
+| `tailnet` | My Tailscale devices: reading the tailnet, the owner's tick list, letting switched-on devices in without a code, finding other copies. |
 | `task-worker` | The background task worker: claims tasks and runs them (at most 30 rounds). |
 | `templates` | Ready-made board templates. |
 | `terminal` | The terminal window: sessions, backends and agent output. |
 | `todos` | To-dos assigned to a person. |
+| `tokens` | One-time invite tokens for a friend, a board or a workshop seat. |
 | `tools` | Agent tools: definitions, handlers, the catalog and tool access (RBAC). |
 | `video` | Making and collecting videos for agents and the chat window. |
 | `wakeUps` | Stored wake-up records. |

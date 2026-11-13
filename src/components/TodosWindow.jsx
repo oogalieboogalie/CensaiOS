@@ -3,6 +3,7 @@ import { Icon } from './Icons.jsx';
 import { WindowTitle } from './Windows.jsx';
 import { useTodos } from './todos/useTodos.js';
 import { TodoRow } from './todos/TodoRow.jsx';
+import { todoWordsField } from './todos/TodoWords.jsx';
 import { ErrorNote } from './ErrorNote.jsx';
 
 const ChevronIcon = ({ expanded }) => (
@@ -154,6 +155,7 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
                     onSaveEdit={saveEdit}
                     onCancelEdit={cancelEdit}
                     onEditChange={setEditText}
+                    windowId={win.id} wordsField={todoWordsField(win.items, it.id)}
                   />
                 </div>
               </div>
@@ -204,6 +206,8 @@ export function TodosWindow({ win, onUpdate, currentProject }) {
                       onSaveEdit={saveEdit}
                       onCancelEdit={cancelEdit}
                       onEditChange={setEditText}
+                      windowId={win.id} wordsField={todoWordsField(win.items, it.id)}
+                    windowId={win.id} wordsField={todoWordsField(win.items, it.id)}
                     />
                   </div>
                 ))}

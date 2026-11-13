@@ -50,7 +50,11 @@ function scheduleInput(input = {}) {
   if (input.repeat_freq != null && !['weekly', 'monthly'].includes(input.repeat_freq)) {
     throw new ScheduleContractError('A schedule repeats weekly (on the days you pick) or monthly.', 422);
   }
-  return { agentId, taskText, nextRunAt: parseScheduledTime(input.scheduled_date, input.scheduled_time) };
+  return {
+    agentId,
+    taskText,
+    nextRunAt: parseScheduledTime(input.scheduled_date, input.scheduled_time, input.timeZone),
+  };
 }
 
 export async function createSchedule(input, options = {}) {

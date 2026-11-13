@@ -111,7 +111,7 @@ describe('CliTaskManager', () => {
     expect(changes.patch).toContain('+Added by the stand-in agent.');
     // The repo the user is working in is untouched.
     expect(fs.existsSync(path.join(repo, 'AGENT_NOTES.md'))).toBe(false);
-    expect(m.readFile(task.id, 'AGENT_NOTES.md')).toContain('# Notes');
+    expect(m.readFile(task.id, 'AGENT_NOTES.md').content).toContain('# Notes');
     expect(() => m.readFile(task.id, '../../etc/passwd')).toThrow(/outside/);
   });
 
@@ -288,5 +288,30 @@ describe('agent environment', () => {
     expect(prompt.split('\n')[0]).toBe('Review it.');
     expect(prompt).toContain('- x.js (added, +2 -0)');
     expect(prompt).toContain('```diff\n+x\n```');
+  });
+
+  test('the hand-off prompt, which everyone watching sees, leaves out what changed in a file that holds keys or sits in a hidden folder', () => {
+    const KEY = 'not-a-real-made-up-key';
+    const part = (file, line) => `diff --git a/${file} b/${file}\n--- a/${file}\n+++ b/${file}\n@@ -1 +1 @@\n-old\n+${line}\n`;
+    const prompt = buildHandoffPrompt({
+      source: { cliLabel: 'Claude Code', title: 'Add x' },
+      ask: 'Review it.',
+      files: ['notes.md', '.env.production', '.made-up/settings.json'].map((p) => ({ path: p, change: 'modified', additions: 1, deletions: 1 })),
+      patch: part('notes.md', 'Made-up note, changed') + part('.env.production', `MADE_UP_KEY=${KEY}`) + part('.made-up/settings.json', KEY),
+    });
+    expect(prompt).not.toContain(KEY);
+    expect(prompt).toContain('+Made-up note, changed');
+    expect(prompt).toContain('- .env.production (modified, +1 -1)');
+    expect(prompt).toContain('diff --git a/.env.production b/.env.production');
+  });
+
+  test("the hand-off prompt's summary is the one a teammate sees, without a key file's line the agent printed", () => {
+    const KEY = 'not-a-real-made-up-key';
+    const prompt = buildHandoffPrompt({
+      source: { cliLabel: 'GitHub Copilot', title: 'Add x', summary: `Made-up summary\n./.env:MADE_UP_KEY=${KEY}`, worktree: { dir: '/made-up/.censai/worktrees/x' } },
+      ask: 'Review it.',
+    });
+    expect(prompt).not.toContain(KEY);
+    expect(prompt).toContain('Its summary:\nMade-up summary\n./.env: …');
   });
 });

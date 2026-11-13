@@ -10,6 +10,7 @@ import {
 } from '../chatModel/agentPrompts.js';
 import { callModel, createModelAccessContext, workspaceUsageSink } from '../aiGateway/index.js';
 import { executeTool, filterToolsForAgent } from '../tools.js';
+import { offeredToolNames, runWithOfferedTools, toolNotOfferedResult } from '../tools/rbac/offeredTools.js';
 import { 
   log, TASK_SUBMISSION_PREVIEW_CHARS, MAX_ROUNDS, TASK_TIMEOUT_MS 
 } from './shared.js';
@@ -71,6 +72,8 @@ export async function runTask(task) {
     const modelConfig = getSubAgentModelConfig(sub);
     const { modelName, baseUrl, apiKey, modelProvider } = modelConfig;
     const tools = await filterToolsForAgent(sub.id, scope);
+    // Only the tools offered here run (server/tools/rbac/offeredTools.js).
+    const offered = offeredToolNames(tools);
     const accessContext = createModelAccessContext({
       userId: task.created_by_user_id,
       workspaceId: task.workspace_id,
@@ -100,66 +103,68 @@ export async function runTask(task) {
     let finalText = '';
     let round = 0;
 
-    for (;;) {
-      round++;
-      if (round > MAX_ROUNDS) {
-        finalText = '(Task reached max rounds — partial result follows)\n' + finalText;
+    // executeTool reads this same list, so a call that skips the check above still stops.
+    await runWithOfferedTools(tools, async () => {
+      for (;;) {
+        round++;
+        if (round > MAX_ROUNDS) {
+          finalText = '(Task reached max rounds — partial result follows)\n' + finalText;
+          break;
+        }
+
+        const body = {
+          model: modelName,
+          max_tokens: 4096,
+          messages,
+          tools,
+        };
+
+        const data = await callModel({
+          config: {
+            provider: modelProvider,
+            model: modelName,
+            baseUrl,
+            apiKey,
+          },
+          accessContext,
+          body,
+          timeoutMs: TASK_TIMEOUT_MS,
+          logContext: { source: 'task-worker', taskId: task.id, round },
+          usageAttribution: {
+            workspaceId: task.workspace_id,
+            actor: { kind: 'user', id: task.created_by_user_id },
+            source: 'task-worker',
+            agentId: sub.id,
+            taskId: task.id,
+          },
+          usageSink: workspaceUsageSink,
+        });
+        const choice = data.choices?.[0];
+        const msg = withLongcatToolCallFallback(choice?.message);
+
+        if (msg?.tool_calls?.length > 0) {
+          const calls = msg.tool_calls.slice(0, 10);
+          messages.push({ ...msg, tool_calls: calls });
+
+          for (const call of calls) {
+            const toolName = call.function.name;
+            let args = {};
+            try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
+            log.debug('task tool call', { taskId: task.id, round, tool: toolName });
+            const toolStartedAt = Date.now();
+            const result = offered.has(toolName)
+              ? await executeTool(sub.id, toolName, args, { agentTaskId: task.id, ...scope })
+              : toolNotOfferedResult(toolName);
+            toolCalls.push({ tool: toolName, ok: toolCallOk(result), ms: Date.now() - toolStartedAt, round });
+            messages.push({ role: 'tool', tool_call_id: call.id, content: String(result) });
+          }
+          continue;
+        }
+
+        finalText = msg?.content || '(no response)';
         break;
       }
-
-      const body = {
-        model: modelName,
-        max_tokens: 4096,
-        messages,
-        tools,
-      };
-
-      const data = await callModel({
-        config: {
-          provider: modelProvider,
-          model: modelName,
-          baseUrl,
-          apiKey,
-        },
-        accessContext,
-        body,
-        timeoutMs: TASK_TIMEOUT_MS,
-        logContext: { source: 'task-worker', taskId: task.id, round },
-        usageAttribution: {
-          workspaceId: task.workspace_id,
-          actor: { kind: 'user', id: task.created_by_user_id },
-          source: 'task-worker',
-          agentId: sub.id,
-          taskId: task.id,
-        },
-        usageSink: workspaceUsageSink,
-      });
-      const choice = data.choices?.[0];
-      const msg = withLongcatToolCallFallback(choice?.message);
-
-      if (msg?.tool_calls?.length > 0) {
-        const calls = msg.tool_calls.slice(0, 10);
-        messages.push({ ...msg, tool_calls: calls });
-
-        for (const call of calls) {
-          const toolName = call.function.name;
-          let args = {};
-          try { args = JSON.parse(call.function.arguments || '{}'); } catch {}
-          log.debug('task tool call', { taskId: task.id, round, tool: toolName });
-          const toolStartedAt = Date.now();
-          const result = await executeTool(sub.id, toolName, args, {
-            agentTaskId: task.id,
-            ...scope,
-          });
-          toolCalls.push({ tool: toolName, ok: toolCallOk(result), ms: Date.now() - toolStartedAt, round });
-          messages.push({ role: 'tool', tool_call_id: call.id, content: String(result) });
-        }
-        continue;
-      }
-
-      finalText = msg?.content || '(no response)';
-      break;
-    }
+    });
 
     await updateAgentTask(task.id, {
       status: 'completed',

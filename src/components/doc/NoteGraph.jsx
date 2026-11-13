@@ -20,7 +20,7 @@ export function NoteGraph({ current, backlinks, outlinks, onNodeClick }) {
   ];
 
   return (
-    <div style={{ flex: 1, background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+    <div className="hb-well doc-graph">
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
         {/* Links */}
         {nodes.filter(n => !n.isCurrent).map((n, i) => (
@@ -28,9 +28,9 @@ export function NoteGraph({ current, backlinks, outlinks, onNodeClick }) {
         ))}
         {/* Nodes */}
         {nodes.map((n, i) => (
-          <g key={i} onClick={() => onNodeClick(n)} style={{ cursor: 'pointer' }}>
-            <circle cx={n.x} cy={n.y} r={n.isCurrent ? 8 : 5} fill={n.isCurrent ? 'var(--accent)' : 'var(--surface)'} stroke={n.isCurrent ? 'var(--accent)' : 'var(--hairline-strong)'} strokeWidth="2" />
-            <text x={n.x} y={n.y + 20} textAnchor="middle" fontSize="10" fill="var(--ink-soft)" fontFamily="var(--font-mono)">{n.name}</text>
+          <g key={i} onClick={() => onNodeClick(n)} className="doc-graph-node">
+            <circle cx={n.x} cy={n.y} r={n.isCurrent ? 8 : 5} fill={n.isCurrent ? 'var(--accent)' : 'var(--layer-panel)'} stroke={n.isCurrent ? 'var(--accent)' : 'var(--hairline-strong)'} strokeWidth="2" />
+            <text x={n.x} y={n.y + 20} textAnchor="middle" className="doc-graph-name">{n.name}</text>
           </g>
         ))}
       </svg>

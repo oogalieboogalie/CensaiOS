@@ -8,7 +8,7 @@
   margin: 0; padding: var(--yw-margin); display: block; background: var(--surface); box-shadow: var(--elevation-2);
   border-radius: var(--radius-xs); transform-origin: top left;
 }
-.yw-paper > [data-row-id="__title"] > .hb-of-doc-title { display: block; width: 100%; box-sizing: border-box; }
+.yw-paper > [data-row-id="__title"] .hb-of-doc-title { display: block; width: 100%; box-sizing: border-box; }
 .yw-break { position: relative; margin: 0 calc(var(--yw-margin) * -1); }
 .yw-break::after {
   content: attr(data-label); position: absolute; left: 0; right: 0; top: var(--yw-gap-top); height: var(--yw-gap);

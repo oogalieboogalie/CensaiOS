@@ -47,7 +47,9 @@ memoryRouter.get('/memory/context/:agentId', requireDb, async (req, res) => {
       hours: Number(req.query.hours) || 12,
     });
     if (!ctx) return res.status(404).json({ error: 'Agent not found' });
-    res.json(ctx);
+    // Journal words stay private over HTTP, as in GET /journals below.
+    const journalEntries = (ctx.journalEntries || []).map(entry => ({ ...entry, content: '[private]' }));
+    res.json({ ...ctx, journalEntries });
   } catch (err) {
     memoryRouteError(res, err);
   }

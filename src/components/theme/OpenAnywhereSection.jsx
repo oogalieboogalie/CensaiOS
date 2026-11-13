@@ -125,8 +125,9 @@ export function OpenAnywhereSection() {
       {!status && !error && <p style={muted}>Loading…</p>}
       {status?.thisComputerOnly && (
         <p style={muted} data-testid="open-anywhere-local-only">
-          The desktop app keeps censaiOS on this computer only, so other computers can't open it.
-          To open your board from other computers, run the one-file install (docker compose up -d) on this computer.
+          The desktop app keeps censaiOS on this computer only, so other computers on the Wi-Fi can't open it.
+          Your own Tailscale devices can: see My Tailscale devices below. For any computer on the Wi-Fi,
+          run the one-file install (docker compose up -d) on this computer.
         </p>
       )}
       {status && !status.thisComputerOnly && !status.available && (

@@ -27,7 +27,11 @@ export function createSchedule(schedule, workspaceId) {
   return scheduleRequest('/api/schedules', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...schedule, workspaceId: workspaceValue(workspaceId) }),
+    body: JSON.stringify({
+      ...schedule,
+      timeZone: schedule.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+      workspaceId: workspaceValue(workspaceId),
+    }),
   }, 'Failed to create schedule');
 }
 

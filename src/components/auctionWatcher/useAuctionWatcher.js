@@ -99,7 +99,8 @@ export function useAuctionWatcher({ win = {}, onUpdate }) {
 
   const addWatch = (input) => run('adding', async () => {
     const data = await call('/watches', { method: 'POST', body: input });
-    logToApp('info', `auction-watcher: watch added for "${data.watch.query}" on ${data.watch.site}`, { where: 'auction-watcher' });
+    // The watch's words are what someone is shopping for: the line names its id and site.
+    logToApp('info', `auction-watcher: watch ${data.watch.id} added on ${data.watch.site}`, { where: 'auction-watcher' });
     await loadWatches();
     select(data.watch.id);
     // A problem note shows in the watch's own header; only good news goes here.

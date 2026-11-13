@@ -156,13 +156,14 @@ that matters:
 ## Multiplayer collaboration
 
 The multiplayer beta covers the important slice end to end: an owner invites a workspace member,
-both see live presence and window movement, durable changes are revision-checked into PostgreSQL
-and broadcast to everyone, and an equipped agent can request approval, write into a canvas window,
-and publish the result to both people. Reconnecting restores the authoritative revision;
-non-members are denied.
+both see who is there and what moves, and every change is written to PostgreSQL as it happens. The
+board is one shared document, so two people's edits merge instead of one overwriting the other,
+and an agent's edits land in the same windows for everyone. Reconnecting catches up from the
+server; non-members are refused.
 
 Document and code windows have character-by-character collaborative text editing (Yjs), so a
-teammate sees each keystroke as you type. Other windows share their content when you save.
+teammate sees each keystroke as you type. To-do lists, sheets, sketches and slides merge one item
+at a time, and any other field is last writer wins.
 [COLLABORATION.md](COLLABORATION.md) explains how the pieces fit together.
 
 ## What's new

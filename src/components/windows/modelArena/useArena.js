@@ -7,14 +7,18 @@ const SAVED_TEXT_LIMIT = 8_000;
 const sameLanes = (a = [], b = []) => a.length === b.length && a.every((lane, i) => lane.provider === b[i]?.provider && lane.model === b[i]?.model);
 
 /**
- * State for the arena window. The picked models, the last request and the
- * last finished race are saved on the window, so they survive a reload; the
- * words streaming in live only in this browser until the race ends.
+ * State for the arena window. The picked models, the request, its
+ * instructions and the last finished race are saved on the window, so they
+ * survive a reload; the words streaming in live only in this browser until
+ * the race ends. The request and instructions are saved as you type, so two
+ * people on one board write them together, letter by letter.
  */
 export function useArena(win = {}, onUpdate) {
   const lanes = Array.isArray(win.lanes) && win.lanes.length ? win.lanes.slice(0, MAX_LANES) : DEFAULT_LANES;
-  const [prompt, setPrompt] = React.useState(win.prompt || '');
-  const [system, setSystem] = React.useState(win.system || '');
+  const prompt = typeof win.prompt === 'string' ? win.prompt : '';
+  const system = typeof win.system === 'string' ? win.system : '';
+  const setPrompt = React.useCallback((next) => onUpdate?.({ prompt: String(next ?? '') }), [onUpdate]);
+  const setSystem = React.useCallback((next) => onUpdate?.({ system: String(next ?? '') }), [onUpdate]);
   const [results, setResults] = React.useState(() => (
     sameLanes(win.lastRun?.lanes, lanes) ? win.lastRun.results : []
   ));
@@ -58,12 +62,14 @@ export function useArena(win = {}, onUpdate) {
       latest.current = latest.current.map((r) => (r.status === 'done' || r.status === 'error' ? r : { ...r, status: 'stopped' }));
       setResults(latest.current);
       const saved = latest.current.map((r) => ({ ...r, text: String(r.text || '').slice(0, SAVED_TEXT_LIMIT) }));
-      onUpdate?.({ prompt, system, racing: null, lastRun: { at: new Date().toISOString(), lanes, results: saved } });
+      // needsAuto: the record hook picks a best once, and only for this finish.
+      // The race keeps the request it ran, so later typing never changes its record.
+      onUpdate?.({ racing: null, lastRun: { at: new Date().toISOString(), prompt, system, lanes, results: saved, needsAuto: true } });
     }
   }, [running, prompt, system, lanes, onUpdate]);
 
   const stop = React.useCallback(() => abortRef.current?.abort(), []);
-  const pickSample = React.useCallback((task) => { setPrompt(task.prompt); setSystem(task.system || ''); }, []);
+  const pickSample = React.useCallback((task) => onUpdate?.({ prompt: task.prompt, system: task.system || '' }), [onUpdate]);
 
   return { lanes, setLanes, prompt, setPrompt, system, setSystem, results, running, error, run, stop, pickSample };
 }

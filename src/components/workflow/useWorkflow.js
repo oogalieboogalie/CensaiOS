@@ -1,6 +1,7 @@
 import React from 'react';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { canConnect, graphProblem, makeNode, workflowGraph } from '../../lib/workflow/graph.js';
+import { graphHash } from '../../lib/workflow/graphHash.js';
 import {
   answerWorkflowReview, getWorkflowTrigger, runWorkflow, saveWorkflowTrigger, stopWorkflow,
 } from '../../lib/api/workflows.js';
@@ -17,6 +18,7 @@ export function useWorkflow(win, onUpdate, api = { runWorkflow, answerWorkflowRe
   const [error, setError] = React.useState(null);
   const [pending, setPending] = React.useState(false);
   const [armed, setArmed] = React.useState(null);
+  const [liveHash, setLiveHash] = React.useState(null);
 
   const setGraph = React.useCallback((next) => onUpdate?.({ graph: next }), [onUpdate]);
 
@@ -31,6 +33,12 @@ export function useWorkflow(win, onUpdate, api = { runWorkflow, answerWorkflowRe
     api.getWorkflowTrigger(workspaceId, win.id).then((res) => { if (live) setArmed(res.trigger); }).catch(() => {});
     return () => { live = false; };
   }, [workspaceId, win.id]);
+
+  React.useEffect(() => {
+    let live = true;
+    graphHash(graph).then((hash) => { if (live) setLiveHash(hash); }).catch(() => { if (live) setLiveHash(null); });
+    return () => { live = false; };
+  }, [graph]);
 
   const call = async (work) => {
     if (!workspaceId) { setError('Open a board first.'); return null; }
@@ -75,13 +83,19 @@ export function useWorkflow(win, onUpdate, api = { runWorkflow, answerWorkflowRe
   const stop = () => call(() => api.stopWorkflow(workspaceId, win.id));
   const review = (approve) => call(() => api.answerWorkflowReview(workspaceId, win.id, run?.id, approve));
   const saveTrigger = (trigger) => call(async () => {
-    const res = await api.saveWorkflowTrigger(workspaceId, win.id, trigger);
+    const res = await api.saveWorkflowTrigger(workspaceId, win.id, { ...trigger, graph });
     setArmed(res.trigger);
     return res;
   });
 
+  // Off when the board's graph is no longer the one someone turned on.
+  const stale = Boolean(armed && armed.mode && armed.mode !== 'manual' && (
+    armed.disarmed || !armed.graphHash || (liveHash && liveHash !== armed.graphHash)
+  ));
+  const armedView = armed ? { ...armed, stale } : null;
+
   return {
-    graph, run, busy, error, pending, armed, setError,
+    graph, run, busy, error, pending, armed: armedView, stale, setError,
     patchNode, moveNode, addNode, removeNode, connect, removeEdge,
     start, stop, review, saveTrigger,
   };

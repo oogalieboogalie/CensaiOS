@@ -10,7 +10,7 @@ import { PdfFormLayer } from './PdfFormLayer.jsx';
  * placed on it on top. Dragging is previewed locally and saved to the board
  * once, when you let go.
  */
-export function PdfPageView({ p, scale, byFile, finds = [] }) {
+export function PdfPageView({ p, scale, byFile, finds = [], windowId }) {
   const { doc, page, pageId, size, tool, selected, editId } = p;
   const canvasRef = React.useRef(null);
   const layerRef = React.useRef(null);
@@ -103,7 +103,7 @@ export function PdfPageView({ p, scale, byFile, finds = [] }) {
         const m = doc.marks[id];
         const box = drag?.id === id ? drag.box : m;
         return (
-          <PdfMark key={id} id={id} mark={m} box={box} scale={scale} selected={selected === id} editing={editId === id}
+          <PdfMark key={id} id={id} mark={m} box={box} scale={scale} selected={selected === id} editing={editId === id} windowId={windowId}
             onPointerDown={onMarkPointerDown(id)}
             onDoubleClick={() => { if (m.type === 'text') p.setEditId(id); if (m.type === 'signHere') p.signInto(m, id); }}
             onSign={() => p.signInto(m, id)}

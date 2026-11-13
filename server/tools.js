@@ -10,14 +10,26 @@ import { authorizeToolInvocation } from './tools/rbac/runtimeAccess.js';
 import { requestToolApprovalIfRequired } from './approvals/requests.js';
 import { assertApprovedToolExecution } from './approvals/decisions.js';
 import { assertFamilyToolAvailable } from './tools/rbac/executionBoundary.js';
+import { offeredListMissing, unofferedToolResult } from './tools/rbac/offeredTools.js';
 import { assertHostToolAllowed } from './tools/rbac/hostOwnerOnly.js';
+import { offBoardGithubRead } from './tools/rbac/ownerOnlyReads.js';
+import { projectRefusalWords } from './workspaces/projectRefusalWords.js';
+import { protectedTarget } from './tools/rbac/protectedFiles.js';
 
 export { TOOL_DEFINITIONS, filterToolsForAgent, listToolCatalog } from './tools/definitions.js';
 export { initializeDynamicTools, initializeMcpTools, shutdownMcpTools };
 
 const log = createLogger('tools');
+let missingListNoted = false;
 
-const RESTRICTED_FILES = ['.env', '.git', 'secrets.json'];
+function noteMissingOfferedList() {
+  // Dev and test only, and only once: a model loop that forgot to store its
+  // list would fail open. Calls that are not model runs stay allowed.
+  if (missingListNoted || process.env.NODE_ENV === 'production' || !offeredListMissing()) return;
+  missingListNoted = true;
+  log.warn('executeTool ran with no offered-tool list; a model loop that forgot to store its list would fail open');
+}
+
 const PROJECT_WORK_TOOLS = new Set([
   'open_project', 'refresh_brief', 'project_write', 'project_edit', 'project_multi_edit',
   'report', 'submit_pr', 'jules_submit', 'merge_pr', 'local_write_file', 'sandbox_exec',
@@ -30,31 +42,20 @@ const DIRECT_REPO_TOOLS = new Set([
   'github_create_issue', 'github_comment_issue',
 ]);
 
-// What the agent passes on to the person when a file tool is refused. Trust
-// mode is often blamed, so say what it does and what actually opens files.
-export const NO_PROJECT_FILES = 'Tell the person in plain words: I can only open files in a project that is open on this board, and none is open for me yet. Open a project from the top bar while my chat window is on the board, then ask again. Trust mode does not change this: it only lets agents use the tools they already have without waiting for an OK.';
-
 // ═══════════════════════════════════════════════════════════════════
 //  TOOL EXECUTOR ORCHESTRATOR
 //  Dynamic entry point routing calls to specialized domain handlers.
 // ═══════════════════════════════════════════════════════════════════
 
 function securityTripwire(agentId, name, args) {
-  // SECURITY TRIPWIRE
-  const isWriteTool = ['local_write_file', 'project_write', 'project_edit', 'project_multi_edit', 'github_write_file', 'run_shell_command', 'run_host_script'].includes(name);
-  if (isWriteTool) {
-    const rawTarget = args?.file_path || args?.path || args?.command || '';
-    const targetLower = String(rawTarget).toLowerCase();
-    const isRestricted = RESTRICTED_FILES.some(restricted => targetLower.includes(restricted));
-
-    if (isRestricted) {
-      log.warn('security tripwire blocked tool execution', {
-        agentId, name, ...safeToolLogMetadata(name, args),
-      });
-      return `SECURITY VIOLATION: You are strictly forbidden from modifying or accessing ${rawTarget}. Tell the user to do this manually.`;
-    }
-  }
-  return null;
+  // SECURITY TRIPWIRE: keys, git's folder, add-on and agent settings, shell
+  // start files (server/tools/rbac/protectedFiles.js). Trust mode never skips it.
+  const hit = protectedTarget(name, args);
+  if (!hit) return null;
+  log.warn('security tripwire blocked tool execution', {
+    agentId, name, protectedKind: hit.what, ...safeToolLogMetadata(name, args),
+  });
+  return `SECURITY VIOLATION: You are strictly forbidden from modifying or accessing ${hit.target} (${hit.what}). Tell the user to do this manually.`;
 }
 
 async function executeRegisteredTool(agentId, name, args, context) {
@@ -78,6 +79,10 @@ async function executeRegisteredTool(agentId, name, args, context) {
         agentId: sub?.parent_id || agentId,
         requiredPermission: requiredProjectPermission,
       });
+    } else if (DIRECT_REPO_TOOLS.has(name)) {
+      // Off a board no repo is shared, so only the owner's agents use this computer's GitHub key.
+      const refused = await offBoardGithubRead(context, { feature: `agent tool ${name} off a board` });
+      if (refused) return `Error: ${refused}`;
     }
     const result = await handler(agentId, name, args, {
       ...context,
@@ -91,12 +96,18 @@ async function executeRegisteredTool(agentId, name, args, context) {
     const code = ['TOOL_ACCESS_DENIED', 'TOOL_ACCESS_UNAVAILABLE', 'COMPUTER_OWNER_ONLY', 'PROJECT_ACCESS_DENIED'].includes(err?.code)
       ? `${err.code}: `
       : '';
-    const why = err?.code === 'PROJECT_ACCESS_DENIED' ? ` ${NO_PROJECT_FILES}` : '';
+    // On a board the words name the projects it did give the agent (server/workspaces/projectRefusalWords.js).
+    const why = err?.code === 'PROJECT_ACCESS_DENIED' ? ` ${await projectRefusalWords(agentId, context, err)}` : '';
     return `Error: ${code}${err.message}${why}`;
   }
 }
 
 export async function executeTool(agentId, name, args, context = {}) {
+  noteMissingOfferedList();
+  // A run remembers the tools it offered. Any other name stops here, before
+  // the family list, the owner check or the handler (server/tools/rbac/offeredTools.js).
+  const unoffered = unofferedToolResult(name);
+  if (unoffered) return unoffered;
   const blocked = securityTripwire(agentId, name, args);
   if (blocked) return blocked;
   try {

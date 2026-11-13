@@ -45,7 +45,7 @@ export function CreativePhotoWindow({ win = {}, onUpdate }) {
     if ((e.ctrlKey || e.metaKey) && k === 'j') { e.preventDefault(); p.copyToLayer(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const tool = TOOLS.find((t) => t[2].toLowerCase() === k);
-    if (tool) { p.setTool(tool[0]); return; }
+    if (tool) { p.setTool(tool[0]); e.stopPropagation(); return; }
     if (e.key === '[') p.setSize(Math.max(1, p.size - 4));
     else if (e.key === ']') p.setSize(Math.min(300, p.size + 4));
     else if (e.key === 'Escape') p.setSelection(null);
@@ -106,7 +106,7 @@ export function CreativePhotoWindow({ win = {}, onUpdate }) {
             ))}
           </div>
           <PhotoStage p={p} zoom={zoom} alpha={alpha} onNotice={setNotice} />
-          <PhotoPanel p={p} />
+          <PhotoPanel p={p} windowId={win.id} />
         </div>
       </div>
     </>

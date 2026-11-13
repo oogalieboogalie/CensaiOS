@@ -4,6 +4,8 @@ import { logOwnerRefusal, ownerNamesFor } from './ownerNames.js';
 // What a teammate sees when they try something only the computer's owner may
 // do (Docker, dev servers, git pushes, host files, tasks, the terminal).
 export const OWNER_ONLY_MESSAGE = "Only this computer's owner can do this.";
+// What anyone sees when censaiOS cannot tell right now who owns the computer.
+export const OWNER_UNCHECKED_MESSAGE = "Couldn't check who owns this computer right now. Try again in a moment.";
 
 /**
  * The one place that asks the database for an account's role. Returns the
@@ -24,6 +26,21 @@ export async function assertSystemAdmin(req, { db = pool } = {}) {
     throw Object.assign(new Error(OWNER_ONLY_MESSAGE), { statusCode: 403 });
   }
   return { userId, role: 'admin' };
+}
+
+/**
+ * True for this computer's owner, false for anyone else; with a `feature`, a
+ * refusal is logged the way requireSystemAdmin logs one. A database error is thrown.
+ */
+export async function isComputerOwner(req, feature = null, { db = pool } = {}) {
+  try {
+    await assertSystemAdmin(req, { db });
+    return true;
+  } catch (error) {
+    if (error.statusCode !== 401 && error.statusCode !== 403) throw error;
+    if (feature) logOwnerRefusal(feature, error.statusCode, Number(req?.session?.userId) || null);
+    return false;
+  }
 }
 
 async function refuse(req, res, error) {

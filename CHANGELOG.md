@@ -13,6 +13,220 @@ and each Sunday that list becomes the next numbered stable release.
 The Releases page of this repository has each release's notes and container
 tags.
 
+## 0.7.0 (2026-11-13)
+
+### New
+
+- Comms window, push-to-talk with an agent
+- Add buttons for what a project folder can do
+- Show each terminal command as a card
+- Add the board tools the canvas already knows
+- An update still goes in after the PC restarts
+- Slim the board tool dock
+- Show which agent is in each terminal tab
+- Add a Workbench switch that keeps the same terminal session
+- Jules Tasks gets a toolbar, sunken lists of raised cards, a button and cards that answer the pointer, and readable small words, 70 to 100
+- Document gets a raised page on a sunken desk, comment cards that lift, and readable small words, 70 to 92
+- Test team: two people in one chat works; the walk was out of date, not the chat
+- Let switched-on Tailscale devices open censaiOS with no code
+- Add the My Tailscale devices card, phone code and one-click pop-up
+- Kraken Request: paste a report, hand each finding to the family
+- Paste or drag pictures onto the board
+- Keep a merge-bot revoke, and only merge known-safe files
+- Add a dry-run merge bot and a Needs you list
+- UI team nightly: Git Diff Viewer gets sunken panes, a tool bar, buttons that answer the pointer and readable green and red
+- Agents hand coding jobs to the GitHub agent and hear back
+- Show who typed what in the Image Generator prompt
+- Show who typed what in Image Studio's prompt and instructions
+- Rhythm Run: test-team module for one and two people
+- Git Diff shows who typed what in Before and After
+- Keep CAD tools loaded while a CAD window shares the agent's group
+- Shorts category picker + Reddit canvas scroll window
+- Slides: see who typed what in slide text boxes (crew realtime)
+- Legion: see who typed what in the goal and YAML spec (crew realtime)
+- Model Arena: see who typed what in the request and instructions (crew realtime)
+- Slides: see who typed what in the speaker notes (crew realtime)
+- Browser window: let a page ask for the mic and a game controller
+- Vault notes: see who typed what in a note (crew realtime)
+- Refuse to mint journal and vault keys when encrypted data already exists
+- Let an admin choose which email domains can sign up
+- Code Editor: see who typed what in the code (crew realtime)
+- Model arena: each model's lane stands as a card on a sunken tray, so the UI team's depth mark goes up (crew arena-depth)
+- Teleprompter: see who typed what in the script (crew realtime)
+- ProjectGit test: give the merge a committer (unblocks CensaiOS release)
+- Give a reply that claims an action one hidden retry (R2)
+- One-time invite tokens that burn when claimed (R1)
+- Refuse a foreign page on live sockets and on writes
+- Stop public health leaks and the hub email fallback key
+- Keep sub-agent writes and database tools to the owner
+- Keep postgres tool reads to one guarded statement
+- Turn off passwordless email sign-in unless a flag is set
+- Close hub sign-up outside the cloud and keep hub sessions off the board
+- Translate board comments between English and French
+- Document: see who typed what, each person's part in their own colour (crew realtime)
+- Spreadsheet: see which cell a teammate is typing in, with their name (crew realtime)
+- Outbox: two people can rewrite a draft at once and see each other's cursor (crew realtime)
+- Code Editor: see a teammate's cursor and name in the code (crew realtime)
+- Photo and Video: see a teammate's cursor and name in a text layer, layer name or title (crew realtime)
+- UI team nightly: n8n's connect screen gets a raised card, a sunken address box and buttons that answer the pointer
+- Layout: see a teammate's cursor and name in a text frame (crew realtime)
+- YorWare PDF: see a teammate's cursor and name in a text box on a page (crew realtime)
+- Invite links: test team checks one-time join links, and inviting someone already on the board says so
+- Vector: see a teammate's cursor and name in a text box (crew realtime)
+- CAD: see a teammate's cursor and name in the recipe (crew realtime)
+- Slides: see a teammate's cursor and name in a slide's text box (crew realtime)
+- Writer: see a teammate's cursor and name in a table cell or picture caption (crew realtime)
+- Step cards: see a teammate's cursor and name in a step's answer (crew realtime)
+- Idea Pad: see a teammate's cursor and name in a bullet (crew realtime)
+- To-do list: see a teammate's cursor and name in a to-do (crew realtime)
+- LeadHound: see a teammate's cursor and name in a lead's drafts (crew realtime)
+- Writer: see a teammate's cursor and name in a paragraph (crew realtime)
+- 3D Viewer: see a teammate's cursor and name in a note (crew realtime)
+- Slides: see a teammate's cursor and name in the speaker notes (crew realtime)
+- Local Sites: see a teammate's cursor and name in the form (crew realtime)
+- Listing Writer: see a teammate's cursor and name in the form (crew realtime)
+- LeadHound: see a teammate's cursor and name in the brief (crew realtime)
+- Vault notes: see a teammate's cursor and name in a note (crew realtime)
+- Idea Pad: see a teammate's cursor and name in the save tag (crew realtime)
+- WhatsApp: see a teammate's cursor and name in the quick message (crew realtime)
+- Image Generator: see a teammate's cursor and name in the prompt (crew realtime)
+- Image Studio: see a teammate's cursor and name in the prompt and instructions (crew realtime)
+- Git Diff: see a teammate's cursor and name in the Before and After boxes (crew realtime)
+- UI team nightly: Blueprints gets bars, sunken inputs, raised cards, readable buttons and a real empty state
+- Legion: see a teammate's cursor and name in the goal and YAML spec (crew realtime)
+- Window Importer: a teammate's "check only" import uses their own AI key
+- Model Arena: see a teammate's cursor and name in the request and instructions (crew realtime)
+- Nightly sweep 2026-11-07: OAuth logins tied to the signed-in person; sandbox tool names checked properly
+- Teleprompter: see a teammate's cursor and name in the script (crew realtime)
+- Document: see a teammate's cursor and name as they type (crew realtime)
+- To-do list: two people can type in one to-do at once (crew realtime)
+- LeadHound: two people can rewrite one lead's drafts at once (crew realtime)
+- Idea Pad: two people can type in one bullet at once (crew realtime)
+- Step cards: two people can type one step's answer at once (crew realtime)
+- WhatsApp: two people can type one quick message at once (crew realtime)
+- Writer: two people can type in one table or picture caption at once (crew realtime)
+- Local Sites: two people can fill in one shop's website at once (crew realtime)
+- 3D Viewer: two people can type in one pinned note at once (crew realtime)
+- YorWare PDF: two people can type in one text box on a page (crew realtime)
+- Image Studio: two people can type in one prompt at once (crew realtime)
+- Vector: two people can type in one text box at once (crew realtime)
+- Idea Pad: two people can type in one save tag at once (crew realtime)
+- LeadHound: two people can fill in one brief at once (crew realtime)
+- Image Generator: two people can type in one prompt at once (crew realtime)
+- Legion: two people can type in one goal at once (crew realtime)
+- Model Arena: two people can type in one request at once (crew realtime)
+- Git Diff: two people can type in one Before or After box at once (crew realtime)
+- Photo and Video: two people can type in one text layer or title at once (crew realtime)
+- UI team nightly: Lead Queue gets a filter bar, a sunken queue, raised lead cards and a real empty state
+- Window names: two people can rename one window at once (crew realtime)
+- Layout: two people can type in one text frame at once (crew realtime)
+- Listing Writer: two people can fill in one listing at once (crew realtime)
+- Nightly sweep 2026-11-06: board search/to-dos, GitHub file cache, agent journals
+- CAD: two people can change one recipe at once (crew realtime)
+- Writer: two people can type in one paragraph at once (crew realtime)
+- Slides: two people can type in one slide text box at once (crew realtime)
+- Slides: two people can type in one slide's speaker notes at once (crew realtime)
+- Teleprompter: two people can type in one script at once (crew realtime)
+- Prove a chat in a group keeps its grouped size through click, type, drag, reload, Alt+1, F1 and Escape (crew 157)
+- Add owner project access and arena compare
+- Keep chat working when Ollama retires the default model
+- Starter box: keep Ollama private until the firewall is on
+- UI team nightly: Image Studio gets a sunken board, raised tool keys and a readable chosen tool
+- The "GitHub already has" line can be put away once the keys are new
+- Stream Viewer: YouTube live/Shorts and Twitch past-broadcast links play
+- Close three agent write and run gaps
+- A teammate's folder picker shows only the projects open on the board
+- Each person keeps their own Grok conversation in a shared Grok chat
+- A model picked in a chat reaches teammates' screens at once
+- More files that hold keys count as key files
+- Version bar: say when GitHub already has a key file (crew 194)
+- UI team nightly: Finder's "no project" page gets depth and a readable button
+- Lead Queue: only real web addresses become links
+- Files catches up with files changed outside censaiOS
+- Find windows in Add by every name the board shows
+- A project's secret files open only for this computer's owner
+
+### Fixed
+
+- Let the pre-push check and two tests run on Windows
+- Claim coding jobs only from their own worker branch
+- Rhythm Run shows only real words from the board, and offers Join on the results card
+- Each UI team and test team run starts its own copy of the app on its own ports
+- The test team finds its module files by itself, so two teams can add one at the same time
+- Say updates are paused when this PC is on a side branch
+- Allow the desktop shell origin and keep userinfo out of the origin list
+- Keep owner sign-in working on a LAN origin and refuse rewritten hosts
+- Keep the route map inside its line budget
+- One-time board links, and keep one-click sign-in off the public proxy
+- Developer sign-in only trusts a loopback socket
+- Keep board template apply to the owner and editors
+- Treat loopback names as one origin when scheme and port match
+- Say when Reddit blocks the public feed
+- Refuse to drop an occupied desktop database
+- Read schedule times and repeats on the configured clock
+- LeadHound: full run proven with pictures, and the ice breaker's title and ask show their whole words again (crew leadhound)
+- Code Robot: test team checks it for one and two people, and a broken class record shows as "Player"
+- Stop shared boards from auto-starting runs
+- Asteroids: test team checks it for one and two players, and a broken score table no longer crashes it
+- One app: the UI team checks each window shows its name once, and three windows stop repeating it (crew one-app-look)
+- Legion picks a run up after a restart instead of losing it
+- An MCP server whose path has a space starts on Windows
+- Keep approvals on when an agent starts a coding CLI
+- Refuse a tool a run did not offer
+- Keep monthly schedules on the 29th, 30th and 31st
+- Racetrack: test team checks it for one and two people, and a broken lap table no longer crashes it
+- Nightly sweep 2026-11-08: chat crash, GitHub PR number escape, viewer wake-up cancel
+- Close the Open anywhere pairing gate against capitalized paths
+- Release the dev-server test folder on Windows
+- Finish the Windows gate on the dev-server checks
+- Make Windows paths usable in the gate
+- Let the Windows gate run without symlink privilege
+- Keep the Windows gate on this tree
+- The list of every project on this computer is its owner's
+- The Window Importer says where a new window goes, with no launcher box
+- With no project open, censaiOS's own folder stays the owner's in Files
+- Grok in a shared chat knows who said what
+- A failed Grok chat's lines in the app log keep codes, never Grok's words
+- A model picked for a board's own agent reaches teammates and survives a reload
+- Terraform's state and its other values files count as key files
+- A coding agent's command that names a key file in quotes shows a teammate only its title
+- The request log never names a project
+- The owner sees a fix job's waiting request whole before answering
+- The review team never sends GitHub a key from a file only the owner opens
+- A console opened by Hand off names its project
+- Open in Code Editor never puts a copied key on the shared board
+- Names with _ keep them in messages
+- A teammate's Local Sites preview keeps up with the form
+- Board log never names a window's file, a group or a watch's words
+- Run dev and Docker logs name a folder's hash, never the folder
+- A refused project's words name the ones the board gave the agent
+- An agent runs only the tools it was given
+- Only this computer's owner gives a board's agents a new project
+- Off a board, only the owner's agents reach this computer's projects
+- A Save never leaves a file cut short
+- The Image Generator's header says "Image Generator"
+- Send to GitHub: make unsent versions again without key files (crew 193)
+- Hide a secret file's words a coding agent repeats from teammates
+- Logs never name the file someone asked for
+- Off a board, only the owner's agents read GitHub with this computer's key
+- A Save that did not save says so in plain words
+- Show the open project's real files in the Finder
+- Ask to check the Grok sign-in code the link already holds
+- Keep files that hold keys out of saved versions and off GitHub
+
+### Behind the scenes
+
+- ARCHITECTURE.md and COLLABORATION.md say what the code does today
+- Disarm a workflow start when its graph changes
+- Each run's temp files go in one folder that is deleted at the end
+- Workflow: see a teammate's cursor and name in a step (crew realtime)
+- Window names: see a teammate's cursor in the Writer title and Workflow name (crew realtime)
+- Workflow: two people can type in one step at once (crew realtime)
+- Prove workflows, Scheduler, the MCP door and Idea Pad use the key saved in Settings (crew 159)
+- The crew's guide says what the empty board draws; unused tile names go
+
+_2 more changes are not listed because the description names a part of censaiOS that is not in the public copy._
+
 ## 0.6.0 (2026-11-01)
 
 ### New

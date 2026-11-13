@@ -62,6 +62,16 @@ describe('Work Queue', () => {
     expect(jobs.every((j) => j.status === 'done')).toBe(true);
   });
 
+  // The saved place (state.json) is written on every change. A job finishing
+  // and the job it frees starting are one change, so no save shows the freed
+  // job still waiting while nothing is running.
+  test('a job finishing and the job it frees are reported as one change', async () => {
+    const jobs = [job('J-1', 'foundation'), job('J-2', 'genesis', ['J-1'])];
+    const seen = [];
+    await runQueue({ jobs, runJob: async () => 'ok', onChange: (all) => seen.push(all.map((j) => j.status).join(',')) });
+    expect(seen).toEqual(['working,queued', 'done,working', 'done,done']);
+  });
+
   test('a job whose agent cannot answer ends the queue and blocks the jobs waiting on it', async () => {
     const jobs = [job('J-1', 'nexus'), job('J-2', 'genesis', ['J-1'])];
     await expect(runQueue({ jobs, runJob: async () => { throw new Error('no key'); } })).rejects.toThrow('no key');

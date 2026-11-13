@@ -5,6 +5,7 @@ import { refreshSession as refreshJulesSession } from '../jules.js';
 import { fetchGitHubPullRequestFiles, fetchGitHubPullRequestState, syncAgentTaskFromJulesSession } from '../jules-task-sync/index.js';
 import { getProject, logProjectActivity } from '../workspaces.js';
 import { createLogger } from '../logger.js';
+import { githubApiUrl } from '../github/apiUrl.js';
 
 // Lines carry the session's row id, statuses and PR number only.
 const log = createLogger('jules-watcher');
@@ -88,7 +89,7 @@ export async function tickJulesWatcher() {
             }
 
             const res = await fetch(
-              `https://api.github.com/repos/${project.repo}/pulls/${db.pr_number}/reviews`,
+              `${githubApiUrl()}/repos/${project.repo}/pulls/${db.pr_number}/reviews`,
               { headers: { Authorization: `Bearer ${githubToken}`, Accept: 'application/vnd.github.v3+json', 'User-Agent': 'Homebase-Agent' } }
             );
             if (res.ok) {

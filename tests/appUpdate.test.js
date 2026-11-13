@@ -75,6 +75,10 @@ describe('restart request', () => {
   test('refuses when the updater is not running', () => {
     const dir = makeDir({ 'running.txt': OLD, 'ready.json': { commit: NEW } });
     expect(() => requestRestart({ dir })).toThrow('updater is not running');
+    try { requestRestart({ dir }); } catch (err) {
+      expect(err.code).toBe('updater-not-running');
+      expect(err.statusCode).toBe(409);
+    }
     expect(fs.existsSync(path.join(dir, 'restart-requested'))).toBe(false);
   });
 });
@@ -92,6 +96,12 @@ describe('check now (the tray Update item)', () => {
     expect(updateStatus({ dir }).checked).toEqual({ at: '2026-10-17T23:00:06Z', result: 'blocked' });
   });
 
+  test('a PC on a side branch reads as side-branch, not as up to date', () => {
+    const dir = makeDir({ 'running.txt': NEW, 'watcher.json': beat() });
+    fs.writeFileSync(path.join(dir, 'checked.json'), JSON.stringify({ at: '2026-11-11T17:55:25Z', result: 'side-branch' }));
+    expect(updateStatus({ dir }).checked).toEqual({ at: '2026-11-11T17:55:25Z', result: 'side-branch' });
+  });
+
   test('an unknown result reads as up to date and a bad time as never looked', () => {
     expect(updateStatus({ dir: makeDir({ 'checked.json': { at: '2026-10-17T23:00:05Z', result: 'rm -rf' } }) }).checked.result).toBe('up-to-date');
     expect(updateStatus({ dir: makeDir({ 'checked.json': { at: 'soon' } }) }).checked).toBeNull();
@@ -100,6 +110,9 @@ describe('check now (the tray Update item)', () => {
   test('refuses when the updater is not running', () => {
     const dir = makeDir({ 'running.txt': NEW });
     expect(() => requestCheck({ dir })).toThrow('updater is not running');
+    try { requestCheck({ dir }); } catch (err) {
+      expect(err.code).toBe('updater-not-running');
+    }
     expect(fs.existsSync(path.join(dir, 'check-requested'))).toBe(false);
   });
 });

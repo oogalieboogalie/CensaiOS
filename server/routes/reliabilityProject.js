@@ -31,7 +31,8 @@ export function projectScanHandler(scopeFor, onError) {
     }
     const name = project.name || project.path;
     const started = Date.now();
-    log.info(`scan: started on ${name}`);
+    // Counts and time only: never the project's name or folder.
+    log.info('scan: started');
     try {
       const config = await loadConfig();
       const { results, capped } = scanProjectFolder(resolveProjectPathForRuntime(project.path), config);
@@ -45,7 +46,7 @@ export function projectScanHandler(scopeFor, onError) {
         scans.push(rows[0]);
       }
       const findings = results.filter((r) => r.score < threshold).length;
-      log.info(`scan: finished on ${name}, ${results.length} files, ${findings} need review${capped ? ' (stopped at the file limit)' : ''}, ${Date.now() - started} ms`);
+      log.info(`scan: finished, ${results.length} files, ${findings} need review${capped ? ' (stopped at the file limit)' : ''}, ${Date.now() - started} ms`);
       res.status(201).json({ project: name, scanned: results.length, findings, capped, scans });
     } catch (err) {
       log.warn('scan: a project failed', { code: safeErrorCode(err) });

@@ -55,7 +55,8 @@ export async function filterToolsForAgent(agentId, context = {}) {
       const agent = await getAgent(agentId);
       toolScopes = agent?.tool_scopes;
       allowedDefaults = [
-        'remember', 'recall', 'feeling', 'message_to', 'reply_to', 'read_messages',
+        'remember', 'remember_important', 'journal', 'recall', 'feeling',
+        'message_to', 'broadcast', 'reply_to', 'read_messages',
         'lead_save', 'lead_list', 'lead_status',
         'project_read', 'project_list', 'read_brief', 'report'
       ];

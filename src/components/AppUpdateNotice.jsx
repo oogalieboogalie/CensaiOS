@@ -1,8 +1,9 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { appUpdateApi, changeCount } from '../lib/appUpdate/api.js';
+import { afterUpdaterStarted, launchUpdater, UPDATER_DID_NOT_START } from '../lib/appUpdate/startUpdater.js';
 import { DEMO } from '../lib/demo/demoMode.js';
-import { TRAY_UPDATE_EVENT } from '../lib/appUpdate/trayFlow.js';
+import { STAGE_TEXT, TRAY_UPDATE_EVENT, updatesPaused } from '../lib/appUpdate/trayFlow.js';
 
 // The tray's Update panel sits next to this note in AppContent.
 export { TrayUpdatePanel } from './TrayUpdatePanel.jsx';
@@ -22,13 +23,16 @@ const button = { all: 'unset', cursor: 'pointer', fontSize: 'var(--text-xs)', fo
 /**
  * "Update ready" note: the PC's updater (scripts/auto-update.ps1) pulled and
  * built a newer censaiOS in the background. Restart swaps it in and the page
- * reloads by itself once the new copy answers. Only the owner sees it.
+ * reloads by itself once the new copy answers. When no update can come in at
+ * all (the PC has its own commits, or sits on a side branch) the same spot
+ * says updates are paused. Only the owner sees it.
  */
 export function AppUpdateNotice() {
   const [status, setStatus] = React.useState(null);
   const [phase, setPhase] = React.useState('idle'); // idle | restarting | hidden
   const [error, setError] = React.useState('');
   const [open, setOpen] = React.useState(false);
+  const [starting, setStarting] = React.useState(false);
 
   React.useEffect(() => {
     if (DEMO) return undefined;
@@ -70,11 +74,41 @@ export function AppUpdateNotice() {
     return () => { stopped = true; clearTimeout(timer); clearTimeout(giveUp); };
   }, [phase, status]);
 
-  if (!status?.ready || phase === 'hidden') return null;
+  if (phase === 'hidden') return null;
+  // Updates cannot reach this PC: say so here, where "Update ready" would have been,
+  // so a stopped updater is never just silence. It comes back each time censaiOS opens.
+  if (updatesPaused(status)) {
+    return (
+      <div role="status" style={box} data-testid="app-update-paused" data-result={status.checked.result}>
+        <strong>Updates are paused on this PC</strong>
+        <span style={{ color: 'var(--ink-soft)' }}>{STAGE_TEXT[status.checked.result]}</span>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="button" style={{ ...button, color: 'var(--ink-soft)' }} onClick={() => setPhase('hidden')}>OK</button>
+        </div>
+      </div>
+    );
+  }
+  if (!status?.ready) return null;
   const count = changeCount(status.ready.changes);
   const restart = () => {
     setError('');
     appUpdateApi.restart().then(() => setPhase('restarting')).catch((err) => setError(err.message));
+  };
+  const startTheUpdater = () => {
+    setError('');
+    setStarting(true);
+    const before = status?.running || '';
+    launchUpdater()
+      .then(() => afterUpdaterStarted({ read: () => appUpdateApi.status(), before }))
+      .then(async (watched) => {
+        if (watched?.swapped) { window.location.reload(); return; }
+        if (!watched?.watching) throw new Error(UPDATER_DID_NOT_START);
+        if (!watched.ready) return;
+        await appUpdateApi.restart();
+        setPhase('restarting');
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setStarting(false));
   };
 
   return (
@@ -83,7 +117,9 @@ export function AppUpdateNotice() {
       <span style={{ color: 'var(--ink-soft)' }}>
         {phase === 'restarting'
           ? 'This takes a few seconds. The board comes back by itself.'
-          : `A newer censaiOS is downloaded${count ? ` (${count})` : ''}. Restart to use it, or it goes in the next time you open censaiOS.`}
+          : status.inUse
+            ? 'Update ready, restarts when you are done'
+            : `A newer censaiOS is downloaded${count ? ` (${count})` : ''}. Restart to use it, or it goes in the next time you sign in, when nobody is using censaiOS.`}
       </span>
       {open && status.ready.changes.length > 0 && (
         <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--ink-soft)', fontSize: 'var(--text-xs)', maxHeight: 160, overflow: 'auto' }}>
@@ -99,8 +135,12 @@ export function AppUpdateNotice() {
             </button>
           )}
           <button type="button" style={{ ...button, color: 'var(--ink-soft)' }} onClick={() => setPhase('hidden')}>Later</button>
-          {status.watching && (
+          {status.watching ? (
             <button type="button" style={{ ...button, background: 'var(--accent-soft)', color: 'var(--ink)' }} onClick={restart}>Restart now</button>
+          ) : (
+            <button type="button" style={{ ...button, background: 'var(--accent-soft)', color: 'var(--ink)' }} onClick={startTheUpdater} disabled={starting} data-testid="start-updater">
+              {starting ? 'Starting the updater…' : 'Start the updater'}
+            </button>
           )}
         </div>
       )}

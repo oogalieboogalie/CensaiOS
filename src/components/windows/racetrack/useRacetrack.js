@@ -2,6 +2,7 @@ import React from 'react';
 import { buildTrack, gridSpot, locate } from '../../../lib/games/racetrack/track.js';
 import { createCar, INPUT, speedOf, STEP, stepCar } from '../../../lib/games/racetrack/car.js';
 import { createLaps, currentLap, mergeBestLaps, updateLaps } from '../../../lib/games/racetrack/laps.js';
+import { readBestLaps } from '../../../lib/games/racetrack/bestLapRows.js';
 import { CAR_MESSAGE, SEND_EVERY_MS, createRivals } from '../../../lib/games/racetrack/wire.js';
 import { claimKeyboard, releaseKeyboard } from '../../../lib/keyboardClaim.js';
 import { sendGameMessage } from '../../../lib/collaboration/liveText.js';
@@ -136,7 +137,7 @@ export function useRacetrack({ win, onUpdate }) {
   // A finished lap that beats your best goes on the board's table.
   const recordLap = React.useCallback((seconds) => {
     const entry = { name: selfName, ms: Math.round(seconds * 1000), at: Date.now() };
-    const table = winRef.current.bestLaps || [];
+    const table = readBestLaps(winRef.current.bestLaps);
     const mine = table.find((row) => row.name === selfName);
     if (mine && mine.ms <= entry.ms) return;
     updateRef.current?.({ bestLaps: mergeBestLaps(table, entry) });

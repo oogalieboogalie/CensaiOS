@@ -39,20 +39,24 @@ export async function listRuns(db, workspaceId, windowId, limit = 20) {
 }
 
 /** Turn a workflow's own start on (schedule or board event) or off (mode manual). */
-export async function saveTrigger(db, { workspaceId, windowId, mode, everyMinutes = null, windowKind = null, armedBy, seenWindowIds = [] }) {
+export async function saveTrigger(db, {
+  workspaceId, windowId, mode, everyMinutes = null, windowKind = null, armedBy, seenWindowIds = [], graphHash = null,
+}) {
   if (mode !== 'schedule' && mode !== 'board') {
     await db.query('DELETE FROM board_workflow_triggers WHERE workspace_id = $1 AND window_id = $2', [workspaceId, windowId]);
     return null;
   }
   const { rows } = await db.query(
-    `INSERT INTO board_workflow_triggers (workspace_id, window_id, mode, every_minutes, window_kind, armed_by, next_run_at, seen_window_ids)
-     VALUES ($1, $2, $3, $4, $5, $6, CASE WHEN $3 = 'schedule' THEN NOW() + make_interval(mins => $4) ELSE NULL END, $7)
+    `INSERT INTO board_workflow_triggers
+       (workspace_id, window_id, mode, every_minutes, window_kind, armed_by, next_run_at, seen_window_ids, graph_hash, disarmed_reason)
+     VALUES ($1, $2, $3, $4, $5, $6, CASE WHEN $3 = 'schedule' THEN NOW() + make_interval(mins => $4) ELSE NULL END, $7, $8, NULL)
      ON CONFLICT (workspace_id, window_id) DO UPDATE
        SET mode = EXCLUDED.mode, every_minutes = EXCLUDED.every_minutes, window_kind = EXCLUDED.window_kind,
-           armed_by = EXCLUDED.armed_by, next_run_at = EXCLUDED.next_run_at, seen_window_ids = EXCLUDED.seen_window_ids
+           armed_by = EXCLUDED.armed_by, next_run_at = EXCLUDED.next_run_at, seen_window_ids = EXCLUDED.seen_window_ids,
+           graph_hash = EXCLUDED.graph_hash, disarmed_reason = NULL
      RETURNING *`,
     [workspaceId, windowId, mode, mode === 'schedule' ? everyMinutes : null, mode === 'board' ? windowKind : null,
-      armedBy, JSON.stringify(seenWindowIds)],
+      armedBy, JSON.stringify(seenWindowIds), graphHash],
   );
   return rows[0];
 }
@@ -69,6 +73,7 @@ export async function listArmedTriggers(db) {
     `SELECT t.* FROM board_workflow_triggers t
        JOIN workspace_members m ON m.workspace_id = t.workspace_id AND m.user_id = t.armed_by
       WHERE m.role IN ('owner', 'admin', 'member')
+        AND t.disarmed_reason IS NULL
         AND (t.mode = 'board' OR t.next_run_at <= NOW())`,
   );
   return rows;
@@ -89,6 +94,15 @@ export async function saveSeenWindows(db, row, ids, ran) {
         SET seen_window_ids = $3, last_run_at = CASE WHEN $4 THEN NOW() ELSE last_run_at END
       WHERE workspace_id = $1 AND window_id = $2`,
     [row.workspace_id, row.window_id, JSON.stringify(ids), ran],
+  );
+}
+
+/** An edit of the graph turns the start off until someone turns it on again. */
+export async function disarmTrigger(db, row) {
+  await db.query(
+    `UPDATE board_workflow_triggers SET disarmed_reason = 'graph_changed'
+      WHERE workspace_id = $1 AND window_id = $2`,
+    [row.workspace_id, row.window_id],
   );
 }
 

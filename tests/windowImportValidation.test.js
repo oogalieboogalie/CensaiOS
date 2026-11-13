@@ -84,11 +84,12 @@ describe('window package writer helpers', () => {
       label: 'Demo Window',
       componentName: 'DemoWindow',
       size: { w: 400, h: 300 },
-      launcher: { show: true, order: 10 },
     });
     expect(meta).toContain('export const windowMeta');
     expect(meta).toContain('"demoWindow"');
-    expect(meta).toContain('launcher');
+    // Every imported window gets the Tools icon in its header, and no
+    // starting button (tests/importedWindowMeta.test.js follows it through).
+    expect(meta).toContain('launcher: {"show":false,"icon":"Tools"}');
     expect(meta).toContain("moduleMenu: { show: false, status: 'prototype' }");
 
     const plan = buildWindowFilePlan({
@@ -97,7 +98,6 @@ describe('window package writer helpers', () => {
       size: { w: 400, h: 300 },
       jsx: "import './old.css';\nexport function DemoWindow() {}",
       css: '.demo { color: var(--ink); }',
-      launcher: null,
     });
 
     expect(plan.kind).toBe('demoWindow');

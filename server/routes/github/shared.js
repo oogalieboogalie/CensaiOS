@@ -1,6 +1,15 @@
+import { createHash } from 'node:crypto';
+import { githubApiUrl } from '../../github/apiUrl.js';
+
 export const githubBranchCache = new Map();
 export const githubFileCache = new Map();
 export const GITHUB_FILE_CACHE_TTL = 60_000;
+
+// A kept copy belongs to the key that read it: a private project's file or
+// branch name read with one person's key is never handed to another key.
+export function githubKeyTag(token) {
+  return token ? createHash('sha256').update(String(token)).digest('hex').slice(0, 16) : 'none';
+}
 
 export async function fetchGithub(endpoint, res, token) {
   if (!token) {
@@ -8,7 +17,7 @@ export async function fetchGithub(endpoint, res, token) {
     return null;
   }
 
-  const url = endpoint.startsWith('http') ? endpoint : `https://api.github.com${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${githubApiUrl()}${endpoint}`;
   try {
     const r = await fetch(url, {
       headers: {
@@ -30,10 +39,11 @@ export async function fetchGithub(endpoint, res, token) {
 }
 
 export async function getGithubDefaultBranch(repo, token) {
-  const cached = githubBranchCache.get(repo);
+  const cacheKey = `${githubKeyTag(token)}:${repo}`;
+  const cached = githubBranchCache.get(cacheKey);
   if (cached) return cached;
 
-  const repoRes = await fetch(`https://api.github.com/repos/${repo}`, {
+  const repoRes = await fetch(`${githubApiUrl()}/repos/${repo}`, {
     headers: token ? { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'Homebase-App' } : { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'Homebase-App' }
   });
   if (!repoRes.ok) {
@@ -42,6 +52,6 @@ export async function getGithubDefaultBranch(repo, token) {
   }
   const repoData = await repoRes.json();
   const branch = repoData.default_branch || 'main';
-  githubBranchCache.set(repo, branch);
+  githubBranchCache.set(cacheKey, branch);
   return branch;
 }

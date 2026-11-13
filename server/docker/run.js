@@ -7,7 +7,8 @@ import { optionArgs, parseEnv, parseRestart, parseShare } from './runOptions.js'
 // Only the image, an optional name, published ports and the settings in
 // runOptions.js are accepted, each checked, so nothing typed in the window
 // reaches the CLI as a flag. The log names how many settings there were,
-// never their values.
+// never their values, and never the image or the container's name, which
+// can carry a project folder's name (shared/logs/addressNames.js).
 
 const log = createLogger('docker');
 const NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,62}$/;
@@ -36,11 +37,11 @@ export function parsePorts(input) {
 }
 
 function describe(what) {
-  return `${what.image} as ${what.name}, ports ${what.ports.join(', ') || 'none'}, ${what.settings} setting${what.settings === 1 ? '' : 's'}, shared folder ${what.shared ? 'yes' : 'no'}, restart ${what.restart}`;
+  return `ports ${what.ports.join(', ') || 'none'}, ${what.settings} setting${what.settings === 1 ? '' : 's'}, shared folder ${what.shared ? 'yes' : 'no'}, restart ${what.restart}`;
 }
 
 export async function runContainer({ image, name, ports, env, share, restart } = {}) {
-  const what = { image: String(image ?? '').slice(0, 120), name: name || '(docker picks)', ports: [], settings: 0, shared: false, restart: 'no' };
+  const what = { ports: [], settings: 0, shared: false, restart: 'no' };
   try {
     assertRef(image, 'image');
     const cleanName = String(name ?? '').trim();
@@ -60,10 +61,10 @@ export async function runContainer({ image, name, ports, env, share, restart } =
     args.push(...optionArgs({ env: settings, share: folder, restart: what.restart }));
     const { stdout } = await docker([...args, image], { timeout: 5 * 60_000 });
     const id = stdout.trim().split('\n').pop() || '';
-    log.info(`run: started ${describe(what)} (${id.slice(0, 12)})`);
+    log.info(`run: started a container, ${describe(what)} (${id.slice(0, 12)})`);
     return { ok: true, id, image, name: cleanName || null, ports: what.ports, settings: what.settings, shared: what.shared, restart: what.restart };
   } catch (err) {
-    log.warn(`run: could not start ${describe(what)}: ${dockerFailureReason(err)}`);
+    log.warn(`run: could not start a container, ${describe(what)}: ${dockerFailureReason(err)}`);
     throw err;
   }
 }

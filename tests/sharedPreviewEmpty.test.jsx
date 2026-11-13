@@ -29,17 +29,17 @@ test('a page shows in the frame with no note', () => {
   expect(document.querySelector('iframe').getAttribute('srcdoc')).toContain("Pat's shop");
 });
 
-test('a linked file that cannot load shows why and warns in the app log once', async () => {
+test('a linked file that cannot load shows why and warns in the app log once, never naming the file', async () => {
   global.fetch = jest.fn(async () => ({ json: async () => ({ error: 'File not found' }) }));
   await act(async () => {
     render(<HtmlPreviewWindow win={{ id: 'p3', filePath: 'site/index.html' }} onUpdate={jest.fn()} />);
   });
   expect(screen.getByText('File not found')).toBeInTheDocument();
-  expect(logged).toEqual([{ level: 'warn', message: 'shared preview: could not load site/index.html: File not found', where: 'htmlPreview' }]);
+  expect(logged).toEqual([{ level: 'warn', message: 'shared preview: could not load its file: File not found', where: 'htmlPreview' }]);
 });
 
-test('a linked code window that is gone warns in the app log and keeps the saved copy', () => {
+test('a linked code window that is gone warns in the app log without its file name and keeps the saved copy', () => {
   render(<HtmlPreviewWindow win={{ id: 'p4', sourceWindowId: 'gone', fileName: 'index.html', html: '<p>saved</p>' }} onUpdate={jest.fn()} />);
   expect(screen.getByText(/Linked code window is unavailable/)).toBeInTheDocument();
-  expect(logged.map((l) => l.message)).toEqual(['shared preview: the linked code window for index.html is gone, showing the last saved copy']);
+  expect(logged.map((l) => l.message)).toEqual(['shared preview: the linked code window is gone, showing the last saved copy']);
 });

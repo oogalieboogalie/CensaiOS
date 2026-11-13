@@ -3,8 +3,8 @@ import { analyzeImports } from './imports.js';
 import { analyzeCircular } from './circular.js';
 import { analyzeOutdated } from './outdated.js';
 
-export async function handleAnalyzeDeps(agentId, args) {
-  const projectPath = await resolveDepsProjectPath(agentId, args);
+export async function handleAnalyzeDeps(agentId, args, context = {}) {
+  const projectPath = await resolveDepsProjectPath(agentId, args, context);
   const mode = args.mode || 'all';
 
   if (mode === 'imports') {

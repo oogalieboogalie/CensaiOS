@@ -22,8 +22,8 @@ export function ImageStudioToolbar({
   onClear,
 }) {
   return (
-    <div style={{ display: 'grid', gap: 8, paddingTop: 8 }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+    <div className="hb-is-tools">
+      <div className="hb-is-row">
         {IMAGE_STUDIO_TOOLS.map(item => (
           <ToolButton key={item.id} active={tool === item.id} onClick={() => setTool(item.id)}>
             {item.label}
@@ -36,53 +36,33 @@ export function ImageStudioToolbar({
         <ToolButton onClick={onClear}>Clear</ToolButton>
         <ToolButton disabled={!canInsertImage} onClick={onInsertImage}>Add image</ToolButton>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-        <span style={labelStyle}>Color</span>
+      <div className="hb-is-row">
+        <span className="hb-is-label">Color</span>
         {IMAGE_STUDIO_COLORS.map(item => (
           <button
             key={item}
             type="button"
             title={item}
+            aria-label={`Color ${item}`}
+            aria-pressed={item === color}
             onClick={() => setColor(item)}
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: 'var(--radius-full)',
-              border: item === color ? '2px solid var(--accent-line)' : '1px solid var(--hairline)',
-              background: item,
-              cursor: 'pointer',
-            }}
+            className="hb-is-swatch"
+            style={{ background: item }}
           />
         ))}
         <Divider />
-        <span style={labelStyle}>Stroke</span>
+        <span className="hb-is-label">Stroke</span>
         {STROKE_SIZES.map(item => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setStrokeWidth(item.value)}
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              width: 24,
-              height: 24,
-              borderRadius: 'var(--radius-lg)',
-              display: 'grid',
-              placeItems: 'center',
-              background: strokeWidth === item.value ? 'var(--accent-soft)' : 'var(--surface-2)',
-              color: strokeWidth === item.value ? 'var(--accent)' : 'var(--ink-soft)',
-              font: '700 11px var(--font-mono)',
-            }}
-          >
+          <ToolButton key={item.id} active={strokeWidth === item.value} onClick={() => setStrokeWidth(item.value)}>
             {item.label}
-          </button>
+          </ToolButton>
         ))}
         {tool === 'text' && (
           <input
             value={textValue}
             onChange={event => setTextValue(event.target.value)}
             placeholder="Text"
-            style={{ flex: '1 1 160px', minWidth: 120, background: 'var(--surface-2)', border: '1px solid var(--hairline)', color: 'var(--ink)', borderRadius: 'var(--radius-lg)', padding: '6px 8px', fontSize: 'var(--text-sm)' }}
+            className="hb-is-input hb-is-input-text"
           />
         )}
       </div>
@@ -90,22 +70,15 @@ export function ImageStudioToolbar({
   );
 }
 
+// Tools and stroke sizes share one raised key; the chosen one is filled.
 function ToolButton({ active, disabled, onClick, children }) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      style={{
-        all: 'unset',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        padding: '6px 9px',
-        borderRadius: 'var(--radius-lg)',
-        background: active ? 'var(--accent)' : 'var(--surface-2)',
-        color: active ? 'var(--on-fill)' : 'var(--ink-soft)',
-        opacity: disabled ? 0.45 : 1,
-        font: '700 11px var(--font-mono)',
-      }}
+      aria-pressed={active === undefined ? undefined : active}
+      className="hb-is-key"
     >
       {children}
     </button>
@@ -113,12 +86,5 @@ function ToolButton({ active, disabled, onClick, children }) {
 }
 
 function Divider() {
-  return <span aria-hidden="true" style={{ width: 1, height: 22, background: 'var(--hairline)' }} />;
+  return <span aria-hidden="true" className="hb-is-divider" />;
 }
-
-const labelStyle = {
-  color: 'var(--ink-faint)',
-  font: '700 10px var(--font-mono)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-};

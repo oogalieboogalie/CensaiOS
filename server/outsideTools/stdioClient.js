@@ -68,10 +68,13 @@ export function createStdioClient({
   }
 
   function start() {
+    // cmd.exe splits on spaces, so "C:\Program Files\nodejs\node.exe" never starts.
+    // A .exe can be spawned directly. A .cmd (npm, npx) still needs the shell.
+    const useShell = process.platform === 'win32' && !String(command).toLowerCase().endsWith('.exe');
     child = spawnImpl(command, args, {
       env: stdioEnv({ secret, secretEnv, serverKeys }),
       stdio: ['pipe', 'pipe', 'pipe'],
-      shell: process.platform === 'win32',
+      shell: useShell,
       windowsHide: true,
     });
     child.stdout.setEncoding('utf8');

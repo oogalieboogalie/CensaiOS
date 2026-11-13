@@ -2,6 +2,7 @@
 import React from 'react';
 import { HIGHLIGHT_OPACITY, PDF_INK } from '../../../lib/yorware/pdfColors.js';
 import { strokesToPath } from '../../../lib/yorware/pdfExport.js';
+import { PdfTextEdit, PdfTextHere } from './PdfTextEdit.jsx';
 
 const LABEL = { text: 'Text', sign: 'Signature', highlight: 'Highlight', redact: 'Blacked out', signHere: 'Sign here' };
 
@@ -9,7 +10,7 @@ const LABEL = { text: 'Text', sign: 'Signature', highlight: 'Highlight', redact:
  * One thing placed on a page, drawn the way the export will draw it. `box`
  * is the live position (it differs from the mark while it's being dragged).
  */
-export function PdfMark({ id, mark, box, scale, selected, editing, onPointerDown, onDoubleClick, onText, onEndEdit, onSign }) {
+export function PdfMark({ id, mark, box, scale, selected, editing, onPointerDown, onDoubleClick, onText, onEndEdit, onSign, windowId }) {
   const style = { left: box.x * scale, top: box.y * scale, width: box.w * scale, height: box.h * scale };
   const common = {
     className: 'hb-yp-mark', 'data-mark': id, 'data-type': mark.type, 'data-selected': selected ? 'true' : undefined,
@@ -19,11 +20,8 @@ export function PdfMark({ id, mark, box, scale, selected, editing, onPointerDown
   if (mark.type === 'text') {
     const font = { fontSize: (Number(mark.size) || 14) * scale, color: mark.color || PDF_INK.text, padding: `${2 * scale}px ${3 * scale}px` };
     body = editing
-      ? <textarea className="hb-yp-text-edit" aria-label="Text on the page" style={font} value={mark.text} autoFocus
-          onFocus={(e) => e.target.select()} onChange={(e) => onText(e.target.value)} onBlur={onEndEdit}
-          onPointerDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); e.currentTarget.blur(); } }} />
-      : <div className="hb-yp-text" style={font}>{mark.text}</div>;
+      ? <PdfTextEdit windowId={windowId} markId={id} text={String(mark.text ?? '')} style={font} onText={onText} onEndEdit={onEndEdit} />
+      : <><div className="hb-yp-text" style={font}>{mark.text}</div>{windowId && <PdfTextHere windowId={windowId} markId={id} />}</>;
   } else if (mark.type === 'highlight') {
     body = <div className="hb-yp-fill" style={{ background: PDF_INK.highlight, opacity: HIGHLIGHT_OPACITY }} />;
   } else if (mark.type === 'redact') {

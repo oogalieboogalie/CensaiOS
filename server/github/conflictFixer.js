@@ -14,6 +14,9 @@ import path from 'path';
 import crypto from 'crypto';
 import { execFile } from 'child_process';
 import { updateBranch, deskError } from './mergeDesk.js';
+import { githubGitUrl } from './apiUrl.js';
+import { permissionForViewer } from '../cli-agents/ownerOnlySteps.js';
+import { taskHiddenWords, teammateSummary } from '../cli-agents/taskHiddenWords.js';
 
 const POLL_MS = 1500;
 const MAX_JOBS = 50;
@@ -67,13 +70,20 @@ export function getFixJob(id) {
   return publicJob(job);
 }
 
-/** Pending agent approvals for a job, in the window's words. */
-export function fixApprovals(job, manager) {
+/**
+ * Pending agent approvals for a job, in the window's words: as a teammate
+ * sees them, as the window is on the shared board. `owner`: the whole
+ * requests, for this computer's owner's own screen, never for the board.
+ */
+export function fixApprovals(job, manager, { owner = false } = {}) {
   if (!job.taskId) return [];
   try {
-    return manager.get(job.taskId).permissions
+    const task = manager.get(job.taskId);
+    const shown = owner ? { owner: true } : { root: task.worktree?.dir || '', hidden: taskHiddenWords(task) };
+    return task.permissions
       .filter((p) => p.status === 'pending')
-      .map((p) => ({ id: p.id, title: p.title, detail: String(p.detail || '').slice(0, 300) }));
+      .map((p) => permissionForViewer(p, shown))
+      .map((p) => ({ id: p.id, title: p.title, detail: String(p.detail || '').slice(0, owner ? 2000 : 300) }));
   } catch {
     return [];
   }
@@ -140,7 +150,8 @@ export function watchTask(job, { manager, git, finish = finishAndPush, agentText
     setJob(job, { status: 'pushing', text: 'Checking the agent’s merge and pushing it.' });
     try {
       const sha = await finish({ job, task, git, token: job.token });
-      setJob(job, { status: 'done', sha, agentSummary: task.summary || null, text: doneText });
+      // The summary shows on the shared board, so it is the one a teammate sees.
+      setJob(job, { status: 'done', sha, agentSummary: teammateSummary(task) || null, text: doneText });
     } catch (err) {
       setJob(job, { status: 'failed', text: err.message });
     } finally {
@@ -179,7 +190,7 @@ export async function startFix({ octokit, token, owner, repo, number, user = {} 
   }
 
   setJob(job, { status: 'agent', text: 'Getting a copy of the repo for the agent.' });
-  const remoteUrl = deps.remoteUrl || `https://github.com/${owner}/${repo}.git`;
+  const remoteUrl = deps.remoteUrl || githubGitUrl(`${owner}/${repo}`);
   const dir = await ensureClone({ owner, repo, token, root, remoteUrl, git });
   await git(['fetch', 'origin', `+refs/heads/${info.baseRef}:refs/remotes/origin/${info.baseRef}`, `+refs/heads/${info.headRef}:refs/remotes/origin/${info.headRef}`], dir, { token });
   const headSha = (await git(['rev-parse', `origin/${info.headRef}`], dir)).trim();

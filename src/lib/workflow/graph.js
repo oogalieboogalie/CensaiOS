@@ -184,3 +184,5 @@ export function clip(text, max = MAX_OUTPUT_CHARS) {
   const value = String(text ?? '');
   return value.length > max ? `${value.slice(0, max)}…` : value;
 }
+
+export { graphCanonical, graphHash } from './graphHash.js';

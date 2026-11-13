@@ -5,6 +5,7 @@ import { useOperationalTodos } from './useOperationalTodos.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { startCodingAgent } from './startCodingAgent.js';
 import { openSteps, todoItemsFrom } from './todoImport.js';
+import { useTodoLiveEdit } from './useTodoLiveEdit.js';
 
 export function useTodos(win, onUpdate, currentProject) {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
@@ -12,8 +13,6 @@ export function useTodos(win, onUpdate, currentProject) {
   const operational = useOperationalTodos(win, onUpdate, items);
   const [newText, setNewText] = React.useState('');
   const [handoffError, setHandoffError] = React.useState(null);
-  const [editingId, setEditingId] = React.useState(null);
-  const [editText, setEditText] = React.useState('');
   const pendingHandoffs = React.useRef(new Set());
 
   const setLocalItems = (next) => onUpdate({ items: normalizeTodos(typeof next === 'function' ? next(items) : next) });
@@ -66,9 +65,7 @@ export function useTodos(win, onUpdate, currentProject) {
     if (id && id !== item.stepsWindowId) persistItemPatch(item.id, { stepsWindowId: id });
   };
 
-  const startEdit = (id, text) => { setEditingId(id); setEditText(text); };
-  const saveEdit = () => { if (editingId && editText.trim()) { persistItemPatch(editingId, { text: editText.trim() }); } setEditingId(null); setEditText(''); };
-  const cancelEdit = () => { setEditingId(null); setEditText(''); };
+  const { editingId, editText, setEditText, startEdit, saveEdit, cancelEdit } = useTodoLiveEdit(win, onUpdate, persistItemPatch, operational.enabled);
   
   const completedCount = React.useMemo(() => items.filter(it => it.done).length, [items]);
   const totalCount = items.length;

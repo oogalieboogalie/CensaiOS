@@ -4,6 +4,7 @@ import { Icon } from '../../Icons.jsx';
 import { ADJUSTMENTS, BLENDS, PRESETS } from '../../../lib/creative/photoModel.js';
 import { INK } from '../../../lib/creative/creativeColors.js';
 import { Slider } from '../Slider.jsx';
+import { CreativeCaretText, photoLayerField } from '../CreativeCaretText.jsx';
 
 function LayerRow({ id, layer, active, onSelect, onToggle }) {
   return (
@@ -21,7 +22,7 @@ function LayerRow({ id, layer, active, onSelect, onToggle }) {
 }
 
 /** Layers on top, then the selected layer's settings and adjustments. */
-export function PhotoPanel({ p }) {
+export function PhotoPanel({ p, windowId }) {
   const { doc, layer, current } = p;
   const top = [...doc.order].reverse();
   const adj = layer?.adj || {};
@@ -48,9 +49,9 @@ export function PhotoPanel({ p }) {
       </section>
       {layer && (
         <section className="hb-cr-section">
-          <label className="hb-cr-field"><span>Name</span>
-            <input className="hb-cr-input" value={layer.name} aria-label="Layer name" onChange={(e) => p.setLayer(current, { name: e.target.value })} />
-          </label>
+          <div className="hb-cr-field"><span>Name</span>
+            <CreativeCaretText oneLine windowId={windowId} field={photoLayerField(current, 'name')} label="Layer name" value={layer.name || ''} onType={(name) => p.setLayer(current, { name })} />
+          </div>
           <label className="hb-cr-field"><span>Blend</span>
             <select className="hb-of-select" aria-label="Blend mode" value={layer.blend || 'source-over'} onChange={(e) => p.setLayer(current, { blend: e.target.value })}>
               {Object.entries(BLENDS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -59,7 +60,7 @@ export function PhotoPanel({ p }) {
           <Slider label="Opacity" min={0} max={100} unit="%" value={Math.round((layer.opacity ?? 1) * 100)} onChange={(v) => p.setLayer(current, { opacity: v / 100 })} />
           {layer.kind === 'text' && (
             <>
-              <textarea className="hb-cr-input hb-cr-textarea" aria-label="Text" value={layer.text} onChange={(e) => p.setLayer(current, { text: e.target.value })} />
+              <CreativeCaretText windowId={windowId} field={photoLayerField(current, 'text')} label="Text" value={layer.text || ''} onType={(text) => p.setLayer(current, { text })} />
               <div className="hb-cr-row">
                 <input type="color" className="hb-cr-color" aria-label="Text color" value={layer.color || INK} onChange={(e) => p.setLayer(current, { color: e.target.value })} />
                 <button type="button" className="hb-of-mini" aria-pressed={(layer.weight || 600) >= 600} aria-label="Bold text" onClick={() => p.setLayer(current, { weight: (layer.weight || 600) >= 600 ? 400 : 700 })}><strong>B</strong></button>

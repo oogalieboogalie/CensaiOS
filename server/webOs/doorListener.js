@@ -24,6 +24,9 @@ import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { cameThroughDoor, doorUsable, markThroughDoor, readDoorSettings } from './door.js';
 import { CLOSED_PAGE } from './closedPage.js';
+import { tailnetVisit } from '../tailnet/visit.js';
+import { checkDeviceSignIn, watchVisitorSocket } from '../tailnet/signIns.js';
+import { startTailnetListener, stopTailnetListener } from '../tailnet/listener.js';
 
 const log = createLogger('web-os-door');
 let listening = null;
@@ -31,7 +34,9 @@ let listening = null;
 const CLOSED_MESSAGE = 'This censaiOS is not open to other computers yet. On your main computer, turn on Settings, Open anywhere.';
 const PAIR_MESSAGE = 'On another computer, sign in with a code. On your main computer open Settings, Open anywhere, Add a computer.';
 // Every way to sign in without a code: typed email, one-click, Google, Hub.
-const SIGN_IN_WITHOUT_CODE = /^\/api\/(auth\/(developer|local|google)|hub-auth)(\/|$)/;
+// The router matches these paths in any capitalization (/API and /api are the
+// same request), so the check has to as well.
+const SIGN_IN_WITHOUT_CODE = /^\/api\/(auth\/(developer|local|google)|hub-auth)(\/|$)/i;
 
 export function doorListenerConfig(env = process.env) {
   const fallback = env.CENSAI_IN_CONTAINER === '1' ? '3004' : '';
@@ -47,13 +52,27 @@ export function doorIsOpen() {
   return doorUsable() && readDoorSettings().open;
 }
 
-/** Runs first for every request; does nothing unless it came through the door. */
+/**
+ * Runs first for every request; does nothing unless it came through the door.
+ * A Tailscale device the owner switched on in "My Tailscale devices"
+ * (server/tailnet/visit.js) is let in even while Open anywhere is off, and
+ * signs in without a code.
+ */
 export function doorGuard(req, res, next) {
   if (!cameThroughDoor(req)) return next();
-  if (!doorIsOpen()) {
+  const visit = tailnetVisit(req);
+  if (typeof visit?.then === 'function') return visit.then((known) => enter(known, req, res, next)).catch(next);
+  return enter(visit, req, res, next);
+}
+
+function enter(visit, req, res, next) {
+  if (visit.admitted) req.tailnetDevice = visit.device;
+  // A sign-in made by a switched-on device ends when it is switched off.
+  checkDeviceSignIn(req);
+  if (!visit.admitted && (visit.tailnetOnly || !doorIsOpen())) {
     if (req.method === 'GET' && req.path.startsWith('/assets/')) return next();
-    if (req.method === 'GET' && !req.path.startsWith('/api/')) return res.status(403).type('html').send(CLOSED_PAGE);
-    return res.status(403).json({ error: CLOSED_MESSAGE, doorClosed: true });
+    if (req.method === 'GET' && !req.path.startsWith('/api/')) return res.status(403).type('html').send(visit.page || CLOSED_PAGE);
+    return res.status(403).json({ error: visit.message || CLOSED_MESSAGE, doorClosed: true, ...visit.hint });
   }
   if (SIGN_IN_WITHOUT_CODE.test(req.path)) {
     return res.status(403).json({ error: PAIR_MESSAGE, pairRequired: true });
@@ -66,11 +85,14 @@ export function doorGuard(req, res, next) {
  * handed to the main server's own handlers, which check the sign-in as usual.
  */
 export function startDoorListener(mainServer, app, config = doorListenerConfig()) {
+  // A copy with no door (the desktop app) gets a Tailscale-only port instead.
+  if (doorUsable() && !listening) startTailnetListener(mainServer, app, { doorPort: config?.publicPort ?? null });
   if (!config || listening || !doorUsable()) return null;
   const server = http.createServer(app);
-  server.on('connection', markThroughDoor);
-  server.on('upgrade', (req, socket, head) => {
-    if (!doorIsOpen()) {
+  server.on('connection', (socket) => { markThroughDoor(socket); watchVisitorSocket(socket); });
+  server.on('upgrade', async (req, socket, head) => {
+    const visit = doorIsOpen() ? null : await Promise.resolve(tailnetVisit(req)).catch(() => null);
+    if (!doorIsOpen() && !visit?.admitted) {
       socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return;
     }
@@ -94,4 +116,5 @@ export function doorPublicPort() {
 export function stopDoorListener() {
   listening?.server?.close();
   listening = null;
+  stopTailnetListener();
 }

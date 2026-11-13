@@ -52,7 +52,7 @@ export function ChatWindow({ win, onUpdate, allWins, canvasGroups, currentProjec
     canShare ? { id: 'agent-scout', label: 'Scout', title: `${agent.name}'s scout: maps the code and points to the line to change`, icon: <Icon.Eye size={13} />, pressed: scoutOpen, onSelect: () => togglePanel('scout') } : null,
     canShare ? { id: 'agent-tools', label: 'Tools', title: `Give ${agent.name} tools from outside MCP servers`, icon: <Icon.Toolbox size={13} />, pressed: toolsOpen, onSelect: () => togglePanel('tools') } : null,
     canShare ? { id: 'share-agent', label: 'Share', title: `Let other apps ask ${agent.name}`, icon: <Icon.Plug size={13} />, pressed: sharing, onSelect: () => togglePanel('share') } : null,
-    msgs.length > 0 ? { id: 'new-chat', label: 'New chat', icon: <Icon.Plus size={13} />, onSelect: () => onUpdate({ msgs: [], chatId: `chat:${win.id}:${Date.now()}`, grokSessionId: null }) } : null,
+    msgs.length > 0 ? { id: 'new-chat', label: 'New chat', icon: <Icon.Plus size={13} />, onSelect: () => onUpdate({ msgs: [], chatId: `chat:${win.id}:${Date.now()}` }) } : null,
   ].filter(Boolean);
 
   return (

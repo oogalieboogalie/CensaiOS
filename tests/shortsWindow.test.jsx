@@ -8,6 +8,7 @@ import {
   CURATED_CHANNELS, createWheelStepper, embedUrlFor, normalizeSource, parseShortsInput,
   shortsPlaylistId, sourceFromSearch, stepIndex, withPastedVideo,
 } from '../src/lib/shorts/shortsFeed.js';
+import { SHORTS_CATEGORIES, sourceFromCategoryId } from '../src/lib/shorts/shortsCategories.js';
 import { ShortsWindow } from '../src/components/windows/shorts/index.jsx';
 import { keyboardClaimed, releaseKeyboard } from '../src/lib/keyboardClaim.js';
 import { WINDOW_MANIFESTS } from '../src/lib/windowManifest.js';
@@ -106,6 +107,26 @@ describe('Shorts window', () => {
     const frame = document.querySelector('iframe.hb-shorts-player');
     expect(frame.getAttribute('src')).toContain('list=UUSHLA_DiR1FfKNvjuUpBHmylQ');
     expect(screen.getByText('NASA')).toBeTruthy();
+    expect(screen.getByTestId('shorts-chips')).toBeTruthy();
+    expect(SHORTS_CATEGORIES.length).toBeGreaterThanOrEqual(4);
+  });
+
+  test('category chips switch the shared Shorts feed', () => {
+    const onUpdate = jest.fn();
+    render(<ShortsWindow win={{ id: 'w1b' }} onUpdate={onUpdate} />);
+    fireEvent.click(screen.getByTestId('shorts-chips').querySelector('[data-category="tech"]'));
+    expect(onUpdate).toHaveBeenCalledWith({ shortsSource: sourceFromCategoryId('tech') });
+  });
+
+  test('sources sheet lists categories to pick a type of Shorts', () => {
+    const onUpdate = jest.fn();
+    render(<ShortsWindow win={{ id: 'w1c' }} onUpdate={onUpdate} />);
+    fireEvent.click(screen.getByTitle('Choose what to watch'));
+    expect(screen.getByTestId('shorts-categories')).toBeTruthy();
+    expect(screen.getByText('Categories')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('shorts-categories').querySelector('[data-category="science"]'));
+    expect(onUpdate).toHaveBeenCalledWith({ shortsSource: sourceFromCategoryId('science') });
+    expect(screen.queryByTestId('shorts-sources')).toBeNull();
   });
 
   test('steps through a list with keys and the rail, and owns the keyboard while focused', () => {

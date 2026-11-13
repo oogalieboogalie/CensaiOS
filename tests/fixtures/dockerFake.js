@@ -187,7 +187,8 @@ export function createFakeDocker({ daemon = 'up', state, live = false } = {}) {
         const cmd = rest.slice(rest.indexOf('-c') + 1).join(' ');
         if (cmd.startsWith('echo ')) return ok(`${cmd.slice(5).replace(/\$(\w+)/g, (_, k) => env[k] ?? '')}\n`);
         if (cmd.startsWith('ls') && env.TERM) return ok('total 24\ndrwxr-xr-x 1 node node 4096 Oct  4 01:12 \u001b[1;34m.\u001b[0m\n-rw-r--r-- 1 node node 1873 Oct  4 01:12 package.json\n-rwxr-xr-x 1 node node  912 Oct  4 01:12 \u001b[1;32mentrypoint.sh\u001b[0m\ndrwxr-xr-x 1 node node 4096 Oct  4 01:12 \u001b[1;34mserver\u001b[0m\n');
-        if (cmd === 'exit 3') return { stdout: '', stderr: '', code: 3 };
+        // POSIX sends `sh -c "exit 3"`. Windows sends the words as argv, with no -c.
+        if (cmd === 'exit 3' || (rest.at(-2) === 'exit' && rest.at(-1) === '3')) return { stdout: '', stderr: '', code: 3 };
         if (cmd.startsWith('ls')) return ok('total 24\ndrwxr-xr-x 1 node node 4096 Oct  4 01:12 .\n-rw-r--r-- 1 node node 1873 Oct  4 01:12 package.json\ndrwxr-xr-x 1 node node 4096 Oct  4 01:12 server\n');
         return ok(`ran: ${cmd}\n`);
       }

@@ -122,7 +122,7 @@ function jupyter({ app }) {
   const cell = [
     '# First cell: check the notebook can reach your board.',
     'import json, urllib.request',
-    `json.load(urllib.request.urlopen("${LOCAL_APP_URL}/api/health"))["database"]`,
+    `json.load(urllib.request.urlopen("${LOCAL_APP_URL}/api/health"))["ok"]`,
   ].join('\n');
   return {
     files: [{ name: 'notebook-command.txt', text: `${command}\n` }, { name: 'first-cell.py', text: `${cell}\n` }],

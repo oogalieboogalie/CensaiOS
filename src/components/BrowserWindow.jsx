@@ -185,6 +185,9 @@ export function BrowserWindow({ win, onUpdate }) {
               src={webOnlyFrameSrc(activeUrl) || undefined}
               title="Browser"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
+              // Let a page ask for the mic, a game controller and sound, like it could in a normal tab.
+              // The browser still asks you before any page gets the mic.
+              allow="microphone; gamepad; autoplay; clipboard-write; fullscreen"
               allowFullScreen
               style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
             />

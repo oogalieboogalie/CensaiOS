@@ -3,8 +3,10 @@
 // Postgres rows for canvas comment pins (canvas_comments). store.js
 // re-exports these so callers keep one import for share-link data.
 
+import { publicTranslation } from '../../shared/comments/translationPairs.js';
+
 const COMMENT_COLUMNS = `id, workspace_id, thread_id, link_id, author_kind, author_id, author_name,
-  author_color, body, x, y, window_id, mentions, resolved_at, resolved_by, created_at`;
+  author_color, body, x, y, window_id, mentions, resolved_at, resolved_by, translation, created_at`;
 
 export async function listComments(db, { workspaceId }) {
   const { rows } = await db.query(
@@ -48,6 +50,17 @@ export async function setCommentResolved(db, { workspaceId, commentId, resolved,
   return rows[0] || null;
 }
 
+export async function setCommentTranslation(db, { workspaceId, commentId, translation }) {
+  const { rows } = await db.query(
+    `UPDATE canvas_comments
+        SET translation = $3::jsonb
+      WHERE workspace_id = $1 AND id::text = $2
+      RETURNING ${COMMENT_COLUMNS}`,
+    [workspaceId, String(commentId), JSON.stringify(translation)],
+  );
+  return rows[0] || null;
+}
+
 export function publicComment(row) {
   if (!row) return null;
   return {
@@ -59,6 +72,7 @@ export function publicComment(row) {
     y: row.y,
     windowId: row.window_id,
     mentions: Array.isArray(row.mentions) ? row.mentions : [],
+    translation: publicTranslation(row.translation),
     resolvedAt: row.resolved_at,
     resolvedBy: row.resolved_by,
     createdAt: row.created_at,

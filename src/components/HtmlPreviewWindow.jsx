@@ -4,6 +4,7 @@ import { WindowTitle } from './Windows.jsx';
 import { useLinkedPreviewSource } from './preview/linkedPreviewSource.js';
 import { useLinkedPreviewSnapshot } from './preview/useLinkedPreviewSnapshot.js';
 import { EmptyPreviewNote, usePreviewWarnings } from './preview/EmptyPreviewNote.jsx';
+import { OffBoardNote } from './files/OffBoardNote.jsx';
 
 function agentDisplayName(id) {
   const clean = String(id || '').trim();
@@ -14,16 +15,21 @@ export function HtmlPreviewWindow({ win, onUpdate }) {
   const [html, setHtml] = React.useState(win.html || '');
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
+  const [offBoard, setOffBoard] = React.useState(false);
   const preview = useLinkedPreviewSource({ ...win, html });
   // The chat's own live preview: the agent writes, this refreshes.
   const chatLive = win.chatId ? agentDisplayName(win.previewAgentId) : '';
   useLinkedPreviewSnapshot(preview, win.html, onUpdate);
-  usePreviewWarnings({ error, missing: preview.missing, label: win.filePath || preview.label });
+  usePreviewWarnings({ error, missing: preview.missing });
   // A linked window has its own banner; only an unlinked, pageless preview gets the note.
   const empty = !chatLive && !preview.linked && !preview.missing && !String(preview.html || '').trim();
   React.useEffect(() => {
     if (win.html !== undefined) setHtml(win.html);
   }, [win.html]);
+  // Read through a ref: a file only the owner may read never fills win.html,
+  // so a new onUpdate on every board change would read it again and again.
+  const onUpdateRef = React.useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
   React.useEffect(() => {
     if (win.html || !win.filePath) return;
     setLoading(true);
@@ -37,11 +43,13 @@ export function HtmlPreviewWindow({ win, onUpdate }) {
       .then(data => {
         if (data.error) throw new Error(data.error);
         setHtml(data.content || '');
-        onUpdate?.({ html: data.content || '' });
+        // A file only this computer's owner may read stays on this screen, off the shared board.
+        setOffBoard(data.ownerOnly === true);
+        if (!data.ownerOnly) onUpdateRef.current?.({ html: data.content || '' });
       })
       .catch(err => setError(err.message || 'Failed to load HTML'))
       .finally(() => setLoading(false));
-  }, [win.filePath, win.githubRepo, win.html, win.isGithub, onUpdate]);
+  }, [win.filePath, win.githubRepo, win.html, win.isGithub]);
   return (
     <>
       <WindowTitle
@@ -77,6 +85,7 @@ export function HtmlPreviewWindow({ win, onUpdate }) {
             {error}
           </div>
         )}
+        <OffBoardNote show={offBoard && !loading && !error} />
         {!loading && !error && empty && <EmptyPreviewNote />}
         {!loading && !error && !empty && (
           <iframe

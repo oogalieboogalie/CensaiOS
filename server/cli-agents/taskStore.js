@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { scheduleOutsideRun } from '../tools/rbac/offeredTools.js';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { createLogger } from '../logger.js';
@@ -50,11 +51,14 @@ export class TaskStore extends EventEmitter {
 
   scheduleSave() {
     if (!this.stateFile || this.saveTimer) return;
-    this.saveTimer = setTimeout(() => {
-      this.saveTimer = null;
-      this.saveNow();
-    }, 800);
-    this.saveTimer.unref?.();
+    // Outside the run that dirtied the task: the write happens later.
+    scheduleOutsideRun(() => {
+      this.saveTimer = setTimeout(() => {
+        this.saveTimer = null;
+        this.saveNow();
+      }, 800);
+      this.saveTimer.unref?.();
+    });
   }
 
   saveNow() {
@@ -119,7 +123,7 @@ export class TaskStore extends EventEmitter {
   }
 
   summary(task) {
-    const { items, raw: _raw, prompt: _prompt, permissions, ...meta } = task;
+    const { items, raw: _raw, prompt: _prompt, permissions, handoffHidden: _handoffHidden, ...meta } = task;
     const lastError = task.status === 'failed' ? [...(items || [])].reverse().find((i) => i.kind === 'error')?.text : null;
     return {
       ...meta,

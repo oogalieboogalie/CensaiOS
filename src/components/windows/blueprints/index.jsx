@@ -30,7 +30,7 @@ export function BlueprintsWindow({ win = {} }) {
       <WindowTitle icon={<Icon.Files size={12} />} label={win.title || windowMeta.label} subtitle={`${bp.blueprints.length} on the shelf`} />
       <div className="hb-bp">
         <BlueprintAsk onAsk={bp.ask} busy={bp.busy === 'ask'} answer={bp.answer} onClear={() => bp.setAnswer(null)} />
-        <nav className="hb-bp-tabs" aria-label="Shelves">
+        <nav className="hb-bp-tabs hb-bar" aria-label="Shelves">
           <button type="button" className="hb-bp-tab" aria-current={tab === 'shelf' && !bp.shelf && !bp.answer} onClick={() => pickShelf(0)}>All</button>
           {BLUEPRINT_SHELVES.map((s) => (
             <button key={s.number} type="button" className="hb-bp-tab" aria-current={tab === 'shelf' && bp.shelf === s.number && !bp.answer} onClick={() => pickShelf(s.number)}>
@@ -75,10 +75,13 @@ export function BlueprintsWindow({ win = {} }) {
 
 function BlueprintEmpty({ count, onNew }) {
   return (
-    <div className="hb-bp-empty">
-      <p className="hb-bp-h">{count ? 'Pick a blueprint on the left.' : 'No blueprints on this board yet.'}</p>
-      <p className="hb-bp-sub">A blueprint is a recipe that worked, saved with its own ID so you and your agents can find it again. Ask an agent "Do we have any budget blueprints?" and it looks here first.</p>
-      <button type="button" className="hb-bp-btn hb-bp-btn-primary" onClick={onNew}><Icon.Plus size={12} /> New blueprint</button>
+    <div className="hb-empty">
+      <div className="hb-empty-icon"><Icon.Files size={20} /></div>
+      <div className="hb-empty-title">{count ? 'Pick a blueprint on the left.' : 'No blueprints on this board yet.'}</div>
+      <div className="hb-empty-text">A blueprint is a recipe that worked, saved with its own ID so you and your agents can find it again. Ask an agent "Do we have any budget blueprints?" and it looks here first.</div>
+      <div className="hb-empty-actions">
+        <button type="button" className="hb-bp-btn hb-bp-btn-primary" onClick={onNew}><Icon.Plus size={12} /> New blueprint</button>
+      </div>
     </div>
   );
 }

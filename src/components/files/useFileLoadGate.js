@@ -1,12 +1,13 @@
 import React from 'react';
 import { initialFileLoad } from './fileLoad.js';
-import { tryingAgainHelps } from '../../../shared/files/fileProblems.js';
+import { staysOffBoard, tryingAgainHelps } from '../../../shared/files/fileProblems.js';
 
 // Save stays off until this path has loaded. A path change drops the previous
 // result in the same render, so the button cannot flash on between files.
 // `retry` ("Try again") goes back to loading and bumps `attempt`, which the
 // reader's effect lists so it reads the file again. It is null while there is
 // nothing to try again, or when trying again cannot help (a folder, say).
+// `offBoard`: the file's words stay on this screen, off the shared board.
 export function useFileLoadGate(filePath) {
   const path = filePath || '';
   const [loadState, setLoadState] = React.useState(() => initialFileLoad(filePath));
@@ -30,5 +31,6 @@ export function useFileLoadGate(filePath) {
     settle,
     attempt,
     retry: failed && tryingAgainHelps(loadState.reason) ? retry : null,
+    offBoard: staysOffBoard(loadState.reason),
   };
 }

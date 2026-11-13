@@ -4,6 +4,7 @@ import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { requireWorkspaceMember } from '../workspaces/context.js';
 import { defaultAuthenticate, loadSessionFromRequest } from './agentRegistry.js';
+import { rejectUpgradeUnlessOwnOrigin } from './upgradeOrigin.js';
 import { collaborationHumanActor } from '../collaboration/humanActor.js';
 import {
   countWorkspaceSpectators,
@@ -18,10 +19,8 @@ import { trackGuestSocket } from '../shareLinks/liveGuests.js';
 import { usesProjection } from '../shareLinks/access.js';
 import { actionForMessage, can, guestPrincipal, memberPrincipal } from '../access/policy.js';
 import { subscribeProjection } from '../shareLinks/projector.js';
-import { isMember, handleLiveShowMessage, notSpectator } from './liveShowMessages.js';
-import { handleInkPreviewMessage } from './inkPreviewMessages.js';
-import { handleGameMessage } from './gameMessages.js';
-import { handleDockCastMessage } from './dockCastMessages.js';
+import { isMember, notSpectator } from './liveShowMessages.js';
+import { RELAY_HANDLERS } from './relayHandlers.js';
 import { noteCursor } from '../lessons/cursorTap.js';
 import { keepAlive } from './socketHeartbeat.js';
 
@@ -32,7 +31,6 @@ const MAX_COORDINATE = 1_000_000;
 const ID_PATTERN = /^[a-zA-Z0-9._:-]{1,96}$/;
 const MAX_TEXT_PREVIEW_BYTES = 8 * 1024;
 const log = createLogger('workspace-collaboration');
-const RELAY_HANDLERS = [handleLiveShowMessage, handleInkPreviewMessage, handleGameMessage, handleDockCastMessage];
 
 function sendJson(ws, payload) {
   if (ws.readyState !== WebSocket.OPEN) return false;
@@ -148,6 +146,7 @@ export function attachWorkspaceCollaborationWs(server, options = {}) {
   server.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url, 'http://localhost');
     if (url.pathname !== WORKSPACE_COLLABORATION_PATH) return;
+    if (rejectUpgradeUnlessOwnOrigin(request, socket)) return;
     const workspaceId = String(url.searchParams.get('workspaceId') || '').trim();
     const clientId = String(url.searchParams.get('clientId') || '').trim();
     if (!ID_PATTERN.test(workspaceId) || !ID_PATTERN.test(clientId)) {

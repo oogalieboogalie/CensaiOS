@@ -32,7 +32,7 @@ describe('registry test window contract', () => {
     expect(launcher).toBeTruthy();
     expect(launcher.launcher).toMatchObject({
       show: true,
-      label: 'Registry Test Window',
+      icon: 'Flask',
       hint: 'test window',
     });
   });
