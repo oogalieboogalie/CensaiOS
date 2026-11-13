@@ -75,6 +75,10 @@ describe('restart request', () => {
   test('refuses when the updater is not running', () => {
     const dir = makeDir({ 'running.txt': OLD, 'ready.json': { commit: NEW } });
     expect(() => requestRestart({ dir })).toThrow('updater is not running');
+    try { requestRestart({ dir }); } catch (err) {
+      expect(err.code).toBe('updater-not-running');
+      expect(err.statusCode).toBe(409);
+    }
     expect(fs.existsSync(path.join(dir, 'restart-requested'))).toBe(false);
   });
 });
@@ -106,6 +110,9 @@ describe('check now (the tray Update item)', () => {
   test('refuses when the updater is not running', () => {
     const dir = makeDir({ 'running.txt': NEW });
     expect(() => requestCheck({ dir })).toThrow('updater is not running');
+    try { requestCheck({ dir }); } catch (err) {
+      expect(err.code).toBe('updater-not-running');
+    }
     expect(fs.existsSync(path.join(dir, 'check-requested'))).toBe(false);
   });
 });

@@ -1,0 +1,76 @@
+/*
+ * Comms: push-to-talk with the agent family. Values come only from tokens.css.
+ * The selected agent's hue (--agent, via [data-agent-hue]) tints the stage;
+ * --vc-level (0..1) is the live mic loudness, set from useComms.
+ */
+
+.vc { --vc-level: 0; flex: 1; min-height: 0; display: grid; grid-template-columns: 188px minmax(0, 1fr); background: var(--surface); color: var(--ink); font-family: var(--font-sans); container-type: inline-size; outline: none; }
+.vc-empty { flex: 1; display: grid; place-items: center; color: var(--ink-faint); font-size: var(--text-sm); }
+
+/* Roster */
+.vc-roster { display: flex; flex-direction: column; gap: var(--space-0-5); padding: var(--space-2); background: var(--surface-2); border-right: 1px solid var(--hairline); overflow-y: auto; min-height: 0; }
+.vc-roster-head { padding: var(--space-1) var(--space-2) var(--space-1-5); font-family: var(--font-label); font-size: var(--text-xs); text-transform: var(--label-case); letter-spacing: var(--label-tracking); color: var(--ink-faint); }
+.vc-member { display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-1-5) var(--space-2); border: 1px solid transparent; border-radius: var(--radius-md); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; user-select: none; touch-action: none; transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard); }
+.vc-member:hover { background: color-mix(in oklab, var(--ink) 6%, transparent); }
+.vc-member:focus-visible, .vc-ptt:focus-visible, .vc-icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.vc-member[data-selected="true"] { background: var(--agent-soft); border-color: color-mix(in oklab, var(--agent) 35%, transparent); }
+.vc-member-text { display: grid; min-width: 0; flex: 1; }
+.vc-name { font-size: var(--text-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vc-role { font-size: var(--text-xs); color: var(--ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vc-key { padding: 0 var(--space-1); min-width: 16px; text-align: center; border: 1px solid var(--hairline); border-radius: var(--radius-xs); font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); background: var(--surface); }
+.vc-member:not(:hover):not([data-selected="true"]) .vc-key { opacity: 0; }
+.vc-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: var(--radius-full); background: var(--hairline-strong); }
+.vc-member[data-selected="true"] .vc-dot { background: var(--agent); }
+.vc-member[data-live="listening"] .vc-dot { background: var(--danger); }
+.vc-member[data-live="transcribing"] .vc-dot, .vc-member[data-live="thinking"] .vc-dot { background: var(--warning); animation: vc-blink 1.2s var(--ease-standard) infinite; }
+.vc-member[data-live="speaking"] .vc-dot { background: var(--success); animation: vc-blink 0.9s var(--ease-standard) infinite; }
+
+/* Stage */
+.vc-stage { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-6) var(--space-5) var(--space-4); min-width: 0; min-height: 0; background: radial-gradient(120% 70% at 50% 0%, color-mix(in oklab, var(--agent) 9%, transparent), transparent 70%); }
+.vc-orb { position: relative; width: 132px; height: 132px; flex-shrink: 0; display: grid; place-items: center; }
+.vc-orb::before, .vc-orb::after { content: ''; position: absolute; border-radius: var(--radius-full); pointer-events: none; }
+.vc-orb::before { inset: 0; background: radial-gradient(circle, color-mix(in oklab, var(--agent) 34%, transparent), transparent 68%); transform: scale(calc(0.72 + var(--vc-level) * 0.75)); transition: transform 90ms linear; }
+.vc-orb::after { inset: 16px; border: 1.5px solid color-mix(in oklab, var(--agent) 40%, transparent); transition: border-color var(--dur-base) var(--ease-standard), box-shadow var(--dur-base) var(--ease-standard); }
+.vc[data-phase="listening"] .vc-orb::after { border-color: var(--agent); box-shadow: 0 0 0 5px color-mix(in oklab, var(--agent) 16%, transparent); }
+.vc[data-phase="transcribing"] .vc-orb::after, .vc[data-phase="thinking"] .vc-orb::after { border-style: dashed; animation: vc-spin 7s linear infinite; }
+.vc[data-phase="speaking"] .vc-orb::before { animation: vc-breathe 1.15s var(--ease-standard) infinite; }
+.vc[data-phase="speaking"] .vc-orb::after { border-color: var(--agent); }
+
+.vc-agent { font-size: var(--text-lg); font-weight: 600; letter-spacing: -0.01em; }
+.vc-status { min-height: 1.4em; font-size: var(--text-sm); color: var(--ink-soft); text-align: center; }
+.vc[data-phase="listening"] .vc-status, .vc[data-phase="speaking"] .vc-status { color: var(--agent-ink); }
+
+.vc-captions { flex: 1; min-height: 0; width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2) var(--space-1); overflow-y: auto; text-align: center; }
+.vc-line, .vc-hint, .vc-error { margin: 0; line-height: 1.5; overflow-wrap: anywhere; }
+.vc-line--me { font-size: var(--text-sm); color: var(--ink-faint); }
+.vc-line--me::before { content: '“'; }
+.vc-line--me::after { content: '”'; }
+.vc-line--agent { font-size: var(--text-md); color: var(--ink); }
+.vc-hint { margin-top: auto; font-size: var(--text-xs); color: var(--ink-faint); }
+.vc-error { font-size: var(--text-sm); color: var(--danger); }
+
+/* Controls */
+.vc-controls { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
+.vc-ptt { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-width: 220px; height: 44px; padding: 0 var(--space-5); border: 0; border-radius: var(--radius-full); background: var(--agent); color: var(--on-fill); font: inherit; font-size: var(--text-md); font-weight: 600; cursor: pointer; user-select: none; touch-action: none; box-shadow: var(--elevation-1); transition: transform var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard), filter var(--dur-fast) var(--ease-standard); }
+.vc-ptt:hover { filter: brightness(1.06); }
+.vc-ptt:active, .vc[data-phase="listening"] .vc-ptt { transform: scale(0.97); box-shadow: 0 0 0 5px color-mix(in oklab, var(--agent) 22%, transparent); }
+.vc-key--on-fill { border-color: color-mix(in oklab, var(--on-fill) 40%, transparent); background: transparent; color: var(--on-fill); opacity: 0.85; }
+.vc-icon-btn { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--hairline); border-radius: var(--radius-full); background: var(--surface); color: var(--ink-soft); cursor: pointer; transition: background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard); }
+.vc-icon-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.vc-icon-btn:disabled { opacity: 0.35; cursor: default; }
+.vc-icon-btn[aria-pressed="true"] { color: var(--warning); }
+
+/* Narrow window: the roster folds down to avatars. */
+@container (max-width: 440px) {
+  .vc { grid-template-columns: auto minmax(0, 1fr); }
+  .vc-roster-head, .vc-member-text, .vc-key, .vc-member .vc-dot { display: none; }
+  .vc-member { padding: var(--space-1); justify-content: center; }
+  .vc-ptt { min-width: 0; }
+}
+
+@keyframes vc-blink { 50% { opacity: 0.3; } }
+@keyframes vc-spin { to { transform: rotate(360deg); } }
+@keyframes vc-breathe { 0%, 100% { transform: scale(0.8); } 50% { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) {
+  .vc-orb::before, .vc-orb::after, .vc-dot { animation: none !important; transition: none; }
+}

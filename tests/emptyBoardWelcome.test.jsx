@@ -19,7 +19,7 @@ test('the welcome shows only on a board with nothing on it', () => {
 });
 
 test('the welcome steps aside while a drawing tool is picked', () => {
-  for (const tool of ['pen', 'eraser', 'rect', 'text', 'lasso']) {
+  for (const tool of ['pen', 'eraser', 'rect', 'ellipse', 'line', 'arrow', 'highlight', 'text', 'lasso']) {
     expect(showsWelcome({ ...EMPTY, activeTool: tool })).toBe(false);
   }
   expect(showsWelcome({ ...EMPTY, activeTool: 'select' })).toBe(true);

@@ -22,10 +22,15 @@ jest.unstable_mockModule('../server/logger.js', () => ({
 
 const { createGithubTaskIssue } = await import('../server/tools/handlers/git/agentTask.js');
 const { createGithubAgentWebhookRouter } = await import('../server/routes/githubAgentWebhook.js');
-const { sendTaskNotice, NO_TASK_REPO, linkedIssueNumbers } = await import('../server/github/agentTasks.js');
+const { sendTaskNotice, NO_TASK_REPO, TASK_REPO_NOT_ALLOWED, linkedIssueNumbers } = await import('../server/github/agentTasks.js');
 const { assertHostToolAllowed, changesHost } = await import('../server/tools/rbac/hostOwnerOnly.js');
 const { OWNER_ONLY_MESSAGE } = await import('../server/security/systemAdmin.js');
+const { gitTools } = await import('../server/tools/definitions/git.js');
+const { TOOL_CATALOG_OVERRIDES } = await import('../server/tools/catalog.js');
 const express = (await import('express')).default;
+
+const HOMEBASE_REPO = 'oogalieboogalie/Homebase';
+const COORDINATION_REPO = 'oogalieboogalie/censai-coordination';
 
 const REPO = 'pat-example/made-up-repo';
 const SECRET = 'made-up-webhook-secret';
@@ -42,8 +47,10 @@ function fakeTaskDb() {
       return { rows: [row] };
     }
     if (/^\s*UPDATE agent_github_tasks/i.test(sql)) {
-      const [repo, issueNumber, prNumber, status, prUrl] = params;
-      const row = rows.find((r) => r.repo.toLowerCase() === repo.toLowerCase() && r.issue_number === issueNumber);
+      const [repo, issueNumber, prNumber, status, prUrl, worker] = params;
+      const row = rows.find((r) => r.repo.toLowerCase() === repo.toLowerCase()
+        && r.issue_number === issueNumber
+        && String(r.worker).toLowerCase() === String(worker).toLowerCase());
       const allowed = row && ({
         pr_open: () => ['open', 'closed'].includes(row.status),
         merged: () => row.status !== 'merged',
@@ -64,7 +71,7 @@ beforeEach(() => {
 });
 afterAll(() => { delete process.env.GITHUB_AGENT_WEBHOOK_SECRET; });
 
-describe('create_github_issue', () => {
+describe('hand_coding_job_to_github', () => {
   const job = {
     title: 'Add a dark mode switch',
     goal: 'The Settings window has a dark mode switch.',
@@ -76,11 +83,11 @@ describe('create_github_issue', () => {
   test('files the issue with the tag and labels, and saves the task for this agent', async () => {
     const db = fakeTaskDb();
     const createIssue = jest.fn(async () => ({ number: 41, html_url: 'https://made-up.example/issues/41' }));
-    const out = await createGithubTaskIssue('atlas', job, context, { db, createIssue, env: { CENSAI_AGENT_TASK_REPO: REPO } });
+    const out = await createGithubTaskIssue('atlas', job, context, { db, createIssue, env: { CENSAI_AGENT_TASK_REPO: HOMEBASE_REPO } });
 
     expect(JSON.parse(out)).toEqual({ issue_number: 41, issue_url: 'https://made-up.example/issues/41' });
     const [repo, title, body, labels] = createIssue.mock.calls[0];
-    expect(repo).toBe(REPO);
+    expect(repo).toBe(HOMEBASE_REPO);
     expect(title).toBe(job.title);
     expect(labels).toEqual(['agent-task', 'auto-implement']);
     expect(body).toContain('## Goal\nThe Settings window has a dark mode switch.');
@@ -88,16 +95,16 @@ describe('create_github_issue', () => {
     expect(body).toContain('## Done when\n- [ ] The switch flips the board dark\n- [ ] The choice survives a reload');
     expect(body.trim().endsWith('@grok please build this.')).toBe(true);
     expect(db.rows).toEqual([expect.objectContaining({
-      repo: REPO, issue_number: 41, agent_id: 'atlas', workspace_id: 'made-up-board',
+      repo: HOMEBASE_REPO, issue_number: 41, agent_id: 'atlas', workspace_id: 'made-up-board',
       conversation_id: 'conv-7', created_by: 1, worker: 'grok', status: 'open',
     })]);
   });
 
   test('tags @claude when asked, and the named repo wins over the default', async () => {
     const createIssue = jest.fn(async () => ({ number: 5, html_url: 'u' }));
-    await createGithubTaskIssue('atlas', { ...job, worker: 'claude', repo: 'pat-example/other-repo' }, context,
-      { db: fakeTaskDb(), createIssue, env: { CENSAI_AGENT_TASK_REPO: REPO } });
-    expect(createIssue.mock.calls[0][0]).toBe('pat-example/other-repo');
+    await createGithubTaskIssue('atlas', { ...job, worker: 'claude', repo: COORDINATION_REPO }, context,
+      { db: fakeTaskDb(), createIssue, env: { CENSAI_AGENT_TASK_REPO: HOMEBASE_REPO } });
+    expect(createIssue.mock.calls[0][0]).toBe(COORDINATION_REPO);
     expect(createIssue.mock.calls[0][2].trim().endsWith('@claude please build this.')).toBe(true);
   });
 
@@ -108,11 +115,44 @@ describe('create_github_issue', () => {
     expect(createIssue).not.toHaveBeenCalled();
   });
 
+  test('refuses any repository outside the coding-job list, and does not call GitHub', async () => {
+    const createIssue = jest.fn(async () => ({ number: 9, html_url: 'u' }));
+    const named = await createGithubTaskIssue('atlas', { ...job, repo: 'pat-example/surprise-repo' }, context, {
+      db: fakeTaskDb(), createIssue, env: { CENSAI_AGENT_TASK_REPO: HOMEBASE_REPO },
+    });
+    const fallback = await createGithubTaskIssue('atlas', job, context, {
+      db: fakeTaskDb(), createIssue, env: { CENSAI_AGENT_TASK_REPO: 'pat-example/surprise-repo' },
+    });
+    expect(named).toBe(`Error: ${TASK_REPO_NOT_ALLOWED}`);
+    expect(fallback).toBe(`Error: ${TASK_REPO_NOT_ALLOWED}`);
+    expect(createIssue).not.toHaveBeenCalled();
+  });
+
+  test('files an allowed repository under its listed spelling', async () => {
+    const createIssue = jest.fn(async () => ({ number: 9, html_url: 'u' }));
+    const out = await createGithubTaskIssue('atlas', { ...job, repo: 'oogalieboogalie/homebase' }, context, {
+      db: fakeTaskDb(), createIssue, env: {},
+    });
+    expect(JSON.parse(out).issue_number).toBe(9);
+    expect(createIssue.mock.calls[0][0]).toBe(HOMEBASE_REPO);
+  });
+
+  test('is its own tool, hand_coding_job_to_github, not github_create_issue', () => {
+    const names = gitTools.map((tool) => tool.function.name);
+    expect(names).toContain('hand_coding_job_to_github');
+    expect(names).not.toContain('create_github_issue');
+    expect(names).toContain('github_create_issue');
+    expect(changesHost('hand_coding_job_to_github')).toBe(true);
+    expect(changesHost('create_github_issue')).toBe(false);
+    expect(TOOL_CATALOG_OVERRIDES.hand_coding_job_to_github).toMatchObject({ label: 'Hand a Coding Job to GitHub' });
+    expect(TOOL_CATALOG_OVERRIDES.create_github_issue).toBeUndefined();
+  });
+
   test('only the computer owner may use it', async () => {
-    expect(changesHost('create_github_issue')).toBe(true);
+    expect(changesHost('hand_coding_job_to_github')).toBe(true);
     const roles = { 1: 'admin', 2: 'user' };
     const db = { query: jest.fn(async (_sql, [id]) => ({ rows: roles[id] ? [{ role: roles[id] }] : [] })) };
-    const ask = (userId) => assertHostToolAllowed(db, { name: 'create_github_issue', args: {}, context: { userId }, mode: 'private_server' });
+    const ask = (userId) => assertHostToolAllowed(db, { name: 'hand_coding_job_to_github', args: {}, context: { userId }, mode: 'private_server' });
     await expect(ask(1)).resolves.toEqual({ enforced: true, userId: 1 });
     await expect(ask(2)).rejects.toMatchObject({ code: 'COMPUTER_OWNER_ONLY', message: OWNER_ONLY_MESSAGE });
   });
@@ -146,12 +186,56 @@ describe('POST /api/webhooks/github-agent', () => {
     pull_request: { number, html_url: `https://made-up.example/pull/${number}`, body, merged, head: { ref } },
   });
 
+  test('a same-repo pull request that only says Fixes #N does not claim the job', async () => {
+    const { app, db, notify } = setup();
+    const human = pr('opened', { body: 'Fixes #41', ref: 'feature/x' });
+    human.pull_request.head.repo = { full_name: REPO };
+    const opened = await send(app, 'pull_request', human);
+    expect(opened.status).toBe(200);
+    expect(opened.body).toEqual({ received: true, matched: false });
+    expect(db.rows[0].status).toBe('open');
+    expect(db.rows[1].status).toBe('open');
+    expect(notify).not.toHaveBeenCalled();
+
+    const merged = pr('closed', { body: 'Fixes #41', ref: 'feature/x', merged: true });
+    merged.pull_request.head.repo = { full_name: REPO };
+    const closed = await send(app, 'pull_request', merged);
+    expect(closed.body).toEqual({ received: true, matched: false });
+    expect(db.rows[0].status).toBe('open');
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  test('the job\'s own worker branch still claims it, and a Fixes line for another job does not', async () => {
+    const { app, db, notify } = setup();
+    const worker = pr('opened', { body: 'Fixes #42', ref: 'grok/issue-41-dark-mode' });
+    worker.pull_request.head.repo = { full_name: REPO };
+    const res = await send(app, 'pull_request', worker);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true, matched: true });
+    expect(db.rows[0]).toMatchObject({ status: 'pr_open', pr_number: 77, pr_url: 'https://made-up.example/pull/77' });
+    expect(db.rows[1].status).toBe('open');
+    expect(notify).toHaveBeenCalledTimes(1);
+    expect(notify.mock.calls[0][0]).toMatchObject({ agent_id: 'atlas', issue_number: 41, status: 'pr_open' });
+  });
+
+  test('the other worker\'s branch does not claim the job', async () => {
+    const { app, db, notify } = setup();
+    const other = pr('opened', { ref: 'claude/issue-41-dark-mode' });
+    other.pull_request.head.repo = { full_name: REPO };
+    const res = await send(app, 'pull_request', other);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true, matched: false });
+    expect(db.rows[0].status).toBe('open');
+    expect(notify).not.toHaveBeenCalled();
+  });
+
   test('a pull request from a fork cannot claim a task', async () => {
     const { app, db, notify } = setup();
-    const fork = pr('opened', { body: 'Fixes #41' });
+    const fork = pr('opened', { body: 'Fixes #41', ref: 'grok/issue-41-stolen' });
     fork.pull_request.head.repo = { full_name: 'someone-else/fork' };
     const res = await send(app, 'pull_request', fork);
     expect(res.status).toBe(200);
+    expect(db.rows[0].status).toBe('open');
     expect(db.query).not.toHaveBeenCalled();
     expect(notify).not.toHaveBeenCalled();
   });
@@ -172,9 +256,9 @@ describe('POST /api/webhooks/github-agent', () => {
     expect(notify).not.toHaveBeenCalled();
   });
 
-  test('matches by "Fixes #N", marks the task pr_open and posts one notice', async () => {
+  test('a worker branch marks the task pr_open and posts one notice', async () => {
     const { app, db, notify } = setup();
-    const res = await send(app, 'pull_request', pr('opened', { body: 'Builds the switch.\n\nFixes #41' }));
+    const res = await send(app, 'pull_request', pr('opened', { body: 'Builds the switch.', ref: 'grok/issue-41-switch' }));
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ received: true, matched: true });
     expect(db.rows[0]).toMatchObject({ status: 'pr_open', pr_number: 77, pr_url: 'https://made-up.example/pull/77' });
@@ -194,8 +278,8 @@ describe('POST /api/webhooks/github-agent', () => {
 
   test('posts exactly one notice per state change, even when GitHub sends a delivery twice', async () => {
     const { app, notify } = setup();
-    const opened = pr('opened', { body: 'Closes #41' });
-    const merged = pr('closed', { body: 'Closes #41', merged: true });
+    const opened = pr('opened', { ref: 'grok/issue-41-switch', body: 'Closes #41' });
+    const merged = pr('closed', { ref: 'grok/issue-41-switch', body: 'Closes #41', merged: true });
     for (const payload of [opened, opened, merged, merged]) {
       expect((await send(app, 'pull_request', payload)).status).toBe(200);
     }
@@ -204,8 +288,8 @@ describe('POST /api/webhooks/github-agent', () => {
 
   test('a pull request closed without merging marks the task closed and sends no notice', async () => {
     const { app, db, notify } = setup();
-    await send(app, 'pull_request', pr('opened', { body: 'Fixes #41' }));
-    await send(app, 'pull_request', pr('closed', { body: 'Fixes #41', merged: false }));
+    await send(app, 'pull_request', pr('opened', { ref: 'grok/issue-41-switch', body: 'Fixes #41' }));
+    await send(app, 'pull_request', pr('closed', { ref: 'grok/issue-41-switch', body: 'Fixes #41', merged: false }));
     expect(db.rows[0].status).toBe('closed');
     expect(notify).toHaveBeenCalledTimes(1);
   });
@@ -221,7 +305,7 @@ describe('POST /api/webhooks/github-agent', () => {
 
   test('logs each delivery by event, action and match, never its body', async () => {
     const { app } = setup();
-    await send(app, 'pull_request', pr('opened', { body: 'Secret plan words. Fixes #41' }));
+    await send(app, 'pull_request', pr('opened', { ref: 'grok/issue-41-plan', body: 'Secret plan words. Fixes #41' }));
     await send(app, 'pull_request', pr('opened', { body: 'Fixes #999' }));
     const lines = logged.filter((l) => l.includes('github agent webhook delivery'));
     expect(lines).toHaveLength(2);
@@ -247,8 +331,9 @@ describe('the notice', () => {
     expect(opts.wake).not.toBe(false);
   });
 
-  test('reads issue links from the body and the coding agents\' branch names', () => {
-    expect(linkedIssueNumbers({ body: 'fixes #3 and Closes #4', head: { ref: 'grok/issue-5-x' } }).sort()).toEqual([3, 4, 5]);
+  test('claims only the coding agent branch, not a Fixes line or another branch', () => {
+    expect(linkedIssueNumbers({ body: 'fixes #3 and Closes #4', head: { ref: 'grok/issue-5-x' } })).toEqual([5]);
+    expect(linkedIssueNumbers({ body: 'Fixes #41', head: { ref: 'feature/x' } })).toEqual([]);
     expect(linkedIssueNumbers({ body: 'see #3', head: { ref: 'someone/issue-6-x' } })).toEqual([]);
   });
 });

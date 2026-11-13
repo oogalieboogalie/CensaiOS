@@ -3,6 +3,8 @@ import { pickedWindowTheme, useLookCodeTheme } from './terminal/lookCodeTheme.js
 import { glowTheme } from './terminal/terminalGlow.js';
 import { TerminalHeader, AgentRunBar } from './terminal/TerminalUI.jsx';
 import { TerminalPane } from './terminal/TerminalPane.jsx';
+import { WorkbenchView } from './terminal/WorkbenchView.jsx';
+import { isWorkbenchView } from './terminal/workbenchMode.js';
 import { TerminalTabBar, terminalTabKeyAction } from './terminal/TerminalTabBar.jsx';
 import {
   terminalTabs, activeTerminalTabId, tabSessionId,
@@ -27,6 +29,7 @@ export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
 
   const tabs = terminalTabs(win);
   const activeTab = activeTerminalTabId(win);
+  const workbench = isWorkbenchView(win);
   const tabAction = useCallback((action, tabId) => {
     const change = action === 'add' ? addTerminalTab(win)
       : action === 'close' ? closeTerminalTab(win, tabId || activeTab)
@@ -53,24 +56,26 @@ export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
         onRunAgent={() => setShowAgentBar(s => !s)}
       />
       {showAgentBar && (
-        <AgentRunBar
-          theme={theme}
-          defaultCwd={cwd}
-          onCancel={() => setShowAgentBar(false)}
-          onRun={(task) => {
-            setShowAgentBar(false);
-            // Same-window run: replaces this session, no window spam.
-            // The prompt starts only because this click asked. A prompt that
-            // arrived on the shared window does not.
-            const agentSessionId = newId();
-            armAgentRun(win.id, { prompt: task, sessionId: agentSessionId });
-            onUpdate?.({
-              title: `Agent · ${task.slice(0, 40)}`,
-              agentRun: { prompt: task },
-              agentSessionId,
-            });
-          }}
-        />
+        <div style={{ display: workbench ? 'none' : 'block' }}>
+          <AgentRunBar
+            theme={theme}
+            defaultCwd={cwd}
+            onCancel={() => setShowAgentBar(false)}
+            onRun={(task) => {
+              setShowAgentBar(false);
+              // Same-window run: replaces this session, no window spam.
+              // The prompt starts only because this click asked. A prompt that
+              // arrived on the shared window does not.
+              const agentSessionId = newId();
+              armAgentRun(win.id, { prompt: task, sessionId: agentSessionId });
+              onUpdate?.({
+                title: `Agent · ${task.slice(0, 40)}`,
+                agentRun: { prompt: task },
+                agentSessionId,
+              });
+            }}
+          />
+        </div>
       )}
       <TerminalTabBar
         win={win} tabs={tabs} activeId={activeTab} theme={theme}
@@ -78,8 +83,15 @@ export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
         onClose={(id) => tabAction('close', id)}
         onAdd={() => tabAction('add')}
       />
+      {workbench && <WorkbenchView />}
       <div
-        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+        data-terminal-session="kept"
+        style={{
+          flex: workbench ? '0 0 auto' : 1,
+          minHeight: 0,
+          display: workbench ? 'none' : 'flex',
+          flexDirection: 'column',
+        }}
         onKeyDownCapture={(event) => {
           const action = terminalTabKeyAction(event);
           if (!action) return;
@@ -95,6 +107,7 @@ export function TerminalWindow({ win, onUpdate, currentProject, zoom = 1 }) {
             sessionId={tabSessionId(win, tab)}
             plain={tab.id !== 'main'}
             active={tab.id === activeTab}
+            shown={!workbench}
           />
         ))}
       </div>

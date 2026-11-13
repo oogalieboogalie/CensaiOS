@@ -3,6 +3,7 @@ import { Icon } from '../Icons.jsx';
 import { WindowTitle } from '../Windows.jsx';
 import { SettingsPanel } from '../windows/WindowThemePanel.jsx';
 import { newId } from '../../lib/ids/newId.js';
+import { WorkbenchSwitch } from './WorkbenchSwitch.jsx';
 
 function HeaderButton({ on, title, onClick, children }) {
   return (
@@ -56,8 +57,15 @@ export function TerminalHeader({ win, onUpdate, showSettings, setShowSettings, h
             title: 'Run a headless OpenCode agent in this terminal on this folder (streams live)',
             onSelect: () => onRunAgent?.(),
           },
+          {
+            id: 'glow',
+            label: glow ? 'Glow look: on' : 'Glow look: off',
+            title: glow ? 'Glow look is on: pixel font, glowing colors. Click for the normal look.' : 'Glow look: pixel font with glowing colors',
+            onSelect: () => onUpdate({ terminalGlow: !glow }),
+          },
         ]}
       >
+        <WorkbenchSwitch win={win} onUpdate={onUpdate} />
         {inAgentRun && (
           <HeaderButton
             title="End the agent view and open a fresh shell in this window"
@@ -68,13 +76,6 @@ export function TerminalHeader({ win, onUpdate, showSettings, setShowSettings, h
         )}
         <HeaderButton title="New tab: another shell in this window (Ctrl+Shift+T)" onClick={onAddTab}>
           <Icon.Plus size={13} />
-        </HeaderButton>
-        <HeaderButton
-          on={glow}
-          title={glow ? 'Glow look is on: pixel font, glowing colors. Click for the normal look.' : 'Glow look: pixel font with glowing colors'}
-          onClick={() => onUpdate({ terminalGlow: !glow })}
-        >
-          Glow
         </HeaderButton>
         <button
           onClick={() => setShowSettings(!showSettings)}

@@ -75,7 +75,7 @@ describe('canvas pointer workflow', () => {
     fireEvent.pointerUp(canvas, { button: 0, pointerId: 1, clientX: 180, clientY: 180 });
 
     expect(onSelection).toHaveBeenLastCalledWith(['one', 'two']);
-    expect(onRegion).toHaveBeenLastCalledWith({ x: 0, y: 0, w: 180, h: 180, mode: 'selection', isGroup: false, isSelection: true });
+    expect(onRegion).toHaveBeenLastCalledWith(expect.objectContaining({ x: 0, y: 0, w: 180, h: 180, mode: 'selection', isGroup: false, isSelection: true }));
   });
 
   test('right-drag grouping clears stale selection and suppresses its context menu', () => {

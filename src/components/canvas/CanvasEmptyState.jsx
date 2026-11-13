@@ -16,7 +16,7 @@ export function CanvasMarks({ zoom, pan }) {
 }
 
 // Tools that put something on the board; the welcome steps aside for them.
-const DRAWING_TOOLS = ['pen', 'eraser', 'rect', 'text', 'lasso'];
+const DRAWING_TOOLS = ['pen', 'eraser', 'rect', 'ellipse', 'line', 'arrow', 'highlight', 'text', 'lasso'];
 
 /**
  * Whether the board shows its welcome: only while nothing is on it (no

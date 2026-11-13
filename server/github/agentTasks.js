@@ -1,6 +1,6 @@
 // Coding jobs an agent hands to the repository's GitHub coding agent
-// (docker/095-agent-github-tasks.sql). The create_github_issue tool files an
-// issue that tags @grok or @claude; the workflows in .github/workflows build
+// (docker/095-agent-github-tasks.sql). The hand_coding_job_to_github tool files
+// an issue that tags @grok or @claude; the workflows in .github/workflows build
 // it and open a pull request. GitHub then calls /api/webhooks/github-agent,
 // and this file matches the pull request back to the task, moves its status
 // and tells the agent through the ordinary family mail wake-up
@@ -10,7 +10,13 @@ import { isRepoName } from '../github.js';
 
 export const AGENT_TASK_WORKERS = Object.freeze(['grok', 'claude']);
 export const AGENT_TASK_LABELS = Object.freeze(['agent-task', 'auto-implement']);
+// The host token can write to other repositories. Coding jobs stay in these two.
+export const AGENT_TASK_REPOS = Object.freeze([
+  'oogalieboogalie/Homebase',
+  'oogalieboogalie/censai-coordination',
+]);
 export const NO_TASK_REPO = 'No repository for coding jobs: pass repo as owner/name, or set CENSAI_AGENT_TASK_REPO in .env.';
+export const TASK_REPO_NOT_ALLOWED = 'Coding jobs can only be filed in oogalieboogalie/Homebase or oogalieboogalie/censai-coordination.';
 
 const clean = (value) => String(value ?? '').trim();
 const list = (value) => (Array.isArray(value) ? value : [value]).map(clean).filter(Boolean);
@@ -22,12 +28,14 @@ export function taskWorker(value) {
   return worker;
 }
 
-/** The repo named in the call, else CENSAI_AGENT_TASK_REPO; throws plain words when neither is set. */
+/** The repo named in the call, else CENSAI_AGENT_TASK_REPO. Only the coding-job list is accepted. */
 export function taskRepo(repo, env = process.env) {
   const named = clean(repo) || clean(env.CENSAI_AGENT_TASK_REPO);
   if (!named) throw new Error(NO_TASK_REPO);
   if (!isRepoName(named)) throw new Error('repo must be owner/name.');
-  return named;
+  const allowed = AGENT_TASK_REPOS.find((item) => item.toLowerCase() === named.toLowerCase());
+  if (!allowed) throw new Error(TASK_REPO_NOT_ALLOWED);
+  return allowed;
 }
 
 /** Issue body: Goal / Steps / Done when, then the tag that starts the coding agent. */
@@ -69,16 +77,25 @@ export function verifyGithubSignature(rawBody, header, secret) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-const BODY_LINK = /\b(?:fix(?:es|ed)?|close[sd]?|resolve[sd]?)\s*:?\s+#(\d+)\b/gi;
-const BRANCH_LINK = /^(?:grok|claude)\/issue-(\d+)-/i;
+const BRANCH_LINK = /^(grok|claude)\/issue-(\d+)-/i;
 
-/** Issue numbers a pull request belongs to: "Fixes #N" / "Closes #N" in its body, or a grok/issue-N- or claude/issue-N- branch. */
-export function linkedIssueNumbers(pr = {}) {
-  const found = new Set();
-  for (const match of String(pr.body || '').matchAll(BODY_LINK)) found.add(Number(match[1]));
+/** The job a pull request may claim: its own worker's branch, grok/issue-N- or claude/issue-N-. */
+export function workerBranchClaim(pr = {}) {
   const branch = BRANCH_LINK.exec(String(pr.head?.ref || ''));
-  if (branch) found.add(Number(branch[1]));
-  return [...found].filter((n) => Number.isInteger(n) && n > 0);
+  if (!branch) return null;
+  const issueNumber = Number(branch[2]);
+  if (!Number.isInteger(issueNumber) || issueNumber <= 0) return null;
+  return { issueNumber, worker: branch[1].toLowerCase() };
+}
+
+/**
+ * Issue numbers a pull request may claim. Only its own worker branch counts.
+ * A "Fixes #N" line in the body is not enough, including on a pull request
+ * opened from this same repository.
+ */
+export function linkedIssueNumbers(pr = {}) {
+  const claim = workerBranchClaim(pr);
+  return claim ? [claim.issueNumber] : [];
 }
 
 /** The status a pull_request delivery moves a task to, or null when it is not one we follow. */
@@ -96,13 +113,13 @@ const MOVE_SQL = {
   closed: `status = 'pr_open' AND pr_number = $3`,
 };
 
-async function moveTask(db, { repo, issueNumber, status, prNumber, prUrl }) {
+async function moveTask(db, { repo, issueNumber, worker, status, prNumber, prUrl }) {
   const { rows } = await db.query(
     `UPDATE agent_github_tasks
         SET status = $4, pr_number = $3, pr_url = $5, updated_at = NOW()
-      WHERE lower(repo) = lower($1) AND issue_number = $2 AND ${MOVE_SQL[status]}
+      WHERE lower(repo) = lower($1) AND issue_number = $2 AND lower(worker) = lower($6) AND ${MOVE_SQL[status]}
       RETURNING *`,
-    [repo, issueNumber, prNumber, status, prUrl],
+    [repo, issueNumber, prNumber, status, prUrl, worker],
   );
   return rows[0] || null;
 }
@@ -148,10 +165,11 @@ export async function handleGithubAgentDelivery(db, { event, payload }, { notify
     return { handled: true, matched: false, linked: 0, changed: [], notices: [] };
   }
   const changed = [];
-  const linked = linkedIssueNumbers(pr);
-  for (const issueNumber of linked) {
+  const claim = workerBranchClaim(pr);
+  const linked = claim ? [claim] : [];
+  for (const { issueNumber, worker } of linked) {
     const task = await moveTask(db, {
-      repo, issueNumber, status, prNumber: Number(pr.number) || null, prUrl: clean(pr.html_url) || null,
+      repo, issueNumber, worker, status, prNumber: Number(pr.number) || null, prUrl: clean(pr.html_url) || null,
     });
     if (task) changed.push(task);
   }

@@ -3,13 +3,22 @@ import { useTerminal } from './useTerminal.js';
 
 // One tab's shell. Hidden tabs stay mounted so their shells keep running and
 // their output keeps arriving while another tab is in front.
-export function TerminalPane({ win, cwd, theme, workspaceId, sessionId, plain, active, glow }) {
+export function TerminalPane({ win, cwd, theme, workspaceId, sessionId, plain, active, glow, shown = true }) {
   const hostRef = useRef(null);
+  const shownRef = useRef(shown);
   const { termRef } = useTerminal(hostRef, win, cwd, theme, workspaceId, { sessionId, plain });
 
   React.useEffect(() => {
     if (active && win.activeTerminalTab) termRef.current?.focus();
   }, [active]);
+
+  // Workbench hides this pane without unmounting it. Focus again when it
+  // comes back, so the same shell takes typing where it left off.
+  React.useEffect(() => {
+    const revealed = shown && shownRef.current === false;
+    shownRef.current = shown;
+    if (revealed && active) termRef.current?.focus();
+  }, [shown, active]);
 
   const translucent = win.opacity !== undefined;
   const classes = [translucent ? 'terminal-translucent' : '', glow ? 'terminal-glow' : ''].filter(Boolean).join(' ');

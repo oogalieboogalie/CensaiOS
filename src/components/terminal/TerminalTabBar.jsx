@@ -1,10 +1,24 @@
-import React from 'react';
 import { Icon } from '../Icons.jsx';
 import { tabLabel } from './terminalTabs.js';
+import { AgentOrbRow } from './AgentOrbRow.jsx';
 
 // The tab strip under the title bar. It only shows once there are two or
 // more tabs; the + in the title bar opens the second one.
+// Workbench keeps the same tabs, drawn as round buttons, even when there
+// is only one shell.
 export function TerminalTabBar({ win, tabs, activeId, onSelect, onClose, onAdd, theme }) {
+  if (win?.terminalView === 'workbench') {
+    return (
+      <AgentOrbRow
+        win={win}
+        tabs={tabs}
+        activeId={activeId}
+        onSelect={onSelect}
+        onClose={onClose}
+        onKeyDown={(event) => orbKeys(event, { tabs, activeId, onSelect, onClose, onAdd })}
+      />
+    );
+  }
   if (tabs.length < 2) return null;
   return (
     <div className="terminal-tabs" role="tablist" aria-label="Terminal tabs" 
@@ -40,6 +54,20 @@ export function TerminalTabBar({ win, tabs, activeId, onSelect, onClose, onAdd, 
       </button>
     </div>
   );
+}
+
+// Same shortcuts as the plain strip. They bubble from the round button.
+function orbKeys(event, { tabs, activeId, onSelect, onClose, onAdd }) {
+  const action = terminalTabKeyAction(event);
+  if (!action || !tabs?.length) return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (action === 'add') { onAdd?.(); return; }
+  if (action === 'close') { onClose?.(activeId); return; }
+  const index = Math.max(0, tabs.findIndex((tab) => tab.id === activeId));
+  const step = action === 'next' ? 1 : -1;
+  const next = tabs[(index + step + tabs.length) % tabs.length];
+  if (next) onSelect?.(next.id);
 }
 
 // Windows Terminal keys. They work in the desktop app; a web browser keeps

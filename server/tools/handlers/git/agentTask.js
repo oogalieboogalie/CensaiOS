@@ -1,4 +1,4 @@
-// create_github_issue: an agent hands a coding job to the repository's GitHub
+// hand_coding_job_to_github: an agent hands a coding job to the repository's GitHub
 // coding agent. The issue tags @grok (or @claude), whose workflow builds it
 // and opens a pull request; the task is saved so the webhook
 // (server/routes/githubAgentWebhook.js) can tell this agent when the pull

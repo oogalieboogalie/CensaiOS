@@ -4,10 +4,12 @@ import { windowsInSelection } from './CanvasInteractions.js';
 import { strokesInBox } from '../../lib/ink/shapes.js';
 import { useInkPointer } from './useInkPointer.js';
 import {
-  blurActiveEditable, buildBandBox, buildPinchStart, buildRectStroke,
+  blurActiveEditable, buildBandBox, buildPinchStart,
   computePinchZoom, consumeSuppression, isInteractivePanTarget, leaveWindows, shouldStartCanvasPan,
 } from './pointerBuilders.js';
 import { isCanvasBackground } from './canvasSelectionSurface.js';
+import { beginCanvasDrag } from './toolDrag.js';
+import { commitShape, isShapeMode } from './shapeStrokes.js';
 
 // Re-exported so existing importers keep working after the builders extraction.
 export { shouldStartCanvasPan };
@@ -106,32 +108,14 @@ export function useCanvasPointer({
       const rect = ref.current.getBoundingClientRect();
       const canvasPt = screenToCanvas(e.clientX, e.clientY, pan.x, pan.y, zoom, rect);
 
-      if (activeTool === 'eraser' || isPenEraser) {
-        dragRef.current = { id: e.pointerId, isErasing: true };
-        setPaths(prev => prev.filter(p => !p.pts.some(pt => distance(pt.x, pt.y, canvasPt.x, canvasPt.y) < 16 / zoom)));
-      } else if (activeTool === 'pen' || (penMode && isPen)) {
-        dragRef.current = { id: e.pointerId, isDrawing: true };
-        ink.startStroke(e);
-      } else if (activeTool === 'lasso') {
-        dragRef.current = { id: e.pointerId, isLasso: true };
-        ink.startLasso(e);
-      } else if (activeTool === 'rect' || activeTool === 'text') {
-        dragRef.current = {
-          id: e.pointerId,
-          x0: canvasPt.x,
-          y0: canvasPt.y,
-          started: false,
-          mode: activeTool,
-        };
-      } else {
-        dragRef.current = {
-          id: e.pointerId,
-          x0: canvasPt.x,
-          y0: canvasPt.y,
-          started: false,
-          mode: e.shiftKey ? 'region' : 'selection',
-        };
-      }
+      const started = beginCanvasDrag({
+        activeTool, penMode, isPen, isPenEraser,
+        pointerId: e.pointerId, canvasPt, shiftKey: e.shiftKey, penColor, penSize,
+      });
+      dragRef.current = started.drag;
+      if (started.erase) setPaths(prev => prev.filter(p => !p.pts.some(pt => distance(pt.x, pt.y, canvasPt.x, canvasPt.y) < 16 / zoom)));
+      if (started.draw) ink.startStroke(e, started.ink);
+      if (started.lasso) ink.startLasso(e);
 
       try { ref.current.setPointerCapture(e.pointerId); } catch {}
       onSelect(null);
@@ -177,6 +161,8 @@ export function useCanvasPointer({
       setRegion(null);
     }
     d.started = true;
+    d.x1 = canvasPt.x;
+    d.y1 = canvasPt.y;
     // Text clicks spawn on pointer-up; dragging with the text tool draws nothing.
     if (d.mode === 'text') return;
     setBand(buildBandBox(d, canvasPt));
@@ -206,10 +192,10 @@ export function useCanvasPointer({
 
     if (d?.isErasing) return;
 
-    // Rect tool: commit the dragged band as a closed stroke in pen color/size.
-    if (d?.mode === 'rect') {
+    // Rectangle, ellipse, line and arrow: commit the drag in the pen colour.
+    if (isShapeMode(d?.mode)) {
       if (d.started) {
-        const stroke = buildRectStroke(band, zoom, penColor, penSize);
+        const stroke = commitShape({ mode: d.mode, band, from: d, zoom, penColor, penSize });
         if (stroke) setPaths(prev => [...prev, stroke]);
       }
       setBand(null);

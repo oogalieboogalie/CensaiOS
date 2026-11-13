@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 import { jest } from '@jest/globals';
 import { act, render, cleanup } from '@testing-library/react';
-import { notePress, pasteOwner, pasteOwnerLine } from '../src/lib/pasteOwner.js';
+import { notePress, pasteOwner, pasteOwnerLine, windowHoldsKeys } from '../src/lib/pasteOwner.js';
 import { claimKeyboard, releaseKeyboard } from '../src/lib/keyboardClaim.js';
 import { pendingAppLog } from '../src/lib/appLog/browserLog.js';
 import { useAppKeyboard } from '../src/app/hooks/useAppKeyboard.js';
@@ -46,6 +46,19 @@ afterEach(() => {
 });
 
 describe('pasteOwner', () => {
+  test('a window with the focus or the last press holds the board keys', () => {
+    expect(windowHoldsKeys(document.body)).toBe(false);
+    const cells = focusable(frame());
+    expect(windowHoldsKeys(cells)).toBe(true);
+    cells.focus();
+    expect(windowHoldsKeys(document.body)).toBe(true);
+    cells.blur();
+    pressOn(document.body);
+    expect(windowHoldsKeys(document.body)).toBe(false);
+    pressOn(cells);
+    expect(windowHoldsKeys(document.body)).toBe(true);
+  });
+
   test('a paste on the empty board is the canvas’s', () => {
     expect(pasteOwner(on(document.body))).toBeNull();
   });

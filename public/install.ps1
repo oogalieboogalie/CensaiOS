@@ -20,6 +20,21 @@
 
 $ErrorActionPreference = 'Stop'
 
+# Uninstall: $env:CENSAI_UNINSTALL = '1'; irm https://censai.app/install.ps1 | iex
+# Stops censaiOS and takes away the sign-in updater for this account.
+if ($env:CENSAI_UNINSTALL -eq '1') {
+  $Home_ = if ($env:CENSAI_HOME) { $env:CENSAI_HOME } else { Join-Path $env:USERPROFILE '.censai' }
+  $AppDir = Join-Path $Home_ 'CensaiOS'
+  $signin = Join-Path $AppDir 'scripts\updater-signin.ps1'
+  if (Test-Path $signin) { & powershell -NoProfile -ExecutionPolicy Bypass -File $signin -Remove }
+  if (Test-Path (Join-Path $AppDir 'docker-compose.yml')) {
+    Set-Location $AppDir
+    docker compose down
+  }
+  Write-Host 'censaiOS is stopped, and it will not start its updater when you sign in.'
+  exit 0
+}
+
 $Repo    = if ($env:CENSAI_REPO) { $env:CENSAI_REPO } else { 'oogalieboogalie/CensaiOS' }
 $Ref     = if ($env:CENSAI_REF)  { $env:CENSAI_REF }  else { 'main' }
 $Home_   = if ($env:CENSAI_HOME) { $env:CENSAI_HOME } else { Join-Path $env:USERPROFILE '.censai' }
@@ -128,11 +143,21 @@ if (-not $ready) { Fail "timed out waiting for $AppUrl. Check logs with: docker 
 
 Start-Process $AppUrl | Out-Null
 
+$signin = Join-Path $AppDir 'scripts\updater-signin.ps1'
+# A downloaded copy has no git checkout. The updater only pulls with git,
+# so it would start at every sign-in and do nothing. Skip it here.
+if ((Test-Path $signin) -and (Test-Path (Join-Path $AppDir '.git'))) {
+  & powershell -NoProfile -ExecutionPolicy Bypass -File $signin -Install
+} elseif (-not (Test-Path (Join-Path $AppDir '.git'))) {
+  Write-Host 'This copy was downloaded, not checked out with git, so it will not check for updates when you sign in. Run this installer again to get a newer copy.'
+}
+
 Write-Host ''
 Write-Host "  Censai is running:  $AppUrl"
 Write-Host ''
 Write-Host "  Installed in:       $AppDir"
 Write-Host "  Stop:               cd `"$AppDir`"; docker compose down"
+Write-Host "  Uninstall:          `$env:CENSAI_UNINSTALL = '1', then re-run this installer"
 Write-Host "  Logs:               cd `"$AppDir`"; docker compose logs -f"
 Write-Host '  Update:             re-run this installer'
 Write-Host ''

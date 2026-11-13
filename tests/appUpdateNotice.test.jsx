@@ -11,9 +11,19 @@ import '@testing-library/jest-dom';
 import { jest } from '@jest/globals';
 
 const status = jest.fn();
+const restart = jest.fn(async () => ({}));
+const launchUpdater = jest.fn(async () => 'app');
+const afterUpdaterStarted = jest.fn(async () => ({ watching: false }));
 jest.unstable_mockModule('../src/lib/appUpdate/api.js', () => ({
-  appUpdateApi: { status, restart: jest.fn(), check: jest.fn(), inFlight: jest.fn() },
+  appUpdateApi: { status, restart, check: jest.fn(), inFlight: jest.fn(), start: jest.fn() },
   changeCount: (changes) => (changes?.length ? `${changes.length} changes` : null),
+}));
+jest.unstable_mockModule('../src/lib/appUpdate/startUpdater.js', () => ({
+  launchUpdater,
+  afterUpdaterStarted,
+  UPDATER_DID_NOT_START: 'The updater did not start. Open censaiOS with its shortcut once so it can start on its own from then on.',
+  UPDATER_DOWN: 'updater-not-running',
+  UPDATER_LINK: 'censaios-updater:start',
 }));
 jest.unstable_mockModule('../src/components/TrayUpdatePanel.jsx', () => ({ TrayUpdatePanel: () => null }));
 
@@ -29,7 +39,15 @@ async function shown(found) {
   await act(async () => { await jest.advanceTimersByTimeAsync(5100); });
 }
 
-beforeEach(() => { jest.useFakeTimers(); status.mockReset(); });
+beforeEach(() => {
+  jest.useFakeTimers();
+  status.mockReset();
+  restart.mockReset();
+  restart.mockResolvedValue({});
+  launchUpdater.mockClear();
+  afterUpdaterStarted.mockReset();
+  afterUpdaterStarted.mockResolvedValue({ watching: false });
+});
 afterEach(() => { jest.useRealTimers(); });
 
 describe('the update note', () => {
@@ -37,7 +55,33 @@ describe('the update note', () => {
     await shown({ ready: { commit: 'b'.repeat(40), changes: ['Fix the header', 'New window'] }, watching: true, checked: { at: AT, result: 'ready' } });
     expect(screen.getByTestId('app-update-notice')).toHaveTextContent('Update ready');
     expect(screen.getByText('Restart now')).toBeInTheDocument();
+    expect(screen.queryByTestId('start-updater')).toBeNull();
+    expect(screen.getByTestId('app-update-notice')).toHaveTextContent('when nobody is using censaiOS');
     expect(screen.queryByTestId('app-update-paused')).toBeNull();
+  });
+
+  test('while someone is using censaiOS the note says the update waits', async () => {
+    await shown({ ready: { commit: 'b'.repeat(40), changes: [] }, watching: true, inUse: true });
+    expect(screen.getByTestId('app-update-notice')).toHaveTextContent('Update ready, restarts when you are done');
+    expect(screen.getByText('Restart now')).toBeInTheDocument();
+  });
+
+  test('a ready update with the updater stopped offers one button to start it', async () => {
+    await shown({ ready: { commit: 'b'.repeat(40), changes: [] }, watching: false, running: 'a'.repeat(40) });
+    expect(screen.getByTestId('start-updater')).toHaveTextContent('Start the updater');
+    expect(screen.queryByText('Restart now')).toBeNull();
+    afterUpdaterStarted.mockResolvedValue({ watching: true, ready: { commit: 'b'.repeat(40) } });
+    await act(async () => { fireEvent.click(screen.getByTestId('start-updater')); });
+    expect(launchUpdater).toHaveBeenCalled();
+    expect(restart).toHaveBeenCalled();
+    expect(screen.getByTestId('app-update-notice')).toHaveTextContent('Updating censaiOS');
+  });
+
+  test('Start the updater says so when it does not come up', async () => {
+    await shown({ ready: { commit: 'b'.repeat(40), changes: ['Fix the header'] }, watching: false, running: 'a'.repeat(40) });
+    await act(async () => { fireEvent.click(screen.getByTestId('start-updater')); });
+    expect(screen.getByRole('alert')).toHaveTextContent('The updater did not start');
+    expect(restart).not.toHaveBeenCalled();
   });
 
   test('a PC on a side branch is told updates are paused, instead of nothing', async () => {

@@ -1,6 +1,7 @@
 // Toolbar definitions extracted from Toolbar.jsx: tool metadata (with JSX
 // glyphs), pen constants, and the small helpers the dock uses. No component
 // state here — Toolbar.jsx owns all rendering and interaction.
+import { windowHoldsKeys } from '../lib/pasteOwner.js';
 
 export const TOOL_DEFS = [
   {
@@ -32,6 +33,24 @@ export const TOOL_DEFS = [
     id: 'lasso', label: 'Lasso', key: 'L',
     glyph: <path strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2.5 2.5" d="M12 4c4.4 0 8 2.2 8 5s-3.6 5-8 5-8-2.2-8-5 3.6-5 8-5zm-5 9.5c-.8 1.8-.4 3.6 1 4.5 1.3.8 2.4.4 2.4 2.5" />,
   },
+  // Kept after the original seven so a dock that still addresses tools by
+  // position does not shift. The extra row claims these and draws them.
+  {
+    id: 'ellipse', label: 'Ellipse', key: 'O',
+    glyph: <ellipse cx="12" cy="12" rx="8" ry="5.5" />,
+  },
+  {
+    id: 'line', label: 'Line', key: 'K',
+    glyph: <path strokeLinecap="round" strokeLinejoin="round" d="M5 18L19 6" />,
+  },
+  {
+    id: 'arrow', label: 'Arrow', key: 'W',
+    glyph: <path strokeLinecap="round" strokeLinejoin="round" d="M5 18L19 6M19 6v6M19 6h-6" />,
+  },
+  {
+    id: 'highlight', label: 'Highlight', key: 'M',
+    glyph: <path strokeLinecap="round" strokeLinejoin="round" d="M4 18h16M8 15l6.2-8.2 2.6 2L10.6 17H8V15z" />,
+  },
 ];
 
 export const AI_DEF = {
@@ -55,8 +74,12 @@ export function broadcastToolChange(tool) {
   window.dispatchEvent(new CustomEvent('canvas:tool-change', { detail: { tool } }));
 }
 
+// True while typing, and while a window has the focus or the last press.
+// The dock's key handler already calls this, so a board shortcut stays quiet there.
 export function isEditingTarget(target) {
-  if (!target) return false;
-  const tag = target.tagName;
-  return tag === 'INPUT' || tag === 'TEXTAREA' || target.contentEditable === 'true';
+  if (target) {
+    const tag = target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || target.contentEditable === 'true') return true;
+  }
+  return windowHoldsKeys(target);
 }

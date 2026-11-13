@@ -17,6 +17,15 @@ tags.
 
 ### New
 
+- Comms window, push-to-talk with an agent (Nov 13)
+- Add buttons for what a project folder can do (Nov 13)
+- Show each terminal command as a card (Nov 13)
+- Add the board tools the canvas already knows (Nov 13)
+- An update still goes in after the PC restarts (Nov 13)
+- Slim the board tool dock (Nov 13)
+- Show which agent is in each terminal tab (Nov 12)
+- Add a Workbench switch that keeps the same terminal session (Nov 12)
+- Jules Tasks gets a toolbar, sunken lists of raised cards, a button and cards that answer the pointer, and readable small words, 70 to 100 (Nov 12)
 - Document gets a raised page on a sunken desk, comment cards that lift, and readable small words, 70 to 92 (Nov 12)
 - Test team: two people in one chat works; the walk was out of date, not the chat (Nov 12)
 - Let switched-on Tailscale devices open censaiOS with no code (Nov 11)
@@ -139,6 +148,8 @@ tags.
 
 ### Fixed
 
+- Let the pre-push check and two tests run on Windows (Nov 13)
+- Claim coding jobs only from their own worker branch (Nov 13)
 - Rhythm Run shows only real words from the board, and offers Join on the results card (Nov 12)
 - Each UI team and test team run starts its own copy of the app on its own ports (Nov 12)
 - The test team finds its module files by itself, so two teams can add one at the same time (Nov 12)
@@ -205,6 +216,7 @@ tags.
 
 ### Behind the scenes
 
+- ARCHITECTURE.md and COLLABORATION.md say what the code does today (Nov 12)
 - Disarm a workflow start when its graph changes (Nov 9)
 - Each run's temp files go in one folder that is deleted at the end (Nov 9)
 - Workflow: see a teammate's cursor and name in a step (crew realtime) (Nov 8)

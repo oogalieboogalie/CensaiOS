@@ -1,0 +1,96 @@
+/* Jules Tasks. Depth comes from the shared pieces in src/styles/depth.css
+   (docs/ui-yardstick.md): Refresh and the "completed" box sit on a bar, each
+   list is a sunken tray, and each task, wave and session is a raised card.
+   The button, the box, the cards and the links answer the pointer. Small grey
+   words use --ink-soft, and green, amber and red words use the -text tokens,
+   so they stay readable in dark and in light. One rule per line:
+   tests/julesLook.test.js reads it that way. */
+.jules { flex: 1; min-height: 0; display: flex; flex-direction: column; color: var(--ink); }
+.jules-bar { flex-shrink: 0; display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); }
+/* Written with .hb-btn so these win over the shared button rule whichever stylesheet loads first. */
+.hb-btn.jules-refresh { background: var(--layer-panel); box-shadow: var(--control-raise); transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.hb-btn.jules-refresh:hover { border-color: var(--hairline-strong); background: color-mix(in oklab, var(--layer-panel) 94%, var(--ink)); box-shadow: var(--control-raise-hot); }
+.hb-btn.jules-refresh:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.hb-btn.jules-refresh:active:not(:disabled) { box-shadow: var(--well-shadow); transform: scale(var(--press-scale)); }
+.hb-btn.jules-refresh:disabled { opacity: 0.6; cursor: wait; }
+.jules-check { display: inline-flex; align-items: center; gap: var(--space-1-5); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); color: var(--ink-soft); font-size: var(--text-xs); cursor: pointer; transition: background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard); }
+.jules-check:hover { background: color-mix(in oklab, var(--layer-bar) 94%, var(--ink)); color: var(--ink); }
+.jules-check-box { margin: 0; accent-color: var(--accent); cursor: pointer; transition: outline-color var(--dur-fast) var(--ease-standard); }
+.jules-check-box:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.jules-loaded { flex: 1 1 auto; text-align: right; color: var(--ink-soft); font: var(--text-xs) / 1.4 var(--font-mono); }
+.jules-error { flex-shrink: 0; margin: var(--space-2) var(--space-3) 0; padding: var(--space-2) var(--space-3); border: 1px solid color-mix(in oklab, var(--danger) 30%, transparent); border-radius: var(--radius-lg); background: color-mix(in oklab, var(--danger) 12%, transparent); color: var(--danger-text); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.jules-body { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-4); padding: var(--space-3); }
+
+/* The note that a key is needed: a raised card with an amber tint. */
+.jules-notice { display: grid; gap: var(--space-1); padding: var(--space-3); font-size: var(--text-sm); }
+.hb-panel.jules-notice { border-color: color-mix(in oklab, var(--warning) 40%, var(--hairline)); background: color-mix(in oklab, var(--warning) 12%, var(--layer-panel)); }
+.jules-notice-title { color: var(--ink); font-weight: 600; }
+.jules-notice-text { color: var(--ink-soft); line-height: 1.5; }
+
+/* Waves, the queue and the sessions: a heading, then a sunken tray of raised cards. */
+.jules-section { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+.jules-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); }
+.jules-title { color: var(--ink); font-size: var(--text-sm); font-weight: 600; }
+.jules-counts { flex: 1 1 auto; color: var(--ink-soft); font: var(--text-xs) / 1.4 var(--font-mono); }
+.jules-note { color: var(--ink-soft); font-size: var(--text-xs); }
+.jules-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1-5); }
+.jules-label { color: var(--ink-soft); font-family: var(--font-label); font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--label-tracking); text-transform: var(--label-case); }
+.jules-tray { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1-5); padding: var(--space-1-5); }
+.jules-tray-empty { padding: var(--space-1-5) var(--space-2); color: var(--ink-soft); font-size: var(--text-xs); }
+
+/* One colour per state, set once on the card and used by its dot and its pill. */
+.jules-item { --jules-tone: var(--ink-faint); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1); padding: var(--space-2) var(--space-2-5); }
+.jules-item[data-tone="good"] { --jules-tone: var(--success); }
+.jules-item[data-tone="warn"] { --jules-tone: var(--warning); }
+.jules-item[data-tone="bad"] { --jules-tone: var(--danger); }
+.jules-item[data-tone="run"] { --jules-tone: var(--info); }
+/* Written with .hb-panel so these win over the shared card rule whichever stylesheet loads first. */
+.hb-panel.jules-item { transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard); }
+.hb-panel.jules-item:hover { border-color: var(--hairline-strong); background: var(--layer-panel-hover); box-shadow: var(--panel-shadow-hover); }
+.jules-item-head { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.jules-dot { flex: 0 0 auto; width: var(--space-2); height: var(--space-2); border-radius: var(--radius-full); background: var(--jules-tone); }
+.jules-dot[data-glow="true"] { box-shadow: 0 0 var(--space-2) color-mix(in oklab, var(--jules-tone) 67%, transparent); }
+.jules-item-title { flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--ink); font-size: var(--text-sm); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.jules-pill { flex-shrink: 0; padding: 0 var(--space-2); border: 1px solid color-mix(in oklab, var(--jules-tone) 40%, transparent); border-radius: var(--radius-full); background: color-mix(in oklab, var(--jules-tone) 14%, transparent); color: var(--ink); font-family: var(--font-label); font-size: var(--text-xs); letter-spacing: var(--label-tracking); line-height: 1.6; text-transform: var(--label-case); }
+.jules-item-meta { overflow: hidden; color: var(--ink-soft); font: var(--text-xs) / 1.4 var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.jules-item-note { color: var(--ink-soft); font-size: var(--text-xs); overflow-wrap: anywhere; }
+.jules-item-note[data-tone="good"] { color: var(--success-text); }
+.jules-item-note[data-tone="warn"] { color: var(--warning-text); }
+.jules-item-note[data-tone="bad"] { color: var(--danger-text); }
+
+/* The queue's own setting, top right of the queue. */
+.jules-merge { --jules-tone: var(--success); cursor: help; }
+.jules-merge[data-on="true"] { --jules-tone: var(--warning); }
+
+/* A session Jules reported. */
+.jules-session-title { min-width: 0; color: var(--ink); font-size: var(--text-md); font-weight: 600; overflow-wrap: anywhere; }
+.jules-session-meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); color: var(--ink-soft); font: var(--text-xs) / 1.4 var(--font-mono); }
+.jules-links { display: flex; flex-wrap: wrap; gap: var(--space-2); font-size: var(--text-xs); }
+.jules-link { border-radius: var(--radius-xs); color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent-line); text-underline-offset: 2px; transition: background var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard), text-decoration-color var(--dur-fast) var(--ease-standard); }
+.jules-link:hover { background: var(--accent-soft); box-shadow: 0 0 0 var(--space-0-5) var(--accent-soft); text-decoration-color: var(--ink); }
+.jules-link:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+
+/* Waves: one raised card per wave. A locked wave lies flat with a dashed edge until its turn. */
+.jules-wave-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--space-56), 1fr)); gap: var(--space-1-5); padding: var(--space-1-5); }
+.jules-wave { --jules-tone: var(--ink-faint); display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-1-5); min-width: 0; padding: var(--space-2) var(--space-2-5); }
+.jules-wave[data-state="running"] { --jules-tone: var(--info); }
+.jules-wave[data-state="needs-fix"] { --jules-tone: var(--danger); }
+.jules-wave[data-state="merged"] { --jules-tone: var(--success); }
+.hb-panel.jules-wave { border-color: color-mix(in oklab, var(--jules-tone) 45%, var(--hairline)); transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard); }
+.hb-panel.jules-wave:hover { background: var(--layer-panel-hover); box-shadow: var(--panel-shadow-hover); }
+.hb-panel.jules-wave[data-state="locked"] { border-style: dashed; background: transparent; box-shadow: none; }
+.jules-wave-head { display: flex; align-items: center; gap: var(--space-2); color: var(--ink); font-size: var(--text-sm); }
+.jules-wave-name { flex: 1 1 auto; min-width: 0; font-weight: 600; }
+.jules-wave-tasks { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.jules-wave-task { --jules-tone: var(--ink-faint); display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: var(--space-0-5) var(--space-1-5); font-size: var(--text-xs); }
+.jules-wave-task[data-stage="merged"] { --jules-tone: var(--success); }
+.jules-wave-task[data-stage="in-review"] { --jules-tone: var(--info); }
+.jules-wave-task[data-stage="with-jules"] { --jules-tone: var(--info); }
+.jules-wave-task[data-stage="fixing"] { --jules-tone: var(--warning); }
+.jules-wave-task[data-stage="needs-split"] { --jules-tone: var(--warning); }
+.jules-wave-task[data-stage="needs-fix"] { --jules-tone: var(--danger); }
+.jules-wave-label { color: var(--ink-soft); font-family: var(--font-mono); }
+.jules-wave-title { min-width: 0; overflow: hidden; color: var(--ink); text-overflow: ellipsis; white-space: nowrap; }
+.jules-wave-stage { grid-column: 3; color: var(--ink-soft); }
+.jules-wave-task[data-stage="needs-fix"] .jules-wave-stage { color: var(--danger-text); }
+.jules-wave-summary { margin: 0; color: var(--ink-soft); font-size: var(--text-xs); }

@@ -15,6 +15,7 @@ import { SEARCH_WINDOW_MANIFESTS } from './manifest/searchWindows.js';
 import { VERTICAL_WINDOW_MANIFESTS } from './manifest/verticalWindows.js';
 import { NOTES_WINDOW_MANIFESTS } from './manifest/notesWindows.js';
 import { CONFIRMATIONS_WINDOW_MANIFESTS } from './manifest/confirmationsWindows.js';
+import { COMMS_WINDOW_MANIFESTS } from './manifest/commsWindows.js';
 
 export const WINDOW_MANIFEST_VERSION = 2;
 
@@ -48,6 +49,7 @@ export const WINDOW_MANIFESTS = Object.freeze([
   ...VERTICAL_WINDOW_MANIFESTS,
   ...NOTES_WINDOW_MANIFESTS,
   ...CONFIRMATIONS_WINDOW_MANIFESTS,
+  ...COMMS_WINDOW_MANIFESTS,
 ]);
 
 export const WINDOW_MANIFEST_BY_KIND = Object.freeze(Object.fromEntries(

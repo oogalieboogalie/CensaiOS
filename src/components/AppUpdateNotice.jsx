@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { appUpdateApi, changeCount } from '../lib/appUpdate/api.js';
+import { afterUpdaterStarted, launchUpdater, UPDATER_DID_NOT_START } from '../lib/appUpdate/startUpdater.js';
 import { DEMO } from '../lib/demo/demoMode.js';
 import { STAGE_TEXT, TRAY_UPDATE_EVENT, updatesPaused } from '../lib/appUpdate/trayFlow.js';
 
@@ -31,6 +32,7 @@ export function AppUpdateNotice() {
   const [phase, setPhase] = React.useState('idle'); // idle | restarting | hidden
   const [error, setError] = React.useState('');
   const [open, setOpen] = React.useState(false);
+  const [starting, setStarting] = React.useState(false);
 
   React.useEffect(() => {
     if (DEMO) return undefined;
@@ -92,6 +94,22 @@ export function AppUpdateNotice() {
     setError('');
     appUpdateApi.restart().then(() => setPhase('restarting')).catch((err) => setError(err.message));
   };
+  const startTheUpdater = () => {
+    setError('');
+    setStarting(true);
+    const before = status?.running || '';
+    launchUpdater()
+      .then(() => afterUpdaterStarted({ read: () => appUpdateApi.status(), before }))
+      .then(async (watched) => {
+        if (watched?.swapped) { window.location.reload(); return; }
+        if (!watched?.watching) throw new Error(UPDATER_DID_NOT_START);
+        if (!watched.ready) return;
+        await appUpdateApi.restart();
+        setPhase('restarting');
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setStarting(false));
+  };
 
   return (
     <div role="status" style={box} data-testid="app-update-notice" data-phase={phase}>
@@ -99,7 +117,9 @@ export function AppUpdateNotice() {
       <span style={{ color: 'var(--ink-soft)' }}>
         {phase === 'restarting'
           ? 'This takes a few seconds. The board comes back by itself.'
-          : `A newer censaiOS is downloaded${count ? ` (${count})` : ''}. Restart to use it, or it goes in the next time you open censaiOS.`}
+          : status.inUse
+            ? 'Update ready, restarts when you are done'
+            : `A newer censaiOS is downloaded${count ? ` (${count})` : ''}. Restart to use it, or it goes in the next time you sign in, when nobody is using censaiOS.`}
       </span>
       {open && status.ready.changes.length > 0 && (
         <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--ink-soft)', fontSize: 'var(--text-xs)', maxHeight: 160, overflow: 'auto' }}>
@@ -115,8 +135,12 @@ export function AppUpdateNotice() {
             </button>
           )}
           <button type="button" style={{ ...button, color: 'var(--ink-soft)' }} onClick={() => setPhase('hidden')}>Later</button>
-          {status.watching && (
+          {status.watching ? (
             <button type="button" style={{ ...button, background: 'var(--accent-soft)', color: 'var(--ink)' }} onClick={restart}>Restart now</button>
+          ) : (
+            <button type="button" style={{ ...button, background: 'var(--accent-soft)', color: 'var(--ink)' }} onClick={startTheUpdater} disabled={starting} data-testid="start-updater">
+              {starting ? 'Starting the updater…' : 'Start the updater'}
+            </button>
           )}
         </div>
       )}

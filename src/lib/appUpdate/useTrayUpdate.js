@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { appUpdateApi } from './api.js';
+import { afterUpdaterStarted, launchUpdater, UPDATER_DID_NOT_START, UPDATER_DOWN } from './startUpdater.js';
 import { TRAY_UPDATE_EVENT, lookedSince, readWait, saveWait, stillOpen } from './trayFlow.js';
 
 const LOOK_EVERY_MS = 2000;
@@ -43,6 +44,7 @@ export function useTrayUpdate() {
   const [status, setStatus] = React.useState(null);
   const [inFlight, setInFlight] = React.useState(null);
   const [error, setError] = React.useState('');
+  const [updaterDown, setUpdaterDown] = React.useState(false);
   const [waitFor, setWaitFor] = React.useState(() => readWait());
   const run = React.useRef(0);
 
@@ -74,6 +76,7 @@ export function useTrayUpdate() {
     const alive = () => run.current === mine;
     setOpen(true);
     setError('');
+    setUpdaterDown(false);
     setPhase('checking');
     appUpdateApi.inFlight().then((data) => { if (alive()) setInFlight(data); }).catch(() => {});
     try {
@@ -83,6 +86,44 @@ export function useTrayUpdate() {
       setPhase('shown');
     } catch (err) {
       if (!alive()) return;
+      if (err.code === UPDATER_DOWN) {
+        setUpdaterDown(true);
+        setError('');
+        setPhase('shown');
+        return;
+      }
+      setUpdaterDown(false);
+      setError(friendly(err));
+      setPhase('shown');
+    }
+  }, []);
+
+  const bringUpdaterUp = React.useCallback(async () => {
+    const mine = ++run.current;
+    const alive = () => run.current === mine;
+    setOpen(true);
+    setError('');
+    setUpdaterDown(false);
+    setPhase('checking');
+    const before = await appUpdateApi.status().then((s) => s.running).catch(() => '');
+    try {
+      await launchUpdater();
+      const watched = await afterUpdaterStarted({ read: () => appUpdateApi.status(), alive, before });
+      if (!alive()) return;
+      if (watched?.swapped) { window.location.reload(); return; }
+      if (!watched?.watching) {
+        setUpdaterDown(true);
+        setError(UPDATER_DID_NOT_START);
+        setPhase('shown');
+        return;
+      }
+      const looked = await lookNow(alive);
+      if (!alive() || !looked) return;
+      setStatus(looked);
+      setPhase('shown');
+    } catch (err) {
+      if (!alive()) return;
+      setUpdaterDown(true);
       setError(friendly(err));
       setPhase('shown');
     }
@@ -128,5 +169,5 @@ export function useTrayUpdate() {
 
   const close = React.useCallback(() => { run.current += 1; setOpen(false); if (phase !== 'waiting') setPhase('idle'); }, [phase]);
 
-  return { open, phase, status, inFlight, error, waitFor, start, restart, wait, stopWaiting, close };
+  return { open, phase, status, inFlight, error, updaterDown, waitFor, start, bringUpdaterUp, restart, wait, stopWaiting, close };
 }

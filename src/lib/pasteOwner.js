@@ -42,6 +42,12 @@ export function notePress(event) {
   pressedFrame = frameOf(event?.target);
 }
 
+/** A board shortcut stands down while a window has the focus or the last press. */
+export function windowHoldsKeys(target, doc = globalThis.document) {
+  if (frameOf(target) || frameOf(doc?.activeElement)) return true;
+  return Boolean(pressedFrame?.isConnected);
+}
+
 /**
  * null when the canvas may take this paste; otherwise who has it:
  * { why: 'handled' | 'keyboard' | 'typing' | 'inside-window' | 'pressed-window', kind, id }

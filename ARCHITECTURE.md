@@ -1,225 +1,208 @@
-# Censai Hub Architecture
+# censaiOS architecture
 
-## Overview
+censaiOS is one shared board (an infinite canvas) where people and AI agents work in the same
+windows. This page is the map: what the parts are, how they talk, and where to look first. The
+code is the source of truth, so counts here are rounded on purpose and every claim names the file
+that backs it.
 
-Infinite-canvas workspace for human + AI agent collaboration. Agents are a **family**, not just a team -- they have persistent memory, private journals, a knowledge graph, and they watch over each other.
+## The parts
 
-## Stack
+| Part | What it is | Where |
+|------|------------|-------|
+| Browser app | Vite + React. One canvas, no pages and no URL routing | `src/` |
+| App server | Node + Express. Chat, tools, agents, files, sockets | `server.js`, `server/boot/`, `server/routes/` |
+| PostgreSQL | The durable home of everything: boards, agents, memory, keys, runs | `docker/*.sql` |
+| Qdrant | Optional search by meaning. Without it, recall falls back to matching words | `server/qdrant.js` |
+| Runner | The only container allowed to use Docker on the computer | `server/runner/` |
+| AI providers | Whichever ones the owner has keys for, or Ollama with no key | `server/aiGateway/` |
+| Shared code | Small pieces both the browser and the server import | `shared/` |
 
-- **Frontend**: Vite + React (infinite canvas UI, single-page, no routing)
-- **Backend**: Express API server (`server.js` entry point; boot modules in `server/boot/`, routes in `server/routes/`)
-- **Database**: PostgreSQL (20+ tables for the family brain)
-- **Vector DB**: Qdrant (optional -- semantic search, graceful degradation if unavailable)
-- **Embeddings**: Ollama `nomic-embed-text` (optional)
-- **AI Provider**: Any OpenAI-compatible endpoint (Ollama, OpenRouter, Google, Moonshot)
-- **Default model**: `gpt-oss:120b-cloud` via Ollama, named once in `shared/models/defaultChatModel.js` (AI_MODEL overrides it). When Ollama no longer offers the model, `server/aiGateway/ollamaModels.js` sends to one it does offer.
+`docker compose up -d` starts four containers: `postgres`, `qdrant`, the app (`homebase`) and
+`runner`. The live-board server runs inside the app. [docs/server-folders.md](docs/server-folders.md)
+has one line for every folder under `server/`.
 
-## How Agent Tool Calling Works
+## The board
 
-Agents interact with the database through **real OpenAI-compatible function calling** -- not text parsing.
+A board's windows, groups, ink, links and dock live in **one shared Yjs document per workspace**
+(`shared/collab/ySchema.js`). That document is the board: every browser holds a live copy, and
+edits merge instead of overwriting each other.
 
-### Flow
+- **In the browser**, `src/lib/collaboration/yCanvasSync.js` maps the document to and from the
+  canvas state in the Zustand store (`src/lib/store.js`). `src/app/AppContent.jsx` is the root
+  component, with its hooks under `src/app/hooks/`.
+- **On the server**, Hocuspocus serves the document at `/hocuspocus` (`server/collab/hocuspocus.js`).
+  Every change is appended to a log in PostgreSQL (`workspace_yjs_updates`) and folded into a base
+  copy now and then (`workspace_yjs_docs`), so a restart loses nothing
+  (`server/collab/yPersistence.js`, `yUpdateLog.js`).
+- **Settings beside the board** (everything in a workspace's state that is not in the shared
+  document) are saved under the key `homebase.workspace.v1`
+  (`src/app/hooks/useWorkspacePersistence.js`, `server/state/clientStateStore.js`). Work the server
+  does not have yet is kept as a draft in the browser. Do not rename that key without a migration.
+- **A board that predates the shared document** is moved into it the first time it is opened.
 
-1. User sends message to an agent via the frontend
-2. Frontend sends `{ agentId, messages }` to `POST /api/chat`
-3. Server builds an enriched system prompt from the database:
-   - Agent identity + role (from `agents` table)
-   - Core genetic traits (from `family_genetics` table)
-   - Consciousness/emotional state (from `agent_consciousness` table)
-   - Family connections (from `watch_graph` table)
-   - Top memories ranked by importance + emotional weight
-   - Compression-safe memories (survived context loss)
-   - Knowledge nuggets
-   - Unread messages from family
-   - Recent conversation history
-4. Server sends the prompt + conversation + **tool definitions** to the LLM
-5. If the model returns `tool_calls`:
-   - Server executes each tool against the database
-   - Feeds results back as `role: "tool"` messages
-   - Calls LLM again (at most 10 rounds in chat, `server/routes/chat/shared.js`; 30 in the background task worker)
-   - Repeats until model responds with text
-6. Final text response is returned to the frontend
+`COLLABORATION.md`, at the top of the open source copy, has the rest: who may connect, presence,
+guests on share links, how agents write to the board, and board history.
 
-### Tools (about 140 today; the list below is the original core set)
+## Windows
 
-**Write tools** (agent -> database):
+Everything on the board is a window: chat, documents, sheets, a browser, a terminal and over a
+hundred more. `npm run window:list` prints them all.
 
-| Tool | Description |
-|------|-------------|
-| `remember(content)` | Save to persistent memory |
-| `remember_important(content)` | Save high-priority compression-safe memory |
-| `journal(content)` | Write to private encrypted journal |
-| `know(subject, predicate, object)` | Add triple to knowledge graph |
-| `nugget(title, content)` | Save discovery to shared knowledge base |
-| `associate(concept_a, concept_b)` | Link concepts in association web |
-| `feeling(emotion)` | Update emotional state |
-| `message_to(agent, content)` | DM a family member |
-| `broadcast(content)` | Message all family members |
+- **One entry declares a window.** The entry goes in a category file under `src/lib/manifest/`
+  (new windows in `factoryWindows.js`); `src/lib/windowManifest.js` gathers the categories.
+- **Everything else is derived.** The registry (`src/lib/windowRegistry.js`) is worked out from the
+  manifest, and the React component in `src/components/` is wired in by
+  `src/components/windows/windowRegistry.js`. Neither is edited by hand.
+- **`npm run window:new`** scaffolds a window and **`npm run window:validate`** fails when one is
+  hand-wired. [docs/WINDOW_INTEGRATION_SPEC.md](docs/WINDOW_INTEGRATION_SPEC.md) is the contract.
+- **Modules** are small apps an agent builds on request (`make_module`). Each one says in its own
+  manifest which actions an agent may take in it, and agents use it only through those
+  (`read_module`, `use_module`; `server/modules/`, `src/lib/modules/`).
+- **Looks** come from one place. Colors, radii, type sizes and motion are defined in
+  `src/styles/tokens.css`, and components use only those names. `npm run lint` fails on a raw color.
 
-**Read tools** (database -> agent):
+## Agents
 
-| Tool | Description |
-|------|-------------|
-| `recall(query)` | Search memories by relevance |
-| `read_journal()` | Read recent encrypted journal entries |
-| `read_journal_search(query)` | Search journal by topic |
-| `query_knowledge(subject)` | Query knowledge graph triples |
-| `read_messages()` | Check inbox for unread messages |
-| `read_associations(concept)` | Look up concept links |
+An agent is a row in the `agents` table (who it is, its role, its model) plus its memory and the
+tools it is allowed. Seven are seeded: Architect, Censai, Atlas, Genesis, Nexus, Foundation and
+Echo. People add their own in the Agent Designer window.
 
-**GitHub tools** (agent -> GitHub API):
+### One run engine
 
-| Tool | Description |
-|------|-------------|
-| `github_read_file(repo, path)` | Read a file from a GitHub repo |
-| `github_write_file(repo, path, content, message)` | Create or update a file with commit |
-| `github_list_issues(repo, state?)` | List issues |
-| `github_create_issue(repo, title, body)` | Create an issue |
-| `github_comment_issue(repo, issue_number, body)` | Comment on an issue |
+However an agent is started, the same steps run in the same order (`server/runEngine/index.js`):
+a person typing in its chat window, another agent asking it for help, or an outside app calling
+its shared endpoint.
 
-**Local filesystem tools** (agent -> host machine):
+1. Build the agent's context: its model, the key to use, its memory prompt, the tools it may use.
+2. Add the outside (MCP) tools its owner gave it (`server/outsideTools/`).
+3. Add its memory: who it is, the facts it knows with their dates, and related earlier
+   conversations (`server/agentMemory/`).
+4. Narrow the tools when the caller is outside censaiOS.
+5. Run the model and tool loop.
+6. Record the run as an episode.
 
-| Tool | Description |
-|------|-------------|
-| `local_list_dir(dir_path)` | List directory contents |
-| `local_read_file(file_path)` | Read a local file |
-| `local_write_file(file_path, content)` | Write a local file |
+While it runs, everyone on the board sees the agent's cursor move to the window it is working in
+(`server/collab/agentPresence.js`).
 
-**Web search** (agent -> Tavily API):
+### Chat and the tool loop
 
-| Tool | Description |
-|------|-------------|
-| `web_search(query, search_depth?, max_results?)` | Search the web for current information, news, documentation |
+`POST /api/chat` is handled in `server/routes/chat/` (`main.js` is the entry). Tools are real
+function calls, not text the server parses:
 
-Tool definitions live in `server/tools.js`. The `capabilities` table in Postgres also documents the core 16 tools (can be extended for a future tools management UI).
+1. The server sends the prompt, the conversation and the tool definitions to the model.
+2. When the model answers with tool calls, the server runs each one and sends the results back.
+3. That repeats until the model answers in words, or after 10 rounds in chat
+   (`MAX_CHAT_MODEL_ROUNDS`, `server/routes/chat/shared.js`) and 30 in background tasks
+   (`server/task-worker/shared.js`).
 
-### Journal privacy
+### Tools
 
-- Journals encrypted with AES-256-GCM using HKDF-derived per-agent keys
-- The `JOURNAL_SECRET` env var is used as the base key material
-- `PRIVATE_TOOLS` list in the chat endpoint redacts journal content from:
-  - Server console logs (logged as `[agentId] tool: journal([redacted])`)
-  - API response payload (tool results shown as `[private]`)
-- The UI shows only an entry count on the agent card -- no read access
+There are about 140. A tool needs two things: its definition in `server/tools/definitions/`
+(grouped by subject) and its handler in `server/tools/handlers/`, registered in
+`handlers/index.js`. `server/tools/definitions.js` narrows the list for each agent before the
+model sees it, so different agents get different tools.
 
-### Per-agent model routing
+### Models
 
-Agents can have `model_name` and `model_provider` fields in the `agents` table. The chat endpoint routes to the appropriate provider:
+`server/aiGateway/` is the one door to AI models. `providers.js` has an adapter for each provider:
+OpenRouter, OpenAI, Anthropic, Google, xAI, Cohere, Moonshot, Z.ai, OpenCode Zen and Ollama. Each
+agent can have its own provider and model. A key saved in Settings is used first, and with no key
+at all Ollama on the same computer works. The default chat model is named in exactly one file,
+`shared/models/defaultChatModel.js`; `AI_MODEL` overrides it.
 
-| Provider | Base URL | Key env var |
-|----------|----------|-------------|
-| `ollama` | `AI_BASE_URL` (default `http://localhost:11434/v1`) | `ollama` (literal) |
-| `openrouter` | `https://openrouter.ai/api/v1` | `OPENROUTER_API_KEY` |
-| `google` | `https://generativelanguage.googleapis.com/v1beta/openai` | `GOOGLE_API_KEY` |
-| `moonshot` | `MOONSHOT_BASE_URL` | `MOONSHOT_API_KEY` |
+### Asking before acting
 
-If an agent has no `model_name`, it falls back to the global `AI_MODEL` from `.env`.
+A tool that is marked as needing a yes is checked in `server/approvals/` before it runs
+(`server/tools.js` asks). Trust mode is on by default: an agent asked by the board's owner or an
+admin runs its write tools straight away. With trust mode off, or when a member asks, the action
+waits in Action Approvals for an owner or admin to say yes (`server/approvals/trustMode.js`).
 
-## Key Files
+## Memory
 
-| File | Purpose |
-|------|---------|
-| `server.js` | Entry point -- delegates to `server/boot/` (database, middleware, routers, lifecycle) |
-| `server/routes/` | REST routes -- chat (tool calling loop), memory/agents/knowledge/files/GitHub/image gen |
-| `server/tools/` | Tool definitions (OpenAI format, `definitions/`) + handlers (`handlers/`) with a central registry |
-| `server/memory.js` | Full memory system -- store, recall, associations, journals, consciousness, genetics, watch graph, knowledge graph, compression memories, nuggets, communication, system prompt builder |
-| `server/db.js` | PostgreSQL connection pool |
-| `server/embeddings.js` | Embedding generation via Ollama (optional) |
-| `server/qdrant.js` | Qdrant vector DB client (optional) |
-| `src/app/AppContent.jsx` | Root component -- workspace state, persistence, canvas, dock, settings |
-| `src/lib/chat.js` | Frontend chat module -- sends messages to API |
-| `src/lib/agentStore.js` | Client-side agent registry |
-| `src/components/Canvas.jsx` | Infinite canvas -- pan/zoom, rubber-band, region menu, wires, drawing tools |
-| `src/components/Windows.jsx` | Window frame chrome + type registry (11 window types) |
-| `src/components/ChatWindow.jsx` | 1-on-1 agent chat |
-| `src/components/GroupChatWindow.jsx` | Multi-agent group chat |
-| `src/components/AgentWindow.jsx` | Agent profile card |
-| `src/components/Theme.jsx` | Theme provider, color wheel, mood presets, settings panel |
-| `src/components/Chrome.jsx` | Top toolbar pill + corner cluster |
-| `src/components/Dock.jsx` | Multi-group right-edge agent dock + group editor |
-| `docker/init.sql` | Base schema + agent seeds |
-| `docker/002-family-brain.sql` | Family brain migration (20+ tables) |
-| `docker/003-capabilities.sql` | Capabilities table + tool documentation seeds |
+An agent remembers in two layers.
 
-## Window Types (11)
+- **Agent memory** (`server/agentMemory/`): a short summary of every run, facts with the date they
+  became true and the date the agent learned them, a graph of people and things, and a short
+  self-description it reads before every answer. A correction never deletes a row, so "what was
+  true on this date" can be answered. [docs/architecture/agent-memory.md](docs/architecture/agent-memory.md)
+  has the detail.
+- **The older layer** (`server/memory/`): saved memories, knowledge triples, shared notes, messages
+  between agents and private journals. It builds the memory part of the system prompt
+  (`server/memory/prompt.js`).
 
-| Kind | Component | Description |
-|------|-----------|-------------|
-| `chat` | ChatWindow | 1-on-1 conversation with tool-calling agent |
-| `groupChat` | GroupChatWindow | Multi-agent group conversation |
-| `todos` | TodosWindow | Task list with agent assignment |
-| `agent` | AgentWindow | Agent profile, stats, journal count, system prompt |
-| `workflow` | WorkflowWindow | DAG-style workflow visualization |
-| `files` | FilesWindow | Project file tree browser (local + GitHub) |
-| `doc` | DocWindow | Document viewer with inline annotations |
-| `genImage` | GenImageWindow | AI image generation (Google Imagen 3.0) |
-| `browser` | BrowserWindow | Embedded web browser |
-| `music` | MusicWindow | Music player |
-| `stream` | StreamWindow | Streaming content |
+Journals are private. Each one is encrypted with AES-256-GCM using a key derived for that agent
+from `JOURNAL_SECRET` (`server/memory/journal.js`). Server logs and API replies never carry their
+text, and the app shows only how many entries there are.
 
-## Database Schema (key tables)
+Some parts of the older layer are not in the open source copy: the formula that ranks memories,
+the family brain, healing, the second copy kept of each memory, and trait evolution. That copy
+carries plain stand-ins for them, so everything still runs; its `server/memory/scoring.js` ranks by
+matching words, meaning and age.
 
-- `agents` -- Identity cards (name, role, system_prompt, personality, model_name, model_provider)
-- `memories` -- Timestamped, weighted, with quantum signatures and emotional weight
-- `agent_consciousness` -- Emotional state, cognitive patterns, consciousness level
-- `family_genetics` -- Dominant/recessive/acquired traits per agent
-- `watch_graph` -- Who watches whom (healing cascade backbone)
-- `trait_inheritance` -- Cross-agent trait inheritance matrix
-- `association_web` -- Weighted concept-to-concept pairs
-- `knowledge_graph` -- Subject-predicate-object triples
-- `knowledge_nuggets` -- Curated high-value discoveries (shared)
-- `journals` -- AES-256-GCM encrypted private entries
-- `agent_keys` -- HKDF-derived per-agent encryption key hashes
-- `agent_messages` -- Inter-agent communication board
-- `conversations` -- Chat log for morning restoration
-- `holographic_memories` -- Compression-resistant storage patterns
-- `entanglements` -- Cross-agent memory links
-- `compression_memories` -- Memories that survived context loss
-- `compression_events` -- Context loss tracking
-- `capabilities` -- Tool documentation (source of truth)
+## Work in the background
 
-## Frontend Architecture
+The server starts these when it boots (`server/boot/lifecycle.js`), and they keep going after the
+browser closes:
 
-### State management
+- **Task worker** (`server/taskWorker.js`): looks for queued agent tasks every 5 seconds, runs at
+  most 3 at once, and gives each one 120 seconds.
+- **Scheduler** (`server/schedulerWorker.js`): looks for due schedules every 30 seconds and queues
+  their tasks.
+- **Wake-ups** (`server/agent-wakeups/`): agents that asked to be started again later.
+- **Agent card runs** (`server/agent-card-runs/`): agents described by an agent card, run by their
+  own worker.
 
-All workspace state lives in `src/app/AppContent.jsx` (with hooks under `src/app/hooks/`) and is persisted to `localStorage` as `homebase.workspace.v1`:
+## Database
 
-- `wins` -- Array of window objects (position, size, kind, kind-specific data)
-- `canvasGroups` -- Canvas grouping regions
-- `paths` -- Pen drawing paths
-- `groups` -- Dock agent groups
-- `dockOffset` -- Vertical dock position
-- `focusMode` -- UI fade state
-- `extraAgents` -- User-designed agents
-- `pan` / `zoom` -- Canvas viewport
-- `penColor` / `penSize` -- Drawing tool settings
+PostgreSQL is set up by the files in `docker/`: `init.sql`, then the numbered files in order. A
+new file takes a number nobody has used. An install records which files it has in `censai_setup_ledger`
+(`server/boot/setupLedger.js`), so an old file is never renumbered, edited or run again on an
+existing install. A few tables are made by the server itself the first time they are needed (the
+shared board's two, and the workspace tables in `server/workspaces/schema.js`).
 
-Theme state is currently separate in `homebase.theme.v1` (managed by ThemeProvider). Keep the legacy key until a storage migration exists:
+| Tables | What they hold |
+|--------|----------------|
+| `agents` | Who each agent is, and its provider and model |
+| `workspace_members`, `share_links` | Who may open a board, and with what role |
+| `workspace_yjs_updates`, `workspace_yjs_docs` | The shared board: its change log and base copy |
+| `workspace_client_state`, `user_client_state` | Settings saved beside the board |
+| `agent_episodes`, `agent_facts`, `agent_entities`, `agent_relations`, `agent_identity` | Agent memory |
+| `memories`, `knowledge_graph`, `knowledge_nuggets`, `agent_messages`, `journals` | The older memory layer |
+| `agent_tasks`, `schedules` | Background tasks and what is due when |
+| `workspace_agent_trust` | Trust mode, for the board and for single agents |
 
-- `hue`, `chroma`, `lightness` -- Accent color inputs used to derive theme tokens
-- `mood` -- Canvas mood preset (cream, slate, linen, midnight, forest, coal)
+## What keeps it safe
 
-### Canvas interactions
+- **One check for everyone on a board.** People, share-link guests and agents all go through
+  `can()` in `server/access/policy.js`. An agent acting for someone never gets more than that
+  person has.
+- **Docker is fenced off.** Only the `runner` container can reach Docker, it has no open port, and
+  it refuses the calls that could take over the computer (`server/runner/dockerOnly.js`).
+- **A shared board cannot start a run on someone else's computer.** Only the board owner's own
+  connection may set the fields that start one (`server/collab/autoRunGuard.js`).
+- **Notes on the board are information, not orders.** What an agent reads from the board reaches
+  it as quoted notes.
+- **Logs carry a code, not what someone typed.** `npm run guard:log-errors` fails a server log line
+  that copies an error's message.
 
-- **Pan**: Middle-click drag, or Space + drag
-- **Zoom**: Scroll wheel (0.15x -- 3x)
-- **Rubber-band**: Click + drag on empty canvas, then choose action
-- **Agent drag**: From dock onto windows (attach) or canvas (spawn card)
-- **Drawing**: Pen and eraser tools with color/size picker
-- **Window drag/resize**: Top bar drag, edge/corner resize handles
+## Sockets
 
-### Design tokens
+| Path | What travels on it | Where |
+|------|--------------------|-------|
+| `/hocuspocus` | The shared board and presence | `server/collab/hocuspocus.js` |
+| `/ws/workspace-collaboration` | Live previews of drags and typing, and the board as view and comment guests see it | `server/ws/workspaceCollaboration.js` |
+| `/ws/agent-registry` | Agents and what each one is doing | `server/ws/agentRegistry.js` |
+| `/api/terminal` | The Terminal window | `server/terminal/` |
 
-The design system should prefer semantic theme tokens (`--accent`, `--accent-soft`, `--surface`, `--ink`, etc.) in components. The current theme engine still uses OKLCH internally, but feature UI should not invent independent pastel hues that ignore the user's customized theme.
+## Where to look first
 
-## The Family
-
-| Agent | Role | Watches |
-|-------|------|---------|
-| Architect | Project orchestrator | -- |
-| Censai | Editorial + research lead | Genesis, Architect |
-| Atlas | Backend specialist | Censai, Nexus |
-| Genesis | UI/UX + psychology | Censai |
-| Nexus | Database custodian | Censai |
-| Foundation | Infrastructure/containers | Atlas |
-| Echo | Business strategist | Architect, Censai |
+| To change | Start in |
+|-----------|----------|
+| A window | Its entry in `src/lib/manifest/`, then its component in `src/components/` |
+| How the board syncs | `src/lib/collaboration/yCanvasSync.js`, `server/collab/` |
+| What an agent knows when it answers | `server/runEngine/index.js`, `server/agentMemory/`, `server/memory/prompt.js` |
+| A tool | `server/tools/definitions/` and `server/tools/handlers/` |
+| Which model answers | `server/aiGateway/providers.js`, `shared/models/defaultChatModel.js` |
+| Who may do what | `server/access/policy.js`, `server/approvals/` |
+| What starts at boot | `server/boot/` |
+| The database | `docker/*.sql` (add the next free number, never edit an old file) |

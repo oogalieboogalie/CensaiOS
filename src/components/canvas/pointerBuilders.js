@@ -18,6 +18,10 @@ export function buildBandBox(drag, canvasPt) {
     mode: drag.mode,
     isGroup: drag.mode === 'group',
     isSelection: drag.mode === 'selection',
+    x0: drag.x0,
+    y0: drag.y0,
+    x1: canvasPt.x,
+    y1: canvasPt.y,
   };
 }
 

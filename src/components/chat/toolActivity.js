@@ -23,7 +23,7 @@ const VERBS = [
   { tools: ['jobs_status'], verb: 'Checking on the plan', past: 'Checked on the plan', icon: 'Eye' },
   { tools: ['stop_jobs'], verb: 'Stopping the plan', past: 'Stopped the plan', icon: 'Group' },
   { tools: ['web_search'], verb: 'Searching the web', past: 'Searched the web', icon: 'Search' },
-  { tools: ['github_list_issues', 'github_create_issue', 'create_github_issue', 'github_comment_issue'], verb: 'Syncing with GitHub', past: 'Synced with GitHub', icon: 'Files' },
+  { tools: ['github_list_issues', 'github_create_issue', 'hand_coding_job_to_github', 'github_comment_issue'], verb: 'Syncing with GitHub', past: 'Synced with GitHub', icon: 'Files' },
   { tools: ['create_sub_agent', 'list_sub_agents', 'remove_sub_agent'], verb: 'Summoning sub-agent', past: 'Summoned sub-agent', icon: 'Bot' },
   { tools: ['submit_pr', 'pr_status', 'pr_comments', 'merge_pr'], verb: 'Reviewing pull requests', past: 'Reviewed pull requests', icon: 'Tools' },
   { tools: ['jules_submit', 'jules_status', 'jules_list'], verb: 'Dispatching Jules', past: 'Dispatched Jules', icon: 'Bot' },

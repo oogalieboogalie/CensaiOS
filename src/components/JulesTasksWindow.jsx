@@ -5,6 +5,7 @@ import { api } from '../lib/api.js';
 import { useVisibilityAwareInterval } from '../lib/usePolling.js';
 import { JulesQueuePanel } from './jules/JulesQueuePanel.jsx';
 import { JulesWavesPanel } from './jules/JulesWavesPanel.jsx';
+import './jules/jules.css';
 
 function fmtDate(value) {
   if (!value) return 'not checked';
@@ -13,11 +14,12 @@ function fmtDate(value) {
   return date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
-function statusColor(status) {
-  if (/COMPLETE|DONE|SUCCESS/i.test(status)) return 'var(--ps-green)';
-  if (/FAIL|ERROR|CANCEL/i.test(status)) return 'var(--ps-red)';
-  if (/AWAITING/i.test(status)) return 'var(--ps-yellow)';
-  return 'var(--ps-blue)';
+// Which colour a session's dot takes (the colours are in jules.css).
+function statusTone(status) {
+  if (/COMPLETE|DONE|SUCCESS/i.test(status)) return 'good';
+  if (/FAIL|ERROR|CANCEL/i.test(status)) return 'bad';
+  if (/AWAITING/i.test(status)) return 'warn';
+  return 'run';
 }
 
 export function JulesTasksWindow({ win, isActive }) {
@@ -79,34 +81,33 @@ export function JulesTasksWindow({ win, isActive }) {
         label={win.title || 'Jules Tasks'}
         subtitle="live repository queue"
       />
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: 12, gap: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="jules">
+        <div className="hb-bar jules-bar">
           <button
             type="button"
+            className="hb-btn hb-press jules-refresh"
             onClick={() => load({ refresh: true })}
             disabled={loading}
-            style={{ all: 'unset', cursor: loading ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 10px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', fontSize: 'var(--text-sm)', color: 'var(--ink)' }}
           >
-            <Icon.Search size={13} />
+            <Icon.Refresh size={13} />
             {loading ? 'Refreshing' : 'Refresh'}
           </button>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>
-            <input type="checkbox" checked={includeCompleted} onChange={(e) => setIncludeCompleted(e.target.checked)} />
+          <label className="jules-check">
+            <input className="jules-check-box" type="checkbox" checked={includeCompleted} onChange={(e) => setIncludeCompleted(e.target.checked)} />
             completed
           </label>
-          <div style={{ flex: 1 }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
+          <span className="jules-loaded">
             {lastLoadedAt ? `loaded ${fmtDate(lastLoadedAt)}` : 'not loaded'}
           </span>
         </div>
 
-        {error && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-sm)' }}>{error}</div>}
+        {error && <div className="jules-error">{error}</div>}
 
-        <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'grid', alignContent: 'start', gap: 8 }}>
+        <div className="jules-body">
           {keyMissing && (
-            <div role="status" style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', padding: 12, color: 'var(--ink)', fontSize: 'var(--text-sm)', display: 'grid', gap: 4 }}>
-              <strong>Jules needs an API key.</strong>
-              <span style={{ color: 'var(--ink-soft)' }}>
+            <div role="status" className="hb-panel jules-notice">
+              <strong className="jules-notice-title">Jules needs an API key.</strong>
+              <span className="jules-notice-text">
                 Get a key at jules.google.com (Settings, API keys), add a line JULES_API_KEY=your key to the .env file in your censaiOS folder, then restart censaiOS.
               </span>
             </div>
@@ -114,30 +115,35 @@ export function JulesTasksWindow({ win, isActive }) {
           <JulesWavesPanel queue={queue} />
           <JulesQueuePanel queue={queue} includeCompleted={includeCompleted} />
           {!loading && !keyMissing && sessions.length === 0 && !queue && (
-            <div style={{ border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-lg)', padding: 18, color: 'var(--ink-faint)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
-              No Jules queue or session data.
+            <div className="hb-empty">
+              <div className="hb-empty-icon"><Icon.Bot size={24} /></div>
+              <div className="hb-empty-title">No Jules queue or session data.</div>
             </div>
           )}
-          {sessions.map(session => (
-            <div key={session.id || session.session} style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', padding: 10, display: 'grid', gap: 6 }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColor(session.status), boxShadow: `0 0 8px ${statusColor(session.status)}` }} />
-                <strong style={{ fontSize: 'var(--text-md)', color: 'var(--ink)' }}>{session.title}</strong>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
-                <span>{session.status}</span>
-                {session.projectName && <span>{session.projectName}</span>}
-                {session.branch && <span>{session.branch}</span>}
-                <span>checked {fmtDate(session.lastPolledAt)}</span>
-              </div>
-              {(session.prUrl || session.julesUrl) && (
-                <div style={{ display: 'flex', gap: 8, fontSize: 'var(--text-xs)' }}>
-                  {session.julesUrl && <a href={session.julesUrl} target="_blank" rel="noreferrer">Jules</a>}
-                  {session.prUrl && <a href={session.prUrl} target="_blank" rel="noreferrer">PR #{session.prNumber || ''}</a>}
+          {sessions.length > 0 && (
+            <div className="hb-well jules-tray">
+              {sessions.map(session => (
+                <div key={session.id || session.session} className="hb-panel jules-item" data-tone={statusTone(session.status)}>
+                  <div className="jules-item-head">
+                    <span className="jules-dot" data-glow="true" />
+                    <strong className="jules-session-title">{session.title}</strong>
+                  </div>
+                  <div className="jules-session-meta">
+                    <span>{session.status}</span>
+                    {session.projectName && <span>{session.projectName}</span>}
+                    {session.branch && <span>{session.branch}</span>}
+                    <span>checked {fmtDate(session.lastPolledAt)}</span>
+                  </div>
+                  {(session.prUrl || session.julesUrl) && (
+                    <div className="jules-links">
+                      {session.julesUrl && <a className="jules-link" href={session.julesUrl} target="_blank" rel="noreferrer">Jules</a>}
+                      {session.prUrl && <a className="jules-link" href={session.prUrl} target="_blank" rel="noreferrer">PR #{session.prNumber || ''}</a>}
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </>

@@ -21,7 +21,7 @@ import path from 'path';
 import { selfRepo } from '../selfFix/patches.js';
 
 // The updater writes its heartbeat every few seconds; a minute of silence
-// means it is not running (censaiOS was started some other way).
+// means it is not running (censaiOS was opened some way that did not start it).
 const WATCHER_FRESH_MS = 60_000;
 const COMMIT = /^[0-9a-f]{7,40}$/;
 
@@ -85,7 +85,7 @@ function needWatcher(dir) {
   if (!dir) throw Object.assign(new Error('This copy of censaiOS does not update itself.'), { statusCode: 409 });
   const status = updateStatus({ dir });
   if (!status.watching) {
-    throw Object.assign(new Error('The updater is not running. Close censaiOS and open it again with the censaiOS shortcut.'), { statusCode: 409 });
+    throw Object.assign(new Error('The updater is not running.'), { statusCode: 409, code: 'updater-not-running' });
   }
   return status;
 }

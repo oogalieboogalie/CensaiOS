@@ -123,12 +123,13 @@ describe('signed gatekeeper clear', () => {
       env: { CENSAI_STATE_DIR: '/app/.homebase-state' },
       home: '/root',
       root,
-    })).toBe(path.join('/app', '.homebase-state', 'merge-bot', 'revokes.json'));
+    // The state dir is made absolute, which on Windows adds a drive letter.
+    })).toBe(path.join(path.resolve('/app/.homebase-state'), 'merge-bot', 'revokes.json'));
     expect(revokeStateFile({
       env: { CENSAI_STATE_DIR: '/var/lib/censai' },
       home: '/root',
       root,
-    })).toBe(path.join('/var/lib/censai', 'merge-bot', 'revokes.json'));
+    })).toBe(path.join(path.resolve('/var/lib/censai'), 'merge-bot', 'revokes.json'));
     expect(revokeStateFile({ env: {}, home: '/home/dev', root })).toBe(
       path.join('/home/dev', '.local', 'share', 'censai', 'merge-bot', 'revokes.json'),
     );

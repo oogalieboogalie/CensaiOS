@@ -70,7 +70,7 @@ export function CreativeVectorWindow({ win = {}, onUpdate }) {
     if (e.key === ']') { v.reorder(true); return; }
     if (e.key === '[') { v.reorder(false); return; }
     const tool = TOOLS.find((t) => t[2].toLowerCase() === k);
-    if (tool) { pen?.cancelPen(); v.setTool(tool[0]); }
+    if (tool) { pen?.cancelPen(); v.setTool(tool[0]); e.stopPropagation(); }
   };
 
   return (

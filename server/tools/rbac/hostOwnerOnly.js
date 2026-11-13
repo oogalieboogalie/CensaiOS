@@ -18,7 +18,7 @@ export const HOST_CHANGING_TOOL_NAMES = Object.freeze([
   'project_write', 'project_edit', 'project_multi_edit', 'generate_tests',
   // Git and GitHub with the owner's own checkout and token
   'local_git_fetch', 'local_git_pull_ff_only', 'local_git_checkpoint', 'local_git_verify',
-  'github_write_file', 'github_create_issue', 'create_github_issue', 'github_comment_issue', 'submit_pr', 'merge_pr',
+  'github_write_file', 'github_create_issue', 'hand_coding_job_to_github', 'github_comment_issue', 'submit_pr', 'merge_pr',
   // Jules works on a GitHub repo and opens a pull request there, with the owner's own Jules key
   'jules_submit',
   // Commands, Docker and the shared terminal

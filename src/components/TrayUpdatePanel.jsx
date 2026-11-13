@@ -75,6 +75,19 @@ export function TrayUpdatePanel() {
       </>
     );
     actions = <Buttons><button type="button" style={plain} onClick={flow.stopWaiting}>Stop waiting</button><button type="button" style={main} onClick={flow.close}>OK</button></Buttons>;
+  } else if (flow.updaterDown) {
+    body = (
+      <>
+        <span style={soft}>The updater is not running.</span>
+        {error && <span role="alert" style={{ color: 'var(--danger)' }}>{error}</span>}
+      </>
+    );
+    actions = (
+      <Buttons>
+        <button type="button" style={plain} onClick={flow.close}>Not now</button>
+        <button type="button" style={main} onClick={flow.bringUpdaterUp} data-testid="start-updater">Start the updater</button>
+      </Buttons>
+    );
   } else if (error) {
     body = <span role="alert" style={{ color: 'var(--danger)' }}>{error}</span>;
     actions = <Buttons><button type="button" style={main} onClick={flow.close}>OK</button></Buttons>;
@@ -98,8 +111,9 @@ export function TrayUpdatePanel() {
     body = (
       <>
         <span style={soft}>
-          A newer censaiOS is ready{count ? ` with ${count}` : ''}.
-          {more ? ' Update now, or wait for the ones the crew is still finishing?' : ''}
+          {status?.inUse
+            ? 'Update ready, restarts when you are done'
+            : `A newer censaiOS is ready${count ? ` with ${count}` : ''}.${more ? ' Update now, or wait for the ones the crew is still finishing?' : ''}`}
         </span>
         {showNew && changes.length > 0 && <ul style={list}>{changes.map((c, i) => <li key={i}>{c}</li>)}</ul>}
         <Work work={work} />
