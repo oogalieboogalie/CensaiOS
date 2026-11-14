@@ -117,7 +117,7 @@ export function doorAllowsOrigin(origin, hostHeader, {
   const host = originHost(origin);
   if (!host || host !== String(hostHeader || '').trim().toLowerCase()) return false;
   if (settings.open && isHomeNetworkHostname(host)) return true;
-  return ownAddressRule(host) === true;
+  return ownAddressRule(host) === true || moreAddressRules.some((rule) => rule(host) === true);
 }
 
 // "My Tailscale devices" (server/tailnet/visit.js): with that switch on, a
@@ -126,6 +126,14 @@ let ownAddressRule = () => false;
 
 export function setOwnAddressRule(rule) {
   ownAddressRule = typeof rule === 'function' ? rule : () => false;
+}
+
+// Friends (server/friends/parties.js) adds a rule of its own for a friend's
+// page. Each rule still only sees an address the page and the request share.
+const moreAddressRules = [];
+
+export function addOwnAddressRule(rule) {
+  if (typeof rule === 'function' && !moreAddressRules.includes(rule)) moreAddressRules.push(rule);
 }
 
 // Every connection that arrives on the Open anywhere port (doorListener.js)

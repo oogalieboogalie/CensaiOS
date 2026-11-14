@@ -23,7 +23,8 @@ b{color:var(--ink)}button{margin-top:6px;border:0;border-radius:10px;padding:10p
 
 export function doorClosedPage(req, res, next) {
   if (req.method !== 'GET' || req.path.startsWith('/api/') || req.path.startsWith('/assets/')) return next();
-  // A Tailscale device the owner switched on is let in while this switch is off.
-  if (req.tailnetDevice || !doorUsable() || readDoorSettings().open || !isFromAnotherComputer(req)) return next();
+  // A Tailscale device the owner switched on is let in while this switch is
+  // off, and so is a friend on a board shared with them (friends/parties.js).
+  if (req.tailnetDevice || req.friendParty || !doorUsable() || readDoorSettings().open || !isFromAnotherComputer(req)) return next();
   res.status(403).type('html').send(CLOSED_PAGE);
 }

@@ -27,6 +27,7 @@ import { CLOSED_PAGE } from './closedPage.js';
 import { tailnetVisit } from '../tailnet/visit.js';
 import { checkDeviceSignIn, watchVisitorSocket } from '../tailnet/signIns.js';
 import { startTailnetListener, stopTailnetListener } from '../tailnet/listener.js';
+import { checkPartySignIn, endParties, partyGuard, wireParties } from '../friends/parties.js';
 
 const log = createLogger('web-os-door');
 let listening = null;
@@ -59,7 +60,11 @@ export function doorIsOpen() {
  * signs in without a code.
  */
 export function doorGuard(req, res, next) {
+  // A sign-in made on a friend's party port counts on that port and nowhere else.
+  checkPartySignIn(req);
   if (!cameThroughDoor(req)) return next();
+  // A friend's party port (server/friends/parties.js) has rules of its own.
+  if (partyGuard(req, res, next)) return undefined;
   const visit = tailnetVisit(req);
   if (typeof visit?.then === 'function') return visit.then((known) => enter(known, req, res, next)).catch(next);
   return enter(visit, req, res, next);
@@ -87,6 +92,7 @@ function enter(visit, req, res, next) {
 export function startDoorListener(mainServer, app, config = doorListenerConfig()) {
   // A copy with no door (the desktop app) gets a Tailscale-only port instead.
   if (doorUsable() && !listening) startTailnetListener(mainServer, app, { doorPort: config?.publicPort ?? null });
+  if (doorUsable()) wireParties(mainServer, app);
   if (!config || listening || !doorUsable()) return null;
   const server = http.createServer(app);
   server.on('connection', (socket) => { markThroughDoor(socket); watchVisitorSocket(socket); });
@@ -117,4 +123,5 @@ export function stopDoorListener() {
   listening?.server?.close();
   listening = null;
   stopTailnetListener();
+  endParties({ atOnce: true }).catch(() => {});
 }

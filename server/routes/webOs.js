@@ -12,6 +12,8 @@ import {
 } from '../webOs/door.js';
 import { createPairCode, redeemPairCode } from '../webOs/pairing.js';
 import { tailnetPublicRouter, tailnetRouter } from './tailnet.js';
+import { friendsRouter } from './friends.js';
+import { friendsPublicRouter } from './friendsParty.js';
 import { doorPublicPort } from '../webOs/doorListener.js';
 import { isJestRun } from '../security/testShortcut.js';
 import { createLogger } from '../logger.js';
@@ -29,6 +31,9 @@ export const webOsRouter = express.Router();
 // My Tailscale devices: switched-on devices get in with no code (./tailnet.js).
 webOsPublicRouter.use('/tailnet', tailnetPublicRouter);
 webOsRouter.use('/tailnet', tailnetRouter);
+// Friends: friend codes and sharing a board with one friend (./friends.js).
+webOsPublicRouter.use('/friends', friendsPublicRouter);
+webOsRouter.use('/friends', friendsRouter);
 
 webOsPublicRouter.post('/pair/redeem', authSecurityRateLimiter, async (req, res) => {
   if (!dbReady()) {
