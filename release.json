@@ -1,8 +1,8 @@
 {
   "channel": "nightly",
-  "version": "0.8.0-nightly.20261114",
-  "date": "2026-11-14",
-  "source": "fe38bf6172871fa9fba6823a2dc268ba2beedb76",
+  "version": "0.8.0-nightly.20261115",
+  "date": "2026-11-15",
+  "source": "16afbcfa75242926c5951fa205cd1ab92c64bafe",
   "stable": {
     "version": "0.7.0",
     "source": "2ff91c7c464d1bc31a60f6895afb1ad8b8321828"

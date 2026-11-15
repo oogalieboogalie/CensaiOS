@@ -274,7 +274,12 @@ describe('sharing a board with a friend', () => {
     const { url } = await joinParty({ code });
     expect(password(url)).toBe(readPartyCode(code).token);
     // Reaching the port is not enough: no names, and no way in.
-    for (const wrong of [null, 'x'.repeat(32), `${password(url).slice(0, -1)}_`]) {
+    // One character off. Swap the first one for a letter it is not: swapping the last for a fixed
+    // "_" left the password unchanged whenever it already ended in "_" (about 1 run in 64).
+    const real = password(url);
+    const oneOff = `${real[0] === 'A' ? 'B' : 'A'}${real.slice(1)}`;
+    expect(oneOff).not.toBe(real);
+    for (const wrong of [null, 'x'.repeat(32), oneOff]) {
       const ask = (call) => (wrong ? call.set('X-Party-Token', wrong) : call);
       expect((await ask(through(url).get('/api/web-os/friends/party/hello'))).body).toEqual({ app: 'censaiOS', needsCode: true });
       const enter = await ask(through(url).post('/api/web-os/friends/party/enter')).send({});

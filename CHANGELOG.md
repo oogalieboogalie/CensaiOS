@@ -17,9 +17,17 @@ tags.
 
 ### New
 
+- Landing: the canvas for everyone and everything (dots that light under the cursor) (Nov 15)
+- Site: a Cloudflare Worker for censaios.com (landing, docs, wiki, installers) (Nov 14)
+- Guard: a failure nobody sees may only go away (Nov 14)
 - Friends tells Safari users how to open a friend's board (Nov 13)
 - Friends, part 1 (server): friend codes, and a board shared with one friend through tailcat (Nov 13)
 - Friends, part 2 (screens): the Friends card in Settings, and the way in for a friend (Nov 13)
+
+### Behind the scenes
+
+- The wrong party password is always wrong (Nov 14)
+- The censaiOS Wiki, a page per window in Add (Nov 14)
 
 ## 0.7.0 (2026-11-13)
 
