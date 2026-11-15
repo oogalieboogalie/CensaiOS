@@ -13,6 +13,22 @@ and each Sunday that list becomes the next numbered stable release.
 The Releases page of this repository has each release's notes and container
 tags.
 
+## 0.8.0 (2026-11-15)
+
+### New
+
+- Landing: the canvas for everyone and everything (dots that light under the cursor)
+- Site: a Cloudflare Worker for censaios.com (landing, docs, wiki, installers)
+- Guard: a failure nobody sees may only go away
+- Friends tells Safari users how to open a friend's board
+- Friends, part 1 (server): friend codes, and a board shared with one friend through tailcat
+- Friends, part 2 (screens): the Friends card in Settings, and the way in for a friend
+
+### Behind the scenes
+
+- The wrong party password is always wrong
+- The censaiOS Wiki, a page per window in Add
+
 ## 0.7.0 (2026-11-13)
 
 ### New

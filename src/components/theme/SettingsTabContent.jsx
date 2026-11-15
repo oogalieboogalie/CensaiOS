@@ -2,6 +2,7 @@ import React from 'react';
 import { ThemeAppearanceContent } from './ThemeAppearanceContent.jsx';
 import { WorkspaceSection } from './ThemeWorkspaceSection.jsx';
 import { WorkspaceSharingSection } from './WorkspaceSharingSection.jsx';
+import { FriendsSection } from './FriendsSection.jsx';
 import { SignInDomainsSection } from './SignInDomainsSection.jsx';
 import { VaultSection } from './VaultSection.jsx';
 import { KeySharingSection } from './KeySharingSection.jsx';
@@ -73,6 +74,7 @@ export function SettingsTabContent({
     return (
       <div style={scrollStyle}>
         <WorkspaceSharingSection />
+        <FriendsSection />
         <SignInDomainsSection />
       </div>
     );

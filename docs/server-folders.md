@@ -38,6 +38,7 @@ One line per folder under `server/`, so a newcomer (person or AI) knows where to
 | `design` | Figma and remix design steps. |
 | `devServers` | Running a project's dev server ("Run dev") in Docker. |
 | `docker` | The Docker manager window's server side (allowlisted actions). |
+| `friends` | Friends: friend codes, the friends list, and sharing a board with one friend through tailcat. |
 | `github` | GitHub helpers (fixing merge conflicts and more). |
 | `grokSignin` | The Grok chat on the person's own Grok sign-in. |
 | `health` | Health and readiness probes: a public up-or-not, and the full picture for this computer's owner. |

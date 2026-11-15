@@ -4,6 +4,7 @@ import { api } from '../lib/api.js';
 import { changeDesktopServer, getDesktopServer } from '../lib/desktopServer.js';
 import { BrandMark, BrandWordmark } from './brand/BrandMark.jsx';
 import { PairSignIn } from './login/PairSignIn.jsx';
+import { FriendEntry } from './login/FriendEntry.jsx';
 import { TailnetEntry } from './login/TailnetEntry.jsx';
 import { HelpDialog, PrivacyDialog, TermsDialog } from './login/LoginDialogs.jsx';
 
@@ -130,7 +131,9 @@ export function Login({ onLoginSuccess, oauthConfigured, localSignIn = false, fr
 
         {fromAnotherComputer ? (
           <div className="hb-login-card">
-            <TailnetEntry onLoginSuccess={onLoginSuccess}><PairSignIn onLoginSuccess={onLoginSuccess} /></TailnetEntry>
+            <FriendEntry onLoginSuccess={onLoginSuccess}>
+              <TailnetEntry onLoginSuccess={onLoginSuccess}><PairSignIn onLoginSuccess={onLoginSuccess} /></TailnetEntry>
+            </FriendEntry>
           </div>
         ) : localSignIn ? (
           <div className="hb-login-card">
