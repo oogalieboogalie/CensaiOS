@@ -1,12 +1,64 @@
 import { ALWAYS_LOADED_TOOL_NAMES, TOOL_DISCOVERY_NAMES } from '../../tools/definitions/discovery.js';
 import { pinnedToolNamesOf } from './pinnedTools.js';
 
+// The last line matters: it used to say tools work "on the next turn", and
+// models read that as "after the person's next message". They loaded a tool,
+// stopped, asked the person to say "do it", then lost the tool and did the
+// same thing again on every message.
 const DISCOVERY_PROMPT = [
   'Tools are loaded on demand.',
   'Start with search_tools when you need a capability, then call get_tool with the exact returned name,',
   'or get_toolkit with a kit name to load every tool in that kit at once.',
-  'Tools you load become available on the next turn.',
+  'A tool you load is ready right away, in this same reply: call it in your very next step.',
+  'Loading a tool is never a reason to stop and ask the person to confirm.',
+  'Tools you loaded earlier in this chat stay loaded.',
 ].join(' ');
+
+// Tools loaded in one chat window stay loaded for that window's later messages,
+// so a "go ahead" can run the write that was loaded a message earlier. Kept in
+// this process only: a server restart forgets them, and the agent loads again.
+const CARRY_OVER_MS = 6 * 60 * 60 * 1000;
+const CARRY_OVER_MAX_CHATS = 500;
+// Only the most recently loaded tools carry over, so a long chat that loaded
+// several kits never sends more tools than a provider takes (some cap at 128).
+export const CARRY_OVER_MAX_TOOLS = 32;
+const loadedByChat = new Map();
+
+function chatKeyOf(agentId, windowId) {
+  return agentId && windowId ? `${agentId}\u0000${windowId}` : null;
+}
+
+function rememberedNames(key, now) {
+  const entry = key ? loadedByChat.get(key) : null;
+  if (!entry) return [];
+  if (now - entry.at > CARRY_OVER_MS) {
+    loadedByChat.delete(key);
+    return [];
+  }
+  entry.at = now; // a chat in use keeps its tools
+  return [...entry.names];
+}
+
+function remember(key, name, now) {
+  if (!key) return;
+  const entry = loadedByChat.get(key) || { names: new Set(), at: now };
+  entry.names.delete(name); // newest last
+  entry.names.add(name);
+  while (entry.names.size > CARRY_OVER_MAX_TOOLS) {
+    entry.names.delete(entry.names.values().next().value);
+  }
+  entry.at = now;
+  loadedByChat.delete(key);
+  loadedByChat.set(key, entry);
+  while (loadedByChat.size > CARRY_OVER_MAX_CHATS) {
+    loadedByChat.delete(loadedByChat.keys().next().value);
+  }
+}
+
+// For tests.
+export function forgetLoadedTools() {
+  loadedByChat.clear();
+}
 
 // Search-first (diagram 09): the agent starts with only the discovery
 // tools and loads what it needs. Cohere always works this way; every other
@@ -32,7 +84,8 @@ function kitToolNames(result) {
   }
 }
 
-export function createChatToolSession(toolsForCaller, provider) {
+export function createChatToolSession(toolsForCaller, provider, { agentId = null, windowId = null, now = Date.now } = {}) {
+  const chatKey = chatKeyOf(agentId, windowId);
   const permittedTools = Array.isArray(toolsForCaller) ? toolsForCaller : [];
   const toolsByName = new Map(
     permittedTools.map(tool => [tool.function.name, tool])
@@ -51,6 +104,13 @@ export function createChatToolSession(toolsForCaller, provider) {
     (discoveryFirst ? [...discoveryTools, ...alwaysLoaded] : permittedTools)
       .map(tool => [tool.function.name, tool])
   );
+  // Only tools this agent is still allowed come back (toolsByName is today's list).
+  if (discoveryFirst) {
+    for (const name of rememberedNames(chatKey, now())) {
+      const tool = toolsByName.get(name);
+      if (tool) activeTools.set(name, tool);
+    }
+  }
 
   return {
     discoveryFirst,
@@ -62,6 +122,7 @@ export function createChatToolSession(toolsForCaller, provider) {
       const tool = toolsByName.get(name);
       if (!tool) return false;
       activeTools.set(name, tool);
+      if (discoveryFirst) remember(chatKey, name, now());
       return true;
     },
     observe(toolName, args, ok, result) {

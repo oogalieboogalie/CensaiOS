@@ -17,17 +17,52 @@ tags.
 
 ### New
 
-- Landing: the canvas for everyone and everything (dots that light under the cursor) (Nov 15)
-- Site: a Cloudflare Worker for censaios.com (landing, docs, wiki, installers) (Nov 14)
-- Guard: a failure nobody sees may only go away (Nov 14)
-- Friends tells Safari users how to open a friend's board (Nov 13)
-- Friends, part 1 (server): friend codes, and a board shared with one friend through tailcat (Nov 13)
-- Friends, part 2 (screens): the Friends card in Settings, and the way in for a friend (Nov 13)
+- One rule book for which project an agent's call means (Nov 19)
+- Open a friend's board from a Docker install (Nov 17)
+- Tailcat in the Docker image, so Friends works from a Docker install (Nov 17)
+- GitHub window bar uses icons: a round arrow for Refresh, joining arrows for Merge all green (Nov 17)
+- Settings, part 2: Agents, Hotkeys, Sharing, Open anywhere and AI keys on the same pieces (Nov 17)
+- Settings pieces, and Appearance and Canvas built from them (Nov 17)
+- Quick invite for Friends (8 digits and a door open for 30 seconds) (Nov 17)
+- Blurred chat bubbles, picked per chat window in Window Style (Nov 17)
+- Censai can hand off a code job on Homebase, and its tests run in the folder here (Nov 16)
+- Every window is black glass, like the chat panel and the menus (Nov 16)
+- Lead revival on the Real Estate Team board (Nov 16)
+- Update censaiOS from Settings, with an updater that only runs when asked (Nov 16)
+- Legion: owned files, contract first, and a re-plan between waves (Nov 16)
+- Family agents read their past, read only, and new memory links back to it (Nov 16)
+- Import an old agent library as helpers on the core agents' teams (Nov 15)
+- An agent handed a to-do can now work in that to-do's project, even with no window on the board (Nov 15)
+- The owner's agents work in any project on the computer, on a board too (Nov 15)
+- An agent can now work in the project its own chat window is set to (Nov 15)
+- A family member Censai hands work to can now work in Censai's project (Nov 15)
+- Project menus list each real project once, with the current one first (Nov 15)
+
+### Fixed
+
+- Seven small window bugs found while filming the wiki (Nov 17)
+- A model that runs out of room before answering is asked once more with room to answer (Nov 17)
+- Black glass windows take their colour from Window Surface, not the board canvas (Nov 17)
+- A tool an agent loads works in the same reply and stays loaded in that chat (Nov 17)
+- Friends runs on the real tailcat (it refused the way we shared a port) (Nov 15)
+
+_1 more change is not listed because the description names a part of censaiOS that is not in the public copy._
+
+## 0.8.0 (2026-11-15)
+
+### New
+
+- Landing: the canvas for everyone and everything (dots that light under the cursor)
+- Site: a Cloudflare Worker for censaios.com (landing, docs, wiki, installers)
+- Guard: a failure nobody sees may only go away
+- Friends tells Safari users how to open a friend's board
+- Friends, part 1 (server): friend codes, and a board shared with one friend through tailcat
+- Friends, part 2 (screens): the Friends card in Settings, and the way in for a friend
 
 ### Behind the scenes
 
-- The wrong party password is always wrong (Nov 14)
-- The censaiOS Wiki, a page per window in Add (Nov 14)
+- The wrong party password is always wrong
+- The censaiOS Wiki, a page per window in Add
 
 ## 0.7.0 (2026-11-13)
 

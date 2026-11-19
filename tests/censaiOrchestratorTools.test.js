@@ -103,7 +103,8 @@ describe('the tools themselves', () => {
       'Error: The project "Homebase" lives on GitHub, so I can\'t run its tests on this computer. Job 1 needs the project\'s tests, '
       + 'so it could never be checked off. Hand out jobs that look into it and write up what to change instead, and tell the person why.',
     );
-    expect(onGitHub).toHaveBeenCalledWith({ agentId: 'nexus', project: 'Homebase', context });
+    // The folder is looked up as Censai, whose access to the project the family member works with.
+    expect(onGitHub).toHaveBeenCalledWith({ agentId: 'censai', project: 'Homebase', context });
     expect(db.plans.size).toBe(0);
     // Code work names its project, so Censai knows where to run the tests.
     expect(await call(db, 'hand_off_jobs', { ...goodPlan, project: undefined }))

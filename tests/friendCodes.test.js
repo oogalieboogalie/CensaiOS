@@ -1,9 +1,10 @@
 // tests/friendCodes.test.js
 //
-// The two codes friends pass to each other: a friend code (who someone is)
-// and a party code (where one board is shared right now).
+// The codes friends pass to each other: a friend code (who someone is), a
+// party code (where one board is shared right now), and a quick invite (a
+// locked box that 8 digits open).
 
-import { CodeError, kindOfCode, makeFriendCode, makePartyCode, partyHost, plainKey, readFriendCode, readPartyCode } from '../server/friends/codes.js';
+import { CodeError, isDoorCode, kindOfCode, makeDoorCode, makeFriendCode, makePartyCode, makeQuickInvite, openQuickInvite, partyHost, plainKey, readFriendCode, readPartyCode } from '../server/friends/codes.js';
 
 const KEY = 'ab'.repeat(32);
 const ADDRESS = `tc${'A1b2C3d4_-'.repeat(4)}`;
@@ -60,13 +61,13 @@ describe('a party code', () => {
   test('carries the address, who is sharing and which board', () => {
     const token = 'p'.repeat(32);
     const label = 'p-0123456789ab';
-    const code = makePartyCode({ address: ADDRESS, hostName: 'Alma', hostKey: KEY, boardName: 'Family board', boardId: 'board-a', token, label });
+    const code = makePartyCode({ address: ADDRESS, hostName: 'Alma', hostKey: KEY, boardName: 'Family board', boardId: 'board-a', token, label, port: 40123 });
     expect(code.startsWith('cp1-')).toBe(true);
-    expect(readPartyCode(code)).toEqual({ address: ADDRESS, hostName: 'Alma', hostKey: KEY, boardName: 'Family board', boardId: 'board-a', token, label });
+    expect(readPartyCode(code)).toEqual({ address: ADDRESS, hostName: 'Alma', hostKey: KEY, boardName: 'Family board', boardId: 'board-a', token, label, port: 40123 });
     // A code that does not say who is sharing reads as from nobody, and one
     // with an odd password reads as having none.
     const bare = readPartyCode(makePartyCode({ address: ADDRESS, hostName: 'Alma', boardName: 'B', boardId: 'b', token: 'short' }));
-    expect(bare).toMatchObject({ hostKey: '', token: '', label: '' });
+    expect(bare).toMatchObject({ hostKey: '', token: '', label: '', port: 0 });
     expect(kindOfCode(code)).toBe('party');
     expect(kindOfCode('something else')).toBe('');
   });
@@ -96,5 +97,47 @@ describe('a party code', () => {
   test('a board id with odd characters is dropped, not passed on', () => {
     const code = makePartyCode({ address: ADDRESS, hostName: 'Alma', boardName: 'B', boardId: '../../etc' });
     expect(readPartyCode(code).boardId).toBe('');
+  });
+});
+
+describe('a quick invite', () => {
+  const door = { address: ADDRESS, port: 45123, doorCode: '04817362' };
+
+  test('is a locked box: the 8 digits open it, and it reads back where the door is', async () => {
+    const invite = await makeQuickInvite(door);
+    expect(kindOfCode(invite)).toBe('quick');
+    expect(await openQuickInvite(` ${invite}\n`, '04817362')).toEqual({ address: ADDRESS, port: 45123 });
+    // Nothing of the door can be read off the box itself.
+    expect(Buffer.from(invite.slice(4, -7), 'base64url').toString('latin1')).not.toContain(ADDRESS);
+    expect(invite).not.toContain('04817362');
+  });
+
+  test('other digits do not open it, and say so in plain words', async () => {
+    const invite = await makeQuickInvite(door);
+    for (const wrong of ['04817363', '0481736', '', 'abcdefgh', undefined]) {
+      await expect(openQuickInvite(invite, wrong)).rejects.toMatchObject({ code: 'WRONG_DOOR_CODE', message: expect.stringContaining('8 digits') });
+    }
+  });
+
+  test('two invites to one door look nothing alike', async () => {
+    expect(await makeQuickInvite(door)).not.toBe(await makeQuickInvite(door));
+  });
+
+  test('an invite cut off on the way is caught before any digits are tried', async () => {
+    const invite = await makeQuickInvite(door);
+    await expect(openQuickInvite(invite.slice(0, -9), '04817362')).rejects.toBeInstanceOf(CodeError);
+    await expect(openQuickInvite(invite.slice(0, -9), '04817362')).rejects.not.toMatchObject({ code: 'WRONG_DOOR_CODE' });
+  });
+
+  test('is not made without a real address, port and 8 digits', async () => {
+    await expect(makeQuickInvite({ ...door, doorCode: '1234' })).rejects.toBeInstanceOf(CodeError);
+    await expect(makeQuickInvite({ ...door, address: 'example.com' })).rejects.toBeInstanceOf(CodeError);
+    await expect(makeQuickInvite({ ...door, port: 0 })).rejects.toBeInstanceOf(CodeError);
+  });
+
+  test('door codes are always 8 digits, zeros in front included', () => {
+    for (let i = 0; i < 200; i += 1) expect(isDoorCode(makeDoorCode())).toBe(true);
+    expect(isDoorCode('00000042')).toBe(true);
+    expect(isDoorCode(12345678)).toBe(false);
   });
 });

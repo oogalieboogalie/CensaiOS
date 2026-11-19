@@ -10,7 +10,7 @@ const fetchWorkspaceRevision = jest.fn();
 
 jest.unstable_mockModule('../src/lib/projectPrewarm.js', () => ({
   persistWorkspaceWithPrewarm,
-  deriveCanvasProjectMemberships: ({ wins = [] } = {}) => wins.filter((w) => w.agentId).map((w) => w.agentId),
+  deriveBoardProjectAccess: ({ wins = [] } = {}) => wins.filter((w) => w.agentId).map((w) => w.agentId),
 }));
 jest.unstable_mockModule('../src/lib/api/workspaceAuthority.js', () => ({
   clearWorkspaceDraft, writeWorkspaceDraft,

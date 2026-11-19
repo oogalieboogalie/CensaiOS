@@ -19,6 +19,7 @@ import { OutsideToolsPanel } from './outsideTools/OutsideToolsPanel.jsx';
 import { AgentMemoryPanel } from './agentMemory/AgentMemoryPanel.jsx';
 import { AgentScoutPanel } from './agentScout/AgentScoutPanel.jsx';
 import { hostedVendorOf } from './agent/HostedBadge.jsx';
+import './chat/blurredChat.css';
 
 export function ChatWindow({ win, onUpdate, allWins, canvasGroups, currentProject, isActive, workspaceId }) {
   const activeWorkspaceId = useWorkspaceStore(state => state.workspaceId);
@@ -65,7 +66,7 @@ export function ChatWindow({ win, onUpdate, allWins, canvasGroups, currentProjec
         onDetach={(id) => onUpdate({ attachedAgents: (win.attachedAgents || []).filter(a => a !== id) })}
         actions={actions.length ? actions : undefined}
       />
-      <div className="hb-chat" data-chat-root data-agent-hue="" style={agentHueStyle(agent)}>
+      <div className="hb-chat" data-chat-root data-agent-hue="" data-chat-style={win.chatStyle === 'blurred' ? 'blurred' : undefined} style={agentHueStyle(agent)}>
         {sharing && canShare && (
           <AgentEndpointPanel agent={{ ...agent, id: win.agentId }} windowId={win.id} workspaceId={boardId} onClose={() => setPanel(null)} />
         )}

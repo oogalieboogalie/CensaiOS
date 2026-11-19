@@ -196,7 +196,7 @@ describe('the Friends card in Settings', () => {
     render(<FriendsSection />);
     fireEvent.change(await screen.findByLabelText('Paste a code'), { target: { value: 'hello there' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('not a friend code or a party code');
+    expect(await screen.findByRole('alert')).toHaveTextContent('not a friend code, a party code or an invite');
     expect(sent('POST')).toHaveLength(0);
   });
 
@@ -250,6 +250,121 @@ describe('the Friends card in Settings', () => {
     expect(kindOfCode(` ${SAMS_CODE}`)).toBe('friend');
     expect(kindOfCode(PARTY_CODE)).toBe('party');
     expect(kindOfCode('tcSomethingElse')).toBe('');
+  });
+});
+
+describe('a quick invite, for someone who is not on the list yet', () => {
+  const INVITE = 'cq1-bG9ja2VkLWJveA-778899';
+  const QUICK = { invite: INVITE, doorCode: '04817362', boardId: 'board-garden', boardName: 'Garden plan', role: 'member', open: false, secondsLeft: 0, triesLeft: 5, endsAt: '2026-11-17T10:10:00.000Z' };
+  const JOIN = { id: 'join-9', url: `http://p-0123456789ab.localhost:50123/?party=${'p'.repeat(32)}`, hostName: 'Alma', boardName: 'Garden plan', startedAt: '2026-11-17T10:00:00.000Z' };
+
+  test('the owner makes one for the open board and gets an invite to send and 8 digits to say', async () => {
+    answer('/', CARD);
+    answer('POST /quick', { ...CARD, quick: QUICK });
+    render(<FriendsSection />);
+    fireEvent.change(await screen.findByLabelText('What the person you invite can do on this board'), { target: { value: 'viewer' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Make a quick invite' }));
+    expect(await screen.findByTestId('quick-invite-code')).toHaveValue(INVITE);
+    expect(sent('POST')[0]).toMatchObject({ path: '/quick', body: { workspaceId: 'board-garden', role: 'viewer' } });
+    // Read out in two halves, and nowhere inside the invite.
+    expect(screen.getByTestId('door-code')).toHaveTextContent('0481 7362');
+    expect(INVITE).not.toContain('04817362');
+    expect(screen.getByTestId('door-state')).toHaveTextContent('The door is shut. Nobody can come in.');
+    expect(screen.getByTestId('quick-invite')).toHaveTextContent('after 5 wrong tries, or in 10 minutes');
+  });
+
+  test('opening the door counts down from 30 on the screen, and shuts again', async () => {
+    jest.useFakeTimers();
+    try {
+      answer('/', { ...CARD, quick: QUICK });
+      answer('POST /quick/open', { ...CARD, quick: { ...QUICK, open: true, secondsLeft: 30 } });
+      render(<FriendsSection />);
+      await act(async () => { await jest.advanceTimersByTimeAsync(10); });
+      fireEvent.click(screen.getByRole('button', { name: 'Open the door for 30 seconds' }));
+      await act(async () => { await jest.advanceTimersByTimeAsync(10); });
+      expect(screen.getByTestId('door-state')).toHaveTextContent('The door is open: 30 seconds left.');
+      expect(screen.getByRole('button', { name: 'Give them 30 more seconds' })).toBeInTheDocument();
+      // The card looks again every 2 seconds while the door is open; the server still says 30 here.
+      answer('/', { ...CARD, quick: { ...QUICK, open: true, secondsLeft: 30 } });
+      await act(async () => { await jest.advanceTimersByTimeAsync(1000); });
+      expect(screen.getByTestId('door-state')).toHaveTextContent('29 seconds left');
+      answer('/', { ...CARD, quick: QUICK });
+      await act(async () => { await jest.advanceTimersByTimeAsync(2100); });
+      expect(screen.getByTestId('door-state')).toHaveTextContent('The door is shut.');
+      expect(screen.getByTestId('quick-invite')).toHaveAttribute('data-door', 'shut');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('once the person is in, the card says who came in and shows them on the list', async () => {
+    answer('/', { ...CARD, quick: null, quickGuest: { name: 'Robin', boardName: 'Garden plan', at: '2026-11-17T10:01:00.000Z' }, friends: [{ ...SAM, id: 'friend-robin', name: 'Robin', party: { ...PARTY, friendName: 'Robin', joined: true } }] });
+    render(<FriendsSection />);
+    expect(await screen.findByTestId('quick-invite')).toHaveTextContent('Robin came in on your invite and is on your friends list now.');
+    expect(screen.getByTestId('friend-row')).toHaveTextContent('Robin is on "Garden plan" now');
+    expect(screen.queryByTestId('door-code')).toBeNull();
+  });
+
+  test('End this invite asks the server and goes back to the one button', async () => {
+    answer('/', { ...CARD, quick: QUICK });
+    answer('DELETE /quick', { ...CARD, quick: null });
+    render(<FriendsSection />);
+    fireEvent.click(await screen.findByRole('button', { name: 'End this invite' }));
+    expect(await screen.findByRole('button', { name: 'Make a quick invite' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('The invite is over. It leads nowhere now.');
+  });
+
+  test('the other person pastes the invite, is asked for the 8 digits, and comes in', async () => {
+    answer('/', CARD);
+    answer('POST /quick/use', { ...CARD, friends: [{ ...SAM, name: 'Alma' }], joins: [JOIN], joined: JOIN, added: { name: 'Alma', alreadyThere: false } });
+    const openTab = jest.spyOn(window, 'open').mockReturnValue({});
+    render(<FriendsSection />);
+    expect(screen.queryByLabelText('The 8 digits they told you')).toBeNull();
+    fireEvent.change(await screen.findByLabelText('Paste a code'), { target: { value: INVITE } });
+    const digits = screen.getByLabelText('The 8 digits they told you');
+    // Without all 8 digits nothing is sent.
+    fireEvent.change(digits, { target: { value: '0481' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Come in' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Type the 8 digits they told you.');
+    expect(sent('POST')).toEqual([]);
+    fireEvent.change(digits, { target: { value: '0481 7362x' } });
+    expect(digits).toHaveValue('0481 7362');
+    fireEvent.click(screen.getByRole('button', { name: 'Come in' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('You are in. Alma is on your friends list, and their board "Garden plan" is opening in your browser.');
+    expect(sent('POST')[0]).toMatchObject({ path: '/quick/use', body: { invite: INVITE, doorCode: '04817362' } });
+    expect(openTab).toHaveBeenCalledWith(JOIN.url, '_blank');
+    expect(screen.getByLabelText('Paste a code')).toHaveValue('');
+    expect(screen.queryByLabelText('The 8 digits they told you')).toBeNull();
+  });
+
+  test('a shut door or wrong digits are said in plain words, and what was typed stays for another go', async () => {
+    answer('/', CARD);
+    answer('POST /quick/use', { error: 'The door is not open right now. Ask them to open it, then try again.', code: 'DOOR_SHUT' }, 409);
+    render(<FriendsSection />);
+    fireEvent.change(await screen.findByLabelText('Paste a code'), { target: { value: INVITE } });
+    fireEvent.change(screen.getByLabelText('The 8 digits they told you'), { target: { value: '04817362' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Come in' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('The door is not open right now. Ask them to open it, then try again.');
+    expect(screen.getByLabelText('Paste a code')).toHaveValue(INVITE);
+    expect(screen.getByLabelText('The 8 digits they told you')).toHaveValue('04817362');
+  });
+
+  test('a Docker install started without the ports for friends\' boards says so, next to the paste box', async () => {
+    answer('/', { ...CARD, canJoin: false });
+    render(<FriendsSection />);
+    expect(await screen.findByTestId('friends-docker-hint')).toHaveTextContent('started without the ports a friend\'s board opens on');
+    expect(screen.getByRole('button', { name: 'Make a quick invite' })).toBeEnabled();
+    cleanup();
+    answer('/', { ...CARD, canJoin: true });
+    render(<FriendsSection />);
+    await screen.findByTestId('friend-code');
+    expect(screen.queryByTestId('friends-docker-hint')).toBeNull();
+  });
+
+  test('the client tells an invite from the other two codes by its first characters', () => {
+    expect(kindOfCode(` ${INVITE}`)).toBe('quick');
+    expect(kindOfCode(MY_CODE)).toBe('friend');
+    expect(kindOfCode(PARTY_CODE)).toBe('party');
   });
 });
 

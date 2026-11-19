@@ -21,7 +21,15 @@ const tempRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'censai-p
 const stateDir = path.join(tempRoot, 'state');
 fs.mkdirSync(stateDir, { recursive: true });
 process.env.CENSAI_STATE_DIR = stateDir;
-const folder = (name) => path.join(tempRoot, name);
+// The projects' folders sit outside the temp folder: the list leaves out
+// temp folders and folders that are not there, so these made-up ones are
+// reported as there (fs.promises.stat below).
+const PROJECTS_ROOT = path.resolve('/made-up-drive/projects');
+const folder = (name) => path.join(PROJECTS_ROOT, name);
+const realStat = fs.promises.stat.bind(fs.promises);
+jest.spyOn(fs.promises, 'stat').mockImplementation(async (p, ...rest) => (
+  String(p).startsWith(PROJECTS_ROOT) ? { isDirectory: () => true } : realStat(p, ...rest)
+));
 
 const PRICING_SUMMARY = "Made-up: Pat's pricing notes for next spring";
 // Newest first, as listProjects returns them.
@@ -88,7 +96,10 @@ describe("the list of every project on this computer is its owner's", () => {
       summary: PRICING_SUMMARY,
       ownerAgentId: 'architect',
       updatedAt: '2026-10-31T10:00:00Z',
+      isCurrent: false,
+      label: 'Made-up pricing plans',
     });
+    expect(pat.body.projects[0].isCurrent).toBe(true);
   });
 
   test("a teammate's list holds the projects open on the board and the one their board gives its agents, and names nothing of the other", async () => {

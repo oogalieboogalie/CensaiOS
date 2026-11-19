@@ -15,7 +15,9 @@
 # "Update censaiOS" item (via the app) writes check-requested to look right
 # away instead of waiting for the next round; every look ends in
 # checked.json { at, result }. Closing and reopening censaiOS with the
-# shortcut also puts a ready update in.
+# shortcut also puts a ready update in. When this PC forwards localhost:3002
+# to another computer (scripts\served-elsewhere.ps1), censaiOS runs there and
+# scripts/auto-update.sh there updates it: this copy only pulls.
 #
 #   -Once            one check (and a waiting restart), then exit; for tests
 #   -CheckMinutes N  how often to look for an update (default 5)
@@ -150,6 +152,18 @@ function Write-Ready {
   Write-Value 'ready.json' ($ready | ConvertTo-Json -Compress)
 }
 
+# censaiOS runs on another computer that keeps it updated (this PC forwards
+# localhost:3002 there, scripts\served-elsewhere.ps1). This PC then only keeps
+# its folder current, for the desktop app, and never builds or starts Docker.
+$script:elsewhere = ''
+function Test-ServedElsewhere {
+  $found = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'served-elsewhere.ps1') 2>$null
+  $where = if ($LASTEXITCODE -eq 0) { "$($found | Select-Object -First 1)".Trim() } else { '' }
+  if ($where -and $where -ne $script:elsewhere) { Write-Log "censaiOS runs on $where, which updates it, so this PC builds nothing" }
+  $script:elsewhere = $where
+  return [bool]$where
+}
+
 function Test-Behind {
   return (Get-Head) -ne (Read-Value 'running.txt') -or (Test-Path $rebuildMarker)
 }
@@ -158,6 +172,12 @@ function Invoke-Check {
   $script:blocked = $false
   $script:paused = $false
   Update-Code
+  if (Test-ServedElsewhere) {
+    Remove-Item -Force (Join-Path $dir 'ready.json') -ErrorAction SilentlyContinue
+    if ($script:paused) { return 'side-branch' }
+    if ($script:blocked) { return 'blocked' }
+    return 'up-to-date'
+  }
   if (-not (Test-Behind)) {
     Remove-Item -Force (Join-Path $dir 'ready.json') -ErrorAction SilentlyContinue
     if ($script:paused) { return 'side-branch' }
@@ -218,7 +238,8 @@ Write-Log "watching for updates every $CheckMinutes minute(s) (pid $PID)"
 . (Join-Path $PSScriptRoot 'updater-apply.ps1')
 $next = Get-Date
 $applyUntil = (Get-Date).AddMinutes(10)
-$applySettled = $false
+# Nothing to put in on this PC when censaiOS runs on another computer.
+$applySettled = Test-ServedElsewhere
 $swapFails = 0
 $nextSwapTry = Get-Date
 $saidBusy = $false
@@ -271,6 +292,7 @@ while ($true) {
     }
   }
   try {
+    if ($script:elsewhere) { Remove-Item -Force (Join-Path $dir 'restart-requested') -ErrorAction SilentlyContinue }
     $restarted = @(Invoke-Restart)[-1]
     # A person asked, and it went in. Do not log that the automatic tries failed.
     if ($restarted -eq 'done') { $applySettled = $true; $swapStopAfterWait = $false }

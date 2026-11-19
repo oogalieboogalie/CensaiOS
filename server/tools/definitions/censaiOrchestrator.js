@@ -28,7 +28,7 @@ export const censaiPlanTools = [
         type: 'object',
         properties: {
           goal: { type: 'string', description: 'What the person wants, in one plain sentence.' },
-          project: { type: 'string', description: 'The project the work is in, as project_list names it. Code work and test runs need it, so the tests run where the work is.' },
+          project: { type: 'string', description: 'The project the work is in, as project_list names it. Leave it out for your own project on this board (the one your window is set to). The tests run where the work is.' },
           jobs: {
             type: 'array',
             description: `The jobs in order (1 to ${MAX_JOBS}). Each later job sees the checked answers of the ones before it.`,

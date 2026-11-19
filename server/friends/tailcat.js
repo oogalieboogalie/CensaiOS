@@ -6,14 +6,27 @@
 //   tailcat genkey --client --key=<file>
 //       makes this computer's identity. Prints its public half
 //       ("nodekey:<64 hex>"); the secret half stays in <file>.
-//   tailcat serve --json --key=new --allow=nodekey:<friend> 80:<port>
+//   tailcat serve --json --key=new --allow=nodekey:<friend> <port>
 //       shares one local port with one friend, under a fresh address that
 //       dies with the process. Prints {"listenAddr":"tc…"} on its output.
 //       Anyone whose key is not the allowed one is silently ignored.
-//   tailcat forward --key=<file> <address> 0:80
+//       Tailcat shares a port under its own number and cannot rename it
+//       ("80:<port>" is refused), so the friend has to be told the number:
+//       it travels in the party code.
+//   tailcat serve --json --key=new <port>
+//       the same with no --allow: any tailcat that holds the address gets
+//       through. Used only for the door of a quick invite (quick.js), which
+//       serves one question and asks for the door code itself.
+//   tailcat forward --key=<file> <address> 0:<port>
 //       opens a port on this computer that leads to a friend's shared port.
-//       Prints "# forwarding 127.0.0.1:<port> -> remote …" on its error
-//       output once the port is listening.
+//       Prints "# forwarding 127.0.0.1:<local> -> remote localhost:<port>"
+//       on its error output once the port is listening.
+//   tailcat forward --bind=0.0.0.0 --key=<file> <address> <local>:<port>
+//       the same on a set port that other computers can reach, for a Docker
+//       install, where the browser is outside the container. Prints
+//       "# forwarding [::]:<local> -> remote localhost:<port>".
+//
+// Checked against the real program, v0.7.0, on 2026-11-15.
 //
 // Tailcat promises no stable command line yet, so if a new version changes
 // one of these, this file is the only place to fix.
@@ -147,6 +160,8 @@ function start(args, read, what) {
   return { child, ready, stop };
 }
 
+const isPort = (value) => Number.isInteger(value) && value >= 1 && value <= 65535;
+
 /**
  * Shares one local port with one friend. The address is new every time and
  * stops working the moment this process is stopped.
@@ -154,8 +169,21 @@ function start(args, read, what) {
  */
 export function shareWithFriend({ friendKey, port }) {
   const key = plainKey(friendKey);
-  if (!key || !Number.isInteger(port)) throw new TailcatError('Tailcat could not start sharing.', 'BAD_REQUEST');
-  const run = start(['serve', '--json', '--key=new', `--allow=nodekey:${key}`, `80:${port}`], (text, stream) => {
+  if (!key) throw new TailcatError('Tailcat could not start sharing.', 'BAD_REQUEST');
+  return share([`--allow=nodekey:${key}`], port);
+}
+
+/**
+ * Shares one local port with anyone who holds the address. Only for a port
+ * that checks who is asking by itself (the door of a quick invite).
+ */
+export function shareWithAnyone({ port }) {
+  return share([], port);
+}
+
+function share(who, port) {
+  if (!isPort(port)) throw new TailcatError('Tailcat could not start sharing.', 'BAD_REQUEST');
+  const run = start(['serve', '--json', '--key=new', ...who, String(port)], (text, stream) => {
     if (stream !== 'out') return undefined;
     for (const line of text.split('\n')) {
       try {
@@ -173,14 +201,18 @@ export function shareWithFriend({ friendKey, port }) {
 
 /**
  * Opens a port on this computer that leads to a friend's shared board.
+ * @param {{ address: string, identityFile: string, port: number, localPort?: number }} input
+ *   localPort: a set port, open to more than this computer (a Docker install,
+ *   where the browser is outside the container). Without it tailcat picks a
+ *   free port that only this computer can reach.
  * @returns {{ child, stop: () => void, port: Promise<number> }}
  */
-export function reachFriend({ address, identityFile }) {
-  if (!isTailcatAddress(address)) throw new TailcatError('Tailcat could not reach that address.', 'BAD_REQUEST');
-  const args = ['forward', `--key=${identityFile}`, address, '0:80'];
+export function reachFriend({ address, identityFile, port, localPort = 0 }) {
+  if (!isTailcatAddress(address) || !isPort(port) || (localPort !== 0 && !isPort(localPort))) throw new TailcatError('Tailcat could not reach that address.', 'BAD_REQUEST');
+  const args = ['forward', ...(localPort ? ['--bind=0.0.0.0'] : []), `--key=${identityFile}`, address, `${localPort}:${port}`];
   const run = start(args, (text, stream) => {
     if (stream !== 'err') return undefined;
-    const match = /# forwarding (?:127\.0\.0\.1|\[::1\]|localhost):(\d{2,5}) ->/.exec(text);
+    const match = /# forwarding (?:127\.0\.0\.1|0\.0\.0\.0|\[::1?\]|localhost):(\d{2,5}) ->/.exec(text);
     return match ? Number(match[1]) : undefined;
   }, 'reach your friend');
   return { child: run.child, stop: run.stop, port: run.ready };

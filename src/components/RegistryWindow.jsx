@@ -43,7 +43,7 @@ const TABS = [
 
 function TabBar({ active, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: 6, padding: '8px 14px', borderBottom: '1px solid var(--hairline)', background: 'var(--surface-2)', flexShrink: 0, overflowX: 'auto' }}>
+    <div style={{ display: 'flex', gap: 2, padding: '8px 10px', borderBottom: '1px solid var(--hairline)', background: 'var(--surface-2)', flexShrink: 0, overflowX: 'auto' }}>
       {TABS.map((t) => {
         const Glyph = Icon[t.icon];
         return (
@@ -53,8 +53,8 @@ function TabBar({ active, onChange }) {
             data-testid={`registry-tab-${t.id}`}
             onClick={() => onChange(t.id)}
             style={{
-              all: 'unset', cursor: 'pointer', padding: '6px 12px', borderRadius: 'var(--radius-md)',
-              fontSize: 'var(--text-sm)', fontWeight: 650, display: 'inline-flex', alignItems: 'center', gap: 6,
+              all: 'unset', cursor: 'pointer', padding: '6px 9px', borderRadius: 'var(--radius-md)',
+              fontSize: 'var(--text-sm)', fontWeight: 650, display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', flexShrink: 0,
               color: active === t.id ? 'var(--accent-ink)' : 'var(--ink-soft)',
               background: active === t.id ? 'var(--accent-soft)' : 'transparent',
             }}

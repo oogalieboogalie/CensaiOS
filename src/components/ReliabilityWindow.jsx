@@ -4,6 +4,9 @@ import { useWorkspaceStore } from '../lib/store.js';
 import { useProjectScan } from './reliability/useProjectScan.js';
 import { logFailure } from '../lib/appLog/browserLog.js';
 
+// Most checks are problems when true (a monolith, a hotspot). These are good when true.
+const GOOD_WHEN_TRUE = new Set(['has_tests']);
+
 export function ReliabilityWindow() {
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +103,7 @@ export function ReliabilityWindow() {
                     <div key={key} className="text-xs p-2 rounded bg-surface border border-surface-soft">
                       <div className="text-ink-soft uppercase text-[10px]">{key.replace(/_/g, ' ')}</div>
                       <div className="font-medium mt-1">
-                        {typeof val === 'boolean' ? (val ? '⚠️ Yes' : '✅ No') : val}
+                        {typeof val === 'boolean' ? `${val === GOOD_WHEN_TRUE.has(key) ? '✅' : '⚠️'} ${val ? 'Yes' : 'No'}` : val}
                       </div>
                     </div>
                   ))}

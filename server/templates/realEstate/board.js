@@ -1,5 +1,5 @@
 // Spec 7: the Real Estate Team board. A pure builder: given the board's
-// agents and the five modules, return the snapshot a client lays out on the
+// agents and the six modules, return the snapshot a client lays out on the
 // canvas: four groups (Listings, Active Deals, Marketing, Team Chat) bound to
 // F1 to F4, each with a layout tree the client fits into the group with the
 // canvas's own layout code (so the template follows whatever group style the
@@ -48,6 +48,19 @@ export function sampleDeals(today = new Date()) {
     { id: 'harbor', client: 'Okafor', address: '902 Harbor St, Unit 4', price: 389000, stage: 'Offer' },
     { id: 'quarry', client: 'Lindqvist', address: '7 Quarry Rd', price: 712000, stage: 'Showing' },
     { id: 'birch', client: 'Nguyen', address: '31 Birch Ct', price: 0, stage: 'Lead' },
+  ];
+}
+
+// Sample cold leads for the Cold leads module, so the Follow-up Assistant's
+// lead revival has someone to write to on day one. Dates are relative to
+// today so they stay cold; the people are made up.
+export function sampleColdLeads(today = new Date()) {
+  const ago = (days) => isoDay(new Date(today.getFullYear(), today.getMonth(), today.getDate() - days));
+  return [
+    { id: 'cold-torres', name: 'Mike Torres', email: 'mike.torres@example.com', phone: '', lastContact: ago(240), notes: 'Renting near the river. Said he would look again once his lease ends in the spring. Wants a garage for his workshop.', status: 'cold' },
+    { id: 'cold-bell', name: 'Priya Bell', email: 'priya.bell@example.com', phone: '', lastContact: ago(400), notes: 'Toured 7 Quarry Rd, loved the light, felt the kitchen was too small. Pre-approved with a local credit union.', status: 'cold' },
+    { id: 'cold-haas', name: 'Jonas Haas', email: '', phone: '555-0142', lastContact: ago(150), notes: 'Thinking about selling his condo to buy something with a yard for his dog.', status: 'cold' },
+    { id: 'cold-ortiz', name: 'Lena Ortiz', email: 'lena.ortiz@example.com', phone: '', lastContact: ago(30), notes: 'Asked about open houses last month.', status: 'cold' },
   ];
 }
 
@@ -102,6 +115,7 @@ export function buildRealEstateBoard({ agents, modules, listing = SAMPLE_LISTING
     openHouse: wid('open-house'),
     teamChat: wid('team-chat'),
     outbox: wid('outbox'),
+    coldLeads: wid('cold-leads'),
     followUpChat: wid('follow-up-chat'),
   };
 
@@ -123,6 +137,7 @@ export function buildRealEstateBoard({ agents, modules, listing = SAMPLE_LISTING
     { id: ids.teamChat, kind: 'groupChat', title: 'Team Chat', templateRole: 'teamChat', members: ['censai'], msgs: [
       { from: agents.transactionCoordinator, text: 'Morning. Rivera (14 Alder Way): the inspection period ends in 2 days. I will post deadline reminders here as they come up.' },
     ] },
+    moduleWindow(modules['cold-leads'], { id: ids.coldLeads, role: 'coldLeads', moduleData: { leads: sampleColdLeads(today) } }),
     { id: ids.outbox, kind: 'outbox', title: 'Outbox', templateRole: 'outbox', drafts: [
       {
         id: `d-${tag}`,
@@ -155,8 +170,8 @@ export function buildRealEstateBoard({ agents, modules, listing = SAMPLE_LISTING
       root: split('vertical', 0.6, leaf(ids.cma), split('horizontal', 0.42, leaf(ids.analystChat), leaf(ids.openHouse))),
     },
     {
-      id: `re-group-team-${tag}`, label: 'Team Chat', hotkey: '4', x: 1640, y: 1160, w: 1640, h: 780,
-      root: split('vertical', 0.34, leaf(ids.teamChat), split('vertical', 0.52, leaf(ids.outbox), leaf(ids.followUpChat))),
+      id: `re-group-team-${tag}`, label: 'Team Chat', hotkey: '4', x: 1640, y: 1160, w: 2000, h: 780,
+      root: split('vertical', 0.26, leaf(ids.teamChat), split('vertical', 0.36, leaf(ids.coldLeads), split('vertical', 0.5, leaf(ids.outbox), leaf(ids.followUpChat)))),
     },
   ];
 

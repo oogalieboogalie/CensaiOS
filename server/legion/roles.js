@@ -72,10 +72,12 @@ export const PROMPTS = Object.freeze({
   final: [
     'You are the Orchestrator Engine. Turn your plan and the team chat into a gameplan, a Work Queue of jobs, and the checks the Validation Engine will run.',
     'Jobs: each has an id (J-001, J-002...), an owner (foundation, nexus, atlas or genesis) and a task small enough for one agent. Split big work into several jobs for the same builder so they can run side by side. Builders with nothing to do get no jobs. depends_on is optional (by default a job waits for the builders before it, except that Atlas and Genesis run side by side and Synthesis joins front and back afterwards).',
+    'Files: give every job the list of files and folders it owns ("files"). Only that job writes them. Jobs that can run at the same time must own different files, so no two builders write the same file.',
+    'Contract first: when the project has more than a couple of jobs, make J-001 the contract job ("contract": true, no depends_on). It writes the shared data shapes as files: the tables, the API routes with what each one takes and gives back, and the shared types. Every other job depends on it, directly or through other jobs, and builds to it without changing it.',
     'Checks: each has an id (C-001...), the job it checks, and one rule: file_exists (a path), file_contains ({"file": "...", "text": "..."}), page_contains (text the page must show) or no_script_errors (true). Add a page_contains check for every number or word the person must see.',
     'Genesis must always make a root index.html that uses only the project\'s own files.',
     'Gameplan fields, one or two plain sentences each: skills (skills needed), movingParts, coordination (who hands what to whom), resources, workspace, convergence (how the parts come together), checkups (when Echo checks), dependencies (which agent waits on which).',
-    'Reply in JSON only: {"summary": "...", "gameplan": {"skills": "...", "movingParts": "...", "coordination": "...", "resources": "...", "workspace": "...", "convergence": "...", "checkups": "...", "dependencies": "..."}, "jobs": [{"id": "J-001", "owner": "genesis", "task": "...", "depends_on": []}], "checks": [{"id": "C-001", "job": "J-001", "page_contains": "Total"}]}',
+    'Reply in JSON only: {"summary": "...", "gameplan": {"skills": "...", "movingParts": "...", "coordination": "...", "resources": "...", "workspace": "...", "convergence": "...", "checkups": "...", "dependencies": "..."}, "jobs": [{"id": "J-001", "owner": "nexus", "task": "...", "contract": true, "files": ["contract/"]}, {"id": "J-002", "owner": "genesis", "task": "...", "depends_on": ["J-001"], "files": ["index.html", "ui/"]}], "checks": [{"id": "C-001", "job": "J-001", "page_contains": "Total"}]}',
   ].join('\n'),
   build: FILE_FORMAT,
   judge: [
@@ -86,6 +88,11 @@ export const PROMPTS = Object.freeze({
   fix: [
     'The Validation Engine sent jobs back. Write fixing instructions for each failed job, by its UID.',
     'Reply in JSON only: {"fixes": {"J-001": "what to change and where", "...": "..."}}',
+  ].join('\n'),
+  replan: [
+    'A wave of jobs just finished. Look at what was built and the jobs still waiting.',
+    'If a waiting job\'s task or files should change to fit what was built, change them. Leave the rest alone. You cannot add, remove or reorder jobs.',
+    'Reply in JSON only: {"jobs": [{"id": "J-004", "task": "the new task", "files": ["..."]}]} with only the jobs you changed, or {"jobs": []}.',
   ].join('\n'),
   reflect: [
     'Global post-project reflection. For each agent on the Legion give 2 positives and 1 negative from this run, then a summary of what was learned for next time.',

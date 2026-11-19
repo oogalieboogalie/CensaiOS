@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { ThemePanelCard } from './ThemeControls.jsx';
 import { changeDesktopServer, getDesktopServer } from '../../lib/desktopServer.js';
+import { SettingsButton, SettingsNote, SettingsRow, SettingsSection } from './settingsKit.jsx';
 
-/** Only in the installed desktop app: which computer's censaiOS is open. */
+/** Settings > Open anywhere, only in the installed desktop app: which computer's censaiOS it opens. */
 export function DesktopServerCard() {
   const [server, setServer] = useState(null);
   const [error, setError] = useState('');
@@ -21,17 +21,12 @@ export function DesktopServerCard() {
   };
 
   return (
-    <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 11 }}>
-      <div>
-        <div style={{ fontSize: 'var(--text-md)', fontWeight: 750, color: 'var(--ink)' }}>Desktop app</div>
-        <div style={{ marginTop: 3, fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
-          {server.mode === 'remote' ? `Opens censaiOS on ${server.url}` : 'Opens censaiOS on this computer'}
-        </div>
-      </div>
-      <button onClick={change} style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', borderRadius: 'var(--radius-lg)', fontSize: 'var(--text-sm)', fontWeight: 700, background: 'var(--surface)', color: 'var(--ink-soft)', border: '1px solid var(--hairline)' }}>
-        Change computer
-      </button>
-      {error && <div role="alert" style={{ color: 'var(--ps-red)', fontSize: 'var(--text-xs)' }}>{error}</div>}
-    </ThemePanelCard>
+    <SettingsSection title="Desktop app" data-testid="desktop-server">
+      <SettingsRow label={server.mode === 'remote' ? `Opens censaiOS on ${server.url}` : 'Opens censaiOS on this computer'}
+        hint="Point the desktop app at censaiOS on another computer, or back at this one.">
+        <SettingsButton onClick={change}>Change computer</SettingsButton>
+      </SettingsRow>
+      <SettingsNote tone="error">{error}</SettingsNote>
+    </SettingsSection>
   );
 }

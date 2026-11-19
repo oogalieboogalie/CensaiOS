@@ -47,7 +47,7 @@ export const BRANCHES = Object.freeze({
       hunt: {
         about: 'Run one hunt: what you sell and who you sell to in, scored leads with a 7-day plan out.',
         method: 'POST', path: '/api/leadhound/run', body: true, changes: true, listKey: 'leads',
-        input: { business: 'Real estate photography', market: 'Listing agents', region: 'Dale City, Virginia', maxLeads: 3 },
+        input: { business: 'Real estate photography', market: 'Listing agents', region: 'Austin, Texas', maxLeads: 3 },
       },
     },
   },
@@ -99,7 +99,7 @@ export const BRANCHES = Object.freeze({
     about: 'Projects your agents work on.',
     actions: {
       projects: {
-        about: 'Every project, with its folder and summary.',
+        about: 'Every project to work in, with its folder and summary: the current one first, each folder once, without helper copies, temp folders or folders that are gone.',
         method: 'GET', path: '/api/projects', listKey: 'projects',
         input: {},
       },

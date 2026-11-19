@@ -1,7 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { updateStatus, requestRestart, requestCheck } from '../server/appUpdate/index.js';
+import { updateStatus, requestRestart, requestCheck, updaterOnDemand } from '../server/appUpdate/index.js';
 
 const NEW = 'b'.repeat(40);
 const OLD = 'a'.repeat(40);
@@ -114,5 +114,40 @@ describe('check now (the tray Update item)', () => {
       expect(err.code).toBe('updater-not-running');
     }
     expect(fs.existsSync(path.join(dir, 'check-requested'))).toBe(false);
+  });
+});
+
+describe('an updater that only runs when asked (Linux)', () => {
+  const env = process.env.CENSAI_UPDATER_ON_DEMAND;
+  afterEach(() => {
+    if (env === undefined) delete process.env.CENSAI_UPDATER_ON_DEMAND;
+    else process.env.CENSAI_UPDATER_ON_DEMAND = env;
+  });
+
+  test('is off unless the setting says 1', () => {
+    expect(updaterOnDemand({})).toBe(false);
+    expect(updaterOnDemand({ CENSAI_UPDATER_ON_DEMAND: 'yes' })).toBe(false);
+    expect(updaterOnDemand({ CENSAI_UPDATER_ON_DEMAND: '1' })).toBe(true);
+  });
+
+  test('counts as running with no heartbeat at all', () => {
+    const dir = makeDir({ 'running.txt': NEW });
+    expect(updateStatus({ dir, onDemand: false }).watching).toBe(false);
+    expect(updateStatus({ dir, onDemand: true }).watching).toBe(true);
+  });
+
+  test('Check and Update now write their request with no heartbeat', () => {
+    process.env.CENSAI_UPDATER_ON_DEMAND = '1';
+    const dir = makeDir({ 'running.txt': OLD, 'ready.json': { commit: NEW } });
+    requestCheck({ dir });
+    expect(fs.existsSync(path.join(dir, 'check-requested'))).toBe(true);
+    requestRestart({ dir });
+    expect(fs.existsSync(path.join(dir, 'restart-requested'))).toBe(true);
+  });
+
+  test('without the setting, no heartbeat still means not running', () => {
+    delete process.env.CENSAI_UPDATER_ON_DEMAND;
+    const dir = makeDir({ 'running.txt': OLD, 'ready.json': { commit: NEW } });
+    expect(() => requestCheck({ dir })).toThrow('The updater is not running.');
   });
 });

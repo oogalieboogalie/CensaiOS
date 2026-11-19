@@ -1,0 +1,74 @@
+/*
+ * "Blurred" chat bubbles, picked per chat window in Window Style.
+ * Three layers, back to front:
+ *   1. soft shapes in the window's accent, blurred, close behind the glass
+ *   2. a bubble under every message (the person's in the accent, the
+ *      agent's in the window surface), its edges softened a little
+ *   3. the words, always sharp
+ * Owner's picks: background blur 25px, scale 1.08, colour 126 %; bubble
+ * edge softness 2px; agent bubble 78 %, the person's 61 %.
+ */
+
+.hb-chat[data-chat-style="blurred"] {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Layer 1: the shapes behind everything. */
+.hb-chat[data-chat-style="blurred"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 28%, color-mix(in oklab, var(--accent) 42%, var(--surface)) 0 22%, transparent 23%),
+    radial-gradient(circle at 88% 52%, color-mix(in oklab, var(--accent) 72%, var(--surface)) 0 19%, transparent 20%),
+    radial-gradient(circle at 46% 96%, color-mix(in oklab, var(--accent) 22%, var(--surface)) 0 16%, transparent 17%),
+    radial-gradient(circle at 38% 14%, color-mix(in oklab, var(--accent) 55%, var(--surface)) 0 8%, transparent 9%);
+  filter: blur(25px) saturate(126%);
+  transform: scale(1.08);
+  /* Kept inside the chat without clipping the chat itself, so menus that
+     open from the message box (the model picker) keep all their room.
+     3.7 % undoes the 1.08 scale: the clip ends on the chat's own edges. */
+  clip-path: inset(3.7%);
+}
+
+/* Layer 2: a bubble under every message; layer 3: the words on top. */
+.hb-chat[data-chat-style="blurred"] .hb-msg-bubble,
+.hb-chat[data-chat-style="blurred"] .hb-msg[data-from="agent"] .hb-msg-body:not(:empty) {
+  position: relative;
+  isolation: isolate;
+  border: none;
+  background: transparent;
+}
+.hb-chat[data-chat-style="blurred"] .hb-msg[data-from="agent"] .hb-msg-body:not(:empty) {
+  align-self: flex-start;
+  padding: var(--pad-2) var(--pad-3);
+}
+.hb-chat[data-chat-style="blurred"] .hb-msg-bubble::before,
+.hb-chat[data-chat-style="blurred"] .hb-msg[data-from="agent"] .hb-msg-body:not(:empty)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: var(--radius-xl);
+  filter: blur(2px);
+  pointer-events: none;
+}
+.hb-chat[data-chat-style="blurred"] .hb-msg[data-from="agent"] .hb-msg-body:not(:empty)::before {
+  background: color-mix(in oklab, var(--surface) 78%, transparent);
+}
+.hb-chat[data-chat-style="blurred"] .hb-msg-bubble::before {
+  background: color-mix(in oklab, var(--accent) 61%, transparent);
+}
+.hb-chat[data-chat-style="blurred"] .hb-msg-bubble {
+  color: var(--on-fill);
+}
+/* White words on a dark accent (purple), near-black on a light one (amber),
+   so the person's message stays readable whatever the accent and theme. */
+@supports (color: oklch(from red l c h)) {
+  .hb-chat[data-chat-style="blurred"] .hb-msg-bubble {
+    color: oklch(from color-mix(in oklab, var(--accent) 61%, var(--surface)) clamp(0.2, (0.75 - l) * 999, 1) 0 0);
+  }
+}

@@ -10,6 +10,8 @@ import { TRUSTED_ROLES, agentIsTrusted } from '../../approvals/trustMode.js';
 import { PlanInputError, agentName, clip, normalizePlanInput, publicPlan } from '../../censaiOrchestrator/shape.js';
 import { tickWords } from '../../censaiOrchestrator/checklist.js';
 import { whyNoTestsHere, whyTestsCannotRun } from '../../censaiOrchestrator/projectTests.js';
+import { HANDOFF_GIVER } from '../../censaiOrchestrator/projectShare.js';
+import { planProject } from '../../censaiOrchestrator/planProject.js';
 import { MAX_OPEN_PLANS, countOpenPlans, getPlan, listPlans } from '../../censaiOrchestrator/store.js';
 import { createPlan, recoverOnce, stopPlan } from '../../censaiOrchestrator/runner.js';
 
@@ -64,15 +66,15 @@ async function ownerGap(input, scope, db, deps) {
 
 // The tests run in the project's folder on this computer, so a job that needs them
 // could never be checked off in a project that has none here (on GitHub only, say).
+// The folder is looked up as Censai: each family member works in the plan's project
+// with Censai's own access to it on this board while the plan runs (projectShare.js).
 async function projectGap(input, scope, deps) {
-  for (const job of input.jobs.filter((entry) => entry.checklist.some((item) => item.how === 'tests'))) {
-    const why = await (deps.whyNoTestsHere || whyNoTestsHere)({ agentId: job.agentId, project: input.project, context: scope });
-    if (why) {
-      return `Error: ${why} Job ${job.n} needs the project's tests, so it could never be checked off. `
-        + 'Hand out jobs that look into it and write up what to change instead, and tell the person why.';
-    }
-  }
-  return null;
+  const job = input.jobs.find((entry) => entry.checklist.some((item) => item.how === 'tests'));
+  if (!job) return null;
+  const why = await (deps.whyNoTestsHere || whyNoTestsHere)({ agentId: HANDOFF_GIVER, project: input.project, context: scope });
+  if (!why) return null;
+  return `Error: ${why} Job ${job.n} needs the project's tests, so it could never be checked off. `
+    + 'Hand out jobs that look into it and write up what to change instead, and tell the person why.';
 }
 
 // A code job's agent saves files with project_write, which needs Project Writer
@@ -111,9 +113,12 @@ export async function handOffGap(input, scope, member, db, deps = {}) {
 async function handOff(args, scope, db, deps) {
   // Viewers can look at a board but not set work running on it.
   const member = await requireWorkspaceMember(db, { ...scope, roles: ['owner', 'admin', 'member'] });
+  // The plan's project is found once, by the board's rules, and kept by its id
+  // (planProject.js): no name means Censai's own project on this board.
+  const pinned = await planProject(db, { ...scope, project: args.project });
   let input;
   try {
-    input = normalizePlanInput(args);
+    input = normalizePlanInput(pinned ? { ...args, project: pinned.id } : args);
   } catch (error) {
     if (error instanceof PlanInputError) return `Error: ${error.message}`;
     throw error;

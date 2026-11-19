@@ -30,10 +30,10 @@ describe('Block ads on web pages', () => {
 
   test('the Settings switch flips the setting', () => {
     render(<AdBlockCard />);
-    const toggle = screen.getByRole('button', { name: 'Block ads on web pages' });
-    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    const toggle = screen.getByRole('switch', { name: 'Block ads on web pages' });
+    expect(toggle).toBeChecked();
     act(() => { fireEvent.click(toggle); });
-    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(toggle).not.toBeChecked();
     expect(isAdBlockEnabled()).toBe(false);
   });
 

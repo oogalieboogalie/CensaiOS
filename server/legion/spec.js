@@ -8,6 +8,8 @@
 //       owner: genesis
 //       task: index.html with a bill box, tip and total
 //       depends_on: [J-000]          # optional
+//       files: [index.html, src/ui]  # optional: the files and folders only this job writes
+//       contract: true               # optional, on one job: the shared data shapes everyone builds on
 //   checks:
 //     - id: C-001
 //       job: J-001
@@ -24,6 +26,7 @@ import { safeRelativePath } from './parse.js';
 
 export const MAX_JOBS = 24;
 export const MAX_CHECKS = 40;
+export const MAX_JOB_FILES = 20;
 export const CHECK_KINDS = Object.freeze(['file_exists', 'file_contains', 'page_contains', 'no_script_errors']);
 
 const str = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : typeof value === 'number' ? String(value) : '');
@@ -48,6 +51,12 @@ function cleanCheck(raw, index, jobIds) {
   }
   if (raw?.no_script_errors) return { id, job, kind: 'no_script_errors' };
   return null;
+}
+
+/** A job's owned files and folders, cleaned: project-relative, no trailing slash, no repeats. */
+export function cleanFiles(value) {
+  const list = (Array.isArray(value) ? value : typeof value === 'string' ? [value] : []).slice(0, MAX_JOB_FILES);
+  return [...new Set(list.map((f) => safeRelativePath(String(f || '').trim().replace(/\/+$/, ''))).filter(Boolean))];
 }
 
 /** The ids of jobs that wait on each other in a circle, or null. */
@@ -87,11 +96,23 @@ export function cleanSpec(data, fallbackGoal = '') {
     let id = uid(raw?.id, 'J', i + 1);
     while (seen.has(id)) id = `${id}b`;
     seen.add(id);
-    jobs.push({ id, owner, task, dependsOn: (Array.isArray(raw?.depends_on) ? raw.depends_on : []).map(cleanId) });
+    const files = cleanFiles(raw?.files);
+    jobs.push({
+      id, owner, task, dependsOn: (Array.isArray(raw?.depends_on) ? raw.depends_on : []).map(cleanId),
+      ...(files.length ? { files } : {}), ...(raw?.contract === true ? { contract: true } : {}),
+    });
   });
   if (!jobs.length) return { error: 'The spec needs at least one job with an owner (foundation, nexus, atlas or genesis) and a task.' };
   const ids = jobs.map((j) => j.id);
   for (const job of jobs) job.dependsOn = job.dependsOn.filter((d) => ids.includes(d) && d !== job.id);
+  // Contract first: one job writes the shared data shapes, waits on nobody,
+  // and every job that names no depends_on waits on it.
+  const contract = jobs.find((j) => j.contract);
+  for (const job of jobs) {
+    if (job === contract) { job.dependsOn = []; continue; }
+    delete job.contract;
+    if (contract && !job.dependsOn.length) job.dependsOn = [contract.id];
+  }
   const loop = findCycle(jobs);
   if (loop) return { error: `Jobs ${loop.join(' and ')} wait on each other, so neither could ever start. Remove one of the depends_on lines.` };
   const checks = (Array.isArray(data.checks) ? data.checks : []).slice(0, MAX_CHECKS)
@@ -122,7 +143,10 @@ export function specToYaml(spec) {
   };
   return yaml.dump({
     goal: spec.goal,
-    jobs: spec.jobs.map((j) => ({ id: j.id, owner: j.owner, task: j.task, ...(j.dependsOn.length ? { depends_on: j.dependsOn } : {}) })),
+    jobs: spec.jobs.map((j) => ({
+      id: j.id, owner: j.owner, task: j.task, ...(j.contract ? { contract: true } : {}),
+      ...(j.dependsOn.length ? { depends_on: j.dependsOn } : {}), ...(j.files?.length ? { files: j.files } : {}),
+    })),
     checks: spec.checks.map(check),
   }, { lineWidth: 100, noRefs: true });
 }
@@ -134,9 +158,10 @@ export function specToYaml(spec) {
  */
 // Front and back at the same time (diagram 04): Genesis (front end) does not
 // wait for Atlas (back end); Synthesis joins them after both are done.
+// The contract job waits on nobody.
 export function withBuildOrder(jobs) {
   return jobs.map((job) => {
-    if (job.dependsOn.length) return job;
+    if (job.dependsOn.length || job.contract) return job;
     const before = BUILD_ORDER.slice(0, BUILD_ORDER.indexOf(job.owner)).filter((role) => !(job.owner === 'genesis' && role === 'atlas'));
     return { ...job, dependsOn: jobs.filter((j) => before.includes(j.owner)).map((j) => j.id) };
   });

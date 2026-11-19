@@ -22,7 +22,7 @@ export function InstalledTab({
     );
   }
   return (
-    <div style={{ padding: 12, display: 'grid', gap: 8, flex: 1, minHeight: 0, overflow: 'auto' }} data-testid="registry-installed-list">
+    <div style={{ padding: 12, display: 'grid', gap: 8, alignContent: 'start', flex: 1, minHeight: 0, overflow: 'auto' }} data-testid="registry-installed-list">
       {ids.map((cardId) => {
         const meta = installed[cardId];
         return (

@@ -1,6 +1,6 @@
 // An in-memory stand-in for the censai_plans table (server/censaiOrchestrator/store.js),
-// the workspace member check, the computer-owner check, and the Project Writer and
-// trust mode lookups (server/approvals), for the orchestrator's tests.
+// the workspace member check, the computer-owner check, the Project Writer and
+// trust mode lookups (server/approvals), and an empty project list, for the orchestrator's tests.
 import { getToolPackageForModule } from '../../server/capabilities/packageCatalog.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -97,6 +97,9 @@ export function fakePlanDb({
       const role = members[workspaceId]?.[userId];
       return { rows: role ? [{ id: workspaceId, name: 'Stand-in board', role }] : [] };
     }
+    // The board gives Censai no project and this computer has none, unless a test adds them
+    // (tests/censaiHandoffProjectAccess.test.js): a hand-off looks its project up first.
+    if (text.includes('FROM workspace_agent_projects wap JOIN projects p') || text.startsWith('SELECT p.* FROM projects p')) return { rows: [] };
     throw new Error(`fakePlanDb: unexpected SQL: ${text.slice(0, 120)}`);
   }
 

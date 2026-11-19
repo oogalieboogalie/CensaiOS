@@ -27,6 +27,10 @@ export async function resolveAuthorizedWorkspaceProject(db, {
           -- A folder name such as CRM_Vision matches a project stored in that directory.
           OR lower(regexp_replace(p.path, '^.*[/\\\\]', '')) = lower($3))
       ORDER BY
+        -- A project a hand-off lends for one plan (source_kind 'task') or for a to-do's tasks
+        -- (source_id 'agent-task:...') is used only when named, so a call that names none
+        -- still lands in the agent's own project.
+        CASE WHEN $3::text IS NULL AND (wap.source_kind = 'task' OR wap.source_id LIKE 'agent-task:%') THEN 1 ELSE 0 END,
         CASE WHEN p.id = $3 THEN 0 WHEN p.path = $3 OR p.repo = $3 THEN 1 ELSE 2 END,
         CASE wap.permission WHEN 'work' THEN 0 ELSE 1 END, wap.updated_at DESC
       LIMIT 1`,

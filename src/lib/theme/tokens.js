@@ -147,8 +147,9 @@ export function computeTokenMap(preset, options = {}) {
   const shadow = SHADOW_BY_MODE[mode];
   const active = ACTIVE_SHADOW_BY_MODE[mode];
   if (tint === 0) {
-    // Unified title bar: same color as the window body.
-    return { '--window-title-bg': 'var(--window-bg, var(--surface))', '--window-shadow': shadow, '--window-shadow-active': active };
+    // Unified title bar: the window body shows through it. Painting the
+    // body colour again would double a see-through (glass) body into a band.
+    return { '--window-title-bg': 'transparent', '--window-shadow': shadow, '--window-shadow-active': active };
   }
 
   return {

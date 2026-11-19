@@ -10,6 +10,7 @@
 //   POST   /:id/party        { workspaceId, role }   share a board; gives a party code
 //   DELETE /party/:partyId   stop sharing
 //   POST   /joins            { code }                join a friend's board
+//   …      /quick…                                   quick invites: friendsQuick.js
 //   DELETE /joins/:joinId    leave it
 
 import express from 'express';
@@ -19,11 +20,13 @@ import { safeErrorCode } from '../security/errorCode.js';
 import { isJestRun } from '../security/testShortcut.js';
 import { doorUsable, isFromAnotherComputer } from '../webOs/door.js';
 import { cleanLabel, makeFriendCode, readFriendCode, readPartyCode } from '../friends/codes.js';
-import { joinParty, leaveEveryParty, leaveParty, listJoins } from '../friends/joins.js';
+import { canJoinHere, joinParty, needJoinHere, leaveEveryParty, leaveParty, listJoins } from '../friends/joins.js';
+import { endQuickInvite, lastQuickGuest, quickInviteCard } from '../friends/quick.js';
 import { MAX_PARTIES, endParties, listParties, startParty, takeOffBoard } from '../friends/parties.js';
 import { identityFile, readFriendsSettings, writeFriendsSettings } from '../friends/settings.js';
 import { addFriend, findFriend, listFriends, putOnBoard, removeFriend } from '../friends/store.js';
 import { findTailcat, installHint, makeIdentity } from '../friends/tailcat.js';
+import { addQuickInviteRoutes } from './friendsQuick.js';
 
 const log = createLogger('friends');
 export const friendsRouter = express.Router();
@@ -74,6 +77,9 @@ async function cardFor(req) {
       party: parties.find((party) => party.friendId === friend.id) || null,
     })),
     joins: listJoins(),
+    canJoin: canJoinHere(),
+    quick: settings.on ? quickInviteCard() : null,
+    quickGuest: settings.on ? lastQuickGuest() : null,
   };
 }
 
@@ -103,6 +109,7 @@ friendsRouter.put('/', async (req, res) => {
       if (!patch.name && !current.name) patch.name = cleanLabel(req.session?.userName) || 'Someone';
     } else if (req.body?.on === false) {
       patch.on = false;
+      endQuickInvite();
       await endParties();
       leaveEveryParty();
     }
@@ -133,6 +140,7 @@ friendsRouter.post('/joins', async (req, res) => {
   if (ownerId === null) return;
   if (!friendsOn()) return res.status(409).json({ error: 'Turn Friends on first.' });
   try {
+    needJoinHere();
     // You join friends, not strangers: the code says who is sharing, and
     // that person has to be on this list already.
     const { hostKey, hostName } = readPartyCode(req.body?.code);
@@ -176,36 +184,47 @@ function inTurn(job) {
   return run;
 }
 
-friendsRouter.post('/:id/party', async (req, res) => {
-  const ownerId = owner(req, res);
-  if (ownerId === null) return;
-  if (!friendsOn()) return res.status(409).json({ error: 'Turn Friends on first.' });
-  let onBoard = null; // { friend, board } once the friend has been put on the board
-  try {
-    const party = await inTurn(async () => {
-      const friend = await findFriend(pool, ownerId, req.params.id);
-      if (!friend) throw Object.assign(new Error('That friend is not on your list.'), { statusCode: 404 });
-      const role = req.body?.role === 'viewer' ? 'viewer' : 'member';
-      // One board at a time per friend: an earlier party with them ends first,
-      // and with it their place on that board.
+/**
+ * Shares one board with one friend and gives the party. One board at a time
+ * per friend: an earlier party with them ends first, and with it their place
+ * on that board. A share that did not start leaves nobody on the board.
+ */
+function shareBoard({ ownerId, friend, workspaceId, role }) {
+  return inTurn(async () => {
+    let onBoard = null;
+    try {
       await endParties({ friendId: friend.id });
       if (listParties().length >= MAX_PARTIES) {
         throw Object.assign(new Error(`You are sharing with ${MAX_PARTIES} friends already. End one first.`), { statusCode: 409, code: 'TOO_MANY' });
       }
-      const board = await putOnBoard(pool, { ownerId, friend, workspaceId: req.body?.workspaceId, role });
+      const board = await putOnBoard(pool, { ownerId, friend, workspaceId, role });
       onBoard = { friend, board };
       const settings = readFriendsSettings();
-      const started = await startParty({ friend, board, role, hostName: settings.name, hostKey: settings.key });
-      onBoard = null;
-      return started;
-    });
+      return await startParty({ friend, board, role, hostName: settings.name, hostKey: settings.key });
+    } catch (error) {
+      if (onBoard) await takeOffBoard(onBoard.friend, onBoard.board);
+      throw error;
+    }
+  });
+}
+
+const notYourBoard = (error) => error.message === 'Workspace access denied' || error.message === 'Workspace role does not allow this operation';
+
+// Before the routes that take a friend's id, so "quick" is never read as one.
+addQuickInviteRoutes(friendsRouter, { owner, friendsOn, cardFor, sendError, shareBoard, notYourBoard, log });
+
+friendsRouter.post('/:id/party', async (req, res) => {
+  const ownerId = owner(req, res);
+  if (ownerId === null) return;
+  if (!friendsOn()) return res.status(409).json({ error: 'Turn Friends on first.' });
+  try {
+    const friend = await findFriend(pool, ownerId, req.params.id);
+    if (!friend) return res.status(404).json({ error: 'That friend is not on your list.' });
+    const role = req.body?.role === 'viewer' ? 'viewer' : 'member';
+    const party = await shareBoard({ ownerId, friend, workspaceId: req.body?.workspaceId, role });
     res.status(201).json({ ...(await cardFor(req)), party });
   } catch (error) {
-    // A share that did not start leaves nobody on the board.
-    if (onBoard) await takeOffBoard(onBoard.friend, onBoard.board);
-    if (error.message === 'Workspace access denied' || error.message === 'Workspace role does not allow this operation') {
-      return res.status(403).json({ error: 'You can only share a board you own or manage.' });
-    }
+    if (notYourBoard(error)) return res.status(403).json({ error: 'You can only share a board you own or manage.' });
     sendError(res, error, 'starting a party');
   }
 });

@@ -152,8 +152,10 @@ export const WindowFrame = React.memo(({ win, onUpdate, onClose, onSelect, onDra
           ? `${theme.borderWidth || 1}px solid ${bare ? 'transparent' : 'var(--hairline)'}`
           : `${theme.borderWidth || 1}px solid ` + frameBorder,
         boxShadow: (frameless && !chromeVisible) || bare ? 'none' : frameShadow,
-        backdropFilter: bare ? 'none' : customizedBackdrop,
-        WebkitBackdropFilter: bare ? 'none' : customizedBackdrop,
+        // The blur sits on a ::after layer (window-chrome.css), not on the
+        // frame: a backdrop-filter on the frame would make a maximized window
+        // the containing block of every position: fixed menu inside it.
+        '--frame-backdrop': bare ? 'none' : customizedBackdrop,
         transition: 'box-shadow var(--dur-base) var(--ease-standard), border-color var(--dur-base) var(--ease-standard), background var(--dur-base) var(--ease-standard), backdrop-filter var(--dur-base) var(--ease-standard)',
         // Edge headers hang outside the frame, so the content does the clipping.
         display: 'flex', flexDirection: 'column', overflow: headerMode === 'edge' ? 'visible' : 'hidden',

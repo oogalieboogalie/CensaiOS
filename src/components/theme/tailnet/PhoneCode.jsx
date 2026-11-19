@@ -1,7 +1,6 @@
 import React from 'react';
 
-const muted = { fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', margin: 0, lineHeight: 1.5 };
-const button = { border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '8px 12px', background: 'var(--surface-2)', color: 'var(--ink)', font: 'inherit', fontWeight: 700, cursor: 'pointer' };
+import { SettingsButton, SettingsNote } from '../settingsKit.jsx';
 
 /**
  * A code to scan with a phone or tablet, next to the same link as text.
@@ -37,17 +36,17 @@ export function PhoneCode({ link, children }) {
 
   if (!link) return null;
   return (
-    <div data-testid="tailnet-phone-code" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-      <div style={{ width: 132, height: 132, flexShrink: 0, borderRadius: 'var(--radius-sm)', background: 'var(--on-fill)', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+    <div data-testid="tailnet-phone-code" className="hb-set-inline hb-set-qr">
+      <span className="hb-set-qr-box">
         {picture
           ? <img src={picture} alt="Code to scan with your phone or tablet" width={132} height={132} />
-          : <span style={{ ...muted, color: 'var(--scrim)' }}>{failed ? 'No code' : '…'}</span>}
-      </div>
-      <div style={{ display: 'grid', gap: 6, flex: 1, minWidth: 170 }}>
+          : <span className="hb-set-hint">{failed ? 'No code' : '...'}</span>}
+      </span>
+      <div className="hb-set-group">
         {children}
-        <div data-testid="tailnet-phone-link" style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 'var(--text-xs)', color: 'var(--ink-soft)', wordBreak: 'break-all' }}>{link}</div>
-        <div><button type="button" style={button} onClick={copy}>{copied ? 'Copied' : 'Copy link'}</button></div>
-        {failed ? <p style={muted}>The code could not be drawn. Open the link above on the device instead.</p> : null}
+        <span data-testid="tailnet-phone-link" className="hb-set-mono">{link}</span>
+        <span><SettingsButton small onClick={copy}>{copied ? 'Copied' : 'Copy link'}</SettingsButton></span>
+        {failed ? <SettingsNote tone="warn">The code could not be drawn. Open the link above on the device instead.</SettingsNote> : null}
       </div>
     </div>
   );

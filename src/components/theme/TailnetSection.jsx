@@ -1,14 +1,10 @@
 import React from 'react';
-import { ThemePanelCard } from './ThemeControls.jsx';
 import { DeviceRows } from './tailnet/DeviceRows.jsx';
 import { NearbyCopies } from './tailnet/NearbyCopies.jsx';
 import { PhoneCode } from './tailnet/PhoneCode.jsx';
 import { getTailnet, saveTailnet, whyNotConnected } from '../../lib/tailnet/index.js';
 
-const muted = { fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', margin: 0, lineHeight: 1.5 };
-const row = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' };
-const button = { border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '8px 12px', background: 'var(--surface-2)', color: 'var(--ink)', font: 'inherit', fontWeight: 700, cursor: 'pointer' };
-const heading = { fontWeight: 650, color: 'var(--ink)', fontSize: 'var(--text-sm)' };
+import { SettingsButton, SettingsGroup, SettingsNote, SettingsSection, SwitchRow } from './settingsKit.jsx';
 
 const PORT_PROBLEMS = {
   'port-busy': 'Another program on this computer is using the port censaiOS needs for your devices, so they can\'t connect yet. Close that program, or restart censaiOS.',
@@ -64,59 +60,55 @@ export function TailnetSection() {
 
   const switchedOn = card.devices.filter((device) => device.on).length;
   return (
-    <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 14, marginTop: 12 }} data-testid="tailnet-section">
-      <div>
-        <div style={{ fontSize: 'var(--text-md)', fontWeight: 750, color: 'var(--ink)' }}>My Tailscale devices</div>
-        <p style={{ ...muted, marginTop: 3 }}>
-          Your own phone, tablet and other computers on Tailscale open this censaiOS in one click, at home or away, with no code to type.
-          Only the devices you switch on here get in.
-        </p>
-      </div>
-      {error && <p role="alert" style={{ ...muted, color: 'var(--ps-red)' }}>{error}</p>}
+    <SettingsSection
+      title="My Tailscale devices"
+      hint="Your own phone, tablet and other computers on Tailscale open this censaiOS in one click, at home or away, with no code to type. Only the devices you switch on here get in."
+      data-testid="tailnet-section"
+    >
+      <SettingsNote tone="error">{error}</SettingsNote>
       {!card.connected ? (
-        <p style={muted} data-testid="tailnet-not-connected">{whyNotConnected(card.reason)}</p>
+        <SettingsNote data-testid="tailnet-not-connected">{whyNotConnected(card.reason)}</SettingsNote>
       ) : (
         <>
-          <div style={{ display: 'grid', gap: 4 }}>
-            <label style={{ ...row, cursor: busy ? 'default' : 'pointer', fontWeight: 650, color: 'var(--ink)' }}>
-              <input type="checkbox" role="switch" checked={card.on} disabled={busy} onChange={(event) => save({ on: event.target.checked })} />
-              Let my Tailscale devices open censaiOS
-            </label>
-            <p style={muted}>
-              {card.on
-                ? `On. ${switchedOn === 0 ? 'No device is switched on yet.' : switchedOn === 1 ? '1 device is switched on.' : `${switchedOn} devices are switched on.`} A switched-on device opens the board as you.`
-                : 'Off. No Tailscale device gets in without a code.'}
-            </p>
-          </div>
+          <SwitchRow
+            label="Let my Tailscale devices open censaiOS"
+            hint={card.on
+              ? `On. ${switchedOn === 0 ? 'No device is switched on yet.' : switchedOn === 1 ? '1 device is switched on.' : `${switchedOn} devices are switched on.`} A switched-on device opens the board as you.`
+              : 'Off. No Tailscale device gets in without a code.'}
+            checked={card.on}
+            disabled={busy}
+            onChange={(on) => save({ on })}
+          />
           {card.on && (
             <>
-              {PORT_PROBLEMS[card.portProblem] ? <p role="alert" style={{ ...muted, color: 'var(--ps-red)' }}>{PORT_PROBLEMS[card.portProblem]}</p> : null}
-              <div style={{ display: 'grid', gap: 6 }}>
-                <div style={heading}>Devices on your tailnet</div>
+              {PORT_PROBLEMS[card.portProblem] ? <SettingsNote tone="error">{PORT_PROBLEMS[card.portProblem]}</SettingsNote> : null}
+              <SettingsGroup title="Devices on your tailnet">
                 <DeviceRows devices={card.devices} disabled={busy} onSwitch={switchDevice} />
-              </div>
+              </SettingsGroup>
               {card.address ? (
-                <div style={{ display: 'grid', gap: 8 }}>
-                  <div style={row}>
-                    <button type="button" style={button} aria-expanded={showCode} onClick={() => setShowCode((shown) => !shown)}>
+                <SettingsGroup
+                  title="Open on a phone or tablet"
+                  hint={card.thisComputer?.name ? `This computer on Tailscale: ${card.thisComputer.name}` : undefined}
+                >
+                  <div className="hb-set-actions">
+                    <SettingsButton aria-expanded={showCode} onClick={() => setShowCode((shown) => !shown)}>
                       {showCode ? 'Hide the code' : 'Open on a phone or tablet'}
-                    </button>
-                    <span style={muted}>{card.thisComputer?.name ? `This computer on Tailscale: ${card.thisComputer.name}` : ''}</span>
+                    </SettingsButton>
                   </div>
                   {showCode && (
                     <PhoneCode link={`${card.address}/`}>
-                      <p style={muted}>
+                      <p className="hb-set-hint">
                         Scan this with a device that is switched on above, with Tailscale on. The board opens. Nothing to type, and the code never runs out.
                       </p>
                     </PhoneCode>
                   )}
-                </div>
+                </SettingsGroup>
               ) : null}
               <NearbyCopies />
             </>
           )}
         </>
       )}
-    </ThemePanelCard>
+    </SettingsSection>
   );
 }

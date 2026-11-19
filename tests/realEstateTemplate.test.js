@@ -27,7 +27,7 @@ function fakeCreateAgent() {
 }
 
 describe('Real Estate Team template', () => {
-  test('ships five sealed modules with a valid manifest v3 label', async () => {
+  test('ships six sealed modules with a valid manifest v3 label', async () => {
     const modules = await loadRealEstateModules();
     expect(Object.keys(modules)).toEqual([...REAL_ESTATE_MODULE_IDS]);
     for (const mod of Object.values(modules)) {
@@ -48,7 +48,8 @@ describe('Real Estate Team template', () => {
     expect(board.groups.map(g => g.label)).toEqual(['Listings', 'Active Deals', 'Marketing', 'Team Chat']);
     expect(board.hotkeys).toEqual({ 1: 're-group-listings-t1', 2: 're-group-deals-t1', 3: 're-group-marketing-t1', 4: 're-group-team-t1' });
     expect(board.windows.every(w => w.groupId)).toBe(true);
-    expect(board.windows.filter(w => w.kind === 'module')).toHaveLength(5);
+    expect(board.windows.filter(w => w.kind === 'module')).toHaveLength(6);
+    expect(findTemplateWindow(board.windows, 'coldLeads').moduleData.leads.every(l => l.status === 'cold' && l.name)).toBe(true);
     expect(board.windows.filter(w => w.kind === 'chat').map(w => w.agentId).sort()).toEqual(['fu-1', 'lw-1', 'ma-1', 'tc-1']);
     expect(findTemplateWindow(board.windows, 'teamChat').kind).toBe('groupChat');
     expect(findTemplateWindow(board.windows, 'outbox').drafts[0]).toMatchObject({ status: 'pending', agentId: 'fu-1' });
@@ -71,7 +72,7 @@ describe('Real Estate Team template', () => {
     expect(first.toolScopes).toEqual({ mode: 'custom', tools: expect.arrayContaining(['fair_housing_check']) });
     expect(board.agents.map(a => a.name)).toEqual(REAL_ESTATE_AGENTS.map(a => a.name));
     expect(board.agents[0]).toMatchObject({ starters: expect.any(Array), description: expect.any(String), model_provider: 'ollama' });
-    expect(BOARD_TEMPLATES.find(t => t.id === 'real-estate-team').modules).toHaveLength(5);
+    expect(BOARD_TEMPLATES.find(t => t.id === 'real-estate-team').modules).toHaveLength(6);
   });
 
   test('no agent can send: client messages only reach the Outbox', () => {

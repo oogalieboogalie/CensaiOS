@@ -24,6 +24,8 @@ const ALLOW_FIXTURES = new Set([
   'tests/windowImportValidation.test.js -> ./DemoWindow.css',
   'tests/windowImportValidation.test.js -> ./old.css',
   'tests/windowImportValidation.test.js -> ./DemoWindowWindow.css',
+  // A file the hook-check test writes into its own throwaway repo.
+  'tests/hookCheck.test.js -> ./old.js',
   'scripts/window-sdk.mjs -> ./Windows.jsx',
   'scripts/window-sdk.mjs -> ./Icons.jsx',
   'tools/generate-window.js -> ./Icons.jsx',

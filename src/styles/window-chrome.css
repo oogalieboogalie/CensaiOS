@@ -282,3 +282,19 @@
 .hb-win-project-error { padding: var(--space-1) var(--space-2); font-size: var(--text-xs); color: var(--ink-faint); }
 .hb-win-project-error { color: var(--danger); }
 [data-header-mode="bare"] > .hb-win-header .hb-win-project { display: none; }
+
+/* The window's glass blur (--window-backdrop, black glass on dark). It lives
+   on this layer under the content instead of on the frame, the way
+   .hb-glass-host does in glass.css: a backdrop-filter on the frame itself
+   would make a maximized window the containing block of position: fixed
+   menus inside it. The frame paints the tint; this layer blurs the board. */
+[data-win-frame]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  -webkit-backdrop-filter: var(--frame-backdrop, none);
+  backdrop-filter: var(--frame-backdrop, none);
+  pointer-events: none;
+}

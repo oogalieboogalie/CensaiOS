@@ -5,7 +5,7 @@ export const memoryTools = [
     type: 'function',
     function: {
       name: 'remember',
-      description: 'Save something to your persistent memory. Survives between conversations. Use for facts, preferences, decisions, lessons learned.',
+      description: 'Save something to your persistent memory. Survives between conversations. Use for facts, preferences, decisions, lessons learned. To point back at your past (the family\'s old homebase-db folder), include a link such as past://homebase-db/FAMILY_CORE/... ; project_read opens it.',
       parameters: {
         type: 'object',
         properties: {

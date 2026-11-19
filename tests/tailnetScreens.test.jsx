@@ -148,7 +148,7 @@ describe('the Share panel', () => {
   test('points at Settings while the switch is off, and stays out of the way without Tailscale', async () => {
     answer('/', { ...CARD, on: false });
     render(<OpenOnMyDevices workspaceId="family-board" />);
-    expect(await screen.findByText(/Turn it on in Settings/)).toBeInTheDocument();
+    expect(await screen.findByText(/Turn it on in Open anywhere/)).toBeInTheDocument();
     cleanup();
     answer('/', { ...CARD, connected: false });
     const { container } = render(<OpenOnMyDevices workspaceId="family-board" />);

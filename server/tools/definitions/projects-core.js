@@ -53,7 +53,7 @@ export const coreProjectTools = [
     type: 'function',
     function: {
       name: 'project_read',
-      description: 'Read a file inside a project, by path relative to the project root. Sub-agents: omit `project` to use your bound project.',
+      description: 'Read a file inside a project, by path relative to the project root. Sub-agents: omit `project` to use your bound project. A path starting past:// (for example past://homebase-db/FAMILY_CORE/...) reads the family\'s past, a read-only copy of the old homebase-db folder, whatever `project` says.',
       parameters: {
         type: 'object',
         properties: {
@@ -119,7 +119,7 @@ export const coreProjectTools = [
     type: 'function',
     function: {
       name: 'project_list',
-      description: 'List entries in a directory inside a project. Defaults to the project root.',
+      description: 'List entries in a directory inside a project. Defaults to the project root. A path starting past:// (start with past://homebase-db) lists the family\'s past, read only.',
       parameters: {
         type: 'object',
         properties: {

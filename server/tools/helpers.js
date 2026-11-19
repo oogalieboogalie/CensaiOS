@@ -6,21 +6,25 @@ import { getSubAgentById } from '../memory.js';
 import { getProject, getProjectByName, getProjectByRepoOrPath, listProjects, openProject } from '../workspaces.js';
 import { getSecret } from '../secrets.js';
 import { githubApiUrl } from '../github/apiUrl.js';
-import {
-  assertAgentProjectAccess,
-} from '../workspaces/projectMemberships.js';
-import { resolveAuthorizedWorkspaceProject } from '../workspaces/projectAccess.js';
+import { resolveProjectForDriver } from '../workspaces/ownerProjectLookup.js';
+import { refusePastWork } from '../workspaces/familyPast.js';
 import { noteToolFailure } from './toolsLog.js';
 import { refuseProjectsOffBoard } from './rbac/ownerOnlyReads.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CURRENT_PROJECT_FILE = path.resolve(path.join(__dirname, '..', '..', '.homebase-state', 'current-project.json'));
+// The same file the project routes keep (server/routes/projects/shared.js);
+// CENSAI_STATE_DIR moves local state for tests and sandboxes.
+const currentProjectFile = () => path.join(
+  process.env.CENSAI_STATE_DIR ? path.resolve(process.env.CENSAI_STATE_DIR) : path.resolve(__dirname, '..', '..', '.homebase-state'),
+  'current-project.json',
+);
 
+/** The project open on this computer (the top bar's), or null. */
 async function readCurrentProjectState() {
   try {
-    const raw = await fs.promises.readFile(CURRENT_PROJECT_FILE, 'utf8');
-    return JSON.parse(raw);
-  } catch {
+    return JSON.parse(await fs.promises.readFile(currentProjectFile(), 'utf8'));
+  } catch (error) {
+    if (error.code !== 'ENOENT') noteToolFailure('could not read the open project', {}, error);
     return null;
   }
 }
@@ -54,29 +58,57 @@ async function maybeOpenCurrentProject(agentId, projectName) {
   });
 }
 
-async function authorizedProjectResult(agentId, project, isSubAgent, context) {
-  if (context.workspaceId) {
-    const sub = isSubAgent ? await getSubAgentById(agentId, context) : null;
-    await assertAgentProjectAccess(pool, {
-      workspaceId: context.workspaceId,
-      projectId: project.id,
-      agentId: sub?.parent_id || agentId,
-      requiredPermission: context.requiredProjectPermission || 'read',
-    });
+// Off a board, one way to find a project by what an agent called it. Agents
+// often pass "owner/repo" for a project opened from a GitHub repo (stored
+// under just "repo"), so: its id, its name, the last `/`-segment, its repo or
+// path, then the project open on this computer when that is the one meant.
+async function namedProject(agentId, projectName) {
+  let p = await getProject(projectName);
+  if (!p) p = await getProjectByName(agentId, projectName);
+  if (!p && projectName.includes('/')) p = await getProjectByName(agentId, projectName.split('/').pop());
+  // Core projects are shared; owner only records who opened the row first.
+  if (!p) p = await getProjectByRepoOrPath(agentId, projectName);
+  // The canvas can know a project the database has not been seeded with yet.
+  if (!p) p = await maybeOpenCurrentProject(agentId, projectName);
+  return p;
+}
+
+// Off a board, the project a call means when it names none: the one open on
+// this computer, and only when there is none, the one worked in last.
+async function defaultProject(agentId) {
+  const current = await readCurrentProjectState();
+  if (current?.type === 'local' && current.path) {
+    const open = (current.projectId && await getProject(current.projectId))
+      || await getProjectByRepoOrPath(agentId, current.path);
+    if (open) return open;
   }
-  return { project, isSubAgent };
+  const projects = await listProjects(agentId);
+  return projects[0] || await maybeOpenCurrentProject(agentId, null);
+}
+
+async function noSuchProject(agentId, projectName) {
+  const projects = await listProjects(agentId);
+  const projectList = projects.length ? projects.map(x => `"${x.name}"${x.repo ? ` (${x.repo})` : x.path ? ` (${x.path})` : ''}`).join(', ') : 'none';
+  return `No shared project matching "${projectName}". Available projects: ${projectList}. Use open_project to add the project once; all core agents can use it after that.`;
 }
 
 // Resolve which project a tool call should operate against.
-// - On a board: a project the board gave the agent.
+// - On a board: a project the board gave the agent, or any project on this
+//   computer when its owner drives the chat (workspaces/ownerProjects.js).
 // - Off a board: for this computer's owner's agents only (refuseProjectsOffBoard).
-// - Sub-agents: bound project (always).
-// - Head agents: project name from args, or most-recent if omitted.
-// Forgiving lookup: agents often pass "owner/repo" as the project name when the
-// project was opened from a GitHub repo (stored under just "repo"). Try the
-// literal name first, then fall back to matching the last `/`-segment OR the
-// `repo` field directly, before giving up.
+//   A named project is that project or a refusal, never a different one. No
+//   name means the project open on this computer, then the most recent.
+// - Sub-agents live on a board: no name means their task's project, then the
+//   one they are bound to.
+// - The family's past is read only for every agent and every driver, the
+//   owner included (workspaces/familyPast.js).
 export async function resolveProjectForCall(agentId, projectName, context = {}) {
+  const found = await findProjectForCall(agentId, projectName, context);
+  refusePastWork(found.project, context.requiredProjectPermission);
+  return found;
+}
+
+async function findProjectForCall(agentId, projectName, context) {
   await refuseProjectsOffBoard(context);
   const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
   if (context.workspaceId) {
@@ -89,101 +121,20 @@ export async function resolveProjectForCall(agentId, projectName, context = {}) 
       projectIdentifier = rows[0]?.project_id || rows[0]?.project || null;
     }
     if (!projectIdentifier && sub?.project_id) projectIdentifier = sub.project_id;
-    const project = await resolveAuthorizedWorkspaceProject(pool, {
+    const project = await resolveProjectForDriver(pool, {
       workspaceId: context.workspaceId,
       agentId: sub?.parent_id || agentId,
       projectIdentifier,
       requiredPermission: context.requiredProjectPermission || 'read',
-    });
+    }, context);
     return { project, isSubAgent: Boolean(sub) };
   }
-  if (sub) {
-    let p = null;
-    if (projectName) {
-      p = await getProject(projectName);
-      if (!p) p = await getProjectByName(agentId, projectName);
-      if (!p && projectName.includes('/')) p = await getProjectByName(agentId, projectName.split('/').pop());
-      if (!p) p = await getProjectByRepoOrPath(agentId, projectName);
-    }
-
-    if (!p && context.agentTaskId) {
-      try {
-        const { rows } = await pool.query('SELECT project_id, project FROM agent_tasks WHERE id = $1', [context.agentTaskId]);
-        if (rows[0]) {
-          const taskId = rows[0].project_id;
-          const taskProjectStr = rows[0].project;
-          if (taskId) {
-            p = await getProject(taskId);
-          }
-          if (!p && taskProjectStr) {
-            p = await getProject(taskProjectStr);
-            if (!p) p = await getProjectByName(agentId, taskProjectStr);
-            if (!p && taskProjectStr.includes('/')) p = await getProjectByName(agentId, taskProjectStr.split('/').pop());
-            if (!p) p = await getProjectByRepoOrPath(agentId, taskProjectStr);
-          }
-        }
-      } catch (dbErr) {
-        noteToolFailure('could not load a task\'s project scope', { taskId: context.agentTaskId }, dbErr);
-      }
-    }
-
-    if (!p && sub.project_id) {
-      p = await getProject(sub.project_id);
-    }
-
-    if (!p) {
-      const projects = await listProjects(agentId);
-      if (projects.length > 0) {
-        p = projects[0];
-      }
-    }
-
-    if (!p) {
-      p = await maybeOpenCurrentProject(agentId, projectName);
-    }
-
-    if (!p) {
-      throw new Error('This sub-agent has no project context. Please open a project first.');
-    }
-    return authorizedProjectResult(agentId, p, true, context);
-  }
-  if (projectName) {
-    // 0) Try exact ID match first (handles "agent-project" formats passed by agents or frontend context)
-    let p = await getProject(projectName);
-
-    // 1) Exact name match
-    if (!p) {
-      p = await getProjectByName(agentId, projectName);
-    }
-    // 2) If name looks like "owner/repo", try just the repo segment
-    if (!p && projectName.includes('/')) {
-      p = await getProjectByName(agentId, projectName.split('/').pop());
-    }
-    // 3) Match globally by repo or path. Core projects are shared; owner only
-    // records who opened the row first.
-    if (!p) {
-      p = await getProjectByRepoOrPath(agentId, projectName);
-    }
-    // 4) If the frontend has a current project selected, materialize it once.
-    // This avoids "project not found" when the canvas knows the workspace but
-    // the DB has not yet been seeded for the calling agent/process.
-    if (!p) {
-      p = await maybeOpenCurrentProject(agentId, projectName);
-    }
-    if (!p) {
-      const projects = await listProjects(agentId);
-      const projectList = projects.length ? projects.map(x => `"${x.name}"${x.repo ? ` (${x.repo})` : x.path ? ` (${x.path})` : ''}`).join(', ') : 'none';
-      throw new Error(`No shared project matching "${projectName}". Available projects: ${projectList}. Use open_project to add the project once; all core agents can use it after that.`);
-    }
-    return authorizedProjectResult(agentId, p, false, context);
-  }
-  const projects = await listProjects(agentId);
-  if (!projects[0]) {
-    const current = await maybeOpenCurrentProject(agentId, null);
-    if (current) return authorizedProjectResult(agentId, current, false, context);
+  const p = projectName ? await namedProject(agentId, projectName) : await defaultProject(agentId);
+  if (!p) {
+    if (projectName) throw new Error(await noSuchProject(agentId, projectName));
     throw new Error('There are no shared projects yet. Use open_project to create one.');
   }
-  return authorizedProjectResult(agentId, projects[0], false, context);
+  return { project: p, isSubAgent: false };
 }
 
 export async function resolveLocalProjectRoot(agentId, projectName, context = {}) {

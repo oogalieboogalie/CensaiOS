@@ -6,6 +6,7 @@
 //   2. Work Queue (server/legion/queue.js): Foundation, Nexus, Atlas and
 //      Genesis pull jobs by UID, up to three at once; a job waits only on
 //      the jobs it depends on (by default, the builders before it).
+//      Owned files and the re-plan between waves: server/legion/waves.js.
 //   2b. Front and back at the same time (diagram 04, server/legion/combine.js):
 //      Atlas and Genesis build side by side, then Synthesis joins them.
 //   3. Validation Engine (server/legion/validate.js): a browser opens the
@@ -31,6 +32,7 @@ import { callModel } from './modelCall.js';
 import { planProject } from './plan.js';
 import { specToYaml, withBuildOrder } from './spec.js';
 import { runQueue, snapshot } from './queue.js';
+import { ownFilesOnly, replanWaiting } from './waves.js';
 import { failedJobs, runChecks } from './validate.js';
 import { selfEducate } from './educate.js';
 import { memoryInMemory } from './memory.js';
@@ -48,7 +50,7 @@ export async function runLegion({
   goal, models, account, dir, emit, signal, lessons = [], maxFixRounds = MAX_FIX_ROUNDS, spec: personSpec = null,
   ask = callModel, look = lookAtProject, commit = commitProject,
   askPerson = async () => '', search = async () => [], concurrency, selfEducate: educateFirst = true, memory = memoryInMemory(),
-  resume = null, checkpoint = () => {},
+  resume = null, checkpoint = () => {}, replan = true,
 }) {
   const projectDir = path.join(dir, 'project');
   const modelFor = (role) => models[role] || models.architect;
@@ -89,6 +91,7 @@ export async function runLegion({
     const instructions = job.fix
       ? `Job ${job.id} came back from the Validation Engine.\nYour job: ${job.task}\nFixing instructions from the Orchestrator Engine:\n${job.fix}`
       : `Job ${job.id} (only yours): ${job.task}\nOnly touch the files this job needs; other agents are working on other jobs at the same time.`;
+    const owned = job.files?.length ? `\nFiles this job owns: ${job.files.join(', ')}. Other jobs own other files, and a file another job owns will not be written.` : '';
     // The self-educate loop: know enough? If not, memory and Research first.
     let educated = { learned: '', remember: '' };
     if (educateFirst) {
@@ -99,8 +102,10 @@ export async function runLegion({
         emit({ type: 'note', text: `${job.id}: self-educate did not work (${String(error.message).slice(0, 160)}), so it builds with what it knows.` });
       }
     }
-    const task = [instructions, educated.learned, await filesForPrompt(projectDir), PROMPTS.build].filter(Boolean).join('\n\n');
-    const { files, notes, remember } = parseFileBlocks(await turn(job.owner, task));
+    const task = [instructions + owned, educated.learned, await filesForPrompt(projectDir), PROMPTS.build].filter(Boolean).join('\n\n');
+    const { files: replyFiles, notes, remember } = parseFileBlocks(await turn(job.owner, task));
+    const { files, leftOut } = ownFilesOnly(job, jobs, replyFiles);
+    if (leftOut) emit({ type: 'note', text: `${job.id} also wrote ${leftOut}. Those were not saved.` });
     const write = writing.then(() => writeFiles(projectDir, files));
     writing = write.catch(() => {});
     const written = await write;
@@ -115,7 +120,13 @@ export async function runLegion({
     }
     // Work-done callback: the builder reports back to the team chat.
     chat.push({ role: job.owner, text: `${job.id} done (${label}): ${written.join(', ') || 'no files'}${notes ? `. ${notes}` : ''}` });
-    return written.length ? `Wrote ${written.join(', ')}` : 'Wrote no files';
+    return `${written.length ? `Wrote ${written.join(', ')}` : 'Wrote no files'}${leftOut ? `. Not saved: ${leftOut}.` : ''}`;
+  }
+
+  // Between waves: one Architect turn to fit the waiting jobs to what was built.
+  async function afterWave(ended) {
+    const changed = await replanWaiting({ ended, jobs, spec, projectDir, turn, emit });
+    if (changed.length) { say('architect', `Between waves: changed ${changed.join(', ')} to fit what was built.`); queueChanged(); }
   }
 
   // 1. Spec. A run picked up after a restart has its spec saved, so planning and the questions are skipped.
@@ -148,7 +159,6 @@ export async function runLegion({
       if (!jobs.some((j) => j.owner === role)) emit({ type: 'role', role, status: 'skipped', note: 'No jobs for this builder.' });
     }
   }
-  const yamlText = specToYaml(spec);
   const queueChanged = () => { emit({ type: 'queue', jobs: snapshot(jobs) }); save(); };
   const step = back?.step || 'build';
 
@@ -156,7 +166,7 @@ export async function runLegion({
   if (step === 'build') {
     enter('build');
     queueChanged();
-    await runQueue({ jobs, runJob, onChange: queueChanged, concurrency, stopIfAsked });
+    await runQueue({ jobs, runJob, onChange: queueChanged, concurrency, stopIfAsked, afterWave: replan ? afterWave : null });
     if (needsCombine(jobs)) {
       const joined = await combineFrontAndBack({ projectDir, turn, emit, buildPrompt: PROMPTS.build });
       chat.push({ role: 'architect', text: `Synthesis joined front and back: ${joined.files.join(', ') || 'they already fit'}${joined.notes ? `. ${joined.notes}` : ''}` });
@@ -214,7 +224,7 @@ export async function runLegion({
   // 5. Commit when Echo said OK (once, even when a restart came after it).
   if (verdict?.verdict === 'OK' && !committed) {
     enter('commit');
-    await fs.writeFile(path.join(projectDir, 'legion.yaml'), yamlText, 'utf8'); // the spec as agreed, even if a builder touched it
+    await fs.writeFile(path.join(projectDir, 'legion.yaml'), specToYaml(spec), 'utf8'); // the spec as agreed, even if a builder touched it
     committed = await commit(projectDir, `Legion: ${plan.summary || goal}`);
     emit({ type: 'commit', ...committed });
   }

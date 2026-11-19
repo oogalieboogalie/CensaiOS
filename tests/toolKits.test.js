@@ -17,7 +17,7 @@ jest.unstable_mockModule('../server/tools/rbac/checks.js', () => ({
 jest.unstable_mockModule('../server/tools/catalog.js', () => ({ listToolCatalog: () => ({ tools: CATALOG }) }));
 
 const { handleToolDiscovery } = await import('../server/tools/handlers/discovery.js');
-const { createChatToolSession, useSearchFirst, SEARCH_FIRST_MIN_TOOLS } = await import('../server/routes/chat/toolSession.js');
+const { createChatToolSession, useSearchFirst, SEARCH_FIRST_MIN_TOOLS, forgetLoadedTools, CARRY_OVER_MAX_TOOLS } = await import('../server/routes/chat/toolSession.js');
 const { TOOL_DISCOVERY_NAMES, discoveryTools } = await import('../server/tools/definitions/discovery.js');
 
 describe('get_toolkit', () => {
@@ -70,6 +70,74 @@ describe('search-first chat sessions', () => {
     session.observe('get_toolkit', {}, true, 'not json');
     session.observe('get_tool', { name: 'tool_3' }, false);
     expect(session.list()).toHaveLength(TOOL_DISCOVERY_NAMES.length + 2);
+  });
+
+  test('the prompt says a loaded tool works in this same reply, not after the next message', () => {
+    const { prompt } = createChatToolSession([...discovery, ...many], 'openai');
+    expect(prompt).not.toMatch(/next turn/i);
+    expect(prompt).toMatch(/ready right away, in this same reply/);
+    expect(prompt).toMatch(/never a reason to stop and ask/);
+  });
+
+  // The loop from the chat that found this: the agent loads project_write, asks
+  // the person to say "build it", and on that message it had lost the tool again.
+  test('a tool loaded in one message is still loaded on the next message in the same window', () => {
+    forgetLoadedTools();
+    const tools = [...discovery, def('project_write'), ...many];
+    const first = createChatToolSession(tools, 'openai', { agentId: 'genesis', windowId: 'w1' });
+    first.observe('get_tool', { name: 'project_write' }, true);
+
+    const next = createChatToolSession(tools, 'openai', { agentId: 'genesis', windowId: 'w1' });
+    expect(next.list().map((t) => t.function.name)).toContain('project_write');
+
+    // Another window, another agent, or no window id: nothing carries over.
+    for (const ids of [{ agentId: 'genesis', windowId: 'w2' }, { agentId: 'atlas', windowId: 'w1' }, {}]) {
+      expect(createChatToolSession(tools, 'openai', ids).list().map((t) => t.function.name)).toEqual(TOOL_DISCOVERY_NAMES);
+    }
+  });
+
+  test('a carried-over tool the agent may no longer use stays out, and old loads expire', () => {
+    forgetLoadedTools();
+    let clock = 1_000;
+    const now = () => clock;
+    const tools = [...discovery, def('project_write'), ...many];
+    createChatToolSession(tools, 'openai', { agentId: 'genesis', windowId: 'w1', now })
+      .observe('get_tool', { name: 'project_write' }, true);
+
+    const withoutWrite = [...discovery, ...many];
+    expect(createChatToolSession(withoutWrite, 'openai', { agentId: 'genesis', windowId: 'w1', now })
+      .list().map((t) => t.function.name)).toEqual(TOOL_DISCOVERY_NAMES);
+
+    clock += 7 * 60 * 60 * 1000;
+    expect(createChatToolSession(tools, 'openai', { agentId: 'genesis', windowId: 'w1', now })
+      .list().map((t) => t.function.name)).toEqual(TOOL_DISCOVERY_NAMES);
+  });
+
+  test('a chat in use keeps its tools past six hours from the load', () => {
+    forgetLoadedTools();
+    let clock = 1_000;
+    const now = () => clock;
+    const tools = [...discovery, def('project_write'), ...many];
+    const ids = { agentId: 'genesis', windowId: 'w1', now };
+    createChatToolSession(tools, 'openai', ids).observe('get_tool', { name: 'project_write' }, true);
+    for (let hour = 0; hour < 10; hour += 4) {
+      clock += 4 * 60 * 60 * 1000;
+      expect(createChatToolSession(tools, 'openai', ids).list().map((t) => t.function.name)).toContain('project_write');
+    }
+  });
+
+  test('only the most recently loaded tools carry over, so a long chat stays under provider limits', () => {
+    forgetLoadedTools();
+    const lots = Array.from({ length: CARRY_OVER_MAX_TOOLS + 10 }, (_, i) => def(`kit_tool_${i}`));
+    const tools = [...discovery, ...lots];
+    const ids = { agentId: 'genesis', windowId: 'w1' };
+    const first = createChatToolSession(tools, 'openai', ids);
+    lots.forEach((t) => first.observe('get_tool', { name: t.function.name }, true));
+
+    const names = createChatToolSession(tools, 'openai', ids).list().map((t) => t.function.name);
+    expect(names).toHaveLength(TOOL_DISCOVERY_NAMES.length + CARRY_OVER_MAX_TOOLS);
+    expect(names).toContain(`kit_tool_${lots.length - 1}`);
+    expect(names).not.toContain('kit_tool_0');
   });
 });
 

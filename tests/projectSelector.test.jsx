@@ -96,3 +96,44 @@ test('github-only rows and same-folder duplicates collapse out of the list', asy
   expect(options.some(t => t.includes('Idea-Foundry'))).toBe(false);
   expect(options.filter(t => t.includes('Same'))).toHaveLength(1);
 });
+
+test('the default project comes first, helper copies and temp folders stay out, names are short', async () => {
+  global.fetch.mockResolvedValueOnce({
+    ok: true,
+    json: jest.fn().mockResolvedValue({ projects: [
+      { id: 'w-1', name: 'fix-x', path: '/home/alma/Shop-worktrees/fix-x', updatedAt: '2026-11-15T00:00:00Z' },
+      { id: 'w-2', name: 'ag-1', path: '/home/alma/.cache/agent-worktrees/ag-1', updatedAt: '2026-11-15T00:00:00Z' },
+      { id: 't-1', name: 'try', path: '/tmp/try', updatedAt: '2026-11-15T00:00:00Z' },
+      { id: 'b-1', name: 'Blog', path: 'D:\\Repos\\Blog', updatedAt: '2026-11-14T00:00:00Z' },
+      { id: 's-new', name: 'shop-site', path: 'D:\\Repos\\Shop', updatedAt: '2026-11-13T00:00:00Z' },
+      { id: 's-old', name: 'Shop', path: 'd:/repos/shop/', updatedAt: '2026-11-01T00:00:00Z' },
+    ] }),
+  });
+  renderSelector({ currentProject: { projectId: 's-old', name: 'Shop', path: 'D:\\Repos\\Shop' } });
+
+  await waitFor(() => expect(screen.getByText('Blog')).toBeTruthy());
+  const options = screen.getAllByRole('option').filter(o => o.value).map(o => o.textContent);
+  expect(options).toEqual(['Shop', 'Blog']);
+  expect(screen.getByRole('combobox').value).toBe('s-old');
+  expect(document.body.textContent.includes('\u2014')).toBe(false);
+});
+
+test('the default stays picked when its row for the folder has another id', async () => {
+  global.fetch.mockResolvedValueOnce({
+    ok: true,
+    json: jest.fn().mockResolvedValue({ projects: [
+      { id: 's-new', name: 'Shop', path: 'D:\\Repos\\Shop' },
+      { id: 'b-1', name: 'Blog', path: 'D:\\Repos\\Blog' },
+    ] }),
+  });
+  renderSelector({ currentProject: { projectId: 'gone-id', name: 'Shop', path: 'D:/Repos/Shop/' } });
+  await waitFor(() => expect(screen.getByText('Blog')).toBeTruthy());
+  expect(screen.getByRole('combobox').value).toBe('s-new');
+});
+
+test('a failed load says so instead of showing an empty list', async () => {
+  global.fetch.mockResolvedValueOnce({ ok: false, json: jest.fn().mockResolvedValue({ error: 'boom' }) });
+  renderSelector();
+  await waitFor(() => expect(screen.getByText(/could not be loaded/)).toBeTruthy());
+  expect(screen.queryByText(/No folders yet/)).toBeNull();
+});

@@ -49,6 +49,9 @@ export function IdeaFoundryWindow({ win }) {
     return cards.map((card) => ({ card, rec: suggestRecommendation(card, cards) }));
   }, [cards]);
 
+  // The recommender names companions by file; show each one's title.
+  const titles = React.useMemo(() => new Map((cards || []).map((c) => [c.path, c.title])), [cards]);
+
   const phases = React.useMemo(
     () => [...new Set((cards || []).map((c) => c.phase).filter(Boolean))].sort(),
     [cards],
@@ -64,7 +67,7 @@ export function IdeaFoundryWindow({ win }) {
       return true;
     });
     return sortCards(filtered.map(({ card, rec }) => ({
-      file: card.path, phase: rec.suggestedPhase, status: card.status,
+      file: card.path, phase: card.phase || rec.suggestedPhase, status: card.status,
       companions: rec.companions.length, card, rec,
     })), sortKey, sortDir);
   }, [enriched, statusFilter, phaseFilter, tagFilter, sortKey, sortDir]);
@@ -137,7 +140,7 @@ export function IdeaFoundryWindow({ win }) {
                       {rec.companions.length > 0 && (
                         <div style={{ marginBottom: 8 }}>
                           <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Companions</div>
-                          {rec.companions.map((c) => <div key={c.path} style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>{c.title || c.path}</div>)}
+                          {rec.companions.map((path) => <div key={path} style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>{titles.get(path) || path}</div>)}
                         </div>
                       )}
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-sm)' }}>

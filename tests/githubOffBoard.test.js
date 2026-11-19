@@ -157,11 +157,14 @@ describe('on a board, as before', () => {
     expect(await readFile({ userId: SAM, workspaceId: BOARD })).toBe(README);
   });
 
-  test("a repo the board did not give the agent is refused for Sam and Pat alike", async () => {
-    for (const who of [SAM, PAT]) {
-      const result = await readFile({ userId: who, workspaceId: BOARD }, 'pat-example/made-up-other-repo');
-      expect(result).toMatch(/^Error: PROJECT_ACCESS_DENIED: /);
-    }
+  test("a repo the board did not give the agent is refused for Sam, and read for Pat, who owns this computer", async () => {
+    const result = await readFile({ userId: SAM, workspaceId: BOARD }, 'pat-example/made-up-other-repo');
+    expect(result).toMatch(/^Error: PROJECT_ACCESS_DENIED: /);
     expect(global.fetch).not.toHaveBeenCalled();
+    // The owner is not held to a board's list (server/workspaces/ownerProjects.js).
+    // The made-up GitHub has no such repo: what matters is that the read reached it.
+    const forPat = await readFile({ userId: PAT, workspaceId: BOARD }, 'pat-example/made-up-other-repo');
+    expect(forPat).not.toContain('PROJECT_ACCESS_DENIED');
+    expect(global.fetch).toHaveBeenCalled();
   });
 });

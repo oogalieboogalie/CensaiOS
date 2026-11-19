@@ -23,6 +23,14 @@ import { selfRepo } from '../selfFix/patches.js';
 // The updater writes its heartbeat every few seconds; a minute of silence
 // means it is not running (censaiOS was opened some way that did not start it).
 const WATCHER_FRESH_MS = 60_000;
+
+// On a Linux computer the updater can run on demand instead: it starts when
+// one of the request files below is written and stops when it is done
+// (scripts/censaios-update.path), so there is no heartbeat between runs.
+// CENSAI_UPDATER_ON_DEMAND=1 tells the app that this is how its computer works.
+export function updaterOnDemand(env = process.env) {
+  return env.CENSAI_UPDATER_ON_DEMAND === '1';
+}
 const COMMIT = /^[0-9a-f]{7,40}$/;
 
 export function updateDir(repoRoot = selfRepo()) {
@@ -48,7 +56,7 @@ function readJson(dir, name) {
 }
 
 /** What the "Update ready" note needs. Never throws. */
-export function updateStatus({ dir = updateDir(), now = Date.now() } = {}) {
+export function updateStatus({ dir = updateDir(), now = Date.now(), onDemand = updaterOnDemand() } = {}) {
   const empty = { ready: null, running: null, watching: false, requested: false, checking: false, checked: null };
   if (!dir) return empty;
   const running = readText(dir, 'running.txt');
@@ -66,7 +74,7 @@ export function updateStatus({ dir = updateDir(), now = Date.now() } = {}) {
   return {
     ready,
     running: COMMIT.test(running) ? running : null,
-    watching: Number.isFinite(beatAt) && now - beatAt < WATCHER_FRESH_MS,
+    watching: onDemand || (Number.isFinite(beatAt) && now - beatAt < WATCHER_FRESH_MS),
     requested: fs.existsSync(path.join(dir, 'restart-requested')),
     checking: fs.existsSync(path.join(dir, 'check-requested')),
     checked: lastCheck(dir),

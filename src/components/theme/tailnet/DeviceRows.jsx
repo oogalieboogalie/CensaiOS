@@ -1,7 +1,7 @@
 import React from 'react';
 import { Icon } from '../../Icons.jsx';
 
-const muted = { fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', margin: 0, lineHeight: 1.5 };
+import { SettingsNote, SettingsSwitch } from '../settingsKit.jsx';
 const SYSTEMS = { android: 'Android', ios: 'iPhone or iPad', ipados: 'iPad', windows: 'Windows', macos: 'Mac', linux: 'Linux' };
 
 function PhoneGlyph() {
@@ -28,21 +28,18 @@ function whose(device) {
 function DeviceRow({ device, disabled, onSwitch }) {
   const note = whose(device);
   return (
-    <div role="listitem" data-testid="tailnet-device" data-on={device.on ? 'true' : 'false'}
-      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 'var(--radius-md)', background: 'var(--surface)', border: '1px solid var(--hairline)' }}>
-      <span style={{ color: device.online ? 'var(--ink-soft)' : 'var(--ink-faint)', display: 'inline-flex', flexShrink: 0 }}>
+    <div role="listitem" data-testid="tailnet-device" data-on={device.on ? 'true' : 'false'} className="hb-set-item">
+      <span className={device.online ? 'hb-set-device hb-set-device--on' : 'hb-set-device'}>
         {device.kind === 'phone' ? <PhoneGlyph /> : <Icon.Computer size={16} aria-hidden="true" />}
       </span>
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 'var(--text-sm)', fontWeight: 650, color: 'var(--ink)', overflowWrap: 'anywhere' }}>{device.name}</span>
-          {device.here ? <span style={{ ...muted, color: 'var(--accent-ink)', fontWeight: 650 }}>This device</span> : null}
-        </div>
-        <p style={muted}>{about(device)}</p>
-        {note ? <p style={{ ...muted, color: device.on ? 'var(--warning)' : 'var(--ink-faint)' }}>{note}{device.on ? ' It opens censaiOS as you.' : ''}</p> : null}
+      <div className="hb-set-item-main">
+        <span className="hb-set-label">{device.name}</span>
+        {device.here ? <span className="hb-set-hint">This device</span> : null}
+        <span className="hb-set-hint">{about(device)}</span>
+        {note ? <span className={device.on ? 'hb-set-note hb-set-note--warn' : 'hb-set-hint'}>{note}{device.on ? ' It opens censaiOS as you.' : ''}</span> : null}
       </div>
-      <input type="checkbox" role="switch" aria-label={`Let ${device.name} open censaiOS`} checked={device.on} disabled={disabled}
-        onChange={(event) => onSwitch(device, event.target.checked)} />
+      <SettingsSwitch label={`Let ${device.name} open censaiOS`} checked={device.on} disabled={disabled}
+        onChange={(on) => onSwitch(device, on)} />
     </div>
   );
 }
@@ -51,13 +48,13 @@ function DeviceRow({ device, disabled, onSwitch }) {
 export function DeviceRows({ devices, disabled, onSwitch }) {
   if (!devices.length) {
     return (
-      <p style={muted} data-testid="tailnet-no-devices">
+      <SettingsNote data-testid="tailnet-no-devices">
         No other devices on your tailnet yet. Put Tailscale on your phone, tablet or laptop and sign in with the same account. They show up here.
-      </p>
+      </SettingsNote>
     );
   }
   return (
-    <div role="list" aria-label="Devices on your tailnet" style={{ display: 'grid', gap: 6 }}>
+    <div role="list" aria-label="Devices on your tailnet" className="hb-set-list">
       {devices.map((device) => <DeviceRow key={device.id} device={device} disabled={disabled} onSwitch={onSwitch} />)}
     </div>
   );

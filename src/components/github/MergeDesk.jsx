@@ -1,6 +1,30 @@
 import React from 'react';
 import { PrRow } from './PrRow.jsx';
 
+// Icon buttons for the bar (asked for on 2026-11-17): Refresh is a round arrow, Merge all green two arrows joining
+// into one. The words stay as the button's name and tooltip.
+function RefreshIcon({ spinning }) {
+  return (
+    <svg className={spinning ? 'hb-gh-icon hb-gh-spin' : 'hb-gh-icon'} viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+      <path d="M20 4v5h-5" />
+    </svg>
+  );
+}
+
+function MergeIcon() {
+  return (
+    <svg className="hb-gh-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 21v-4c0-3 6-5 6-8" />
+      <path d="M18 21v-4c0-3-6-5-6-8" />
+      <path d="M12 9V3" />
+      <path d="M8.5 6.5 12 3l3.5 3.5" />
+    </svg>
+  );
+}
+
 export function timeAgo(iso, now = Date.now()) {
   const t = Date.parse(iso || '');
   if (!Number.isFinite(t)) return '';
@@ -60,10 +84,16 @@ export function MergeDesk({ desk: model, team }) {
           {desk ? <><strong>{prs.length}</strong> open · <strong>{green.length}</strong> ready to merge</> : loading ? 'Loading pull requests…' : 'No data yet'}
         </span>
         <span className="hb-gh-bar-age">{loading ? 'Refreshing…' : desk ? `Updated ${timeAgo(desk.fetchedAt)}` : ''}</span>
-        <button type="button" className="hb-btn" onClick={refresh} disabled={loading}>Refresh</button>
-        <button type="button" className="hb-btn" data-primary="true" disabled={!green.length || Boolean(bulk)} onClick={mergeAllGreen}
-          title="Merges every PR with passing checks and no conflicts, one after another">
-          {bulk ? `Merging ${bulk.done}/${bulk.total}…` : `Merge all green${green.length ? ` (${green.length})` : ''}`}
+        <button type="button" className="hb-btn hb-gh-icon-btn" onClick={refresh} disabled={loading}
+          aria-label="Refresh" title="Refresh">
+          <RefreshIcon spinning={loading} />
+        </button>
+        <button type="button" className="hb-btn hb-gh-icon-btn" data-primary="true" disabled={!green.length || Boolean(bulk)} onClick={mergeAllGreen}
+          aria-label={bulk ? `Merging ${bulk.done} of ${bulk.total}` : `Merge all green${green.length ? ` (${green.length})` : ''}`}
+          title="Merge all green: every PR with passing checks and no conflicts, one after another">
+          <MergeIcon />
+          {bulk ? <span className="hb-gh-icon-count">{bulk.done}/{bulk.total}</span>
+            : green.length ? <span className="hb-gh-icon-count">{green.length}</span> : null}
         </button>
       </div>
       {error ? <p className="hb-gh-error hb-gh-pad">{error}</p> : null}

@@ -30,6 +30,14 @@ async function openOnThisComputer(db, projectId) {
 }
 
 /**
+ * True when anyone on the board may hand `projectId` to its agents: the board
+ * already has it, or this computer's owner has it open here.
+ */
+export async function boardMayUse(db, workspaceId, projectId) {
+  return await boardHas(db, workspaceId, projectId) || await openOnThisComputer(db, projectId);
+}
+
+/**
  * Null when this request may give the board's agents `projectId`, else the
  * status and plain words to answer with. A request that gives no agent
  * anything passes. Anyone but the owner hears the same words whether or not
@@ -38,7 +46,7 @@ async function openOnThisComputer(db, projectId) {
 export async function refuseNewProjectToTeammate(req, { workspaceId, projectId, memberships, db = pool } = {}) {
   if (!Array.isArray(memberships) || memberships.length === 0) return null;
   try {
-    if (await boardHas(db, workspaceId, projectId) || await openOnThisComputer(db, projectId)) return null;
+    if (await boardMayUse(db, workspaceId, projectId)) return null;
     if (await isComputerOwner(req, "giving a board's agents a new project", { db })) return null;
   } catch {
     return { status: 503, body: { error: OWNER_UNCHECKED_MESSAGE } };

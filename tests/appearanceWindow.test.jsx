@@ -49,6 +49,6 @@ test('switching tab to Canvas shows workspace settings content', async () => {
     fireEvent.click(canvasTabBtn);
   });
 
-  expect(screen.getByText('Canvas behavior')).toBeInTheDocument();
-  expect(screen.getByText('Focus Mode')).toBeInTheDocument();
+  expect(screen.getByText('Moving around')).toBeInTheDocument();
+  expect(screen.getByText('Focus mode')).toBeInTheDocument();
 });

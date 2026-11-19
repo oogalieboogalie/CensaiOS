@@ -85,7 +85,7 @@ export async function resumeLegions({ root = legionRoot(), now = Date.now(), acc
       await startRun({
         userId: state.userId, account: await accountFor(state.userId), goal: state.goal.trim(), root, ...more,
         models: Object.fromEntries(ROLE_IDS.map((role) => [role, cleanModelSpec(state.models[role])])),
-        askFirst: state.askFirst !== false, selfEducate: state.selfEducate !== false,
+        askFirst: state.askFirst !== false, selfEducate: state.selfEducate !== false, replan: state.replan !== false,
         spec: parseSpecYaml(state.personSpecYaml).spec || null,
         resume: { id, startedAt: saved.startedAt, viewToken: /^[0-9a-f]{32}$/.test(saved.viewToken) ? saved.viewToken : undefined, events: Array.isArray(saved.events) ? saved.events : [], state },
       });

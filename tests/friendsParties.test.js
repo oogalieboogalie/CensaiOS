@@ -49,6 +49,10 @@ jest.unstable_mockModule('../server/friends/store.js', () => ({
     list.delete(friendId);
     return friend;
   },
+  boardToShare: async (_db, { workspaceId }) => {
+    if (!boards[workspaceId]) throw Object.assign(new Error('Workspace access denied'), { statusCode: 403 });
+    return boards[workspaceId];
+  },
   putOnBoard: async (_db, { friend, workspaceId, role }) => {
     if (!boards[workspaceId]) throw Object.assign(new Error('Workspace access denied'), { statusCode: 403 });
     onBoard.push({ friendId: friend.id, workspaceId, role });
@@ -61,7 +65,7 @@ const { doorGuard } = await import('../server/webOs/doorListener.js');
 const { doorClosedPage } = await import('../server/webOs/closedPage.js');
 const { webOsPublicRouter, webOsRouter } = await import('../server/routes/webOs.js');
 const { endParties, listParties, wireParties } = await import('../server/friends/parties.js');
-const { joinParty, leaveEveryParty, listJoins } = await import('../server/friends/joins.js');
+const { canJoinHere, joinParty, joinPorts, leaveEveryParty, listJoins } = await import('../server/friends/joins.js');
 const { identityFile, readFriendsSettings, resetFriendsSettingsCache } = await import('../server/friends/settings.js');
 const { setTailcatProgram } = await import('../server/friends/tailcat.js');
 const { isTailcatAddress, makeFriendCode, makePartyCode, readPartyCode } = await import('../server/friends/codes.js');
@@ -377,11 +381,13 @@ describe('sharing a board with a friend', () => {
     expect(listParties().find((party) => party.friendId === samId).joined).toBe(false);
   });
 
-  test('a party code without the board\'s own name or password is refused before anything connects', async () => {
+  test('a party code without the board\'s own name, password or port is refused before anything connects', async () => {
     await addFriend('Sam', { mine: true });
     const hostKey = readFriendsSettings().key;
-    const bare = (extra) => makePartyCode({ address: `tc${'A'.repeat(40)}`, hostName: 'Alma', hostKey, boardName: 'B', boardId: 'b', ...extra });
-    for (const code of [bare({ token: 'p'.repeat(32) }), bare({ label: 'p-0123456789ab' }), bare({ token: 'p'.repeat(32), label: 'localhost' })]) {
+    const bare = (extra) => makePartyCode({ address: `tc${'A'.repeat(40)}`, hostName: 'Alma', hostKey, boardName: 'B', boardId: 'b', port: 4321, ...extra });
+    const whole = { token: 'p'.repeat(32), label: 'p-0123456789ab' };
+    expect(readPartyCode(bare(whole))).toMatchObject({ ...whole, port: 4321 });
+    for (const code of [bare({ token: whole.token }), bare({ label: whole.label }), bare({ ...whole, label: 'localhost' }), bare({ ...whole, port: undefined }), bare({ ...whole, port: 70000 })]) {
       await expect(joinParty({ code })).rejects.toMatchObject({ code: 'BAD_CODE' });
     }
     expect(listJoins()).toEqual([]);
@@ -405,6 +411,109 @@ describe('sharing a board with a friend', () => {
       delete process.env.TAILCAT_STANDIN_FORWARD_LIFE_MS;
       stopped.mockRestore();
     }
+  });
+});
+
+describe('opening a friend\'s board from a Docker install', () => {
+  // In Docker the browser is outside the container, so a friend's board opens
+  // on a set port that docker-compose.yml publishes under the same number.
+  const SET_PORTS = [39131, 39132];
+  beforeEach(() => {
+    process.env.CENSAI_IN_CONTAINER = '1';
+    process.env.CENSAI_FRIENDS_JOIN_PORTS = `${SET_PORTS[0]}-${SET_PORTS[1]}`;
+  });
+  afterEach(() => {
+    leaveEveryParty();
+    delete process.env.CENSAI_IN_CONTAINER;
+    delete process.env.CENSAI_FRIENDS_JOIN_PORTS;
+  });
+  const fromOutside = (port, url, how = '127.0.0.1') => new Promise((resolve) => {
+    const headers = { host: new URL(url).host, 'x-party-token': password(url) };
+    http.get({ host: how, port, path: '/api/web-os/friends/party/hello', headers, timeout: 3000 }, (res) => {
+      let text = '';
+      res.on('data', (chunk) => { text += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(text || '{}') }));
+    }).on('error', () => resolve(null)).on('timeout', function gone() { this.destroy(); });
+  });
+
+  test('says which ports to use, only inside Docker', () => {
+    expect(joinPorts()).toEqual(SET_PORTS);
+    expect(canJoinHere()).toBe(true);
+    expect(joinPorts({ CENSAI_FRIENDS_JOIN_PORTS: '3031-3034' })).toEqual([]);
+    expect(canJoinHere({ CENSAI_FRIENDS_JOIN_PORTS: '' })).toBe(true);
+    for (const wrong of ['', '3031', '3034-3031', '80-83', '3031-9999', 'abc', '3031-3034; rm']) {
+      expect(joinPorts({ CENSAI_IN_CONTAINER: '1', CENSAI_FRIENDS_JOIN_PORTS: wrong })).toEqual([]);
+      expect(canJoinHere({ CENSAI_IN_CONTAINER: '1', CENSAI_FRIENDS_JOIN_PORTS: wrong })).toBe(false);
+    }
+  });
+
+  test('the board opens on a set port, under the party\'s own name, and the friend comes in as themselves', async () => {
+    const samId = await addFriend('Sam', { mine: true });
+    const joined = await asOwner(api().post('/api/web-os/friends/joins')).send({ code: (await share(samId)).body.party.code });
+    expect(joined.status).toBe(201);
+    const { url } = joined.body.joined;
+    expect(url).toMatch(/^http:\/\/p-[0-9a-f]{12}\.localhost:\d+\/\?party=/);
+    const setPort = Number(new URL(url).port);
+    expect(SET_PORTS).toContain(setPort);
+    // The port answers a browser outside the container, not only this computer itself.
+    const outside = Object.values(os.networkInterfaces()).flat().find((net) => net.family === 'IPv4' && !net.internal)?.address;
+    for (const how of ['127.0.0.1', outside].filter(Boolean)) {
+      expect(await fromOutside(setPort, url, how)).toMatchObject({ status: 200, body: { app: 'censaiOS', boardId: 'board-a' } });
+    }
+    const sam = agentAt(url);
+    expect((await enterWith(sam, url)).body).toMatchObject({ ok: true, boardId: 'board-a', user: { name: 'Sam' } });
+    expect((await sam.get('/api/who')).body.userId).toBe(list.get(samId).userId);
+    // Still nothing under a name that shares sign-ins with this person's own censaiOS.
+    for (const shared of [`localhost:${setPort}`, `127.0.0.1:${setPort}`]) {
+      expect((await request(dial(url)).get('/').set('Host', shared).set('X-Party-Token', password(url))).status).toBe(403);
+    }
+  });
+
+  test('each board gets a port of its own, no more boards than ports, and a left port is used again', async () => {
+    const samId = await addFriend('Sam', { mine: true });
+    list.set('f9', { id: 'f9', name: 'Kit', key: list.get(samId).key, userId: 222 });
+    list.set('f8', { id: 'f8', name: 'Robin', key: list.get(samId).key, userId: 223 });
+    const first = await joinParty({ code: (await share(samId)).body.party.code });
+    const second = await joinParty({ code: (await share('f9')).body.party.code });
+    expect([first, second].map((join) => Number(new URL(join.url).port)).sort()).toEqual(SET_PORTS);
+    const third = (await share('f8')).body.party.code;
+    await expect(joinParty({ code: third })).rejects.toMatchObject({ code: 'TOO_MANY', message: 'You have 2 friends\' boards open already. Leave one first.' });
+    expect(listJoins()).toHaveLength(2);
+    // Leave one: its port closes, and the next board opens there.
+    const left = Number(new URL(first.url).port);
+    await asOwner(api().delete(`/api/web-os/friends/joins/${first.id}`));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(await fromOutside(left, first.url)).toBe(null);
+    const again = await joinParty({ code: third });
+    expect(Number(new URL(again.url).port)).toBe(left);
+    expect((await fromOutside(left, again.url)).body).toMatchObject({ friend: 'Robin' });
+  });
+
+  test('a set port something else holds: that join fails in plain words and the next one moves on', async () => {
+    const samId = await addFriend('Sam', { mine: true });
+    const squatter = http.createServer(() => {});
+    await new Promise((resolve) => squatter.listen(SET_PORTS[1], '0.0.0.0', resolve));
+    try {
+      const code = (await share(samId)).body.party.code;
+      const tries = [await joinParty({ code }).catch((error) => error), await joinParty({ code }).catch((error) => error)];
+      const failed = tries.find((one) => one instanceof Error);
+      const worked = tries.find((one) => !(one instanceof Error));
+      expect(failed.message).toBe('Tailcat could not reach your friend.');
+      expect(Number(new URL(worked.url).port)).toBe(SET_PORTS[0]);
+      expect(listJoins()).toHaveLength(1);
+    } finally {
+      await new Promise((resolve) => squatter.close(resolve));
+    }
+  });
+
+  test('started without the ports, it says so before anything connects', async () => {
+    delete process.env.CENSAI_FRIENDS_JOIN_PORTS;
+    const samId = await addFriend('Sam', { mine: true });
+    const refused = await asOwner(api().post('/api/web-os/friends/joins')).send({ code: (await share(samId)).body.party.code });
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ code: 'NO_JOIN_IN_DOCKER' });
+    expect(refused.body.error).toContain('started without the ports a friend\'s board opens on (3031 to 3034 in docker-compose.yml)');
+    expect(listJoins()).toEqual([]);
   });
 });
 

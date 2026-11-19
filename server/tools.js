@@ -3,7 +3,7 @@ import { createLogger } from './logger.js';
 import { initializeDynamicTools } from './tools/dynamicRegistry.js';
 import { initializeMcpTools, shutdownMcpTools } from './tools/mcpClient.js';
 import pool from './db.js';
-import { assertAgentRepoAccess } from './workspaces/projectMemberships.js';
+import { assertRepoForDriver } from './workspaces/ownerProjects.js';
 import { getSubAgentById } from './memory.js';
 import { safeToolLogMetadata } from './operational-intelligence/tracePrivacy.js';
 import { authorizeToolInvocation } from './tools/rbac/runtimeAccess.js';
@@ -73,12 +73,12 @@ async function executeRegisteredTool(agentId, name, args, context) {
     const requiredProjectPermission = PROJECT_WORK_TOOLS.has(name) ? 'work' : 'read';
     if (context.workspaceId && DIRECT_REPO_TOOLS.has(name)) {
       const sub = await getSubAgentById(agentId, context);
-      await assertAgentRepoAccess(pool, {
+      await assertRepoForDriver(pool, {
         workspaceId: context.workspaceId,
         repo: args?.repo,
         agentId: sub?.parent_id || agentId,
         requiredPermission: requiredProjectPermission,
-      });
+      }, context);
     } else if (DIRECT_REPO_TOOLS.has(name)) {
       // Off a board no repo is shared, so only the owner's agents use this computer's GitHub key.
       const refused = await offBoardGithubRead(context, { feature: `agent tool ${name} off a board` });

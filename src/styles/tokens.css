@@ -275,10 +275,14 @@
      panel (a raised card) < float (glass, below). Light raises with white and
      a soft shadow; dark raises with a lighter surface and a lit top edge, the
      way macOS dark windows do. Classes in src/styles/depth.css. ──────────── */
-  --layer-well: color-mix(in oklab, var(--surface) 96.5%, var(--ink));
-  --layer-bar: color-mix(in oklab, var(--surface) 98%, var(--ink));
-  --layer-panel: var(--surface);
-  --layer-panel-hover: var(--surface);
+  --layer-well-solid: color-mix(in oklab, var(--surface) 96.5%, var(--ink));
+  --layer-bar-solid: color-mix(in oklab, var(--surface) 98%, var(--ink));
+  --layer-panel-solid: var(--surface);
+  --layer-panel-hover-solid: var(--surface);
+  --layer-well: var(--layer-well-solid);
+  --layer-bar: var(--layer-bar-solid);
+  --layer-panel: var(--layer-panel-solid);
+  --layer-panel-hover: var(--layer-panel-hover-solid);
   --rim-light: oklch(1 0 0 / 0.8);
   --well-shadow: inset 0 1px 2px oklch(0 0 0 / 0.05);
   --panel-shadow: inset 0 1px 0 var(--rim-light), 0 1px 2px oklch(0 0 0 / 0.05), 0 2px 6px -2px oklch(0 0 0 / 0.06);
@@ -296,8 +300,8 @@
 
   /* ── Frosted glass (src/styles/glass.css): menus, pop-ups, the palette and
      the floating bars show the board through a strong blur, like a macOS
-     menu. Light is the look's own surface, milky; dark is smoked in the look's hue. Window
-     bodies stay solid. Settings > Appearance "Frosted glass" turns it off
+     menu. Light is the look's own surface, milky; dark is smoked in the look's hue. Dark
+     window bodies are this glass too (--window-surface); light ones stay solid. Settings > Appearance "Frosted glass" turns it off
      (data-frost="off"), and so do reduce-transparency and old browsers. ── */
   --glass-bg: color-mix(in oklab, var(--surface) 70%, transparent);
   --glass-bg-strong: color-mix(in oklab, var(--surface) 82%, transparent);
@@ -305,6 +309,24 @@
   --glass-line: oklch(0 0 0 / 0.1);
   --glass-hover: oklch(0 0 0 / 0.06);
   --glass-shadow: inset 0 1px 0 oklch(1 0 0 / 0.55), 0 1px 2px oklch(0 0 0 / 0.06), 0 14px 36px -10px oklch(0 0 0 / 0.24);
+
+  /* ── The window body. Theme.jsx points --window-bg / --window-backdrop
+     here, so every window gets it without a line in any module. Light
+     windows are the look's solid surface; dark windows are the same smoked
+     black glass as the chat panel and the menus (set below). ───────────── */
+  --window-surface: var(--surface);
+  --window-surface-filter: none;
+  /* What --surface, --surface-2 and the lines mean inside a window (the
+     [data-win-frame] rule at the end of this file). Light: the same as on the
+     board. Dark: see-through black glass, so a module that paints its body
+     or a card with --surface still looks like the chat panel, not grey. */
+  --in-window-surface: var(--surface);
+  --in-window-surface-2: var(--surface-2);
+  --in-window-line: var(--hairline);
+  --in-window-line-strong: var(--hairline-strong);
+  /* Worked out here, not in the window, so hover keeps the look's accent
+     and not the window's agent hue. */
+  --in-window-surface-hover: color-mix(in oklab, var(--in-window-surface-2) 88%, var(--accent));
 }
 
 /* ── Agent accent (spec 3). Each agent keeps its own hue but borrows the
@@ -339,10 +361,19 @@
   --elevation-1: 0 1px 2px oklch(0 0 0 / 0.4);
   --elevation-2: 0 0 0 1px oklch(1 0 0 / 0.03), 0 12px 32px -12px oklch(0 0 0 / 0.6);
   --elevation-3: 0 0 0 1px oklch(1 0 0 / 0.04), 0 32px 64px -24px oklch(0 0 0 / 0.7);
-  --layer-well: color-mix(in oklab, var(--surface) 72%, var(--color-black));
-  --layer-bar: color-mix(in oklab, var(--surface) 97%, var(--color-white));
-  --layer-panel: color-mix(in oklab, var(--surface) 95%, var(--color-white));
-  --layer-panel-hover: color-mix(in oklab, var(--surface) 92%, var(--color-white));
+  /* Dark windows are black glass (--window-surface below), so the layers
+     inside them are see-through tints of that glass, never grey slabs: a
+     well is the glass darkened, a bar and a card are the glass with a breath
+     of white and a lit top edge. Same depth, still black. */
+  --layer-well: oklch(0 0 0 / 0.34);
+  --layer-bar: oklch(1 0 0 / 0.025);
+  --layer-panel: oklch(1 0 0 / 0.04);
+  --layer-panel-hover: oklch(1 0 0 / 0.065);
+  /* The same steps solid, for glass off (the blocks below). */
+  --layer-well-solid: color-mix(in oklab, var(--surface) 72%, var(--color-black));
+  --layer-bar-solid: color-mix(in oklab, var(--surface) 97%, var(--color-white));
+  --layer-panel-solid: color-mix(in oklab, var(--surface) 95%, var(--color-white));
+  --layer-panel-hover-solid: color-mix(in oklab, var(--surface) 92%, var(--color-white));
   --rim-light: oklch(1 0 0 / 0.06);
   --success-text: var(--success);
   --danger-text: var(--danger);
@@ -352,16 +383,31 @@
   --panel-shadow-hover: inset 0 1px 0 oklch(1 0 0 / 0.09), 0 0 0 1px oklch(0 0 0 / 0.4), 0 10px 24px -10px oklch(0 0 0 / 0.7);
   --control-raise: inset 0 1px 0 var(--rim-light), inset 0 -1px 0 color-mix(in oklab, var(--color-black) 72%, transparent), var(--elevation-1);
   --control-raise-hot: inset 0 1px 0 color-mix(in oklab, var(--color-white) 18%, transparent), inset 0 -1px 0 color-mix(in oklab, var(--color-black) 82%, transparent), 0 1px 2px color-mix(in oklab, var(--color-black) 55%, transparent), 0 4px 10px -3px color-mix(in oklab, var(--color-black) 72%, transparent);
-  /* Black smoked glass, the hero look: the board's canvas pushed toward
-     black, and the backdrop dimmed as well as blurred so colour behind it
-     reads as smoke, not grey haze. */
-  --glass-tint: color-mix(in oklab, var(--canvas) 55%, var(--color-black));
+  /* Black smoked glass, the hero look and the owner's default: the Window
+     Surface colour pushed toward black, and the backdrop dimmed as well as
+     blurred so colour behind it reads as smoke, not grey haze. Never the
+     Board Canvas colour: mixed from that, windows took the board's colour. */
+  --glass-tint: color-mix(in oklab, var(--surface) 55%, var(--color-black));
   --glass-bg: color-mix(in oklab, var(--glass-tint) 62%, transparent);
   --glass-bg-strong: color-mix(in oklab, var(--glass-tint) 74%, transparent);
   --glass-filter: blur(calc(28px * var(--glass-blur-scale, 1))) saturate(150%) brightness(0.72);
   --glass-line: oklch(1 0 0 / 0.09);
   --glass-hover: oklch(1 0 0 / 0.09);
   --glass-shadow: inset 0 1px 0 oklch(1 0 0 / 0.07), 0 1px 2px oklch(0 0 0 / 0.4), 0 20px 48px -12px oklch(0 0 0 / 0.75);
+  /* Every dark window body: the chat panel's strong black glass. With glass
+     off (Settings, reduce transparency, no blur support) --glass-bg-strong
+     turns back into the solid surface and the filter into none. */
+  --window-surface: var(--glass-bg-strong);
+  --window-surface-filter: var(--glass-filter);
+  /* Inside a dark window: the glass tint itself, solid, so a pop-up or a
+     sticky header drawn with --surface over text stays readable (the window
+     body behind it is already the see-through glass). --surface-2 (inputs,
+     chips, hover) is a little of the look's own --surface-2 over it, and the
+     lines are the look's lines, thinned, so Fine Tune still reaches them. */
+  --in-window-surface: var(--glass-tint);
+  --in-window-surface-2: color-mix(in oklab, var(--surface-2) 35%, var(--glass-tint));
+  --in-window-line: color-mix(in oklab, var(--hairline) 70%, transparent);
+  --in-window-line-strong: color-mix(in oklab, var(--hairline-strong) 75%, transparent);
 }
 
 /* Glass follows the look: on a coloured dark look the bars and menus are
@@ -383,6 +429,14 @@
   --glass-line: var(--hairline);
   --glass-hover: var(--surface-2);
   --glass-shadow: var(--elevation-3);
+  --in-window-surface: var(--surface);
+  --in-window-surface-2: var(--surface-2);
+  --in-window-line: var(--hairline);
+  --in-window-line-strong: var(--hairline-strong);
+  --layer-well: var(--layer-well-solid);
+  --layer-bar: var(--layer-bar-solid);
+  --layer-panel: var(--layer-panel-solid);
+  --layer-panel-hover: var(--layer-panel-hover-solid);
 }
 @media (prefers-reduced-transparency: reduce) {
   :root:root {
@@ -392,6 +446,14 @@
     --glass-line: var(--hairline);
     --glass-hover: var(--surface-2);
     --glass-shadow: var(--elevation-3);
+    --in-window-surface: var(--surface);
+    --in-window-surface-2: var(--surface-2);
+    --in-window-line: var(--hairline);
+    --in-window-line-strong: var(--hairline-strong);
+    --layer-well: var(--layer-well-solid);
+    --layer-bar: var(--layer-bar-solid);
+    --layer-panel: var(--layer-panel-solid);
+    --layer-panel-hover: var(--layer-panel-hover-solid);
   }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -402,7 +464,41 @@
     --glass-line: var(--hairline);
     --glass-hover: var(--surface-2);
     --glass-shadow: var(--elevation-3);
+    --in-window-surface: var(--surface);
+    --in-window-surface-2: var(--surface-2);
+    --in-window-line: var(--hairline);
+    --in-window-line-strong: var(--hairline-strong);
+    --layer-well: var(--layer-well-solid);
+    --layer-bar: var(--layer-bar-solid);
+    --layer-panel: var(--layer-panel-solid);
+    --layer-panel-hover: var(--layer-panel-hover-solid);
   }
+}
+
+/* Inside every window. The board's names, re-pointed at the in-window
+   values above, and everything built from them worked out again here (a
+   custom property is worked out where it is declared, so the :root copies
+   would keep the board's grey). One rule, so every module gets black glass
+   on dark without touching its own stylesheet. */
+[data-win-frame] {
+  --surface: var(--in-window-surface);
+  --surface-2: var(--in-window-surface-2);
+  --hairline: var(--in-window-line);
+  --hairline-strong: var(--in-window-line-strong);
+  --surface-1: var(--surface);
+  --surface-soft: var(--surface-2);
+  --surface-raised: color-mix(in oklab, var(--surface) 92%, var(--ink));
+  --surface-3: color-mix(in oklab, var(--surface-2) 86%, var(--ink));
+  --surface-hover: var(--in-window-surface-hover);
+  --surface-sunken: color-mix(in oklab, var(--surface) 90%, var(--color-black));
+  --surface-50: color-mix(in oklab, var(--surface) 50%, transparent);
+  --surface-soft-30: color-mix(in oklab, var(--surface-soft) 30%, transparent);
+  --surface-soft-50: color-mix(in oklab, var(--surface-soft) 50%, transparent);
+  --hairline-soft: color-mix(in oklab, var(--hairline) 65%, transparent);
+  --hairline-bg: color-mix(in oklab, var(--hairline) 35%, transparent);
+  --border-subtle: var(--hairline);
+  --border-strong: var(--hairline-strong);
+  --agent-soft: color-mix(in oklab, var(--agent) 16%, var(--surface));
 }
 
 /* Before the theme engine runs (first paint, splash): the brand Canvas, or

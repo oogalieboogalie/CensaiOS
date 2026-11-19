@@ -1,13 +1,7 @@
-/* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
-import { ThemePanelCard } from './ThemeControls.jsx';
-import { TrustModeSwitch } from '../approvals/TrustModeSwitch.jsx';
 import { useTrustMode } from '../approvals/useTrustMode.js';
 import { FAMILY_AGENTS } from '../../data/family-agents.js';
-
-const muted = { fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', margin: 0, lineHeight: 1.5 };
-const select = { padding: '5px 8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)',
-  background: 'var(--surface)', color: 'var(--ink)', font: 'inherit', fontSize: 'var(--text-xs)' };
+import { OWNER_ONLY, SettingsGroup, SettingsNote, SettingsRow, SettingsRows, SettingsSection, SwitchRow, useSavedNote } from './settingsKit.jsx';
 
 function choiceFor(value) {
   if (value === true) return 'trust';
@@ -15,38 +9,50 @@ function choiceFor(value) {
   return 'board';
 }
 
-/** Settings > Agents: the board's Trust mode, plus a per-agent override. */
+/** Settings > Agents: the board's Trust mode, plus a choice for each agent. */
 export function TrustModeSection() {
   const trust = useTrustMode();
   const disabled = !trust.ready || !trust.canChange || trust.saving;
+  const note = useSavedNote(trust.saving, trust.error);
   const change = (agentId, choice) => trust.setAgent(agentId, choice === 'board' ? null : choice === 'trust');
   return (
-    <div style={{ display: 'grid', gap: 12 }} data-testid="trust-mode-section">
-      <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 8 }}>
-        <TrustModeSwitch trust={trust} />
-        <p style={muted}>
-          Still never automatic: sending a message or email to another person, spending money, and signing. Agents never sign.
-        </p>
-        <p style={muted} data-testid="trust-mode-files">
-          Trust mode only skips the OK click. It does not give an agent new tools or files. For files, open a project from the top bar
-          (only that project's files can be opened), and for Censai's family agents also equip Project Reader or Project Writer in the ExoSkeleton window.
-        </p>
-      </ThemePanelCard>
-      <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 8 }}>
-        <div style={{ fontWeight: 650 }}>One agent at a time</div>
-        <p style={muted}>Leave an agent on "Same as the board", or pick for that one agent.</p>
-        {FAMILY_AGENTS.map(agent => (
-          <label key={agent.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-            <span>{agent.name}</span>
-            <select style={select} disabled={disabled} aria-label={`Trust mode for ${agent.name}`}
-              value={choiceFor(trust.agents[agent.id])} onChange={event => change(agent.id, event.target.value)}>
-              <option value="board">Same as the board</option>
-              <option value="trust">Acts on its own</option>
-              <option value="ask">Asks first</option>
-            </select>
-          </label>
-        ))}
-      </ThemePanelCard>
-    </div>
+    <SettingsSection
+      title="Trust mode"
+      hint="Never automatic, whatever you pick: messages or emails to another person, spending money, and signing. Agents never sign."
+      data-testid="trust-mode-section"
+    >
+      <SwitchRow
+        label="Agents act without asking"
+        hint={trust.board
+          ? 'On. Edits to files, the board, designs, PDFs and CAD parts happen without your OK.'
+          : 'Off. Each change waits in Action Approvals until an owner or admin says OK.'}
+        switchLabel="Trust mode"
+        checked={trust.board}
+        disabled={disabled}
+        onChange={(on) => trust.setBoard(on)}
+        data-testid="trust-mode-switch"
+      />
+      <SettingsGroup title="One agent at a time" hint="Leave an agent on “Same as the board”, or choose for that agent only.">
+        <SettingsRows>
+          {FAMILY_AGENTS.map((agent) => (
+            <SettingsRow key={agent.id} label={agent.name}>
+              <select className="hb-set-input" disabled={disabled} aria-label={`Trust mode for ${agent.name}`}
+                value={choiceFor(trust.agents[agent.id])} onChange={(event) => change(agent.id, event.target.value)}>
+                <option value="board">Same as the board</option>
+                <option value="trust">Acts on its own</option>
+                <option value="ask">Asks first</option>
+              </select>
+            </SettingsRow>
+          ))}
+        </SettingsRows>
+      </SettingsGroup>
+      <p className="hb-set-hint" data-testid="trust-mode-files">
+        Trust mode only skips the OK click. It gives no agent new tools or files. To let agents open files, open a project
+        from the top bar (only that project&apos;s files open), and for Censai&apos;s family agents also equip Project Reader
+        or Project Writer in the ExoSkeleton window.
+      </p>
+      {trust.ready && !trust.canChange ? <SettingsNote>{OWNER_ONLY}</SettingsNote> : null}
+      <SettingsNote note={note} />
+    </SettingsSection>
   );
 }

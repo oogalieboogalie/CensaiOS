@@ -150,7 +150,7 @@ export async function startParty({ friend, board, role, hostName, hostKey }) {
     });
     const address = await party.tunnel.address;
     if (parties.get(party.id) !== party) throw new PartyError('Sharing was ended.', { code: 'ENDED' });
-    party.code = makePartyCode({ address, hostName, hostKey, boardName: board.name, boardId: board.id, token: party.secret, label: party.label });
+    party.code = makePartyCode({ address, hostName, hostKey, boardName: board.name, boardId: board.id, token: party.secret, label: party.label, port });
     log.info('friends: a party started', { partyId: party.id, friendId: friend.id, role });
     return publicParty(party);
   } catch (error) {

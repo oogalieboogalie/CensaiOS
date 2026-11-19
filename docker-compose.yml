@@ -99,6 +99,10 @@ services:
       # opens at http://localhost:3010-3019 in this computer's browser.
       # This computer only, like the board.
       - "127.0.0.1:3010-3019:3010-3019"
+      # Friends: a friend's board you join opens at one of these, in this
+      # computer's browser only. Keep the numbers the same on both sides and
+      # the same as CENSAI_FRIENDS_JOIN_PORTS below.
+      - "127.0.0.1:3031-3034:3031-3034"
     volumes:
       - homebase_state:/app/.homebase-state
       - .:/workspace/CensaiHub
@@ -109,6 +113,10 @@ services:
       # without it, projects live in censai-projects next to this file.
       - ${CENSAI_PROJECTS_FOLDER_ON_PC:-./censai-projects}:/workspace/projects
       - runner_secret:/run/censai-runner:ro
+      # The family's past (optional): a copy of the agents' old folder, read
+      # by past:// links and the project "Family past" (server/workspaces/familyPast.js).
+      # Mount it read only at /workspace/family-past from an override file,
+      # for example: - /mnt/hdd/family-past:/workspace/family-past:ro
     # Lets the app reach Ollama (or anything else) running on this computer
     # at host.docker.internal on Linux too; Docker Desktop has it already.
     extra_hosts:
@@ -116,6 +124,8 @@ services:
     environment:
       # Makes missing secrets and sets up a new database on first start.
       CENSAI_SELF_SETUP: "1"
+      # The ports a friend's board opens on (published above).
+      CENSAI_FRIENDS_JOIN_PORTS: "3031-3034"
       # The app's log goes in the censaiOS folder on this computer
       # (.homebase-state\logs next to this file), not only inside Docker, so
       # it survives rebuilds and Claude can read it next to a screenshot.

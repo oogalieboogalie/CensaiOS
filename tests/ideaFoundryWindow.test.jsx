@@ -74,4 +74,17 @@ describe('IdeaFoundryWindow', () => {
     });
     expect(entry.defaultSize).toEqual({ w: 1000, h: 800 });
   });
+
+  test('an open card names its companions and the row shows the card\'s own phase', async () => {
+    const cards = [
+      { kind: 'valid', path: 'a.md', title: 'Lobby kiosk', date: '2026-06-06', source: 'notes', status: 'parked', phase: '3', tags: ['canvas', 'modules'] },
+      { kind: 'valid', path: 'b.md', title: 'Lobby kiosk signs', date: '2026-06-07', source: 'notes', status: 'parked', phase: '3', tags: ['canvas', 'modules'] },
+    ];
+    mockFetch(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ cards, summary: {} }) }));
+    render(<IdeaFoundryWindow win={{}} />);
+    const row = await screen.findByRole('button', { name: /^Lobby kiosk\s*3/ });
+    fireEvent.click(row);
+    const heading = screen.getByText('Companions');
+    expect(heading.parentElement).toHaveTextContent('Lobby kiosk signs');
+  });
 });

@@ -7,6 +7,9 @@
 // Plans live in censai_plans (store.js). After a restart, a plan that was
 // between jobs carries on; a job that was cut off midway is marked stuck
 // instead of being run twice.
+//
+// While a plan runs, each of its family members works in the plan's project
+// with Censai's own access to it on the board (projectShare.js); it ends with the plan.
 
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
@@ -16,6 +19,7 @@ import { finish, markStopped, planFromRow, skipRest, stickJob } from './planStat
 import { reportMessages, summaryLine } from './prompts.js';
 import { FINAL_JOB, FINAL_PLAN, agentName } from './shape.js';
 import { getPlan, insertPlan, listUnfinished, loadPlan, savePlan } from './store.js';
+import { sharePlanProject, sweepShares, takeBackPlanProject } from './projectShare.js';
 
 const log = createLogger('censai-orchestrator');
 export const MAX_RUNNING = 2;
@@ -33,7 +37,7 @@ export const DEFAULT_DEPS = Object.freeze({
   askCensai: async (model, messages, opts) => (await import('./model.js')).askCensai(model, messages, opts),
 });
 
-const running = new Map(); // plan id -> { id, plan, controller, stopped, chain, done }
+const running = new Map(); // plan id -> { id, plan, controller, stopped, chain, done, sharing }
 const waiting = []; // [{ id, deps }]
 
 const settledListeners = new Set(); // each called with the plan id once a plan stops running here
@@ -65,6 +69,15 @@ async function finalLine(plan, censai, deps) {
   }
 }
 
+// Kept for an agent that another plan running here shared the same project with,
+// waiting for a share still being written, so it is never taken out from under it.
+async function takeBack(entry, deps) {
+  const mine = entry.sharing;
+  entry.sharing = null;
+  const others = [...running.values()].filter((other) => other !== entry).map((other) => other.sharing);
+  await takeBackPlanProject(deps.db, entry.plan, await mine, await Promise.all(others));
+}
+
 async function runPlan(entry, deps) {
   const row = await loadPlan(deps.db, entry.id);
   if (!row || FINAL_PLAN.has(row.status) || entry.stopped) return;
@@ -73,6 +86,8 @@ async function runPlan(entry, deps) {
   const save = () => saveEntry(entry, deps);
   plan.status = 'running';
   await save();
+  entry.sharing = sharePlanProject(deps.db, plan);
+  await entry.sharing;
   log.info('plan started', { planId: plan.id, parts: plan.jobs.length, agents: plan.jobs.map((job) => job.agentId) });
   let model = null;
   const censai = async () => {
@@ -106,6 +121,8 @@ async function runPlan(entry, deps) {
     const job = plan.jobs.find((item) => !FINAL_JOB.has(item.status));
     stickJob(plan, job, { why: 'something went wrong on my side', error: 'Something went wrong on my side while running this part.' });
     await save();
+  } finally {
+    await takeBack(entry, deps);
   }
 }
 
@@ -163,7 +180,15 @@ export async function stopPlan({ id, workspaceId, userId }, deps = {}) {
   return (await savePlan(all.db, plan)) || loadPlan(all.db, id);
 }
 
+/** Take back the project shares a stopped server never took back (none while a plan runs here). Run at start. */
+export async function sweepOldShares(deps = {}) {
+  if (running.size) return;
+  await sweepShares(withDefaults(deps).db).catch((error) => log.warn('old project shares not taken back', { code: safeErrorCode(error) }));
+}
+
 async function recover(deps) {
+  // A plan that carries on shares again as it starts.
+  await sweepOldShares(deps);
   const rows = await listUnfinished(deps.db);
   let carriedOn = 0;
   let cutOff = 0;

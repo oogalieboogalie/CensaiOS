@@ -58,10 +58,12 @@ export function UsePanel({ data }) {
           ))}
         </ul>
       </section>
-      <section className="hb-air-section">
-        <h3 className="hb-air-label">Sharing</h3>
-        <Sharing sharing={data.sharing} />
-      </section>
+      {data.sharing?.available && (
+        <section className="hb-air-section">
+          <h3 className="hb-air-label">Sharing</h3>
+          <Sharing sharing={data.sharing} />
+        </section>
+      )}
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Icon } from '../Icons.jsx';
-import { ThemePanelCard } from './ThemeControls.jsx';
 import { api } from '../../lib/api.js';
 import { BYOK_PROVIDERS } from '../../lib/byokProviders.js';
 import { BrandIcon } from '../brand/BrandIcon.jsx';
@@ -8,22 +7,88 @@ import { PROVIDER_BRAND, brandFor } from '../../lib/brands/index.js';
 import { logToApp } from '../../lib/appLog/browserLog.js';
 import { NEEDS_OWN_CENSAI, onTryItBoard } from '../../lib/demo/needsOwnCensai.js';
 import { KEY_LIST_UNREADABLE, readKeyList } from './readKeyList.js';
+import { SettingsButton, SettingsNote, SettingsSection } from './settingsKit.jsx';
 
+function KeyForm({ provider, onSave, onCancel }) {
+  const [key, setKey] = React.useState('');
+  const [model, setModel] = React.useState('');
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const save = async (event) => {
+    event.preventDefault();
+    if (!key) return;
+    setSaving(true);
+    setError('');
+    try {
+      await onSave(key, model || null);
+    } catch (err) {
+      setError(err.message || 'The key was not saved. Try again.');
+      setSaving(false);
+    }
+  };
+  return (
+    <form className="hb-set-group hb-set-key-form" onSubmit={save}>
+      <label className="hb-set-group">
+        <span className="hb-set-label">Key</span>
+        <input type="password" autoFocus autoComplete="off" className="hb-set-input hb-set-input--mono" value={key}
+          onChange={(e) => setKey(e.target.value)} placeholder={provider.placeholder} />
+      </label>
+      {provider.id === 'openrouter' && (
+        <label className="hb-set-group">
+          <span className="hb-set-label">Model to use first (optional)</span>
+          <input className="hb-set-input hb-set-input--mono" value={model} onChange={(e) => setModel(e.target.value)} placeholder="anthropic/claude-3.5-sonnet" />
+        </label>
+      )}
+      <div className="hb-set-actions">
+        <SettingsButton type="submit" variant="primary" disabled={saving || !key}>{saving ? 'Saving...' : 'Save key'}</SettingsButton>
+        <SettingsButton onClick={onCancel}>Cancel</SettingsButton>
+      </div>
+      <SettingsNote tone="error">{error}</SettingsNote>
+    </form>
+  );
+}
+
+function ProviderRow({ provider, userKey, editing, onEdit, onRemove, onSave }) {
+  // A local install's owner: the key is in the server's .env file.
+  const fromEnv = userKey?.source === 'env';
+  const status = !userKey ? 'Not added' : fromEnv ? "From this computer's .env file" : 'Added';
+  return (
+    <li className="hb-set-item hb-set-item--stack" data-provider={provider.id}>
+      <div className="hb-set-inline">
+        <span className={userKey ? 'hb-set-provider hb-set-provider--on' : 'hb-set-provider'} aria-hidden="true">
+          {brandFor(PROVIDER_BRAND[provider.id]) ? <BrandIcon brand={PROVIDER_BRAND[provider.id]} size={16} title="" /> : <Icon.Tools size={16} />}
+        </span>
+        <span className="hb-set-item-main">
+          <span className="hb-set-label">{provider.name}</span>
+          <span className={userKey ? 'hb-set-note' : 'hb-set-hint'}>{userKey ? <Icon.Check size={11} /> : null}{status}</span>
+        </span>
+        {!editing && userKey && !fromEnv && <SettingsButton small onClick={onRemove} aria-label={`Remove the ${provider.name} key`}>Remove</SettingsButton>}
+        {!editing && (
+          <SettingsButton small onClick={() => onEdit()}>{fromEnv ? 'Use another key' : userKey ? 'Change' : 'Add key'}</SettingsButton>
+        )}
+      </div>
+      {editing && <KeyForm provider={provider} onSave={onSave} onCancel={() => onEdit(null)} />}
+    </li>
+  );
+}
+
+/** Settings > AI keys: one row per provider; a key is added, changed or removed in its row. */
 export function VaultSection() {
   const [keys, setKeys] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
-  const [addingProvider, setAddingProvider] = React.useState(null);
-  const [keyInput, setKeyInput] = React.useState('');
-  const [modelInput, setModelInput] = React.useState('');
-  const [saving, setSaving] = React.useState(false);
+  const [loadFailed, setLoadFailed] = React.useState(false);
+  const [editing, setEditing] = React.useState(null);
+  const [note, setNote] = React.useState(null);
 
   const fetchKeys = async () => {
     try {
       setLoading(true);
       setKeys(readKeyList(await api.getUserKeys()));
+      setLoadFailed(false);
     } catch {
       logToApp('warn', KEY_LIST_UNREADABLE, { where: 'vault' });
       setKeys([]);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -33,180 +98,51 @@ export function VaultSection() {
     fetchKeys();
   }, []);
 
-  const selectProvider = (provider) => {
-    setAddingProvider(provider);
-    setKeyInput('');
-    setModelInput('');
+  const save = (provider) => async (key, model) => {
+    await api.setUserKey(provider.id, key, null, model);
+    await fetchKeys();
+    setEditing(null);
+    setNote({ tone: 'ok', text: `${provider.name} key saved.` });
   };
 
-  const handleSave = async () => {
-    if (!addingProvider || !keyInput) return;
-    setSaving(true);
+  const remove = async (provider) => {
+    if (!confirm(`Remove your ${provider.name} key?`)) return;
     try {
-      await api.setUserKey(addingProvider.id, keyInput, null, modelInput || null);
+      await api.deleteUserKey(provider.id);
       await fetchKeys();
-      setAddingProvider(null);
-      setKeyInput('');
-      setModelInput('');
+      setNote({ tone: 'ok', text: `${provider.name} key removed.` });
     } catch (err) {
-      alert(err.message);
-    } finally {
-      setSaving(false);
+      setNote({ tone: 'error', text: err.message || `The ${provider.name} key was not removed. Try again.` });
     }
   };
 
-  const handleDelete = async (providerId) => {
-    if (!confirm(`Remove ${providerId} key from your vault?`)) return;
-    try {
-      await api.deleteUserKey(providerId);
-      await fetchKeys();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  if (loading) return <div style={{ padding: 30, color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>Loading AI provider keys...</div>;
-
+  const tryIt = onTryItBoard();
   return (
-    <div style={{ display: 'grid', gap: 16, padding: '4px 0 20px' }}>
-      <div style={{ padding: '0 4px', marginBottom: 4 }}>
-        <div style={{ fontSize: 'var(--text-lg)', fontWeight: 900, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 12, textTransform: 'uppercase', letterSpacing: '-0.02em' }}>
-          <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-lg)', background: 'var(--accent)', color: 'var(--accent-contrast)', display: 'grid', placeItems: 'center', boxShadow: '4px 4px 0 var(--ink)' }}>
-            <Icon.Memory size={18} stroke={2.5} />
-          </div>
-          AI provider keys
-        </div>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', marginTop: 12, lineHeight: 1.5, maxWidth: '90%' }}>
-          Bring Your Own Key (BYOK). Keys are AES-256-GCM encrypted at rest and stored in your private account.
-          {keys.some(k => k.source === 'env') && ' Keys marked "From your .env file" come straight from the .env on this computer and are only used for you; nothing is copied.'}
-        </p>
-        {onTryItBoard() && (
-          <p data-testid="needs-own-censai" style={{ fontSize: 'var(--text-sm)', color: 'var(--ink)', marginTop: 8, lineHeight: 1.5 }}>
-            {NEEDS_OWN_CENSAI}
-          </p>
-        )}
-      </div>
-
-      {BYOK_PROVIDERS.map(p => {
-        const userKey = keys.find(k => k.provider === p.id);
-        // A local install's owner: the key is in the server's .env file.
-        const fromEnv = userKey?.source === 'env';
-        const isEditing = addingProvider?.id === p.id;
-
-        return (
-          <ThemePanelCard key={p.id} style={{ 
-            padding: 0, 
-            overflow: 'hidden',
-            border: isEditing ? '2px solid var(--accent-line)' : '1px solid var(--hairline)',
-            boxShadow: isEditing ? '6px 6px 0 var(--accent-soft)' : 'none',
-            transition: 'all 0.2s'
-          }}>
-            <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isEditing ? 'var(--surface-2)' : 'transparent' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ 
-                  width: 40, height: 40, borderRadius: 'var(--radius-lg)', 
-                  background: userKey ? 'var(--accent-soft)' : 'var(--surface-3)', 
-                  border: `1px solid ${userKey ? 'var(--accent)' : 'var(--hairline)'}`, 
-                  display: 'grid', placeItems: 'center', color: userKey ? 'var(--accent-ink)' : 'var(--ink-faint)',
-                  boxShadow: userKey ? '2px 2px 0 var(--accent)' : 'none'
-                }}>
-                   {brandFor(PROVIDER_BRAND[p.id]) ? <BrandIcon brand={PROVIDER_BRAND[p.id]} size={20} title="" /> : <Icon.Tools size={20} />}
-                </div>
-                <div>
-                  <div style={{ fontSize: 'var(--text-base)', fontWeight: 800, color: 'var(--ink)' }}>{p.name}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: userKey ? 'var(--ps-green)' : 'var(--ink-faint)', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>
-                    {userKey ? (
-                      <><Icon.Check size={10} stroke={3} /> {fromEnv ? 'From your .env file' : 'Configured'}</>
-                    ) : (
-                      'Not configured'
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {userKey && !fromEnv && !isEditing && (
-                  <button 
-                    onClick={() => handleDelete(p.id)}
-                    style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', color: 'var(--ps-red)', display: 'grid', placeItems: 'center', border: '1px solid var(--hairline)' }}
-                    title="Delete Key"
-                  >
-                    <Icon.Close size={14} stroke={2.5} />
-                  </button>
-                )}
-                <button 
-                  onClick={() => selectProvider(isEditing ? null : p)}
-                  style={{ 
-                    all: 'unset', cursor: 'pointer', padding: '0 16px', height: 32, borderRadius: 'var(--radius-lg)', 
-                    background: isEditing ? 'var(--ink)' : 'var(--accent)', 
-                    color: isEditing ? 'var(--surface)' : 'var(--on-fill)', 
-                    fontSize: 'var(--text-xs)', fontWeight: 800, textTransform: 'uppercase',
-                    boxShadow: isEditing ? 'none' : '3px 3px 0 var(--ink)'
-                  }}
-                >
-                  {isEditing ? 'Cancel' : (fromEnv ? 'Use another key' : userKey ? 'Update' : 'Add key')}
-                </button>
-              </div>
-            </div>
-
-            {isEditing && (
-              <div style={{ padding: '0 16px 16px', display: 'grid', gap: 10 }}>
-                <div style={{ height: 1, background: 'var(--hairline)' }} />
-                <div style={{ display: 'grid', gap: 6 }}>
-                  <label style={{ fontSize: 'var(--text-xs)', fontWeight: 800, color: 'var(--ink-faint)', textTransform: 'uppercase' }}>API Key</label>
-                  <input 
-                    type="password"
-                    autoFocus
-                    value={keyInput}
-                    onChange={e => setKeyInput(e.target.value)}
-                    placeholder={p.placeholder}
-                    style={{ all: 'unset', width: '100%', boxSizing: 'border-box', background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '10px 12px', fontSize: 'var(--text-md)', fontFamily: 'var(--font-mono)', boxShadow: 'var(--elevation-1)' }}
-                  />
-                </div>
-                
-                {p.id === 'openrouter' && (
-                  <div style={{ display: 'grid', gap: 6 }}>
-                    <label style={{ fontSize: 'var(--text-xs)', fontWeight: 800, color: 'var(--ink-faint)', textTransform: 'uppercase' }}>Default Model Slug</label>
-                    <input 
-                      value={modelInput}
-                      onChange={e => setModelInput(e.target.value)}
-                      placeholder="anthropic/claude-3.5-sonnet"
-                      style={{ all: 'unset', boxSizing: 'border-box', width: '100%', background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '10px 12px', fontSize: 'var(--text-md)', fontFamily: 'var(--font-mono)' }}
-                    />
-                  </div>
-                )}
-
-                <button 
-                  onClick={handleSave}
-                  disabled={saving || !keyInput}
-                  style={{ 
-                    all: 'unset', cursor: (saving || !keyInput) ? 'not-allowed' : 'pointer', 
-                    padding: '12px', borderRadius: 'var(--radius-lg)', 
-                    background: 'var(--ps-green)', color: 'var(--on-fill)', 
-                    fontSize: 'var(--text-sm)', fontWeight: 900, textAlign: 'center', 
-                    marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em',
-                    boxShadow: (saving || !keyInput) ? 'none' : '4px 4px 0 var(--ink)',
-                    opacity: (saving || !keyInput) ? 0.5 : 1
-                  }}
-                >
-                  {saving ? 'Encrypting...' : 'Save encrypted key'}
-                </button>
-              </div>
-            )}
-          </ThemePanelCard>
-        );
-      })}
-
-      <div style={{ 
-        marginTop: 8, padding: '12px 16px', borderRadius: 'var(--radius-xl)', 
-        background: 'var(--surface-2)', border: '1px solid var(--hairline)', 
-        display: 'flex', gap: 14, alignItems: 'start',
-        boxShadow: 'inset 4px 0 0 var(--ps-blue)'
-      }}>
-        <Icon.Eye size={18} style={{ color: 'var(--ps-blue)', marginTop: 1 }} />
-        <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-soft)', lineHeight: 1.5 }}>
-          <strong>Personal credentials:</strong> Requests to a configured provider use your encrypted key instead of shared server credentials.
-        </div>
-      </div>
-    </div>
+    <SettingsSection
+      title="AI provider keys"
+      hint={`Paste a key from a provider to use your own account with it. Keys are locked (encrypted) and kept in your account only.${keys.some((k) => k.source === 'env') ? ' A key marked as from the .env file comes from that file on this computer, is used only for you, and is not copied.' : ''}`}
+      data-testid="vault-section"
+    >
+      {tryIt ? <SettingsNote data-testid="needs-own-censai">{NEEDS_OWN_CENSAI}</SettingsNote> : null}
+      {loading ? <SettingsNote>Loading AI provider keys...</SettingsNote> : (
+        <>
+          {loadFailed && !tryIt ? <SettingsNote tone="warn">Your saved keys could not be read just now, so some may show as not added. Open AI keys again to retry.</SettingsNote> : null}
+          <ul className="hb-set-list">
+            {BYOK_PROVIDERS.map((provider) => (
+              <ProviderRow
+                key={provider.id}
+                provider={provider}
+                userKey={keys.find((k) => k.provider === provider.id)}
+                editing={editing === provider.id}
+                onEdit={(id = provider.id) => { setEditing(id); setNote(null); }}
+                onRemove={() => remove(provider)}
+                onSave={save(provider)}
+              />
+            ))}
+          </ul>
+        </>
+      )}
+      <SettingsNote note={note} />
+    </SettingsSection>
   );
 }

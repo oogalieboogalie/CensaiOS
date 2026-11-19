@@ -9,6 +9,7 @@ export const dispatchTools = [
         type: 'object',
         properties: {
           label: { type: 'string', description: 'A short name for this dispatch batch (e.g. "auth-audit", "perf-sprint"). Used to identify the group in squad_status.' },
+          project: { type: 'string', description: 'Optional project every task in this squad works in. Leave out to let each sub-agent work in its own project.' },
           tasks: {
             type: 'array',
             description: 'List of tasks to dispatch in parallel.',
@@ -19,6 +20,7 @@ export const dispatchTools = [
                 title: { type: 'string', description: 'Short task title.' },
                 prompt: { type: 'string', description: 'Full task instructions for the sub-agent. Be specific — the sub-agent runs autonomously with no follow-up.' },
                 priority: { type: 'string', enum: ['low', 'normal', 'high', 'critical'], description: 'Task priority (default: normal).' },
+                project: { type: 'string', description: 'Optional project for this one task, when it differs from the squad\'s.' },
               },
               required: ['assignee', 'title', 'prompt'],
             },

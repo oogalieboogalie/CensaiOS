@@ -4,8 +4,7 @@ import { invitePerson, inviteToBoard, knownPeople } from '../../lib/invites/inde
 import { logToApp } from '../../lib/appLog/browserLog.js';
 import { PUBLIC_LINK_RETRY, publishedJoinUrl, rememberPublishedOrigin } from '../../lib/workspace/publishedLink.js';
 
-const field = { minWidth: 0, flex: 1, padding: '9px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)', background: 'var(--surface-2)', color: 'var(--ink)', font: 'inherit' };
-const primary = { border: 0, borderRadius: 'var(--radius-md)', padding: '9px 12px', background: 'var(--accent-line)', color: 'var(--surface)', fontWeight: 750, cursor: 'pointer' };
+import { SettingsButton, SettingsGroup, SettingsNote } from './settingsKit.jsx';
 
 /**
  * "Invite to this board". An email of someone with an account here adds
@@ -90,40 +89,33 @@ export function InviteToBoard({ workspaceId, onMember }) {
     }
   }
 
+  const busy = state.status === 'saving';
   return (
-    <div style={{ display: 'grid', gap: 8 }} data-testid="invite-to-board">
-      <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)' }}>Invite to this board</div>
+    <SettingsGroup title="Invite people" hint="Type the email of someone with an account here, or leave it empty to make a look-only link." data-testid="invite-to-board">
       {people.length ? (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }} aria-label="People you can invite">
+        <div className="hb-set-actions" aria-label="People you can invite">
           {people.map((person) => (
-            <button key={person.id} type="button" onClick={() => tap(person)} disabled={state.status === 'saving'}
-              style={{ ...primary, padding: '6px 10px', fontSize: 'var(--text-sm)' }}>
-              Invite {person.name}
-            </button>
+            <SettingsButton key={person.id} small onClick={() => tap(person)} disabled={busy}>Invite {person.name}</SettingsButton>
           ))}
         </div>
       ) : null}
-      <form onSubmit={invite} style={{ display: 'flex', gap: 8 }} aria-label="Invite to this board">
+      <form onSubmit={invite} className="hb-set-inline" aria-label="Invite to this board">
         <input aria-label="Their email, if they have an account here" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-          placeholder="Their email, or leave empty for a link" disabled={state.status === 'saving'} style={field} />
-        <button type="submit" disabled={state.status === 'saving'} style={{ ...primary, opacity: state.status === 'saving' ? 0.5 : 1 }}>
-          {state.status === 'saving' ? 'Inviting…' : email.trim() ? 'Invite' : 'Make link and copy'}
-        </button>
+          placeholder="Their email, or leave empty for a link" disabled={busy} className="hb-set-input" />
+        <SettingsButton type="submit" variant="primary" disabled={busy}>
+          {busy ? 'Inviting...' : email.trim() ? 'Invite' : 'Make link and copy'}
+        </SettingsButton>
       </form>
       {link?.url ? (
-        <div style={{ display: 'grid', gap: 6 }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input readOnly value={link.url} aria-label="Join link" onFocus={(e) => e.target.select()} style={field} />
-            <button type="button" onClick={copy} style={primary}>Copy</button>
+        <>
+          <div className="hb-set-inline">
+            <input readOnly value={link.url} aria-label="Join link" onFocus={(e) => e.target.select()} className="hb-set-input hb-set-input--mono" />
+            <SettingsButton onClick={copy}>Copy</SettingsButton>
           </div>
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>
-            It works once, for 7 days. They can look, not change the board. Not your keys, vault, or other boards.
-          </div>
-        </div>
+          <p className="hb-set-hint">It works once, for 7 days. They can look, not change the board. Not your keys, vault, or other boards.</p>
+        </>
       ) : null}
-      {state.message ? (
-        <div role="status" style={{ fontSize: 'var(--text-xs)', color: state.status === 'error' ? 'var(--ps-red)' : 'var(--accent-ink)' }}>{state.message}</div>
-      ) : null}
-    </div>
+      <SettingsNote note={state.message ? { tone: state.status === 'error' ? 'error' : 'ok', text: state.message } : null} />
+    </SettingsGroup>
   );
 }

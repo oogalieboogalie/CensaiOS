@@ -57,7 +57,8 @@ export const CHROME_VARIANTS = Object.freeze({
     vars: {
       '--window-radius': 'var(--radius-card)',
       '--window-shadow': 'var(--shadow-card)',
-      '--window-backdrop': 'none',
+      // Stock is black glass on dark (tokens.css --window-surface-filter).
+      '--window-backdrop': 'var(--window-surface-filter)',
       '--window-title-backdrop': 'none',
       '--window-strip-height': '0px',
       '--window-strip-bg': 'transparent',

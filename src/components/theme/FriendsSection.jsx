@@ -3,9 +3,10 @@ import { ThemePanelCard } from './ThemeControls.jsx';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { CodeBox, Hint } from './friends/CodeBox.jsx';
 import { FriendRows, JoinedBoards } from './friends/FriendRows.jsx';
+import { DoorCodeField, QuickInvite } from './friends/QuickInvite.jsx';
 import {
-  addFriend, copyText, getFriends, joinBoard, kindOfCode, leaveBoard, mayNotOpenFriendBoards, openBoard, removeFriend, saveFriends,
-  shareWithFriend, stopSharing,
+  addFriend, copyText, endQuickInvite, getFriends, joinBoard, kindOfCode, leaveBoard, makeQuickInvite, mayNotOpenFriendBoards, openBoard,
+  openQuickDoor, removeFriend, saveFriends, shareWithFriend, stopSharing, useQuickInvite as comeInOnInvite,
 } from '../../lib/friends/index.js';
 
 const muted = { fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', margin: 0, lineHeight: 1.5 };
@@ -41,6 +42,7 @@ export function FriendsSection() {
   const [note, setNote] = React.useState({ text: '', tone: '' });
   const [busy, setBusy] = React.useState(false);
   const [pasted, setPasted] = React.useState('');
+  const [digits, setDigits] = React.useState('');
 
   React.useEffect(() => {
     let live = true;
@@ -52,7 +54,9 @@ export function FriendsSection() {
 
   // While a board is shared or joined, look again now and then: the card
   // says when the friend has come in, and when a board they shared has closed.
-  const active = Boolean(card?.on && ((card.friends || []).some((friend) => friend.party) || (card.joins || []).length));
+  const active = Boolean(card?.on && (card.quick || (card.friends || []).some((friend) => friend.party) || (card.joins || []).length));
+  // With the door open someone may come in any second: look more often.
+  const every = card?.quick?.open ? 2000 : 6000;
   const busyNow = React.useRef(false);
   busyNow.current = busy;
   React.useEffect(() => {
@@ -60,9 +64,9 @@ export function FriendsSection() {
     const timer = setInterval(() => {
       if (busyNow.current) return;
       getFriends().then((data) => { if (!busyNow.current) setCard(data); }).catch(() => {});
-    }, 6000);
+    }, every);
     return () => clearInterval(timer);
-  }, [active]);
+  }, [active, every]);
 
   /** Runs one change, shows the card it answers with, and says what happened. */
   async function run(change, done) {
@@ -86,7 +90,17 @@ export function FriendsSection() {
     const code = pasted.trim();
     const kind = kindOfCode(code);
     if (!kind) {
-      setNote({ text: 'That is not a friend code or a party code. Copy the whole code and paste it again.', tone: 'bad' });
+      setNote({ text: 'That is not a friend code, a party code or an invite. Copy the whole code and paste it again.', tone: 'bad' });
+      return;
+    }
+    if (kind === 'quick') {
+      const eight = digits.replace(/\D/g, '');
+      if (eight.length !== 8) {
+        setNote({ text: 'Type the 8 digits they told you.', tone: 'bad' });
+        return;
+      }
+      const came = await run(() => comeInOnInvite(code, eight), (data) => `You are in. ${data.joined?.hostName} is on your friends list, and their board "${data.joined?.boardName}" ${data.opened ? 'is opening in your browser.' : 'is ready: press Open below.'}`);
+      if (came) { setPasted(''); setDigits(''); }
       return;
     }
     const next = kind === 'friend'
@@ -141,14 +155,25 @@ export function FriendsSection() {
                 <label htmlFor="friends-paste" style={heading}>Paste a code</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input id="friends-paste" style={field} value={pasted} disabled={busy} autoComplete="off" spellCheck={false}
-                    placeholder="A friend code, or a party code a friend sent you" onChange={(event) => setPasted(event.target.value)} />
+                    placeholder="A friend code, a party code, or an invite someone sent you" onChange={(event) => setPasted(event.target.value)} />
                   <button type="submit" style={button} disabled={busy || !pasted.trim()}>
-                    {kindOfCode(pasted) === 'party' ? 'Join' : 'Add'}
+                    {{ party: 'Join', quick: 'Come in' }[kindOfCode(pasted)] || 'Add'}
                   </button>
                 </div>
-                <p style={muted}>A friend code adds that person to your list. A party code opens the board they are sharing with you.</p>
+                {card.canJoin === false ? <p style={muted} data-testid="friends-docker-hint">This censaiOS runs in Docker and was started without the ports a friend's board opens on. You can add friends, share your boards and invite people from here. To open a friend's board, update censaiOS and start it again.</p> : null}
+                {kindOfCode(pasted) === 'quick' ? <DoorCodeField value={digits} disabled={busy} onChange={setDigits} /> : null}
+                <p style={muted}>A friend code adds that person to your list. A party code opens the board they are sharing with you. An invite does both, with the 8 digits they tell you.</p>
               </form>
               <JoinedBoards joins={card.joins || []} busy={busy} safari={mayNotOpenFriendBoards()} onOpen={open} onLeave={(join) => run(() => leaveBoard(join.id), () => `You left ${join.hostName}'s board.`)} />
+              <QuickInvite
+                quick={card.quick || null}
+                guest={card.quickGuest || null}
+                busy={busy}
+                canShare={Boolean(workspaceId)}
+                onMake={(role) => run(() => makeQuickInvite({ workspaceId, role }))}
+                onOpen={() => run(openQuickDoor)}
+                onEnd={() => run(endQuickInvite, () => 'The invite is over. It leads nowhere now.')}
+              />
               <div style={{ display: 'grid', gap: 6 }}>
                 <div style={heading}>Your friends</div>
                 <FriendRows

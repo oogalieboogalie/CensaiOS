@@ -3,7 +3,7 @@ import { createWorkspaceEvent } from '../operational-intelligence/factories.js';
 import { requireWorkspaceMember } from '../workspaces/context.js';
 import { findApprovalGrant } from './grants.js';
 import { approvalRequestHash, sanitizeApprovalArguments } from './requestContract.js';
-import { toolHasApprovalModule } from '../../src/data/agent-capability-modules.js';
+import { AGENT_CAPABILITY_MODULES, toolHasApprovalModule } from '../../src/data/agent-capability-modules.js';
 import { toolPackageLockKey } from '../capabilities/packageCatalog.js';
 import { agentIsTrusted, TRUSTED_ROLES } from './trustMode.js';
 import { assertHelperTrusted } from './helperTrust.js';
@@ -25,6 +25,15 @@ function canonicalAgentId(value) {
   return agentId;
 }
 
+/** The refusal an agent gets for a tool whose module is not equipped: which one, on whom, and where to equip it. */
+export function notEquippedWords(agentId, toolName) {
+  const name = FAMILY_AGENT_BY_ID[agentId]?.name || agentId;
+  const module = AGENT_CAPABILITY_MODULES.find((entry) => entry.mode === 'execute_with_approval' && entry.toolNames.includes(toolName));
+  if (!module) return 'The approval module for this tool is not equipped.';
+  return `${name} cannot use ${toolName} on this board yet: ${module.name} is not equipped on ${name}. `
+    + `Tell the person in plain words: to let me do this here, open ${name}'s Exo-Skeleton Builder, go to the Exo-Modules tab, and press Install and equip on ${module.name}.`;
+}
+
 export async function requestToolApprovalIfRequired(db, { agentId, toolName, args, context = {} }) {
   const workspaceId = String(context.workspaceId || '').trim();
   // Helper agents have no approval card; with Trust mode off their writes and
@@ -44,13 +53,7 @@ export async function requestToolApprovalIfRequired(db, { agentId, toolName, arg
   }
   const canonicalId = canonicalAgentId(agentId);
   const grant = await findApprovalGrant(db, { workspaceId, agentId: canonicalId, toolName });
-  if (!grant) {
-    throw new ToolApprovalError(
-      'The approval module for this tool is not equipped.',
-      403,
-      'TOOL_APPROVAL_GRANT_REQUIRED',
-    );
-  }
+  if (!grant) throw new ToolApprovalError(notEquippedWords(canonicalId, toolName), 403, 'TOOL_APPROVAL_GRANT_REQUIRED');
   const userId = Number(context.userId);
   if (!Number.isInteger(userId) || userId <= 0) {
     throw new ToolApprovalError('Signed user context is required for an approval request.', 403,

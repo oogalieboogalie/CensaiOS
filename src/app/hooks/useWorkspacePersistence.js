@@ -1,6 +1,6 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
-import { deriveCanvasProjectMemberships, persistWorkspaceWithPrewarm } from '../../lib/projectPrewarm.js';
+import { deriveBoardProjectAccess, persistWorkspaceWithPrewarm } from '../../lib/projectPrewarm.js';
 import { clearWorkspaceDraft, writeWorkspaceDraft } from '../../lib/api/workspaceAuthority.js';
 import { SYNCED_KEYS } from '../../lib/collaboration/yCanvasSync.js';
 
@@ -13,8 +13,8 @@ const RETRY_DELAYS = [5000, 15000, 30000, 60000];
 // settings beside it and never conflict; while the doc is not connected
 // (canvasLive false) edits wait in the local draft and nothing is sent.
 // Moving or editing windows doesn't send anything on this path at all: a
-// save goes out only when the settings (or which agents the board uses,
-// for project prewarm) change.
+// save goes out only when the settings (or which agents the board uses, or
+// which project each agent's window is set to, for project access) change.
 //
 // The local draft is a copy of what the server does not have yet: a settings
 // change, or board edits this tab made while the doc was away (`boardSaves`
@@ -33,7 +33,7 @@ function signatures(workspace, canvasSource) {
   const settings = { ...workspace };
   for (const key of SYNCED_KEYS) delete settings[key];
   return {
-    save: JSON.stringify({ settings, memberships: deriveCanvasProjectMemberships(workspace) }),
+    save: JSON.stringify({ settings, memberships: deriveBoardProjectAccess(workspace) }),
     settings: JSON.stringify(settings),
   };
 }

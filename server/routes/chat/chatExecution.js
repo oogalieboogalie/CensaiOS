@@ -13,7 +13,7 @@ import { recordTraceRound } from '../../operational-intelligence/traces.js';
 import { createChatToolSession } from './toolSession.js';
 import { noteFailure } from './chatLog.js';
 import { runToolCalls } from './toolRound.js';
-import { callChatModelRound, chatModelAccessContext, forwardDeltas, modelTokens, throwIfChatAborted } from './modelRound.js';
+import { callWithRoomToAnswer, chatModelAccessContext, forwardDeltas, modelTokens, throwIfChatAborted } from './modelRound.js';
 import { outsideOfferedTools, runWithOfferedTools } from '../../tools/rbac/offeredTools.js';
 
 // The tools this run offered are what executeTool will allow, for every agent.
@@ -42,7 +42,7 @@ async function chatLoop({
   let synthesisRequested = false;
   let synthesisReason = null;
   let round = 0;
-  const toolSession = createChatToolSession(toolsForCaller, reqProvider);
+  const toolSession = createChatToolSession(toolsForCaller, reqProvider, { agentId, windowId });
   const toolContext = { userId, ...(atThisComputer === true ? { atThisComputer: true } : {}), ...(windowId ? { windowId } : {}), ...(authorizationWorkspaceId ? { workspaceId: authorizationWorkspaceId } : {}) };
   const accessContext = chatModelAccessContext(userId, authorizationWorkspaceId);
   let modelAccepted = false;
@@ -74,7 +74,7 @@ async function chatLoop({
     }
 
     const modelStartedAt = Date.now();
-    const data = await claimRetry.guard(callChatModelRound({
+    const data = await claimRetry.guard(callWithRoomToAnswer({
       accessContext,
       activeTools,
       chatMessages,
@@ -87,7 +87,7 @@ async function chatLoop({
       userId,
       workspaceId, agentId, windowId,
       onDelta: forwardDeltas(round, sendEvent, acceptModel),
-    }), signal);
+    }, { signal, onRetry: () => sendEvent({ type: 'status', status: 'thinking', detail: { round, moreRoom: true } }) }), signal);
     acceptModel();
     const modelMs = Date.now() - modelStartedAt;
     timings.model_ms += modelMs;

@@ -23,6 +23,7 @@ import { getCliTaskManager } from '../cli-agents/index.js';
 import { RUNNING } from '../cli-agents/taskStore.js';
 import { teammateSummary } from '../cli-agents/taskHiddenWords.js';
 import { allowedRoots, assertAllowedFolder } from '../cli-agents/folders.js';
+import { resolveProjectPathForRuntime } from '../workspaces/shared.js';
 import { askModule } from '../modules/ask.js';
 import { listBoardAgents, searchBoardAgents } from '../../src/lib/agentNetwork/boardAgents.js';
 import { familyAgentFor } from '../agents/identity.js';
@@ -92,20 +93,23 @@ export function cliOutcome(task) {
   };
 }
 
-async function cliFolder(win) {
+// A console with no folder of its own works where the asking chat works (that
+// window's project), not in whichever project this computer opened last.
+async function cliFolder(win, askerWin = null) {
   if (win.folder) return assertAllowedFolder(win.folder);
+  if (askerWin?.project?.path) return assertAllowedFolder(resolveProjectPathForRuntime(askerWin.project.path));
   const roots = await allowedRoots();
   const root = roots.find((entry) => entry.current) || roots[0];
   if (!root) throw new Error('Open a project folder first, so the coding agent has somewhere to work.');
   return root.path;
 }
 
-async function startCli(scope, win, prompt, fromLabel) {
+async function startCli(scope, win, prompt, fromLabel, askerWin) {
   if (!localFilesystemAllowed()) throw new Error('Coding agents only run on a desktop install of censaiOS.');
   await assertSystemAdmin({ session: { userId: scope.userId } });
   const manager = getCliTaskManager();
   const started = await manager.start({
-    cli: win.cli || 'claudecode', folder: await cliFolder(win), prompt, approvalGated: true, user: { userId: scope.userId, name: fromLabel },
+    cli: win.cli || 'claudecode', folder: await cliFolder(win, askerWin), prompt, approvalGated: true, user: { userId: scope.userId, name: fromLabel },
   });
   return started.id;
 }
@@ -183,7 +187,7 @@ export async function requestBoardHelp(scope, {
   }
 
   if (target.executor === 'cli') {
-    const taskId = await startCli(scope, win, prompt, fromLabel);
+    const taskId = await startCli(scope, win, prompt, fromLabel, wins.find((entry) => entry.id === fromWindowId));
     const card = await place(`help-cli-${taskId}`, { cliTaskId: taskId, task: text, status: 'working' });
     // An idle console shows the task it was asked to do, approvals included.
     const shown = win.taskId ? getCliTaskManager().tasks.get(win.taskId) : null;

@@ -18,6 +18,12 @@
 .hb-gh-bar-count { color: var(--ink-soft); }
 .hb-gh-bar-count strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .hb-gh-bar-age { flex: 1; color: var(--ink-faint); font-size: var(--text-xs); }
+.hb-gh-icon-btn { display: inline-flex; align-items: center; gap: var(--space-1-5, 6px); min-width: 32px; justify-content: center; }
+.hb-gh-icon { flex: none; display: block; }
+.hb-gh-icon-count { font-variant-numeric: tabular-nums; font-weight: 600; }
+.hb-gh-spin { animation: hb-gh-spin 0.9s linear infinite; }
+@keyframes hb-gh-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .hb-gh-spin { animation: none; } }
 
 .hb-gh-list { list-style: none; margin: 0; padding: 0; }
 .hb-gh-row { display: flex; gap: var(--space-4); align-items: flex-start; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--hairline-soft); }

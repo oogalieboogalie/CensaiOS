@@ -92,13 +92,15 @@ const NOT_OPEN = 'Tell the person in plain words: that project is not open for m
 
 describe('a project the board did not give the agent', () => {
   test('a repo it was not given gets words that name the projects the board did give it, not "none is open"', async () => {
-    for (const who of [SAM, PAT]) {
-      const result = await readRepo(who, 'pat-example/made-up-other-repo');
-      expect(result).toBe(`Error: PROJECT_ACCESS_DENIED: This agent is not authorized for that repository in the current workspace. ${NOT_OPEN}`);
-      expect(result).not.toContain('none is open');
-      expect(toolCallOk(result)).toBe(false);
-    }
+    const result = await readRepo(SAM, 'pat-example/made-up-other-repo');
+    expect(result).toBe(`Error: PROJECT_ACCESS_DENIED: This agent is not authorized for that repository in the current workspace. ${NOT_OPEN}`);
+    expect(result).not.toContain('none is open');
+    expect(toolCallOk(result)).toBe(false);
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('this computer\'s owner is not held to the board\'s list: the same repo is not refused for Pat', async () => {
+    expect(await readRepo(PAT, 'pat-example/made-up-other-repo')).not.toContain('PROJECT_ACCESS_DENIED');
   });
 
   test('a folder project it was not given gets the same words', async () => {

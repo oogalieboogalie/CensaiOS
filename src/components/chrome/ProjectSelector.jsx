@@ -1,33 +1,38 @@
 import React from 'react';
 import { api } from '../../lib/api.js';
 import { logFailure } from '../../lib/appLog/browserLog.js';
+import { tidyProjectList } from '../../../shared/projects/projectList.js';
 
 export function ProjectSelector({ currentProject, onOpenLocalProject, onClose }) {
   const [openingProject, setOpeningProject] = React.useState(false);
   const [projectPath, setProjectPath] = React.useState(currentProject?.path || '');
   const [projectNameInput, setProjectNameInput] = React.useState(currentProject?.name || '');
   const [projectError, setProjectError] = React.useState('');
-  const [projectsList, setProjectsList] = React.useState([]);
   const [newName, setNewName] = React.useState(null); // null = form closed
   const [making, setMaking] = React.useState(false);
   const projectInputRef = React.useRef(null);
 
+  const [rawProjects, setRawProjects] = React.useState([]);
+  const [loadError, setLoadError] = React.useState('');
+
   React.useEffect(() => {
-    api.getProjects().then(list => {
-      // Local-project dropdown: one entry per local folder. GitHub-only
-      // rows have no path and cannot be worked out of — exclude them.
-      // Agent-owned duplicates of the same folder collapse to the newest.
-      const byPath = new Map();
-      for (const p of list || []) {
-        if (!p?.path) continue;
-        const key = String(p.path).replace(/[\\/]+$/, '').toLowerCase();
-        if (!byPath.has(key)) byPath.set(key, p);
-      }
-      setProjectsList([...byPath.values()]);
-    }).catch(err => {
+    api.getProjects().then(list => setRawProjects(list || [])).catch(err => {
+      setLoadError('Your projects could not be loaded just now. Close this menu and open it again to retry.');
       logFailure('projects: could not load projects', err, 'projects', 'error');
     });
   }, []);
+
+  // One entry per folder on this computer (GitHub-only rows have none to
+  // work in), no agent worktrees or temp folders, the default project first
+  // and then the most recently used (shared/projects/projectList.js).
+  const projectsList = React.useMemo(
+    () => tidyProjectList(rawProjects, currentProject, { localOnly: true }),
+    [rawProjects, currentProject],
+  );
+
+  // The default is found by its folder too: an older row for the same
+  // folder can carry another id.
+  const selectedId = projectsList.find(p => p.isCurrent)?.id || '';
 
   React.useEffect(() => {
     if (!openingProject) return undefined;
@@ -100,7 +105,8 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <select
-            value={currentProject?.projectId || ''}
+            aria-label="Default project for new windows"
+            value={selectedId}
             onChange={async (e) => {
               const selected = projectsList.find(p => p.id === e.target.value);
               if (selected) {
@@ -124,8 +130,8 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
           >
             <option value="" disabled>-- Choose a project --</option>
             {projectsList.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.name} — {p.path}
+              <option key={p.id} value={p.id} title={p.path}>
+                {p.label}
               </option>
             ))}
           </select>
@@ -151,9 +157,10 @@ export function ProjectSelector({ currentProject, onOpenLocalProject, onClose })
           </button>
         </div>
         {projectError && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-xs)', lineHeight: 1.35 }}>{projectError}</div>}
-        {projectsList.length === 0 && (
+        {loadError && <div style={{ color: 'var(--ps-red)', fontSize: 'var(--text-xs)', lineHeight: 1.35 }}>{loadError}</div>}
+        {!loadError && projectsList.length === 0 && (
           <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', lineHeight: 1.4 }}>
-            No local folders yet — add one with + below, or open the Files window to browse.
+            No folders yet. Add one with the + button, or open the Files window to browse.
           </div>
         )}
         <div style={{ color: 'var(--ink-faint)', fontSize: 'var(--text-xs)', lineHeight: 1.4 }}>

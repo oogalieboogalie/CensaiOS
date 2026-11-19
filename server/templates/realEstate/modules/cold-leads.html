@@ -1,0 +1,165 @@
+<!-- module {"request": "a cold leads list for reviving old CRM leads with personal check-ins", "manifest": {"manifest": 3, "version": "1.0.0", "author": "censaiOS", "id": "cold-leads", "name": "Cold leads", "description": "Paste an old-lead export from your CRM; the Follow-up Assistant drafts a personal check-in for each one and you approve it in the Outbox.", "icon": "Person", "size": {"w": 520, "h": 620}, "permissions": ["storage"], "state": {"leads": "list of {id, name, email, phone, lastContact, notes, status, touchedAt}"}, "tools": [{"name": "list_cold_leads", "description": "Read the leads nobody has contacted in a while, coldest first, with their notes. Only leads still marked cold are listed.", "input": {"type": "object", "properties": {"min_days": {"type": "number", "description": "Only leads with no contact for at least this many days (default 90)"}, "limit": {"type": "number", "description": "How many to return (default 10, max 50)"}}}}, {"name": "mark_lead", "description": "Set a lead's status after you act on it: drafted (a check-in is waiting in the Outbox), replied, booked (an appointment is set) or stop (do not contact).", "input": {"type": "object", "properties": {"lead": {"type": "string", "description": "The lead's name or id"}, "status": {"type": "string", "enum": ["cold", "drafted", "replied", "booked", "stop"]}}, "required": ["lead", "status"]}}]}} -->
+<div class="stack" style="gap: var(--space-3); height: 100%">
+  <div class="spread">
+    <div><div class="label">Lead revival</div><h2 style="margin:2px 0 0">Cold leads</h2></div>
+    <span class="pill" id="count">0 leads</span>
+  </div>
+  <div class="muted" id="score"></div>
+  <details id="importBox">
+    <summary>Add leads from your CRM</summary>
+    <div class="stack" style="margin-top: var(--space-2)">
+      <div class="faint">Paste a CSV export (Follow Up Boss, kvCORE, a spreadsheet or your phone). It needs a name column; email, phone, last contact and notes make the check-ins personal.</div>
+      <textarea id="paste" rows="5" placeholder="Name,Email,Phone,Last contact,Notes&#10;Mike Torres,mike@example.com,555-0101,2025-11-02,Waiting for lease to end in spring; wants east side"></textarea>
+      <div class="spread"><span class="muted" id="msg" style="min-height:1.4em"></span><button class="primary" id="add" type="button">Add leads</button></div>
+    </div>
+  </details>
+  <div class="spread">
+    <span class="label">Coldest first</span>
+    <select id="filter" style="width:auto"><option value="cold">Still cold</option><option value="all">Everyone</option></select>
+  </div>
+  <div style="flex:1; overflow:auto; min-height: 0"><table><tbody id="list"></tbody></table></div>
+</div>
+<script>
+  const STATUSES = { cold: 'Cold', drafted: 'Drafted', replied: 'Replied', booked: 'Booked', stop: 'Do not contact' };
+  const DAY = 86400000;
+  let leads = censai.storage.get('leads', []);
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
+
+  function daysCold(lead) {
+    const when = Date.parse(lead.lastContact || '');
+    return Number.isFinite(when) ? Math.max(0, Math.floor((Date.now() - when) / DAY)) : null;
+  }
+  function ago(days) {
+    if (days == null) return 'never';
+    if (days < 60) return days + ' days';
+    if (days < 730) return Math.round(days / 30) + ' months';
+    return Math.round(days / 365) + ' years';
+  }
+  // The first words of the notes, cut at a word, for the list.
+  function short(text, max = 90) {
+    const t = String(text || '').trim();
+    if (t.length <= max) return t;
+    const cut = t.slice(0, max);
+    return cut.slice(0, cut.lastIndexOf(' ') > 40 ? cut.lastIndexOf(' ') : max).replace(/[,.;:\s]+$/, '') + '…';
+  }
+  // Leads with no date count as the coldest of all.
+  const coldness = (lead) => { const d = daysCold(lead); return d == null ? Infinity : d; };
+
+  // A small CSV reader: quoted fields, commas and new lines inside quotes, "" as a quote.
+  // Cells copied out of a spreadsheet come tab-separated with commas left bare
+  // inside them, so the header row decides the one separator.
+  function parseCsv(text) {
+    const sep = text.split(/\r?\n/, 1)[0].includes('\t') ? '\t' : ',';
+    const rows = [];
+    let row = [], field = '', quoted = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (quoted) {
+        if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+        else if (c === '"') quoted = false;
+        else field += c;
+      } else if (c === '"') quoted = true;
+      else if (c === sep) { row.push(field); field = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        row.push(field); field = '';
+        if (row.some((v) => v.trim())) rows.push(row);
+        row = [];
+      } else field += c;
+    }
+    row.push(field);
+    if (row.some((v) => v.trim())) rows.push(row);
+    return rows;
+  }
+  const COLUMNS = {
+    name: ['name', 'full name', 'contact', 'contact name', 'lead name', 'client'],
+    first: ['first name', 'first'],
+    last: ['last name', 'last'],
+    email: ['email', 'e-mail', 'email address', 'primary email'],
+    phone: ['phone', 'mobile', 'cell', 'phone number', 'primary phone'],
+    lastContact: ['last contact', 'last contacted', 'last activity', 'last touch', 'last communication', 'last called', 'last emailed', 'last texted', 'updated'],
+    notes: ['notes', 'note', 'background', 'comments', 'description', 'tags', 'details'],
+  };
+  function readLeads(text) {
+    const rows = parseCsv(String(text || ''));
+    if (rows.length < 2) return { error: 'Paste at least a header row and one lead.' };
+    const header = rows[0].map((h) => h.trim().toLowerCase());
+    const col = {};
+    for (const [key, names] of Object.entries(COLUMNS)) col[key] = header.findIndex((h) => names.includes(h));
+    if (col.name < 0 && col.first < 0) return { error: 'No name column found. The first row should name the columns, for example Name, Email, Phone, Last contact, Notes.' };
+    const cell = (r, key) => (col[key] >= 0 ? String(r[col[key]] || '').trim() : '');
+    const found = rows.slice(1).map((r) => ({
+      name: cell(r, 'name') || [cell(r, 'first'), cell(r, 'last')].filter(Boolean).join(' '),
+      email: cell(r, 'email'), phone: cell(r, 'phone'), lastContact: cell(r, 'lastContact'), notes: cell(r, 'notes'),
+    })).filter((l) => l.name);
+    if (!found.length) return { error: 'No rows had a name in them.' };
+    return { leads: found };
+  }
+
+  function save() { censai.storage.set('leads', leads); render(); }
+  function find(ref) {
+    const key = String(ref || '').trim().toLowerCase();
+    if (!key) return null;
+    const exact = leads.find((l) => l.id === ref) || leads.find((l) => l.name.toLowerCase() === key);
+    if (exact) return exact;
+    // Part of a name only counts when it points at one lead.
+    const partial = leads.filter((l) => l.name.toLowerCase().includes(key));
+    if (partial.length > 1) throw new Error('More than one lead matches "' + ref + '": ' + partial.slice(0, 5).map((l) => l.name).join(', ') + '. Use the full name or the id.');
+    return partial[0] || null;
+  }
+
+  function render() {
+    $('count').textContent = leads.length + (leads.length === 1 ? ' lead' : ' leads');
+    const n = (s) => leads.filter((l) => l.status === s).length;
+    $('score').textContent = leads.length ? 'Drafted ' + n('drafted') + ' · Replied ' + n('replied') + ' · Booked ' + n('booked') : '';
+    const shown = leads.filter((l) => $('filter').value === 'all' || (l.status || 'cold') === 'cold').sort((a, b) => coldness(b) - coldness(a));
+    $('list').innerHTML = shown.length ? shown.map((l) => '<tr><td><div>' + esc(l.name) + '</div><div class="faint">' + esc(short(l.notes) || 'No notes') + '</div></td><td class="muted" style="white-space:nowrap">' + ago(daysCold(l)) + '</td><td><select style="width:auto" data-id="' + esc(l.id) + '" aria-label="Status for ' + esc(l.name) + '">' + Object.entries(STATUSES).map(([v, label]) => '<option value="' + v + '"' + ((l.status || 'cold') === v ? ' selected' : '') + '>' + label + '</option>').join('') + '</select></td></tr>').join('')
+      : '<tr><td class="faint">' + (leads.length ? 'Every lead has been worked. Switch to Everyone to see them.' : 'No leads yet. Open "Add leads from your CRM" and paste an export.') + '</td></tr>';
+  }
+
+  $('add').onclick = () => {
+    const result = readLeads($('paste').value);
+    if (result.error) { $('msg').textContent = result.error; return; }
+    const known = new Set(leads.map((l) => (l.email || l.phone || l.name).toLowerCase()));
+    const fresh = result.leads.filter((l) => {
+      const key = (l.email || l.phone || l.name).toLowerCase();
+      if (known.has(key)) return false;
+      known.add(key); // the same person twice in one paste is added once
+      return true;
+    });
+    const stamp = Date.now().toString(36);
+    leads = [...leads, ...fresh.map((l, i) => ({ ...l, id: 'L' + stamp + i, status: 'cold' }))];
+    const skipped = result.leads.length - fresh.length;
+    $('msg').textContent = 'Added ' + fresh.length + (fresh.length === 1 ? ' lead' : ' leads') + (skipped ? ', skipped ' + skipped + ' already on the list or repeated' : '') + '.';
+    $('paste').value = '';
+    save();
+  };
+  $('list').onchange = (e) => {
+    const lead = leads.find((l) => l.id === e.target.dataset.id);
+    if (!lead) return;
+    leads = leads.map((l) => (l === lead ? { ...l, status: e.target.value, touchedAt: new Date().toISOString() } : l));
+    save();
+  };
+  $('filter').onchange = render;
+  censai.storage.onChange((k, v) => { if (k === 'leads' && Array.isArray(v)) { leads = v; render(); } });
+
+  censai.tools.handle('list_cold_leads', ({ min_days, limit } = {}) => {
+    const min = Number.isFinite(Number(min_days)) ? Number(min_days) : 90;
+    const max = Math.min(50, Math.max(1, Number(limit) || 10));
+    return leads
+      .filter((l) => (l.status || 'cold') === 'cold' && coldness(l) >= min)
+      .sort((a, b) => coldness(b) - coldness(a))
+      .slice(0, max)
+      .map((l) => ({ id: l.id, name: l.name, email: l.email, phone: l.phone, lastContact: l.lastContact || null, daysCold: daysCold(l), notes: l.notes || '' }));
+  });
+  censai.tools.handle('mark_lead', ({ lead, status }) => {
+    if (!STATUSES[status]) throw new Error('Status must be one of: ' + Object.keys(STATUSES).join(', ') + '.');
+    const found = find(lead);
+    if (!found) throw new Error('No lead matches "' + lead + '".');
+    leads = leads.map((l) => (l === found ? { ...l, status, touchedAt: new Date().toISOString() } : l));
+    save();
+    return { name: found.name, status };
+  });
+  render();
+</script>

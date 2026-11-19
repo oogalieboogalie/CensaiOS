@@ -59,6 +59,12 @@ describe('AI resources on the board', () => {
     expect(renderToStaticMarkup(<CliPanel data={DATA} />)).toContain('pat@example.com');
   });
 
+  test('the Sharing heading only shows when there is something to say under it', () => {
+    useWorkspaceStore.setState({ wins: WINS });
+    expect(renderToStaticMarkup(<UsePanel data={DATA} />)).toContain('Sharing');
+    expect(renderToStaticMarkup(<UsePanel data={{ ...DATA, sharing: { available: false } }} />)).not.toContain('Sharing');
+  });
+
   test('the window is registered once, sized by the manifest', () => {
     expect(WINDOW_MANIFEST_BY_KIND.aiResources).toMatchObject({ componentName: 'AiResourcesWindow', defaultSize: { w: 920, h: 660 } });
   });
