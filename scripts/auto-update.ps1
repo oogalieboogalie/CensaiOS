@@ -72,6 +72,7 @@ function Write-Heartbeat {
 # put back after, exactly like the launcher does.
 function Update-Code {
   $branch = ((& git rev-parse --abbrev-ref HEAD 2>$null) -as [string]).Trim()
+  Write-Value 'step.txt' 'looking'
   & git fetch --quiet origin master *> $null
   $fetched = $LASTEXITCODE -eq 0
   # Not on master (someone switched this folder to a side branch): updates cannot
@@ -102,6 +103,7 @@ function Update-Code {
     return
   }
   Write-Log "master has $behind new commit(s), pulling"
+  Write-Value 'step.txt' 'downloading'
   & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'self-fix-patches.ps1') -Mode unapply *> $null
   $out = & git pull --ff-only --quiet origin master 2>&1
   if ($LASTEXITCODE -ne 0) {
@@ -120,6 +122,7 @@ function Build-App {
   & docker info *> $null
   if ($LASTEXITCODE -ne 0) { return $false }
   Write-Log "building $head"
+  Write-Value 'step.txt' 'building'
   # The same lock as a start or a swap. If one of those is running, do not
   # start a second build. The next look tries again.
   $lock = Join-Path $PSScriptRoot 'compose-lock.ps1'
@@ -199,6 +202,8 @@ function Invoke-Check {
 function Invoke-Look([string]$why) {
   $result = 'up-to-date'
   try { $result = @(Invoke-Check)[-1] } catch { Write-Log "check failed: $_"; $result = 'build-failed' }
+  # The look is over, whatever it found: no step is being worked on now.
+  Remove-Item -Force (Join-Path $dir 'step.txt') -ErrorAction SilentlyContinue
   # Someone else is already building. Leave the last note and try later.
   if ($result -eq 'locked') { return }
   Write-Value 'checked.json' (@{ at = (Get-Date).ToUniversalTime().ToString('o'); result = $result } | ConvertTo-Json -Compress)

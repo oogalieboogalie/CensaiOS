@@ -10,6 +10,7 @@ import { resolveProjectForDriver } from '../workspaces/ownerProjectLookup.js';
 import { refusePastWork } from '../workspaces/familyPast.js';
 import { noteToolFailure } from './toolsLog.js';
 import { refuseProjectsOffBoard } from './rbac/ownerOnlyReads.js';
+import { jobProjectFor } from './jobProject.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // The same file the project routes keep (server/routes/projects/shared.js);
@@ -112,7 +113,8 @@ async function findProjectForCall(agentId, projectName, context) {
   await refuseProjectsOffBoard(context);
   const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
   if (context.workspaceId) {
-    let projectIdentifier = projectName || null;
+    // On a job Censai handed off, no name means the job's project (jobProject.js).
+    let projectIdentifier = projectName || jobProjectFor(agentId) || null;
     if (!projectIdentifier && sub && context.agentTaskId) {
       const { rows } = await pool.query(
         'SELECT project_id, project FROM agent_tasks WHERE id = $1',

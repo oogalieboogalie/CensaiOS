@@ -4,6 +4,8 @@ import { resolveAuthorizedWorkspaceProject } from '../../workspaces/projectAcces
 import { resolveChatModelConfig } from '../../aiGateway/index.js';
 import { getSubAgents } from '../../memory.js';
 import { boxNumbers } from '../../../src/lib/agents/dataBoxes.js';
+import { MAX_FAILED_WRITES_IN_A_ROW, MAX_PROJECT_WRITES_PER_TURN } from './turnLimits.js';
+import { toolCallWaiting } from './toolOutcome.js';
 import {
   MODEL,
   FORCE_TOOL_SYNTHESIS_AFTER_ROUNDS, DIRECT_SYNTHESIS_TOOLS
@@ -149,17 +151,30 @@ export function summarizeToolActions(toolActions) {
 // Project file writes may come in a short run (index.html, style.css, then
 // index.html again) so the chat's live preview builds up as the agent works.
 // The turn is still wrapped up after a few writes, after a failed write, or
-// as soon as a write repeats exactly (a model stuck in a loop).
+// as soon as a write repeats exactly (a model stuck in a loop). A job Censai
+// hands off is told why a save failed and keeps its tools, so it can read the
+// file again and retry; it is wrapped up after a few failed saves in a row.
 const PROJECT_WRITE_TOOLS = new Set(['project_write', 'project_edit', 'project_multi_edit']);
-export const MAX_PROJECT_WRITES_PER_TURN = 4;
+export { MAX_PROJECT_WRITES_PER_TURN };
 const writeKey = ({ tool, args = {} }) => `${tool}:${JSON.stringify([args.path, args.content, args.old_string, args.new_string, args.edits])}`;
+// The longest run of failed saves with no good save in between.
+const failedRun = (writes) => writes.reduce(([run, most], action) => {
+  const now = action.ok === false ? run + 1 : 0;
+  return [now, Math.max(most, now)];
+}, [0, 0])[1];
 
-export function shouldSynthesizeAfterToolBatch(actions, round) {
+// The limits are a chat turn's unless the loop passes a job's (turnLimits.js).
+export function shouldSynthesizeAfterToolBatch(actions, round, {
+  forceAfter = FORCE_TOOL_SYNTHESIS_AFTER_ROUNDS, maxWrites = MAX_PROJECT_WRITES_PER_TURN,
+  maxFailedWrites = MAX_FAILED_WRITES_IN_A_ROW,
+} = {}) {
   if (actions.some(action => DIRECT_SYNTHESIS_TOOLS.has(action.tool) && !PROJECT_WRITE_TOOLS.has(action.tool))) return true;
   const writes = actions.filter(action => PROJECT_WRITE_TOOLS.has(action.tool));
-  if (writes.length >= MAX_PROJECT_WRITES_PER_TURN || writes.some(action => action.ok === false)) return true;
+  if (writes.length >= maxWrites || failedRun(writes) >= maxFailedWrites) return true;
+  // A save parked for a person's OK is not one a retry can change: say so and stop, job or not.
+  if (writes.some(action => action.ok === false && toolCallWaiting(action.result))) return true;
   if (new Set(writes.map(writeKey)).size < writes.length) return true;
-  return round >= FORCE_TOOL_SYNTHESIS_AFTER_ROUNDS;
+  return round >= forceAfter;
 }
 
 export function buildToolSynthesisPrompt(toolActions) {

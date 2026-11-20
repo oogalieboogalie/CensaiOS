@@ -17,6 +17,9 @@ tags.
 
 ### New
 
+- The Update panel shows which step the update is on (Nov 20)
+- Echo, Censai and Foundation save project files with nothing equipped (Nov 20)
+- Builders save project files with nothing equipped (Nov 19)
 - One rule book for which project an agent's call means (Nov 19)
 - Open a friend's board from a Docker install (Nov 17)
 - Tailcat in the Docker image, so Friends works from a Docker install (Nov 17)
@@ -40,6 +43,11 @@ tags.
 
 ### Fixed
 
+- On the owner's own board, an agent given no project works in the one open there (Nov 20)
+- A job Censai hands off goes on after a save that failed (Nov 20)
+- On a job Censai hands off, a call that names no project means the job's project (Nov 20)
+- A job Censai hands off has room to read, change and test before it answers (Nov 20)
+- Censai hands off a code job named for a GitHub project into its own folder here (Nov 20)
 - Seven small window bugs found while filming the wiki (Nov 17)
 - A model that runs out of room before answering is asked once more with room to answer (Nov 17)
 - Black glass windows take their colour from Window Surface, not the board canvas (Nov 17)

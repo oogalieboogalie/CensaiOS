@@ -47,7 +47,8 @@ test('unscoped calls keep the minimal family baseline and never consult a capabi
   expect(names).toEqual(expect.arrayContaining(['remember', 'recall', 'message_to', 'report']));
   expect(names).toEqual(expect.arrayContaining(['create_sub_agent', 'project_read']));
   expect(names).not.toContain('web_search');
-  expect(names).not.toContain('project_write');
+  expect(names).toEqual(expect.arrayContaining(['project_write', 'project_edit']));
+  expect(names).not.toContain('canvas_update_design');
   expect(names).not.toContain('read_calendar');
   expect(pool.query).not.toHaveBeenCalled();
 });

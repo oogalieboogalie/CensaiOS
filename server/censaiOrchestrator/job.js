@@ -15,13 +15,15 @@
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { publicChatError } from '../chatModel/errors.js';
+import { runInJobProject } from '../tools/jobProject.js';
 import { checkAnswer } from './check.js';
 import { closeChecklist, reopenChecklist, tickCount } from './checklist.js';
 import { jobPrompt, sendBackPrompt } from './prompts.js';
-import { MAX_ANSWER_CHARS, MAX_ATTEMPTS, addStep, agentName, clip, settleStep } from './shape.js';
+import { JOB_ROUNDS, MAX_ANSWER_CHARS, MAX_ATTEMPTS, addStep, agentName, clip, settleStep } from './shape.js';
 
 const log = createLogger('censai-orchestrator');
-const configured = Number(process.env.CENSAI_JOB_TIMEOUT_MS) || 8 * 60 * 1000;
+// Room for JOB_ROUNDS on a slow model; the turn is asked to answer before this runs out.
+const configured = Number(process.env.CENSAI_JOB_TIMEOUT_MS) || 20 * 60 * 1000;
 export const JOB_TIMEOUT_MS = Math.min(30 * 60 * 1000, Math.max(30_000, configured));
 
 /** Thrown inside a job once the person stopped the plan; the plan is already saved as stopped. */
@@ -99,12 +101,13 @@ export async function runJob({ entry, plan, job, earlier = [], deps, save, censa
     const startedAt = deps.now();
     let turn;
     try {
-      turn = await deps.runAgent({
+      // A call of the agent's that names no project means the plan's project (tools/jobProject.js).
+      turn = await runInJobProject({ agentId: job.agentId, project: plan.project }, () => deps.runAgent({
         origin: 'help', agentId: job.agentId, messages, userId: plan.userId,
         workspaceId: plan.workspaceId, loopWorkspaceId: plan.workspaceId,
         conversationId: `censai-plan:${plan.id}:${job.n}`, signal: entry.controller.signal,
-        timeoutMs: JOB_TIMEOUT_MS, rememberQuestion: `Censai asked: ${job.task}`,
-      });
+        timeoutMs: JOB_TIMEOUT_MS, rounds: JOB_ROUNDS, rememberQuestion: `Censai asked: ${job.task}`,
+      }));
     } catch (error) {
       alive();
       log.warn('agent turn failed', { ...meta, attempt, code: safeErrorCode(error) });

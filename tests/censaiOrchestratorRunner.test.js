@@ -6,7 +6,7 @@ import { fakePlanDb } from './support/censaiPlanDb.js';
 import {
   createPlan, planSettled, recoverOnce, resetPlansForTests, stopPlan,
 } from '../server/censaiOrchestrator/runner.js';
-import { normalizePlanInput } from '../server/censaiOrchestrator/shape.js';
+import { JOB_ROUNDS, normalizePlanInput } from '../server/censaiOrchestrator/shape.js';
 import { claimReport, insertPlan, savePlan } from '../server/censaiOrchestrator/store.js';
 import { onLogRecord } from '../server/logger.js';
 
@@ -98,6 +98,8 @@ describe('a plan from hand-off to one checked line', () => {
     expect(h.read).toEqual([101, 102]);
     expect(h.agentCalls[0]).toMatchObject({
       origin: 'help', agentId: 'nexus', userId: 7, workspaceId: 'ws-1', conversationId: `censai-plan:${plan.id}:1`,
+      // A job gets room to read, change and test, not a chat turn's 6 rounds (tests/handoffJobRoom.test.js).
+      rounds: JOB_ROUNDS,
     });
     expect(h.agentCalls[0].messages[0].text).toContain('Your job: Look at the leads table and list its columns.');
     expect(h.agentCalls[0].messages[0].text).toContain('1. Every column is named');

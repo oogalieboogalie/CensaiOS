@@ -40,6 +40,15 @@ function failureWhy(action) {
   return why ? `did not go through: ${clip(why, 160)}` : 'did not go through';
 }
 
+const savedFile = (action) => (LOCAL_WRITES.has(action?.tool) && (action.summary?.path || action.args?.path || action.args?.file_path)) || null;
+
+// A save that missed, then went through to the same file later in the turn (a job
+// reads the file again and retries): the retry worked, so it is not a step that failed.
+function madeGood(actions, index) {
+  const file = savedFile(actions[index]);
+  return Boolean(file) && actions.slice(index + 1).some((later) => later?.ok !== false && savedFile(later) === file);
+}
+
 /** What the agent's tool calls show: { files, projects, shell, failedTools, failures, agentTests }. */
 export function readEvidence(toolActions = []) {
   const files = new Set();
@@ -47,16 +56,17 @@ export function readEvidence(toolActions = []) {
   const failed = new Map();
   const agentTests = [];
   let shell = false;
-  for (const action of Array.isArray(toolActions) ? toolActions : []) {
+  const actions = Array.isArray(toolActions) ? toolActions : [];
+  for (const [index, action] of actions.entries()) {
     const tool = action?.tool;
     if (!tool) continue;
     if (action.ok === false) {
-      if (!failed.has(tool)) failed.set(tool, failureWhy(action));
+      if (!failed.has(tool) && !madeGood(actions, index)) failed.set(tool, failureWhy(action));
       continue;
     }
     const args = action.args || {};
     if (LOCAL_WRITES.has(tool)) {
-      const file = action.summary?.path || args.path || args.file_path;
+      const file = savedFile(action);
       if (file) files.add(String(file));
       for (const edit of Array.isArray(args.edits) ? args.edits : []) if (edit?.path) files.add(String(edit.path));
       const project = writtenProject(action, file);

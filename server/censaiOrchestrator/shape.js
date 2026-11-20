@@ -11,6 +11,10 @@ import { familyDefaultToolNames } from '../tools/rbac/familyBaseline.js';
 
 export const MAX_JOBS = 4;
 export const MAX_ATTEMPTS = 2;
+// A chat turn is told to answer after 6 rounds of tools and 4 saves. A job reads,
+// changes and tests several files first, so it gets the background worker's room.
+// A save that fails does not end it: it reads the file again and retries, up to 3 misses in a row.
+export const JOB_ROUNDS = Object.freeze({ max: 30, forceAfter: 28, maxWrites: 16, maxFailedWrites: 3 });
 export const MAX_ANSWER_CHARS = 6000;
 const MAX_GOAL = 300;
 const MAX_TASK = 2000;

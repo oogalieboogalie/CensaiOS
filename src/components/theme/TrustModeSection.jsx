@@ -48,8 +48,8 @@ export function TrustModeSection() {
       </SettingsGroup>
       <p className="hb-set-hint" data-testid="trust-mode-files">
         Trust mode only skips the OK click. It gives no agent new tools or files. To let agents open files, open a project
-        from the top bar (only that project&apos;s files open), and for Censai&apos;s family agents also equip Project Reader
-        or Project Writer in the ExoSkeleton window.
+        from the top bar (only that project&apos;s files open). Every family agent can then save files in it,
+        with nothing to equip.
       </p>
       {trust.ready && !trust.canChange ? <SettingsNote>{OWNER_ONLY}</SettingsNote> : null}
       <SettingsNote note={note} />

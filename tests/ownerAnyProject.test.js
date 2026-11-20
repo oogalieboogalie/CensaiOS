@@ -15,6 +15,10 @@ const PROJECTS = [
   { id: 'attic', name: 'made-up-attic', path: '/made-up/attic', repo: 'made-up/attic' },
 ];
 const GIVEN = { garden: 'work', library: 'read' };
+// What each board has open for any of its agents: [project, may it be changed].
+// One board has only the garden, one only the library to read, one has nothing.
+const [ONE, READING, BARE] = ['made-up-one-project-board', 'made-up-reading-board', 'made-up-bare-board'];
+const ON_BOARD = { [BOARD]: [['garden', true], ['library', false]], [ONE]: [['garden', true]], [READING]: [['library', false]], [BARE]: [] };
 
 const named = (id) => PROJECTS.find((p) => [p.id, p.name, p.path, p.repo].includes(id) || p.path.endsWith(`/${id}`));
 const db = {
@@ -22,8 +26,13 @@ const db = {
     const text = String(sql).replace(/\s+/g, ' ');
     if (text.includes('FROM users')) return { rows: ROLES[params[0]] ? [{ role: ROLES[params[0]] }] : [] };
     if (text.includes('SELECT p.*, wap.permission')) {
+      // Only Censai was given anything, and only on the first board.
+      if (params[0] !== BOARD || params[1] !== 'censai') return { rows: [] };
       const project = named(params[2]);
       return { rows: project && GIVEN[project.id] ? [{ ...project, workspace_permission: GIVEN[project.id] }] : [] };
+    }
+    if (text.includes('bool_or(wap.permission')) {
+      return { rows: (ON_BOARD[params[0]] || []).map(([id, work]) => ({ ...named(id), board_work: work })) };
     }
     if (text.includes('SELECT wap.project_id')) {
       const project = PROJECTS.find((p) => p.repo === params[2]);
@@ -80,6 +89,37 @@ test('a project the board gave to read only stays read only, for the owner too',
   await expect(ask('library', PAT, 'work')).rejects.toMatchObject({ readOnly: true });
   await expect(assertProjectForDriver(db, { workspaceId: BOARD, projectId: 'library', agentId: 'censai', requiredPermission: 'work' }, { userId: PAT }, cloud))
     .rejects.toMatchObject({ readOnly: true });
+});
+
+// Genesis was given nothing on any board, and its calls name no project.
+const askGenesis = (board, userId, permission = 'read') => resolveProjectForDriver(
+  db, { workspaceId: board, agentId: 'genesis', projectIdentifier: null, requiredPermission: permission }, { userId }, cloud
+);
+
+test('the owner asks an agent the board gave nothing, naming no project: it works in the one project open on the board', async () => {
+  const project = await askGenesis(ONE, PAT, 'work');
+  expect(project.id).toBe('garden');
+  expect(project).not.toHaveProperty('board_work');
+  expect((await askGenesis(ONE, PAT)).path).toBe('/made-up/garden');
+});
+
+test('the same call from a teammate is still refused', async () => {
+  await expect(askGenesis(ONE, SAM)).rejects.toMatchObject({ code: 'PROJECT_ACCESS_DENIED' });
+  await expect(askGenesis(BOARD, SAM)).rejects.toMatchObject({ code: 'PROJECT_ACCESS_DENIED' });
+});
+
+test('with several projects open on the board the owner is told their names, not sent into one', async () => {
+  await expect(askGenesis(BOARD, PAT)).rejects.toMatchObject({ code: 'PROJECT_NAME_NEEDED' });
+  await expect(askGenesis(BOARD, PAT)).rejects.toThrow('"made-up-garden", "made-up-library"');
+});
+
+test('a board with only a read-only project lets the owner read it there, not change it', async () => {
+  expect((await askGenesis(READING, PAT, 'read')).id).toBe('library');
+  await expect(askGenesis(READING, PAT, 'work')).rejects.toMatchObject({ readOnly: true });
+});
+
+test('a board with no project open still refuses, as before', async () => {
+  await expect(askGenesis(BARE, PAT)).rejects.toMatchObject({ code: 'PROJECT_ACCESS_DENIED' });
 });
 
 test('the owner hears plainly when no such project exists', async () => {

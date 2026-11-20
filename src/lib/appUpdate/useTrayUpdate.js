@@ -28,11 +28,12 @@ export function friendly(error) {
 }
 
 /** Ask the updater to look now and wait until it has. */
-async function lookNow(alive) {
+async function lookNow(alive, onStatus = () => {}) {
   const asked = await appUpdateApi.check();
   for (;;) {
     const status = await appUpdateApi.status().catch(() => null);
     if (!alive()) return null;
+    if (status) onStatus(status);
     if (status && lookedSince(status, asked.askedAt)) return status;
     await sleep(LOOK_EVERY_MS);
   }
@@ -46,12 +47,19 @@ export function useTrayUpdate() {
   const [error, setError] = React.useState('');
   const [updaterDown, setUpdaterDown] = React.useState(false);
   const [waitFor, setWaitFor] = React.useState(() => readWait());
+  // What the panel's row of steps draws: the updater's latest word while it looks,
+  // when the current phase began, and whether the app has gone away for the swap.
+  const [looking, setLooking] = React.useState(null);
+  const [since, setSince] = React.useState(0);
+  const [away, setAway] = React.useState(false);
   const run = React.useRef(0);
 
   // After Restart: the page reloads once the new copy answers.
   const restart = React.useCallback(async (want) => {
     setError('');
     setPhase('restarting');
+    setSince(Date.now());
+    setAway(false);
     try {
       const res = await appUpdateApi.restart();
       if (res.waiting) setStatus((s) => ({ ...s, pendingRestart: res }));
@@ -65,7 +73,7 @@ export function useTrayUpdate() {
       await sleep(BACK_EVERY_MS);
       const now = await appUpdateApi.status().catch(() => null);
       if (now?.running && now.running === want) { window.location.reload(); return; }
-      if (now) setStatus(now);
+      if (now) setStatus(now); else setAway(true);
     }
     setPhase('shown');
     setError('The update is taking longer than expected. Close censaiOS and open it again.');
@@ -78,9 +86,11 @@ export function useTrayUpdate() {
     setError('');
     setUpdaterDown(false);
     setPhase('checking');
+    setSince(Date.now());
+    setLooking(null);
     appUpdateApi.inFlight().then((data) => { if (alive()) setInFlight(data); }).catch(() => {});
     try {
-      const looked = await lookNow(alive);
+      const looked = await lookNow(alive, setLooking);
       if (!alive() || !looked) return;
       setStatus(looked);
       setPhase('shown');
@@ -105,6 +115,8 @@ export function useTrayUpdate() {
     setError('');
     setUpdaterDown(false);
     setPhase('checking');
+    setSince(Date.now());
+    setLooking(null);
     const before = await appUpdateApi.status().then((s) => s.running).catch(() => '');
     try {
       await launchUpdater();
@@ -117,7 +129,7 @@ export function useTrayUpdate() {
         setPhase('shown');
         return;
       }
-      const looked = await lookNow(alive);
+      const looked = await lookNow(alive, setLooking);
       if (!alive() || !looked) return;
       setStatus(looked);
       setPhase('shown');
@@ -169,5 +181,5 @@ export function useTrayUpdate() {
 
   const close = React.useCallback(() => { run.current += 1; setOpen(false); if (phase !== 'waiting') setPhase('idle'); }, [phase]);
 
-  return { open, phase, status, inFlight, error, updaterDown, waitFor, start, bringUpdaterUp, restart, wait, stopWaiting, close };
+  return { open, phase, status, inFlight, error, updaterDown, waitFor, looking, since, away, start, bringUpdaterUp, restart, wait, stopWaiting, close };
 }

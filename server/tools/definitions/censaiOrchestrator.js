@@ -17,7 +17,9 @@ export const censaiPlanTools = [
         'Hand the jobs of a plan to the family so the work runs in the background while you keep chatting.',
         'Use it when the person asks for real work: fixing a bug, building or changing something, looking into something, writing something.',
         `Think the plan through first, then give 1 to ${MAX_JOBS} jobs in order, each for the family member who fits best.`,
-        `Code and file changes go to ${nameList(FILE_CHANGERS)}; ${nameList(READERS, 'and')} can look things up, read files and write answers.`,
+        READERS.length
+          ? `Code and file changes go to ${nameList(FILE_CHANGERS)}; ${nameList(READERS, 'and')} can look things up, read files and write answers.`
+          : `Any of ${nameList(FILE_CHANGERS, 'and')} can change code and files, look things up and write answers.`,
         'Give each job a checklist: the things that must be true before it counts as done. You check off each item yourself before the person hears about it:',
         '"tests" runs the project\'s own tests, "file" looks for a file that must exist, "answer" reads the reply against the item.',
         `Code and file jobs always get "${TESTS_ITEM}". A job is done only when every item is checked off.`,

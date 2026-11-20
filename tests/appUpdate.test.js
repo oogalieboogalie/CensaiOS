@@ -18,7 +18,7 @@ const beat = (msAgo = 0) => ({ pid: 1, at: new Date(Date.now() - msAgo).toISOStr
 
 describe('app update status', () => {
   test('no folder means nothing to show', () => {
-    expect(updateStatus({ dir: null })).toEqual({ ready: null, running: null, watching: false, requested: false, checking: false, checked: null });
+    expect(updateStatus({ dir: null })).toEqual({ ready: null, running: null, watching: false, requested: false, checking: false, checked: null, step: null });
   });
 
   test('a built update newer than the running app is ready', () => {
@@ -34,7 +34,23 @@ describe('app update status', () => {
       requested: false,
       checking: false,
       checked: null,
+      step: null,
     });
+  });
+
+  test('while a look runs it passes on the step the updater names', () => {
+    for (const step of ['looking', 'downloading', 'building']) {
+      expect(updateStatus({ dir: makeDir({ 'step.txt': step }) }).step).toBe(step);
+    }
+    expect(updateStatus({ dir: makeDir({ 'step.txt': '\uFEFFbuilding\r\n' }) }).step).toBe('building');
+  });
+
+  test('a step it does not know, or one left behind by an updater that stopped, is not shown', () => {
+    expect(updateStatus({ dir: makeDir({ 'step.txt': 'rm -rf' }) }).step).toBeNull();
+    expect(updateStatus({ dir: makeDir({}) }).step).toBeNull();
+    const dir = makeDir({ 'step.txt': 'building' });
+    expect(updateStatus({ dir, now: Date.now() + 44 * 60_000 }).step).toBe('building');
+    expect(updateStatus({ dir, now: Date.now() + 46 * 60_000 }).step).toBeNull();
   });
 
   test('reads files written with a BOM and a lone change string', () => {

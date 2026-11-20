@@ -10,6 +10,7 @@
  *   .homebase-state/update/restart-requested  written here: "put it in now"
  *   .homebase-state/update/check-requested    written here: "look for one now"
  *   .homebase-state/update/checked.json       the updater's last look: { at, result }
+ *   .homebase-state/update/step.txt           while a look runs: looking, downloading or building
  *
  * result is up-to-date, ready, build-failed, docker-off, blocked (this PC's
  * master has its own commits or edits, so it cannot fast-forward) or
@@ -57,7 +58,7 @@ function readJson(dir, name) {
 
 /** What the "Update ready" note needs. Never throws. */
 export function updateStatus({ dir = updateDir(), now = Date.now(), onDemand = updaterOnDemand() } = {}) {
-  const empty = { ready: null, running: null, watching: false, requested: false, checking: false, checked: null };
+  const empty = { ready: null, running: null, watching: false, requested: false, checking: false, checked: null, step: null };
   if (!dir) return empty;
   const running = readText(dir, 'running.txt');
   const heartbeat = readJson(dir, 'watcher.json');
@@ -78,7 +79,24 @@ export function updateStatus({ dir = updateDir(), now = Date.now(), onDemand = u
     requested: fs.existsSync(path.join(dir, 'restart-requested')),
     checking: fs.existsSync(path.join(dir, 'check-requested')),
     checked: lastCheck(dir),
+    step: currentStep(dir, now),
   };
+}
+
+// While a look runs the updater names the step it is on, so the panel can show
+// how far along it is. An updater that stopped mid-look leaves the file behind:
+// after 45 minutes it is not believed any more.
+const STEPS = ['looking', 'downloading', 'building'];
+const STEP_FRESH_MS = 45 * 60_000;
+
+function currentStep(dir, now) {
+  const step = readText(dir, 'step.txt');
+  if (!STEPS.includes(step)) return null;
+  try {
+    return now - fs.statSync(path.join(dir, 'step.txt')).mtimeMs < STEP_FRESH_MS ? step : null;
+  } catch {
+    return null;
+  }
 }
 
 const RESULTS = ['up-to-date', 'ready', 'build-failed', 'docker-off', 'blocked', 'side-branch'];

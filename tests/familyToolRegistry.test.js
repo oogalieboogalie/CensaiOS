@@ -5,20 +5,24 @@ import { buildFamilyToolRegistry } from '../server/tools/familyRegistry.js';
 const effective = names => names.map(name => ({ type: 'function', function: { name } }));
 
 test('registry exposes only intrinsic and reviewed module tools with exact effective state', () => {
-  const writer = AGENT_CAPABILITY_MODULE_BY_ID['project-writer'];
+  const writer = AGENT_CAPABILITY_MODULE_BY_ID['canvas-designer'];
   const registry = buildFamilyToolRegistry({
     agentId: 'censai',
     effectiveTools: effective([...FAMILY_DEFAULT_TOOL_NAMES.censai, ...writer.toolNames]),
     capabilities: [{ module_id: writer.id }],
-    installedModuleIds: ['project-reader', 'project-writer'],
+    installedModuleIds: ['project-reader', 'canvas-designer'],
   });
 
   expect(registry.tools.find(tool => tool.name === 'message_to')).toMatchObject({
     status: 'active', source: 'intrinsic', risk: 'write', mode: 'autonomous_internal',
   });
-  expect(registry.tools.find(tool => tool.name === 'project_write')).toMatchObject({
+  expect(registry.tools.find(tool => tool.name === 'canvas_update_design')).toMatchObject({
     status: 'active', source: 'module', equipped: true, approvalRequired: true,
-    mode: 'execute_with_approval', module: { id: 'project-writer' },
+    mode: 'execute_with_approval', module: { id: 'canvas-designer' },
+  });
+  // The family saves project files by role; Trust mode decides if a save waits.
+  expect(registry.tools.find(tool => tool.name === 'project_write')).toMatchObject({
+    status: 'active', source: 'role', approvalRequired: true, module: { id: 'project-writer' },
   });
   expect(registry.tools.find(tool => tool.name === 'project_read')).toMatchObject({
     status: 'active', source: 'role', equipped: false, approvalRequired: false,
@@ -38,10 +42,10 @@ test('reviewed tools stay unavailable until their package is installed', () => {
     agentId: 'censai', effectiveTools: effective(FAMILY_DEFAULT_TOOL_NAMES.censai),
     capabilities: [], installedModuleIds: [],
   });
-  // project_read is baseline now; project_write still needs the module package.
-  expect(registry.tools.find(tool => tool.name === 'project_write')).toMatchObject({
+  // project_read and project_write are baseline; a design rewrite still needs its module package.
+  expect(registry.tools.find(tool => tool.name === 'canvas_update_design')).toMatchObject({
     status: 'install_required', source: 'module', equipped: false,
-    module: { id: 'project-writer', packageInstalled: false },
+    module: { id: 'canvas-designer', packageInstalled: false },
   });
   expect(registry.counts.installRequired).toBeGreaterThan(0);
 });

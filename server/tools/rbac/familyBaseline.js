@@ -133,6 +133,10 @@ const BUILD = FAMILY_BUILD_TOOL_POLICIES.map(entry => entry.name);
 const WAKE_UPS = FAMILY_WAKE_UP_TOOL_POLICIES.map(entry => entry.name);
 const PLANS = FAMILY_PLAN_TOOL_POLICIES.map(entry => entry.name);
 
+// Saving project files: every family agent, with nothing to equip. Trust mode
+// and the board's owner decide if a save waits (server/approvals/requests.js).
+const SAVE = Object.freeze(['project_write', 'project_edit']);
+
 const BUILDERS = Object.freeze([...ORCHESTRATION, ...LIFECYCLE, ...PROJECT_READ, ...BUILD]);
 
 const ROLE_ADDITIONS = Object.freeze({
@@ -141,10 +145,10 @@ const ROLE_ADDITIONS = Object.freeze({
   genesis: BUILDERS,
   nexus: BUILDERS,
   phoenix: BUILDERS,
-  echo: Object.freeze(['dispatch_squad', 'squad_status', ...LIFECYCLE, ...PROJECT_READ]),
-  censai: Object.freeze([...LIFECYCLE, ...PROJECT_READ, ...WAKE_UPS, ...PLANS]),
-  foundation: Object.freeze([...LIFECYCLE, ...PROJECT_READ]),
-  guardian: Object.freeze([...LIFECYCLE, ...PROJECT_READ]),
+  echo: Object.freeze(['dispatch_squad', 'squad_status', ...LIFECYCLE, ...PROJECT_READ, ...SAVE]),
+  censai: Object.freeze([...LIFECYCLE, ...PROJECT_READ, ...SAVE, ...WAKE_UPS, ...PLANS]),
+  foundation: Object.freeze([...LIFECYCLE, ...PROJECT_READ, ...SAVE]),
+  guardian: Object.freeze([...LIFECYCLE, ...PROJECT_READ, ...SAVE]),
 });
 
 export const FAMILY_DEFAULT_TOOL_NAMES = Object.freeze(Object.fromEntries(

@@ -136,7 +136,22 @@ test('sub-agent calls never enter the canonical gate; with Trust mode off their 
 
 test('canonical approval tools cannot fall back to unscoped execution', async () => {
   await expect(requestToolApprovalIfRequired({}, {
-    agentId: 'censai', toolName: 'project_write', args: {}, context: {},
+    agentId: 'censai', toolName: 'canvas_update_design', args: {}, context: {},
   })).rejects.toMatchObject({ code: 'TOOL_APPROVAL_SCOPE_REQUIRED', statusCode: 403 });
+  expect(findApprovalGrant).not.toHaveBeenCalled();
+});
+
+test('a family agent\'s file save runs in a chat that is on no board, where there is nothing to wait in', async () => {
+  for (const agentId of ['Atlas', 'echo', 'censai', 'foundation', 'guardian']) {
+    for (const toolName of ['project_write', 'project_edit']) {
+      await expect(requestToolApprovalIfRequired({}, {
+        agentId, toolName, args: {}, context: { userId: 7 },
+      })).resolves.toEqual({ required: false });
+    }
+  }
+  // A tool that comes only from a module still needs a board.
+  await expect(requestToolApprovalIfRequired({}, {
+    agentId: 'atlas', toolName: 'canvas_update_design', args: {}, context: { userId: 7 },
+  })).rejects.toMatchObject({ code: 'TOOL_APPROVAL_SCOPE_REQUIRED' });
   expect(findApprovalGrant).not.toHaveBeenCalled();
 });

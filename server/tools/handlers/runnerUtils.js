@@ -4,6 +4,7 @@ import pool from '../../db.js';
 import { resolveLocalProjectRoot, resolveProjectForCall } from '../helpers.js';
 import { resolveProjectPathForRuntime } from '../../workspaces/shared.js';
 import { runnerClient } from '../../runner/client.js';
+import { jobProjectFor } from '../jobProject.js';
 
 export const PROJECT_ROOT = process.cwd();
 export const MAX_OUTPUT = 5000;
@@ -82,7 +83,8 @@ export async function resolveRunnerContext(agentId, args = {}, taskContext = {})
     const root = await resolveLocalProjectRoot(agentId, projectPath, taskContext);
     return { cwd: root, scopedPath: args.path || '.' };
   }
-  const projectName = args.project || args.project_name || args.projectName;
+  // On a job Censai handed off, no name means the job's project, where its saves went (jobProject.js).
+  const projectName = args.project || args.project_name || args.projectName || jobProjectFor(agentId);
   if (projectName) {
     const root = await resolveLocalProjectRoot(agentId, projectName, taskContext);
     return { cwd: root, scopedPath: args.path || '.' };

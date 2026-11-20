@@ -68,7 +68,7 @@ test('a reviewed module adds exactly its declared tools despite legacy global sc
     workspaceId: 'workspace-a', userId: 7,
   })).map(tool => tool.function.name);
   expect(names).toEqual(expect.arrayContaining(module.toolNames));
-  expect(names).not.toContain('project_write');
+  expect(names).not.toContain('canvas_update_design');
   expect(names).not.toContain('terminal_run');
 });
 

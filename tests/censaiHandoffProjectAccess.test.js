@@ -249,6 +249,53 @@ describe('taking the access back', () => {
   });
 });
 
+// Diagram 11's next wall, found by running the whole path with a scripted model: the board gave
+// Atlas a project of its own, the job was in Censai's, and Atlas named no project in its calls
+// (its file tools say the name is optional). Its save landed in its own project and its run_tests
+// ran this app's own tests, so Censai found the plan's project unchanged and the plan stopped, stuck.
+describe('a call that names no project, while Atlas works a job', () => {
+  /** Where Atlas's file tools and its test runs land when the call names no project. */
+  async function unnamedCalls() {
+    const save = await resolveProjectForCall('atlas', null, { ...teammate, requiredProjectPermission: 'work' });
+    return { savesIn: save.project.id, testsRunIn: (await resolveRunnerContext('atlas', {}, teammate)).cwd };
+  }
+
+  test('means the job\'s project for its saves and its test runs, and its own project again once the job is over', async () => {
+    db = board();
+    // Atlas has a window of its own on this board, set to another project.
+    const own = { workspace_id: 'ws-1', project_id: OTHER.id, permission: 'work', source_kind: 'canvas', source_id: null };
+    db.shares.push({ ...own, agent_id: 'atlas' }, { ...own, agent_id: 'genesis' });
+    const before = await unnamedCalls();
+    expect(before).toEqual({ savesIn: OTHER.id, testsRunIn: process.cwd() });
+
+    const during = [];
+    const helper = [];
+    const { deps: runDeps } = deps();
+    runDeps.runAgent = jest.fn(async () => {
+      during.push(await unnamedCalls());
+      // An agent Atlas asks for help mid-job keeps its own project: only Atlas is on the job.
+      helper.push((await resolveProjectForCall('genesis', null, { ...teammate, requiredProjectPermission: 'work' })).project.id);
+      return { finalText: 'Added the line to notes.md.', toolActions: [] };
+    });
+    await handOff(codePlan, runDeps);
+    const [id] = [...db.plans.keys()];
+    await planSettled(id);
+
+    expect(db.row(id).status).toBe('done');
+    expect(during).toEqual([{ savesIn: PROJECT.id, testsRunIn: folder }]);
+    expect(helper).toEqual([OTHER.id]);
+    expect(await unnamedCalls()).toEqual(before);
+  });
+
+  test('a job in no project changes nothing: the call lands where it always did', async () => {
+    const { runInJobProject, jobProjectFor } = await import('../server/tools/jobProject.js');
+    expect(await runInJobProject({ agentId: 'atlas', project: null }, async () => jobProjectFor('atlas'))).toBeNull();
+    expect(await runInJobProject({ agentId: 'Atlas', project: ' made-up-base ' }, async () => [jobProjectFor('atlas'), jobProjectFor('genesis')]))
+      .toEqual(['made-up-base', null]);
+    expect(jobProjectFor('atlas')).toBeNull();
+  });
+});
+
 describe('what the loan does not change', () => {
   test('a call that names no project still lands in Atlas\'s own project while it has Censai\'s on loan', async () => {
     db = board();
@@ -348,5 +395,90 @@ describe('a code job on Homebase, which the board knows by another name', () => 
     // Kept as named: the folder match is only for what the owner's lookup finds.
     expect(db.row(id).project).toBe('Homebase');
     expect(shared).toEqual([]);
+  });
+});
+
+// The board as it is on the owner's computer (diagram of 2026-11-19): Censai's
+// window is on a project with a folder here, and the board also gives Censai
+// "Homebase", a row kept only on GitHub. The folder is a checkout of that repo.
+describe('a code job on a GitHub row whose code is checked out in Censai\'s own folder', () => {
+  const ON_GITHUB = { id: 'shared-made-up', name: 'Homebase', path: '', repo: 'made-up/Homebase' };
+  const gitConfig = path.join(folder, '.git', 'config');
+
+  function remote(url) {
+    fs.mkdirSync(path.dirname(gitConfig), { recursive: true });
+    fs.writeFileSync(gitConfig, `[core]\n\tbare = false\n[remote "origin"]\n\turl = ${url}\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n`);
+  }
+
+  function githubBoard({ onBoard = true } = {}) {
+    return withBoardProjects(fakePlanDb(), {
+      projects: [PROJECT, ON_GITHUB],
+      // The first is the project Censai's window is set to: a call that names none lands there.
+      memberships: [
+        { workspace_id: 'ws-1', project_id: PROJECT.id, agent_id: 'censai', permission: 'work' },
+        ...(onBoard ? [{ workspace_id: 'ws-1', project_id: ON_GITHUB.id, agent_id: 'censai', permission: 'work' }] : []),
+      ],
+      computer: [PROJECT, ON_GITHUB],
+    });
+  }
+
+  async function runs(plan) {
+    const during = [];
+    const { deps: runDeps, ran } = deps({ during });
+    const said = await handOff(plan, runDeps);
+    const [id] = [...db.plans.keys()];
+    if (id) await planSettled(id);
+    return { said, row: id ? db.row(id) : null, during, ran };
+  }
+
+  afterEach(() => fs.rmSync(path.join(folder, '.git'), { recursive: true, force: true }));
+
+  test('named "Homebase", it runs in Censai\'s own folder, and the tests run there', async () => {
+    remote('git@github.com:made-up/Homebase.git');
+    db = githubBoard();
+    const { said, row, during, ran } = await runs({ ...codePlan, project: 'Homebase' });
+    expect(said).toContain('Handed off; it has only started.');
+    expect(row.project).toBe(PROJECT.id);
+    expect(row.status).toBe('done');
+    expect(during[0]).toMatchObject({ cwd: folder, work: folder });
+    expect(ran.map((run) => run.cwd)).toEqual([folder]);
+  });
+
+  test('the same when the GitHub row is only found by the owner\'s lookup, with an https remote', async () => {
+    remote('https://github.com/Made-Up/homebase');
+    db = githubBoard({ onBoard: false });
+    const { row } = await runs({ ...codePlan, project: 'Homebase' });
+    expect(row.project).toBe(PROJECT.id);
+    expect(row.status).toBe('done');
+  });
+
+  test('a folder that is a checkout of another repo is not swapped in, nor offered for a retry', async () => {
+    remote('git@github.com:made-up/SomethingElse.git');
+    db = githubBoard();
+    const { said, row } = await runs({ ...codePlan, project: 'Homebase' });
+    expect(row).toBeNull();
+    expect(said).toBe('Error: The project "shared-made-up" lives on GitHub, so I can\'t run its tests on this computer. '
+      + 'Job 1 needs the project\'s tests, so it could never be checked off. '
+      + 'Hand out jobs that look into it and write up what to change instead, and tell the person why.');
+  });
+
+  test('a folder with no git settings is not swapped in, but is named for a retry if it is the same code', async () => {
+    db = githubBoard();
+    const { said, row } = await runs({ ...codePlan, project: 'Homebase' });
+    expect(row).toBeNull();
+    expect(said).toContain('Your own project on this board, "MadeUpBase", has its folder on this computer: if it is the same code, '
+      + 'hand off again with project "MadeUpBase". If not, hand out jobs that look into it');
+  });
+
+  test('a job that needs no tests here keeps the GitHub row, so its GitHub tools still work there', async () => {
+    remote('git@github.com:made-up/Homebase.git');
+    db = githubBoard();
+    const lookIntoIt = {
+      goal: 'Say what the open pull requests are', project: 'Homebase',
+      jobs: [{ agent: 'atlas', job: 'List the open pull requests on Homebase.', checklist: ['The open pull requests are listed'] }],
+    };
+    const { said, row } = await runs(lookIntoIt);
+    expect(said).toContain('Handed off; it has only started.');
+    expect(row.project).toBe(ON_GITHUB.id);
   });
 });

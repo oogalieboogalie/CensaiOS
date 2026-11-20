@@ -57,6 +57,36 @@ export const STAGE_TEXT = {
   'up-to-date': 'censaiOS is up to date.',
 };
 
+/**
+ * The steps a look goes through, in order. The updater names the one it is on
+ * (status.step); the panel draws them as a row and says the current one in words.
+ */
+export const LOOK_STEPS = [
+  { id: 'looking', label: 'Look', text: 'Looking for a newer censaiOS…' },
+  { id: 'downloading', label: 'Download', text: 'A newer censaiOS is out. Downloading it…' },
+  { id: 'building', label: 'Build', text: 'Building it. This is the long part and can take a few minutes. You can keep working.' },
+  { id: 'ready', label: 'Ready', text: '' },
+];
+
+/** The two steps of putting a built update in. */
+export const SWAP_STEPS = [
+  { id: 'swapping', label: 'Put it in', text: 'Putting the new censaiOS in. This takes a few seconds.' },
+  { id: 'returning', label: 'Come back', text: 'Waiting for censaiOS to come back. The board reloads by itself.' },
+];
+
+/** Where a look is: the updater's own word for it, or the first step until it says. */
+export function lookStep(status) {
+  const at = LOOK_STEPS.findIndex((step) => step.id === status?.step);
+  return at < 0 ? 0 : at;
+}
+
+/** "40 s", "2 min 05 s": how long a step has been going. */
+export function elapsedText(ms) {
+  const seconds = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  return minutes ? `${minutes} min ${String(seconds % 60).padStart(2, '0')} s` : `${seconds} s`;
+}
+
 /** Open-change numbers from a saved "wait for them" choice still open now. */
 export function stillOpen(waitFor, inFlight) {
   const open = new Set((inFlight?.changes || []).map((c) => c.number));

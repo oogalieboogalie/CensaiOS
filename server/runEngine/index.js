@@ -113,7 +113,7 @@ export async function runAgentTurn({
   origin = 'chat', agentId, messages, currentProject = null, userId = null, userRole = null, atThisComputer = false,
   workspaceId = null, windowId = null, loopWorkspaceId = null, sendEvent = () => {}, onModelAccepted,
   conversationId = null, timeZone = undefined,
-  signal = null, timeoutMs = 0, toolFilter = null, onPrepared = null, rememberQuestion = null,
+  signal = null, timeoutMs = 0, toolFilter = null, onPrepared = null, rememberQuestion = null, rounds = null,
   timings = newTimings(), loadOutside = loadOutsideTools, loadMemory = loadRunMemory,
   gatherContexts = gatherSevenContexts, loadHosted = findHostedAgent,
 }) {
@@ -187,6 +187,8 @@ export async function runAgentTurn({
       traceId: hooks.traceId ?? null,
       signal: limit.signal,
       runTool: toolRunner(outside, memory.tools),
+      // A long turn answers before its own clock runs out, instead of being cut off with nothing.
+      rounds: rounds && timeoutMs > 0 ? { ...rounds, deadline: Date.now() + timeoutMs } : rounds,
     });
     await memory.record({ answer: finalText, toolActions, model: context.reqModel });
     answer = finalText;

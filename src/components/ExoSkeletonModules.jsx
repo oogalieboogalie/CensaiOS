@@ -10,10 +10,13 @@ function trustModeCopy(text) {
   return String(text || '').replace(/Every (call|change|rewrite) waits for owner\/admin approval/, 'With Trust mode off, every $1 waits for an owner or admin').replace('after owner/admin approval', 'right away in Trust mode, otherwise after an owner or admin says OK');
 }
 
+// Said beside a module the family no longer needs (server/approvals/grants.js).
+const ALSO = { 'project-writer': ' Every family agent already saves project files without it.' };
+
 export const AVAILABLE_MODULES = Object.fromEntries(SLOT_KEYS.map(slot => [slot,
   AGENT_CAPABILITY_MODULES.filter(module => module.slot === slot).map(module => ({
     ...module,
-    desc: trustModeCopy(module.description),
+    desc: `${trustModeCopy(module.description)}${ALSO[module.id] || ''}`,
     color: 'var(--accent-text)',
   })),
 ]));
@@ -116,7 +119,7 @@ function SelectionSidebar({ activeSlot, equipped, installedModuleIds, setActiveS
             onClick={() => installed && handleEquip(activeSlot, mod.id)}
             style={{
               padding: 12, borderRadius: 'var(--radius-lg)', background: 'var(--surface-2)', border: `1px solid ${equipped[activeSlot] === mod.id ? mod.color : 'var(--hairline)'}`,
-              cursor: installed ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', gap: 4, position: 'relative', overflow: 'hidden'
+              cursor: installed ? 'pointer' : 'default', display: 'flex', flexShrink: 0, flexDirection: 'column', gap: 4, position: 'relative', overflow: 'hidden'
             }}
           >
             <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: mod.color }} />
