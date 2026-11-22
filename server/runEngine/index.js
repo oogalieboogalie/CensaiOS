@@ -41,6 +41,7 @@ import { agentTurnStarted } from '../appUpdate/busy.js';
 import { noteAgentWork } from '../social/agentNotes.js';
 import { findHostedAgent } from '../hostedAgents/store.js';
 import { unofferedToolResult } from '../tools/rbac/offeredTools.js';
+import { codeJobRefusal } from '../tools/jobProject.js';
 
 export const RUN_ORIGINS = Object.freeze(['chat', 'help', 'endpoint', 'workflow']);
 
@@ -75,6 +76,9 @@ export function toolRunner(...extras) {
     // Outside tools skip executeTool, so the run's list is checked here too.
     const refused = unofferedToolResult(name);
     if (refused) return refused;
+    // An outside tool during a Kraken fix: it could change anything, so it is refused here too.
+    const confined = codeJobRefusal(agentId, name);
+    if (confined) return confined;
     const owner = sets.find((set) => set.has(name));
     if (owner) return owner.call(name, args);
     const { executeTool } = await import('../tools.js');

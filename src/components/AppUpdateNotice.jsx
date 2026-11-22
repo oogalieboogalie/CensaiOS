@@ -4,6 +4,7 @@ import { appUpdateApi, changeCount } from '../lib/appUpdate/api.js';
 import { afterUpdaterStarted, launchUpdater, UPDATER_DID_NOT_START } from '../lib/appUpdate/startUpdater.js';
 import { DEMO } from '../lib/demo/demoMode.js';
 import { STAGE_TEXT, TRAY_UPDATE_EVENT, updatesPaused } from '../lib/appUpdate/trayFlow.js';
+import { markUpdateSeen, unseenUpdate, updateSummary, versionLabel } from '../lib/appUpdate/version.js';
 
 // The tray's Update panel sits next to this note in AppContent.
 export { TrayUpdatePanel } from './TrayUpdatePanel.jsx';
@@ -33,6 +34,7 @@ export function AppUpdateNotice() {
   const [error, setError] = React.useState('');
   const [open, setOpen] = React.useState(false);
   const [starting, setStarting] = React.useState(false);
+  const [readVersion, setReadVersion] = React.useState('');
 
   React.useEffect(() => {
     if (DEMO) return undefined;
@@ -74,6 +76,25 @@ export function AppUpdateNotice() {
     return () => { stopped = true; clearTimeout(timer); clearTimeout(giveUp); };
   }, [phase, status]);
 
+  // An update went in since the person last looked: say which version this is
+  // now and what changed in it. Shown once for each version, before anything else.
+  const landed = unseenUpdate(status);
+  if (landed && readVersion !== landed.version) {
+    return (
+      <div role="status" style={box} data-testid="app-updated-note" data-version={landed.version}>
+        <strong>Updated to {versionLabel(landed.version)}</strong>
+        <span style={{ color: 'var(--ink-soft)' }}>{updateSummary(landed)}</span>
+        {landed.changes.length > 0 && (
+          <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--ink-soft)', fontSize: 'var(--text-xs)', maxHeight: 200, overflow: 'auto' }}>
+            {landed.changes.map((c, i) => <li key={i}>{c}</li>)}
+          </ul>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="button" style={{ ...button, background: 'var(--accent-soft)', color: 'var(--ink)' }} onClick={() => { markUpdateSeen(landed.version); setReadVersion(landed.version); }}>OK</button>
+        </div>
+      </div>
+    );
+  }
   if (phase === 'hidden') return null;
   // Updates cannot reach this PC: say so here, where "Update ready" would have been,
   // so a stopped updater is never just silence. It comes back each time censaiOS opens.
@@ -119,7 +140,7 @@ export function AppUpdateNotice() {
           ? 'This takes a few seconds. The board comes back by itself.'
           : status.inUse
             ? 'Update ready, restarts when you are done'
-            : `A newer censaiOS is downloaded${count ? ` (${count})` : ''}. Restart to use it, or it goes in the next time you sign in, when nobody is using censaiOS.`}
+            : `${status.ready.version ? versionLabel(status.ready.version) : 'A newer censaiOS'} is downloaded${count ? ` (${count})` : ''}. Restart to use it, or it goes in the next time you sign in, when nobody is using censaiOS.`}
       </span>
       {open && status.ready.changes.length > 0 && (
         <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--ink-soft)', fontSize: 'var(--text-xs)', maxHeight: 160, overflow: 'auto' }}>

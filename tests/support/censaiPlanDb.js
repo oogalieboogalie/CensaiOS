@@ -28,11 +28,12 @@ export function fakePlanDb({
   async function query(sql, params = []) {
     const text = sql.replace(/\s+/g, ' ').trim();
     if (text.startsWith('INSERT INTO censai_plans')) {
-      const [id, workspaceId, userId, goal, project, jobs] = params;
+      const [id, workspaceId, userId, goal, project, jobs, pin = null] = params;
+      if (plans.has(id)) return { rows: [] }; // ON CONFLICT (id) DO NOTHING
       const at = tick();
       const row = {
         id, workspace_id: workspaceId, user_id: userId, goal, project, status: 'queued', summary: null,
-        jobs: JSON.parse(jobs), created_at: at, updated_at: at, finished_at: null, reported_at: null,
+        jobs: JSON.parse(jobs), created_at: at, updated_at: at, finished_at: null, reported_at: null, pin: pin ? JSON.parse(pin) : null,
       };
       plans.set(id, row);
       return { rows: [out(row)] };
@@ -41,8 +42,13 @@ export function fakePlanDb({
       const [id, status, summary, jobs, finished] = params;
       const row = plans.get(id);
       if (!row || !['queued', 'running'].includes(row.status)) return { rows: [] };
+      // settleParkedPlan: only while the saved plan still has that job waiting for its checks.
+      if (text.includes('jobs @>')) {
+        const [{ n, status: waiting }] = JSON.parse(params[4]);
+        if (row.status !== 'running' || !row.jobs.some((job) => job.n === n && job.status === waiting)) return { rows: [] };
+      }
       Object.assign(row, {
-        status, summary, jobs: JSON.parse(jobs), updated_at: tick(), finished_at: finished ? row.finished_at || tick() : null,
+        status, summary, jobs: JSON.parse(jobs), updated_at: tick(), finished_at: finished && !text.includes('jobs @>') ? row.finished_at || tick() : null,
       });
       return { rows: [out(row)] };
     }

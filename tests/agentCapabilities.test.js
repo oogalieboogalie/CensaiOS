@@ -42,14 +42,13 @@ beforeEach(() => {
   });
 });
 
-test('unscoped calls keep the minimal family baseline and never consult a capability table', async () => {
+test('unscoped calls keep the family\'s role tools and never consult a capability table', async () => {
   const names = (await filterToolsForAgent('censai')).map(tool => tool.function.name);
   expect(names).toEqual(expect.arrayContaining(['remember', 'recall', 'message_to', 'report']));
   expect(names).toEqual(expect.arrayContaining(['create_sub_agent', 'project_read']));
-  expect(names).not.toContain('web_search');
-  expect(names).toEqual(expect.arrayContaining(['project_write', 'project_edit']));
-  expect(names).not.toContain('canvas_update_design');
-  expect(names).not.toContain('read_calendar');
+  expect(names).toEqual(expect.arrayContaining(['project_write', 'project_edit', 'web_search', 'read_calendar']));
+  // Censai is not a builder: no commands, database or Docker.
+  for (const name of ['terminal_run', 'postgres_query', 'restart_service']) expect(names).not.toContain(name);
   expect(pool.query).not.toHaveBeenCalled();
 });
 
@@ -82,7 +81,7 @@ test('a foreign workspace and a drifted row grant no module tools', async () => 
   const drifted = (await filterToolsForAgent('censai', {
     workspaceId: 'workspace-b', userId: 1,
   })).map(tool => tool.function.name);
-  expect(foreign).not.toContain('read_calendar');
+  expect(foreign).not.toContain('terminal_run');
   expect(drifted).not.toContain('terminal_run');
   expect(drifted).not.toContain('sandbox_exec');
 });

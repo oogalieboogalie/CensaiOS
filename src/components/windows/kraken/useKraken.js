@@ -17,7 +17,8 @@ const WHERE = { where: 'kraken' };
  */
 export function useKraken(win = {}, onUpdate) {
   const workspaceId = useWorkspaceStore((state) => state.workspaceId);
-  const projectName = useWorkspaceStore((state) => state.currentProject?.name || '');
+  const boardProject = useWorkspaceStore((state) => state.currentProject);
+  const projectName = boardProject?.name || '';
   const [requests, setRequests] = React.useState([]);
   const [preview, setPreview] = React.useState(null);
   const [skipped, setSkipped] = React.useState(() => new Set());
@@ -27,6 +28,8 @@ export function useKraken(win = {}, onUpdate) {
   const report = win.krakenReport || '';
   const mode = win.krakenMode === 'fix' ? 'fix' : 'writeup';
   const project = win.krakenProject ?? projectName;
+  // The board project's id goes along while the name shown is still its own: two projects can share a name.
+  const projectId = project && project === projectName ? boardProject?.projectId || '' : '';
   const setDraft = React.useCallback((patch) => {
     setPreview(null);
     setError('');
@@ -60,15 +63,16 @@ export function useKraken(win = {}, onUpdate) {
   }, []);
 
   const look = React.useCallback(() => run('preview', async () => {
-    const result = await previewKraken({ workspaceId, report, mode, project: mode === 'fix' ? project : '' });
+    const result = await previewKraken({ workspaceId, report, mode, project, projectId });
     setSkipped(new Set());
     setPreview(result);
     logToApp('info', `kraken: report read, ${result.arms.length} findings`, WHERE);
-  }), [run, workspaceId, report, mode, project]);
+  }), [run, workspaceId, report, mode, project, projectId]);
 
   const release = React.useCallback(() => run('release', async () => {
     const only = preview.arms.filter((arm) => !skipped.has(arm.n)).map((arm) => arm.n);
-    await releaseKraken({ workspaceId, report, mode, project: mode === 'fix' ? project : '', only });
+    // The pin the look came back with, not whatever project the board shows by now.
+    await releaseKraken({ workspaceId, report, mode, project, pin: preview.pin, only });
     logToApp('info', `kraken: request handed out, ${only.length} arms`, WHERE);
     setPreview(null);
     onUpdate?.({ krakenReport: '' });

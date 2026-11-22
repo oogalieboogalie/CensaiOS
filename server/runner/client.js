@@ -5,8 +5,12 @@ import pathModule from 'path';
 import { getSecret } from '../secrets.js';
 import { getRuntimeMode } from '../middleware/runtimeMode.js';
 import { requireRunnerSecret, runnerSecretStatus } from './auth.js';
+import { runsHere } from './hereForRun.js';
+import { cleanEnv } from '../security/cleanEnv.js';
 
 const execFileAsync = promisify(execFile);
+// The runner's default limit (server/runner/service.js), for its commands run here instead.
+const HERE_TIMEOUT_MS = 15 * 60_000;
 
 /**
  * Runner Client
@@ -34,6 +38,16 @@ export class RunnerClient {
     return this.isEnabled() && !!process.env.RUNNER_URL;
   }
 
+  /**
+   * The runner, unless this tool call is the owner's with Trust mode on (hereForRun.js).
+   * `docker` always goes to the runner: it is the one that can reach Docker.
+   */
+  async useRunner(command = null) {
+    if (!this.isRemote()) return false;
+    if (command === 'docker') return true;
+    return !(await runsHere());
+  }
+
   getRunnerUrl() {
     return process.env.RUNNER_URL || 'http://localhost:3003';
   }
@@ -54,8 +68,14 @@ export class RunnerClient {
       throw new Error('Dangerous execution is disabled. Enable RUNNER_ENABLED or configure a runner service.');
     }
 
-    if (this.isRemote()) {
+    if (await this.useRunner(command)) {
       return this.execRemote(command, args, options);
+    }
+    // A command the runner would have run, run here instead: no app keys, and the runner's time limit.
+    if (this.isRemote()) {
+      return this.execLocal(command, args, {
+        timeout: HERE_TIMEOUT_MS, ...options, env: options.env ? cleanEnv(options.env) : cleanEnv(),
+      });
     }
 
     return this.execLocal(command, args, options);
@@ -63,7 +83,7 @@ export class RunnerClient {
 
   async fsRead(path, options = {}) {
     if (!this.isEnabled()) throw new Error('Dangerous execution is disabled.');
-    if (this.isRemote()) {
+    if (await this.useRunner()) {
       const secret = this.requireRemoteSecret();
       const url = `${this.getRunnerUrl()}/fs/read`;
       const res = await fetch(url, {
@@ -79,7 +99,7 @@ export class RunnerClient {
 
   async fsWrite(path, content, options = {}) {
     if (!this.isEnabled()) throw new Error('Dangerous execution is disabled.');
-    if (this.isRemote()) {
+    if (await this.useRunner()) {
       const secret = this.requireRemoteSecret();
       const url = `${this.getRunnerUrl()}/fs/write`;
       const res = await fetch(url, {
@@ -98,7 +118,7 @@ export class RunnerClient {
 
   async fsList(path) {
     if (!this.isEnabled()) throw new Error('Dangerous execution is disabled.');
-    if (this.isRemote()) {
+    if (await this.useRunner()) {
       const secret = this.requireRemoteSecret();
       const url = `${this.getRunnerUrl()}/fs/list`;
       const res = await fetch(url, {

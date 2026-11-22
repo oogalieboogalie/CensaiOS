@@ -68,6 +68,8 @@ beforeEach(() => {
   pool.query.mockImplementation(async (sql, params = []) => {
     const text = String(sql);
     if (text.includes('FROM users')) return { rows: ROLES[params[0]] ? [{ role: ROLES[params[0]] }] : [] };
+    // Trust mode is off on this board: the walls stand (with it on, see tests/ownerTrustNoWalls.test.js).
+    if (text.includes('FROM workspace_agent_trust')) return { rows: [{ agent_id: '*', trusted: false }] };
     if (text.includes('JOIN projects')) {
       const [board, agent, identifier] = params;
       const given = board === BOARD ? GIVEN[agent] || {} : {};
@@ -130,7 +132,7 @@ describe('the test runner, given a folder by its path', () => {
       .rejects.toMatchObject({ code: 'PROJECT_ACCESS_DENIED' });
   });
 
-  test('a project the board gave to read only stays read only, for the owner too', async () => {
+  test('with Trust mode off, a project the board gave to read only stays read only, for the owner too', async () => {
     await expect(resolveRunnerContext('atlas', { project_path: LEDGER.path }, onBoard(PAT)))
       .rejects.toMatchObject({ code: 'PROJECT_ACCESS_DENIED', readOnly: true });
   });

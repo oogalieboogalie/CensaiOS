@@ -1,10 +1,15 @@
 import { ProjectMembershipError } from './membershipInput.js';
 import { resolveAuthorizedWorkspaceProject } from './projectAccess.js';
 import { notGiven, ownerDrives } from './ownerProjects.js';
+import { ownerUnfenced } from './ownerTrust.js';
+import { pickProjectFor } from './projectIdentity.js';
 
 // Finding a project by its name for the owner rule in ownerProjects.js. It is
 // its own file so the checks there load without the board's project lookup.
 
+// Its id first, then its full repo or folder, then a name. A name that fits
+// different projects is refused with the choices named (projectIdentity.js),
+// never settled by which one was touched last.
 async function anyProject(db, identifier) {
   const { rows } = await db.query(
     `SELECT p.* FROM projects p
@@ -12,10 +17,10 @@ async function anyProject(db, identifier) {
          OR ($1 NOT LIKE '%/%' AND p.repo LIKE ('%/' || $1))
          OR lower(regexp_replace(p.path, '^.*[/\\\\]', '')) = lower($1)
       ORDER BY CASE WHEN p.id = $1 THEN 0 WHEN p.path = $1 OR p.repo = $1 THEN 1 ELSE 2 END, p.updated_at DESC
-      LIMIT 1`,
+      LIMIT 50`,
     [identifier]
   );
-  return rows[0] || null;
+  return pickProjectFor(rows, identifier);
 }
 
 // The projects this board gave any of its agents, each once, newest first. A
@@ -71,8 +76,16 @@ export async function resolveProjectForDriver(db, options, context = {}, deps = 
     return await resolveAuthorizedWorkspaceProject(db, options);
   } catch (error) {
     const identifier = options.projectIdentifier ? String(options.projectIdentifier).trim() : '';
-    if (!notGiven(error) || !(await ownerDrives(context, { db, ...deps }))) throw error;
-    if (!identifier) return boardProjectForOwner(db, options, error);
+    // Read only stops everyone but the owner's agents with Trust mode on (ownerTrust.js).
+    const unfenced = () => ownerUnfenced({ ...context, workspaceId: options.workspaceId }, options.agentId, { db, ...deps });
+    const readOnly = error?.code === 'PROJECT_ACCESS_DENIED' && Boolean(error.readOnly);
+    if (readOnly ? !(await unfenced()) : (!notGiven(error) || !(await ownerDrives(context, { db, ...deps })))) throw error;
+    // The project the board gave to read only, now to change: that very one, not another by the same name.
+    if (readOnly) return resolveAuthorizedWorkspaceProject(db, { ...options, requiredPermission: 'read' });
+    if (!identifier) {
+      const anyChange = await unfenced();
+      return boardProjectForOwner(db, anyChange ? { ...options, requiredPermission: 'read' } : options, error);
+    }
     const project = await anyProject(db, identifier);
     if (!project) throw new ProjectMembershipError(`There is no project named "${identifier}" on this computer.`, { code: 'PROJECT_NOT_FOUND', statusCode: 404 });
     return project;

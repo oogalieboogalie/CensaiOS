@@ -18,7 +18,7 @@ const beat = (msAgo = 0) => ({ pid: 1, at: new Date(Date.now() - msAgo).toISOStr
 
 describe('app update status', () => {
   test('no folder means nothing to show', () => {
-    expect(updateStatus({ dir: null })).toEqual({ ready: null, running: null, watching: false, requested: false, checking: false, checked: null, step: null });
+    expect(updateStatus({ dir: null })).toEqual({ ready: null, running: null, version: null, updated: null, watching: false, requested: false, checking: false, checked: null, step: null });
   });
 
   test('a built update newer than the running app is ready', () => {
@@ -28,8 +28,10 @@ describe('app update status', () => {
       'watcher.json': beat(),
     });
     expect(updateStatus({ dir })).toEqual({
-      ready: { commit: NEW, builtAt: '2026-10-15T15:00:00Z', changes: ['Fix the terminal', 'Board map minimize'] },
+      ready: { commit: NEW, version: null, builtAt: '2026-10-15T15:00:00Z', changes: ['Fix the terminal', 'Board map minimize'] },
       running: OLD,
+      version: null,
+      updated: null,
       watching: true,
       requested: false,
       checking: false,
@@ -110,6 +112,39 @@ describe('check now (the tray Update item)', () => {
     expect(updateStatus({ dir }).checked).toEqual({ at: '2026-10-17T23:00:05Z', result: 'docker-off' });
     fs.writeFileSync(path.join(dir, 'checked.json'), JSON.stringify({ at: '2026-10-17T23:00:06Z', result: 'blocked' }));
     expect(updateStatus({ dir }).checked).toEqual({ at: '2026-10-17T23:00:06Z', result: 'blocked' });
+  });
+
+  test('a download that failed reads as download-failed, not as up to date', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-update-'));
+    fs.writeFileSync(path.join(dir, 'checked.json'), JSON.stringify({ at: '2026-11-21T14:43:44Z', result: 'download-failed' }));
+    expect(updateStatus({ dir }).checked).toEqual({ at: '2026-11-21T14:43:44Z', result: 'download-failed' });
+  });
+
+  test('the running version number and the last update\'s patch notes are passed on', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-update-'));
+    const now = 'a'.repeat(40);
+    const next = 'b'.repeat(40);
+    fs.writeFileSync(path.join(dir, 'running.txt'), now);
+    fs.writeFileSync(path.join(dir, 'running-version.json'), JSON.stringify({ commit: now, version: '0.7.1359' }));
+    fs.writeFileSync(path.join(dir, 'updated.json'), JSON.stringify({ commit: now, version: '0.7.1359', fromVersion: '0.7.1358', at: '2026-11-21T15:03:34Z', changes: ['fix: one', ' fix: two '] }));
+    fs.writeFileSync(path.join(dir, 'ready.json'), JSON.stringify({ commit: next, version: '0.7.1360', changes: ['fix: three'] }));
+
+    const status = updateStatus({ dir });
+
+    expect(status.version).toBe('0.7.1359');
+    expect(status.updated).toEqual({ version: '0.7.1359', fromVersion: '0.7.1358', at: '2026-11-21T15:03:34Z', changes: ['fix: one', 'fix: two'] });
+    expect(status.ready.version).toBe('0.7.1360');
+  });
+
+  test('a number that belongs to another commit, or is not a number, is not shown', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'censai-update-'));
+    fs.writeFileSync(path.join(dir, 'running.txt'), 'a'.repeat(40));
+    fs.writeFileSync(path.join(dir, 'running-version.json'), JSON.stringify({ commit: 'c'.repeat(40), version: '0.7.1300' }));
+    fs.writeFileSync(path.join(dir, 'updated.json'), JSON.stringify({ commit: 'c'.repeat(40), version: '0.7.1300', changes: [] }));
+    expect(updateStatus({ dir })).toMatchObject({ version: null, updated: null });
+
+    fs.writeFileSync(path.join(dir, 'running-version.json'), JSON.stringify({ commit: 'a'.repeat(40), version: '<b>0.7</b>' }));
+    expect(updateStatus({ dir }).version).toBeNull();
   });
 
   test('a PC on a side branch reads as side-branch, not as up to date', () => {

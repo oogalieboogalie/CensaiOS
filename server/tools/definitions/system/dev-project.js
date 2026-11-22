@@ -24,7 +24,7 @@ export const devProjectTools = [
     type: 'function',
     function: {
       name: 'project_multi_edit',
-      description: 'Make coordinated string replacements across multiple files in a project in a single call. Use for refactors that touch N files. Each edit specifies a path, the exact old_string to replace, and the new_string. Fails fast if any old_string is not found.',
+      description: 'Make coordinated string replacements across multiple files in a project in a single call. Use for refactors that touch N files. Each edit specifies a path, the exact old_string to replace, and the new_string. Fails fast if any old_string is not found. In a project kept on GitHub the edits go only on your own work branch (a worker sub-agent\'s branch, or the branch of the coding job Censai handed you), never on the main branch; with no such branch the call is refused and nothing is changed.',
       parameters: {
         type: 'object',
         properties: {

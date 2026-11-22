@@ -23,6 +23,11 @@ describe('naming a repo', () => {
     expect([...remotesIn('[remote "origin"]\n\tURL = "https://github.com/made-up/homebase.git"\n')]).toEqual(['made-up/homebase']);
   });
 
+  test('only the origin remote counts: a fork\'s upstream names other code', () => {
+    const fork = '[remote "origin"]\n\turl = git@github.com:made-up/fork.git\n[remote "upstream"]\n\turl = git@github.com:made-up/homebase.git\n';
+    expect([...remotesIn(fork)]).toEqual(['made-up/fork']);
+  });
+
   test('only GitHub remotes count', () => {
     const text = '[remote "origin"]\n\turl = https://github.com/made-up/homebase\n[remote "forge"]\n\turl = https://forge.example.com/made-up/homebase\n';
     expect([...remotesIn(text)]).toEqual(['made-up/homebase']);

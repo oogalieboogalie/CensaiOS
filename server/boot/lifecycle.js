@@ -100,6 +100,8 @@ export async function startServer(app, options = {}) {
         startAgentWakeupWorker();
         startAgentCardRunWorker();
         import('../kraken/feeder.js').then((kraken) => kraken.feedEveryone()).catch(() => {});
+        import('../censaiOrchestrator/runner.js').then((plans) => plans.recoverOnce()) // fixes waiting for checks wait again
+          .catch((err) => log.warn('could not pick up plans after a start', { code: safeErrorCode(err) }));
         // Project access a hand-off lent for a plan that a stop cut off (server/censaiOrchestrator/projectShare.js).
         import('../censaiOrchestrator/runner.js').then((plans) => plans.sweepOldShares())
           .catch((err) => log.warn('could not take back old hand-off project access', { code: safeErrorCode(err) }));

@@ -14,7 +14,7 @@ import { resolveProjectForCall } from '../helpers.js';
 export async function handleJulesTool(agentId, name, args, context = {}) {
   switch (name) {
     case 'jules_submit': {
-      const { project } = await resolveProjectForCall(agentId, args.project, context);
+      const { project } = await resolveProjectForCall(agentId, args.project, context, { github: true });
       if (!isGithubProject(project)) {
         return 'Error: Jules only works with GitHub-backed projects. Open the project with a `repo`.';
       }
@@ -106,7 +106,7 @@ export async function handleJulesTool(agentId, name, args, context = {}) {
     }
 
     case 'jules_list': {
-      const { project } = await resolveProjectForCall(agentId, args.project, context);
+      const { project } = await resolveProjectForCall(agentId, args.project, context, { github: true });
       const sessions = await getJulesSessionsForProject(project.id, { activeOnly: !args.include_completed });
       if (sessions.length === 0) return 'No Jules sessions for this project.';
       return sessions.map(s => {

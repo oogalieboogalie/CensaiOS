@@ -2,6 +2,7 @@
 import React from 'react';
 import { changeCount } from '../lib/appUpdate/api.js';
 import { LOOK_STEPS, STAGE_TEXT, SWAP_STEPS, describeWork, lookStep, panelStage, stillOpen } from '../lib/appUpdate/trayFlow.js';
+import { versionLabel } from '../lib/appUpdate/version.js';
 import { useTrayUpdate } from '../lib/appUpdate/useTrayUpdate.js';
 import { UPDATE_MOTION, UpdateSteps } from './UpdateSteps.jsx';
 
@@ -99,7 +100,7 @@ export function TrayUpdatePanel() {
       <>
         {stage === 'checking'
           ? <UpdateSteps steps={LOOK_STEPS} at={lookStep(flow.looking)} since={flow.since} />
-          : <span style={soft}>{STAGE_TEXT[stage]}{waitable ? ' Want it to update by itself when they land?' : ''}</span>}
+          : <span style={soft}>{STAGE_TEXT[stage]}{stage === 'up-to-date' && status?.version ? ` This computer runs ${versionLabel(status.version)}.` : ''}{waitable ? ' Want it to update by itself when they land?' : ''}</span>}
         {stage !== 'checking' && <Work work={work} />}
       </>
     );
@@ -117,8 +118,8 @@ export function TrayUpdatePanel() {
         <UpdateSteps steps={LOOK_STEPS} at={LOOK_STEPS.length} />
         <span style={soft}>
           {status?.inUse
-            ? 'Update ready, restarts when you are done'
-            : `A newer censaiOS is ready${count ? ` with ${count}` : ''}.${more ? ' Update now, or wait for the ones the crew is still finishing?' : ''}`}
+            ? `${ready?.version ? `${versionLabel(ready.version)} is ready` : 'Update ready'}, restarts when you are done`
+            : `${ready?.version ? versionLabel(ready.version) : 'A newer censaiOS'} is ready${count ? ` with ${count}` : ''}.${more ? ' Update now, or wait for the ones the crew is still finishing?' : ''}`}
         </span>
         {showNew && changes.length > 0 && <ul style={list}>{changes.map((c, i) => <li key={i}>{c}</li>)}</ul>}
         <Work work={work} />

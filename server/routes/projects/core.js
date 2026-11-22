@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { listProjects, openProject } from '../../workspaces.js';
+import { ensureProjectBrief } from '../../workspaces/briefs.js';
 import { resolveProjectPathForRuntime } from '../../workspaces/shared.js';
 import { isCloudRuntime } from '../../middleware/runtimeMode.js';
 import { projectFolderKey, tidyProjectList } from '../../../shared/projects/projectList.js';
@@ -10,6 +11,11 @@ import {
   listOpenProjectRoots,
 } from './shared.js';
 import { projectsFor } from './teammateProjects.js';
+import { runAsGithubPerson } from '../../github/credential.js';
+import { createLogger } from '../../logger.js';
+import { safeErrorCode } from '../../security/errorCode.js';
+
+const log = createLogger('projects');
 
 // The board's default project is open on every board here, so anyone signed
 // in may know it, as Files and a window's project menu already show it.
@@ -146,13 +152,19 @@ export async function openProjectHandler(req, res) {
 
   try {
     const existingPath = projectPath ? await assertDirectory(projectPath) : undefined;
-    const project = await openProject(CORE_PROJECT_OWNERS[0], {
+    // A project kept on GitHub is read with the saved GitHub key of whoever opens it.
+    const project = await runAsGithubPerson({ userId: req.session?.userId, computerKey: true }, () => openProject(CORE_PROJECT_OWNERS[0], {
       // A folder opened by its path alone is named after the folder.
       name: String(name || '').trim() || (existingPath ? inferProjectName(existingPath) : undefined),
       repo: String(repo || '').trim() || undefined,
       existingPath,
       summary: String(summary || '').trim() || undefined,
-    });
+    }));
+    // A GitHub project whose brief the app no longer has gets it built again (reads only).
+    if (project.repo) {
+      await runAsGithubPerson({ userId: req.session?.userId, computerKey: true }, () => ensureProjectBrief(project))
+        .catch((err) => log.warn('project brief not built on open', { code: safeErrorCode(err) }));
+    }
     // Opening a folder alongside the default puts it on the board without
     // moving any other window (multi-project canvas).
     if (existingPath) await registerOpenProject(existingPath);

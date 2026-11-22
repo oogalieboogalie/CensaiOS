@@ -56,9 +56,32 @@ function readJson(dir, name) {
   }
 }
 
+// The number people see, such as 0.7.1358. The updater works it out
+// (scripts/auto-update.sh, version_of); anything else in the file is not shown.
+const VERSION = /^\d{1,4}\.\d{1,4}\.\d{1,7}$/;
+const versionText = (value) => (typeof value === 'string' && VERSION.test(value) ? value : null);
+const changeList = (value) => [].concat(value || []).map((c) => String(c).trim()).filter(Boolean).slice(0, 20);
+
+function runningVersion(dir, running) {
+  const raw = readJson(dir, 'running-version.json');
+  return raw?.commit === running ? versionText(raw.version) : null;
+}
+
+/** The update that put the running version in: its number and its patch notes. */
+function lastUpdate(dir, running) {
+  const raw = readJson(dir, 'updated.json');
+  if (!raw || raw.commit !== running || !versionText(raw.version)) return null;
+  return {
+    version: raw.version,
+    fromVersion: versionText(raw.fromVersion),
+    at: typeof raw.at === 'string' && Number.isFinite(Date.parse(raw.at)) ? raw.at : null,
+    changes: changeList(raw.changes),
+  };
+}
+
 /** What the "Update ready" note needs. Never throws. */
 export function updateStatus({ dir = updateDir(), now = Date.now(), onDemand = updaterOnDemand() } = {}) {
-  const empty = { ready: null, running: null, watching: false, requested: false, checking: false, checked: null, step: null };
+  const empty = { ready: null, running: null, version: null, updated: null, watching: false, requested: false, checking: false, checked: null, step: null };
   if (!dir) return empty;
   const running = readText(dir, 'running.txt');
   const heartbeat = readJson(dir, 'watcher.json');
@@ -68,13 +91,16 @@ export function updateStatus({ dir = updateDir(), now = Date.now(), onDemand = u
   const ready = COMMIT.test(commit) && commit !== running
     ? {
       commit,
+      version: versionText(raw.version),
       builtAt: typeof raw.builtAt === 'string' ? raw.builtAt : null,
-      changes: [].concat(raw.changes || []).map((c) => String(c).trim()).filter(Boolean).slice(0, 20),
+      changes: changeList(raw.changes),
     }
     : null;
   return {
     ready,
     running: COMMIT.test(running) ? running : null,
+    version: runningVersion(dir, running),
+    updated: lastUpdate(dir, running),
     watching: onDemand || (Number.isFinite(beatAt) && now - beatAt < WATCHER_FRESH_MS),
     requested: fs.existsSync(path.join(dir, 'restart-requested')),
     checking: fs.existsSync(path.join(dir, 'check-requested')),
@@ -99,7 +125,7 @@ function currentStep(dir, now) {
   }
 }
 
-const RESULTS = ['up-to-date', 'ready', 'build-failed', 'docker-off', 'blocked', 'side-branch'];
+const RESULTS = ['up-to-date', 'ready', 'build-failed', 'docker-off', 'blocked', 'side-branch', 'download-failed'];
 
 function lastCheck(dir) {
   const raw = readJson(dir, 'checked.json');

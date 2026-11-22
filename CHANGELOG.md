@@ -17,6 +17,9 @@ tags.
 
 ### New
 
+- The rules a coding job is followed by: its own key, a clean review, proven done (Nov 22)
+- Every update has a version number and patch notes (Nov 21)
+- Family agents have the tools of their roles with nothing equipped (Nov 20)
 - The Update panel shows which step the update is on (Nov 20)
 - Echo, Censai and Foundation save project files with nothing equipped (Nov 20)
 - Builders save project files with nothing equipped (Nov 19)
@@ -43,6 +46,25 @@ tags.
 
 ### Fixed
 
+- A Kraken fix on GitHub ends in a pull request on its own branch (Nov 22)
+- The full test run is split in eight parts so one part no longer runs out of memory (Nov 22)
+- Findings block, a clean review with none passes, struck-through words do not count (Nov 22)
+- A coding job's review is read as the reviewer meant it (Nov 22)
+- A project's exact id is never second-guessed by a repo name, and a missing name says how to add one (Nov 22)
+- A name that fits two projects reaches the agent as a choice, and never sends work somewhere else (Nov 22)
+- An agent reads a private repo with the GitHub key its person saved, and opening a GitHub project only reads (Nov 22)
+- A viewer's Kraken look shows no project details, and a write-up's look never fails on the project (Nov 22)
+- A Kraken Request works in the project you looked at, a blocked fix stays a fix, and no arm goes out twice (Nov 22)
+- The coding job tool says which repositories are approved and how to list jobs (Nov 22)
+- A path, a branch name or a second plan cannot point a worker's change somewhere else (Nov 22)
+- Two projects with the same name get their own ids and never take over each other's row (Nov 22)
+- Every coding worker gets its own branch and a way to open its pull request (Nov 22)
+- The public export stops when a stand-in file lacks a name the shipped code imports (Nov 22)
+- An agent that asks for "/" gets the top of the project, not a refusal (Nov 21)
+- "Check for an update" says when the download failed instead of "up to date" (Nov 21)
+- With Trust mode on, the owner's agents work anywhere on the owner's computer (Nov 21)
+- An agent's newest notes keep a place in its instructions (Nov 21)
+- An agent's prompt stops carrying links between filler words (Nov 21)
 - On the owner's own board, an agent given no project works in the one open there (Nov 20)
 - A job Censai hands off goes on after a save that failed (Nov 20)
 - On a job Censai hands off, a call that names no project means the job's project (Nov 20)
@@ -53,6 +75,11 @@ tags.
 - Black glass windows take their colour from Window Surface, not the board canvas (Nov 17)
 - A tool an agent loads works in the same reply and stays loaded in that chat (Nov 17)
 - Friends runs on the real tailcat (it refused the way we shared a port) (Nov 15)
+
+### Behind the scenes
+
+- A Kraken fix cannot hand its work on, waits for any CI, and is picked up after a restart (Nov 22)
+- The read-only open test no longer trips the public copy's scan for dropped files (Nov 22)
 
 _1 more change is not listed because the description names a part of censaiOS that is not in the public copy._
 

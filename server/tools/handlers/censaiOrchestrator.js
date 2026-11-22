@@ -22,6 +22,8 @@ const JOB_WORDS = {
   stuck: 'stuck',
   stopped: 'stopped',
   skipped: 'did not start',
+  waiting_checks: 'waiting for the pull request\'s checks',
+  sendback: 'sent back to fix what the checks found',
 };
 const ITEM_MARKS = { ticked: '[x]', failed: '[ ] not yet:', unknown: '[?] could not check:', checking: '[ ] checking:', open: '[ ]' };
 
@@ -194,7 +196,8 @@ export async function handleCensaiPlanTool(agentId, name, args = {}, context = {
   const scope = scopeOf(context);
   if (!scope) return 'Error: There is no board and signed-in person here to run jobs for.';
   try {
-    if (name === 'hand_off_jobs') return await handOff(args, scope, db, deps);
+    // onGithub is the Kraken's to set (a fix pinned to a GitHub repo), never a chat hand-off's.
+    if (name === 'hand_off_jobs') return await handOff({ ...args, onGithub: false }, scope, db, deps);
     if (name === 'jobs_status') return await status(args, scope, db);
     if (name === 'stop_jobs') return await stop(args, scope, db, deps);
     return `Error: Unknown plan tool ${name}.`;

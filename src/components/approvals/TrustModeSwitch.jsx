@@ -17,8 +17,8 @@ export function TrustModeSwitch({ trust, compact = false }) {
       {!compact && (
         <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', lineHeight: 1.5 }}>
           {trust.board
-            ? 'Agents act on their own: edits to files, the board, designs, PDFs and CAD parts happen without your OK.'
-            : 'Agents ask first: each change waits in Action Approvals until an owner or admin says OK.'}
+            ? 'Agents act on their own: edits to files, the board, designs, PDFs and CAD parts happen without your OK. On your own computer your agents work in any folder, not only the board\'s projects; people you share the board with stay inside them.'
+            : 'Agents ask first: each change waits in Action Approvals until an owner or admin says OK. Agents stay inside the projects open on this board.'}
         </p>
       )}
       {trust.ready && !trust.canChange && (

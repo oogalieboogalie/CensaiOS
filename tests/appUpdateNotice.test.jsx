@@ -29,6 +29,7 @@ jest.unstable_mockModule('../src/components/TrayUpdatePanel.jsx', () => ({ TrayU
 
 const { AppUpdateNotice } = await import('../src/components/AppUpdateNotice.jsx');
 const { panelStage, updatesPaused, STAGE_TEXT } = await import('../src/lib/appUpdate/trayFlow.js');
+const { unseenUpdate, updateSummary, versionLabel } = await import('../src/lib/appUpdate/version.js');
 
 const AT = '2026-11-11T17:55:25Z';
 
@@ -51,6 +52,38 @@ beforeEach(() => {
 afterEach(() => { jest.useRealTimers(); });
 
 describe('the update note', () => {
+  test('after an update the note says the new version number and what changed, once', async () => {
+    window.localStorage.clear();
+    const landed = { version: '0.7.1360', running: 'b'.repeat(40), updated: { version: '0.7.1360', fromVersion: '0.7.1359', at: AT, changes: ['fix: the header', 'feat: a new window'] }, ready: null, watching: true, checked: { at: AT, result: 'up-to-date' } };
+    await shown(landed);
+    const note = screen.getByTestId('app-updated-note');
+    expect(note).toHaveTextContent('Updated to censaiOS 0.7.1360');
+    expect(note).toHaveTextContent('Updated from 0.7.1359 with 2 changes.');
+    expect(note).toHaveTextContent('fix: the header');
+    expect(note).toHaveTextContent('feat: a new window');
+
+    await act(async () => { fireEvent.click(screen.getByText('OK')); });
+    expect(screen.queryByTestId('app-updated-note')).toBeNull();
+    // It does not come back for this version, and comes back for the next one.
+    expect(unseenUpdate(landed)).toBeNull();
+    expect(unseenUpdate({ version: '0.7.1361', updated: { version: '0.7.1361', changes: [] } })).toMatchObject({ version: '0.7.1361' });
+  });
+
+  test('a waiting update is named by its number', async () => {
+    window.localStorage.clear();
+    await shown({ ready: { commit: 'b'.repeat(40), version: '0.7.1361', changes: ['Fix the header'] }, watching: true, version: '0.7.1360', checked: { at: AT, result: 'ready' } });
+    expect(screen.getByTestId('app-update-notice')).toHaveTextContent('censaiOS 0.7.1361 is downloaded');
+  });
+
+  test('the words around the number', () => {
+    expect(versionLabel('0.7.1360')).toBe('censaiOS 0.7.1360');
+    expect(versionLabel('')).toBe('');
+    expect(updateSummary({ changes: ['a'] })).toBe('Updated with 1 change.');
+    expect(updateSummary({ fromVersion: '0.7.1', changes: [] })).toBe('Updated from 0.7.1.');
+    // No number for the running copy means nothing to announce.
+    expect(unseenUpdate({ version: null, updated: { version: '0.7.2', changes: [] } })).toBeNull();
+  });
+
   test('a built update shows "Update ready"', async () => {
     await shown({ ready: { commit: 'b'.repeat(40), changes: ['Fix the header', 'New window'] }, watching: true, checked: { at: AT, result: 'ready' } });
     expect(screen.getByTestId('app-update-notice')).toHaveTextContent('Update ready');
@@ -102,6 +135,13 @@ describe('the update note', () => {
     await shown({ ready: null, watching: true, checked: { at: AT, result: 'up-to-date' } });
     expect(screen.queryByTestId('app-update-notice')).toBeNull();
     expect(screen.queryByTestId('app-update-paused')).toBeNull();
+  });
+
+  test('a failed download is its own screen in the panel, and is not announced unasked', () => {
+    expect(panelStage({ checked: { at: AT, result: 'download-failed' } }, null)).toBe('download-failed');
+    expect(STAGE_TEXT['download-failed']).toMatch(/could not download/);
+    // A laptop that is offline for an hour should not get a notice about it.
+    expect(updatesPaused({ checked: { result: 'download-failed' } })).toBe(false);
   });
 
   test('the tray panel names the side branch too, and a ready update wins over paused', () => {

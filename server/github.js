@@ -6,12 +6,14 @@
 
 import { LINKED_SECRET, OWNER_ONLY_FILE, linkedSecret } from './security/secretFiles.js';
 import { githubApiUrl } from './github/apiUrl.js';
+import { sendWithGithubKey } from './github/credential.js';
 
+// The key comes from the one place every GitHub call asks (github/credential.js):
+// the saved key of the person this call is made for, then GITHUB_TOKEN. A call
+// the saved key cannot make is tried once with GITHUB_TOKEN where that was allowed before.
 async function fetchGithub(endpoint, options = {}) {
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) throw new Error('GITHUB_TOKEN not configured in .env');
   const needsContentType = options.method && ['POST', 'PUT', 'PATCH'].includes(options.method.toUpperCase());
-  const res = await fetch(`${githubApiUrl()}${endpoint}`, {
+  const { res } = await sendWithGithubKey((token) => fetch(`${githubApiUrl()}${endpoint}`, {
     ...options,
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -20,7 +22,7 @@ async function fetchGithub(endpoint, options = {}) {
       ...(needsContentType ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers || {}),
     },
-  });
+  }));
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`GitHub ${res.status}: ${text.slice(0, 200)}`);

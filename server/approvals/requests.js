@@ -7,7 +7,7 @@ import { AGENT_CAPABILITY_MODULES, toolHasApprovalModule } from '../../src/data/
 import { toolPackageLockKey } from '../capabilities/packageCatalog.js';
 import { agentIsTrusted, TRUSTED_ROLES } from './trustMode.js';
 import { assertHelperTrusted } from './helperTrust.js';
-import { familyToolPolicy } from '../tools/rbac/familyBaseline.js';
+import { familyAsksFirst, familyToolPolicy } from '../tools/rbac/familyBaseline.js';
 
 export class ToolApprovalError extends Error {
   constructor(message, statusCode = 400, code = 'TOOL_APPROVAL_INVALID') {
@@ -44,7 +44,7 @@ export async function requestToolApprovalIfRequired(db, { agentId, toolName, arg
       agentId, toolName, workspaceId, approvalTool: toolHasApprovalModule(toolName),
     });
   }
-  if (!toolHasApprovalModule(toolName)) return { required: false };
+  if (!toolHasApprovalModule(toolName) && !familyAsksFirst(String(agentId).trim().toLowerCase(), toolName)) return { required: false };
   // Off a board there is no Trust mode setting and no Action Approvals to wait
   // in. A tool the agent has by role (a builder's file saves) runs for this
   // computer's owner, who the caller has already checked (hostOwnerOnly.js).
@@ -81,9 +81,8 @@ export async function requestToolApprovalIfRequired(db, { agentId, toolName, arg
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
-      toolPackageLockKey(workspaceId, grant.moduleId),
-    ]);
+    const packageLock = toolPackageLockKey(workspaceId, grant.moduleId);
+    if (packageLock) await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [packageLock]);
     const currentGrant = await findApprovalGrant(client, {
       workspaceId, agentId: canonicalId, toolName,
     });

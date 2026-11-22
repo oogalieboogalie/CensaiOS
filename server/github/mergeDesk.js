@@ -8,29 +8,15 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { Octokit } from '@octokit/rest';
-import { getSecret } from '../secrets.js';
 import { githubApiUrl } from './apiUrl.js';
 
 const MAX_PRS = 40;
 const DETAIL_CONCURRENCY = 6;
 const RECENT_MERGES = 8;
 
-/** The user's own token (Settings or the window's token field) first, then GITHUB_TOKEN. */
-export async function resolveGithubToken(userId, { loadUserKey } = {}) {
-  const load = loadUserKey || (async (id) => {
-    const { getUserApiKeyConfig } = await import('../security/userApiKeys.js');
-    return getUserApiKeyConfig(id, 'github');
-  });
-  try {
-    const userKey = userId ? await load(userId) : null;
-    if (userKey?.apiKey) return { token: userKey.apiKey, source: 'byok' };
-  } catch {
-    // A vault read failure falls through to the server token.
-  }
-  const serverToken = getSecret('GITHUB_TOKEN');
-  if (serverToken) return { token: serverToken, source: 'server' };
-  return { token: '', source: null };
-}
+// The user's own token first, then GITHUB_TOKEN: the same one place every
+// GitHub call asks (credential.js), kept under this name for the window's routes.
+export { resolveGithubToken } from './credential.js';
 
 export function deskError(message, status = 400) {
   return Object.assign(new Error(message), { status });

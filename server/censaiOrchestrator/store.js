@@ -3,7 +3,8 @@
 
 import { randomUUID } from 'node:crypto';
 
-const COLUMNS = 'id, workspace_id, user_id, goal, project, status, summary, jobs, created_at, updated_at, finished_at, reported_at';
+// pin: the exact project a Kraken arm's plan is tied to (docker/099-kraken-project-pin.sql, projectPin.js).
+const COLUMNS = 'id, workspace_id, user_id, goal, project, status, summary, jobs, created_at, updated_at, finished_at, reported_at, pin';
 export const MAX_OPEN_PLANS = 3;
 const LONE_HALF = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g;
 
@@ -15,13 +16,21 @@ export function storable(value) {
   return value;
 }
 
-export async function insertPlan(db, { workspaceId, userId, goal, project, jobs, id = randomUUID() }) {
+/**
+ * Save a new plan. Given an id that is already this person's plan (a Kraken arm's task id,
+ * handed out again after a crash), that plan comes back: one task id never makes two plans.
+ */
+export async function insertPlan(db, { workspaceId, userId, goal, project, jobs, pin = null, id = randomUUID() }) {
   const { rows } = await db.query(
-    `INSERT INTO censai_plans (id, workspace_id, user_id, goal, project, status, jobs)
-     VALUES ($1, $2, $3, $4, $5, 'queued', $6::jsonb) RETURNING ${COLUMNS}`,
-    [id, workspaceId, userId, storable(goal), storable(project), JSON.stringify(storable(jobs))],
+    `INSERT INTO censai_plans (id, workspace_id, user_id, goal, project, status, jobs, pin)
+     VALUES ($1, $2, $3, $4, $5, 'queued', $6::jsonb, $7::jsonb)
+     ON CONFLICT (id) DO NOTHING RETURNING ${COLUMNS}`,
+    [id, workspaceId, userId, storable(goal), storable(project), JSON.stringify(storable(jobs)), pin ? JSON.stringify(storable(pin)) : null],
   );
-  return rows[0];
+  if (rows[0]) return rows[0];
+  const made = await getPlan(db, { id, workspaceId, userId });
+  if (!made) throw new Error('That plan id is already in use.');
+  return made;
 }
 
 /** Unscoped: only for the runner, which already owns the plan. */
@@ -66,6 +75,19 @@ export async function savePlan(db, plan) {
        finished_at = CASE WHEN $5::boolean THEN COALESCE(finished_at, NOW()) ELSE NULL END
      WHERE id = $1 AND status IN ('queued', 'running') RETURNING ${COLUMNS}`,
     [plan.id, plan.status, storable(plan.summary) || null, JSON.stringify(storable(plan.jobs || [])), finished],
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Save a parked plan only while the saved plan still has job `part` waiting for its checks: a stale
+ * copy never puts a job back, and of two servers that both saw the checks, one wins (null).
+ */
+export async function settleParkedPlan(db, plan, part) {
+  const { rows } = await db.query(
+    `UPDATE censai_plans SET status = $2, summary = $3, jobs = $4::jsonb, updated_at = NOW(), finished_at = NULL
+     WHERE id = $1 AND status = 'running' AND jobs @> $5::jsonb RETURNING ${COLUMNS}`,
+    [plan.id, plan.status, storable(plan.summary) || null, JSON.stringify(storable(plan.jobs || [])), JSON.stringify([{ n: part, status: 'waiting_checks' }])],
   );
   return rows[0] || null;
 }

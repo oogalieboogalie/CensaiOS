@@ -20,7 +20,7 @@ const PROJECTS = {
 // What each board gave each agent: [board, project, agent, permission].
 let given = [];
 const GIVEN_ON_BOARD = [[BOARD, 'made-up-project', AGENT, 'read'], [BOARD, 'made-up-notes', AGENT, 'work']];
-const TRUST = 'Trust mode does not change this: it only lets agents use the tools they already have without waiting for an OK.';
+const TRUST = 'If this is your own computer, turning Trust mode on for me in Settings lifts this: then I can work in any folder here.';
 
 const pool = { query: jest.fn(), connect: jest.fn(), on: jest.fn(), end: jest.fn() };
 const logged = [];

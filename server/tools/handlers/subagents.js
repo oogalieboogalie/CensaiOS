@@ -38,7 +38,10 @@ export async function handleSubagentTool(agentId, name, args, context = {}) {
             projectIdentifier: args.project,
             requiredPermission: 'read',
           }, context);
-        } catch {
+        } catch (error) {
+          // A name that fits more than one project: the answer names them, so the agent picks one
+          // instead of opening yet another project with that name.
+          if (error?.code === 'PROJECT_NAME_NEEDED') return error.message;
           return `No authorized project named "${args.project}" found. Use open_project first.`;
         }
       }

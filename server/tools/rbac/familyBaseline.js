@@ -1,3 +1,5 @@
+import { ASK_FIRST, FAMILY_ROLE_TOOL_NAMES, FAMILY_ROLE_TOOL_POLICIES } from './familyRoleTools.js';
+
 const policy = (name, risk, mode = 'autonomous') => Object.freeze({ name, risk, mode });
 
 export const FAMILY_INTRINSIC_TOOL_POLICIES = Object.freeze([
@@ -154,12 +156,13 @@ const ROLE_ADDITIONS = Object.freeze({
 export const FAMILY_DEFAULT_TOOL_NAMES = Object.freeze(Object.fromEntries(
   Object.entries(ROLE_ADDITIONS).map(([agentId, additions]) => [
     agentId,
-    Object.freeze([...new Set([...CORE, ...NETWORK, ...MODULES, ...additions])]),
+    Object.freeze([...new Set([...CORE, ...NETWORK, ...MODULES, ...additions, ...(FAMILY_ROLE_TOOL_NAMES[agentId] || [])])]),
   ]),
 ));
 
+// The role tools come first so a name listed in both keeps its older entry.
 const POLICY_BY_NAME = Object.freeze(Object.fromEntries(
-  [...FAMILY_INTRINSIC_TOOL_POLICIES, ...STARTER_BOARD_TOOL_POLICIES, ...FAMILY_NETWORK_TOOL_POLICIES, ...FAMILY_MODULE_TOOL_POLICIES,
+  [...FAMILY_ROLE_TOOL_POLICIES, ...FAMILY_INTRINSIC_TOOL_POLICIES, ...STARTER_BOARD_TOOL_POLICIES, ...FAMILY_NETWORK_TOOL_POLICIES, ...FAMILY_MODULE_TOOL_POLICIES,
    ...FAMILY_ORCHESTRATION_TOOL_POLICIES,
    ...FAMILY_LIFECYCLE_TOOL_POLICIES, ...FAMILY_PROJECT_READ_TOOL_POLICIES,
    ...FAMILY_BUILD_TOOL_POLICIES, ...FAMILY_WAKE_UP_TOOL_POLICIES, ...FAMILY_PLAN_TOOL_POLICIES]
@@ -172,4 +175,9 @@ export function familyDefaultToolNames(agentId) {
 
 export function familyToolPolicy(agentId, toolName) {
   return familyDefaultToolNames(agentId).includes(toolName) ? POLICY_BY_NAME[toolName] || null : null;
+}
+
+/** True when this agent has the tool by role and it waits for an OK with Trust mode off. */
+export function familyAsksFirst(agentId, toolName) {
+  return familyToolPolicy(agentId, toolName)?.mode === ASK_FIRST;
 }

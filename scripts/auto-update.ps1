@@ -86,7 +86,8 @@ function Update-Code {
     Write-Value 'blocked.txt' $why
     return
   }
-  if (-not $fetched) { return }
+  # A download that failed is not "up to date": say so instead.
+  if (-not $fetched) { $script:failed = $true; return }
   $behind = [int]((& git rev-list --count HEAD..origin/master 2>$null) -as [string])
   if ($behind -eq 0) {
     Remove-Item -Force (Join-Path $dir 'blocked.txt') -ErrorAction SilentlyContinue
@@ -174,17 +175,20 @@ function Test-Behind {
 function Invoke-Check {
   $script:blocked = $false
   $script:paused = $false
+  $script:failed = $false
   Update-Code
   if (Test-ServedElsewhere) {
     Remove-Item -Force (Join-Path $dir 'ready.json') -ErrorAction SilentlyContinue
     if ($script:paused) { return 'side-branch' }
     if ($script:blocked) { return 'blocked' }
+    if ($script:failed) { return 'download-failed' }
     return 'up-to-date'
   }
   if (-not (Test-Behind)) {
     Remove-Item -Force (Join-Path $dir 'ready.json') -ErrorAction SilentlyContinue
     if ($script:paused) { return 'side-branch' }
     if ($script:blocked) { return 'blocked' }
+    if ($script:failed) { return 'download-failed' }
     return 'up-to-date'
   }
   if ((Read-Value 'built.txt') -ne (Get-Head) -or (Test-Path $rebuildMarker)) {

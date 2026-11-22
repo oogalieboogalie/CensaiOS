@@ -75,8 +75,11 @@ export async function folderIsOtherRepo(projectPath, repo, deps = {}) {
   return Boolean(key && repos.size && !repos.has(key));
 }
 
-/** The plan's project row for this person on this board, or null when there is none to pin. */
-export async function planProject(db, { workspaceId, userId, project = null, testsHere = false }, deps = {}) {
+/**
+ * The plan's project row for this person on this board, or null when there is none to pin.
+ * keepGithub: a row kept on GitHub stays itself, never a folder here (a Kraken fix's pull request goes there).
+ */
+export async function planProject(db, { workspaceId, userId, project = null, testsHere = false, keepGithub = false }, deps = {}) {
   const name = String(project || '').trim().slice(0, 200);
   if (!workspaceId) return null;
   if (!name) {
@@ -84,12 +87,27 @@ export async function planProject(db, { workspaceId, userId, project = null, tes
     return own && !isPastProject(own) ? own : null;
   }
   const given = await onBoard(db, workspaceId, name);
-  if (given) return testsHere ? hereInsteadOf(db, workspaceId, given, deps) : given;
+  if (given) return testsHere && !keepGithub ? hereInsteadOf(db, workspaceId, given, deps) : given;
   const found = await maybe(() => resolveProjectForDriver(db, {
     workspaceId, agentId: HANDOFF_GIVER, projectIdentifier: name,
   }, { userId }, deps));
-  if (!found?.repo) return found;
+  if (!found?.repo || keepGithub) return found;
   if (testsHere) return hereInsteadOf(db, workspaceId, found, deps);
   // As before #1108's caller asked: the same folder here, when the board has it.
   return (await sameFolderHere(db, workspaceId, found)) || found;
+}
+
+/**
+ * The project with exactly this id, when this person's work may use it on this board
+ * (the board's rule, then the owner rule), or null. Never another project in its place:
+ * this is how a pinned project (projectPin.js) is checked again before work goes out.
+ */
+export async function reachableProject(db, { workspaceId, userId, id }, deps = {}) {
+  const wanted = String(id || '').trim();
+  if (!workspaceId || !wanted) return null;
+  const isIt = (row) => (row && String(row.id) === wanted ? row : null);
+  // A board project that is only NAMED like this id is not it: then the owner rule still gets its say.
+  return isIt(await onBoard(db, workspaceId, wanted)) || isIt(await maybe(() => resolveProjectForDriver(db, {
+    workspaceId, agentId: HANDOFF_GIVER, projectIdentifier: wanted,
+  }, { userId }, deps)));
 }

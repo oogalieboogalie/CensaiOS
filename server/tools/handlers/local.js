@@ -6,6 +6,7 @@ import { getProject } from '../../workspaces.js';
 import { resolveTavilyKey, tavilyBase } from '../../leadhound/tavily.js';
 import { noteToolFailure } from '../toolsLog.js';
 import { defaultWriteFolders } from './localWriteFolders.js';
+import { ownerUnfenced } from '../../workspaces/ownerTrust.js';
 
 const TAVILY_KEY_MISSING = 'Error: no Tavily key yet. Paste one in the LeadHound window (or set TAVILY_API_KEY on the server) to search the web.';
 
@@ -22,13 +23,17 @@ function isPathAllowed(targetPath, allowedPaths) {
 export async function handleLocalTool(agentId, name, args, context = {}) {
   // Load agent scopes for directory path restriction
   let allowedPaths = null;
+  let chosenPaths = false;
+  let trustAgent = agentId;
   let scopeLoadError = null;
   try {
     const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
     const agent = sub ? null : await getAgent(agentId);
     const toolScopes = sub ? sub.tool_scopes : agent?.tool_scopes;
+    if (sub?.parent_id) trustAgent = sub.parent_id;
     if (toolScopes?.scopes?.local?.paths) {
       allowedPaths = [...toolScopes.scopes.local.paths];
+      chosenPaths = true;
     }
 
     // Auto-bind to project path if agent is bound to a project
@@ -52,6 +57,19 @@ export async function handleLocalTool(agentId, name, args, context = {}) {
   if (scopeLoadError && ['local_list_dir', 'local_read_file', 'local_write_file'].includes(name)) {
     return `Failed to access local files: Unable to verify agent directory scopes (${scopeLoadError.message}).`;
   }
+
+  // The owner's agents with Trust mode on reach every folder on this computer (ownerTrust.js),
+  // unless someone set this agent's own folder limit on purpose.
+  const FILE_TOOLS = ['local_list_dir', 'local_read_file', 'local_write_file'];
+  let unfenced = false;
+  if (FILE_TOOLS.includes(name) && !chosenPaths) {
+    try {
+      unfenced = await ownerUnfenced(context, trustAgent);
+    } catch (err) {
+      noteToolFailure('could not read trust mode', { agentId }, err);
+    }
+  }
+  if (unfenced) allowedPaths = null;
 
   switch (name) {
     case 'local_list_dir': {
@@ -90,7 +108,7 @@ export async function handleLocalTool(agentId, name, args, context = {}) {
           return `Failed to write file: Access restricted by agent's directory scopes. Allowed paths: ${allowedPaths.join(', ')}`;
         }
         // No folders of its own: the projects folder or an open project only.
-        if (!allowedPaths?.length) {
+        if (!allowedPaths?.length && !unfenced) {
           const folders = await defaultWriteFolders();
           if (!isPathAllowed(abs, folders)) {
             return `Failed to write file: this agent has no folders of its own, so it can only write inside the projects folder or a project censaiOS has open (${folders.join(', ')}). Add a folder to this agent in the Agent Designer to let it write somewhere else.`;

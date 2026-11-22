@@ -11,6 +11,7 @@
 // While a plan runs, each of its family members works in the plan's project
 // with Censai's own access to it on the board (projectShare.js); it ends with the plan.
 
+import { AsyncLocalStorage } from 'node:async_hooks';
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
@@ -19,6 +20,7 @@ import { finish, markStopped, planFromRow, skipRest, stickJob } from './planStat
 import { reportMessages, summaryLine } from './prompts.js';
 import { FINAL_JOB, FINAL_PLAN, agentName } from './shape.js';
 import { getPlan, insertPlan, listUnfinished, loadPlan, savePlan } from './store.js';
+import { forgetParked, isParked, park, setParkedResume } from './parkedChecks.js';
 import { sharePlanProject, sweepShares, takeBackPlanProject } from './projectShare.js';
 
 const log = createLogger('censai-orchestrator');
@@ -33,6 +35,9 @@ export const DEFAULT_DEPS = Object.freeze({
   runTests: async (input) => (await import('./projectTests.js')).runProjectTests(input),
   readTestScript: async (input) => (await import('./projectTests.js')).readTestScript(input),
   findFile: async (input) => (await import('./projectFiles.js')).findProjectFile(input),
+  prepareJobBranch: async (input) => (await import('./jobPr.js')).prepareJobBranch(input),
+  openJobPr: async (input) => (await import('./jobPr.js')).openJobPr(input),
+  readJobChecks: async (input) => (await import('./jobPr.js')).readJobChecks(input),
   censaiModel: async (input) => (await import('./model.js')).censaiModel(input),
   askCensai: async (model, messages, opts) => (await import('./model.js')).askCensai(model, messages, opts),
 });
@@ -49,7 +54,7 @@ export function onPlanSettled(listener) {
 }
 
 const withDefaults = (deps = {}) => ({ ...DEFAULT_DEPS, ...deps });
-const isQueued = (id) => running.has(id) || waiting.some((item) => item.id === id);
+const isQueued = (id) => running.has(id) || waiting.some((item) => item.id === id) || isParked(id);
 
 // One save after another, each writing the plan as it is by then, so the last write holds the latest state.
 function saveEntry(entry, deps) {
@@ -99,9 +104,12 @@ async function runPlan(entry, deps) {
       if (job.status === 'done') continue;
       // Stuck or cut off before a restart: never build on it. finish() below says where it stopped.
       if (FINAL_JOB.has(job.status)) break;
+      // Waiting for its pull request's checks: that wait takes no slot here (parkedChecks.js).
+      if (job.status === 'waiting_checks') return park(entry.id, deps);
       const earlier = plan.jobs.filter((done) => done.n < job.n && done.status === 'done');
       const outcome = await runJob({ entry, plan, job, earlier, deps, save, censai });
       if (entry.stopped) return;
+      if (outcome === 'parked') return park(entry.id, deps);
       if (outcome !== 'done') {
         plan.status = 'stuck';
         skipRest(plan);
@@ -128,10 +136,10 @@ async function runPlan(entry, deps) {
 
 function pump() {
   while (running.size < MAX_RUNNING && waiting.length) {
-    const { id, deps } = waiting.shift();
+    const { id, deps, inItsSetting = (fn) => fn() } = waiting.shift();
     const entry = { id, plan: null, controller: new AbortController(), stopped: false, chain: Promise.resolve() };
     running.set(id, entry);
-    entry.done = runPlan(entry, withDefaults(deps))
+    entry.done = inItsSetting(() => runPlan(entry, withDefaults(deps)))
       .catch((error) => log.error('plan crashed', { planId: id, code: safeErrorCode(error) }))
       .finally(() => {
         running.delete(id);
@@ -143,13 +151,15 @@ function pump() {
 
 export function startPlan(id, deps = {}) {
   if (isQueued(id)) return;
-  waiting.push({ id, deps });
+  // A queued plan runs in the setting it was made in (a trigger-started run's fence included),
+  // not in whatever plan happened to finish and start it.
+  waiting.push({ id, deps, inItsSetting: AsyncLocalStorage.snapshot() });
   pump();
 }
 
-/** Save a checked-in plan and start it in the background. Returns the saved row. */
-export async function createPlan({ workspaceId, userId, goal, project, jobs }, deps = {}) {
-  const row = await insertPlan(withDefaults(deps).db, { workspaceId, userId, goal, project, jobs });
+/** Save a checked-in plan and start it in the background. Returns the saved row (the first one, for an id used before). */
+export async function createPlan({ workspaceId, userId, goal, project, jobs, pin, id }, deps = {}) {
+  const row = await insertPlan(withDefaults(deps).db, { workspaceId, userId, goal, project, jobs, pin, id });
   log.info('plan made', { planId: row.id, parts: jobs.length, agents: jobs.map((job) => job.agentId) });
   startPlan(row.id, deps);
   return row;
@@ -171,6 +181,7 @@ export async function stopPlan({ id, workspaceId, userId }, deps = {}) {
     return loadPlan(all.db, id);
   }
   if (entry) entry.stopped = true;
+  forgetParked(id);
   const queued = waiting.findIndex((item) => item.id === id);
   if (queued >= 0) waiting.splice(queued, 1);
   const plan = planFromRow(row);
@@ -228,7 +239,10 @@ export function planSettled(id) {
 }
 
 /** For tests: forget everything this server is running. */
+setParkedResume(startPlan); // a parked job whose checks came back carries on through the queue
+
 export function resetPlansForTests() {
+  forgetParked();
   for (const entry of running.values()) entry.stopped = true;
   running.clear();
   waiting.length = 0;

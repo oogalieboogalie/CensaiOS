@@ -20,6 +20,11 @@ jest.unstable_mockModule('../server/workspaces/context.js', () => ({
   }),
 }));
 
+// The Testco board has no project open, so there is none to pin (tests/krakenProjectPin.test.js has the boards that do).
+jest.unstable_mockModule('../server/censaiOrchestrator/planProject.js', () => ({
+  planProject: jest.fn(async () => null), reachableProject: jest.fn(async () => null),
+}));
+
 const REQUEST_ID = '0f0e0d0c-0b0a-4908-8706-050403020100';
 const rows = new Map();
 const mine = ({ workspaceId, userId }) => [...rows.values()].filter((row) => row.workspace_id === workspaceId && row.user_id === userId);

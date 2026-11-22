@@ -11,6 +11,8 @@ import pool from '../db.js';
 import { assertHostToolAllowed } from '../tools/rbac/hostOwnerOnly.js';
 import { ownerNamesSentence } from '../security/ownerNames.js';
 import { readPackageJson, resolveRunnerContext, runCommand } from '../tools/handlers/runnerUtils.js';
+import { runWithHere } from '../runner/hereForRun.js';
+import { ownerUnfenced } from '../workspaces/ownerTrust.js';
 import { scrubText } from '../selfFix/scrubText.js';
 import { agentName } from './shape.js';
 
@@ -134,7 +136,12 @@ const notHere = (line) => ({ ran: false, ok: false, blocked: false, line });
  * projects: where the agent's file tools wrote. expectScript: the test script
  * before the job (readTestScript).
  */
-export async function runProjectTests({
+/** runTestsHere, with its commands run here (not on a Docker-only runner) for the owner with Trust mode on. */
+export function runProjectTests(input) {
+  return runWithHere(() => ownerUnfenced(input?.context || {}, input?.agentId), () => runTestsHere(input));
+}
+
+async function runTestsHere({
   agentId, project = null, files = [], projects = [], shell = false, expectScript = null, signal = null,
   context = {}, db = pool, run = runCommand, now = Date.now, resolve = resolveRunnerContext, readPkg = readPackageJson,
 }) {

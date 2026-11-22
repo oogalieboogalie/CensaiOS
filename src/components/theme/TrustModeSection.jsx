@@ -24,7 +24,7 @@ export function TrustModeSection() {
       <SwitchRow
         label="Agents act without asking"
         hint={trust.board
-          ? 'On. Edits to files, the board, designs, PDFs and CAD parts happen without your OK.'
+          ? 'On. Edits to files, the board, designs, PDFs and CAD parts happen without your OK. So do commands, database changes and restarts, when you are this computer\'s owner.'
           : 'Off. Each change waits in Action Approvals until an owner or admin says OK.'}
         switchLabel="Trust mode"
         checked={trust.board}
@@ -47,9 +47,10 @@ export function TrustModeSection() {
         </SettingsRows>
       </SettingsGroup>
       <p className="hb-set-hint" data-testid="trust-mode-files">
-        Trust mode only skips the OK click. It gives no agent new tools or files. To let agents open files, open a project
-        from the top bar (only that project&apos;s files open). Every family agent can then save files in it,
-        with nothing to equip.
+        Every family agent has the tools for its role with nothing to equip: Nexus and Atlas the database, Foundation
+        Docker and mail, the builders commands, and everyone the web, GitHub, your calendar and sheets. To let agents open
+        files, open a project from the top bar (only that project&apos;s files open). Commands, the database, Docker and
+        saving files work only for this computer&apos;s owner.
       </p>
       {trust.ready && !trust.canChange ? <SettingsNote>{OWNER_ONLY}</SettingsNote> : null}
       <SettingsNote note={note} />

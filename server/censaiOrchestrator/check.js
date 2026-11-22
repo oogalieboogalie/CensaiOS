@@ -6,7 +6,7 @@
 // the agent really did comes from its tool calls, not its words: files it
 // changed, tests it ran, calls that failed.
 
-import { DOC_FILE, agentName, clip } from './shape.js';
+import { DOC_FILE, PR_WAITS, agentName, clip } from './shape.js';
 import { addTestsItem, checklistOf, checklistVerdict, reopenChecklist, setItem, tickCount, tickWords } from './checklist.js';
 import { parseItemReview, reviewMessages } from './prompts.js';
 
@@ -166,7 +166,25 @@ export async function checkAnswer({ job, answer, toolActions, deps }) {
     }));
   }
 
+  // Last: the pull request is opened only for work that checks out otherwise. Its checks are
+  // read later, while the job waits outside the runner (parked: runner.js, jobPr.js).
+  const onPr = items.filter((entry) => entry.how === 'pr');
+  let parked = null;
+  if (onPr.length) {
+    const rest = items.filter((entry) => entry.how !== 'pr');
+    if (rest.some((entry) => entry.state !== 'ticked')) {
+      await deps.change(() => onPr.forEach((item) => setItem(item, 'failed', PR_WAITS)));
+    } else {
+      await deps.change(() => onPr.forEach((item) => setItem(item, 'checking', 'Opening the pull request')));
+      const pr = await deps.openPr();
+      if (pr.open) parked = pr.pr;
+      await deps.change(() => onPr.forEach((item) => setItem(item, pr.open ? 'checking' : stateOf(pr.ok), pr.line)));
+      seen.push(pr.line);
+    }
+  }
+
   const { ticked, total } = tickCount(job);
+  if (parked) return { seen, verdict: { ok: null, items: [] }, parked };
   await deps.step(tickWords(job), ticked === total ? 'done' : 'bad', { settle: true });
   return { seen, verdict: checklistVerdict(job) };
 }

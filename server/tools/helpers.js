@@ -4,13 +4,15 @@ import { fileURLToPath } from 'url';
 import pool from '../db.js';
 import { getSubAgentById } from '../memory.js';
 import { getProject, getProjectByName, getProjectByRepoOrPath, listProjects, openProject } from '../workspaces.js';
-import { getSecret } from '../secrets.js';
+import { sendWithGithubKey } from '../github/credential.js';
 import { githubApiUrl } from '../github/apiUrl.js';
 import { resolveProjectForDriver } from '../workspaces/ownerProjectLookup.js';
+import { projectChoiceError, projectSourceKey } from '../workspaces/projectIdentity.js';
 import { refusePastWork } from '../workspaces/familyPast.js';
 import { noteToolFailure } from './toolsLog.js';
 import { refuseProjectsOffBoard } from './rbac/ownerOnlyReads.js';
 import { jobProjectFor } from './jobProject.js';
+import { hereWhenTrusted } from '../workspaces/ownerTrust.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // The same file the project routes keep (server/routes/projects/shared.js);
@@ -63,12 +65,27 @@ async function maybeOpenCurrentProject(agentId, projectName) {
 // often pass "owner/repo" for a project opened from a GitHub repo (stored
 // under just "repo"), so: its id, its name, the last `/`-segment, its repo or
 // path, then the project open on this computer when that is the one meant.
+//
+// Two projects can share a name (acme/shop and beta/shop, or a repo and a
+// folder). An id, a full repo or a folder is exact and wins; a bare name that
+// fits different projects throws the answer that names them, so the agent
+// asks again with the one it means instead of working in the wrong one.
 async function namedProject(agentId, projectName) {
-  let p = await getProject(projectName);
-  if (!p) p = await getProjectByName(agentId, projectName);
-  if (!p && projectName.includes('/')) p = await getProjectByName(agentId, projectName.split('/').pop());
+  // Its id is exact: nothing else is looked at.
+  const byId = await getProject(projectName);
+  if (byId) return byId;
+  let p = null;
+  const spelledOut = /[\\/]/.test(projectName);
   // Core projects are shared; owner only records who opened the row first.
-  if (!p) p = await getProjectByRepoOrPath(agentId, projectName);
+  if (spelledOut) p = await getProjectByRepoOrPath(agentId, projectName);
+  if (!p) p = await getProjectByName(agentId, projectName);
+  // "acme/shop" for a folder project called shop, never for some other owner's repo.
+  if (!p && projectName.includes('/')) p = await getProjectByName(agentId, projectName.split('/').pop(), { sameRepoAs: projectName });
+  if (!spelledOut) {
+    const byRepo = await getProjectByRepoOrPath(agentId, projectName);
+    if (p && byRepo && projectSourceKey(p) !== projectSourceKey(byRepo)) throw projectChoiceError(projectName, [p, byRepo]);
+    if (!p) p = byRepo;
+  }
   // The canvas can know a project the database has not been seeded with yet.
   if (!p) p = await maybeOpenCurrentProject(agentId, projectName);
   return p;
@@ -90,7 +107,7 @@ async function defaultProject(agentId) {
 async function noSuchProject(agentId, projectName) {
   const projects = await listProjects(agentId);
   const projectList = projects.length ? projects.map(x => `"${x.name}"${x.repo ? ` (${x.repo})` : x.path ? ` (${x.path})` : ''}`).join(', ') : 'none';
-  return `No shared project matching "${projectName}". Available projects: ${projectList}. Use open_project to add the project once; all core agents can use it after that.`;
+  return `No shared project matching "${projectName}". Available projects: ${projectList}. If it is one of these, call again with its repo, its folder or its id. To add a different one, use open_project with its repo (owner/name) or its folder; all core agents can use it after that.`;
 }
 
 // Resolve which project a tool call should operate against.
@@ -103,10 +120,22 @@ async function noSuchProject(agentId, projectName) {
 //   one they are bound to.
 // - The family's past is read only for every agent and every driver, the
 //   owner included (workspaces/familyPast.js).
-export async function resolveProjectForCall(agentId, projectName, context = {}) {
+/**
+ * The project a tool call works in. With Trust mode on and the computer's owner driving, a
+ * project kept on GitHub that is checked out here becomes the folder here (ownerTrust.js);
+ * `github: true` keeps the GitHub project for tools whose job is GitHub (pull requests, Jules).
+ */
+export async function resolveProjectForCall(agentId, projectName, context = {}, { github = false } = {}) {
   const found = await findProjectForCall(agentId, projectName, context);
   refusePastWork(found.project, context.requiredProjectPermission);
-  return found;
+  if (github || !found.project?.repo) return found;
+  // A sub-agent on its own branch works on GitHub on purpose: it opens a pull request after.
+  const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
+  if (sub?.github_branch) return found;
+  const here = await hereWhenTrusted(found.project, sub?.parent_id || agentId, context);
+  if (!here) return found;
+  refusePastWork(here, context.requiredProjectPermission);
+  return { ...found, project: here };
 }
 
 async function findProjectForCall(agentId, projectName, context) {
@@ -153,10 +182,9 @@ export async function resolveLocalProjectRoot(agentId, projectName, context = {}
 }
 
 export async function fetchGithub(endpoint, options = {}) {
-  const token = getSecret('GITHUB_TOKEN');
-  if (!token) throw new Error('GITHUB_TOKEN not configured in .env');
+  // The saved key of the person this tool call is made for, then GITHUB_TOKEN.
   const needsContentType = options.method && ['POST', 'PUT', 'PATCH'].includes(options.method.toUpperCase());
-  const res = await fetch(`${githubApiUrl()}${endpoint}`, {
+  const { res } = await sendWithGithubKey((token) => fetch(`${githubApiUrl()}${endpoint}`, {
     ...options,
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -165,7 +193,7 @@ export async function fetchGithub(endpoint, options = {}) {
       ...(needsContentType ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers || {})
     }
-  });
+  }));
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`GitHub API error ${res.status}: ${text}`);

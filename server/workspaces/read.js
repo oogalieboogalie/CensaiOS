@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { getFile as ghGetFile } from '../github.js';
+import { jobRefFor } from '../tools/jobProject.js';
 import {
   DEFAULT_READ_MAX_CHARS,
   clampReadWindow,
@@ -60,7 +61,7 @@ export function formatFileOutline(content, label, { maxEntries = 200 } = {}) {
 export async function projectRead(project, relPath, { branch, offset = 0, maxChars = DEFAULT_READ_MAX_CHARS } = {}) {
   let content;
   if (isGithubProject(project)) {
-    content = await ghGetFile(project.repo, relPath, branch);
+    content = await ghGetFile(project.repo, relPath, branch || jobRefFor(project.id));
     return formatReadChunk(content, `${project.repo}/${relPath}`, { offset, maxChars });
   }
   const abs = resolveInsideProject(project.path, relPath);
@@ -71,7 +72,7 @@ export async function projectRead(project, relPath, { branch, offset = 0, maxCha
 export async function projectFileOutline(project, relPath, { branch, maxEntries = 200 } = {}) {
   let content;
   if (isGithubProject(project)) {
-    content = await ghGetFile(project.repo, relPath, branch);
+    content = await ghGetFile(project.repo, relPath, branch || jobRefFor(project.id));
     return formatFileOutline(content, `${project.repo}/${relPath}`, { maxEntries });
   }
   const abs = resolveInsideProject(project.path, relPath);

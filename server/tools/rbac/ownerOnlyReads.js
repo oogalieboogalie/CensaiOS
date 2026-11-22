@@ -39,7 +39,8 @@ async function kindOf(project, rel) {
 // works in the projects and repos the board gave it
 // (server/workspaces/projectMemberships.js). Changing something is the
 // owner's alone everywhere (server/tools/rbac/hostOwnerOnly.js).
-export const GITHUB_OFF_BOARD = "Only this computer's owner's agents read GitHub with its key outside a board. Tell the person in plain words: I can read a GitHub repo for you in my chat on a board where that repo is open as a project.";
+// The words hold for someone who saved a GitHub key of their own too: the rule is about where, not whose key.
+export const GITHUB_OFF_BOARD = "Outside a board, only this computer's owner's agents read a GitHub repo by its name, whichever GitHub key is saved. Tell the person in plain words: I can read a GitHub repo for you in my chat on a board where that repo is open as a project.";
 export const PROJECT_OFF_BOARD = "Only this computer's owner's agents work in its projects outside a board. Tell the person in plain words: I can work in a project for you in my chat on a board where that project is open.";
 
 /** `words` for anyone but the owner, or null for the owner's agents; `feature` names the use in the refusal's log line. */

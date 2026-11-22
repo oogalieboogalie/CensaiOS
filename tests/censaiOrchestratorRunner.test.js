@@ -9,6 +9,7 @@ import {
 import { JOB_ROUNDS, normalizePlanInput } from '../server/censaiOrchestrator/shape.js';
 import { claimReport, insertPlan, savePlan } from '../server/censaiOrchestrator/store.js';
 import { onLogRecord } from '../server/logger.js';
+import { ownerUnfenced, runFenced } from '../server/workspaces/ownerTrust.js';
 
 const scope = { workspaceId: 'ws-1', userId: 7 };
 const editOf = (path) => ({ tool: 'project_edit', ok: true, args: { project: 'Homebase', path }, summary: { path } });
@@ -373,5 +374,41 @@ describe('stopping and restarts', () => {
     const db = { query: jest.fn(async () => ({ rows: [] })) };
     expect(await savePlan(db, { id: row.id, status: 'running', jobs: [] })).toBeNull();
     expect(db.query.mock.calls[0][0]).toMatch(/WHERE id = \$1 AND status IN \('queued', 'running'\)/);
+  });
+});
+
+// A plan waits when two already run, and is started by whichever finishes first. It must run in the
+// setting it was made in: a plan a board trigger's workflow made keeps the fence (ownerTrust.js),
+// and an owner's plan queued behind it does not pick the fence up.
+describe('a queued plan keeps the setting it was made in', () => {
+  const unfencedNow = () => ownerUnfenced({ workspaceId: 'ws-1' }, 'echo', { ownerDrives: async () => true, agentIsTrusted: async () => true });
+
+  test('a fenced plan started by an owner\'s finished plan stays fenced, and the other way round', async () => {
+    const release = {};
+    const seen = {};
+    const h = harness({
+      answer: async (input) => {
+        const job = /Your job: (.*)/.exec(input.messages[0].text)[1];
+        if (job.startsWith('Hold')) await new Promise((resolve) => { release[job] = resolve; });
+        seen[job] = await unfencedNow();
+        return { finalText: 'Done.' };
+      },
+    });
+    const plan = (job) => normalizePlanInput({ goal: job, project: null, jobs: [{ agent: 'echo', job, checklist: ['x'] }] });
+    const owners1 = await createPlan({ ...scope, ...plan('Hold one.') }, h.deps);
+    const owners2 = await createPlan({ ...scope, ...plan('Hold two.') }, h.deps);
+    // Both slots are busy: these two wait.
+    const fenced = await runFenced(() => createPlan({ ...scope, ...plan('From a trigger.') }, h.deps));
+    const owners3 = await createPlan({ ...scope, ...plan('From the owner.') }, h.deps);
+    while (!release['Hold one.'] || !release['Hold two.']) await new Promise((resolve) => setTimeout(resolve, 5));
+    // The owner's plans finish and start the waiting ones from their own setting.
+    release['Hold one.']();
+    release['Hold two.']();
+    // A waiting plan has no run to wait on until it starts, so wait for all four to finish.
+    for (let tries = 0; tries < 400 && Object.keys(seen).length < 4; tries += 1) await new Promise((resolve) => setTimeout(resolve, 5));
+    await Promise.all([owners1, owners2, fenced, owners3].map((row) => planSettled(row.id)));
+    expect(seen['From a trigger.']).toBe(false);
+    expect(seen['From the owner.']).toBe(true);
+    expect(seen['Hold one.']).toBe(true);
   });
 });

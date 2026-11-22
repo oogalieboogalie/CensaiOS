@@ -182,8 +182,12 @@ describe('CensaiHub Core Memory and Tool Logic', () => {
       expect(searchVectors).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({
         must: expect.arrayContaining([{ key: 'workspace_id', match: { value: 'workspace-a' } }]),
       }), 3);
-      expect(pool.query.mock.calls[1][0]).toContain('workspace_id = $2');
-      expect(pool.query.mock.calls[1][1]).toEqual([['semantic-1'], 'workspace-a']);
+      // What the meaning search found is read back under the same rule as
+      // the word search: this board, and the agent's own notes or shared ones.
+      expect(pool.query.mock.calls[1][0]).toMatch(
+        /m\.id = ANY\(\$3\) AND m\.workspace_id = \$1 AND \(m\.agent_id = \$2 OR m\.access_level = 'shared'\)/,
+      );
+      expect(pool.query.mock.calls[1][1]).toEqual(['workspace-a', 'atlas', ['semantic-1']]);
     });
 
     test('memory reads and writes fail closed without workspace scope', async () => {
@@ -220,7 +224,7 @@ describe('CensaiHub Core Memory and Tool Logic', () => {
       pool.query.mockResolvedValueOnce({ rows: [{ id: 'censai', name: 'Censai', tool_scopes: {} }] }); // getAgent query
 
       // The family baseline is intrinsic memory, messaging, receipts,
-      // sub-agent lifecycle, project reads and the two project save tools.
+      // sub-agent lifecycle, project reads and saves, and the lookups every role has.
       const tools = await filterToolsForAgent('censai');
       
       const toolNames = tools.map(t => t.function.name);
@@ -228,10 +232,11 @@ describe('CensaiHub Core Memory and Tool Logic', () => {
       expect(toolNames).toContain('message_to');
       expect(toolNames).toContain('create_sub_agent');
       expect(toolNames).toContain('project_read');
-      expect(toolNames).not.toContain('web_search');
+      expect(toolNames).toContain('web_search');
       expect(toolNames).toContain('project_write');
       expect(toolNames).toContain('project_edit');
-      expect(toolNames).not.toContain('run_tests');
+      expect(toolNames).toContain('run_tests');
+      expect(toolNames).not.toContain('terminal_run'); // Censai is not a builder
       expect(toolNames).not.toContain('container_status'); // ops tool not whitelisted for censai
     });
 
@@ -247,7 +252,8 @@ describe('CensaiHub Core Memory and Tool Logic', () => {
       expect(toolNames).toContain('create_sub_agent');
       expect(toolNames).toContain('run_tests');
       expect(toolNames).toContain('project_write');
-      expect(toolNames).not.toContain('web_search');
+      expect(toolNames).toContain('web_search');
+      expect(toolNames).toContain('terminal_run');
     });
   });
 

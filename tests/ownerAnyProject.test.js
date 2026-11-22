@@ -19,12 +19,17 @@ const GIVEN = { garden: 'work', library: 'read' };
 // One board has only the garden, one only the library to read, one has nothing.
 const [ONE, READING, BARE] = ['made-up-one-project-board', 'made-up-reading-board', 'made-up-bare-board'];
 const ON_BOARD = { [BOARD]: [['garden', true], ['library', false]], [ONE]: [['garden', true]], [READING]: [['library', false]], [BARE]: [] };
+// Trust mode, board-wide: off on the two boards with a read-only project unless a test turns it on.
+const TRUST = { [BOARD]: false, [READING]: false };
 
 const named = (id) => PROJECTS.find((p) => [p.id, p.name, p.path, p.repo].includes(id) || p.path.endsWith(`/${id}`));
 const db = {
   async query(sql, params = []) {
     const text = String(sql).replace(/\s+/g, ' ');
     if (text.includes('FROM users')) return { rows: ROLES[params[0]] ? [{ role: ROLES[params[0]] }] : [] };
+    if (text.includes('FROM workspace_agent_trust')) {
+      return { rows: params[0] in TRUST ? [{ agent_id: '*', trusted: TRUST[params[0]] }] : [] };
+    }
     if (text.includes('SELECT p.*, wap.permission')) {
       // Only Censai was given anything, and only on the first board.
       if (params[0] !== BOARD || params[1] !== 'censai') return { rows: [] };
@@ -84,7 +89,7 @@ test('a teammate is still refused a project the board never gave', async () => {
     .rejects.toMatchObject({ code: 'PROJECT_ACCESS_DENIED' });
 });
 
-test('a project the board gave to read only stays read only, for the owner too', async () => {
+test('with Trust mode off, a project the board gave to read only stays read only, for the owner too', async () => {
   expect((await ask('library', PAT, 'read')).id).toBe('library');
   await expect(ask('library', PAT, 'work')).rejects.toMatchObject({ readOnly: true });
   await expect(assertProjectForDriver(db, { workspaceId: BOARD, projectId: 'library', agentId: 'censai', requiredPermission: 'work' }, { userId: PAT }, cloud))
@@ -113,7 +118,7 @@ test('with several projects open on the board the owner is told their names, not
   await expect(askGenesis(BOARD, PAT)).rejects.toThrow('"made-up-garden", "made-up-library"');
 });
 
-test('a board with only a read-only project lets the owner read it there, not change it', async () => {
+test('with Trust mode off, a board with only a read-only project lets the owner read it there, not change it', async () => {
   expect((await askGenesis(READING, PAT, 'read')).id).toBe('library');
   await expect(askGenesis(READING, PAT, 'work')).rejects.toMatchObject({ readOnly: true });
 });
@@ -130,4 +135,29 @@ test('a failing owner check is not mistaken for "not the owner"', async () => {
   const broken = { query: async (sql, params) => (String(sql).includes('FROM users') ? Promise.reject(new Error('database is down')) : db.query(sql, params)) };
   await expect(resolveProjectForDriver(broken, { workspaceId: BOARD, agentId: 'censai', projectIdentifier: 'attic' }, { userId: PAT }, cloud))
     .rejects.toThrow('database is down');
+});
+
+// Trust mode on, on the owner's own computer: no walls for the owner's agents (server/workspaces/ownerTrust.js).
+describe('with Trust mode on', () => {
+  beforeEach(() => { TRUST[BOARD] = true; TRUST[READING] = true; });
+  afterEach(() => { TRUST[BOARD] = false; TRUST[READING] = false; });
+
+  test("the owner's agent changes a project the board gave it to read only", async () => {
+    expect((await ask('library', PAT, 'work')).id).toBe('library');
+    expect((await askGenesis(READING, PAT, 'work')).id).toBe('library');
+  });
+
+  test('a teammate is held to read only and to the board\'s list, whatever the switch says', async () => {
+    await expect(ask('library', SAM, 'work')).rejects.toMatchObject({ readOnly: true });
+    await expect(ask('attic', SAM)).rejects.toMatchObject({ code: 'PROJECT_ACCESS_DENIED' });
+    await expect(askGenesis(READING, SAM, 'work')).rejects.toMatchObject({ code: 'PROJECT_ACCESS_DENIED' });
+  });
+
+  test('trust turned off for one agent keeps that agent fenced', async () => {
+    const oneOff = { query: async (sql, params) => (String(sql).includes('FROM workspace_agent_trust')
+      ? { rows: [{ agent_id: '*', trusted: true }, { agent_id: 'censai', trusted: false }] }
+      : db.query(sql, params)) };
+    await expect(resolveProjectForDriver(oneOff, { workspaceId: BOARD, agentId: 'censai', projectIdentifier: 'library', requiredPermission: 'work' }, { userId: PAT }, cloud))
+      .rejects.toMatchObject({ readOnly: true });
+  });
 });

@@ -4,11 +4,11 @@ import { buildFamilyToolRegistry } from '../server/tools/familyRegistry.js';
 
 const effective = names => names.map(name => ({ type: 'function', function: { name } }));
 
-test('registry exposes only intrinsic and reviewed module tools with exact effective state', () => {
+test('registry shows intrinsic, role and module tools with exact effective state', () => {
   const writer = AGENT_CAPABILITY_MODULE_BY_ID['canvas-designer'];
   const registry = buildFamilyToolRegistry({
     agentId: 'censai',
-    effectiveTools: effective([...FAMILY_DEFAULT_TOOL_NAMES.censai, ...writer.toolNames]),
+    effectiveTools: effective(FAMILY_DEFAULT_TOOL_NAMES.censai),
     capabilities: [{ module_id: writer.id }],
     installedModuleIds: ['project-reader', 'canvas-designer'],
   });
@@ -17,7 +17,7 @@ test('registry exposes only intrinsic and reviewed module tools with exact effec
     status: 'active', source: 'intrinsic', risk: 'write', mode: 'autonomous_internal',
   });
   expect(registry.tools.find(tool => tool.name === 'canvas_update_design')).toMatchObject({
-    status: 'active', source: 'module', equipped: true, approvalRequired: true,
+    status: 'active', source: 'role', equipped: true, approvalRequired: true,
     mode: 'execute_with_approval', module: { id: 'canvas-designer' },
   });
   // The family saves project files by role; Trust mode decides if a save waits.
@@ -32,22 +32,27 @@ test('registry exposes only intrinsic and reviewed module tools with exact effec
     'postgres_query', 'terminal_run', 'restart_service', 'mailcow_add_mailbox', 'vex_run',
   ]) expect(names).not.toContain(unavailable);
   expect(registry.counts).toMatchObject({
-    active: FAMILY_DEFAULT_TOOL_NAMES.censai.length + writer.toolNames.length,
+    active: FAMILY_DEFAULT_TOOL_NAMES.censai.length,
     equippedModules: 1,
   });
 });
 
-test('reviewed tools stay unavailable until their package is installed', () => {
+test('a role tool is active with no package installed, and one that changes things is marked ask-first', () => {
   const registry = buildFamilyToolRegistry({
     agentId: 'censai', effectiveTools: effective(FAMILY_DEFAULT_TOOL_NAMES.censai),
     capabilities: [], installedModuleIds: [],
   });
-  // project_read and project_write are baseline; a design rewrite still needs its module package.
   expect(registry.tools.find(tool => tool.name === 'canvas_update_design')).toMatchObject({
-    status: 'install_required', source: 'module', equipped: false,
+    status: 'active', source: 'role', equipped: false, approvalRequired: true,
     module: { id: 'canvas-designer', packageInstalled: false },
   });
-  expect(registry.counts.installRequired).toBeGreaterThan(0);
+  expect(registry.tools.find(tool => tool.name === 'submit_pr')).toMatchObject({
+    status: 'active', source: 'role', approvalRequired: true, mode: 'ask_first', module: null,
+  });
+  expect(registry.tools.find(tool => tool.name === 'web_search')).toMatchObject({
+    status: 'active', source: 'role', approvalRequired: false,
+  });
+  expect(registry.counts.installRequired).toBe(0);
 });
 
 test('role orchestration is visible as active role policy, not a module grant', () => {

@@ -32,14 +32,15 @@ test('an agent outside the family still needs Project Writer equipped', async ()
   expect(await findApprovalGrant(equipped, { workspaceId: 'ws-1', agentId: 'sub-agent-1', toolName: 'project_write' })).toEqual(WRITER);
 });
 
-test('the only approval tools any agent has by role are the two save tools', () => {
+test('every family agent has every approval module\'s tools by role', () => {
   const byRole = [];
   for (const agent of FAMILY_AGENTS) {
     for (const module of AGENT_CAPABILITY_MODULES.filter((entry) => entry.mode === 'execute_with_approval')) {
       for (const toolName of module.toolNames) if (familyToolPolicy(agent.id, toolName)) byRole.push(`${agent.id}:${toolName}`);
     }
   }
-  expect(byRole.sort()).toEqual(FAMILY_AGENTS.flatMap(({ id }) => [`${id}:project_edit`, `${id}:project_write`]).sort());
+  const approvalTools = AGENT_CAPABILITY_MODULES.filter((entry) => entry.mode === 'execute_with_approval').flatMap((entry) => entry.toolNames);
+  expect(byRole.sort()).toEqual(FAMILY_AGENTS.flatMap(({ id }) => approvalTools.map((toolName) => `${id}:${toolName}`)).sort());
   expect(FAMILY.filter((id) => !familyToolPolicy(id, 'project_write'))).toEqual([]);
 });
 

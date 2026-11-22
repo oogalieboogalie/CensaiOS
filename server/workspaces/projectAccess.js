@@ -2,6 +2,7 @@ import {
   ProjectMembershipError,
   assertAgentProjectAccess,
 } from './projectMemberships.js';
+import { pickProjectFor } from './projectIdentity.js';
 
 function requiredText(value, label) {
   const result = String(value || '').trim();
@@ -33,10 +34,11 @@ export async function resolveAuthorizedWorkspaceProject(db, {
         CASE WHEN $3::text IS NULL AND (wap.source_kind = 'task' OR wap.source_id LIKE 'agent-task:%') THEN 1 ELSE 0 END,
         CASE WHEN p.id = $3 THEN 0 WHEN p.path = $3 OR p.repo = $3 THEN 1 ELSE 2 END,
         CASE wap.permission WHEN 'work' THEN 0 ELSE 1 END, wap.updated_at DESC
-      LIMIT 1`,
+      LIMIT 50`,
     [requiredText(workspaceId, 'workspaceId'), requiredText(agentId, 'agentId'), identifier]
   );
-  const project = rows[0];
+  // A name that fits two different projects on this board is a question back, never a guess.
+  const project = identifier ? pickProjectFor(rows, identifier) : rows[0];
   if (!project) {
     throw new ProjectMembershipError(
       'This agent is not authorized for that project in the current workspace.',

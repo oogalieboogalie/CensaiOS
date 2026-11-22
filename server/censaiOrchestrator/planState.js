@@ -14,6 +14,7 @@ export function planFromRow(row) {
     userId: row.user_id,
     goal: row.goal,
     project: row.project || null,
+    pin: row.pin || null,
     status: row.status,
     summary: row.summary || null,
     jobs: (Array.isArray(row.jobs) ? row.jobs : []).map((job) => ({
@@ -42,7 +43,8 @@ export function cutOff(job, why) {
 export function markStopped(plan) {
   plan.status = 'stopped';
   for (const job of plan.jobs) {
-    if (job.status === 'working' || job.status === 'checking') {
+    // waiting_checks / sendback: a fix waiting for its pull request's checks, or about to try again (parkedChecks.js).
+    if (['working', 'checking', 'waiting_checks', 'sendback'].includes(job.status)) {
       cutOff(job, 'you stopped the plan');
       job.status = 'stopped';
       settleStep(job, 'Stopped, as you asked', 'note');

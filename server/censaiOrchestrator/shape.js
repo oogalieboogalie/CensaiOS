@@ -30,6 +30,10 @@ const TESTS_CLAIM = /\btests?\b.*\bpass(?:es|ing)?\b/i;
 const NOT_A_CLAIM = /\b(?:not|never|why|whether|if|fail\w*)\b|n't/i;
 const claimsTestsPass = (text) => TESTS_CLAIM.test(text) && !NOT_A_CLAIM.test(text);
 export const TESTS_ITEM = 'The project\'s tests pass';
+// A fix on a project kept on GitHub is not tested on this computer: its pull request's checks are its tests.
+export const PR_ITEM = 'The pull request\'s checks on GitHub pass';
+// The pull-request item while other items are not checked off: its checks were not read on this try.
+export const PR_WAITS = 'Waits for the other items on the list: the pull request is opened and its checks read once they are checked off.';
 export const ANSWER_ITEM = 'The job is done as asked';
 // Files no test reads, so changing only these brings no test run.
 export const DOC_FILE = /\.(?:md|mdx|markdown|txt|rst|adoc|png|jpe?g|gif|webp|ico)$/i;
@@ -108,7 +112,7 @@ function checklistItem(raw, where) {
  * item). Code work always carries the project's tests, and every list has at
  * least one item read against the reply, so the job itself is checked too.
  */
-function normalizeChecklist(entry, n, kind) {
+function normalizeChecklist(entry, n, kind, onGithub = false) {
   const raw = listOf(entry?.checklist);
   const given = raw.length ? raw : [entry?.done_when ?? entry?.doneWhen].filter(Boolean);
   if (!given.length) {
@@ -121,13 +125,20 @@ function normalizeChecklist(entry, n, kind) {
     if (!items.some((seen) => seen.text.toLowerCase() === item.text.toLowerCase())) items.push(item);
   }
   const wantsTests = kind === 'code' || items.some((item) => item.how === 'answer' && claimsTestsPass(item.text));
-  if (wantsTests && !items.some((item) => item.how === 'tests')) items.push({ text: TESTS_ITEM, how: 'tests', auto: true });
+  if (onGithub && kind === 'code') {
+    // Its tests run on GitHub, against its pull request: a "tests pass" item is checked there.
+    for (const item of items) if (item.how === 'tests') item.how = 'pr';
+    if (!items.some((item) => item.how === 'pr')) items.push({ text: PR_ITEM, how: 'pr', auto: true });
+  } else if (wantsTests && !items.some((item) => item.how === 'tests')) {
+    items.push({ text: TESTS_ITEM, how: 'tests', auto: true });
+  }
   if (!items.some((item) => item.how === 'answer')) items.unshift({ text: ANSWER_ITEM, how: 'answer', auto: true });
   return items.map((item, index) => ({ n: index + 1, ...item, state: 'open', line: '' }));
 }
 
-/** Check Censai's hand_off_jobs arguments. Throws PlanInputError with words for Censai. */
+/** Check Censai's hand_off_jobs arguments. Throws PlanInputError. onGithub (Kraken only): code jobs are tested by their pull request. */
 export function normalizePlanInput(args = {}) {
+  const onGithub = args.onGithub === true;
   const goal = clip(args.goal, MAX_GOAL);
   if (!goal) throw new PlanInputError('Say the goal in one plain sentence (goal).');
   const raw = listOf(args.jobs);
@@ -150,7 +161,7 @@ export function normalizePlanInput(args = {}) {
       title: jobTitle(task),
       task,
       kind,
-      checklist: normalizeChecklist(entry, index + 1, kind),
+      checklist: normalizeChecklist(entry, index + 1, kind, onGithub),
       status: 'waiting',
       attempts: 0,
       answer: '',
@@ -164,7 +175,7 @@ export function normalizePlanInput(args = {}) {
   const looksForFile = jobs.find((job) => job.checklist.some((item) => item.how === 'file'));
   if (looksForFile && !project) throw new PlanInputError(`Job ${looksForFile.n}: a file check needs the project the file is in (project).`);
   // The tests run in the project's own folder, never in a guessed one.
-  const runsTests = jobs.find((job) => job.checklist.some((item) => item.how === 'tests'));
+  const runsTests = jobs.find((job) => job.checklist.some((item) => item.how === 'tests' || item.how === 'pr'));
   if (runsTests && !project) {
     const what = runsTests.kind === 'code' ? 'code work' : 'running the tests';
     throw new PlanInputError(`Job ${runsTests.n}: ${what} needs the project it is in (project), so I know where to run its tests.`);
