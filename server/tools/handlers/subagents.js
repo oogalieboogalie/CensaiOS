@@ -18,7 +18,7 @@ import { REVIEW_SPECIALTY_PROMPTS } from './subagentPrompts.js';
 import { resolveModelDefaults } from './subagentModelDefaults.js';
 import { handleDataBoxTool } from './dataBox.js';
 import pool from '../../db.js';
-import { resolveAuthorizedWorkspaceProject } from '../../workspaces/projectAccess.js';
+import { resolveProjectForDriver } from '../../workspaces/ownerProjectLookup.js';
 import { userRole } from '../../security/systemAdmin.js';
 import { assertSubAgentToolScopes } from '../rbac/subagentToolScopes.js';
 import { subAgentWriteRefusal } from '../rbac/subagentWriter.js';
@@ -32,13 +32,16 @@ export async function handleSubagentTool(agentId, name, args, context = {}) {
       let project = null;
       if (args.project) {
         try {
-          project = await resolveAuthorizedWorkspaceProject(pool, {
+          project = await resolveProjectForDriver(pool, {
             workspaceId: context.workspaceId,
             agentId,
             projectIdentifier: args.project,
             requiredPermission: 'read',
-          });
-        } catch {
+          }, context);
+        } catch (error) {
+          // A name that fits more than one project: the answer names them, so the agent picks one
+          // instead of opening yet another project with that name.
+          if (error?.code === 'PROJECT_NAME_NEEDED') return error.message;
           return `No authorized project named "${args.project}" found. Use open_project first.`;
         }
       }
@@ -168,12 +171,12 @@ export async function handleSubagentTool(agentId, name, args, context = {}) {
       let projectId = match.project_id || null;
       let projectName = args.project || null;
       if (args.project) {
-        const project = await resolveAuthorizedWorkspaceProject(pool, {
+        const project = await resolveProjectForDriver(pool, {
           workspaceId: context.workspaceId,
           agentId,
           projectIdentifier: args.project,
           requiredPermission: 'read',
-        });
+        }, context);
         projectId = project.id;
         projectName = project.name;
       }

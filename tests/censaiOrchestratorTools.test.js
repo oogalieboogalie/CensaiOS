@@ -59,7 +59,7 @@ describe('the tools themselves', () => {
   test('a bad plan comes back to Censai with what to fix', async () => {
     const db = fakePlanDb();
     expect(await call(db, 'hand_off_jobs', { goal: 'g', jobs: [{ agent: 'echo', job: 'Fix the bug.', kind: 'code', checklist: ['x'] }] }))
-      .toMatch(/^Error: Job 1: Echo can read project files but not change them/);
+      .toMatch(/^Error: Job 1: code work needs the project it is in/);
     expect(await call(db, 'hand_off_jobs', { goal: 'g', jobs: [{ agent: 'atlas', job: 'Look.' }] })).toMatch(/^Error: Job 1: give a checklist/);
   });
 
@@ -78,11 +78,9 @@ describe('the tools themselves', () => {
   });
 
   test('a code job needs its agent to save files here without waiting, or it could never be checked off', async () => {
+    // Nothing is equipped on anyone: a builder's saves need no module (server/approvals/grants.js).
     const unequipped = fakePlanDb({ writers: [] });
-    expect(await call(unequipped, 'hand_off_jobs', goodPlan)).toBe('Error: Nexus cannot save files on this board yet: '
-      + 'Project Writer is not equipped on Nexus. Job 1 changes code, so it could never be checked off. Tell the person to equip it '
-      + '(Nexus\'s Exo-Skeleton Builder, Exo-Modules tab, Install and equip on Project Writer) and ask again, '
-      + 'or hand out a job that looks into it and writes up what to change instead.');
+    expect(await call(unequipped, 'hand_off_jobs', goodPlan)).toContain('Handed off; it has only started.');
     const waits = /^Error: Nexus's file saves for this person wait for an OK in Action Approvals .* so job 1 could not be checked off while it waits\./;
     expect(await call(fakePlanDb({ trust: [{ agent_id: '*', trusted: false }] }), 'hand_off_jobs', goodPlan)).toMatch(waits);
     expect(await call(fakePlanDb({ trust: [{ agent_id: 'nexus', trusted: false }] }), 'hand_off_jobs', goodPlan)).toMatch(waits);
@@ -91,9 +89,10 @@ describe('the tools themselves', () => {
     // One agent's own trust switch can turn it on where the board's is off.
     const ownSwitch = fakePlanDb({ trust: [{ agent_id: '*', trusted: false }, { agent_id: 'nexus', trusted: true }] });
     expect(await call(ownSwitch, 'hand_off_jobs', goodPlan)).toContain('Handed off; it has only started.');
-    // Looking into it needs no saves.
-    expect(await call(unequipped, 'hand_off_jobs', lookIntoIt)).toContain('Handed off; it has only started.');
-    expect(unequipped.plans.size).toBe(1);
+    // Looking into it needs no saves, so it goes ahead with trust mode off too.
+    const off = fakePlanDb({ trust: [{ agent_id: '*', trusted: false }] });
+    expect(await call(off, 'hand_off_jobs', lookIntoIt)).toContain('Handed off; it has only started.');
+    expect(off.plans.size).toBe(1);
   });
 
   test('a job that needs the tests is refused where they cannot run on this computer', async () => {
@@ -103,7 +102,8 @@ describe('the tools themselves', () => {
       'Error: The project "Homebase" lives on GitHub, so I can\'t run its tests on this computer. Job 1 needs the project\'s tests, '
       + 'so it could never be checked off. Hand out jobs that look into it and write up what to change instead, and tell the person why.',
     );
-    expect(onGitHub).toHaveBeenCalledWith({ agentId: 'nexus', project: 'Homebase', context });
+    // The folder is looked up as Censai, whose access to the project the family member works with.
+    expect(onGitHub).toHaveBeenCalledWith({ agentId: 'censai', project: 'Homebase', context });
     expect(db.plans.size).toBe(0);
     // Code work names its project, so Censai knows where to run the tests.
     expect(await call(db, 'hand_off_jobs', { ...goodPlan, project: undefined }))

@@ -1,14 +1,17 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { changeCount } from '../lib/appUpdate/api.js';
-import { STAGE_TEXT, describeWork, panelStage, stillOpen } from '../lib/appUpdate/trayFlow.js';
+import { LOOK_STEPS, STAGE_TEXT, SWAP_STEPS, describeWork, lookStep, panelStage, stillOpen } from '../lib/appUpdate/trayFlow.js';
+import { versionLabel } from '../lib/appUpdate/version.js';
 import { useTrayUpdate } from '../lib/appUpdate/useTrayUpdate.js';
+import { UPDATE_MOTION, UpdateSteps } from './UpdateSteps.jsx';
 
 const box = {
   position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 1210,
   width: 'min(440px, calc(100vw - 32px))', padding: 14, display: 'grid', gap: 8,
   background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 'var(--radius-xl)',
   boxShadow: 'var(--elevation-2)', fontSize: 'var(--text-sm)', color: 'var(--ink)',
+  animation: 'update-panel-in var(--dur-slow) var(--ease-standard)',
 };
 const soft = { color: 'var(--ink-soft)' };
 const list = { margin: 0, paddingLeft: 18, color: 'var(--ink-soft)', fontSize: 'var(--text-xs)', maxHeight: 140, overflow: 'auto' };
@@ -65,7 +68,7 @@ export function TrayUpdatePanel() {
 
   if (phase === 'restarting') {
     title = 'Updating censaiOS…';
-    body = <span style={soft}>{busyWait ? 'Waiting for the agents to finish their task, then updating. The board comes back by itself.' : 'This takes a few seconds. The board comes back by itself.'}</span>;
+    body = <UpdateSteps steps={SWAP_STEPS} at={flow.away ? 1 : 0} since={flow.since} text={busyWait ? 'Waiting for the agents to finish their task, then updating. The board comes back by itself.' : undefined} />;
   } else if (phase === 'waiting') {
     title = 'Waiting for the crew';
     body = (
@@ -95,7 +98,9 @@ export function TrayUpdatePanel() {
     const waitable = stage === 'up-to-date' && work.changes.length > 0;
     body = (
       <>
-        <span style={soft}>{STAGE_TEXT[stage]}{waitable ? ' Want it to update by itself when they land?' : ''}</span>
+        {stage === 'checking'
+          ? <UpdateSteps steps={LOOK_STEPS} at={lookStep(flow.looking)} since={flow.since} />
+          : <span style={soft}>{STAGE_TEXT[stage]}{stage === 'up-to-date' && status?.version ? ` This computer runs ${versionLabel(status.version)}.` : ''}{waitable ? ' Want it to update by itself when they land?' : ''}</span>}
         {stage !== 'checking' && <Work work={work} />}
       </>
     );
@@ -110,10 +115,11 @@ export function TrayUpdatePanel() {
     const more = work.changes.length > 0;
     body = (
       <>
+        <UpdateSteps steps={LOOK_STEPS} at={LOOK_STEPS.length} />
         <span style={soft}>
           {status?.inUse
-            ? 'Update ready, restarts when you are done'
-            : `A newer censaiOS is ready${count ? ` with ${count}` : ''}.${more ? ' Update now, or wait for the ones the crew is still finishing?' : ''}`}
+            ? `${ready?.version ? `${versionLabel(ready.version)} is ready` : 'Update ready'}, restarts when you are done`
+            : `${ready?.version ? versionLabel(ready.version) : 'A newer censaiOS'} is ready${count ? ` with ${count}` : ''}.${more ? ' Update now, or wait for the ones the crew is still finishing?' : ''}`}
         </span>
         {showNew && changes.length > 0 && <ul style={list}>{changes.map((c, i) => <li key={i}>{c}</li>)}</ul>}
         <Work work={work} />
@@ -129,7 +135,8 @@ export function TrayUpdatePanel() {
   }
 
   return (
-    <div role="dialog" aria-label="Update censaiOS" style={box} data-testid="tray-update-panel" data-stage={phase === 'shown' ? stage : phase}>
+    <div role="dialog" aria-label="Update censaiOS" style={box} data-update-motion data-testid="tray-update-panel" data-stage={phase === 'shown' ? stage : phase}>
+      <style>{UPDATE_MOTION}</style>
       <strong>{title}</strong>
       {body}
       {actions}

@@ -1,6 +1,8 @@
 import pool from '../../db.js';
 import { LRUCache } from 'lru-cache';
 import { readJournals } from '../journal.js';
+import { CO_OCCURRENCE_REPEATED } from '../associationStrength.js';
+import { recentPlaces, topNotesSql } from '../scoring.js';
 import { FAMILY_BLUEPRINT_AGENT_IDS } from '../../agents/familyBlueprint.js';
 import { createLogger } from '../../logger.js';
 import { safeErrorCode } from '../../security/errorCode.js';
@@ -49,16 +51,12 @@ export async function loadAgentContext(agentId, opts = {}) {
       [agentId, hoursBack, workspaceId]
     ),
     optionalMemoryRows('top_memories',
-      `SELECT content, memory_type, importance, emotional_weight FROM memories
-       WHERE agent_id = $1 AND workspace_id = $3
-       ORDER BY (importance * 0.6 + emotional_weight * 0.4) DESC, last_accessed DESC LIMIT $2`,
-      [agentId, memoryLimit, workspaceId]
+      topNotesSql('agent_id = $1 AND workspace_id = $3'),
+      [agentId, memoryLimit, workspaceId, recentPlaces(memoryLimit)]
     ),
     optionalMemoryRows('shared_memories',
-      `SELECT content, memory_type, importance, emotional_weight FROM memories
-       WHERE agent_id != $1 AND access_level = 'shared' AND workspace_id = $3
-       ORDER BY (importance * 0.6 + emotional_weight * 0.4) DESC, last_accessed DESC LIMIT $2`,
-      [agentId, memoryLimit, workspaceId]
+      topNotesSql("agent_id != $1 AND access_level = 'shared' AND workspace_id = $3"),
+      [agentId, memoryLimit, workspaceId, recentPlaces(memoryLimit)]
     ),
     optionalMemoryRows('compression_memories',
       `SELECT memory_title, memory_content, emotional_weight FROM compression_memories
@@ -88,10 +86,21 @@ export async function loadAgentContext(agentId, opts = {}) {
       [agentId, workspaceId]
     ),
     optionalMemoryRows('association_web',
-      `SELECT concept_a, concept_b, strength, association_type FROM association_web
-       WHERE agent_id = $1 AND workspace_id = $2 AND bidirectional = TRUE
+      // Each pair once (it is stored in both directions), never a thing linked
+      // to itself, and a link made only because two words sat side by side in
+      // a single note stays out until a second note repeats it.
+      `SELECT concept_a, concept_b, strength, association_type FROM (
+         SELECT DISTINCT ON (LEAST(lower(concept_a), lower(concept_b)), GREATEST(lower(concept_a), lower(concept_b)))
+                concept_a, concept_b, strength, association_type, access_count
+           FROM association_web
+          WHERE agent_id = $1 AND workspace_id = $2 AND bidirectional = TRUE
+            AND lower(concept_a) <> lower(concept_b)
+            AND (association_type IS DISTINCT FROM 'co-occurrence' OR strength > $3)
+          ORDER BY LEAST(lower(concept_a), lower(concept_b)), GREATEST(lower(concept_a), lower(concept_b)),
+                   strength DESC, access_count DESC
+       ) pairs
        ORDER BY strength DESC, access_count DESC LIMIT 10`,
-      [agentId, workspaceId]
+      [agentId, workspaceId, CO_OCCURRENCE_REPEATED]
     ),
   ]);
 

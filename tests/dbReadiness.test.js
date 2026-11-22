@@ -120,6 +120,9 @@ jest.unstable_mockModule('../server/policy/schema.js', () => ({
 jest.unstable_mockModule('../server/workspaces/schema.js', () => ({
   ensureWorkspaceSchema: jest.fn(async () => {}),
 }));
+jest.unstable_mockModule('../server/workspaces/projectIdentitySchema.js', () => ({
+  ensureProjectIdentitySchema: jest.fn(async () => {}),
+}));
 jest.unstable_mockModule('../server/scheduler/schema.js', () => ({
   ensureScheduleTenancySchema: jest.fn(async () => {}),
 }));

@@ -32,7 +32,7 @@
 .gdv-divider { align-self: stretch; width: 1px; background: var(--danger); }
 .gdv-pane { min-width: 0; border: 1px solid var(--hairline-soft); border-radius: var(--radius-lg); background: var(--layer-well); box-shadow: var(--well-shadow); overflow-x: auto; transition: border-color var(--dur-fast) var(--ease-standard); }
 .gdv-pane:focus-within { border-color: var(--accent-line); }
-.gdv-pane-label { position: sticky; left: 0; display: block; padding: var(--space-1-5) var(--space-3); background: var(--layer-bar); color: var(--ink-soft); font-family: var(--font-label); text-transform: var(--label-case); font-size: var(--text-xs); border-bottom: 1px solid var(--hairline); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gdv-pane-label { position: sticky; left: 0; display: block; padding: var(--space-1-5) var(--space-3); background: linear-gradient(var(--layer-bar), var(--layer-bar)), var(--surface); color: var(--ink-soft); font-family: var(--font-label); text-transform: var(--label-case); font-size: var(--text-xs); border-bottom: 1px solid var(--hairline); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gdv-pane-body { min-width: max-content; padding: var(--space-1-5) 0 var(--space-2-5); }
 .gdv-cell { display: flex; white-space: pre; padding: 0 var(--space-3) 0 0; min-height: 1.6em; }
 .gdv-n { width: var(--space-10); flex-shrink: 0; padding-right: var(--space-2-5); text-align: right; color: var(--ink-faint); opacity: 0.6; user-select: none; }

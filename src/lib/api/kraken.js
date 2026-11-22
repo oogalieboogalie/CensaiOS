@@ -17,14 +17,21 @@ function post(path, body) {
   }).then(read);
 }
 
-/** Who would get each finding, without starting anything: { title, arms, dropped }. */
-export function previewKraken({ workspaceId, report, mode, project }) {
-  return post('/api/kraken/preview', { workspaceId, report, mode, project });
+/**
+ * Who would get each finding, and in which project, without starting anything:
+ * { title, arms, dropped, pin }. projectId: the id of the project the name stands for, when the
+ * window knows it. pin: the exact project found (which one, where its code is, which branch).
+ */
+export function previewKraken({ workspaceId, report, mode, project, projectId }) {
+  return post('/api/kraken/preview', { workspaceId, report, mode, project, projectId });
 }
 
-/** Hand the report out. only: the finding numbers to keep. Returns the request. */
-export async function releaseKraken({ workspaceId, report, mode, project, only }) {
-  return (await post('/api/kraken/requests', { workspaceId, report, mode, project, only })).request;
+/**
+ * Hand the report out in the project the look pinned. pin: the look's pin, sent back as it came;
+ * the server checks it still names the same project. only: the finding numbers to keep. Returns the request.
+ */
+export async function releaseKraken({ workspaceId, report, mode, project, pin, only }) {
+  return (await post('/api/kraken/requests', { workspaceId, report, mode, project, pin, only })).request;
 }
 
 /** The person's requests on this board, newest first. Looking also hands out arms that were waiting. */

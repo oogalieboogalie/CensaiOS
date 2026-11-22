@@ -9,7 +9,7 @@ import { listWorkspaceAgentProjects } from './projectMemberships.js';
 // board never shared does not read as "none is open". Trust mode is often
 // blamed, so say what it does and what actually opens files.
 const log = createLogger('tools');
-const TRUST = 'Trust mode does not change this: it only lets agents use the tools they already have without waiting for an OK.';
+const TRUST = 'If this is your own computer, turning Trust mode on for me in Settings lifts this: then I can work in any folder here.';
 export const NO_PROJECT_FILES = `Tell the person in plain words: I can only open files in a project that is open on this board, and none is open for me yet. Open a project from the top bar while my chat window is on the board, then ask again. ${TRUST}`;
 const NAMED = 6;
 

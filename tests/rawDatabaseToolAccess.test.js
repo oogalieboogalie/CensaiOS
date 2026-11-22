@@ -107,18 +107,26 @@ test('cloud execution fails closed for missing or foreign context before the han
   expect(rawHandler).not.toHaveBeenCalled();
 });
 
-test.each(['admin', 'operator'])(
-  'DB-verified %s still cannot widen a canonical workspace through legacy scopes',
-  async (role) => {
-    databaseRole = role;
-    const result = await executeTool('nexus', 'postgres_query', {
-      sql: 'SELECT 1',
-    }, context({ userRole: 'user' }));
+test('a DB-verified operator still cannot widen a canonical workspace through legacy scopes', async () => {
+  databaseRole = 'operator';
+  const result = await executeTool('nexus', 'postgres_query', {
+    sql: 'SELECT 1',
+  }, context({ userRole: 'user' }));
 
-    expect(result).toMatch(/^Error: TOOL_NOT_AVAILABLE:/);
-    expect(rawHandler).not.toHaveBeenCalled();
-  },
-);
+  expect(result).toMatch(/^Error: TOOL_NOT_AVAILABLE:/);
+  expect(rawHandler).not.toHaveBeenCalled();
+});
+
+test('Nexus has the database by role for the computer\'s owner, but a plain board member\'s ask does not run on its own', async () => {
+  databaseRole = 'admin';
+  const names = (await filterToolsForAgent('nexus', context())).map(tool => tool.function.name);
+  expect(names).toEqual(expect.arrayContaining(['postgres_query', 'postgres_exec_file']));
+
+  // The owner is only a member of this board, so the query waits for its owner or admin.
+  const result = await executeTool('nexus', 'postgres_query', { sql: 'SELECT 1' }, context({ userRole: 'user' }));
+  expect(result).not.toMatch(/TOOL_NOT_AVAILABLE/);
+  expect(rawHandler).not.toHaveBeenCalled();
+});
 
 test('cloud authorization-store failure is a stable failed result before the handler', async () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
@@ -147,7 +155,6 @@ test('tool filtering removes custom-scoped raw tools for ordinary cloud users', 
   const names = (await filterToolsForAgent('nexus', context()))
     .map(tool => tool.function.name);
 
-  expect(names).not.toContain('web_search');
   expect(names).not.toContain('postgres_query');
   expect(names).not.toContain('postgres_exec_file');
 });

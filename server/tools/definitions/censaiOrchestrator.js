@@ -17,7 +17,9 @@ export const censaiPlanTools = [
         'Hand the jobs of a plan to the family so the work runs in the background while you keep chatting.',
         'Use it when the person asks for real work: fixing a bug, building or changing something, looking into something, writing something.',
         `Think the plan through first, then give 1 to ${MAX_JOBS} jobs in order, each for the family member who fits best.`,
-        `Code and file changes go to ${nameList(FILE_CHANGERS)}; ${nameList(READERS, 'and')} can look things up, read files and write answers.`,
+        READERS.length
+          ? `Code and file changes go to ${nameList(FILE_CHANGERS)}; ${nameList(READERS, 'and')} can look things up, read files and write answers.`
+          : `Any of ${nameList(FILE_CHANGERS, 'and')} can change code and files, look things up and write answers.`,
         'Give each job a checklist: the things that must be true before it counts as done. You check off each item yourself before the person hears about it:',
         '"tests" runs the project\'s own tests, "file" looks for a file that must exist, "answer" reads the reply against the item.',
         `Code and file jobs always get "${TESTS_ITEM}". A job is done only when every item is checked off.`,
@@ -28,7 +30,7 @@ export const censaiPlanTools = [
         type: 'object',
         properties: {
           goal: { type: 'string', description: 'What the person wants, in one plain sentence.' },
-          project: { type: 'string', description: 'The project the work is in, as project_list names it. Code work and test runs need it, so the tests run where the work is.' },
+          project: { type: 'string', description: 'The project the work is in, as project_list names it. Leave it out for your own project on this board (the one your window is set to). The tests run where the work is.' },
           jobs: {
             type: 'array',
             description: `The jobs in order (1 to ${MAX_JOBS}). Each later job sees the checked answers of the ones before it.`,

@@ -123,4 +123,17 @@ describe('ReliabilityWindow Run a scan', () => {
     });
     expect(screen.getByRole('status')).toHaveTextContent('Open a project first, then run a scan.');
   });
+
+  test('a check that is good when true gets a tick, a problem gets a warning', async () => {
+    global.fetch = jest.fn().mockImplementation(() => jsonResponse([{
+      id: 'scan-2', file_path: 'src/shop.js', score: 90, created_at: new Date().toISOString(),
+      heuristics: { has_tests: true, is_monolith: true, high_complexity: false },
+    }]));
+    await act(async () => {
+      render(<ReliabilityWindow win={{ id: 'rel1', kind: 'reliability' }} onUpdate={jest.fn()} />);
+    });
+    expect(screen.getByText('has tests').nextSibling).toHaveTextContent('✅ Yes');
+    expect(screen.getByText('is monolith').nextSibling).toHaveTextContent('⚠️ Yes');
+    expect(screen.getByText('high complexity').nextSibling).toHaveTextContent('✅ No');
+  });
 });

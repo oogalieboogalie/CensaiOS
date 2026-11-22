@@ -29,6 +29,13 @@ describe('parseKeywords', () => {
   test('pulls the meaning words out of the drawing example', () => {
     expect(parseKeywords('Can we create a website to sell flowers?')).toEqual(['create', 'website', 'sell', 'flowers']);
   });
+  test('a message with no subject in it searches for nothing', () => {
+    // Typed fast, no apostrophes: none of these words names a thing to look up.
+    expect(parseKeywords('ive been working on this for months and thought stuff was taken care of')).toEqual(['care']);
+    expect(parseKeywords('I’ve said it before, don\'t do that every time')).toEqual([]);
+    expect(parseKeywords('im not getting memory for my Atlas agent and its getting random stuff in its prompt'))
+      .toEqual(['memory', 'atlas', 'agent', 'prompt']);
+  });
   test('stems so "flowers" finds "flower", and matches only at word starts', () => {
     expect(stem('flowers')).toBe('flower');
     expect(stem('selling')).toBe('sell');

@@ -58,6 +58,7 @@ function team({ hold = false } = {}) {
       return say('=== FILE: index.html\n<p>Tip: $3</p>\n=== END\nNOTES: page made');
     }
     if (label === 'echo') return say('{"verdict":"OK","summary":"Works."}');
+    if (label === 'architect' && prompt.startsWith('A wave of jobs just finished')) return say('{"jobs":[]}');
     if (label === 'architect' && prompt.startsWith('Global post-project')) return say('{"agents":[],"learned":"Keep it simple."}');
     throw new Error(`unexpected turn for ${label}`);
   };

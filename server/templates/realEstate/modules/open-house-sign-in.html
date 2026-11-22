@@ -23,7 +23,7 @@
 <script>
   let visitors = censai.storage.get('visitors', []);
   const $ = (id) => document.getElementById(id);
-  const esc = (t) => { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; };
+  const esc = (t) => { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
   $('property').textContent = censai.storage.get('property', '14 Alder Way');
   function isHot(v) { return v.agent !== 'yes' && v.timeline === '0-3 months'; }
   function render() {

@@ -52,7 +52,8 @@ describe('GitHub window merge desk', () => {
     const calls = mockFetch({ prs: [pr(7), pr(8, { conflicts: true, green: false })] });
     render(<Harness initial={{ id: 'w', state: { repo: 'o/r' } }} />);
     await screen.findByText('PR 7');
-    expect(screen.getByText(/Merge all green \(1\)/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Merge all green (1)' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Fix conflicts' })).toBeTruthy();
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Merge' })); });
     await waitFor(() => expect(screen.getByText('Recently merged')).toBeTruthy());

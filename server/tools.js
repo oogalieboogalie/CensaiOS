@@ -1,9 +1,13 @@
 import { TOOL_REGISTRY } from './tools/handlers/index.js';
 import { createLogger } from './logger.js';
+import { safeErrorCode } from './security/errorCode.js';
 import { initializeDynamicTools } from './tools/dynamicRegistry.js';
 import { initializeMcpTools, shutdownMcpTools } from './tools/mcpClient.js';
 import pool from './db.js';
-import { assertAgentRepoAccess } from './workspaces/projectMemberships.js';
+import { assertRepoForDriver } from './workspaces/ownerProjects.js';
+import { ownerUnfenced } from './workspaces/ownerTrust.js';
+import { runWithHere } from './runner/hereForRun.js';
+import { runAsGithubPerson } from './github/credential.js';
 import { getSubAgentById } from './memory.js';
 import { safeToolLogMetadata } from './operational-intelligence/tracePrivacy.js';
 import { authorizeToolInvocation } from './tools/rbac/runtimeAccess.js';
@@ -15,6 +19,7 @@ import { assertHostToolAllowed } from './tools/rbac/hostOwnerOnly.js';
 import { offBoardGithubRead } from './tools/rbac/ownerOnlyReads.js';
 import { projectRefusalWords } from './workspaces/projectRefusalWords.js';
 import { protectedTarget } from './tools/rbac/protectedFiles.js';
+import { codeJobRefusal } from './tools/jobProject.js';
 
 export { TOOL_DEFINITIONS, filterToolsForAgent, listToolCatalog } from './tools/definitions.js';
 export { initializeDynamicTools, initializeMcpTools, shutdownMcpTools };
@@ -59,6 +64,9 @@ function securityTripwire(agentId, name, args) {
 }
 
 async function executeRegisteredTool(agentId, name, args, context) {
+  // A Kraken fix's agent changes files only through the project tools, on the fix's own branch.
+  const confined = codeJobRefusal(agentId, name);
+  if (confined) return confined;
   const handler = TOOL_REGISTRY[name];
   if (!handler) {
     log.warn('unknown tool requested', { agentId, name });
@@ -73,21 +81,40 @@ async function executeRegisteredTool(agentId, name, args, context) {
     const requiredProjectPermission = PROJECT_WORK_TOOLS.has(name) ? 'work' : 'read';
     if (context.workspaceId && DIRECT_REPO_TOOLS.has(name)) {
       const sub = await getSubAgentById(agentId, context);
-      await assertAgentRepoAccess(pool, {
+      const owner = sub?.parent_id || agentId;
+      await assertRepoForDriver(pool, {
         workspaceId: context.workspaceId,
         repo: args?.repo,
-        agentId: sub?.parent_id || agentId,
+        agentId: owner,
         requiredPermission: requiredProjectPermission,
+      }, context).catch(async (err) => {
+        // A repo given to read only stops everyone but the owner's agents with Trust mode on.
+        if (err?.code !== 'PROJECT_ACCESS_DENIED' || !err.readOnly) throw err;
+        let lifted = false;
+        try {
+          lifted = await ownerUnfenced(context, owner);
+        } catch (lookupError) {
+          log.warn('could not read trust mode for a read-only repo', { agentId, code: safeErrorCode(lookupError) });
+        }
+        if (!lifted) throw err;
       });
     } else if (DIRECT_REPO_TOOLS.has(name)) {
-      // Off a board no repo is shared, so only the owner's agents use this computer's GitHub key.
+      // Off a board no repo is shared, so only the owner's agents read a repo by its name there,
+      // with this computer's GitHub key or a key of their own (the words say so: GITHUB_OFF_BOARD).
       const refused = await offBoardGithubRead(context, { feature: `agent tool ${name} off a board` });
       if (refused) return `Error: ${refused}`;
     }
-    const result = await handler(agentId, name, args, {
+    // The owner's call with Trust mode on runs its commands here, not on a Docker-only runner.
+    const here = async () => {
+      const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
+      return ownerUnfenced(context, sub?.parent_id || agentId);
+    };
+    // A GitHub call this tool makes uses the saved key of the person it works for (github/credential.js).
+    // The board's and the owner's rules above have run, so this computer's key may stand in, as it always did.
+    const result = await runWithHere(here, () => runAsGithubPerson({ userId: context.userId, computerKey: true }, () => handler(agentId, name, args, {
       ...context,
       requiredProjectPermission,
-    });
+    })));
     const resultLength = typeof result === 'string' ? result.length : undefined;
     log.info('tool ok', { agentId, name, ms: done(), resultLength });
     return result;
@@ -110,6 +137,9 @@ export async function executeTool(agentId, name, args, context = {}) {
   if (unoffered) return unoffered;
   const blocked = securityTripwire(agentId, name, args);
   if (blocked) return blocked;
+  // Refused during a Kraken fix before any approval card is raised for it.
+  const confined = codeJobRefusal(agentId, name);
+  if (confined) return confined;
   try {
     await assertFamilyToolAvailable(agentId, name, context);
     // Refuse a teammate before an approval card ever reaches the owner.

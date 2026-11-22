@@ -156,6 +156,32 @@ export function WindowStyleMenu({ win, theme, onUpdate, onClose, colorMenuRef })
             </div>
           </div>
 
+          {win.kind === 'chat' && (
+            <div style={{ display: 'grid', gap: 4 }}>
+              <label htmlFor="window-chat-style" style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-soft)' }}>
+                Chat bubbles
+              </label>
+              <select
+                id="window-chat-style"
+                value={win.chatStyle === 'blurred' ? 'blurred' : ''}
+                onChange={(e) => onUpdate({ chatStyle: e.target.value || undefined })}
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--hairline)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '4px 6px',
+                  fontSize: 'var(--text-xs)',
+                  color: 'var(--ink)',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                <option value="">Standard</option>
+                <option value="blurred">Blurred</option>
+              </select>
+            </div>
+          )}
+
           <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-xs)', cursor: 'pointer' }}>
             <span style={{ color: 'var(--ink-soft)' }} title="Hide frame, background, and shadow until hover">Frameless</span>
             <input

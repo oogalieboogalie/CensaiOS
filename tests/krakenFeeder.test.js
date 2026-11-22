@@ -31,6 +31,7 @@ jest.unstable_mockModule('../server/kraken/store.js', () => ({
 const { feed, feedEveryone, stopRequest, KRAKEN_SLOTS } = await import('../server/kraken/feeder.js');
 const { onPlanSettled } = await import('../server/censaiOrchestrator/runner.js');
 const { saveRequest } = await import('../server/kraken/store.js');
+const { PlanInputError } = await import('../server/censaiOrchestrator/shape.js');
 const whenPlanSettles = onPlanSettled.mock.calls[0][0];
 const { buildArms } = await import('../server/kraken/arms.js');
 
@@ -103,15 +104,38 @@ describe('kraken feeder', () => {
     expect(deps.createPlan).toHaveBeenCalledTimes(4);
   });
 
-  test('a fix that could never be checked off here goes out as a write-up, with the reason', async () => {
+  // Was: "goes out as a write-up, with the reason". A fix the person asked for is never turned
+  // into a write-up now: it stays a fix, shown as blocked, and goes out once the way is clear.
+  test('a fix that could never be checked off here stays a fix, blocked with the reason, and is tried again on the next look', async () => {
     const [arm] = buildArms([{ n: 1, severity: 'P0', title: 'The api route has no timeout', body: 'server', doneWhen: [], files: [] }], { mode: 'fix', project: 'testco-shop' });
     requests.set('r1', { id: 'r1', project: 'testco-shop', mode: 'fix', status: 'open', arms: [arm] });
     deps.handOffGap.mockResolvedValue('Error: Atlas cannot save files on this board yet: Project Writer is not equipped on Atlas. Job 1 changes code.');
     await feed(PAT, deps);
     const saved = requests.get('r1').arms[0];
-    expect([saved.status, saved.kind]).toEqual(['handed', 'answer']);
-    expect(saved.note).toBe('Atlas cannot save files on this board yet: Project Writer is not equipped on Atlas.');
-    expect(deps.createPlan.mock.calls[0][0].jobs[0].kind).toBe('answer');
+    expect([saved.status, saved.kind]).toEqual(['blocked', 'code']);
+    expect(saved.why).toBe('Atlas cannot save files on this board yet: Project Writer is not equipped on Atlas.');
+    expect(saved.fix).toMatch(/checked again each time you look/);
+    expect(deps.createPlan).not.toHaveBeenCalled();
+    expect(requests.get('r1').status).toBe('open');
+
+    deps.handOffGap.mockResolvedValue(null);
+    await feed(PAT, deps);
+    expect([requests.get('r1').arms[0].status, requests.get('r1').arms[0].why]).toEqual(['handed', '']);
+    expect(deps.createPlan.mock.calls[0][0].jobs[0].kind).toBe('code');
+  });
+
+  test('someone who can only look at the board: their fix is blocked, not downgraded', async () => {
+    const [arm] = buildArms([{ n: 1, severity: 'P0', title: 'The api route has no timeout', body: 'server', doneWhen: [], files: [] }], { mode: 'fix', project: 'testco-shop' });
+    requests.set('r1', { id: 'r1', project: 'testco-shop', mode: 'fix', status: 'open', arms: [arm] });
+    deps.requireMember.mockRejectedValue(Object.assign(new Error('Workspace access denied'), { statusCode: 403 }));
+    await feed(PAT, deps);
+    expect(requests.get('r1').arms[0]).toEqual(expect.objectContaining({ status: 'blocked', kind: 'code', why: 'You can look at this board but not change its project.' }));
+  });
+
+  test('a job that does not read as a plan is stuck, as before', async () => {
+    deps.createPlan.mockRejectedValueOnce(new PlanInputError('Job 1: that is not a job.'));
+    await feed(PAT, deps);
+    expect(requests.get('r1').arms[0]).toEqual(expect.objectContaining({ status: 'stuck', result: 'Job 1: that is not a job.' }));
   });
 
   test('stopping stops the plans that are out and never starts the rest', async () => {
@@ -132,13 +156,22 @@ describe('kraken feeder', () => {
     expect(requests.get('r1').arms[0].result).toBe('Found and written up.');
   });
 
-  test('a save that fails after a hand-out stops that plan, so the arm never goes out twice', async () => {
+  // Was: the plan was made first, and a failed save stopped it. An arm is now saved as going
+  // out BEFORE its plan is made, so a save that fails means no plan was made at all.
+  test('a save that fails before a hand-out makes no plan, so the arm never goes out twice', async () => {
     saveRequest.mockRejectedValueOnce(new Error('database blip'));
     await expect(feed(PAT, deps)).rejects.toThrow('database blip');
-    expect(plans.get('plan-1').status).toBe('stopped');
+    expect(deps.createPlan).not.toHaveBeenCalled();
     expect(armStates()[0]).toBe('waiting');
     await feed(PAT, deps);
     expect([...plans.values()].filter((plan) => plan.status === 'running')).toHaveLength(2);
+  });
+
+  test('a request stopped just as an arm went out: the plan just made is stopped', async () => {
+    saveRequest.mockImplementationOnce(async () => ({})).mockImplementationOnce(async () => null);
+    await feed(PAT, deps);
+    expect(deps.createPlan).toHaveBeenCalledTimes(1);
+    expect(deps.stopPlan).toHaveBeenCalledTimes(1);
   });
 
   test('a start of the app sends waiting arms out with no window open, and the feeder listens for settled plans', async () => {

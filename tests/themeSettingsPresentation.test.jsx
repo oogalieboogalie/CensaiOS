@@ -57,7 +57,7 @@ describe('appearance settings presentation', () => {
   test('uses the real canvas as the preview and hides catalog noise', () => {
     render(<ThemeAppearanceContent panel={createPanel()} />);
 
-    expect(screen.getByText(/editing the live canvas/i)).toBeInTheDocument();
+    expect(screen.getByText(/Every change shows on the board right away/)).toBeInTheDocument();
     expect(screen.queryByText('Live Preview')).not.toBeInTheDocument();
 
     for (const id of CURATED_MOOD_IDS) {

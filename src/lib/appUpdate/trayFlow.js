@@ -32,7 +32,7 @@ export function lookedSince(status, askedAt) {
 
 /**
  * Which screen the panel shows:
- * checking | docker-off | build-failed | blocked | side-branch | up-to-date | ready
+ * checking | docker-off | build-failed | blocked | side-branch | download-failed | up-to-date | ready
  */
 export function panelStage(status, askedAt) {
   if (!lookedSince(status, askedAt)) return 'checking';
@@ -43,7 +43,7 @@ export function panelStage(status, askedAt) {
 }
 
 /** What the updater found when no update can come in by itself. */
-const STOPPED = ['docker-off', 'build-failed', 'blocked', 'side-branch'];
+const STOPPED = ['docker-off', 'build-failed', 'blocked', 'side-branch', 'download-failed'];
 
 /** True while updates cannot reach this PC at all: the app says so without being asked. */
 export const updatesPaused = (status) => !status?.ready && ['blocked', 'side-branch'].includes(status?.checked?.result);
@@ -54,8 +54,39 @@ export const STAGE_TEXT = {
   'build-failed': 'The newest censaiOS did not build, so you stay on this one. The crew can see why in the update log.',
   blocked: 'This PC has its own changes that GitHub does not have, so censaiOS cannot update by itself. Nothing was lost. The crew can see what is in the way in the update log.',
   'side-branch': 'This PC is on a side copy of censaiOS, not the main one, so it is not getting updates. Nothing was lost. Ask the crew to bring it back onto the main line.',
+  'download-failed': 'censaiOS could not download from GitHub, so it cannot tell whether a newer one is out. Check this computer is online, then try again. If it keeps happening, the crew can see why in the update log.',
   'up-to-date': 'censaiOS is up to date.',
 };
+
+/**
+ * The steps a look goes through, in order. The updater names the one it is on
+ * (status.step); the panel draws them as a row and says the current one in words.
+ */
+export const LOOK_STEPS = [
+  { id: 'looking', label: 'Look', text: 'Looking for a newer censaiOS…' },
+  { id: 'downloading', label: 'Download', text: 'A newer censaiOS is out. Downloading it…' },
+  { id: 'building', label: 'Build', text: 'Building it. This is the long part and can take a few minutes. You can keep working.' },
+  { id: 'ready', label: 'Ready', text: '' },
+];
+
+/** The two steps of putting a built update in. */
+export const SWAP_STEPS = [
+  { id: 'swapping', label: 'Put it in', text: 'Putting the new censaiOS in. This takes a few seconds.' },
+  { id: 'returning', label: 'Come back', text: 'Waiting for censaiOS to come back. The board reloads by itself.' },
+];
+
+/** Where a look is: the updater's own word for it, or the first step until it says. */
+export function lookStep(status) {
+  const at = LOOK_STEPS.findIndex((step) => step.id === status?.step);
+  return at < 0 ? 0 : at;
+}
+
+/** "40 s", "2 min 05 s": how long a step has been going. */
+export function elapsedText(ms) {
+  const seconds = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  return minutes ? `${minutes} min ${String(seconds % 60).padStart(2, '0')} s` : `${seconds} s`;
+}
 
 /** Open-change numbers from a saved "wait for them" choice still open now. */
 export function stillOpen(waitFor, inFlight) {

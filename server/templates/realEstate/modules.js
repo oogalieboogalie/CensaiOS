@@ -1,4 +1,4 @@
-// Spec 7: the five modules a Real Estate Team board opens with. They are
+// Spec 7: the six modules a Real Estate Team board opens with. They are
 // sealed modules with a manifest v3 label (docs/modules/manifest-v3.md):
 // sandboxed HTML that saves to the board and names the tools an agent can
 // press, written with the module generator's format and polished by hand. Each file opens with a header
@@ -16,7 +16,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export const REAL_ESTATE_MODULES_DIR = path.join(here, 'modules');
 
 export const REAL_ESTATE_MODULE_IDS = Object.freeze([
-  'deal-pipeline', 'showing-schedule', 'open-house-sign-in', 'commission-calculator', 'cma-sheet',
+  'deal-pipeline', 'showing-schedule', 'open-house-sign-in', 'commission-calculator', 'cma-sheet', 'cold-leads',
 ]);
 
 const HEADER = /^\s*<!--\s*module\s+([\s\S]*?)-->\s*/;

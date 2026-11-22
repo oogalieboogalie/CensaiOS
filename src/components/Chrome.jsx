@@ -10,6 +10,7 @@ import { RecentsPanel } from './chrome/RecentsPanel.jsx';
 import { useEscapeDismiss } from '../lib/useEscapeDismiss.js';
 import { GLASS_HOST, glossButton, glossContainer } from '../lib/theme/gloss.js';
 import { STATUS_TRAY_ID } from './status/SystemStatusWidget.jsx';
+import { useAppVersion, versionLabel } from '../lib/appUpdate/version.js';
 
 function formatTopClock(d) {
   const day = d.toLocaleDateString(undefined, { weekday: 'short' });
@@ -30,6 +31,7 @@ export function Chrome({
   const [folded, setFolded] = React.useState(false);
   const [showFiles, setShowFiles] = React.useState(false);
   const [now, setNow] = React.useState(() => formatTopClock(new Date()));
+  const version = useAppVersion();
   const idleTimer = React.useRef(null);
   useEscapeDismiss(showFiles, () => setShowFiles(false));
 
@@ -129,7 +131,7 @@ export function Chrome({
         </div>
       </div>
       {projectName && <div data-present-hide style={{ position: 'fixed', top: 14, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none', zIndex: 5, fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', color: 'var(--ink-faint)', opacity: 0.55 }}>
-        {(projectName.toLowerCase() === 'homebase' ? 'Censai' : projectName)} · {now}
+        {(projectName.toLowerCase() === 'homebase' ? 'Censai' : projectName)} · {now}{version && <span data-testid="app-version"> · {versionLabel(version)}</span>}
       </div>}
     </>
   );

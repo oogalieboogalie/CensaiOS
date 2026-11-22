@@ -16,6 +16,16 @@ import {
 import { getFamilyBlueprintAgent } from '../../agents/familyBlueprint.js';
 import { getMessageThreadRoot } from '../../agent-wakeups/store.js';
 import { MAX_THREAD_WAKES, WAKE_SUPPRESSED_DESCRIPTIONS } from '../../agent-wakeups/threadGuards.js';
+import { missingPastLinks } from '../../workspaces/familyPast.js';
+
+// A memory may point back at the family's past with past:// links
+// (workspaces/familyPast.js). It is saved either way; a link that names
+// nothing in the past is pointed out so the agent can fix it.
+function pastLinkFootnote(content) {
+  const missing = missingPastLinks(content);
+  if (missing.length === 0) return '';
+  return ` Note: nothing in the family's past at ${missing.join(', ')}. Check the path with project_list past://homebase-db and save it again.`;
+}
 
 function requireFamilyMessageAgent(value) {
   const agent = getFamilyBlueprintAgent(value);
@@ -41,11 +51,11 @@ export async function handleMemoryTool(agentId, name, args, context = {}) {
   switch (name) {
     case 'remember': {
       await storeMemory(agentId, args.content, 'observation', { ...context, source: 'self' });
-      return `Saved to memory: "${args.content}"`;
+      return `Saved to memory: "${args.content}"${pastLinkFootnote(args.content)}`;
     }
     case 'remember_important': {
       await storeMemory(agentId, args.content, 'fact', { ...context, importance: 0.95, source: 'self', compressionSafe: true });
-      return `Saved critical memory: "${args.content}"`;
+      return `Saved critical memory: "${args.content}"${pastLinkFootnote(args.content)}`;
     }
     case 'journal': {
       await writeJournal(agentId, args.content, 'reflection', context);

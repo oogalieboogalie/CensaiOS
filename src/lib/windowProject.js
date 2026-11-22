@@ -1,5 +1,3 @@
-import { isPointInRect } from './canvasMath.js';
-
 // Multi-project board: every project-aware window carries its own project.
 //
 // The board default (top-left project menu, store `currentProject`) is only
@@ -74,8 +72,13 @@ export function windowProject(win, boardDefault = null) {
   return boardDefault || null;
 }
 
+// The window's centre is inside the group's box. Written out here rather than
+// taken from canvasMath.js, which loads the agent list: this file is also used
+// by every board save (src/lib/projectPrewarm.js) and should stay that light.
 function insideGroup(win, group) {
-  return isPointInRect(win.x + win.w / 2, win.y + win.h / 2, group.x, group.y, group.w, group.h);
+  const cx = win.x + win.w / 2;
+  const cy = win.y + win.h / 2;
+  return cx >= group.x && cx <= group.x + group.w && cy >= group.y && cy <= group.y + group.h;
 }
 
 /**

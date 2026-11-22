@@ -1,16 +1,14 @@
-/* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
-import { ThemePanelCard } from './ThemeControls.jsx';
 import { api } from '../../lib/api.js';
 import { useWorkspaceStore } from '../../lib/store.js';
 import { FAMILY_AGENTS } from '../../data/family-agents.js';
-
-const muted = { fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', margin: 0, lineHeight: 1.5 };
+import { OWNER_ONLY, SettingsNote, SettingsRows, SettingsSection, SwitchRow, useSavedNote } from './settingsKit.jsx';
 
 /** Settings > Agents: which agents may post a short note to the Inbox on their own (diagram 17). */
 export function SpeakUpSection() {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
   const [state, setState] = React.useState({ agents: {}, canChange: false, ready: false, saving: false, error: '' });
+  const note = useSavedNote(state.saving, state.error);
 
   React.useEffect(() => {
     let alive = true;
@@ -33,22 +31,19 @@ export function SpeakUpSection() {
 
   const disabled = !state.ready || !state.canChange || state.saving;
   return (
-    <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 8 }} data-testid="speak-up-section">
-      <div style={{ fontWeight: 650 }}>Speak up</div>
-      <p style={muted}>
-        An agent that is on can post one short note to your Inbox by itself when its scheduled check finds
-        something worth telling you. At most one note an hour. Every agent starts off. If you set up the Jules phone ping, your own boards' notes reach your phone too.
-      </p>
-      {FAMILY_AGENTS.map(agent => (
-        <label key={agent.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
-          cursor: disabled ? 'default' : 'pointer' }}>
-          <span>{agent.name}</span>
-          <input type="checkbox" role="switch" aria-label={`Speak up for ${agent.name}`} disabled={disabled}
-            checked={Boolean(state.agents[agent.id])} onChange={event => toggle(agent.id, event.target.checked)} />
-        </label>
-      ))}
-      {state.ready && !state.canChange && <p style={muted}>Only the board's owner or an admin can change this.</p>}
-      {state.error && <p role="alert" style={{ ...muted, color: 'var(--danger)' }}>{state.error}</p>}
-    </ThemePanelCard>
+    <SettingsSection
+      title="Speak up"
+      hint="An agent that is on can post one short note to your Inbox when its scheduled check finds something worth telling you. At most one note an hour. Every agent starts off. With the Jules phone ping set up, notes from your own boards reach your phone too."
+      data-testid="speak-up-section"
+    >
+      <SettingsRows>
+        {FAMILY_AGENTS.map(agent => (
+          <SwitchRow key={agent.id} label={agent.name} switchLabel={`Speak up for ${agent.name}`} disabled={disabled}
+            checked={Boolean(state.agents[agent.id])} onChange={(on) => toggle(agent.id, on)} />
+        ))}
+      </SettingsRows>
+      {state.ready && !state.canChange ? <SettingsNote>{OWNER_ONLY}</SettingsNote> : null}
+      <SettingsNote note={note} />
+    </SettingsSection>
   );
 }

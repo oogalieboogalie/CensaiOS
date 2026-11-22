@@ -6,6 +6,7 @@ import { agentName, clip } from './shape.js';
 
 function howChecked(item) {
   if (item.how === 'tests') return ' (Censai runs the project\'s tests)';
+  if (item.how === 'pr') return ' (your changes go on your job\'s own branch on GitHub; Censai opens the pull request from it if you did not, and waits for its checks)';
   return item.how === 'file' ? ` (Censai looks for ${item.path})` : '';
 }
 
@@ -136,7 +137,16 @@ function sentence(text) {
 }
 
 /** The one line the person reads. done: the model's sentence (or ours); otherwise always ours. */
+// Said after the result line, whatever the model wrote, when no check ran on a fix's pull request.
+const NO_CHECKS_DONE = 'Done, but no checks ran on its pull request, so nothing tested it.';
+const noChecksRan = (plan) => plan.jobs.some((job) => (job.checklist || []).some((item) => item.checks === 'none'));
+
 export function summaryLine(plan, modelSentence = '') {
+  const line = resultLine(plan, modelSentence);
+  return plan.status === 'done' && noChecksRan(plan) ? `${line} ${NO_CHECKS_DONE}` : line;
+}
+
+function resultLine(plan, modelSentence) {
   if (plan.status === 'done') {
     const said = plain(String(modelSentence || '').split(/\r?\n/).find((line) => line.trim()) || '');
     const items = plan.jobs.reduce((sum, job) => sum + (job.checklist || []).length, 0);

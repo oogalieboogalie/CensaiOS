@@ -134,9 +134,40 @@ test('sub-agent calls never enter the canonical gate; with Trust mode off their 
   expect(db.connect).not.toHaveBeenCalled();
 });
 
-test('canonical approval tools cannot fall back to unscoped execution', async () => {
+test('a family agent\'s file save runs in a chat that is on no board, where there is nothing to wait in', async () => {
+  for (const agentId of ['Atlas', 'echo', 'censai', 'foundation', 'guardian']) {
+    for (const toolName of ['project_write', 'project_edit']) {
+      await expect(requestToolApprovalIfRequired({}, {
+        agentId, toolName, args: {}, context: { userId: 7 },
+      })).resolves.toEqual({ required: false });
+    }
+  }
+  // The same for a role tool that asks first on a board.
   await expect(requestToolApprovalIfRequired({}, {
-    agentId: 'censai', toolName: 'project_write', args: {}, context: {},
-  })).rejects.toMatchObject({ code: 'TOOL_APPROVAL_SCOPE_REQUIRED', statusCode: 403 });
+    agentId: 'atlas', toolName: 'terminal_run', args: {}, context: { userId: 7 },
+  })).resolves.toEqual({ required: false });
   expect(findApprovalGrant).not.toHaveBeenCalled();
+});
+
+test('Trust mode off: a role tool that asks first waits under "role"; one that only looks runs', async () => {
+  findApprovalGrant.mockResolvedValue({ moduleId: 'role', capabilityId: 'role.terminal_run', mode: 'execute_with_approval' });
+  const { db, client } = database();
+  await expect(requestToolApprovalIfRequired(db, {
+    agentId: 'atlas', toolName: 'terminal_run', args: { command: 'ls' },
+    context: { workspaceId: 'workspace-a', userId: 7 },
+  })).resolves.toMatchObject({ required: true, created: true });
+  const insert = client.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO workspace_tool_approvals'));
+  expect(insert[1].slice(0, 4)).toEqual(['workspace-a', 'atlas', 'role', 'terminal_run']);
+  // "role" has no package to lock.
+  expect(client.query.mock.calls.some(([, params]) => params?.[0] == null && params?.length === 1)).toBe(false);
+
+  await expect(requestToolApprovalIfRequired({ connect: jest.fn() }, {
+    agentId: 'atlas', toolName: 'web_search', args: { query: 'x' },
+    context: { workspaceId: 'workspace-a', userId: 7 },
+  })).resolves.toEqual({ required: false });
+  // Echo does not have commands by role, so nothing is asked for her here (the tool gate refuses first).
+  await expect(requestToolApprovalIfRequired({ connect: jest.fn() }, {
+    agentId: 'echo', toolName: 'terminal_run', args: {},
+    context: { workspaceId: 'workspace-a', userId: 7 },
+  })).resolves.toEqual({ required: false });
 });

@@ -5,10 +5,15 @@
 // here: a shared port answers only the one key it was shared with.
 //
 //   genkey --client [--force] --key=<file>      -> prints nodekey:<64 hex>
-//   serve --json --key=new --allow=nodekey:<hex> 80:<port>
+//   serve --json --key=new [--allow=nodekey:<hex>] <port>
 //                                               -> prints {"listenAddr":"tc…"}
-//   forward --key=<file> <address> 0:80
-//                                               -> prints "# forwarding 127.0.0.1:<port> -> remote 80"
+//   forward --key=<file> <address> 0:<port>
+//                                               -> prints "# forwarding 127.0.0.1:<local> -> remote localhost:<port>"
+//   forward --bind=0.0.0.0 --key=<file> <address> <local>:<port>
+//                                               -> prints "# forwarding [::]:<local> -> remote localhost:<port>"
+//
+// Like the real one (v0.7.0), it refuses "80:<port>": a port is shared under
+// its own number, and reaching any other number gets no answer.
 //
 // Where the real tailcat finds the other side across the internet, this one
 // looks in a folder both sides share (TAILCAT_STANDIN_DIR). It encrypts
@@ -49,9 +54,10 @@ if (command === 'genkey') {
 }
 
 if (command === 'serve') {
-  const mapping = /^80:(\d+)$/.exec(rest[0] || '');
-  if (!mapping || flags.key !== 'new' || typeof flags.allow !== 'string') fail('usage: serve --json --key=new --allow=nodekey:<hex> 80:<port>');
-  const allow = flags.allow.split(',').map((key) => key.replace(/^nodekey:/, ''));
+  const mapping = /^(\d+)$/.exec(rest[0] || '');
+  if (!mapping || flags.key !== 'new') fail(`invalid port or service to serve: "${rest[0] || ''}"`);
+  // Like the real one: with no --allow, every key gets through.
+  const allow = typeof flags.allow === 'string' ? flags.allow.split(',').map((key) => key.replace(/^nodekey:/, '')) : null;
   const address = `tc${crypto.randomBytes(30).toString('base64url')}`;
   fs.writeFileSync(entry(address), JSON.stringify({ allow, port: Number(mapping[1]) }));
   const tidy = () => { try { fs.unlinkSync(entry(address)); } catch { /* gone */ } };
@@ -62,7 +68,9 @@ if (command === 'serve') {
   setInterval(() => {}, 60_000);
 } else if (command === 'forward') {
   const [address, mapping] = rest;
-  if (!address || mapping !== '0:80' || typeof flags.key !== 'string') fail('usage: forward --key=<file> <address> 0:80');
+  const remote = /^(\d+):(\d+)$/.exec(mapping || '');
+  const open = flags.bind === '0.0.0.0';
+  if (!address || !remote || typeof flags.key !== 'string') fail('usage: forward [--bind=0.0.0.0] --key=<file> <address> <local>:<port>');
   let me = '';
   try { me = JSON.parse(fs.readFileSync(flags.key, 'utf8')).public; } catch { fail(`cannot read key ${flags.key}`); }
   const server = net.createServer((socket) => {
@@ -70,7 +78,7 @@ if (command === 'serve') {
     try { target = JSON.parse(fs.readFileSync(entry(address), 'utf8')); } catch { target = null; }
     socket.on('error', () => {});
     // The real tailcat ignores a key that is not allowed: no answer at all.
-    if (!target || !target.allow.includes(me)) {
+    if (!target || (target.allow && !target.allow.includes(me)) || target.port !== Number(remote[2])) {
       setTimeout(() => socket.destroy(), 60_000).unref();
       return;
     }
@@ -78,8 +86,10 @@ if (command === 'serve') {
     upstream.on('error', () => socket.destroy());
     socket.pipe(upstream).pipe(socket);
   });
-  server.listen(0, '127.0.0.1', () => {
-    process.stderr.write(`# forwarding 127.0.0.1:${server.address().port} -> remote 80\n`);
+  // Like the real one, a port that is taken ends it at once.
+  server.on('error', (error) => fail(`listen: ${error.message}`));
+  server.listen(Number(remote[1]), open ? '0.0.0.0' : '127.0.0.1', () => {
+    process.stderr.write(`# forwarding ${open ? '[::]' : '127.0.0.1'}:${server.address().port} -> remote localhost:${remote[2]}\n`);
   });
   for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => process.exit(0));
   // A test can have the tunnel die by itself: TAILCAT_STANDIN_FORWARD_LIFE_MS.

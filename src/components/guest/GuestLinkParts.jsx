@@ -34,19 +34,23 @@ export const BUDGET_OPTIONS = [
   { value: '100000', label: 'Agents: 100k tokens' },
 ];
 
+// The same look as the shared Settings pieces (src/styles/settings.css).
 export const fieldStyle = {
-  minWidth: 0, width: '100%', boxSizing: 'border-box', padding: '7px 9px',
+  minWidth: 0, width: '100%', boxSizing: 'border-box', padding: 'var(--space-1-5) var(--space-2-5)',
   borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)',
-  background: 'var(--surface-2)', color: 'var(--ink)', font: 'inherit', fontSize: 'var(--text-xs)',
+  background: 'var(--layer-well)', color: 'var(--ink)', font: 'inherit', fontSize: 'var(--text-sm)',
 };
 export const ghostButton = {
-  border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: '6px 9px',
-  background: 'var(--surface-2)', color: 'var(--ink-soft)', font: 'inherit', fontSize: 'var(--text-xs)',
+  border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)', padding: 'var(--space-1) var(--space-2)',
+  background: 'var(--layer-panel)', color: 'var(--ink)', font: 'inherit', fontSize: 'var(--text-xs)',
   fontWeight: 600, cursor: 'pointer',
 };
-export const primaryButton = { ...ghostButton, border: 0, background: 'var(--accent-line)', color: 'var(--accent-contrast)' };
-export const labelStyle = { fontSize: 'var(--text-xs)', fontWeight: 650, color: 'var(--ink)' };
-export const hintStyle = { fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' };
+export const primaryButton = {
+  ...ghostButton, padding: 'var(--space-1-5) var(--space-3)', fontSize: 'var(--text-sm)',
+  border: '1px solid var(--accent)', background: 'var(--accent)', color: 'var(--accent-contrast)',
+};
+export const labelStyle = { fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--ink)' };
+export const hintStyle = { fontSize: 'var(--text-sm)', color: 'var(--ink-faint)', lineHeight: 1.5 };
 
 export function scopeLabel(link, wins, groups) {
   if (link.scopeKind === 'window') {

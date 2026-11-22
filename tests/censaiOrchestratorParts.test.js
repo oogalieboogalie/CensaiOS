@@ -58,15 +58,14 @@ describe('reading Censai\'s plan', () => {
     expect(() => normalizePlanInput({ goal: 'g', jobs: Array(5).fill({ agent: 'nexus', job: 'x', ...ok }) })).toThrow(/At most 4/);
     expect(() => normalizePlanInput({ goal: 'g', jobs: [{ agent: 'censai', job: 'x', ...ok }] })).toThrow(/not a family member I can hand work to/);
     expect(() => normalizePlanInput({ goal: 'g', jobs: [{ agent: 'nexus', ...ok }] })).toThrow(/say what Nexus should do/);
-    expect(() => normalizePlanInput({ goal: 'g', jobs: [{ agent: 'echo', job: 'Fix the bug.', kind: 'code', ...ok }] }))
-      .toThrow(/Echo can read project files but not change them/);
+    expect(normalizePlanInput({ goal: 'g', project: 'Homebase', jobs: [{ agent: 'echo', job: 'Fix the bug.', kind: 'code', ...ok }] }).jobs[0])
+      .toMatchObject({ agentId: 'echo', kind: 'code' });
     expect(() => normalizePlanInput({ goal: 'g', jobs: [{ agent: 'nexus', job: 'Fix it.' }] })).toThrow(/Job 1: give a checklist/);
     expect(() => normalizePlanInput({ goal: 'g', jobs: 'nope' })).toThrow(PlanInputError);
   });
 
-  test('only family members with file tools take code jobs, and Censai is never one of them', () => {
-    expect(FILE_CHANGERS).toEqual(expect.arrayContaining(['atlas', 'nexus', 'genesis', 'architect', 'phoenix']));
-    expect(FILE_CHANGERS).not.toContain('echo');
+  test('every family member Censai hands work to can take a code job, and Censai is never one of them', () => {
+    expect([...FILE_CHANGERS].sort()).toEqual(['architect', 'atlas', 'echo', 'foundation', 'genesis', 'nexus', 'phoenix']);
     expect(handoffAgentId('The Architect')).toBe('architect');
     expect(handoffAgentId('censai')).toBeNull();
   });
@@ -228,6 +227,22 @@ describe('what the agent really did', () => {
       '2 more of Nexus\'s steps did not go through.',
     ]);
     expect(workLines(readEvidence([]), job())).toEqual(['Nexus did not change any files.']);
+  });
+
+  test('a save that missed and then went through to the same file is not called a step that failed', () => {
+    const missed = { tool: 'project_edit', ok: false, args: { path: 'src/sum.js' }, result: 'Error: old_string not found in src/sum.js' };
+    const landed = { tool: 'project_edit', ok: true, args: { path: 'src/sum.js' }, result: 'Edited src/sum.js in tiny-sum. \u2192 /made-up/tiny-sum/src/sum.js' };
+    const retried = readEvidence([missed, { tool: 'project_read', ok: true, args: { path: 'src/sum.js' } }, landed]);
+    expect(retried).toMatchObject({ files: ['src/sum.js'], failedTools: [], failures: [] });
+    expect(workLines(retried, job())).toEqual(['Nexus changed 1 file: src/sum.js.']);
+    // Never made good, made good in another file only, or missed again after the good save: still said.
+    const why = [{ tool: 'project_edit', why: 'did not go through: old_string not found in src/sum.js' }];
+    expect(readEvidence([missed]).failures).toEqual(why);
+    expect(readEvidence([missed, { ...landed, args: { path: 'src/other.js' } }]).failures).toEqual(why);
+    expect(readEvidence([landed, missed]).failures).toEqual(why);
+    // One file retried and saved, another never saved: the one that never landed is the one named.
+    const lost = { tool: 'project_edit', ok: false, args: { path: 'src/lost.js' }, result: 'Error: old_string not found in src/lost.js' };
+    expect(readEvidence([missed, landed, lost]).failures).toEqual([{ tool: 'project_edit', why: 'did not go through: old_string not found in src/lost.js' }]);
   });
 
   test('the project a file went to comes from the tool\'s own result, and every file of a multi-edit counts', () => {

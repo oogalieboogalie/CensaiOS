@@ -7,25 +7,34 @@
 // plans finishes, gets stuck or is stopped, the next waiting arm goes out
 // (onPlanSettled), and looking at the request (the window, on a timer) does the
 // same, so a restart never leaves arms waiting for ever.
+//
+// Every arm works in the request's pinned project (its plan carries the pin),
+// and an arm that cannot go out right now is blocked, not downgraded (handOut.js).
+// A request with a blocked arm stays open until the arm goes out or the person stops it.
 
 import pool from '../db.js';
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { requireWorkspaceMember } from '../workspaces/context.js';
-import { FINAL_PLAN, PlanInputError, clip, normalizePlanInput } from '../censaiOrchestrator/shape.js';
-import { MAX_OPEN_PLANS, countOpenPlans, getPlan, loadPlan } from '../censaiOrchestrator/store.js';
+import { checkPin } from '../censaiOrchestrator/projectPin.js';
+import { FINAL_PLAN, clip } from '../censaiOrchestrator/shape.js';
+import { countOpenPlans, getPlan, loadPlan } from '../censaiOrchestrator/store.js';
 import { createPlan, onPlanSettled, recoverOnce, stopPlan } from '../censaiOrchestrator/runner.js';
 import { handOffGap } from '../tools/handlers/censaiOrchestrator.js';
-import { FINAL_ARM, asWriteup, planInput } from './arms.js';
+import { checkGithubAccess } from '../github/access.js';
+import { folderRepos } from '../censaiOrchestrator/folderRepo.js';
+import { planProject } from '../censaiOrchestrator/planProject.js';
+import { workerBranchesOfPlan } from '../workspaces/workerBranches.js';
+import { FINAL_ARM, notePr } from './arms.js';
+import { KRAKEN_SLOTS, handOut } from './handOut.js';
 import { getRequest, listOpenOwners, listOpenRequests, saveRequest } from './store.js';
 
 const log = createLogger('kraken');
-export const KRAKEN_SLOTS = Math.max(1, MAX_OPEN_PLANS - 1);
-const WORKERS = ['owner', 'admin', 'member'];
+export { KRAKEN_SLOTS };
 
 export const DEFAULT_DEPS = Object.freeze({
-  db: pool, createPlan, stopPlan, getPlan, countOpenPlans, handOffGap, recoverOnce,
-  requireMember: requireWorkspaceMember,
+  db: pool, createPlan, stopPlan, getPlan, countOpenPlans, handOffGap, recoverOnce, checkPin,
+  requireMember: requireWorkspaceMember, checkGithubAccess, folderRepos, planProject, workerBranchesOfPlan,
 });
 
 const lines = new Map(); // "board:person" -> the last piece of work in line for them
@@ -41,58 +50,45 @@ function inLine(scope, work) {
   return next;
 }
 
-const fromRow = (row) => ({ id: row.id, project: row.project, mode: row.mode, status: row.status, arms: structuredClone(row.arms || []) });
+const fromRow = (row) => ({
+  id: row.id, project: row.project, pin: row.pin || null, mode: row.mode, status: row.status, arms: structuredClone(row.arms || []),
+});
 
-/** Bring each handed-out arm up to date with its plan. True when something changed. */
+/**
+ * A fix on GitHub: its branch and its pull request, as noted for its plan's job, and how the
+ * pull request's checks stand. The arm is done when its plan is, and its plan is done only once
+ * the pull request is open and its checks passed. True when something changed.
+ */
+async function followPr(request, arm, plan, deps) {
+  if (arm.kind !== 'code' || request.pin?.kind !== 'github') return false;
+  try {
+    return notePr(arm, await deps.workerBranchesOfPlan(deps.db, plan.id), plan);
+  } catch (error) {
+    log.warn('pull request of an arm not read', { requestId: request.id, arm: arm.n, code: safeErrorCode(error) });
+    return false;
+  }
+}
+
+/** Bring each arm that went out up to date with its plan. True when something changed. */
 async function sync(request, scope, deps) {
   let changed = false;
-  for (const arm of request.arms.filter((item) => item.status === 'handed')) {
-    const plan = await deps.getPlan(deps.db, { id: arm.planId, ...scope });
+  for (const arm of request.arms.filter((item) => item.status === 'handed' || item.status === 'handing')) {
+    const plan = await deps.getPlan(deps.db, { id: arm.planId || arm.taskId, ...scope });
+    if (arm.status === 'handing') {
+      // Saved as going out, then cut off before its plan was known: the plan made under its
+      // task id is its plan, and none means it never went out, so it waits its turn again.
+      arm.status = plan ? 'handed' : 'waiting';
+      arm.planId = plan ? plan.id : null;
+      changed = true;
+      if (!plan) continue;
+    }
+    if (plan && await followPr(request, arm, plan, deps)) changed = true;
     if (plan && !FINAL_PLAN.has(plan.status)) continue;
     arm.status = plan ? plan.status : 'stuck';
     arm.result = plan ? clip(plan.summary || '', 400) : 'Its plan could not be found.';
     changed = true;
   }
   return changed;
-}
-
-/** A fix that could never be checked off here goes out as a write-up instead, with the reason on the arm. */
-async function fitToBoard(request, arm, input, scope, deps) {
-  if (arm.kind !== 'code') return input;
-  const member = await deps.requireMember(deps.db, { ...scope, roles: WORKERS }).catch(() => null);
-  const gap = member
-    ? await deps.handOffGap(input, scope, member, deps.db, deps.planDeps || {})
-    : 'Error: You can look at this board but not change its project.';
-  if (!gap) return input;
-  asWriteup(arm, String(gap).replace(/^Error:\s*/, '').split(/(?<=[.!?])\s/)[0]);
-  return normalizePlanInput(planInput(request, arm));
-}
-
-/** Hand waiting arms out while there is room. Saves after each one. False once the request is no longer open. */
-async function handOut(request, scope, deps) {
-  for (const arm of request.arms.filter((item) => item.status === 'waiting')) {
-    if (await deps.countOpenPlans(deps.db, scope) >= KRAKEN_SLOTS) break;
-    try {
-      const input = await fitToBoard(request, arm, normalizePlanInput(planInput(request, arm)), scope, deps);
-      const plan = await deps.createPlan({ ...scope, ...input }, deps.planDeps || {});
-      arm.status = 'handed';
-      arm.planId = plan.id;
-      log.info('arm handed out', { requestId: request.id, arm: arm.n, agentId: arm.agentId, planId: plan.id });
-    } catch (error) {
-      if (!(error instanceof PlanInputError)) throw error;
-      arm.status = 'stuck';
-      arm.result = clip(error.message, 300);
-    }
-    // Not saved (the request was stopped meanwhile, or the save failed): the plan just made must not
-    // run on, or the arm would go out a second time on the next look.
-    const saved = await saveRequest(deps.db, request).catch((error) => error);
-    if (!saved || saved instanceof Error) {
-      if (arm.status === 'handed') await deps.stopPlan({ id: arm.planId, ...scope }, deps.planDeps || {});
-      if (saved instanceof Error) throw saved;
-      return false;
-    }
-  }
-  return true;
 }
 
 async function feedNow(scope, deps) {

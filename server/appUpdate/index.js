@@ -10,6 +10,7 @@
  *   .homebase-state/update/restart-requested  written here: "put it in now"
  *   .homebase-state/update/check-requested    written here: "look for one now"
  *   .homebase-state/update/checked.json       the updater's last look: { at, result }
+ *   .homebase-state/update/step.txt           while a look runs: looking, downloading or building
  *
  * result is up-to-date, ready, build-failed, docker-off, blocked (this PC's
  * master has its own commits or edits, so it cannot fast-forward) or
@@ -23,6 +24,14 @@ import { selfRepo } from '../selfFix/patches.js';
 // The updater writes its heartbeat every few seconds; a minute of silence
 // means it is not running (censaiOS was opened some way that did not start it).
 const WATCHER_FRESH_MS = 60_000;
+
+// On a Linux computer the updater can run on demand instead: it starts when
+// one of the request files below is written and stops when it is done
+// (scripts/censaios-update.path), so there is no heartbeat between runs.
+// CENSAI_UPDATER_ON_DEMAND=1 tells the app that this is how its computer works.
+export function updaterOnDemand(env = process.env) {
+  return env.CENSAI_UPDATER_ON_DEMAND === '1';
+}
 const COMMIT = /^[0-9a-f]{7,40}$/;
 
 export function updateDir(repoRoot = selfRepo()) {
@@ -47,9 +56,32 @@ function readJson(dir, name) {
   }
 }
 
+// The number people see, such as 0.7.1358. The updater works it out
+// (scripts/auto-update.sh, version_of); anything else in the file is not shown.
+const VERSION = /^\d{1,4}\.\d{1,4}\.\d{1,7}$/;
+const versionText = (value) => (typeof value === 'string' && VERSION.test(value) ? value : null);
+const changeList = (value) => [].concat(value || []).map((c) => String(c).trim()).filter(Boolean).slice(0, 20);
+
+function runningVersion(dir, running) {
+  const raw = readJson(dir, 'running-version.json');
+  return raw?.commit === running ? versionText(raw.version) : null;
+}
+
+/** The update that put the running version in: its number and its patch notes. */
+function lastUpdate(dir, running) {
+  const raw = readJson(dir, 'updated.json');
+  if (!raw || raw.commit !== running || !versionText(raw.version)) return null;
+  return {
+    version: raw.version,
+    fromVersion: versionText(raw.fromVersion),
+    at: typeof raw.at === 'string' && Number.isFinite(Date.parse(raw.at)) ? raw.at : null,
+    changes: changeList(raw.changes),
+  };
+}
+
 /** What the "Update ready" note needs. Never throws. */
-export function updateStatus({ dir = updateDir(), now = Date.now() } = {}) {
-  const empty = { ready: null, running: null, watching: false, requested: false, checking: false, checked: null };
+export function updateStatus({ dir = updateDir(), now = Date.now(), onDemand = updaterOnDemand() } = {}) {
+  const empty = { ready: null, running: null, version: null, updated: null, watching: false, requested: false, checking: false, checked: null, step: null };
   if (!dir) return empty;
   const running = readText(dir, 'running.txt');
   const heartbeat = readJson(dir, 'watcher.json');
@@ -59,21 +91,41 @@ export function updateStatus({ dir = updateDir(), now = Date.now() } = {}) {
   const ready = COMMIT.test(commit) && commit !== running
     ? {
       commit,
+      version: versionText(raw.version),
       builtAt: typeof raw.builtAt === 'string' ? raw.builtAt : null,
-      changes: [].concat(raw.changes || []).map((c) => String(c).trim()).filter(Boolean).slice(0, 20),
+      changes: changeList(raw.changes),
     }
     : null;
   return {
     ready,
     running: COMMIT.test(running) ? running : null,
-    watching: Number.isFinite(beatAt) && now - beatAt < WATCHER_FRESH_MS,
+    version: runningVersion(dir, running),
+    updated: lastUpdate(dir, running),
+    watching: onDemand || (Number.isFinite(beatAt) && now - beatAt < WATCHER_FRESH_MS),
     requested: fs.existsSync(path.join(dir, 'restart-requested')),
     checking: fs.existsSync(path.join(dir, 'check-requested')),
     checked: lastCheck(dir),
+    step: currentStep(dir, now),
   };
 }
 
-const RESULTS = ['up-to-date', 'ready', 'build-failed', 'docker-off', 'blocked', 'side-branch'];
+// While a look runs the updater names the step it is on, so the panel can show
+// how far along it is. An updater that stopped mid-look leaves the file behind:
+// after 45 minutes it is not believed any more.
+const STEPS = ['looking', 'downloading', 'building'];
+const STEP_FRESH_MS = 45 * 60_000;
+
+function currentStep(dir, now) {
+  const step = readText(dir, 'step.txt');
+  if (!STEPS.includes(step)) return null;
+  try {
+    return now - fs.statSync(path.join(dir, 'step.txt')).mtimeMs < STEP_FRESH_MS ? step : null;
+  } catch {
+    return null;
+  }
+}
+
+const RESULTS = ['up-to-date', 'ready', 'build-failed', 'docker-off', 'blocked', 'side-branch', 'download-failed'];
 
 function lastCheck(dir) {
   const raw = readJson(dir, 'checked.json');

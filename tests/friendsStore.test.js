@@ -110,4 +110,14 @@ describe('putting a friend on a board', () => {
     await expect(store.putOnBoard(db, { ownerId: 7, friend: { id: 'f-1', userId: 41 }, workspaceId: 'board-a', role: 'admin' })).rejects.toThrow(/can edit/);
     await expect(store.putOnBoard(db, { ownerId: 7, friend: { id: 'f-1', userId: null }, workspaceId: 'board-a' })).rejects.toMatchObject({ code: 'NO_ACCOUNT' });
   });
+
+  test('a board is named for a quick invite only if the owner manages it, and nobody is put on it yet', async () => {
+    requireWorkspaceMember.mockResolvedValue({ id: 'board-a', name: 'Family board', role: 'owner' });
+    const { db, ran } = fakeDb();
+    expect(await store.boardToShare(db, { ownerId: 7, workspaceId: 'board-a' })).toEqual({ id: 'board-a', name: 'Family board' });
+    expect(requireWorkspaceMember).toHaveBeenCalledWith(db, { workspaceId: 'board-a', userId: 7, roles: ['owner', 'admin'] });
+    expect(ran(/INSERT INTO workspace_members/)).toHaveLength(0);
+    requireWorkspaceMember.mockRejectedValue(Object.assign(new Error('Workspace access denied'), { statusCode: 403 }));
+    await expect(store.boardToShare(db, { ownerId: 7, workspaceId: 'someone-elses' })).rejects.toThrow('Workspace access denied');
+  });
 });

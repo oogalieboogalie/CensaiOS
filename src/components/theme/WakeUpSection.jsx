@@ -1,15 +1,13 @@
-/* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
-import { ThemePanelCard } from './ThemeControls.jsx';
 import { api } from '../../lib/api.js';
 import { useWorkspaceStore } from '../../lib/store.js';
-
-const muted = { fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', margin: 0, lineHeight: 1.5 };
+import { OWNER_ONLY, SettingsNote, SettingsSection, SwitchRow, useSavedNote } from './settingsKit.jsx';
 
 /** Settings > Agents: whether Censai may set wake-ups for himself and the family. */
 export function WakeUpSection() {
   const workspaceId = useWorkspaceStore(state => state.workspaceId);
   const [state, setState] = React.useState({ on: false, canChange: false, ready: false, saving: false, error: '' });
+  const note = useSavedNote(state.saving, state.error);
 
   React.useEffect(() => {
     let alive = true;
@@ -32,21 +30,17 @@ export function WakeUpSection() {
 
   const disabled = !state.ready || !state.canChange || state.saving;
   return (
-    <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 8 }} data-testid="wake-up-section">
-      <div style={{ fontWeight: 650 }}>Wake-ups</div>
-      <p style={muted}>
-        When this is on, Censai can set a time to wake himself up for a follow-up, or wake a family agent
-        (Echo, Nexus, Foundation and the rest) to check its messages and do its part. Each one shows in the
-        Scheduler with his reason, and you can pause or delete it there. At most 6 run a day and 8 can wait at once.
-      </p>
-      <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
-        cursor: disabled ? 'default' : 'pointer' }}>
-        <span>Censai can set wake-ups</span>
-        <input type="checkbox" role="switch" aria-label="Wake-ups for Censai" disabled={disabled}
-          checked={state.on} onChange={event => toggle(event.target.checked)} />
-      </label>
-      {state.ready && !state.canChange && <p style={muted}>Only the board's owner or an admin can change this.</p>}
-      {state.error && <p role="alert" style={{ ...muted, color: 'var(--danger)' }}>{state.error}</p>}
-    </ThemePanelCard>
+    <SettingsSection title="Wake-ups" data-testid="wake-up-section">
+      <SwitchRow
+        label="Censai can set wake-ups"
+        hint="Censai can set a time to wake himself for a follow-up, or wake a family agent (Echo, Nexus, Foundation and the rest) to check its messages and do its part. Each one shows in the Scheduler with his reason, where you can pause or delete it. At most 6 run a day, and 8 can wait at once."
+        switchLabel="Wake-ups for Censai"
+        disabled={disabled}
+        checked={state.on}
+        onChange={toggle}
+      />
+      {state.ready && !state.canChange ? <SettingsNote>{OWNER_ONLY}</SettingsNote> : null}
+      <SettingsNote note={note} />
+    </SettingsSection>
   );
 }

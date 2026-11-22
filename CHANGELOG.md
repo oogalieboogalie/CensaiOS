@@ -13,6 +13,76 @@ and each Sunday that list becomes the next numbered stable release.
 The Releases page of this repository has each release's notes and container
 tags.
 
+## 0.9.0 (2026-11-22)
+
+### New
+
+- The rules a coding job is followed by: its own key, a clean review, proven done
+- Every update has a version number and patch notes
+- Family agents have the tools of their roles with nothing equipped
+- The Update panel shows which step the update is on
+- Echo, Censai and Foundation save project files with nothing equipped
+- Builders save project files with nothing equipped
+- One rule book for which project an agent's call means
+- Open a friend's board from a Docker install
+- Tailcat in the Docker image, so Friends works from a Docker install
+- GitHub window bar uses icons: a round arrow for Refresh, joining arrows for Merge all green
+- Settings, part 2: Agents, Hotkeys, Sharing, Open anywhere and AI keys on the same pieces
+- Settings pieces, and Appearance and Canvas built from them
+- Quick invite for Friends (8 digits and a door open for 30 seconds)
+- Blurred chat bubbles, picked per chat window in Window Style
+- Censai can hand off a code job on Homebase, and its tests run in the folder here
+- Every window is black glass, like the chat panel and the menus
+- Lead revival on the Real Estate Team board
+- Update censaiOS from Settings, with an updater that only runs when asked
+- Legion: owned files, contract first, and a re-plan between waves
+- Family agents read their past, read only, and new memory links back to it
+- Import an old agent library as helpers on the core agents' teams
+- An agent handed a to-do can now work in that to-do's project, even with no window on the board
+- The owner's agents work in any project on the computer, on a board too
+- An agent can now work in the project its own chat window is set to
+- A family member Censai hands work to can now work in Censai's project
+- Project menus list each real project once, with the current one first
+
+### Fixed
+
+- A Kraken fix on GitHub ends in a pull request on its own branch
+- The full test run is split in eight parts so one part no longer runs out of memory
+- Findings block, a clean review with none passes, struck-through words do not count
+- A coding job's review is read as the reviewer meant it
+- A project's exact id is never second-guessed by a repo name, and a missing name says how to add one
+- A name that fits two projects reaches the agent as a choice, and never sends work somewhere else
+- An agent reads a private repo with the GitHub key its person saved, and opening a GitHub project only reads
+- A viewer's Kraken look shows no project details, and a write-up's look never fails on the project
+- A Kraken Request works in the project you looked at, a blocked fix stays a fix, and no arm goes out twice
+- The coding job tool says which repositories are approved and how to list jobs
+- A path, a branch name or a second plan cannot point a worker's change somewhere else
+- Two projects with the same name get their own ids and never take over each other's row
+- Every coding worker gets its own branch and a way to open its pull request
+- The public export stops when a stand-in file lacks a name the shipped code imports
+- An agent that asks for "/" gets the top of the project, not a refusal
+- "Check for an update" says when the download failed instead of "up to date"
+- With Trust mode on, the owner's agents work anywhere on the owner's computer
+- An agent's newest notes keep a place in its instructions
+- An agent's prompt stops carrying links between filler words
+- On the owner's own board, an agent given no project works in the one open there
+- A job Censai hands off goes on after a save that failed
+- On a job Censai hands off, a call that names no project means the job's project
+- A job Censai hands off has room to read, change and test before it answers
+- Censai hands off a code job named for a GitHub project into its own folder here
+- Seven small window bugs found while filming the wiki
+- A model that runs out of room before answering is asked once more with room to answer
+- Black glass windows take their colour from Window Surface, not the board canvas
+- A tool an agent loads works in the same reply and stays loaded in that chat
+- Friends runs on the real tailcat (it refused the way we shared a port)
+
+### Behind the scenes
+
+- A Kraken fix cannot hand its work on, waits for any CI, and is picked up after a restart
+- The read-only open test no longer trips the public copy's scan for dropped files
+
+_1 more change is not listed because the description names a part of censaiOS that is not in the public copy._
+
 ## 0.8.0 (2026-11-15)
 
 ### New

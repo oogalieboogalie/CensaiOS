@@ -4,9 +4,13 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SQL_PATH = path.resolve(here, '../../docker/073-censai-plans.sql');
+// A plan's project pin. Shared with Kraken Requests (server/kraken/schema.js): each table gets
+// its column whichever of the two runs first.
+export const PIN_SQL_PATH = path.resolve(here, '../../docker/099-kraken-project-pin.sql');
 
 export async function ensureCensaiPlanSchema(db) {
   await db.query(await fs.promises.readFile(SQL_PATH, 'utf8'));
+  await db.query(await fs.promises.readFile(PIN_SQL_PATH, 'utf8'));
 }
 
-export const __test__ = { SQL_PATH };
+export const __test__ = { SQL_PATH, PIN_SQL_PATH };

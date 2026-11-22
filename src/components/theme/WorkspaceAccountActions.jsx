@@ -1,30 +1,24 @@
 import React from 'react';
-import { Icon } from '../Icons.jsx';
-import { ThemePanelCard } from './ThemeControls.jsx';
+import { SettingsButton, SettingsRow, SettingsRows, SettingsSection } from './settingsKit.jsx';
 
-export function WorkspaceAccountActions({ onResetWorkspace, onLogout }) {
+/** Settings > Canvas: the two big ones, kept apart from everyday settings. */
+export function WorkspaceAccountActions({ onResetWorkspace, onLogout, note }) {
   if (!onResetWorkspace && !onLogout) return null;
-
   return (
-    <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 11 }}>
-      <div>
-        <div style={{ fontSize: 'var(--text-md)', fontWeight: 750, color: 'var(--ink)' }}>Workspace & account</div>
-        <div style={{ marginTop: 3, fontSize: 'var(--text-xs)', color: 'var(--ink-faint)' }}>Recovery and sign-in actions live here, away from everyday canvas controls.</div>
-      </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+    <SettingsSection title="This board and your account" data-testid="workspace-account">
+      <SettingsRows>
         {onResetWorkspace && (
-          <button onClick={onResetWorkspace} style={{ all: 'unset', cursor: 'pointer', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 12px', borderRadius: 'var(--radius-lg)', fontSize: 'var(--text-sm)', fontWeight: 700, background: 'var(--surface)', color: 'var(--ps-red)', border: '1px solid var(--ps-red)' }}>
-            <Icon.Close size={13} />
-            Reset workspace
-          </button>
+          <SettingsRow label="Reset this board" hint="Takes every window and every designed agent off this board. censaiOS asks first.">
+            <SettingsButton variant="danger" onClick={onResetWorkspace}>Reset board</SettingsButton>
+          </SettingsRow>
         )}
         {onLogout && (
-          <button onClick={onLogout} style={{ all: 'unset', cursor: 'pointer', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 12px', borderRadius: 'var(--radius-lg)', fontSize: 'var(--text-sm)', fontWeight: 700, background: 'var(--surface)', color: 'var(--ink-soft)', border: '1px solid var(--hairline)' }}>
-            <Icon.NewWindow size={13} />
-            Log out
-          </button>
+          <SettingsRow label="Log out" hint="Signs you out of censaiOS on this device.">
+            <SettingsButton onClick={onLogout}>Log out</SettingsButton>
+          </SettingsRow>
         )}
-      </div>
-    </ThemePanelCard>
+      </SettingsRows>
+      {note}
+    </SettingsSection>
   );
 }

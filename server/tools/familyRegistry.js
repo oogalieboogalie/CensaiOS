@@ -67,7 +67,7 @@ export function buildFamilyToolRegistry({
         package: getToolPackageForModule(module.id)?.id || null,
         packageInstalled,
       } : null,
-      approvalRequired: module?.mode === 'execute_with_approval',
+      approvalRequired: module?.mode === 'execute_with_approval' || defaultPolicy?.mode === 'ask_first',
     };
   }).sort((a, b) => (
     Number(b.status === 'active') - Number(a.status === 'active')

@@ -133,9 +133,9 @@ describe('on a board, as before', () => {
     expect(await read({ userId: SAM, workspaceId: BOARD })).toContain(NOTE);
   });
 
-  test("a project the board did not give the agent is refused for Sam and Pat alike", async () => {
-    for (const who of [SAM, PAT]) {
-      expect(await read({ userId: who, workspaceId: 'made-up-other-board' })).toMatch(/^Error: PROJECT_ACCESS_DENIED: /);
-    }
+  test("a project the board did not give the agent is refused for Sam, and read for Pat, who owns this computer", async () => {
+    expect(await read({ userId: SAM, workspaceId: 'made-up-other-board' })).toMatch(/^Error: PROJECT_ACCESS_DENIED: /);
+    // The owner is not held to a board's list (server/workspaces/ownerProjects.js).
+    expect(await read({ userId: PAT, workspaceId: 'made-up-other-board' })).toContain(NOTE);
   });
 });

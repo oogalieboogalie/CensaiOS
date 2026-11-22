@@ -3,20 +3,19 @@ import { recordProvenance } from '../../operational-intelligence/provenance.js';
 import {
   openProject,
   listProjects,
-  readProjectBrief,
-  refreshProjectBrief,
   projectRead,
   projectFileOutline,
   projectWrite,
   projectEdit,
   projectList,
   writeReport,
-  openSubAgentPR,
   logProjectActivity,
-  isGithubProject
 } from '../../workspaces.js';
+import { briefNoteOnOpen, readBriefTool, refreshBriefTool } from './projectBriefs.js';
 import { resolveProjectForCall } from '../helpers.js';
 import { previewAfterWrite } from './projectWindow.js';
+import { branchForRead, branchForWrite } from './writeBranch.js';
+import { submitWorkerPr } from './workerPr.js';
 import pool from '../../db.js';
 import { requireWorkspaceMember } from '../../workspaces/context.js';
 import {
@@ -25,6 +24,22 @@ import {
 } from '../../workspaces/projectMemberships.js';
 import { noteToolFailure } from '../toolsLog.js';
 import { ownerOnlyProjectRead, refuseProjectsOffBoard } from '../rbac/ownerOnlyReads.js';
+import { PAST_PROJECT_ID, ensurePastProject, isPastLink, pastLinkToPath } from '../../workspaces/familyPast.js';
+
+// The project and the path inside it for a call that names a file. A past://
+// link names a file in the family's past (workspaces/familyPast.js), whatever
+// `project` says, and goes through the same project access rules as any
+// other project; resolveProjectForCall refuses any change to it.
+async function projectAndPath(agentId, args, context) {
+  if (!isPastLink(args.path)) {
+    const { project } = await resolveProjectForCall(agentId, args.project, context);
+    return { project, rel: args.path };
+  }
+  const rel = pastLinkToPath(args.path);
+  await ensurePastProject(pool);
+  const { project } = await resolveProjectForCall(agentId, PAST_PROJECT_ID, context);
+  return { project, rel };
+}
 
 export async function handleProjectsTool(agentId, name, args, context = {}) {
   switch (name) {
@@ -59,7 +74,7 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
       const namingNote = (args.repo && project.name !== args.repo)
         ? ` Use project: "${project.name}" in subsequent calls (NOT "${args.repo}").`
         : '';
-      return `Opened project "${project.name}" at ${where}. Brief written to .team/PROJECT.md.${namingNote}`;
+      return `Opened project "${project.name}" at ${where}. ${await briefNoteOnOpen(agentId, project)}${namingNote}`;
     }
     case 'list_projects': {
       if (context.workspaceId) {
@@ -81,25 +96,15 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
         `• ${p.name} — ${p.path || `github:${p.repo}`}${p.owner_agent_id ? ` [opened by ${p.owner_agent_id}]` : ''}`
       ).join('\n');
     }
-    case 'read_brief': {
-      const { project } = await resolveProjectForCall(agentId, args.project, context);
-      const brief = await readProjectBrief(project);
-      if (!brief) return `No brief for "${project.name}" yet. Use refresh_brief to generate one.`;
-      return brief;
-    }
-    case 'refresh_brief': {
-      const { project } = await resolveProjectForCall(agentId, args.project, context);
-      await refreshProjectBrief(project);
-      await logProjectActivity(project.id, agentId, 'refresh_brief', null);
-      return `Brief refreshed for "${project.name}".`;
-    }
+    case 'read_brief': return readBriefTool(agentId, args, context);
+    case 'refresh_brief': return refreshBriefTool(agentId, args, context);
     case 'project_read': {
-      const { project } = await resolveProjectForCall(agentId, args.project, context);
-      const refused = await ownerOnlyProjectRead(context, project, args.path, { tool: name });
+      const { project, rel } = await projectAndPath(agentId, args, context);
+      const refused = await ownerOnlyProjectRead(context, project, rel, { tool: name });
       if (refused) return `Error: ${refused}`;
       const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
-      const branch = sub?.github_branch || undefined;
-      const content = await projectRead(project, args.path, {
+      const branch = await branchForRead({ agentId, sub, project, context });
+      const content = await projectRead(project, rel, {
         branch,
         offset: args.offset,
         maxChars: args.max_chars ?? args.maxChars,
@@ -107,12 +112,12 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
       return content;
     }
     case 'project_file_outline': {
-      const { project } = await resolveProjectForCall(agentId, args.project, context);
-      const refused = await ownerOnlyProjectRead(context, project, args.path, { tool: name });
+      const { project, rel } = await projectAndPath(agentId, args, context);
+      const refused = await ownerOnlyProjectRead(context, project, rel, { tool: name });
       if (refused) return `Error: ${refused}`;
       const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
-      const branch = sub?.github_branch || undefined;
-      return await projectFileOutline(project, args.path, {
+      const branch = await branchForRead({ agentId, sub, project, context });
+      return await projectFileOutline(project, rel, {
         branch,
         maxEntries: args.max_entries ?? args.maxEntries,
       });
@@ -125,8 +130,9 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
       if (sub && sub.permission === 'researcher') {
         return 'Error: researcher sub-agents cannot write project files. Use the `report` tool to share findings.';
       }
-      const { project } = await resolveProjectForCall(agentId, args.project, context);
-      const branch = sub?.github_branch || undefined;
+      const { project } = await projectAndPath(agentId, args, context);
+      const { branch, refused } = await branchForWrite({ agentId, sub, project, paths: [args.path], context });
+      if (refused) return refused;
       const msg = `Update ${args.path} (by ${agentId})`;
       const where = await projectWrite(project, args.path, args.content, { branch, message: msg });
 
@@ -153,8 +159,9 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
       if (sub && (sub.permission === 'reviewer' || sub.permission === 'researcher')) {
         return `Error: ${sub.permission} sub-agents cannot edit project files. Use the \`report\` tool instead.`;
       }
-      const { project } = await resolveProjectForCall(agentId, args.project, context);
-      const branch = sub?.github_branch || undefined;
+      const { project } = await projectAndPath(agentId, args, context);
+      const { branch, refused } = await branchForWrite({ agentId, sub, project, paths: [args.path], context });
+      if (refused) return refused;
       const msg = `Edit ${args.path} (by ${agentId})`;
       const where = await projectEdit(project, args.path, args.old_string, args.new_string, { branch, message: msg });
       await logProjectActivity(project.id, agentId, 'edit', args.path);
@@ -171,7 +178,8 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
         return 'Error: project_multi_edit requires an edits array with at least one entry.';
       }
       const { project } = await resolveProjectForCall(agentId, args.project, context);
-      const branch = sub?.github_branch || undefined;
+      const { branch, refused } = await branchForWrite({ agentId, sub, project, paths: args.edits.map((edit) => edit?.path), context });
+      if (refused) return refused;
       const results = [];
       const errors = [];
 
@@ -203,10 +211,10 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
       return summary;
     }
     case 'project_list': {
-      const { project } = await resolveProjectForCall(agentId, args.project, context);
+      const { project, rel } = await projectAndPath(agentId, args, context);
       const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
-      const branch = sub?.github_branch || undefined;
-      const entries = await projectList(project, args.path || '.', { branch });
+      const branch = await branchForRead({ agentId, sub, project, context });
+      const entries = await projectList(project, rel || '.', { branch });
       if (entries.length === 0) return '(empty)';
       return entries.map(e => `[${e.type === 'dir' ? 'DIR' : 'FILE'}] ${e.name}`).join('\n');
     }
@@ -215,17 +223,8 @@ export async function handleProjectsTool(agentId, name, args, context = {}) {
       const filePath = await writeReport(project, agentId, { title: args.title, content: args.content });
       return `Report filed: ${filePath}`;
     }
-    case 'submit_pr': {
-      const sub = context.workspaceId ? await getSubAgentById(agentId, context) : null;
-      if (!sub) return 'Only sub-agents can submit PRs.';
-      if (sub.permission !== 'worker') return `Error: ${sub.permission} sub-agents cannot submit PRs — only workers.`;
-      if (!sub.github_branch) return 'Error: you have no branch assigned. Was this project actually a GitHub project?';
-      const { project } = await resolveProjectForCall(agentId, null, context);
-      if (!isGithubProject(project)) return 'Error: this project is not GitHub-backed.';
-      const pr = await openSubAgentPR(project, sub, { title: args.title, body: args.body });
-      await logProjectActivity(project.id, agentId, 'pr', `${args.title} (#${pr.number})`);
-      return `Opened PR #${pr.number}: ${pr.html_url}`;
-    }
+    case 'submit_pr':
+      return submitWorkerPr(agentId, args, context);
 
     default:
       throw new Error(`Unknown projects tool: ${name}`);

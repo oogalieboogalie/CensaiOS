@@ -20,7 +20,7 @@ const PROJECTS = {
 // What each board gave each agent: [board, project, agent, permission].
 let given = [];
 const GIVEN_ON_BOARD = [[BOARD, 'made-up-project', AGENT, 'read'], [BOARD, 'made-up-notes', AGENT, 'work']];
-const TRUST = 'Trust mode does not change this: it only lets agents use the tools they already have without waiting for an OK.';
+const TRUST = 'If this is your own computer, turning Trust mode on for me in Settings lifts this: then I can work in any folder here.';
 
 const pool = { query: jest.fn(), connect: jest.fn(), on: jest.fn(), end: jest.fn() };
 const logged = [];
@@ -92,13 +92,15 @@ const NOT_OPEN = 'Tell the person in plain words: that project is not open for m
 
 describe('a project the board did not give the agent', () => {
   test('a repo it was not given gets words that name the projects the board did give it, not "none is open"', async () => {
-    for (const who of [SAM, PAT]) {
-      const result = await readRepo(who, 'pat-example/made-up-other-repo');
-      expect(result).toBe(`Error: PROJECT_ACCESS_DENIED: This agent is not authorized for that repository in the current workspace. ${NOT_OPEN}`);
-      expect(result).not.toContain('none is open');
-      expect(toolCallOk(result)).toBe(false);
-    }
+    const result = await readRepo(SAM, 'pat-example/made-up-other-repo');
+    expect(result).toBe(`Error: PROJECT_ACCESS_DENIED: This agent is not authorized for that repository in the current workspace. ${NOT_OPEN}`);
+    expect(result).not.toContain('none is open');
+    expect(toolCallOk(result)).toBe(false);
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('this computer\'s owner is not held to the board\'s list: the same repo is not refused for Pat', async () => {
+    expect(await readRepo(PAT, 'pat-example/made-up-other-repo')).not.toContain('PROJECT_ACCESS_DENIED');
   });
 
   test('a folder project it was not given gets the same words', async () => {

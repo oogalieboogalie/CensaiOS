@@ -6,9 +6,19 @@
 //   writeup  each agent looks into its finding and writes what to change (the
 //            default: nothing in the project changes)
 //   fix      agents who can change project files fix their finding, and the
-//            project's tests must pass; needs the project the work is in
+//            project's tests must pass; needs the project the work is in.
+//            On a project kept on GitHub each fix works on a branch of its
+//            own and ends in a pull request, whose checks on GitHub are its
+//            tests (server/censaiOrchestrator/jobPr.js); the arm shows it.
+//
+// An arm's status: waiting (its turn has not come), handing (saved as going
+// out, its plan not yet known), handed (its plan is running), blocked (it
+// cannot go out right now, with why and what to try; checked again on every
+// look), then done, stuck or stopped. A fix that cannot go out stays a fix:
+// it is never turned into a write-up behind the person's back.
 
-import { FILE_CHANGERS, HANDOFF_AGENTS, agentName, clip, handoffAgentId } from '../censaiOrchestrator/shape.js';
+import { randomUUID } from 'node:crypto';
+import { FILE_CHANGERS, HANDOFF_AGENTS, PR_WAITS, agentName, clip, handoffAgentId } from '../censaiOrchestrator/shape.js';
 
 export const MODES = Object.freeze(['writeup', 'fix']);
 export const FINAL_ARM = new Set(['done', 'stuck', 'stopped']);
@@ -82,9 +92,14 @@ export function buildArm(finding, { mode = 'writeup', project = null } = {}) {
     doneWhen: own,
     checklist: kind === 'code' ? (own.length ? own : FIX_LIST) : WRITEUP_LIST,
     status: 'waiting',
+    taskId: null,
     planId: null,
+    why: '',
+    fix: '',
     note: '',
     result: '',
+    branch: null,
+    pr: null,
   };
 }
 
@@ -97,21 +112,39 @@ export function buildArms(findings, { mode, project, only } = {}) {
     .sort((a, b) => RANK_ORDER[a.severity] - RANK_ORDER[b.severity] || a.n - b.n);
 }
 
-/** Censai's hand_off_jobs arguments for one arm. */
+/**
+ * Give every arm its task id, once, as the request is made. The id is the arm's for good:
+ * its plan is made under it, so handing the same arm out again finds that plan (feeder.js).
+ */
+export function withTaskIds(arms, newId = randomUUID) {
+  for (const arm of arms) arm.taskId ||= newId();
+  return arms;
+}
+
+/** Censai's hand_off_jobs arguments for one arm. Its project is the request's pinned one, by id. */
 export function planInput(request, arm) {
   return {
     goal: clip(`Kraken ${arm.severity}: ${arm.title}`, 300),
-    project: request.project || undefined,
+    project: request.pin?.projectId || request.project || undefined,
+    // A fix on a project kept on GitHub works on a branch of its own and is tested by its pull request's checks.
+    onGithub: request.pin?.kind === 'github',
     jobs: [{ agent: arm.agentId, job: arm.task, kind: arm.kind, checklist: arm.checklist }],
   };
 }
 
-/** Turn a fix into a write-up, with the reason on the arm, when the fix could never be checked off here. */
-export function asWriteup(arm, why) {
-  arm.kind = 'answer';
-  arm.task = clip(taskText({ severity: arm.severity, title: arm.title, body: arm.detail, files: arm.files, doneWhen: arm.doneWhen }, 'answer'), 2000);
-  arm.checklist = WRITEUP_LIST;
-  arm.note = clip(why, 300);
+/** The arm cannot go out right now: it keeps its kind, and says why and what to try. */
+export function block(arm, { why, fix = '' }) {
+  arm.status = 'blocked';
+  arm.why = clip(why, 300);
+  arm.fix = clip(fix, 300);
+  return arm;
+}
+
+/** What was in the way is gone: the arm waits its turn again. */
+export function unblock(arm) {
+  arm.status = 'waiting';
+  arm.why = '';
+  arm.fix = '';
   return arm;
 }
 
@@ -119,7 +152,78 @@ function publicArm(arm) {
   return {
     n: arm.n, severity: arm.severity, title: arm.title, agentId: arm.agentId, agent: agentName(arm.agentId),
     kind: arm.kind, status: arm.status, planId: arm.planId || null, note: arm.note || '', result: arm.result || '',
+    why: arm.why || '', fix: arm.fix || '',
     checklist: (arm.checklist || []).map(String),
+    branch: arm.branch || null,
+    pr: publicPr(arm.pr),
+  };
+}
+
+// How a fix's pull request's checks stand, as the window names them. none: no check ran on it (never "passed").
+const PR_STATES = new Set(['passed', 'failed', 'running', 'unknown', 'waiting', 'none']);
+const PR_CHECKS = { ticked: 'passed', checking: 'running', open: 'waiting' }; // a checklist state, from before
+const TRY = ['first', 'second', 'third'];
+const LAST_WORDS = { passed: 'passed', failed: 'failed', none: 'did not run', running: 'were still running', unreadable: 'could not be read' };
+
+/** A fix's pull request as the browser sees it: its number, link, branch and how its checks stand. */
+function publicPr(pr) {
+  if (!pr?.number || !/^https:\/\//.test(String(pr.url || ''))) return null;
+  return {
+    number: Number(pr.number), url: String(pr.url), branch: pr.branch || null,
+    checks: PR_STATES.has(pr.checks) ? pr.checks : PR_CHECKS[pr.checks] || 'waiting', line: pr.line || '',
+  };
+}
+
+/**
+ * Bring a fix arm's branch and pull request up to date: what was noted for its plan's job
+ * (server/workspaces/workerBranches.js) and how the job's pull-request item stands. True when it changed.
+ */
+export function notePr(arm, rows = [], plan = null) {
+  const row = (Array.isArray(rows) ? rows : []).find((entry) => entry.branch || entry.pr_number) || null;
+  const job = plan?.jobs?.[0] || null;
+  const item = (job?.checklist || []).find((entry) => entry?.how === 'pr') || null;
+  const { checks, line } = checksNow(item, job);
+  const before = JSON.stringify([arm.branch || null, arm.pr || null]);
+  if (row?.branch) arm.branch = clip(row.branch, 200);
+  if (row?.pr_number) {
+    arm.pr = {
+      number: Number(row.pr_number), url: clip(row.pr_url || '', 300), branch: row.branch || null,
+      headSha: row.pr_head_sha || null, checks, line: clip(line, 300),
+    };
+  }
+  return JSON.stringify([arm.branch || null, arm.pr || null]) !== before;
+}
+
+/**
+ * How the pull request's checks stand for the arm: what this try read, or else the last thing
+ * really known ("checks failed on the first try; the second try did not finish"), never a
+ * bare "could not be read" for a try that never read them.
+ */
+function checksNow(item, job) {
+  if (!item) return { checks: 'waiting', line: '' };
+  if (item.state === 'ticked') return { checks: item.checks === 'none' ? 'none' : 'passed', line: item.line || '' };
+  if (item.state === 'checking') return { checks: 'running', line: item.line || '' };
+  if (item.state === 'failed' && item.line !== PR_WAITS) return { checks: 'failed', line: item.line || '' };
+  const last = item.lastChecks;
+  if (!last) return { checks: item.state === 'unknown' ? 'unknown' : 'waiting', line: item.state === 'unknown' ? item.line || '' : '' };
+  const tries = Number(job?.attempts) || last.attempt;
+  const ended = ['stuck', 'stopped', 'skipped'].includes(job?.status);
+  const ord = (n) => TRY[n - 1] || `try ${n}`;
+  let tail = 'then it stopped there.';
+  if (tries > last.attempt) tail = ended ? `the ${ord(tries)} try did not finish.` : `the ${ord(tries)} try is under way.`;
+  else if (job?.status === 'stopped') tail = 'then the work was stopped.';
+  return {
+    checks: ['passed', 'failed', 'none'].includes(last.state) ? last.state : 'unknown',
+    line: `Checks ${LAST_WORDS[last.state] || 'were not read'} on the ${ord(last.attempt)} try; ${tail}`,
+  };
+}
+
+/** A pin as the browser sees it (null for a request from before pins, or one with no project). */
+export function publicPin(pin) {
+  if (!pin?.projectId) return null;
+  return {
+    projectId: String(pin.projectId), name: pin.name || String(pin.projectId), kind: pin.kind === 'github' ? 'github' : 'folder',
+    source: pin.source || '', branch: pin.branch || null, commit: pin.commit || null,
   };
 }
 
@@ -129,10 +233,10 @@ export function publicRequest(row) {
   const iso = (value) => (value ? new Date(value).toISOString() : null);
   const arms = (Array.isArray(row.arms) ? row.arms : []).map(publicArm);
   return {
-    id: row.id, title: row.title, project: row.project || null, mode: row.mode, status: row.status,
+    id: row.id, title: row.title, project: row.project || null, pin: publicPin(row.pin), mode: row.mode, status: row.status,
     createdAt: iso(row.created_at), updatedAt: iso(row.updated_at), finishedAt: iso(row.finished_at),
     arms,
-    counts: Object.fromEntries(['waiting', 'handed', 'done', 'stuck', 'stopped'].map((s) => [s, arms.filter((arm) => arm.status === s).length])),
+    counts: Object.fromEntries(['waiting', 'handing', 'handed', 'blocked', 'done', 'stuck', 'stopped'].map((s) => [s, arms.filter((arm) => arm.status === s).length])),
   };
 }
 

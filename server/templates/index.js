@@ -28,9 +28,9 @@ const REAL_ESTATE_TEMPLATE = Object.freeze({
     Listings: 'Listing Writer, draft, agent chat',
     'Active Deals': 'Deal pipeline, showings, commission, coordinator',
     Marketing: 'CMA sheet, analyst, open house sign-in',
-    'Team Chat': 'Team chat, Outbox, follow-ups',
+    'Team Chat': 'Team chat, cold leads, Outbox, follow-ups',
   },
-  modules: ['Deal pipeline', 'Showing schedule', 'Open house sign-in', 'Commission calculator', 'CMA sheet'],
+  modules: ['Deal pipeline', 'Showing schedule', 'Open house sign-in', 'Commission calculator', 'CMA sheet', 'Cold leads'],
 });
 
 // Starters people are most likely to want first come first.

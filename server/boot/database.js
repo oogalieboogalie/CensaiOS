@@ -13,6 +13,7 @@ import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { migrateLegacyOAuthCredentials } from '../credentials/oauthStore.js';
 import { ensureWorkspaceSchema } from '../workspaces/schema.js';
+import { ensureProjectIdentitySchema } from '../workspaces/projectIdentitySchema.js';
 import { ensureRunCausalitySchema } from '../runs/schema.js';
 import { ensureScheduleTenancySchema } from '../scheduler/schema.js';
 import { ensureAutonomyTenancySchema } from '../autonomy/schema.js';
@@ -65,6 +66,7 @@ async function probeDb() {
   await ensureMultiUserSchema();
   await migrateLegacyOAuthCredentials();
   await ensureWorkspaceSchema(pool);
+  await ensureProjectIdentitySchema(pool);
   await ensureScheduleTenancySchema(pool);
   await ensureAgentWakeupSchema();
   await ensureAutonomyTenancySchema(pool);

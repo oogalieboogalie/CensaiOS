@@ -32,6 +32,9 @@ jest.unstable_mockModule('../server/workspaces/context.js', () => ({
 jest.unstable_mockModule('../server/workspaces/projectMemberships.js', () => ({
   listWorkspaceAgentProjects: jest.fn(async () => []),
   replaceCanvasProjectMemberships: jest.fn(async () => []),
+  // A to-do hand-off lends its project through server/censaiOrchestrator/projectShare.js, which loads these.
+  ProjectMembershipError: class ProjectMembershipError extends Error {},
+  assertAgentProjectAccess: jest.fn(async () => ({})),
 }));
 jest.unstable_mockModule('../server/workspaces.js', () => ({
   listProjects: jest.fn(async () => []),

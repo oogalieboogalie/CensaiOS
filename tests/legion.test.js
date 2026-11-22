@@ -25,8 +25,12 @@ function scriptedTeam() {
   let echoTurns = 0;
   const calls = [];
   const ask = async ({ label, prompt, images }) => {
-    calls.push({ label, images: images.length });
+    calls.push({ label, images: images.length, prompt });
     const say = (text) => ({ text, model: 'standin', ms: 1 });
+    // Between waves the Architect changes the waiting job; a done job cannot be changed.
+    if (label === 'architect' && prompt.startsWith('A wave of jobs just finished')) {
+      return say('{"jobs":[{"id":"J-002","task":"index.html with a bill box, a tip result and a link to the README","files":["index.html"]},{"id":"J-001","task":"redo it"}]}');
+    }
     if (label === 'architect' && prompt.startsWith('Write a first plan')) return say('{"summary":"A tip calculator page."}');
     if (['research', 'foresight', 'echo'].includes(label) && prompt.includes('give your advice')) return say('```json\n{"notes":["Keep it one page"]}\n```');
     if (label === 'architect' && prompt.startsWith('You are the Orchestrator Engine')) {
@@ -91,6 +95,29 @@ describe('Legion loop', () => {
     // Echo saw the screenshot both times.
     expect(calls.filter((c) => c.label === 'echo' && c.images === 1)).toHaveLength(2);
     expect(events.find((e) => e.type === 'reflection').learned).toBe('Check the result is on screen.');
+    // One look between the two waves, with what was built; the waiting job got the new task.
+    const replans = calls.filter((c) => c.prompt.startsWith('A wave of jobs just finished'));
+    expect(replans).toHaveLength(1);
+    expect(replans[0].prompt).toMatch(/J-001 \(Foundation, done\): Wrote README\.md/);
+    expect(replans[0].prompt).toContain('Files in the project: README.md');
+    expect(calls.find((c) => c.label === 'genesis' && c.prompt.includes('Job J-002 (only yours)')).prompt).toContain('a link to the README');
+    expect(calls.find((c) => c.label === 'genesis' && c.prompt.includes('Job J-002 (only yours)')).prompt).toContain('Files this job owns: index.html');
+    expect(lastQueue.find((j) => j.id === 'J-001').task).toBe('README with how to open it');
+    expect(fs.readFileSync(path.join(dir, 'project', 'legion.yaml'), 'utf8')).toContain('a link to the README');
+    expect(events.some((e) => e.type === 'say' && e.text === 'Between waves: changed J-002 to fit what was built.')).toBe(true);
+  });
+
+  test('with replan off, the Architect is not asked between waves', async () => {
+    const dir = tmp();
+    await makeRunFolders(dir);
+    const { ask, calls } = scriptedTeam();
+    const look = async ({ shotPath }) => { fs.writeFileSync(shotPath, 'png'); return { ok: true, page: 'index.html', png: Buffer.from('png'), text: 'Tip: $3.00', errors: [] }; };
+    await runLegion({
+      goal: 'a tip calculator', models: { architect: model }, account: {}, dir, emit: () => {}, ask, look, replan: false,
+      commit: async () => ({ committed: true, sha: 'a' }),
+    });
+    expect(calls.some((c) => c.prompt.startsWith('A wave of jobs just finished'))).toBe(false);
+    expect(calls.find((c) => c.label === 'genesis' && c.prompt.includes('Job J-002 (only yours)')).prompt).not.toContain('a link to the README');
   });
 
   test('stops after the last fix round without committing when Echo never says OK', async () => {

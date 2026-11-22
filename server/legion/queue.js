@@ -7,6 +7,15 @@
 
 export const QUEUE_CONCURRENCY = 3;
 
+/** True when two paths are the same file, or one is inside the other's folder. */
+export const pathsOverlap = (a, b) => a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+
+/** True when `file` is one of `owned`, or inside one of its folders. */
+export const ownsPath = (owned = [], file = '') => owned.some((o) => file === o || file.startsWith(`${o}/`));
+
+/** True when two jobs own some of the same files. Jobs that list no files never clash. */
+const filesClash = (a, b) => (a.files || []).some((p) => (b.files || []).some((q) => pathsOverlap(p, q)));
+
 /** A copy of the queue for the window: [{ id, owner, task, status, attempt, note }]. */
 export const snapshot = (jobs) => jobs.map(({ id, owner, task, status, attempt, note, dependsOn }) => ({
   id, owner, task: task.slice(0, 300), status, attempt, note: note || '', dependsOn,
@@ -18,12 +27,20 @@ export const snapshot = (jobs) => jobs.map(({ id, owner, task, status, attempt, 
  * that changed a status: a job finishing and the jobs it frees starting are
  * one step, so the saved place (server/legion/checkpoint.js) never shows a
  * freed job still waiting. Resolves when nothing more can run.
+ *
+ * Two jobs whose `files` overlap never run at the same time.
+ *
+ * With `afterWave`, jobs run in waves: the jobs ready at one moment run
+ * together, the next wave starts only when all of them have ended, and
+ * `afterWave(waveJobs)` is awaited in between while jobs are still queued.
  */
-export async function runQueue({ jobs, runJob, onChange = () => {}, concurrency = QUEUE_CONCURRENCY, stopIfAsked = () => {} }) {
+export async function runQueue({ jobs, runJob, onChange = () => {}, concurrency = QUEUE_CONCURRENCY, stopIfAsked = () => {}, afterWave = null }) {
   const statusOf = (id) => jobs.find((j) => j.id === id)?.status;
   const ready = (job) => job.status === 'queued' && job.dependsOn.every((d) => statusOf(d) === 'done');
   const running = new Set();
+  const clashesWithRunning = (job) => [...running].some((id) => filesClash(job, jobs.find((j) => j.id === id)));
   let firstError = null;
+  let wave = null; // ids of the jobs in this wave, when waves are on
 
   const blockStuck = () => {
     let changed = false;
@@ -51,9 +68,22 @@ export async function runQueue({ jobs, runJob, onChange = () => {}, concurrency 
         return;
       }
       changed = blockStuck() || changed;
+      if (afterWave && wave && !running.size && !jobs.some((j) => wave.has(j.id) && j.status === 'queued')) {
+        const ended = jobs.filter((j) => wave.has(j.id));
+        wave = null;
+        if (ended.length && jobs.some((j) => j.status === 'queued')) {
+          report();
+          Promise.resolve()
+            .then(() => afterWave(ended))
+            .catch((error) => { firstError = firstError || error; })
+            .finally(() => pump());
+          return;
+        }
+      }
+      if (afterWave && !wave) wave = new Set(jobs.filter(ready).map((j) => j.id));
       for (const job of jobs) {
         if (running.size >= concurrency) break;
-        if (!ready(job)) continue;
+        if (!ready(job) || (wave && !wave.has(job.id)) || clashesWithRunning(job)) continue;
         job.status = 'working';
         job.attempt = (job.attempt || 0) + 1;
         running.add(job.id);

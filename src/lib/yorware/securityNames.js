@@ -29,7 +29,7 @@ export const YOR_SECURITY = Object.freeze([
     name: 'Yor-BombadilBox',
     line: 'The sandbox. Agents and coding tools run in their own box, away from your files.',
     piece: 'AI coding assistants sandbox',
-    where: 'Settings > Agents > Docker sandbox image',
+    where: 'Agent Console > Agents > Docker sandbox image',
   },
   {
     id: 'dunedain',

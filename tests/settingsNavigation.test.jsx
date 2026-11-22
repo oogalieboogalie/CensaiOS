@@ -8,7 +8,7 @@ import { CollaborationPresence } from '../src/components/CollaborationPresence.j
 import { normalizeSettingsTab, SETTINGS_TABS } from '../src/components/theme/settingsTabs.js';
 
 test('settings use plain-language sections', () => {
-  expect(SETTINGS_TABS).toEqual([
+  expect(SETTINGS_TABS.map(({ id, label }) => ({ id, label }))).toEqual([
     { id: 'appearance', label: 'Appearance' },
     { id: 'workspace', label: 'Canvas' },
     { id: 'agents', label: 'Agents' },
@@ -18,6 +18,7 @@ test('settings use plain-language sections', () => {
     { id: 'modules', label: 'Modules' },
     { id: 'vault', label: 'AI keys' },
   ]);
+  for (const tab of SETTINGS_TABS) expect(tab.intro).toMatch(/^[A-Z][^—]+\.$/);
   expect(normalizeSettingsTab('sharing')).toBe('sharing');
   expect(normalizeSettingsTab('unknown')).toBe('appearance');
 });

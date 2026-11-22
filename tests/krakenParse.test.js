@@ -2,7 +2,7 @@
 // becomes arms, one finding each, for the family (server/kraken/arms.js).
 // The report here is made up: a review of the Testco shop project.
 import { MAX_FINDINGS, ReportInputError, parseReport } from '../server/kraken/parse.js';
-import { buildArms, pickAgent, planInput, publicRequest, asWriteup } from '../server/kraken/arms.js';
+import { block, buildArms, pickAgent, planInput, publicRequest, unblock, withTaskIds } from '../server/kraken/arms.js';
 import { normalizePlanInput } from '../server/censaiOrchestrator/shape.js';
 
 const REPORT = `# Review of the Testco shop
@@ -124,16 +124,28 @@ describe('arms', () => {
     }
   });
 
-  test('a fix is code work only with a project and an agent who can change files, and falls back to a write-up', () => {
+  // Was: "...and falls back to a write-up". A fix that cannot go out is blocked now, and stays a fix.
+  test('a fix is code work only with a project and an agent who can change files, and a blocked fix stays a fix', () => {
     const [arm] = buildArms([{ n: 1, severity: 'P0', title: 'The api route has no timeout', body: 'server', doneWhen: [], files: [] }], { mode: 'fix', project: 'testco-shop' });
     expect(arm.kind).toBe('code');
     const [own] = buildArms([{ n: 1, severity: 'P0', title: 'The api route has no timeout', body: 'server', doneWhen: ['a slow call ends after 10 seconds'], files: [] }], { mode: 'fix', project: 'testco-shop' });
     expect(own.checklist).toEqual(['a slow call ends after 10 seconds']);
     expect(normalizePlanInput(planInput({ project: 'testco-shop' }, arm)).jobs[0].kind).toBe('code');
     expect(buildArms(findings, { mode: 'fix', project: null }).every((item) => item.kind === 'answer')).toBe(true);
-    asWriteup(arm, 'Project Writer is not equipped on Atlas.');
-    expect([arm.kind, arm.note]).toEqual(['answer', 'Project Writer is not equipped on Atlas.']);
-    expect(arm.task).toContain('Do not change any files.');
+    block(arm, { why: 'Project Writer is not equipped on Atlas.', fix: 'Equip it, and this goes out the next time you look.' });
+    expect([arm.status, arm.kind, arm.why]).toEqual(['blocked', 'code', 'Project Writer is not equipped on Atlas.']);
+    expect(arm.task).toContain('Fix it.');
+    unblock(arm);
+    expect([arm.status, arm.kind, arm.why, arm.fix]).toEqual(['waiting', 'code', '', '']);
+  });
+
+  test('an arm works in the pinned project, by its id, and keeps the task id it was given', () => {
+    const arms = withTaskIds(buildArms(findings, {}), () => 'task-1');
+    expect(arms.every((arm) => arm.taskId === 'task-1')).toBe(true);
+    expect(withTaskIds(arms, () => 'task-2')[0].taskId).toBe('task-1');
+    const pin = { projectId: 'p-shop', name: 'Shop' };
+    expect(planInput({ project: 'Shop', pin }, arms[0]).project).toBe('p-shop');
+    expect(planInput({ project: 'Shop' }, arms[0]).project).toBe('Shop');
   });
 
   test('only keeps the picked findings, worst first', () => {
@@ -144,7 +156,8 @@ describe('arms', () => {
     const arms = buildArms(findings, {});
     arms[0].status = 'done';
     const shown = publicRequest({ id: 'r1', title: 'Review', mode: 'writeup', status: 'open', arms, created_at: '2026-11-01T10:00:00Z' });
-    expect(shown.counts).toEqual({ waiting: 2, handed: 0, done: 1, stuck: 0, stopped: 0 });
+    expect(shown.counts).toEqual({ waiting: 2, handing: 0, handed: 0, blocked: 0, done: 1, stuck: 0, stopped: 0 });
+    expect(shown.pin).toBeNull();
     expect(shown.arms[0]).toEqual(expect.objectContaining({ n: 1, agent: expect.any(String), status: 'done' }));
     expect(shown.arms[0].task).toBeUndefined();
   });

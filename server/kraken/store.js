@@ -1,16 +1,18 @@
 // Kraken Requests in the database (docker/096-kraken-requests.sql). Every read
-// a person makes is scoped to their own requests on that board.
+// a person makes is scoped to their own requests on that board. pin: the exact
+// project the request works in (docker/099-kraken-project-pin.sql); null on a
+// request from before pins, which still loads and lists.
 
 import { randomUUID } from 'node:crypto';
 import { storable } from '../censaiOrchestrator/store.js';
 
-const COLUMNS = 'id, workspace_id, user_id, title, project, mode, status, arms, created_at, updated_at, finished_at';
+const COLUMNS = 'id, workspace_id, user_id, title, project, mode, status, arms, created_at, updated_at, finished_at, pin';
 
-export async function insertRequest(db, { workspaceId, userId, title, project, mode, arms, id = randomUUID() }) {
+export async function insertRequest(db, { workspaceId, userId, title, project, mode, arms, pin = null, id = randomUUID() }) {
   const { rows } = await db.query(
-    `INSERT INTO kraken_requests (id, workspace_id, user_id, title, project, mode, arms)
-     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb) RETURNING ${COLUMNS}`,
-    [id, workspaceId, userId, storable(title), storable(project) || null, mode, JSON.stringify(storable(arms))],
+    `INSERT INTO kraken_requests (id, workspace_id, user_id, title, project, mode, arms, pin)
+     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb) RETURNING ${COLUMNS}`,
+    [id, workspaceId, userId, storable(title), storable(project) || null, mode, JSON.stringify(storable(arms)), pin ? JSON.stringify(storable(pin)) : null],
   );
   return rows[0];
 }

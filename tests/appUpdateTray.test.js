@@ -5,7 +5,7 @@ import { jest } from '@jest/globals';
 import { agentTurnStarted, busyAgents, resetBusyAgents } from '../server/appUpdate/busy.js';
 import { repoSlug, workInFlight } from '../server/appUpdate/inFlight.js';
 import { cancelPendingRestart, pendingRestart, restartWhenIdle } from '../server/appUpdate/whenIdle.js';
-import { describeWork, lookedSince, panelStage, readWait, saveWait, stillOpen } from '../src/lib/appUpdate/trayFlow.js';
+import { LOOK_STEPS, SWAP_STEPS, describeWork, elapsedText, lookStep, lookedSince, panelStage, readWait, saveWait, stillOpen } from '../src/lib/appUpdate/trayFlow.js';
 
 const noOthers = async () => [];
 const lookup = async (id) => ({ name: id === 'atlas' ? 'Atlas' : 'Nexus' });
@@ -88,6 +88,32 @@ describe('tray panel wording', () => {
     expect(panelStage({ ready: { commit: 'b' }, checked: { at: '2026-10-17T23:00:01Z' } }, asked)).toBe('ready');
     expect(panelStage({ checked: { at: '2026-10-17T23:00:01Z', result: 'up-to-date' } }, asked)).toBe('up-to-date');
     expect(lookedSince({}, null)).toBe(true);
+  });
+
+  test('a look is on the step the updater names, and on the first one until it says', () => {
+    expect(LOOK_STEPS.map((step) => step.id)).toEqual(['looking', 'downloading', 'building', 'ready']);
+    expect(lookStep({ step: 'looking' })).toBe(0);
+    expect(lookStep({ step: 'downloading' })).toBe(1);
+    expect(lookStep({ step: 'building' })).toBe(2);
+    // An updater from before steps were named, or one that has not started yet.
+    expect(lookStep({ step: null })).toBe(0);
+    expect(lookStep(null)).toBe(0);
+    expect(lookStep({ step: 'something else' })).toBe(0);
+  });
+
+  test('every step that is worked on says what is happening, in words', () => {
+    for (const step of [...LOOK_STEPS.slice(0, 3), ...SWAP_STEPS]) {
+      expect(step.label.length).toBeGreaterThan(2);
+      expect(step.text).toMatch(/censaiOS|Building/);
+    }
+  });
+
+  test('how long a step has been going reads as seconds, then minutes', () => {
+    expect(elapsedText(0)).toBe('0 s');
+    expect(elapsedText(40_900)).toBe('40 s');
+    expect(elapsedText(125_000)).toBe('2 min 05 s');
+    expect(elapsedText(-5)).toBe('0 s');
+    expect(elapsedText(undefined)).toBe('0 s');
   });
 
   test('waiting remembers which changes and sees when they land', () => {

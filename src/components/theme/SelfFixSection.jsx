@@ -1,13 +1,6 @@
-/* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
-import { ThemePanelCard } from './ThemeControls.jsx';
 import { selfFixApi, STATUS_WORDS } from '../../lib/selfFix/api.js';
-
-const muted = { fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', margin: 0, lineHeight: 1.5 };
-const row = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' };
-const smallButton = { padding: '3px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--hairline)',
-  background: 'var(--surface)', color: 'var(--ink)', font: 'inherit', fontSize: 'var(--text-xs)', cursor: 'pointer' };
-const STATUS_COLOR = { ready: 'var(--success)', applied: 'var(--success)', landed: 'var(--success)', fixing: 'var(--accent)', failed: 'var(--danger)' };
+import { SettingsButton, SettingsGroup, SettingsNote, SettingsSection, SwitchRow } from './settingsKit.jsx';
 
 function when(ms) {
   return ms ? new Date(ms).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
@@ -17,25 +10,21 @@ function Report({ report, busy, onFix, onUndo }) {
   const canUndo = ['ready', 'applied'].includes(report.status);
   const canFix = ['saved', 'failed', 'undone'].includes(report.status);
   return (
-    <div style={{ display: 'grid', gap: 4, padding: '10px 0', borderTop: '1px solid var(--hairline)' }} data-testid="self-fix-report" data-status={report.status}>
-      <div style={{ ...row, justifyContent: 'space-between' }}>
-        <strong style={{ fontSize: 'var(--text-sm)' }}>{report.title}</strong>
-        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 650, color: STATUS_COLOR[report.status] || 'var(--ink-soft)' }}>
-          {STATUS_WORDS[report.status] || report.status}
+    <li className="hb-set-item" data-testid="self-fix-report" data-status={report.status}>
+      <div className="hb-set-item-main">
+        <span className="hb-set-label">{report.title}</span>
+        <span className={report.status === 'failed' ? 'hb-set-note hb-set-note--warn' : 'hb-set-note'}>{STATUS_WORDS[report.status] || report.status}</span>
+        {report.fix?.summary ? <span className="hb-set-hint">{report.fix.summary}</span> : null}
+        {report.note ? <span className="hb-set-hint">{report.note}</span> : null}
+        <span className="hb-set-hint">
+          Seen {report.count} {report.count === 1 ? 'time' : 'times'}, last {when(report.lastSeen)}
+          {report.fix?.files?.length ? ` · changed ${report.fix.files.join(', ')}` : ''}
+          {report.fix?.verify?.tests ? ` · ${report.fix.verify.tests} tests passed` : ''}
         </span>
       </div>
-      {report.fix?.summary && <p style={{ ...muted, color: 'var(--ink-soft)' }}>{report.fix.summary}</p>}
-      {report.note && <p style={muted}>{report.note}</p>}
-      <p style={muted}>
-        Seen {report.count} {report.count === 1 ? 'time' : 'times'}, last {when(report.lastSeen)}
-        {report.fix?.files?.length ? ` · changed ${report.fix.files.join(', ')}` : ''}
-        {report.fix?.verify?.tests ? ` · ${report.fix.verify.tests} tests passed` : ''}
-      </p>
-      <div style={row}>
-        {canUndo && <button type="button" style={smallButton} disabled={busy} onClick={() => onUndo(report.id)}>Undo this fix</button>}
-        {canFix && <button type="button" style={smallButton} disabled={busy} onClick={() => onFix(report.id)}>Try to fix it</button>}
-      </div>
-    </div>
+      {canUndo && <SettingsButton small disabled={busy} onClick={() => onUndo(report.id)}>Undo this fix</SettingsButton>}
+      {canFix && <SettingsButton small disabled={busy} onClick={() => onFix(report.id)}>Try to fix it</SettingsButton>}
+    </li>
   );
 }
 
@@ -63,27 +52,33 @@ export function SelfFixSection() {
   const state = data?.state;
   const reports = data?.reports || [];
   return (
-    <ThemePanelCard style={{ padding: 14, display: 'grid', gap: 8 }} data-testid="self-fix-section">
-      <div style={{ fontWeight: 650 }}>Fix errors by itself</div>
-      <label style={{ ...row, cursor: state ? 'pointer' : 'default', fontWeight: 600 }}>
-        <input type="checkbox" role="switch" aria-label="Fix errors by itself" checked={state?.setting === true}
-          disabled={!state || busy} onChange={(e) => act(() => selfFixApi.settings({ autoFix: e.target.checked }))} />
-        {state?.on ? 'On' : 'Off'}
-      </label>
-      <p style={muted}>
-        When something breaks, censaiOS saves a report with the error and the log lines around it (keys, emails and file
-        contents are taken out). With this on, Claude Code on this computer fixes it in a separate copy, the fix is tested,
-        and it goes in the next time censaiOS starts. Reports stay on this computer and only go to your own Claude Code.
-        Every fix can be undone here.
-      </p>
-      {state?.why && <p style={{ ...muted, color: 'var(--ink-soft)' }}>{state.why}</p>}
-      {state && <p style={muted}>Fixes today: {state.runsToday} of {state.dailyCap}.</p>}
-      {error && <p role="alert" style={{ ...muted, color: 'var(--danger)' }}>{error}</p>}
-      {reports.length === 0 && state && <p style={muted}>No errors yet.</p>}
-      {reports.map((report) => (
-        <Report key={report.id} report={report} busy={busy}
-          onFix={(id) => act(() => selfFixApi.fix(id))} onUndo={(id) => act(() => selfFixApi.undo(id))} />
-      ))}
-    </ThemePanelCard>
+    <SettingsSection
+      title="Fix errors by itself"
+      hint="When something breaks, censaiOS keeps a report with the error and the log lines around it (keys, emails and file contents are taken out). Reports stay on this computer."
+      data-testid="self-fix-section"
+    >
+      <SwitchRow
+        label="Let Claude Code fix errors"
+        hint="Claude Code on this computer fixes the error in a separate copy, the fix is tested, and it goes in the next time censaiOS starts. Every fix can be undone here."
+        switchLabel="Fix errors by itself"
+        checked={state?.setting === true}
+        disabled={!state || busy}
+        onChange={(on) => act(() => selfFixApi.settings({ autoFix: on }))}
+      />
+      {state?.why ? <SettingsNote>{state.why}</SettingsNote> : null}
+      <SettingsNote tone="error">{error}</SettingsNote>
+      {state && (
+        <SettingsGroup title="Error reports" hint={`Fixes today: ${state.runsToday} of ${state.dailyCap}.`}>
+          {reports.length === 0 ? <SettingsNote>No errors yet.</SettingsNote> : (
+            <ul className="hb-set-list">
+              {reports.map((report) => (
+                <Report key={report.id} report={report} busy={busy}
+                  onFix={(id) => act(() => selfFixApi.fix(id))} onUndo={(id) => act(() => selfFixApi.undo(id))} />
+              ))}
+            </ul>
+          )}
+        </SettingsGroup>
+      )}
+    </SettingsSection>
   );
 }

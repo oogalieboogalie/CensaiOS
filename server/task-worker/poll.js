@@ -7,8 +7,21 @@ import { runTask } from './execution.js';
 import { runTaskWithLifecycle } from './runLifecycle.js';
 import { requeueInProgressAgentTasks } from '../memory.js';
 import { safeErrorCode } from '../security/errorCode.js';
+import pool from '../db.js';
+import { takeBackEndedTaskSharesQuietly } from '../censaiOrchestrator/projectShare.js';
 
 let requeuedStuckTasks = false;
+
+// A task can also end without updateAgentTask (a pull request sync, a deleted
+// helper), so the project a to-do lent for it is swept up now and then too.
+const LOAN_SWEEP_MS = 30000;
+let lastLoanSweep = 0;
+
+function sweepEndedTaskLoans(now = Date.now()) {
+  if (now - lastLoanSweep < LOAN_SWEEP_MS) return;
+  lastLoanSweep = now;
+  takeBackEndedTaskSharesQuietly(pool);
+}
 
 async function checkAndRequeueStuckTasks() {
   if (requeuedStuckTasks) return;
@@ -22,6 +35,7 @@ async function checkAndRequeueStuckTasks() {
 }
 
 async function poll() {
+  if (dbReady()) sweepEndedTaskLoans();
   if (state.activeCount >= MAX_CONCURRENT) return;
   if (!dbReady()) {
     state.disabledReason = 'database_unavailable';

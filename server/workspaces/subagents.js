@@ -1,9 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import {
-  ensureBranch as ghEnsureBranch,
-  openPR as ghOpenPR,
-} from '../github.js';
+import { openPR as ghOpenPR } from '../github.js';
+import { makeVerifiedBranch, writeBranchRefusal } from './branchGuard.js';
 import {
   safeName,
   safeAgentId,
@@ -18,14 +16,16 @@ export function branchNameFor(subAgent) {
 
 export async function ensureSubAgentBranch(project, subAgent) {
   if (!isGithubProject(project)) return null;
-  const branch = branchNameFor(subAgent);
-  await ghEnsureBranch(project.repo, branch);
-  return branch;
+  // Made, then read back; never the project's main branch. Throws BranchBlocked
+  // with the plain reason, and the worker then has no branch to change files on.
+  return makeVerifiedBranch(project.repo, branchNameFor(subAgent));
 }
 
 export async function openSubAgentPR(project, subAgent, { title, body }) {
   if (!isGithubProject(project)) throw new Error('Not a GitHub project');
   if (!subAgent.github_branch) throw new Error('Sub-agent has no branch');
+  const refusal = await writeBranchRefusal(project.repo, subAgent.github_branch);
+  if (refusal) throw new Error(refusal);
   const pr = await ghOpenPR(project.repo, subAgent.github_branch, title, body);
   return pr;
 }

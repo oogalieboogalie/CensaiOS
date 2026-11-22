@@ -182,10 +182,13 @@ export async function recallMemories(agentId, query, opts = {}) {
 
   const missingIds = [...semanticIds].filter(id => !seen.has(id));
   if (missingIds.length > 0) {
+    // The same "mine, or shared" rule as the word search above. The search
+    // index is not trusted for it: its copy of who may read a note can be
+    // older than the note's own row.
     const { rows } = await pool.query(
       `SELECT id, content, memory_type, importance, emotional_weight, tags, created_at
-         FROM memories WHERE id = ANY($1) AND workspace_id = $2`,
-      [missingIds, scope.workspaceId]
+         FROM memories m WHERE m.id = ANY($3) AND ${accessFilter}`,
+      [scope.workspaceId, agentId, missingIds]
     );
     for (const r of rows) {
       const combined = combinedMemoryScore({

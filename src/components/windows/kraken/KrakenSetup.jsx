@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars -- JSX references are not detected by the legacy lint config. */
 import React from 'react';
 import { Icon } from '../../Icons.jsx';
-import { armsByAgent, rankWord } from '../../../lib/kraken/words.js';
+import { armsByAgent, pinLine, rankWord } from '../../../lib/kraken/words.js';
 
 const EXAMPLE = `# Review of the shop project
 
@@ -42,15 +42,14 @@ export function KrakenPaste({ kraken }) {
           Fix it in the project
         </label>
       </div>
-      {mode === 'fix' && (
-        <label className="hb-kraken-field">
-          <span className="hb-kraken-label">Project</span>
-          <input
-            className="hb-kraken-text" value={project} placeholder="The project the work is in, as Projects names it"
-            onChange={(event) => setDraft({ krakenProject: event.target.value })}
-          />
-        </label>
-      )}
+      <label className="hb-kraken-field">
+        <span className="hb-kraken-label">Project</span>
+        <input
+          className="hb-kraken-text" value={project}
+          placeholder={mode === 'fix' ? 'The project the work is in, as Projects names it' : 'The project to look in, as Projects names it (blank: the one Censai has on this board)'}
+          onChange={(event) => setDraft({ krakenProject: event.target.value })}
+        />
+      </label>
       <div className="hb-kraken-row">
         <button type="button" className="hb-btn" onClick={() => setDraft({ krakenReport: EXAMPLE })} disabled={Boolean(report)}>
           Show me an example
@@ -74,6 +73,10 @@ export function KrakenPreview({ kraken }) {
       <p className="hb-kraken-lede">
         {preview.arms.length} findings in "{preview.title}".
         {preview.dropped > 0 && ` ${preview.dropped} more were past the limit and are left out; hand those out next.`}
+      </p>
+      <p className="hb-kraken-pin" data-testid="kraken-pin">
+        {preview.pinNote || pinLine(preview.pin)}
+        {preview.pin && ' It stays this project and branch even if you switch projects before you release.'}
       </p>
       <p className="hb-kraken-who">
         {armsByAgent(kept).map((entry) => <span key={entry.agentId} className="hb-kraken-chip">{entry.agent} × {entry.count}</span>)}

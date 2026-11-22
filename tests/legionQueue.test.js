@@ -12,8 +12,8 @@ jest.unstable_mockModule('../server/legion/modelCall.js', () => ({
   cleanModelSpec: (spec) => (spec?.provider && spec?.model ? { provider: spec.provider, model: spec.model } : null),
 }));
 
-const { runQueue } = await import('../server/legion/queue.js');
-const { parseSpecYaml, withBuildOrder } = await import('../server/legion/spec.js');
+const { pathsOverlap, runQueue } = await import('../server/legion/queue.js');
+const { parseSpecYaml, specToYaml, withBuildOrder } = await import('../server/legion/spec.js');
 const { runChecks, failedJobs } = await import('../server/legion/validate.js');
 const { runLegion } = await import('../server/legion/loop.js');
 const { makeRunFolders } = await import('../server/legion/workspace.js');
@@ -22,6 +22,7 @@ const { parseStart } = await import('../server/legion/runs.js');
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'legion-queue-'));
 const model = { provider: 'ollama', model: 'standin' };
 const job = (id, owner, dependsOn = []) => ({ id, owner, task: `do ${id}`, dependsOn, status: 'queued', attempt: 0 });
+const pause = (ms) => new Promise((r) => { setTimeout(r, ms); });
 
 describe('YAML spec', () => {
   test('reads jobs and checks, and refuses a spec without jobs', () => {
@@ -37,6 +38,25 @@ describe('YAML spec', () => {
     const jobs = withBuildOrder([job('J-1', 'genesis'), job('J-2', 'foundation'), job('J-3', 'genesis')]);
     expect(jobs.find((j) => j.id === 'J-1').dependsOn).toEqual(['J-2']);
     expect(jobs.find((j) => j.id === 'J-2').dependsOn).toEqual([]);
+  });
+
+  test('a contract job waits on nobody, and every job without depends_on waits on it', () => {
+    const { spec } = parseSpecYaml([
+      'goal: CRM', 'jobs:',
+      '  - { id: J-001, owner: nexus, task: shapes, contract: true, depends_on: [J-003], files: [contract/, contract/] }',
+      '  - { id: J-002, owner: atlas, task: api, files: [server] }',
+      '  - { id: J-003, owner: genesis, task: page, depends_on: [J-002] }',
+      '  - { id: J-004, owner: foundation, task: setup, contract: true }',
+    ].join('\n'));
+    const byId = (id) => spec.jobs.find((j) => j.id === id);
+    expect(byId('J-001')).toMatchObject({ contract: true, dependsOn: [], files: ['contract'] });
+    expect(byId('J-002')).toMatchObject({ dependsOn: ['J-001'], files: ['server'] });
+    expect(byId('J-003').dependsOn).toEqual(['J-002']);
+    expect(byId('J-004').dependsOn).toEqual(['J-001']);
+    expect(byId('J-004').contract).toBeUndefined();
+    // The build order leaves the contract job alone, and the YAML keeps files and the contract.
+    expect(withBuildOrder(spec.jobs).find((j) => j.id === 'J-001').dependsOn).toEqual([]);
+    expect(parseSpecYaml(specToYaml(spec)).spec).toEqual(spec);
   });
 
   test('a start with only a YAML spec takes its goal from the spec', () => {
@@ -84,6 +104,37 @@ describe('Work Queue', () => {
     const jobs = [job('J-1', 'genesis', ['J-2']), job('J-2', 'genesis', ['J-1'])];
     await runQueue({ jobs, runJob: async () => 'ok' });
     expect(jobs.map((j) => j.status)).toEqual(['blocked', 'blocked']);
+  });
+
+  test('two jobs that own the same file or folder never run at the same time', async () => {
+    expect(pathsOverlap('src', 'src/app.js')).toBe(true);
+    expect(pathsOverlap('src', 'src2/app.js')).toBe(false);
+    const jobs = [
+      { ...job('J-1', 'genesis'), files: ['src'] },
+      { ...job('J-2', 'genesis'), files: ['src/app.js'] },
+      { ...job('J-3', 'genesis'), files: ['README.md'] },
+      job('J-4', 'genesis'),
+    ];
+    const live = new Set();
+    const seen = [];
+    await runQueue({ jobs, runJob: async (j) => { live.add(j.id); seen.push([...live]); await pause(10); live.delete(j.id); } });
+    expect(seen.some((ids) => ids.includes('J-1') && ids.includes('J-2'))).toBe(false);
+    expect(seen.some((ids) => ['J-1', 'J-3', 'J-4'].every((id) => ids.includes(id)))).toBe(true);
+    expect(jobs.every((j) => j.status === 'done')).toBe(true);
+  });
+
+  test('in waves, the next wave waits for the last one, and the step between can change a waiting job', async () => {
+    const jobs = [job('J-1', 'nexus'), job('J-2', 'genesis', ['J-1']), job('J-3', 'genesis', ['J-1']), job('J-4', 'genesis')];
+    const waves = [];
+    const ran = [];
+    await runQueue({
+      jobs, concurrency: 1,
+      runJob: async (j) => { ran.push(j.task); await pause(5); },
+      afterWave: async (ended) => { waves.push(ended.map((j) => j.id)); jobs[1].task = 'changed'; },
+    });
+    // J-1 and J-4 were ready together; there is no step after the last wave.
+    expect(waves).toEqual([['J-1', 'J-4']]);
+    expect(ran).toEqual(['do J-1', 'do J-4', 'changed', 'do J-3']);
   });
 
   test('ids in depends_on and checks are cleaned the same way as job ids', () => {
@@ -144,5 +195,40 @@ describe('Legion with a YAML spec', () => {
     // Both Genesis jobs were working at the same moment.
     const both = events.filter((e) => e.type === 'queue').some((e) => e.jobs.filter((j) => j.status === 'working').length === 2);
     expect(both).toBe(true);
+  });
+});
+
+describe('Legion with owned files', () => {
+  test('a builder cannot write a file another job owns, and the job says so', async () => {
+    const dir = tmp();
+    await makeRunFolders(dir);
+    const events = [];
+    const ask = async ({ label, prompt }) => {
+      const say = (text) => ({ text, model: 'standin', ms: 1 });
+      if (label === 'nexus') return say('=== FILE: contract/shapes.json\n{"contact":["name"]}\n=== END');
+      if (label === 'genesis' && prompt.includes('Job J-002')) {
+        expect(prompt).toContain('Files this job owns: index.html');
+        return say('=== FILE: index.html\n<p>hi</p>\n=== END\n=== FILE: contract/shapes.json\nbroken\n=== END\n=== FILE: notes.txt\nfree\n=== END');
+      }
+      if (label === 'genesis') return say('=== FILE: app.js\nx()\n=== END');
+      if (label === 'echo') return say('{"verdict":"OK","summary":"Fine."}');
+      return say('{}');
+    };
+    const { spec } = parseSpecYaml([
+      'goal: CRM', 'jobs:',
+      '  - { id: J-001, owner: nexus, task: shapes, contract: true, files: [contract] }',
+      '  - { id: J-002, owner: genesis, task: page, files: [index.html] }',
+      '  - { id: J-003, owner: genesis, task: script, files: [app.js] }',
+    ].join('\n'));
+    await runLegion({
+      goal: spec.goal, spec, models: { architect: model }, account: {}, dir, emit: (e) => events.push(e), ask, replan: false, selfEducate: false,
+      look: async () => ({ ok: false, reason: 'No browser' }), commit: async () => ({ committed: true, sha: 'a' }),
+    });
+    const project = path.join(dir, 'project');
+    expect(fs.readFileSync(path.join(project, 'contract', 'shapes.json'), 'utf8')).toContain('contact');
+    expect(fs.readFileSync(path.join(project, 'notes.txt'), 'utf8')).toBe('free\n'); // nobody owns it
+    const last = events.filter((e) => e.type === 'queue').pop().jobs;
+    expect(last.find((j) => j.id === 'J-002').note).toMatch(/Not saved: contract\/shapes\.json \(J-001 owns it\)/);
+    expect(events.some((e) => e.type === 'note' && /J-002 also wrote contract\/shapes\.json/.test(e.text))).toBe(true);
   });
 });

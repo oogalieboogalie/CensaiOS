@@ -22,25 +22,27 @@
   background: var(--brand-ultem);
 }
 
+/* The overview card in Settings > Open anywhere: the same card as every Settings section. */
 .hb-yor-card {
   display: grid;
   gap: var(--space-3);
-  margin-top: var(--space-3);
-  padding: var(--space-3);
+  padding: var(--space-4);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background: var(--layer-panel);
+  box-shadow: var(--panel-shadow);
 }
-.hb-yor-card-title { font-size: var(--text-md); font-weight: 750; color: var(--ink); }
-.hb-yor-card-sub { margin-top: var(--space-0-5); font-size: var(--text-xs); color: var(--ink-faint); }
-.hb-yor-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.hb-yor-card-title { font-size: var(--text-base); font-weight: 600; color: var(--ink); }
+.hb-yor-card-sub { margin-top: var(--space-1); font-size: var(--text-sm); color: var(--ink-faint); line-height: 1.5; }
+.hb-yor-list { display: grid; gap: var(--space-1-5); margin: 0; padding: 0; list-style: none; }
 .hb-yor-row {
   display: grid;
   gap: var(--space-1);
   justify-items: start;
-  padding: var(--space-2);
+  padding: var(--space-2) var(--space-2-5);
+  border: 1px solid var(--hairline-soft);
   border-radius: var(--radius-md);
-  background: var(--surface-2);
+  background: var(--layer-well);
 }
 .hb-yor-line { font-size: var(--text-sm); color: var(--ink); line-height: 1.45; }
 .hb-yor-where { font-size: var(--text-xs); color: var(--ink-faint); }

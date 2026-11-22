@@ -6,7 +6,7 @@
 // the agent really did comes from its tool calls, not its words: files it
 // changed, tests it ran, calls that failed.
 
-import { DOC_FILE, agentName, clip } from './shape.js';
+import { DOC_FILE, PR_WAITS, agentName, clip } from './shape.js';
 import { addTestsItem, checklistOf, checklistVerdict, reopenChecklist, setItem, tickCount, tickWords } from './checklist.js';
 import { parseItemReview, reviewMessages } from './prompts.js';
 
@@ -40,6 +40,15 @@ function failureWhy(action) {
   return why ? `did not go through: ${clip(why, 160)}` : 'did not go through';
 }
 
+const savedFile = (action) => (LOCAL_WRITES.has(action?.tool) && (action.summary?.path || action.args?.path || action.args?.file_path)) || null;
+
+// A save that missed, then went through to the same file later in the turn (a job
+// reads the file again and retries): the retry worked, so it is not a step that failed.
+function madeGood(actions, index) {
+  const file = savedFile(actions[index]);
+  return Boolean(file) && actions.slice(index + 1).some((later) => later?.ok !== false && savedFile(later) === file);
+}
+
 /** What the agent's tool calls show: { files, projects, shell, failedTools, failures, agentTests }. */
 export function readEvidence(toolActions = []) {
   const files = new Set();
@@ -47,16 +56,17 @@ export function readEvidence(toolActions = []) {
   const failed = new Map();
   const agentTests = [];
   let shell = false;
-  for (const action of Array.isArray(toolActions) ? toolActions : []) {
+  const actions = Array.isArray(toolActions) ? toolActions : [];
+  for (const [index, action] of actions.entries()) {
     const tool = action?.tool;
     if (!tool) continue;
     if (action.ok === false) {
-      if (!failed.has(tool)) failed.set(tool, failureWhy(action));
+      if (!failed.has(tool) && !madeGood(actions, index)) failed.set(tool, failureWhy(action));
       continue;
     }
     const args = action.args || {};
     if (LOCAL_WRITES.has(tool)) {
-      const file = action.summary?.path || args.path || args.file_path;
+      const file = savedFile(action);
       if (file) files.add(String(file));
       for (const edit of Array.isArray(args.edits) ? args.edits : []) if (edit?.path) files.add(String(edit.path));
       const project = writtenProject(action, file);
@@ -156,7 +166,25 @@ export async function checkAnswer({ job, answer, toolActions, deps }) {
     }));
   }
 
+  // Last: the pull request is opened only for work that checks out otherwise. Its checks are
+  // read later, while the job waits outside the runner (parked: runner.js, jobPr.js).
+  const onPr = items.filter((entry) => entry.how === 'pr');
+  let parked = null;
+  if (onPr.length) {
+    const rest = items.filter((entry) => entry.how !== 'pr');
+    if (rest.some((entry) => entry.state !== 'ticked')) {
+      await deps.change(() => onPr.forEach((item) => setItem(item, 'failed', PR_WAITS)));
+    } else {
+      await deps.change(() => onPr.forEach((item) => setItem(item, 'checking', 'Opening the pull request')));
+      const pr = await deps.openPr();
+      if (pr.open) parked = pr.pr;
+      await deps.change(() => onPr.forEach((item) => setItem(item, pr.open ? 'checking' : stateOf(pr.ok), pr.line)));
+      seen.push(pr.line);
+    }
+  }
+
   const { ticked, total } = tickCount(job);
+  if (parked) return { seen, verdict: { ok: null, items: [] }, parked };
   await deps.step(tickWords(job), ticked === total ? 'done' : 'bad', { settle: true });
   return { seen, verdict: checklistVerdict(job) };
 }

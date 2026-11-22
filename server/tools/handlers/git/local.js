@@ -6,11 +6,15 @@ import {
 } from './shared.js';
 
 async function resolveGitRoot(agentId, args = {}, context = {}) {
+  // A project the call names is that project or a refusal (no such project, or a name that fits
+  // more than one): git never runs somewhere else instead. Only a call that names none, off a
+  // board, falls back to the folder the app runs from.
+  const named = args.project || args.project_name;
   let root;
   try {
-    root = await resolveLocalProjectRoot(agentId, args.project || args.project_name || 'CensaiHub', context);
+    root = await resolveLocalProjectRoot(agentId, named || 'CensaiHub', context);
   } catch (error) {
-    if (context.workspaceId) throw error;
+    if (named || context.workspaceId) throw error;
     root = process.cwd();
   }
   const gitCheck = await runGit(root, ['rev-parse', '--show-toplevel']);

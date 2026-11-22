@@ -6,6 +6,7 @@ import {
   replaceCanvasProjectMemberships,
 } from '../../workspaces/projectMemberships.js';
 import { refuseNewProjectToTeammate } from './newProjectOwnerOnly.js';
+import { windowProjectsToGive } from './windowProjects.js';
 
 export const projectMembershipsRouter = express.Router();
 
@@ -55,14 +56,21 @@ projectMembershipsRouter.put('/workspaces/:workspaceId/agent-projects/:projectId
       memberships: req.body?.memberships,
     });
     if (refused) return res.status(refused.status).json(refused.body);
+    // A window set to its own project gives its agent that project too.
+    const { windowProjects, skipped } = await windowProjectsToGive({
+      workspaceId: req.params.workspaceId,
+      projectId: req.params.projectId,
+      windowProjects: req.body?.windowProjects,
+    });
     const rows = await replaceCanvasProjectMemberships(pool, {
       workspaceId: req.params.workspaceId,
       projectId: req.params.projectId,
       memberships: req.body?.memberships,
+      ...(windowProjects.length ? { windowProjects } : {}),
       sourceId: req.body?.sourceId || req.params.workspaceId,
       userId: req.session.userId,
     });
-    res.json({ ok: true, memberships: rows.map(publicMembership) });
+    res.json({ ok: true, memberships: rows.map(publicMembership), ...(skipped ? { windowProjectsSkipped: skipped } : {}) });
   } catch (error) {
     res.status(error.statusCode || 500).json({ error: error.message, code: error.code });
   }

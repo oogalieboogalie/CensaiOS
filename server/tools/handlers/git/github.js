@@ -3,6 +3,7 @@ import { recordProvenance } from '../../../operational-intelligence/provenance.j
 import { noteToolFailure } from '../../toolsLog.js';
 import { ownerOnlyProjectRead } from '../../rbac/ownerOnlyReads.js';
 import { isRepoName } from '../../../github.js';
+import { BAD_PATH, BranchBlocked, makeVerifiedBranch, repoPathParts } from '../../../workspaces/branchGuard.js';
 import { LINKED_SECRET, linkedSecret } from '../../../security/secretFiles.js';
 
 /**
@@ -26,9 +27,22 @@ export async function githubReadFile(args, context = {}) {
 }
 
 export async function githubWriteFile(args) {
+  if (!isRepoName(args.repo)) return 'Error: Nothing was changed. repo must be owner/name.';
+  // Spelled out part by part, so the path cannot reach another repo or anything that is not a file.
+  const parts = repoPathParts(args.path);
+  if (!parts) return `Error: Nothing was changed. ${BAD_PATH}`;
+  const file = `/repos/${args.repo}/contents/${parts.map(encodeURIComponent).join('/')}`;
+  // Only ever on a work branch, made and read back first; never the repo's main branch.
+  let branch;
+  try {
+    branch = await makeVerifiedBranch(args.repo, args.branch);
+  } catch (error) {
+    if (!(error instanceof BranchBlocked)) throw error;
+    return `Error: Nothing was changed. ${error.message}`;
+  }
   let sha = null;
   try {
-    const fileInfo = await fetchGithub(`/repos/${args.repo}/contents/${args.path}`);
+    const fileInfo = await fetchGithub(`${file}?ref=${encodeURIComponent(branch)}`);
     if (fileInfo && fileInfo.sha) sha = fileInfo.sha;
   } catch (e) {
     // intentional: 404 means the file is new, so we PUT without an existing sha to create it.
@@ -37,10 +51,11 @@ export async function githubWriteFile(args) {
   const body = {
     message: args.message,
     content: Buffer.from(args.content).toString('base64'),
+    branch,
   };
   if (sha) body.sha = sha;
 
-  const res = await fetchGithub(`/repos/${args.repo}/contents/${args.path}`, {
+  const res = await fetchGithub(file, {
     method: 'PUT',
     body: JSON.stringify(body)
   });

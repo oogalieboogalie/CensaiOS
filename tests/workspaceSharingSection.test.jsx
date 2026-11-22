@@ -128,4 +128,21 @@ describe('workspace sharing settings', () => {
     expect(navigate).toHaveBeenCalledWith('user-7-default');
     globalThis.confirm = confirmBefore;
   });
+
+  test('an admin of someone else\'s board can invite and can also leave it', async () => {
+    getWorkspaceMembers.mockResolvedValue({
+      workspace: { id: 'workspace-a', name: 'Launch', role: 'admin' }, members: [],
+    });
+    render(<WorkspaceSharingSection />);
+    expect(await screen.findByTestId('guest-link-manager')).toBeTruthy();
+    expect(screen.getByText('You joined this board as an admin.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Go to my workspace' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Leave shared workspace' })).toBeTruthy();
+  });
+
+  test('the owner gets no leave buttons', async () => {
+    render(<WorkspaceSharingSection />);
+    expect(await screen.findByTestId('guest-link-manager')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Leave shared workspace' })).toBeNull();
+  });
 });

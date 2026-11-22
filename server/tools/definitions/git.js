@@ -18,7 +18,7 @@ export const gitTools = [
     type: 'function',
     function: {
       name: 'github_write_file',
-      description: 'Create or update a file in a GitHub repository on the default branch.',
+      description: 'Create or update a file in a GitHub repository, on a work branch you name. The branch is made from the main branch if it is not there yet. A file is never written straight to the main branch (master, main or whatever the repository\'s default is): with no branch, or with the main branch, the call is refused and nothing is changed.',
       parameters: {
         type: 'object',
         properties: {
@@ -26,8 +26,9 @@ export const gitTools = [
           path: { type: 'string', description: 'Path to the file to create/update' },
           content: { type: 'string', description: 'The new contents of the file' },
           message: { type: 'string', description: 'Commit message' },
+          branch: { type: 'string', description: 'The work branch to write on (for example "fix/readme-typo"). Never the main branch.' },
         },
-        required: ['repo', 'path', 'content', 'message'],
+        required: ['repo', 'path', 'content', 'message', 'branch'],
       },
     },
   },
@@ -68,7 +69,7 @@ export const gitTools = [
     type: 'function',
     function: {
       name: 'hand_coding_job_to_github',
-      description: 'Hand a coding job to the GitHub coding agent (@grok by default, or @claude). Not github_create_issue, which files an ordinary issue anywhere the token can write. This one only files in oogalieboogalie/Homebase or oogalieboogalie/censai-coordination, with Goal / Steps / Done when, and the coding agent builds that into a pull request. You get a message in this chat when that pull request opens and when it merges; then run read_app_log and check the fix.',
+      description: 'Hand a coding job to the GitHub coding agent (@grok by default, or @claude). Not github_create_issue, which files an ordinary issue anywhere the token can write. This one files only in an approved repository: oogalieboogalie/Homebase, oogalieboogalie/censai-coordination, the repository of a project you may work in on this board, or one listed in CENSAI_AGENT_TASK_REPOS. Any other is refused with how to approve it. Give title, goal, steps and acceptance; the coding agent builds that into a pull request. Each job gets a permanent number (task_id) and is followed through checks, review and merge: you get a message in this chat when the pull request opens, when it merges, and when the job is done. Done means proven: a real change, checks passed on the latest commit, an independent review of that commit, and a recorded merge. Merged alone is not done. To see where your jobs stand instead of filing one, pass only list_jobs: true; each job comes back with its pull request link, what it is waiting for and when it last changed.',
       parameters: {
         type: 'object',
         properties: {
@@ -77,9 +78,10 @@ export const gitTools = [
           steps: { type: 'array', items: { type: 'string' }, description: 'The steps to build it, in order' },
           acceptance: { type: 'array', items: { type: 'string' }, description: 'Checks that prove it is done' },
           worker: { type: 'string', enum: ['grok', 'claude'], description: 'Which coding agent builds it (defaults to grok)' },
-          repo: { type: 'string', description: 'owner/name. Only oogalieboogalie/Homebase or oogalieboogalie/censai-coordination. Defaults to CENSAI_AGENT_TASK_REPO when that is one of those two.' },
+          repo: { type: 'string', description: 'owner/name of an approved repository (see above). Defaults to CENSAI_AGENT_TASK_REPO.' },
+          list_jobs: { type: 'boolean', description: 'true = file nothing; list the coding jobs this agent handed over on this board, each with its pull request link, what each waits for and last update.' },
         },
-        required: ['title', 'goal', 'steps', 'acceptance'],
+        required: [],
       },
     },
   },

@@ -49,7 +49,8 @@ export function closeChecklist(job, why) {
 /** Work that turned out to change files gets the project's tests on its list. */
 export function addTestsItem(job) {
   const items = checklistOf(job);
-  if (items.some((item) => item.how === 'tests')) return false;
+  // A fix on GitHub is tested by its pull request's checks (its 'pr' item), not here.
+  if (items.some((item) => item.how === 'tests' || item.how === 'pr')) return false;
   items.push({ n: items.length + 1, text: TESTS_ITEM, how: 'tests', auto: true, state: 'open', line: '' });
   return true;
 }

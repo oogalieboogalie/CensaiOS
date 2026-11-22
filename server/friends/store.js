@@ -136,6 +136,12 @@ export async function removeFriend(db, { ownerId, friendId }) {
   }
 }
 
+/** The board, if the owner may share it. Throws the same way putOnBoard does when not. */
+export async function boardToShare(db, { ownerId, workspaceId }) {
+  const workspace = await requireWorkspaceMember(db, { workspaceId, userId: ownerId, roles: WORKSPACE_MEMBER_MANAGE_ROLES });
+  return { id: workspace.id, name: workspace.name };
+}
+
 /**
  * Makes the friend a member of one board. The owner must manage that board.
  * @param {{ ownerId: number, friend: object, workspaceId: string, role?: 'member'|'viewer' }} input

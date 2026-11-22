@@ -1,6 +1,20 @@
 import pool from '../../db.js';
 import { getSubAgents, getSubAgentById, createAgentTask, sendAgentMessage } from '../../memory.js';
 import { noteToolFailure } from '../toolsLog.js';
+import { resolveProjectForDriver } from '../../workspaces/ownerProjectLookup.js';
+
+// The project a squad task works in, found the way submit_agent_task finds it:
+// by the board's rules, as the agent handing out the work. A name that matches
+// nothing fails that one task instead of sending the helper somewhere else.
+async function namedProject(agentId, name, context, found) {
+  const key = String(name).trim().toLowerCase();
+  if (!found.has(key)) {
+    found.set(key, await resolveProjectForDriver(pool, {
+      workspaceId: context.workspaceId, agentId, projectIdentifier: name, requiredPermission: 'read',
+    }, context));
+  }
+  return found.get(key);
+}
 
 export async function handleDispatchTool(agentId, name, args, context = {}) {
   switch (name) {
@@ -15,6 +29,7 @@ export async function handleDispatchTool(agentId, name, args, context = {}) {
 
       const created = [];
       const errors = [];
+      const found = new Map();
 
       for (const t of args.tasks) {
         if (!t.assignee || !t.title || !t.prompt) {
@@ -30,10 +45,14 @@ export async function handleDispatchTool(agentId, name, args, context = {}) {
           continue;
         }
         try {
+          // The task's own project, else the squad's, else the helper's usual one.
+          const wanted = t.project || args.project || null;
+          const project = wanted ? await namedProject(agentId, wanted, context, found) : null;
           const task = await createAgentTask({
             parentId: agentId,
             assigneeId: sub.id,
-            projectId: sub.project_id || null,
+            projectId: project?.id || sub.project_id || null,
+            project: project?.name || sub.project_id || null,
             title: t.title,
             prompt: t.prompt,
             priority: t.priority || 'normal',
@@ -43,7 +62,7 @@ export async function handleDispatchTool(agentId, name, args, context = {}) {
             workspaceId: context.workspaceId,
             userId: context.userId,
           });
-          created.push(`  • ${sub.name} → "${t.title}" [${task.id.slice(0, 8)}]`);
+          created.push(`  • ${sub.name} → "${t.title}"${project ? ` in "${project.name}"` : ''} [${task.id.slice(0, 8)}]`);
         } catch (err) {
           errors.push(`Failed to queue task for ${t.assignee}: ${err.message}`);
         }

@@ -14,8 +14,9 @@ import { SpeakUpSection } from './SpeakUpSection.jsx';
 import { WakeUpSection } from './WakeUpSection.jsx';
 import { SelfFixSection } from './SelfFixSection.jsx';
 import { HotkeysSection } from './HotkeysSection.jsx';
-
-const scrollStyle = { overflowY: 'auto', flex: 1 };
+import { DesktopServerCard } from './DesktopServerCard.jsx';
+import { SettingsNote, SettingsPage, SettingsSection } from './settingsKit.jsx';
+import { settingsTabIntro } from './settingsTabs.js';
 
 export function SettingsTabContent({
   tab,
@@ -28,12 +29,13 @@ export function SettingsTabContent({
   onLogout,
   resetError = '',
 }) {
-  if (tab === 'appearance') return <ThemeAppearanceContent panel={panel} />;
+  const intro = settingsTabIntro(tab);
+
+  if (tab === 'appearance') return <ThemeAppearanceContent panel={panel} intro={intro} />;
 
   if (tab === 'workspace') {
     return (
-      <div style={scrollStyle}>
-        {resetError && <div role="alert" style={{ marginBottom: 10, color: 'var(--ps-red)', fontSize: 'var(--text-xs)' }}>{resetError}</div>}
+      <SettingsPage intro={intro}>
         <WorkspaceSection
           focusMode={focusMode}
           setFocusMode={setFocusMode}
@@ -41,71 +43,68 @@ export function SettingsTabContent({
           setPenMode={setPenMode}
           onResetWorkspace={onResetWorkspace}
           onLogout={onLogout}
+          accountNote={resetError ? <SettingsNote tone="error">{resetError}</SettingsNote> : null}
         />
-      </div>
+      </SettingsPage>
     );
   }
 
-  // Trust mode: agents act on their own unless the board or one agent asks first.
   if (tab === 'agents') {
     return (
-      <div style={scrollStyle}>
+      <SettingsPage intro={intro}>
         <TrustModeSection />
-        <div style={{ height: 12 }} />
         <SpeakUpSection />
-        <div style={{ height: 12 }} />
         <WakeUpSection />
-        <div style={{ height: 12 }} />
         <SelfFixSection />
-      </div>
+      </SettingsPage>
     );
   }
 
-  // Alt keys that open a coding agent terminal (Claude Code, Codex, Copilot…).
   if (tab === 'hotkeys') {
     return (
-      <div style={scrollStyle}>
+      <SettingsPage intro={intro}>
         <HotkeysSection />
-      </div>
+      </SettingsPage>
     );
   }
 
   if (tab === 'sharing') {
     return (
-      <div style={scrollStyle}>
+      <SettingsPage intro={intro}>
         <WorkspaceSharingSection />
         <FriendsSection />
         <SignInDomainsSection />
-      </div>
+      </SettingsPage>
     );
   }
 
-  // Web OS: other computers open this board by address; install as an app.
   if (tab === 'anywhere') {
     return (
-      <div style={scrollStyle}>
-        <React.Suspense fallback={<p style={{ margin: 0, color: 'var(--ink-faint)', fontSize: 'var(--text-sm)' }}>Loading...</p>}>
+      <SettingsPage intro={intro}>
+        <React.Suspense fallback={<SettingsNote>Loading...</SettingsNote>}>
           <OpenAnywhereSection />
           <TailnetSection />
         </React.Suspense>
+        <DesktopServerCard />
         <YorSecurityCard />
-      </div>
+      </SettingsPage>
     );
   }
 
-  // Spec 6: which modules a board offers. Adding them lives in the Add palette.
   if (tab === 'modules') {
     return (
-      <div style={{ ...scrollStyle, display: 'flex', flexDirection: 'column', minHeight: 0 }} data-settings-modules>
-        <MarketplaceWindow />
-      </div>
+      <SettingsPage intro={intro} data-settings-modules>
+        <SettingsSection className="hb-set-section--flush">
+          <MarketplaceWindow />
+        </SettingsSection>
+      </SettingsPage>
     );
   }
 
   return (
-    <div style={scrollStyle}>
+    <SettingsPage intro={intro}>
       <VaultSection />
       <KeySharingSection />
-    </div>
+    </SettingsPage>
   );
 }

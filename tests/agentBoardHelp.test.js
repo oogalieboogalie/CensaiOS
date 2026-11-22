@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import path from 'path';
 
 // The board: Atlas (chat), a Claude Code console and a ready module.
 const board = [
@@ -97,6 +98,25 @@ test('an agent asks a coding CLI: a console task starts and the card waits on it
   // A step waiting for a person ends the wait; the answer reaches the chat later.
   expect(out).toMatchObject({ request_id: 'cli:t1', agent: 'Claude Code', status: 'needs approval' });
   expect(settleHelpCard).toHaveBeenCalledWith('ws-a', { id: 'help-cli-t1' }, expect.objectContaining({ status: 'needs approval' }));
+});
+
+test('a console with no folder of its own works in the asking chat\'s project, not the one this computer opened last', async () => {
+  const added = [
+    { id: 'w-censai', kind: 'chat', agentId: 'censai', project: { type: 'local', name: 'MadeUpBase', path: '/made-up-base' }, x: 0, y: 400, w: 400, h: 300 },
+    { id: 'w-fresh', kind: 'agentConsole', cli: 'claudecode', x: 1000, y: 400, w: 400, h: 300 },
+  ];
+  board.push(...added);
+  try {
+    await requestBoardHelp(scope, {
+      cardId: 'window:w-fresh', task: 'Fix the header', fromWindowId: 'w-censai', requesterAgentId: 'censai', fromLabel: 'Censai',
+    });
+    expect(manager.start).toHaveBeenCalledWith(expect.objectContaining({ folder: path.resolve('/made-up-base'), approvalGated: true }));
+    // Asked from a chat with no project: the project this computer has open, as before.
+    await requestBoardHelp(scope, { cardId: 'window:w-fresh', task: 'Fix the header', fromWindowId: 'w-atlas', requesterAgentId: 'atlas', fromLabel: 'Atlas' });
+    expect(manager.start).toHaveBeenLastCalledWith(expect.objectContaining({ folder: '/repo' }));
+  } finally {
+    board.splice(board.length - added.length, added.length);
+  }
 });
 
 test('a finished CLI task comes back as the answer', async () => {

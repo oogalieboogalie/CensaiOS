@@ -64,16 +64,25 @@ export async function joinBoard(code, win = globalThis.window) {
   const data = await call('/joins', { method: 'POST', body: { code } });
   return { ...data, opened: data.joined?.url ? await openBoard(data.joined.url, win) : false };
 }
+/** Comes in on someone's quick invite with the 8 digits they told you, and opens their board. */
+export async function useQuickInvite(invite, doorCode, win = globalThis.window) {
+  const data = await call('/quick/use', { method: 'POST', body: { invite, doorCode } });
+  return { ...data, opened: data.joined?.url ? await openBoard(data.joined.url, win) : false };
+}
+export const makeQuickInvite = ({ workspaceId, role }) => call('/quick', { method: 'POST', body: { workspaceId, role } });
+export const openQuickDoor = () => call('/quick/open', { method: 'POST', body: {} });
+export const endQuickInvite = () => call('/quick', { method: 'DELETE' });
 export const leaveBoard = (joinId) => call(`/joins/${encodeURIComponent(joinId)}`, { method: 'DELETE' });
 // On a friend's board: both ask for the party's password from the party code.
 export const partyHello = (token) => call('/party/hello', { token });
 export const enterParty = (token) => call('/party/enter', { method: 'POST', body: {}, token });
 
-/** 'friend', 'party' or '' from the first characters, so one box takes both codes. */
+/** 'friend', 'party', 'quick' or '' from the first characters, so one box takes every code. */
 export function kindOfCode(text) {
   const code = String(text || '').trim();
   if (code.startsWith('cf1-')) return 'friend';
   if (code.startsWith('cp1-')) return 'party';
+  if (code.startsWith('cq1-')) return 'quick';
   return '';
 }
 

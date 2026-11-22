@@ -8,13 +8,15 @@ export async function getWorkspaceAgentProjects(workspaceId, agentId = null) {
   return data.memberships || [];
 }
 
-export async function syncCanvasProjectMemberships({ workspaceId, projectId, memberships, sourceId }) {
+export async function syncCanvasProjectMemberships({ workspaceId, projectId, memberships, sourceId, windowProjects = [] }) {
   const res = await fetch(
     `/api/workspaces/${encodeURIComponent(workspaceId)}/agent-projects/${encodeURIComponent(projectId)}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberships, sourceId }),
+      // windowProjects: the projects windows on the board are set to, each
+      // with the agents in those windows (src/lib/projectPrewarm.js).
+      body: JSON.stringify({ memberships, sourceId, ...(windowProjects.length ? { windowProjects } : {}) }),
     }
   );
   const data = await res.json().catch(() => ({}));

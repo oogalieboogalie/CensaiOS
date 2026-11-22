@@ -55,6 +55,7 @@ export function parseStart(body = {}) {
   if (!goal) return { error: 'Say what the Legion should build.' };
   const askFirst = body.askQuestions !== false;
   const selfEducate = body.selfEducate !== false;
+  const replan = body.replan !== false;
   const fallback = cleanModelSpec(body.model);
   const models = {};
   for (const role of ROLE_IDS) {
@@ -62,7 +63,7 @@ export function parseStart(body = {}) {
     if (!picked) return { error: 'Pick a model for the Legion (one for everyone, or one per role).' };
     models[role] = picked;
   }
-  return { goal, models, askFirst, spec, selfEducate };
+  return { goal, models, askFirst, spec, selfEducate, replan };
 }
 
 const summary = (run) => ({
@@ -81,7 +82,7 @@ export function runningFor(userId) {
 
 /** Start a Legion in the background. Returns the run's summary. */
 export async function startRun({
-  userId, account, goal, models, askFirst = true, spec = null, selfEducate = true, root = legionRoot(), runner = runLegion,
+  userId, account, goal, models, askFirst = true, spec = null, selfEducate = true, replan = true, root = legionRoot(), runner = runLegion,
   search = (query) => webSearch(userId, query), waitMs = QUESTION_WAIT_MS, resume = null,
 }) {
   forgetFinishedRuns();
@@ -103,7 +104,7 @@ export async function startRun({
   };
   // Where the run is (server/legion/checkpoint.js), saved in the same queue as run.json so writes never cross.
   const state = {
-    ...resume?.state, userId, goal, models, askFirst, selfEducate, personSpecYaml: spec ? specToYaml(spec) : null,
+    ...resume?.state, userId, goal, models, askFirst, selfEducate, replan, personSpecYaml: spec ? specToYaml(spec) : null,
     resumes: resume ? (Number(resume.state?.resumes) || 0) + 1 : 0,
   };
   const checkpoint = (point = {}) => {
@@ -126,7 +127,7 @@ export async function startRun({
   const lessons = await pastLessons(path.dirname(dir));
   run.done = Promise.resolve()
     .then(() => runner({
-      goal, models, account, dir, emit, signal: controller.signal, lessons, search, spec, selfEducate, memory: openMemory(path.dirname(dir)),
+      goal, models, account, dir, emit, signal: controller.signal, lessons, search, spec, selfEducate, replan, memory: openMemory(path.dirname(dir)),
       resume: resume?.state || null, checkpoint,
       askPerson: (questions, signal) => (askFirst ? waitForAnswer(run, signal, waitMs) : ''),
     }))

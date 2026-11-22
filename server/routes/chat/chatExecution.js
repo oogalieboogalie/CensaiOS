@@ -1,6 +1,7 @@
 import pool from '../../db.js';
 import { executeTool } from '../../tools.js';
-import { MAX_CHAT_MODEL_ROUNDS, FORCE_TOOL_SYNTHESIS_AFTER_ROUNDS, extractMessageText } from './shared.js';
+import { extractMessageText } from './shared.js';
+import { nearDeadline, turnLimits } from './turnLimits.js';
 import { shouldSynthesizeAfterToolBatch, buildToolSynthesisPrompt, summarizeToolActions } from './prompts.js';
 import { withLongcatToolCallFallback } from './longcatToolCalls.js';
 import { heldBackReplyText, withReasoningContentFallback, reportEmptyModelResponse } from './reasoningFallback.js';
@@ -13,7 +14,7 @@ import { recordTraceRound } from '../../operational-intelligence/traces.js';
 import { createChatToolSession } from './toolSession.js';
 import { noteFailure } from './chatLog.js';
 import { runToolCalls } from './toolRound.js';
-import { callChatModelRound, chatModelAccessContext, forwardDeltas, modelTokens, throwIfChatAborted } from './modelRound.js';
+import { callWithRoomToAnswer, chatModelAccessContext, forwardDeltas, modelTokens, throwIfChatAborted } from './modelRound.js';
 import { outsideOfferedTools, runWithOfferedTools } from '../../tools/rbac/offeredTools.js';
 
 // The tools this run offered are what executeTool will allow, for every agent.
@@ -35,26 +36,28 @@ async function chatLoop({
   onModelAccepted,
   timings,
   userId, atThisComputer = false,
-  traceId, signal = null, runTool = executeTool,
+  traceId, signal = null, runTool = executeTool, rounds = null, now = Date.now,
 }) {
+  const limits = turnLimits(rounds);
   let toolActions = [];
   let finalText = '';
   let synthesisRequested = false;
   let synthesisReason = null;
   let round = 0;
-  const toolSession = createChatToolSession(toolsForCaller, reqProvider);
+  let slowestRound = 0;
+  const toolSession = createChatToolSession(toolsForCaller, reqProvider, { agentId, windowId });
   const toolContext = { userId, ...(atThisComputer === true ? { atThisComputer: true } : {}), ...(windowId ? { windowId } : {}), ...(authorizationWorkspaceId ? { workspaceId: authorizationWorkspaceId } : {}) };
   const accessContext = chatModelAccessContext(userId, authorizationWorkspaceId);
   let modelAccepted = false;
   const acceptModel = () => { if (!modelAccepted) { modelAccepted = true; onModelAccepted?.(); } };
   if (toolSession.prompt) chatMessages.splice(1, 0, { role: 'system', content: toolSession.prompt });
   // A reply that claims an action with no tool run gets one hidden second try.
-  const claimRetry = createClaimRetry({ chatMessages, sendEvent, agentId, maxRounds: MAX_CHAT_MODEL_ROUNDS });
+  const claimRetry = createClaimRetry({ chatMessages, sendEvent, agentId, maxRounds: limits.max });
 
   for (;;) {
     throwIfChatAborted(signal);
     round += 1;
-    if (round > MAX_CHAT_MODEL_ROUNDS) {
+    if (round > limits.max) {
       finalText = summarizeToolActions(toolActions);
       break;
     }
@@ -73,8 +76,9 @@ async function chatLoop({
       }).catch(noteFailure('trace round not recorded', { agentId }));
     }
 
+    const roundStartedAt = now();
     const modelStartedAt = Date.now();
-    const data = await claimRetry.guard(callChatModelRound({
+    const data = await claimRetry.guard(callWithRoomToAnswer({
       accessContext,
       activeTools,
       chatMessages,
@@ -87,7 +91,7 @@ async function chatLoop({
       userId,
       workspaceId, agentId, windowId,
       onDelta: forwardDeltas(round, sendEvent, acceptModel),
-    }), signal);
+    }, { signal, onRetry: () => sendEvent({ type: 'status', status: 'thinking', detail: { round, moreRoom: true } }) }), signal);
     acceptModel();
     const modelMs = Date.now() - modelStartedAt;
     timings.model_ms += modelMs;
@@ -111,10 +115,12 @@ async function chatLoop({
         traceId, signal, runTool, toolContext, toolSession, toolsForCaller,
         chatMessages, sendEvent, timings, toolActions, round,
       });
+      slowestRound = Math.max(slowestRound, now() - roundStartedAt);
 
-      if (!synthesisRequested && toolActions.length > 0 && shouldSynthesizeAfterToolBatch(toolActions, round)) {
+      const outOfTime = nearDeadline(limits, now(), slowestRound);
+      if (!synthesisRequested && toolActions.length > 0 && (outOfTime || shouldSynthesizeAfterToolBatch(toolActions, round, limits))) {
         synthesisRequested = true;
-        synthesisReason = round >= FORCE_TOOL_SYNTHESIS_AFTER_ROUNDS ? 'tool_round_limit' : 'direct_after_write';
+        synthesisReason = outOfTime ? 'time_limit' : round >= limits.forceAfter ? 'tool_round_limit' : 'direct_after_write';
         chatMessages.push({
           role: 'user',
           content: buildToolSynthesisPrompt(toolActions),

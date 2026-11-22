@@ -4,7 +4,7 @@ import { agentRouteError } from './scope.js';
 import { resolveSubAgentRouteScope } from './subagentScope.js';
 import { resolveSubAgentWrite } from './subagentWrites.js';
 import pool from '../../db.js';
-import { resolveAuthorizedWorkspaceProject } from '../../workspaces/projectAccess.js';
+import { resolveProjectForDriver } from '../../workspaces/ownerProjectLookup.js';
 import {
   getAllSubAgents,
   getSubAgents,
@@ -45,12 +45,12 @@ subagentsRouter.post('/sub-agents', requireDb, async (req, res) => {
     const scope = await resolveSubAgentWrite(req);
     const { parentId, name, role, specialty, systemPrompt, hue, permission, projectId, modelProvider, modelName, model_provider, model_name, toolScopes, tool_scopes } = req.body;
     if (!parentId || !name) return res.status(400).json({ error: 'parentId and name required' });
-    const authorizedProject = projectId ? await resolveAuthorizedWorkspaceProject(pool, {
+    const authorizedProject = projectId ? await resolveProjectForDriver(pool, {
       workspaceId: scope.workspaceId,
       agentId: parentId,
       projectIdentifier: projectId,
       requiredPermission: 'read',
-    }) : null;
+    }, { userId: req.session?.userId }) : null;
     const sub = await createSubAgent(parentId, {
       name,
       role,
@@ -76,12 +76,12 @@ subagentsRouter.put('/sub-agents/:id', requireDb, async (req, res) => {
     const current = await getSubAgentById(req.params.id, scope);
     if (!current) return res.status(404).json({ error: 'Sub-agent not found' });
     const requestedProjectId = req.body?.projectId || req.body?.project_id || null;
-    const authorizedProject = requestedProjectId ? await resolveAuthorizedWorkspaceProject(pool, {
+    const authorizedProject = requestedProjectId ? await resolveProjectForDriver(pool, {
       workspaceId: scope.workspaceId,
       agentId: current.parent_id,
       projectIdentifier: requestedProjectId,
       requiredPermission: 'read',
-    }) : null;
+    }, { userId: req.session?.userId }) : null;
     const patch = { ...req.body };
     if (requestedProjectId) patch.project_id = authorizedProject.id;
     delete patch.projectId;

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { execFile } from 'child_process';
+import { handBackGitFiles } from './gitOwnership.js';
 import { cliDataRoot } from './paths.js';
 import { inHiddenFolder, isSecretFileName } from '../security/secretFiles.js';
 import { FILE_PROBLEMS } from '../../shared/files/fileProblems.js';
@@ -83,6 +84,7 @@ export async function createWorktree({ repoRoot, baseSha, taskId, cli, patch = '
       throw Object.assign(new Error(`The previous task's changes did not apply cleanly: ${err.message}`), { statusCode: 409 });
     }
   }
+  handBackGitFiles(path.join(repoRoot, '.git'));
   return { dir, branch };
 }
 
@@ -92,6 +94,7 @@ export async function removeWorktree({ repoRoot, dir, branch }) {
   if (branch) {
     try { await git(['branch', '-D', branch], repoRoot); } catch { /* already gone */ }
   }
+  handBackGitFiles(path.join(repoRoot, '.git'));
 }
 
 function parseNumstat(text) {
@@ -119,6 +122,8 @@ function parseStatus(text) {
 export async function changes({ dir, baseSha }) {
   if (!dir || !fs.existsSync(dir)) return { files: [], patch: '', truncated: false };
   await git(['add', '--intent-to-add', '.'], dir).catch(() => {});
+  // The agent's commits and the line above write into the repo's own .git.
+  await git(['rev-parse', '--path-format=absolute', '--git-common-dir'], dir).then((out) => handBackGitFiles(out.trim())).catch(() => { /* quiet: the diff below still answers, ownership is tidied at the next run */ });
   const [numstat, status, patch] = await Promise.all([
     git(['diff', '--numstat', baseSha], dir),
     git(['diff', '--name-status', baseSha], dir),

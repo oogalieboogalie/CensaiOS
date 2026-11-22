@@ -2,45 +2,15 @@ import {
   invalidCanvasAgentIds,
   ownerMayAuthorizeCustomAgents,
 } from './canvasAgentAccess.js';
+import {
+  PERMISSIONS,
+  ProjectMembershipError,
+  normalizeMemberships,
+  normalizeWindowProjects,
+  requiredText,
+} from './membershipInput.js';
 
-const PERMISSIONS = new Set(['read', 'work']);
-const MAX_MEMBERSHIPS = 64;
-
-export class ProjectMembershipError extends Error {
-  constructor(message, { code = 'INVALID_PROJECT_MEMBERSHIP', statusCode = 400, readOnly = false } = {}) {
-    super(message);
-    this.name = 'ProjectMembershipError';
-    this.code = code;
-    this.statusCode = statusCode;
-    // The agent may read the project here but was asked to change it.
-    if (readOnly) this.readOnly = true;
-  }
-}
-
-function requiredText(value, label) {
-  const result = String(value || '').trim();
-  if (!result) throw new ProjectMembershipError(`${label} is required.`);
-  return result;
-}
-
-function normalizeMemberships(input) {
-  if (!Array.isArray(input)) throw new ProjectMembershipError('memberships must be an array.');
-  if (input.length > MAX_MEMBERSHIPS) {
-    throw new ProjectMembershipError(`memberships cannot contain more than ${MAX_MEMBERSHIPS} entries.`);
-  }
-  const rows = input.map((entry) => {
-    const agentId = requiredText(entry?.agentId, 'agentId');
-    const permission = String(entry?.permission || 'work').trim();
-    if (!PERMISSIONS.has(permission)) {
-      throw new ProjectMembershipError(`Unsupported project permission: ${permission}`);
-    }
-    return { agentId, permission };
-  });
-  if (new Set(rows.map((row) => row.agentId)).size !== rows.length) {
-    throw new ProjectMembershipError('Agent memberships must be unique.');
-  }
-  return rows;
-}
+export { ProjectMembershipError };
 
 export async function listWorkspaceAgentProjects(db, { workspaceId, agentId = null }) {
   const params = [requiredText(workspaceId, 'workspaceId')];
@@ -81,52 +51,79 @@ async function boardAgentsAsParents(db, workspaceId, rows) {
   return [...merged.values()];
 }
 
+/**
+ * One save of a board: the board's main project for every agent on it, plus
+ * each window's own project for the agent in that window. Every other
+ * project the board gave before is taken back. Rows given another way
+ * (by hand, or a hand-off's) are never touched.
+ */
 export async function replaceCanvasProjectMemberships(db, {
   workspaceId,
   projectId,
   memberships,
+  windowProjects = [],
   sourceId = null,
   userId = null,
 }) {
   const cleanWorkspaceId = requiredText(workspaceId, 'workspaceId');
   const cleanProjectId = requiredText(projectId, 'projectId');
   let rows = normalizeMemberships(memberships);
+  let windows = normalizeWindowProjects(windowProjects, cleanProjectId);
   const client = await db.connect();
   try {
     await client.query('BEGIN');
     const project = await client.query('SELECT id FROM projects WHERE id = $1', [cleanProjectId]);
     if (!project.rows[0]) throw new ProjectMembershipError('Project not found.', { statusCode: 404 });
+    if (windows.length > 0) {
+      // A window may still name a project that has since been removed: it
+      // gives nothing, and the rest of the board still saves.
+      const known = await client.query('SELECT id FROM projects WHERE id = ANY($1)', [windows.map((w) => w.projectId)]);
+      const knownIds = new Set(known.rows.map((row) => row.id));
+      windows = windows.filter((w) => knownIds.has(w.projectId) && w.rows.length > 0);
+    }
 
-    if (rows.length > 0) {
+    if (rows.length > 0 || windows.length > 0) {
       rows = await boardAgentsAsParents(client, cleanWorkspaceId, rows);
-      const agents = await client.query('SELECT * FROM agents WHERE id = ANY($1)', [rows.map((row) => row.agentId)]);
+      for (const w of windows) w.rows = await boardAgentsAsParents(client, cleanWorkspaceId, w.rows);
+      const agentIds = [...new Set([...rows, ...windows.flatMap((w) => w.rows)].map((row) => row.agentId))];
+      const agents = await client.query('SELECT * FROM agents WHERE id = ANY($1)', [agentIds]);
       const allowCustom = await ownerMayAuthorizeCustomAgents(client, {
         workspaceId: cleanWorkspaceId,
         userId,
       });
-      const invalid = invalidCanvasAgentIds(rows.map((row) => row.agentId), agents.rows, { allowCustom });
+      const invalid = invalidCanvasAgentIds(agentIds, agents.rows, { allowCustom });
       if (invalid.length > 0) {
         throw new ProjectMembershipError(`Unknown or non-canonical agent IDs: ${invalid.join(', ')}`);
       }
     }
 
+    const kept = windows.flatMap((w) => w.rows.map((row) => [w.projectId, row.agentId]));
     await client.query(
       `DELETE FROM workspace_agent_projects
         WHERE workspace_id = $1 AND source_kind = 'canvas'
-          AND (project_id <> $2 OR NOT (agent_id = ANY($3::text[])))`,
-      [cleanWorkspaceId, cleanProjectId, rows.map((row) => row.agentId)]
+          AND (project_id <> $2 OR NOT (agent_id = ANY($3::text[])))
+          AND NOT ((project_id, agent_id) IN (SELECT * FROM unnest($4::text[], $5::text[])))`,
+      [cleanWorkspaceId, cleanProjectId, rows.map((row) => row.agentId), kept.map(([p]) => p), kept.map(([, a]) => a)]
     );
-    for (const row of rows) {
+    const grants = [
+      ...rows.map((row) => ({ ...row, projectId: cleanProjectId, fromWindow: false })),
+      ...windows.flatMap((w) => w.rows.map((row) => ({ ...row, projectId: w.projectId, fromWindow: true }))),
+    ];
+    for (const row of grants) {
+      // A window's own project is stamped a moment after the board's main
+      // project (clock_timestamp, not the transaction's NOW), so an agent that
+      // names no project gets the one its window shows, every time, not
+      // whichever row a tie in updated_at happens to put first.
       await client.query(
         `INSERT INTO workspace_agent_projects
-         (workspace_id, project_id, agent_id, permission, source_kind, source_id, created_by_user_id)
-         VALUES ($1, $2, $3, $4, 'canvas', $5, $6)
+         (workspace_id, project_id, agent_id, permission, source_kind, source_id, created_by_user_id, updated_at)
+         VALUES ($1, $2, $3, $4, 'canvas', $5, $6, CASE WHEN $7::boolean THEN clock_timestamp() ELSE NOW() END)
          ON CONFLICT (workspace_id, project_id, agent_id, source_kind) DO UPDATE SET
            permission = EXCLUDED.permission,
            source_id = EXCLUDED.source_id,
            created_by_user_id = EXCLUDED.created_by_user_id,
-           updated_at = NOW()`,
-        [cleanWorkspaceId, cleanProjectId, row.agentId, row.permission, sourceId, userId]
+           updated_at = EXCLUDED.updated_at`,
+        [cleanWorkspaceId, row.projectId, row.agentId, row.permission, sourceId, userId, row.fromWindow]
       );
     }
     await client.query('COMMIT');

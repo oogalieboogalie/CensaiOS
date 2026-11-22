@@ -11,35 +11,43 @@ import {
 } from './shared.js';
 import { refreshProjectBrief } from './briefs.js';
 import { logProjectActivity } from './activity.js';
+import { distinctProjectId, folderSourceKey, plainProjectId, repoSourceKey } from './projectIdentity.js';
+import { findExistingGithubProject, findExistingLocalProject, getProjectByName, sameFolder } from './projectFind.js';
 
+export { findExistingGithubProject, findExistingLocalProject, getProjectByName, getProjectByRepoOrPath } from './projectFind.js';
+
+// How a project gets its id, and what makes two projects the same one, is in
+// ./projectIdentity.js: a project is its full owner/repo or its folder, never
+// just its name.
+
+/** The short id, shared-<name>: what the first project with a name gets. */
 export function sharedProjectIdFor(name) {
-  return `shared-${safeName(name)}`;
+  return plainProjectId(name);
 }
 
-export async function findExistingGithubProject(repo) {
-  const { rows } = await pool.query(
-    `SELECT * FROM projects
-     WHERE repo = $1
-     ORDER BY updated_at DESC
-     LIMIT 1`,
-    [repo]
-  );
-  return rows[0] || null;
-}
-
-export async function findExistingLocalProject(name, projectPath) {
-  const absPath = projectPath ? normalizeProjectPathForStorage(projectPath) : null;
-  const { rows } = await pool.query(
-    `SELECT * FROM projects
-     WHERE ($1::text IS NOT NULL AND path = $1)
-        OR lower(name) = lower($2)
-     ORDER BY
-       CASE WHEN owner_agent_id = 'shared' THEN 0 ELSE 1 END,
-       updated_at DESC
-     LIMIT 1`,
-    [absPath, name]
-  );
-  return rows[0] || null;
+// Saved under the row's own id when it is already here; a new project tries
+// the short id, then the one that carries its place. The database changes a
+// row only when it is this same project (or points nowhere yet), so a project
+// from somewhere else that holds the id is left exactly as it was.
+async function saveProject({ existing, name, sourceKey, insert, findAgain }) {
+  const ids = existing ? [existing.id] : [plainProjectId(name), distinctProjectId(name, sourceKey)];
+  for (const id of ids) {
+    try {
+      const { rows } = await insert(id);
+      if (rows[0]) {
+        const { is_new: isNew, ...project } = rows[0];
+        return { project, created: !existing && isNew !== false };
+      }
+    } catch (error) {
+      if (error?.code !== '23505') throw error;
+      // The database already has this very repo under another id (opened at the same moment).
+      const row = await findAgain();
+      if (row) return { project: row, created: false };
+      // Before docker/098-project-identity.sql has run, one agent cannot hold two projects with one name.
+      throw new Error(`A project called "${name}" is already open here from somewhere else, and this copy of censaiOS has not finished updating to keep both. Restart censaiOS, then open it again.`, { cause: error });
+    }
+  }
+  throw new Error(`"${name}" could not be opened: the ids for it are held by other projects. Open it under a different name.`);
 }
 
 /**
@@ -68,21 +76,28 @@ export async function openGithubProject(ownerAgentId, { name, repo, summary }) {
   await getRepoInfo(repo);
 
   const existing = await findExistingGithubProject(repo);
-  const id = existing?.id || sharedProjectIdFor(name);
   const owner = existing?.owner_agent_id || ownerAgentId;
-  const { rows } = await pool.query(
-    `INSERT INTO projects (id, owner_agent_id, name, path, repo, summary)
-     VALUES ($1, $2, $3, NULL, $4, $5)
-     ON CONFLICT (id) DO UPDATE SET
-       repo = EXCLUDED.repo,
-       summary = COALESCE(EXCLUDED.summary, projects.summary),
-       updated_at = NOW()
-     RETURNING *`,
-    [id, owner, name, repo, summary || null]
-  );
-  const project = rows[0];
+  const { project, created } = await saveProject({
+    existing,
+    name,
+    sourceKey: repoSourceKey(repo),
+    findAgain: () => findExistingGithubProject(repo),
+    // Never re-points a row: `repo` is written only into a row that has none.
+    insert: (id) => pool.query(
+      `INSERT INTO projects (id, owner_agent_id, name, path, repo, summary)
+       VALUES ($1, $2, $3, NULL, $4, $5)
+       ON CONFLICT (id) DO UPDATE SET
+         repo = CASE WHEN COALESCE(projects.repo, '') = '' THEN EXCLUDED.repo ELSE projects.repo END,
+         summary = COALESCE(EXCLUDED.summary, projects.summary),
+         updated_at = NOW()
+       WHERE lower(projects.repo) = lower(EXCLUDED.repo)
+          OR (COALESCE(projects.repo, '') = '' AND COALESCE(projects.path, '') = '')
+       RETURNING *, (xmax = 0) AS is_new`,
+      [id, owner, name, repo, summary || null]
+    ),
+  });
 
-  if (!existing) await refreshProjectBrief(project);
+  if (created) await refreshProjectBrief(project);
   await logProjectActivity(project.id, ownerAgentId, 'opened', `${repo}`);
   return project;
 }
@@ -96,12 +111,19 @@ export async function openLocalProject(ownerAgentId, { name, existingPath, summa
     if (!fs.existsSync(runtimePath)) throw new Error(`Path does not exist: ${projectPath}`);
   } else {
     projectPath = path.join(getSharedWorkspaceDir(), 'projects', safeName(name));
+    // Only a name was given. A project that already has that name is the one meant: it is
+    // returned as it is, rather than a new empty project that would make the name fit two.
+    // Several with that name: getProjectByName refuses and names them.
+    const named = await getProjectByName(ownerAgentId, name);
+    if (named && (named.repo || folderSourceKey(named.path) !== folderSourceKey(normalizeProjectPathForStorage(projectPath)))) {
+      await logProjectActivity(named.id, ownerAgentId, 'opened', named.repo ? `${named.repo}` : `Local: ${named.path}`);
+      return named;
+    }
     await fs.promises.mkdir(projectPath, { recursive: true });
     runtimePath = projectPath;
   }
 
   const existing = await findExistingLocalProject(name, projectPath);
-  const id = existing?.id || sharedProjectIdFor(name);
   const owner = existing?.owner_agent_id || ownerAgentId;
 
   const teamDir = path.join(runtimePath, '.team');
@@ -109,19 +131,27 @@ export async function openLocalProject(ownerAgentId, { name, existingPath, summa
   await fs.promises.mkdir(path.join(teamDir, 'shared'), { recursive: true });
   await fs.promises.mkdir(path.join(teamDir, 'notes'), { recursive: true });
 
-  const { rows } = await pool.query(
-    `INSERT INTO projects (id, owner_agent_id, name, path, repo, summary)
-     VALUES ($1, $2, $3, $4, NULL, $5)
-     ON CONFLICT (id) DO UPDATE SET
-       path = EXCLUDED.path,
-       summary = COALESCE(EXCLUDED.summary, projects.summary),
-       updated_at = NOW()
-     RETURNING *`,
-    [id, owner, name, projectPath, summary || null]
-  );
-  const project = rows[0];
+  const { project, created } = await saveProject({
+    existing,
+    name,
+    sourceKey: folderSourceKey(projectPath),
+    findAgain: () => findExistingLocalProject(name, projectPath),
+    // Never re-points a row: `path` is written only into a row that has none.
+    insert: (id) => pool.query(
+      `INSERT INTO projects (id, owner_agent_id, name, path, repo, summary)
+       VALUES ($1, $2, $3, $4, NULL, $5)
+       ON CONFLICT (id) DO UPDATE SET
+         path = CASE WHEN COALESCE(projects.path, '') = '' THEN EXCLUDED.path ELSE projects.path END,
+         summary = COALESCE(EXCLUDED.summary, projects.summary),
+         updated_at = NOW()
+       WHERE (COALESCE(projects.repo, '') = '' AND COALESCE(projects.path, '') = '')
+          OR ${sameFolder('projects.path', 'EXCLUDED.path')}
+       RETURNING *, (xmax = 0) AS is_new`,
+      [id, owner, name, projectPath, summary || null]
+    ),
+  });
 
-  if (!existing || !fs.existsSync(path.join(runtimePath, '.team', 'PROJECT.md'))) {
+  if (created || !fs.existsSync(path.join(runtimePath, '.team', 'PROJECT.md'))) {
     await refreshProjectBrief(project);
   }
   await logProjectActivity(project.id, ownerAgentId, 'opened', `Local: ${projectPath}`);
@@ -145,38 +175,12 @@ export async function getProject(projectId) {
   return rows[0] || null;
 }
 
-export async function getProjectByName(ownerAgentId, name) {
-  const { rows } = await pool.query(
-    `SELECT * FROM projects
-     WHERE lower(name) = lower($2)
-     ORDER BY
-       CASE WHEN owner_agent_id = $1 THEN 0 ELSE 1 END,
-       updated_at DESC
-     LIMIT 1`,
-    [ownerAgentId, name]
-  );
-  return rows[0] || null;
-}
-
-export async function getProjectByRepoOrPath(ownerAgentId, value) {
-  const { rows } = await pool.query(
-    `SELECT * FROM projects
-     WHERE repo = $2
-        OR ($2 NOT LIKE '%/%' AND repo LIKE $3)
-        OR path = $2
-     ORDER BY
-       CASE WHEN owner_agent_id = $1 THEN 0 ELSE 1 END,
-       updated_at DESC
-     LIMIT 1`,
-    [ownerAgentId, value, `%/${value}`]
-  );
-  return rows[0] || null;
-}
-
 export async function projectList(project, relPath = '.', { branch } = {}) {
   if (isGithubProject(project)) {
     const { listDir: ghListDir } = await import('../github.js');
-    return ghListDir(project.repo, relPath === '.' ? '' : relPath, branch);
+    // "/" and "/src" mean the top of the repo, the same as on a folder project.
+    const repoPath = String(relPath || '').replace(/^[\\/]+/, '');
+    return ghListDir(project.repo, repoPath === '.' ? '' : repoPath, branch);
   }
   const { resolveInsideProject } = await import('./shared.js');
   const abs = resolveInsideProject(project.path, relPath);

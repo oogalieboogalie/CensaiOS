@@ -1,6 +1,7 @@
 import pool from '../../db.js';
 import { TERMINAL_TASK_STATUSES, buildCompletionReceipt } from './receipts.js';
 import { requireAutonomyOwnership } from '../../autonomy/ownership.js';
+import { takeBackEndedTaskSharesQuietly } from '../../censaiOrchestrator/projectShare.js';
 
 function requiredWorkspace(opts = {}) {
   const workspaceId = String(opts.workspaceId || opts.workspace_id || '').trim();
@@ -125,5 +126,7 @@ export async function updateAgentTask(id, patch, opts = {}) {
     `UPDATE agent_tasks SET ${fields.join(', ')} WHERE id = $${pi} AND workspace_id = $${pi + 1} RETURNING *`,
     values
   );
+  // A to-do's task that ends gives back the project it lent its agent (server/censaiOrchestrator/projectShare.js).
+  if (rows[0] && TERMINAL_TASK_STATUSES.has(patch.status)) await takeBackEndedTaskSharesQuietly(pool);
   return rows[0];
 }

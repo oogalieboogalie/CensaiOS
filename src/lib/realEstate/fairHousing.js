@@ -42,6 +42,8 @@ export const FAIR_HOUSING_RULES = Object.freeze([
   { pattern: /\b(no\s+section\s*8|no\s+vouchers?)\b/i, category: 'Source of income', severity: 'risk', reason: 'Illegal in many states and cities.', suggestion: 'Remove.' },
   // Steering words that describe residents or safety
   { pattern: /\bsafe\s+(neighborhood|area|community|street)\b/i, category: 'Steering', severity: 'review', reason: '"Safe" is subjective and can steer buyers by who lives nearby.', suggestion: 'State facts, e.g. "gated entry" or "on a low-traffic cul-de-sac".' },
+  { pattern: /\b(good|great|best|top|top[\s-]rated|excellent|award[\s-]winning|highly[\s-]rated)\s+(schools?|school\s+districts?)\b/i, category: 'Steering', severity: 'review', reason: 'Judging school quality can steer buyers by family status or race.', suggestion: 'Name the district as a fact ("in the Maple Grove school district") and point to the state\'s school report cards.' },
+  { pattern: /\b(good|nice|great|better|bad|rough|sketchy)\s+(neighborhoods?|part\s+of\s+town)\b/i, category: 'Steering', severity: 'review', reason: 'Judging a neighborhood can read as a comment on who lives there.', suggestion: 'Describe the property and amenities, or share public sources and let the buyer decide.' },
   { pattern: /\b(traditional|desirable)\s+(neighborhood|area|community)\b/i, category: 'Steering', severity: 'review', reason: 'Can read as code for the people who live there.', suggestion: 'Describe the amenities instead.' },
 ]);
 

@@ -66,9 +66,10 @@ const THEME_VAR_DEFAULTS = {
   '--accent-contrast': 'oklch(1 0 0)',
   '--accent-text': 'var(--accent)',
   '--accent-line': 'var(--accent)',
-  '--window-bg': 'var(--surface)',
+  // Black glass on dark, the solid surface on light (src/styles/tokens.css).
+  '--window-bg': 'var(--window-surface)',
   '--window-title-bg': 'transparent',
-  '--window-backdrop': 'none',
+  '--window-backdrop': 'var(--window-surface-filter)',
   '--window-title-backdrop': 'none',
   '--window-radius': 'var(--radius-card)',
   '--window-shadow': 'var(--shadow-card)',
@@ -172,4 +173,3 @@ export function oklch({ l, c, h }) {
   return `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${Math.round(h)})`;
 }
 
-export { ThemePanel } from './theme/ThemePanel.jsx';

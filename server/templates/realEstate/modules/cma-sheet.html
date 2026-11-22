@@ -39,7 +39,7 @@
 <script>
   const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
   const $ = (id) => document.getElementById(id);
-  const esc = (t) => { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; };
+  const esc = (t) => { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
   const num = (v) => Number(String(v == null ? '' : v).replace(/[^0-9.]/g, '')) || 0;
   const SUBJECT = { address: '14 Alder Way', sqft: '1850', beds: '3', baths: '2', adjBed: '12000', adjBath: '8000' };
   const SAMPLE = [

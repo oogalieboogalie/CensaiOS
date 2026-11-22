@@ -1,29 +1,18 @@
 import React from 'react';
-import { ThemePanelCard, Slider } from './ThemeControls.jsx';
+import { SettingsRow, SettingsSection, SettingsSlider, SettingsSwitch } from './settingsKit.jsx';
 
 export const GLASS_BLUR_RANGE = Object.freeze({ min: 0.25, max: 2, step: 0.05 });
 
-/** Settings > Appearance, under Look: frosted glass on/off and how strong the blur is. */
+/** Settings > Appearance: frosted glass on menus and bars, and how strong the blur is. */
 export function FrostedGlassSection({ theme, setTheme }) {
   const on = theme.frostedGlass !== false;
   return (
-    <ThemePanelCard style={{ padding: 12, display: 'grid', gap: 10 }} data-testid="frosted-glass-section">
-      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, cursor: 'pointer' }}>
-        <span style={{ fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--ink)' }}>Glass</span>
-        <input
-          type="checkbox"
-          role="switch"
-          aria-label="Frosted glass"
-          data-testid="frosted-glass-switch"
-          checked={on}
-          onChange={(e) => setTheme({ frostedGlass: e.target.checked })}
-        />
-      </label>
-      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', lineHeight: 1.45 }}>
-        Menus, pop-ups and the floating bars show the board through frosted glass. Turn it off for solid menus.
-      </span>
+    <SettingsSection title="Frosted menus" data-testid="frosted-glass-section">
+      <SettingsRow label="Frosted glass" hint="Menus, pop-ups and the floating bars show the board through frosted glass. Off makes them solid.">
+        <SettingsSwitch label="Frosted glass" data-testid="frosted-glass-switch" checked={on} onChange={(frostedGlass) => setTheme({ frostedGlass })} />
+      </SettingsRow>
       {on && (
-        <Slider
+        <SettingsSlider
           label="Blur strength"
           value={theme.glassBlur ?? 1}
           min={GLASS_BLUR_RANGE.min}
@@ -33,6 +22,6 @@ export function FrostedGlassSection({ theme, setTheme }) {
           format={(v) => `${Math.round(v * 100)}%`}
         />
       )}
-    </ThemePanelCard>
+    </SettingsSection>
   );
 }

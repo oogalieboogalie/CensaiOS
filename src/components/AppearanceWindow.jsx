@@ -15,7 +15,7 @@ export function AppearanceWindow({ win, onUpdate, workspaceRevision }) {
   const { focusMode, setFocusMode, penMode, setPenMode } = useWorkspaceStore();
 
   const onResetWorkspace = async () => {
-    if (!confirm('Clear all windows + designed agents?')) return;
+    if (!confirm('Clear every window and every designed agent from this board?')) return;
     setResetError('');
     try {
       await resetWorkspaceAndReload({
@@ -24,14 +24,18 @@ export function AppearanceWindow({ win, onUpdate, workspaceRevision }) {
         reload: () => window.location.reload(),
       });
     } catch (error) {
-      setResetError(error.message || 'Workspace reset failed.');
+      setResetError(error.message || 'The board was not reset. Try again.');
     }
   };
 
   const onLogout = async () => {
-    if (confirm('Log out from Censai?')) {
+    if (!confirm('Log out of censaiOS on this device?')) return;
+    setResetError('');
+    try {
       await api.logout();
       window.location.reload();
+    } catch (error) {
+      setResetError(error.message || 'You are still signed in. Try again.');
     }
   };
 
@@ -41,46 +45,27 @@ export function AppearanceWindow({ win, onUpdate, workspaceRevision }) {
         accent="var(--accent)"
         icon={<Icon.Gear size={14} />}
         label={win.title || 'Settings'}
-        subtitle={win.subtitle || 'Appearance, canvas, sharing, open anywhere and AI keys'}
+        subtitle={win.subtitle}
       />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface)', overflow: 'hidden' }}>
-        {/* Tab Selector */}
-        <div style={{ display: 'flex', gap: 6, padding: '10px 16px', borderBottom: '1px solid var(--hairline)', background: 'var(--surface-2)' }}>
+        <nav className="hb-set-tabs" aria-label="Settings sections">
           {tabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              style={{
-                all: 'unset',
-                cursor: 'pointer',
-                padding: '6px 12px',
-                borderRadius: 'var(--radius-md)',
-                fontSize: 'var(--text-sm)',
-                fontWeight: 650,
-                color: tab === t.id ? 'var(--accent-ink)' : 'var(--ink-soft)',
-                background: tab === t.id ? 'var(--accent-soft)' : 'transparent',
-                transition: 'background 0.15s, color 0.15s'
-              }}
-            >
+            <button key={t.id} type="button" className="hb-set-tab" aria-current={tab === t.id ? 'page' : undefined} onClick={() => setTab(t.id)}>
               {t.label}
             </button>
           ))}
-        </div>
-
-        {/* Content Area */}
-        <div style={{ flex: 1, minHeight: 0, padding: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <SettingsTabContent
-            tab={tab}
-            panel={panel}
-            focusMode={focusMode}
-            setFocusMode={setFocusMode}
-            penMode={penMode}
-            setPenMode={setPenMode}
-            onResetWorkspace={onResetWorkspace}
-            onLogout={onLogout}
-            resetError={resetError}
-          />
-        </div>
+        </nav>
+        <SettingsTabContent
+          tab={tab}
+          panel={panel}
+          focusMode={focusMode}
+          setFocusMode={setFocusMode}
+          penMode={penMode}
+          setPenMode={setPenMode}
+          onResetWorkspace={onResetWorkspace}
+          onLogout={onLogout}
+          resetError={resetError}
+        />
       </div>
     </>
   );

@@ -13,11 +13,15 @@ jest.unstable_mockModule('../server/memory.js', () => ({ getAgent, getSubAgentBy
 
 const { filterToolsForAgent } = await import('../server/tools/rbac/checks.js');
 
-const FORBIDDEN_DEFAULTS = [
-  'web_search', 'github_read_file', 'sheets_read_range',
-  'read_journal', 'terminal_run', 'sandbox_exec', 'postgres_query', 'container_logs',
-  'restart_service', 'mailcow_domains', 'vex_run', 'jules_submit', 'generate_image',
-];
+// Tools no family agent has by role, so an old saved scope must not bring them in.
+const FORBIDDEN_DEFAULTS = ['vex_run', 'generate_image', 'hand_coding_job_to_github', 'policy_evaluate', 'scratchpad_clear'];
+// The powerful tools go only to the roles they belong to.
+const ROLE_ONLY = {
+  terminal_run: ['architect', 'atlas', 'genesis', 'nexus', 'phoenix', 'foundation'],
+  db_inspect: ['atlas', 'nexus'],
+  restart_service: ['nexus', 'phoenix', 'foundation'],
+  mailcow_domains: ['foundation'],
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -34,15 +38,19 @@ beforeEach(() => {
 });
 
 test.each(FAMILY_AGENTS.map(agent => agent.id))(
-  '%s gets only its intrinsic baseline when the workspace has no modules',
+  '%s gets its role\'s tools and nothing else when the workspace has no modules',
   async agentId => {
     const names = (await filterToolsForAgent(agentId, {
       workspaceId: 'workspace-a', userId: 7,
     })).map(tool => tool.function.name);
 
-    expect(names).toEqual(expect.arrayContaining(FAMILY_DEFAULT_TOOL_NAMES[agentId]));
+    // The two raw database tools are offered only to the computer's owner (rawDatabaseToolAccess.test.js).
+    const raw = ['postgres_query', 'postgres_exec_file'];
+    expect(names).toEqual(expect.arrayContaining(FAMILY_DEFAULT_TOOL_NAMES[agentId].filter(name => !raw.includes(name))));
     expect(names).toEqual(expect.arrayContaining(['search_tools', 'get_tool']));
+    expect(names).toEqual(expect.arrayContaining(['web_search', 'github_read_file', 'read_journal', 'run_tests']));
     for (const forbidden of FORBIDDEN_DEFAULTS) expect(names).not.toContain(forbidden);
+    for (const [tool, roles] of Object.entries(ROLE_ONLY)) expect(names.includes(tool)).toBe(roles.includes(agentId));
   },
 );
 
@@ -68,22 +76,14 @@ test('a reviewed module adds exactly its declared tools despite legacy global sc
     workspaceId: 'workspace-a', userId: 7,
   })).map(tool => tool.function.name);
   expect(names).toEqual(expect.arrayContaining(module.toolNames));
-  expect(names).not.toContain('project_write');
+  expect(names).not.toContain('vex_run');
   expect(names).not.toContain('terminal_run');
 });
 
-test('reviewed modules do not duplicate intrinsic family tools beyond the documented baseline', () => {
-  // Project read tools are deliberately in the family baseline AND the
-  // project-reader/writer modules (modules add approval/packaging; baseline
-  // grants the raw capability). This is the only sanctioned overlap.
-  const ALLOWED_BASELINE_OVERLAPS = new Set([
-    'project-reader:project_read', 'project-reader:project_list',
-    'project-reader:project_file_outline', 'project-reader:read_brief',
-    'project-writer:project_write', 'project-writer:project_edit',
-  ]);
-  const intrinsic = new Set(Object.values(FAMILY_DEFAULT_TOOL_NAMES).flat());
-  const overlaps = Object.values(AGENT_CAPABILITY_MODULE_BY_ID).flatMap(module => (
-    module.toolNames.filter(name => intrinsic.has(name)).map(name => `${module.id}:${name}`)
-  ));
-  expect(overlaps.sort()).toEqual([...ALLOWED_BASELINE_OVERLAPS].sort());
+test('every reviewed module tool is one the whole family already has by role', () => {
+  for (const module of Object.values(AGENT_CAPABILITY_MODULE_BY_ID)) {
+    for (const name of module.toolNames) {
+      for (const agent of FAMILY_AGENTS) expect(FAMILY_DEFAULT_TOOL_NAMES[agent.id]).toContain(name);
+    }
+  }
 });

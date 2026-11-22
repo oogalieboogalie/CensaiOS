@@ -14,7 +14,8 @@ export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
   const [customPresets, setCustomPresets] = React.useState([]);
   const [savingPreset, setSavingPreset] = React.useState(false);
   const [presetName, setPresetName] = React.useState('');
-  const [activeSurface, setActiveSurface] = React.useState('canvas');
+  const [presetNote, setPresetNote] = React.useState(null);
+  const [activeSurface, setActiveSurface] = React.useState(null);
   const [pos, setPos] = React.useState(null);
   const dragStartRef = React.useRef(null);
 
@@ -86,8 +87,10 @@ export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
       setCustomPresets(next);
       setPresetName('');
       setSavingPreset(false);
+      setPresetNote({ tone: 'ok', text: `Saved “${name}”.` });
     } catch (err) {
       logFailure('theme preset not saved', err, 'settings', 'error');
+      setPresetNote({ tone: 'error', text: 'These colors were not saved. Try again.' });
     }
   };
 
@@ -99,8 +102,10 @@ export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
     try {
       await api.saveThemeCustomPresets(next);
       setCustomPresets(next);
+      setPresetNote(null);
     } catch (err) {
       logFailure('theme preset not deleted', err, 'settings', 'error');
+      setPresetNote({ tone: 'error', text: 'That was not deleted. Try again.' });
     }
   };
 
@@ -121,7 +126,7 @@ export function useThemePanel(initialTab = 'appearance', tabRequestId = null) {
 
   return {
     theme, setTheme, tab, setTab, moodsExpanded, setMoodsExpanded,
-    customPresets, savingPreset, setSavingPreset, presetName, setPresetName,
+    customPresets, savingPreset, setSavingPreset, presetName, setPresetName, presetNote,
     activeSurface, setActiveSurface, pos, tabs: SETTINGS_TABS,
     resetTheme, clearOverrides, applyMoodPreset, randomizeTheme,
     applyLook, setShape, setCustomColors, exportTheme, importTheme,

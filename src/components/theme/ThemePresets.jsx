@@ -1,55 +1,30 @@
 import React from 'react';
-import { Icon } from '../Icons.jsx';
-import { MOODS, oklch } from '../Theme.jsx';
+import { MOODS } from '../Theme.jsx';
+import { SettingsButton } from './settingsKit.jsx';
+import { WindowPreview, moodColors } from './settingsPreview.jsx';
 
-export function MoodSwatch({ name, mood, active, onClick, size = 30 }) {
-  const bg = mood.vars['--canvas'];
-  const surface = mood.vars['--surface'];
-  const hairline = mood.vars['--hairline'];
-  const accent = mood.accent ? oklch({ l: mood.accent.lightness, c: mood.accent.chroma, h: mood.accent.hue }) : 'var(--accent)';
-  const strip = mood.vars['--window-strip-bg'];
+/** A small square of a color set: its board with one window and its accent. */
+export function MoodSwatch({ name, mood, active, onClick }) {
   const swatch = (
-    <span
-      aria-hidden="true"
-      style={{
-        position: 'relative',
-        display: 'block',
-        width: size,
-        height: size,
-        borderRadius: 'var(--radius-md)',
-        background: `linear-gradient(135deg, ${surface} 0 52%, ${bg} 52% 100%)`,
-        boxShadow: active ? `inset 0 0 0 2px ${accent}, 0 0 0 2px var(--surface)` : `inset 0 0 0 1px ${hairline}`,
-        overflow: 'hidden',
-      }}
-    >
-      <span style={{ position: 'absolute', left: 0, right: 0, top: 0, height: Math.max(4, size * 0.16), background: strip && strip !== 'transparent' ? strip : accent }} />
+    <span aria-hidden="true" className="hb-pv hb-pv--swatch" style={moodColors(mood)}>
+      <span className="hb-pv-win"><span className="hb-pv-btn" /></span>
     </span>
   );
-
   if (!onClick) return swatch;
   return (
-    <button onClick={onClick} title={`${name} ${mood.mode}`} aria-label={`${name} ${mood.mode}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', borderRadius: 'var(--radius-lg)' }}>
+    <button type="button" className="hb-set-swatch-pick" onClick={onClick} title={name} aria-label={`${name} ${mood.mode}`} aria-pressed={Boolean(active)}>
       {swatch}
     </button>
   );
 }
 
+/** The same color set as a card with its name, when names are shown. */
 export function MoodChip({ name, mood, active, onClick }) {
-  const bg = mood.vars['--canvas'];
-  const surface = mood.vars['--surface'];
-  const ink = mood.vars['--ink'];
-  const hairline = mood.vars['--hairline'];
-  const accent = mood.accent ? oklch({ l: mood.accent.lightness, c: mood.accent.chroma, h: mood.accent.hue }) : 'var(--accent)';
-  const mode = mood.mode;
   return (
-    <button
-      onClick={onClick}
-      title={name}
-      style={{ all: 'unset', cursor: 'pointer', position: 'relative', display: 'flex', flexDirection: 'column', padding: 9, borderRadius: 'var(--radius-lg)', background: bg, color: ink, boxShadow: active ? `inset 0 0 0 2px ${accent}` : `inset 0 0 0 1px ${hairline}`, minHeight: 64, overflow: 'hidden' }}
-    >
-      <div style={{ height: 18, borderRadius: 'var(--radius-sm)', background: mood.vars['--window-strip-bg'] && mood.vars['--window-strip-bg'] !== 'transparent' ? mood.vars['--window-strip-bg'] : `linear-gradient(90deg, ${surface}, ${accent})`, boxShadow: 'inset 0 0 0 1px oklch(0 0 0 / 0.10)', marginBottom: 9 }} />
-      <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', fontWeight: 750, letterSpacing: 'var(--label-tracking)', textTransform: 'var(--label-case)', color: ink, opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-      <div style={{ fontSize: 'var(--text-xs)', color: ink, opacity: 0.55, marginTop: 2 }}>{mode}</div>
+    <button type="button" className="hb-set-tile" onClick={onClick} title={name} aria-pressed={Boolean(active)}>
+      <WindowPreview colors={moodColors(mood)} />
+      <span className="hb-set-tile-name">{name}</span>
+      <span className="hb-set-tile-hint">{mood.mode}</span>
     </button>
   );
 }
@@ -71,17 +46,15 @@ function getPresetMood(preset) {
 export function SavedPresetRow({ preset, active, onApply, onDelete }) {
   const mood = getPresetMood(preset);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: 7, borderRadius: 'var(--radius-lg)', background: active ? 'var(--accent-soft)' : 'var(--surface)', border: `1px solid ${active ? 'var(--accent)' : 'var(--hairline)'}` }}>
-      <button onClick={onApply} title={`Apply ${preset.name}`} style={{ all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, flex: 1, minWidth: 0 }}>
-        <MoodSwatch name={preset.name} mood={mood} active={active} size={30} />
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preset.name}</div>
-          <div style={{ fontFamily: 'var(--font-label)', fontSize: 'var(--text-xs)', color: 'var(--ink-faint)', textTransform: 'var(--label-case)' }}>{preset.theme?.mood || 'custom'}</div>
-        </div>
+    <li className="hb-set-item" aria-current={active ? 'true' : undefined}>
+      <button type="button" className="hb-set-swatch-btn" onClick={onApply} title={`Use ${preset.name}`}>
+        <MoodSwatch name={preset.name} mood={mood} />
+        <span className="hb-set-item-main">
+          <span className="hb-set-label">{preset.name}{active ? ' (in use)' : ''}</span>
+          <span className="hb-set-hint">{preset.theme?.mood || 'custom'}</span>
+        </span>
       </button>
-      <button onClick={onDelete} title={`Delete ${preset.name}`} style={{ all: 'unset', cursor: 'pointer', width: 24, height: 24, borderRadius: 'var(--radius-md)', display: 'grid', placeItems: 'center', color: 'var(--ink-faint)', background: 'var(--surface-2)' }}>
-        <Icon.Close size={12} />
-      </button>
-    </div>
+      <SettingsButton small onClick={onDelete} title={`Delete ${preset.name}`}>Delete</SettingsButton>
+    </li>
   );
 }

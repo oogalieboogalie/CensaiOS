@@ -19,6 +19,14 @@ describe('fair-housing check', () => {
     expect(result.flags[0]).toMatchObject({ severity: 'review', category: 'Religion' });
   });
 
+  test('flags judging schools or a neighborhood in a client message, as review items', () => {
+    const result = checkFairHousing('Hi Mike, it is a great neighborhood with top-rated schools. In the Maple Grove school district.');
+    expect(result.ok).toBe(true);
+    expect(result.flags.map(f => f.term.toLowerCase())).toEqual(['great neighborhood', 'top-rated schools']);
+    expect(result.flags.every(f => f.severity === 'review' && f.category === 'Steering')).toBe(true);
+    expect(checkFairHousing('A great area for entertaining, two blocks from the school bus stop.').flags).toEqual([]);
+  });
+
   test('passes plain property copy and suggests "primary" over "master"', () => {
     expect(checkFairHousing('Three bedrooms, a fenced yard and a new roof.')).toEqual({ ok: true, flags: [] });
     const master = checkFairHousing('Spacious master suite with a walk-in closet.');

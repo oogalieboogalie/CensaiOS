@@ -15,7 +15,9 @@
 # "Update censaiOS" item (via the app) writes check-requested to look right
 # away instead of waiting for the next round; every look ends in
 # checked.json { at, result }. Closing and reopening censaiOS with the
-# shortcut also puts a ready update in.
+# shortcut also puts a ready update in. When this PC forwards localhost:3002
+# to another computer (scripts\served-elsewhere.ps1), censaiOS runs there and
+# scripts/auto-update.sh there updates it: this copy only pulls.
 #
 #   -Once            one check (and a waiting restart), then exit; for tests
 #   -CheckMinutes N  how often to look for an update (default 5)
@@ -70,6 +72,7 @@ function Write-Heartbeat {
 # put back after, exactly like the launcher does.
 function Update-Code {
   $branch = ((& git rev-parse --abbrev-ref HEAD 2>$null) -as [string]).Trim()
+  Write-Value 'step.txt' 'looking'
   & git fetch --quiet origin master *> $null
   $fetched = $LASTEXITCODE -eq 0
   # Not on master (someone switched this folder to a side branch): updates cannot
@@ -83,7 +86,8 @@ function Update-Code {
     Write-Value 'blocked.txt' $why
     return
   }
-  if (-not $fetched) { return }
+  # A download that failed is not "up to date": say so instead.
+  if (-not $fetched) { $script:failed = $true; return }
   $behind = [int]((& git rev-list --count HEAD..origin/master 2>$null) -as [string])
   if ($behind -eq 0) {
     Remove-Item -Force (Join-Path $dir 'blocked.txt') -ErrorAction SilentlyContinue
@@ -100,6 +104,7 @@ function Update-Code {
     return
   }
   Write-Log "master has $behind new commit(s), pulling"
+  Write-Value 'step.txt' 'downloading'
   & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'self-fix-patches.ps1') -Mode unapply *> $null
   $out = & git pull --ff-only --quiet origin master 2>&1
   if ($LASTEXITCODE -ne 0) {
@@ -118,6 +123,7 @@ function Build-App {
   & docker info *> $null
   if ($LASTEXITCODE -ne 0) { return $false }
   Write-Log "building $head"
+  Write-Value 'step.txt' 'building'
   # The same lock as a start or a swap. If one of those is running, do not
   # start a second build. The next look tries again.
   $lock = Join-Path $PSScriptRoot 'compose-lock.ps1'
@@ -150,6 +156,18 @@ function Write-Ready {
   Write-Value 'ready.json' ($ready | ConvertTo-Json -Compress)
 }
 
+# censaiOS runs on another computer that keeps it updated (this PC forwards
+# localhost:3002 there, scripts\served-elsewhere.ps1). This PC then only keeps
+# its folder current, for the desktop app, and never builds or starts Docker.
+$script:elsewhere = ''
+function Test-ServedElsewhere {
+  $found = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'served-elsewhere.ps1') 2>$null
+  $where = if ($LASTEXITCODE -eq 0) { "$($found | Select-Object -First 1)".Trim() } else { '' }
+  if ($where -and $where -ne $script:elsewhere) { Write-Log "censaiOS runs on $where, which updates it, so this PC builds nothing" }
+  $script:elsewhere = $where
+  return [bool]$where
+}
+
 function Test-Behind {
   return (Get-Head) -ne (Read-Value 'running.txt') -or (Test-Path $rebuildMarker)
 }
@@ -157,11 +175,20 @@ function Test-Behind {
 function Invoke-Check {
   $script:blocked = $false
   $script:paused = $false
+  $script:failed = $false
   Update-Code
+  if (Test-ServedElsewhere) {
+    Remove-Item -Force (Join-Path $dir 'ready.json') -ErrorAction SilentlyContinue
+    if ($script:paused) { return 'side-branch' }
+    if ($script:blocked) { return 'blocked' }
+    if ($script:failed) { return 'download-failed' }
+    return 'up-to-date'
+  }
   if (-not (Test-Behind)) {
     Remove-Item -Force (Join-Path $dir 'ready.json') -ErrorAction SilentlyContinue
     if ($script:paused) { return 'side-branch' }
     if ($script:blocked) { return 'blocked' }
+    if ($script:failed) { return 'download-failed' }
     return 'up-to-date'
   }
   if ((Read-Value 'built.txt') -ne (Get-Head) -or (Test-Path $rebuildMarker)) {
@@ -179,6 +206,8 @@ function Invoke-Check {
 function Invoke-Look([string]$why) {
   $result = 'up-to-date'
   try { $result = @(Invoke-Check)[-1] } catch { Write-Log "check failed: $_"; $result = 'build-failed' }
+  # The look is over, whatever it found: no step is being worked on now.
+  Remove-Item -Force (Join-Path $dir 'step.txt') -ErrorAction SilentlyContinue
   # Someone else is already building. Leave the last note and try later.
   if ($result -eq 'locked') { return }
   Write-Value 'checked.json' (@{ at = (Get-Date).ToUniversalTime().ToString('o'); result = $result } | ConvertTo-Json -Compress)
@@ -218,7 +247,8 @@ Write-Log "watching for updates every $CheckMinutes minute(s) (pid $PID)"
 . (Join-Path $PSScriptRoot 'updater-apply.ps1')
 $next = Get-Date
 $applyUntil = (Get-Date).AddMinutes(10)
-$applySettled = $false
+# Nothing to put in on this PC when censaiOS runs on another computer.
+$applySettled = Test-ServedElsewhere
 $swapFails = 0
 $nextSwapTry = Get-Date
 $saidBusy = $false
@@ -271,6 +301,7 @@ while ($true) {
     }
   }
   try {
+    if ($script:elsewhere) { Remove-Item -Force (Join-Path $dir 'restart-requested') -ErrorAction SilentlyContinue }
     $restarted = @(Invoke-Restart)[-1]
     # A person asked, and it went in. Do not log that the automatic tries failed.
     if ($restarted -eq 'done') { $applySettled = $true; $swapStopAfterWait = $false }

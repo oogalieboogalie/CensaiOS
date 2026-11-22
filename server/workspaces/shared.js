@@ -95,8 +95,14 @@ export async function ensureAgentWorkspace(agentId) {
 
 export function resolveInsideProject(projectRoot, relPath) {
   const absRoot = path.resolve(mapProjectPathForRuntime(projectRoot));
-  const absTarget = path.resolve(absRoot, relPath || '.');
-  const rel = path.relative(absRoot, absTarget);
+  let absTarget = path.resolve(absRoot, relPath || '.');
+  let rel = path.relative(absRoot, absTarget);
+  // Agents often write "/" or "/src" meaning the top of the project. A path that starts with a
+  // slash and is not already inside the project is read from the project's top, never the disk's.
+  if ((rel.startsWith('..') || path.isAbsolute(rel)) && /^[\\/]/.test(String(relPath))) {
+    absTarget = path.resolve(absRoot, String(relPath).replace(/^[\\/]+/, '') || '.');
+    rel = path.relative(absRoot, absTarget);
+  }
   if (rel.startsWith('..') || path.isAbsolute(rel)) {
     throw new Error(`Path escapes project root: ${relPath}`);
   }

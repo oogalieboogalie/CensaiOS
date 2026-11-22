@@ -20,6 +20,7 @@ import pool from '../db.js';
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { runAgentTurn } from '../runEngine/index.js';
+import { runFenced } from '../workspaces/ownerTrust.js';
 import { FAMILY_AGENT_BY_ID } from '../../src/data/family-agents.js';
 import { placeResultCard, patchWorkflowWindow, readWorkflowWindow } from './board.js';
 import { insertRun, updateRun } from './store.js';
@@ -151,7 +152,10 @@ export async function walk(run, deps, startAt = 0) {
     run.results[node.id] = { status: 'running' };
     await publish(run, deps);
     try {
-      const step = await runStep(node, input, run, deps);
+      // A run a board trigger set off keeps the fence, even under the owner's name (ownerTrust.js).
+      const step = run.trigger && run.trigger !== 'manual'
+        ? await runFenced(() => runStep(node, input, run, deps))
+        : await runStep(node, input, run, deps);
       run.results[node.id] = { status: 'done', ms: Date.now() - startedAt, ...step, output: clip(step.output) };
     } catch (error) {
       const message = run.abort.signal.aborted ? 'Stopped.' : (error?.message || 'This step failed.');

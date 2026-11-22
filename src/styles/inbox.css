@@ -69,6 +69,8 @@
 .hb-inbox-actions { display: flex; align-items: center; gap: var(--space-2); margin-top: auto; padding-top: var(--space-2); border-top: 1px solid var(--hairline); }
 .hb-inbox-spacer { flex: 1; }
 .hb-inbox-ack { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+/* The shared button hover paints the surface colour, which is this button's text colour. */
+.hb-btn.hb-inbox-ack:hover { background: color-mix(in oklab, var(--ink) 86%, var(--surface)); }
 .hb-inbox-ack kbd { color: var(--surface); border-color: color-mix(in srgb, var(--surface) 40%, transparent); background: transparent; }
 
 /* Right: the dock rail */

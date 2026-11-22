@@ -26,6 +26,9 @@ export const HOST_CHANGING_TOOL_NAMES = Object.freeze([
   // Docker reads too: container lists and logs can carry addresses and
   // tokens, so they are owner only, like the Docker window (/api/docker)
   'container_status', 'container_logs',
+  // The app's database: its tables and rows hold every board's data, so even
+  // looking is owner only (postgres_query and postgres_exec_file: changesHost below)
+  'db_inspect', 'postgres_schema_audit', 'postgres_table_sample',
   // The owner's mail server, read with the owner's own Mailcow key: its lists
   // are owner only too, like the Mailcow window (server/routes/mailcow.js)
   'mailcow_domains', 'mailcow_mailboxes', 'mailcow_aliases', 'mailcow_queue',

@@ -15,17 +15,35 @@
 import { createLogger } from '../logger.js';
 import { safeErrorCode } from '../security/errorCode.js';
 import { publicChatError } from '../chatModel/errors.js';
+import { runInJobProject } from '../tools/jobProject.js';
+import { runInPlanJob } from '../tools/jobRun.js';
+import { runFenced } from '../workspaces/ownerTrust.js';
 import { checkAnswer } from './check.js';
+import { PR_CHECKS_WAIT_MS, onGithubBranch } from './jobPr.js';
 import { closeChecklist, reopenChecklist, tickCount } from './checklist.js';
+import { checkPin } from './projectPin.js';
 import { jobPrompt, sendBackPrompt } from './prompts.js';
-import { MAX_ANSWER_CHARS, MAX_ATTEMPTS, addStep, agentName, clip, settleStep } from './shape.js';
+import { loadPlan } from './store.js';
+import { JOB_ROUNDS, MAX_ANSWER_CHARS, MAX_ATTEMPTS, addStep, agentName, clip, settleStep } from './shape.js';
 
 const log = createLogger('censai-orchestrator');
-const configured = Number(process.env.CENSAI_JOB_TIMEOUT_MS) || 8 * 60 * 1000;
+// Room for JOB_ROUNDS on a slow model; the turn is asked to answer before this runs out.
+const configured = Number(process.env.CENSAI_JOB_TIMEOUT_MS) || 20 * 60 * 1000;
 export const JOB_TIMEOUT_MS = Math.min(30 * 60 * 1000, Math.max(30_000, configured));
 
 /** Thrown inside a job once the person stopped the plan; the plan is already saved as stopped. */
 export class PlanStopped extends Error {}
+
+// Another server may have stopped this plan, or carried it on, since it was loaded here: then no turn starts.
+async function stillRunning(deps, plan) {
+  if (typeof deps.db?.query !== 'function') return true;
+  try {
+    return (await loadPlan(deps.db, plan.id))?.status === 'running';
+  } catch (error) {
+    log.warn('plan not read again before a turn', { planId: plan.id, code: safeErrorCode(error) });
+    return true;
+  }
+}
 
 /** Plain words for why the agent's turn did not finish. */
 export function turnError(error, name, elapsedMs, limitMs = JOB_TIMEOUT_MS) {
@@ -74,37 +92,76 @@ export async function runJob({ entry, plan, job, earlier = [], deps, save, censa
   };
 
   alive();
+  // Pinned work (a Kraken arm) runs only while the project is still the one the person looked at.
+  const moved = plan.pin ? await (deps.checkPin || checkPin)(deps.db, scope, plan.pin) : null;
+  if (moved) {
+    closeChecklist(job, 'the project is not the one you looked at');
+    return stuck(moved.why);
+  }
+  // A call that names no project means the plan's project, at its pinned commit on GitHub (tools/jobProject.js).
+  const pinnedRef = plan.pin?.kind === 'github' ? plan.pin.commit || plan.pin.branch : null;
+  // A code job on GitHub works on its own branch there and ends in a pull request (jobPr.js).
+  // Its turn runs behind the board's fence whatever Trust mode says, so a checkout of the same
+  // repo on this computer is never written to in its place (workspaces/ownerTrust.js).
+  const onGithub = onGithubBranch(plan, job);
+  const fenced = (work) => (onGithub ? runFenced(work) : work());
+  // Which plan and job this run is, exactly, so two plans at once each find their own branch (tools/jobRun.js).
+  const inProject = (work) => runInPlanJob({ planId: plan.id, part: job.n }, () => fenced(
+    () => runInJobProject({ agentId: job.agentId, project: plan.project, ref: pinnedRef, confined: onGithub }, work),
+  ));
   const prompt = jobPrompt({ plan, job, earlier, total: plan.jobs.length });
+  // Back from waiting on its pull request's checks, which failed: the next try, with what they showed.
+  const resuming = job.status === 'sendback';
+  const messages = [{ from: 'me', text: prompt }];
+  if (resuming) {
+    const failed = job.checklist.filter((item) => item.state === 'failed');
+    messages.push({ from: job.agentId, text: job.answer || '(no answer)' }, { from: 'me', text: sendBackPrompt(failed) });
+  }
   job.status = 'working';
-  const handoffId = await quietly(() => deps.sendMail('censai', job.agentId, prompt, {
+  const handoffId = resuming ? null : await quietly(() => deps.sendMail('censai', job.agentId, prompt, {
     ...scope, messageType: 'work_request', subject: clip(`From Censai: ${job.title}`, 120),
     wake: false, idempotencyKey: `censai-plan:${plan.id}:${job.n}`,
   }), 'hand-off mail', meta);
-  await step(`Handed to ${name}`);
-  log.info('job handed off', meta);
+  if (!resuming) {
+    await step(`Handed to ${name}`);
+    log.info('job handed off', meta);
+  }
   // The agent gets the job right here, so it is not waiting in its mail too.
   if (handoffId) await quietly(() => deps.markRead(handoffId, scope), 'marking the hand-off read', meta);
 
+  // Its branch starts where the person looked, before the agent's first change.
+  if (onGithub) {
+    const made = await deps.prepareJobBranch({ db: deps.db, plan, job });
+    if (!made.ok) {
+      closeChecklist(job, 'no branch could be made on GitHub');
+      return stuck(made.line);
+    }
+    await step(made.line);
+  }
+
   // How the tests run before the agent touches anything, so a changed test script cannot pass for them.
-  if (plan.project && deps.readTestScript && job.testScript === undefined) {
+  if (!onGithub && plan.project && deps.readTestScript && job.testScript === undefined) {
     job.testScript = await quietly(() => deps.readTestScript({ agentId: job.agentId, project: plan.project, context: scope }), 'reading the test script', meta);
   }
 
-  const messages = [{ from: 'me', text: prompt }];
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+  for (let attempt = resuming ? (job.attempts || 1) + 1 : 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     alive();
     job.attempts = attempt;
     job.status = 'working';
     await step(attempt === 1 ? `${name} is working on it` : `${name} is fixing it`, 'now');
+    if (!(await stillRunning(deps, plan))) {
+      entry.stopped = true;
+      throw new PlanStopped();
+    }
     const startedAt = deps.now();
     let turn;
     try {
-      turn = await deps.runAgent({
+      turn = await inProject(() => deps.runAgent({
         origin: 'help', agentId: job.agentId, messages, userId: plan.userId,
         workspaceId: plan.workspaceId, loopWorkspaceId: plan.workspaceId,
         conversationId: `censai-plan:${plan.id}:${job.n}`, signal: entry.controller.signal,
-        timeoutMs: JOB_TIMEOUT_MS, rememberQuestion: `Censai asked: ${job.task}`,
-      });
+        timeoutMs: JOB_TIMEOUT_MS, rounds: JOB_ROUNDS, rememberQuestion: `Censai asked: ${job.task}`,
+      }));
     } catch (error) {
       alive();
       log.warn('agent turn failed', { ...meta, attempt, code: safeErrorCode(error) });
@@ -128,16 +185,17 @@ export async function runJob({ entry, plan, job, earlier = [], deps, save, censa
 
     alive();
     job.status = 'checking';
-    const { seen, verdict } = await checkAnswer({
+    const { seen, verdict, parked } = await checkAnswer({
       job, answer, toolActions: tools,
       deps: {
         change,
         step,
-        findFile: (item) => deps.findFile({ agentId: job.agentId, project: plan.project, path: item.path, context: scope }),
+        findFile: (item) => inProject(() => deps.findFile({ agentId: job.agentId, project: plan.project, path: item.path, context: scope })),
         runTests: ({ files, projects, shell }) => deps.runTests({
           agentId: job.agentId, project: plan.project, files, projects, shell,
           expectScript: job.testScript ?? null, signal: entry.controller.signal, context: scope,
         }),
+        openPr: () => deps.openJobPr({ db: deps.db, plan, job }),
         review: async (reviewMessages) => {
           try {
             return await deps.askCensai(await censai(), reviewMessages, { userId: plan.userId });
@@ -149,6 +207,15 @@ export async function runJob({ entry, plan, job, earlier = [], deps, save, censa
     });
     alive();
     job.seen = seen;
+    if (parked) {
+      // Waits for the pull request's checks outside the runner's slots (runner.js looks every little while).
+      const since = deps.now();
+      job.status = 'waiting_checks';
+      job.prWait = { number: parked.number, url: parked.url, sha: parked.headSha, since, until: since + (deps.prChecksWaitMs ?? PR_CHECKS_WAIT_MS), attempt };
+      await step(`Pull request #${parked.number} is open. Waiting for its checks on GitHub`, 'now');
+      log.info('job waits for checks', { ...meta, attempt, pr: parked.number });
+      return 'parked';
+    }
     log.info('job checked', { ...meta, attempt, ok: verdict.ok, ...tickCount(job) });
     if (verdict.ok === true) {
       job.status = 'done';

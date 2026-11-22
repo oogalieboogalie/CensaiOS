@@ -35,6 +35,23 @@ RUN apk add --no-cache chromium ttf-freefont
 RUN apk add --no-cache curl bash gcompat
 RUN (curl -fsSL https://x.ai/cli/install.sh | bash) \
  || echo "Grok CLI not installed; the Grok chat still works with an xAI key."
+# tailcat: Friends (server/friends/) connects this copy to a friend's
+# computer with it. One program with nothing else to install, from its
+# makers' own release, and only if it is byte for byte the file they
+# published (the sha256 below is from that release's checksums.txt).
+# To move to a newer tailcat, change the version and both sums together.
+ARG TAILCAT_VERSION=0.7.0
+RUN set -e; \
+    case "$(uname -m)" in \
+      x86_64) arch=amd64; sum=23c0b1887a5ec422f0d18a9c52b4f5357815febdaae738a1eb54036d10bd9ee6 ;; \
+      aarch64) arch=arm64; sum=bbb1ab50f24f00effe1e1fd86d0501803fb80793a90785a2a16ff3428f03d8ef ;; \
+      *) echo "tailcat: no build for $(uname -m); Friends will say tailcat is missing."; exit 0 ;; \
+    esac; \
+    curl -fsSL -o /tmp/tailcat.tgz "https://github.com/tailscale/tailcat/releases/download/v${TAILCAT_VERSION}/tailcat_${TAILCAT_VERSION}_linux_${arch}.tar.gz"; \
+    echo "${sum}  /tmp/tailcat.tgz" | sha256sum -c -; \
+    tar -xzf /tmp/tailcat.tgz --no-same-owner -C /usr/local/bin tailcat; \
+    chmod 755 /usr/local/bin/tailcat; rm /tmp/tailcat.tgz; \
+    tailcat genkey --client --force --key=/tmp/tailcat-check.json >/dev/null; rm -f /tmp/tailcat-check.json
 # Tells the Agent Console to keep installs, worktrees and CLI logins in the
 # state volume, which survives the rebuild at every launch.
 ENV CENSAI_IN_CONTAINER=1 USE_BUILTIN_RIPGREP=0

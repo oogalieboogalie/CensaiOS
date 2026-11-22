@@ -82,6 +82,78 @@ describe('template modules run', () => {
     expect(document.getElementById('net').textContent.replace(/[^0-9]/g, '')).toBe('10350');
   });
 
+  test('cold leads: paste a CRM export, coldest first, and the agent marks each one it drafted', () => {
+    const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+    const { errors, storage, tools } = runModule(modules['cold-leads'], { leads: [] });
+    expect(errors).toEqual([]);
+    expect(document.body.textContent).toMatch(/No leads yet/);
+
+    document.getElementById('paste').value = [
+      'First Name,Last Name,Email,Phone,Last Activity,Notes',
+      `Mike,Torres,mike@example.com,,${daysAgo(240)},"Lease ends in spring, wants a garage"`,
+      `Priya,Bell,priya@example.com,,${daysAgo(400)},"Toured 7 Quarry Rd; ""kitchen too small"""`,
+      `Lena,Ortiz,lena@example.com,,${daysAgo(20)},Asked about open houses`,
+      ',,,,,',
+    ].join('\r\n');
+    fireEvent.click(document.getElementById('add'));
+    expect(storage.leads.map(l => l.name)).toEqual(['Mike Torres', 'Priya Bell', 'Lena Ortiz']);
+    expect(storage.leads[1].notes).toBe('Toured 7 Quarry Rd; "kitchen too small"');
+    expect(document.getElementById('msg').textContent).toBe('Added 3 leads.');
+
+    // The same export again adds no one twice.
+    document.getElementById('paste').value = `Name,Email\nMike Torres,mike@example.com`;
+    fireEvent.click(document.getElementById('add'));
+    expect(storage.leads).toHaveLength(3);
+    expect(document.getElementById('msg').textContent).toMatch(/skipped 1 already on the list/);
+
+    // Lena was in touch 20 days ago, so she is not cold yet.
+    const cold = tools.list_cold_leads({});
+    expect(cold.map(l => l.name)).toEqual(['Priya Bell', 'Mike Torres']);
+    expect(cold[0]).toMatchObject({ daysCold: 400, notes: expect.stringMatching(/kitchen/) });
+
+    expect(tools.mark_lead({ lead: 'priya', status: 'drafted' })).toEqual({ name: 'Priya Bell', status: 'drafted' });
+    expect(tools.list_cold_leads({}).map(l => l.name)).toEqual(['Mike Torres']);
+    expect(document.getElementById('score').textContent).toBe('Drafted 1 · Replied 0 · Booked 0');
+    expect(() => tools.mark_lead({ lead: 'nobody', status: 'drafted' })).toThrow(/No lead matches/);
+    expect(() => tools.mark_lead({ lead: 'mike', status: 'sent' })).toThrow(/Status must be one of/);
+  });
+
+  test('cold leads: spreadsheet pastes keep commas in cells, repeats in one paste are added once, and a short name must point at one lead', () => {
+    const { storage, tools } = runModule(modules['cold-leads'], { leads: [] });
+    document.getElementById('paste').value = 'Name\tNotes\tEmail\nMike Torres\tLease ends, wants garage\tm@example.com\nMike Torres\tLease ends, wants garage\tm@example.com\nMika Stone\t\tmika@example.com';
+    fireEvent.click(document.getElementById('add'));
+    expect(storage.leads.map(l => [l.name, l.notes, l.email])).toEqual([
+      ['Mike Torres', 'Lease ends, wants garage', 'm@example.com'],
+      ['Mika Stone', '', 'mika@example.com'],
+    ]);
+    expect(document.getElementById('msg').textContent).toBe('Added 2 leads, skipped 1 already on the list or repeated.');
+    expect(() => tools.mark_lead({ lead: 'mi', status: 'stop' })).toThrow(/More than one lead matches/);
+    expect(storage.leads.every(l => l.status === 'cold')).toBe(true);
+    expect(tools.mark_lead({ lead: 'stone', status: 'stop' }).name).toBe('Mika Stone');
+  });
+
+  test('cold leads: a name with quotes in it stays text and cannot add a script to the page', () => {
+    const name = 'x" onmouseover="window.__hit=1';
+    runModule(modules['cold-leads'], { leads: [{ id: 'q', name, notes: '', status: 'cold' }] });
+    const select = document.querySelector('select[data-id="q"]');
+    expect(select.getAttribute('aria-label')).toBe(`Status for ${name}`);
+    expect(select.hasAttribute('onmouseover')).toBe(false);
+  });
+
+  test('cold leads: a person changes a status by hand, and a paste without names says what is wrong', () => {
+    const { storage } = runModule(modules['cold-leads'], { leads: [{ id: 'a', name: 'Jonas Haas', phone: '555-0142', lastContact: '', notes: '', status: 'cold' }] });
+    expect(document.body.textContent).toMatch(/never/);
+    const select = document.querySelector('select[data-id="a"]');
+    fireEvent.change(select, { target: { value: 'booked' } });
+    expect(storage.leads[0].status).toBe('booked');
+    expect(document.getElementById('score').textContent).toMatch(/Booked 1/);
+
+    document.getElementById('paste').value = 'Email,Phone\nx@example.com,555';
+    fireEvent.click(document.getElementById('add'));
+    expect(document.getElementById('msg').textContent).toMatch(/No name column found/);
+    expect(storage.leads).toHaveLength(1);
+  });
+
   test('CMA sheet prices from pasted comps and asks the analyst for a summary', async () => {
     const { errors, sdk, storage } = runModule(modules['cma-sheet'], { comps: [] });
     expect(errors).toEqual([]);
